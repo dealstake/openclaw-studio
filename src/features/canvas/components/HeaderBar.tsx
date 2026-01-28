@@ -11,11 +11,6 @@ type HeaderBarProps = {
   onNewAgent: () => void;
   onCreateDiscordChannel: () => void;
   canCreateDiscordChannel: boolean;
-  zoom: number;
-  onZoomIn: () => void;
-  onZoomOut: () => void;
-  onZoomReset: () => void;
-  onZoomToFit: () => void;
 };
 
 const statusStyles: Record<GatewayStatus, string> = {
@@ -35,11 +30,6 @@ export const HeaderBar = ({
   onNewAgent,
   onCreateDiscordChannel,
   canCreateDiscordChannel,
-  zoom,
-  onZoomIn,
-  onZoomOut,
-  onZoomReset,
-  onZoomToFit,
 }: HeaderBarProps) => {
   const hasProjects = projects.length > 0;
 
@@ -117,39 +107,6 @@ export const HeaderBar = ({
             Create Discord Channel
           </button>
         ) : null}
-        <div className="flex items-center gap-2 rounded-full border border-slate-300 px-3 py-2">
-          <button
-            className="text-sm font-semibold text-slate-800"
-            type="button"
-            onClick={onZoomOut}
-          >
-            −
-          </button>
-          <span className="text-xs font-semibold text-slate-600" data-zoom-readout>
-            {Math.round(zoom * 100)}%
-          </span>
-          <button
-            className="text-sm font-semibold text-slate-800"
-            type="button"
-            onClick={onZoomIn}
-          >
-            +
-          </button>
-          <button
-            className="ml-2 text-xs font-semibold text-slate-500"
-            type="button"
-            onClick={onZoomReset}
-          >
-            Reset
-          </button>
-          <button
-            className="text-xs font-semibold text-slate-500"
-            type="button"
-            onClick={onZoomToFit}
-          >
-            Fit
-          </button>
-        </div>
       </div>
     </div>
   );

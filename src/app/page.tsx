@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { ReactFlowInstance } from "@xyflow/react";
+// (ReactFlowInstance import removed)
 import { CanvasFlow } from "@/features/canvas/components/CanvasFlow";
 import { HeaderBar } from "@/features/canvas/components/HeaderBar";
 import { screenToWorld, worldToScreen } from "@/features/canvas/lib/transform";
@@ -16,7 +16,7 @@ import {
 } from "@/features/canvas/state/store";
 import { createProjectDiscordChannel } from "@/lib/projects/client";
 import type { AgentTile, ProjectRuntime } from "@/features/canvas/state/store";
-import { CANVAS_BASE_ZOOM } from "@/lib/canvasDefaults";
+// (CANVAS_BASE_ZOOM import removed)
 
 type ChatEventPayload = {
   runId: string;
@@ -186,7 +186,7 @@ const AgentCanvasPage = () => {
   const stateRef = useRef(state);
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
-  const [flowInstance, setFlowInstance] = useState<ReactFlowInstance | null>(null);
+  // flowInstance removed (zoom controls live in the bottom-right ReactFlow Controls).
 
   const tiles = useMemo(() => project?.tiles ?? [], [project?.tiles]);
 
@@ -756,25 +756,7 @@ const AgentCanvasPage = () => {
     });
   }, [client, dispatch, state.projects]);
 
-  const handleZoomIn = useCallback(() => {
-    if (!flowInstance) return;
-    flowInstance.zoomIn();
-  }, [flowInstance]);
-
-  const handleZoomOut = useCallback(() => {
-    if (!flowInstance) return;
-    flowInstance.zoomOut();
-  }, [flowInstance]);
-
-  const handleZoomReset = useCallback(() => {
-    if (!flowInstance) return;
-    flowInstance.setViewport({ x: 0, y: 0, zoom: CANVAS_BASE_ZOOM });
-  }, [flowInstance]);
-
-  const handleZoomToFit = useCallback(() => {
-    if (!flowInstance) return;
-    void flowInstance.fitView({ padding: 0.2 });
-  }, [flowInstance]);
+  // Zoom controls are available in the bottom-right of the canvas.
 
   const handleProjectCreate = useCallback(async () => {
     if (!projectName.trim()) {
@@ -912,7 +894,7 @@ const AgentCanvasPage = () => {
         onModelChange={handleModelChange}
         onThinkingChange={handleThinkingChange}
         onUpdateTransform={(patch) => dispatch({ type: "setCanvas", patch })}
-        onInit={(instance) => setFlowInstance(instance)}
+        onInit={undefined}
       />
 
       <div className="pointer-events-none absolute inset-0 z-10 flex flex-col gap-4 p-6">
@@ -943,11 +925,6 @@ const AgentCanvasPage = () => {
             onNewAgent={handleNewAgent}
             onCreateDiscordChannel={handleCreateDiscordChannel}
             canCreateDiscordChannel={Boolean(project && project.tiles.length > 0)}
-            zoom={state.canvas.zoom}
-            onZoomIn={handleZoomIn}
-            onZoomOut={handleZoomOut}
-            onZoomReset={handleZoomReset}
-            onZoomToFit={handleZoomToFit}
           />
         </div>
 
