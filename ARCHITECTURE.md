@@ -1,10 +1,10 @@
 # Architecture
 
 ## High-level overview & goals
-This repo is a local-first, single-user Next.js App Router UI for managing Moltbot agents on a canvas. It provides:
+OpenClaw Studio is a local-first, single-user Next.js App Router UI for managing OpenClaw agents on a canvas. It provides:
 - A canvas-based workspace UI for multiple agent tiles.
 - Local persistence for projects/tiles via a JSON store on disk.
-- Integration with the Moltbot runtime via a WebSocket gateway.
+- Integration with the OpenClaw runtime via a WebSocket gateway.
 - Optional Discord channel provisioning for agents.
 
 Primary goals:
@@ -29,7 +29,7 @@ This keeps feature cohesion high while preserving a clear client/server boundary
 - **Canvas UI** (`src/features/canvas`): React Flow canvas, tiles, editor UI, local in-memory state + actions.
 - **Projects** (`src/lib/projects`, `src/app/api/projects`): project/tile models, store persistence, shared store normalization and mutation helpers in `src/app/api/projects/store.ts`, workspace files, heartbeat settings, shared project/tile resolution plus API response helpers in `src/lib/projects/resolve.server.ts` (including param-based helpers that load the store), shared sessionKey helpers in `src/lib/projects/sessionKey.ts`, shared workspace file helpers in `src/lib/projects/workspaceFiles.ts`, server-side workspace file read/write helpers in `src/lib/projects/workspaceFiles.server.ts`, agent-canvas path helper in `src/lib/projects/agentWorkspace.ts`, server-side filesystem helpers (`src/lib/projects/fs.server.ts`) including shared agent cleanup. Workspace create/open is handled by `POST /api/projects` in `src/app/api/projects/route.ts` using name-or-path payloads, with a single client entry point in `src/lib/projects/client.ts`. Tile updates (rename/avatar) share a single client wrapper in `src/lib/projects/client.ts`.
 - **Gateway** (`src/lib/gateway`): WebSocket client for agent runtime (frames, connect, request/response).
-- **Moltbot config + paths** (`src/lib/clawdbot`): read/write moltbot.json, shared agent list helpers (used by heartbeat routes), shared config update helper for routes, heartbeat defaults, consolidated state/config/.env path resolution (`src/lib/clawdbot/paths.ts`).
+- **OpenClaw config + paths** (`src/lib/clawdbot`): read/write openclaw.json (with legacy fallback), shared agent list helpers (used by heartbeat routes), shared config update helper for routes, heartbeat defaults, consolidated state/config/.env path resolution with `OPENCLAW_*` env overrides (`src/lib/clawdbot/paths.ts`).
 - **Discord integration** (`src/lib/discord`, API route): channel provisioning and config binding.
 - **Shared utilities** (`src/lib/*`): env, ids, names, avatars, text parsing, logging, filesystem helpers.
 
@@ -44,7 +44,7 @@ This keeps feature cohesion high while preserving a clear client/server boundary
 
 ## Data flow & key boundaries
 ### 1) Project + tile state
-- **Source of truth**: JSON store on disk at `~/.clawdbot/agent-canvas/projects.json`.
+- **Source of truth**: JSON store on disk at `~/.openclaw/agent-canvas/projects.json` (legacy fallback to `~/.moltbot` or `~/.clawdbot`).
 - **Server boundary**: `src/app/api/projects/*` handles validation, persistence, and side effects.
 - **Client boundary**: `AgentCanvasProvider` loads store on startup, caches in memory, and persists via API.
 
@@ -56,19 +56,19 @@ Flow:
 5. Client hydrates store into runtime state.
 
 ### 2) Agent runtime (gateway)
-- **Client-side only**: `GatewayClient` uses WebSocket to connect to the local Moltbot gateway.
+- **Client-side only**: `GatewayClient` uses WebSocket to connect to the local OpenClaw gateway.
 - **API is not in the middle**: UI speaks directly to the gateway for streaming and agent events.
 
 Flow:
 1. UI loads gateway URL/token from `/api/gateway`.
 2. `GatewayClient` connects + sends `connect` request.
-3. UI requests `models.list` to populate the model selector (backed by `~/.moltbot/moltbot.json` via the gateway).
+3. UI requests `models.list` to populate the model selector (backed by `~/.openclaw/openclaw.json` via the gateway, with legacy fallback).
 4. UI sends requests (frames) and receives event streams.
 5. Canvas store updates tile output/state.
 
 ### 3) Workspace files + heartbeat
 - **Workspace files**: `AGENTS.md`, `SOUL.md`, `IDENTITY.md`, `USER.md`, `TOOLS.md`, `HEARTBEAT.md`, `MEMORY.md`.
-- **Heartbeat**: stored in `moltbot.json` agent list entries.
+- **Heartbeat**: stored in `openclaw.json` agent list entries (legacy config supported).
 
 Flow:
 1. UI requests workspace files/heartbeat via API.
@@ -78,10 +78,10 @@ Flow:
 ### 4) Discord provisioning
 - API route calls `createDiscordChannelForAgent`.
 - Uses DISCORD_BOT_TOKEN from the resolved state-dir `.env` file.
-- Updates `moltbot.json` bindings and channel config.
+- Updates `openclaw.json` bindings and channel config.
 
 ## Cross-cutting concerns
-- **Configuration**: `src/lib/env` validates env via zod; `lib/clawdbot/paths.ts` resolves config path and state dirs.
+- **Configuration**: `src/lib/env` validates env via zod; `lib/clawdbot/paths.ts` resolves config path and state dirs, honoring `OPENCLAW_STATE_DIR`/`OPENCLAW_CONFIG_PATH` and legacy fallbacks.
 - **Logging**: `src/lib/logger` (console wrappers) used in API routes and gateway client.
 - **Error handling**:
   - API routes return JSON `{ error }` with appropriate status.
@@ -101,11 +101,11 @@ Flow:
 ### C4 Level 1 (System Context)
 ```mermaid
 C4Context
-  title Moltbot Agent UI - System Context
+  title OpenClaw Studio - System Context
   Person(user, "User", "Operates agent canvas locally")
-  System(ui, "Moltbot Agent UI", "Next.js App Router UI")
-  System_Ext(gateway, "Moltbot Gateway", "WebSocket runtime")
-  System_Ext(fs, "Local Filesystem", "projects.json, workspace files, moltbot.json")
+  System(ui, "OpenClaw Studio", "Next.js App Router UI")
+  System_Ext(gateway, "OpenClaw Gateway", "WebSocket runtime")
+  System_Ext(fs, "Local Filesystem", "projects.json, workspace files, openclaw.json")
   System_Ext(discord, "Discord API", "Optional channel provisioning")
 
   Rel(user, ui, "Uses")
@@ -117,7 +117,7 @@ C4Context
 ### C4 Level 2 (Containers/Components)
 ```mermaid
 C4Container
-  title Moltbot Agent UI - Containers
+  title OpenClaw Studio - Containers
   Person(user, "User")
 
   Container_Boundary(app, "Next.js App") {
@@ -126,7 +126,7 @@ C4Container
   }
 
   Container_Ext(gateway, "Gateway", "WebSocket", "Agent runtime")
-  Container_Ext(fs, "Filesystem", "Local", "projects.json, workspace files, moltbot.json")
+  Container_Ext(fs, "Filesystem", "Local", "projects.json, workspace files, openclaw.json")
   Container_Ext(discord, "Discord API", "REST", "Channel provisioning")
 
   Rel(user, client, "Uses")

@@ -16,10 +16,10 @@ let previousConfigPath: string | undefined;
 
 const createTempConfig = (config: Record<string, unknown>) => {
   tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "clawdbot-config-"));
-  const filePath = path.join(tempDir, "moltbot.json");
+  const filePath = path.join(tempDir, "openclaw.json");
   fs.writeFileSync(filePath, JSON.stringify(config, null, 2), "utf8");
-  previousConfigPath = process.env.MOLTBOT_CONFIG_PATH;
-  process.env.MOLTBOT_CONFIG_PATH = filePath;
+  previousConfigPath = process.env.OPENCLAW_CONFIG_PATH;
+  process.env.OPENCLAW_CONFIG_PATH = filePath;
   return { filePath };
 };
 
@@ -29,9 +29,9 @@ const cleanup = () => {
     tempDir = null;
   }
   if (previousConfigPath === undefined) {
-    delete process.env.MOLTBOT_CONFIG_PATH;
+    delete process.env.OPENCLAW_CONFIG_PATH;
   } else {
-    process.env.MOLTBOT_CONFIG_PATH = previousConfigPath;
+    process.env.OPENCLAW_CONFIG_PATH = previousConfigPath;
   }
   previousConfigPath = undefined;
 };
@@ -94,7 +94,7 @@ describe("updateClawdbotConfig", () => {
     });
 
     expect(result.warnings).toEqual([
-      "Agent config not updated: Failed to update clawdbot.json.",
+      "Agent config not updated: Failed to update config.",
     ]);
   });
 });

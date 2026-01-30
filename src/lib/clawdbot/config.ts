@@ -11,7 +11,7 @@ export type AgentEntry = Record<string, unknown> & {
   workspace?: string;
 };
 
-const CONFIG_FILENAME = "moltbot.json";
+const CONFIG_FILENAME = "openclaw.json";
 
 const parseJsonLoose = (raw: string) => {
   try {
@@ -129,7 +129,7 @@ export const updateClawdbotConfig = (
       saveClawdbotConfig(configPath, config);
     }
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Failed to update clawdbot.json.";
+    const message = err instanceof Error ? err.message : "Failed to update config.";
     warnings.push(`Agent config not updated: ${message}`);
   }
   return { warnings };

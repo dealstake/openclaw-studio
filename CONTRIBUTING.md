@@ -1,16 +1,16 @@
 # Contributing
 
-Thanks for helping improve moltbot-agent-ui. Please use GitHub Issues for bugs and feature requests.
+Thanks for helping improve OpenClaw Studio. Please use GitHub Issues for bugs and feature requests.
 
 ## Before you start
-- Install Moltbot and confirm the gateway runs locally.
-- This repo is UI-only and reads config from `~/.clawdbot` or `~/.moltbot`.
+- Install OpenClaw and confirm the gateway runs locally.
+- This repo is UI-only and reads config from `~/.openclaw` with legacy fallback to `~/.moltbot` or `~/.clawdbot`.
 - It does not run or build the gateway from source.
 
 ## Local setup
 ```bash
-git clone https://github.com/grp06/moltbot-agent-ui.git
-cd moltbot-agent-ui
+git clone https://github.com/grp06/openclaw-studio.git
+cd openclaw-studio
 npm install
 cp .env.example .env
 npm run dev
