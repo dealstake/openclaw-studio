@@ -15,7 +15,6 @@ export const WorkspaceSettingsPanel = ({
   onSaved,
 }: WorkspaceSettingsPanelProps) => {
   const [workspacePath, setWorkspacePath] = useState("");
-  const [workspaceName, setWorkspaceName] = useState("");
   const [warnings, setWarnings] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -28,7 +27,6 @@ export const WorkspaceSettingsPanel = ({
       .then((result) => {
         if (!mounted) return;
         setWorkspacePath(result.workspacePath ?? "");
-        setWorkspaceName(result.workspaceName ?? "");
         setWarnings(result.warnings ?? []);
         setError(null);
       })
@@ -57,7 +55,6 @@ export const WorkspaceSettingsPanel = ({
     try {
       const result = await updateWorkspaceSettings({
         workspacePath: workspacePath.trim(),
-        ...(workspaceName.trim() ? { workspaceName: workspaceName.trim() } : {}),
       });
       setWarnings(result.warnings ?? []);
       if (result.warnings.length > 0) {
@@ -71,16 +68,16 @@ export const WorkspaceSettingsPanel = ({
     } finally {
       setSaving(false);
     }
-  }, [onSaved, workspaceName, workspacePath]);
+  }, [onSaved, workspacePath]);
 
   return (
     <div className="glass-panel px-6 py-6" data-testid="workspace-settings-panel">
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold text-foreground">Workspace Settings</h2>
+            <h2 className="text-lg font-semibold text-foreground">Default Workspace</h2>
             <p className="text-xs text-muted-foreground">
-              Set the folder where Studio agents should operate.
+              Change the folder where Studio agents should operate.
             </p>
           </div>
           <button
@@ -95,25 +92,14 @@ export const WorkspaceSettingsPanel = ({
 
         <div className="grid gap-4">
           <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-            Workspace path
+            Default workspace path
             <input
               className="h-11 rounded-lg border border-input bg-background px-4 text-sm text-foreground outline-none transition focus:border-ring"
               value={workspacePath}
               onChange={(event) => setWorkspacePath(event.target.value)}
-              placeholder="/Users/you/repos/my-workspace"
+              placeholder="~/.clawdbot/workspace"
               disabled={loading || saving}
               data-testid="workspace-settings-path"
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-            Workspace name (optional)
-            <input
-              className="h-11 rounded-lg border border-input bg-background px-4 text-sm text-foreground outline-none transition focus:border-ring"
-              value={workspaceName}
-              onChange={(event) => setWorkspaceName(event.target.value)}
-              placeholder="My Workspace"
-              disabled={loading || saving}
-              data-testid="workspace-settings-name"
             />
           </label>
         </div>

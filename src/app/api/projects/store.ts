@@ -353,6 +353,7 @@ const applySingleWorkspace = (store: ProjectsStore): ProjectsStore => {
       ...primary,
       name,
       repoPath: resolvedWorkspacePath,
+      archivedAt: null,
       tiles: primary.tiles.map((tile) => ({
         ...tile,
         agentId: defaultAgentId,

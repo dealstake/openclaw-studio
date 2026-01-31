@@ -1089,10 +1089,10 @@ const AgentCanvasPage = () => {
         window.alert("No archived agents to clean.");
         return;
       }
-      const confirmation = window.prompt(
-        `Type CLEAN ARCHIVED to remove ${preview.items.length} archived agents.`
+      const confirmation = window.confirm(
+        `Remove ${preview.items.length} archived agents?`
       );
-      if (confirmation !== "CLEAN ARCHIVED") return;
+      if (!confirmation) return;
       const result = await runProjectCleanup({
         tileIds: preview.items.map((item) => item.tileId),
       });
@@ -1289,13 +1289,7 @@ const AgentCanvasPage = () => {
       <div className="pointer-events-none absolute inset-0 z-10 flex flex-col gap-4 p-6">
         <div ref={headerRef} className="pointer-events-auto mx-auto w-full max-w-4xl">
             <HeaderBar
-            workspaceLabel={
-              needsWorkspace
-                ? "Workspace not set"
-                : project?.name?.trim()
-                  ? project.name
-                  : "Workspace"
-            }
+            workspaceLabel={project?.name?.trim() ? project.name : "Workspace"}
             workspacePath={workspacePath || null}
             hasAnyTiles={Boolean(project?.tiles.length)}
             status={status}
@@ -1338,50 +1332,6 @@ const AgentCanvasPage = () => {
           </div>
         ) : null}
 
-        {!state.loading && needsWorkspace && !showWorkspaceSettings ? (
-          <div className="pointer-events-auto mx-auto w-full max-w-5xl">
-            <div className="glass-panel px-8 py-10">
-              <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_260px] lg:items-center">
-                <div className="flex flex-col gap-5">
-                  <div className="space-y-2">
-                    <h2 className="text-2xl font-semibold text-foreground sm:text-3xl">
-                      Set a workspace path to begin.
-                    </h2>
-                    <p className="text-sm text-muted-foreground">
-                      Point Studio at the repo or folder where agents should operate.
-                    </p>
-                  </div>
-
-                  <div className="flex flex-col items-start gap-2">
-                    <div className="relative">
-                      <button
-                        className="rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground transition hover:brightness-110"
-                        type="button"
-                        onClick={handleOpenWorkspaceSettings}
-                        data-testid="workspace-settings-cta"
-                      >
-                        Set workspace path
-                      </button>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      You can change this any time in Workspace Settings.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-center">
-                  <div className="relative h-48 w-64">
-                    <div className="absolute left-1/2 top-1/2 h-36 w-36 -translate-x-1/2 -translate-y-1/2 rounded-full border border-dashed border-border/40" />
-                    <div className="absolute left-1/2 top-1/2 h-10 w-10 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/10" />
-                    <span className="absolute left-6 top-6 h-2 w-2 rounded-full bg-primary/40" />
-                    <span className="absolute right-8 top-12 h-2 w-2 rounded-full bg-primary/40" />
-                    <span className="absolute bottom-6 left-1/2 h-2 w-2 -translate-x-1/2 rounded-full bg-primary/40" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : null}
       </div>
     </div>
   );

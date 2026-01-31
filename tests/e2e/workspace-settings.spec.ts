@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+import path from "node:path";
+
 test("workspace settings flow updates the header label", async ({ page }) => {
   let projectsStore = {
     version: 3,
@@ -7,8 +9,8 @@ test("workspace settings flow updates the header label", async ({ page }) => {
     projects: [],
   };
   let workspaceSettings = {
-    workspacePath: null,
-    workspaceName: null,
+    workspacePath: "/Users/default",
+    workspaceName: "Workspace",
     defaultAgentId: "main",
     warnings: [],
   };
@@ -40,7 +42,7 @@ test("workspace settings flow updates the header label", async ({ page }) => {
         workspaceName?: string;
       };
       const workspacePath = body.workspacePath ?? "";
-      const workspaceName = body.workspaceName ?? "Demo Workspace";
+      const workspaceName = body.workspaceName ?? path.basename(workspacePath);
       workspaceSettings = {
         workspacePath,
         workspaceName,
@@ -74,16 +76,13 @@ test("workspace settings flow updates the header label", async ({ page }) => {
 
   await page.goto("/");
 
-  await expect(page.getByText("Set a workspace path to begin.")).toBeVisible();
-
-  await page.getByTestId("workspace-settings-cta").click();
+  await page.getByTestId("workspace-settings-toggle").click();
   await expect(page.getByTestId("workspace-settings-panel")).toBeVisible();
 
-  await page.getByTestId("workspace-settings-path").fill("/Users/demo");
-  await page.getByTestId("workspace-settings-name").fill("Demo Workspace");
+  await page.getByTestId("workspace-settings-path").fill("/Users/Demo Workspace");
   await page.getByTestId("workspace-settings-save").click();
 
   await expect(page.getByTestId("workspace-settings-panel")).toHaveCount(0);
-  await expect(page.getByText("Demo Workspace")).toBeVisible();
-  await expect(page.getByText("Set a workspace path to begin.")).toHaveCount(0);
+  const workspaceBlock = page.getByText("Default workspace").locator("..");
+  await expect(workspaceBlock.locator("p").nth(1)).toHaveText("Demo Workspace");
 });

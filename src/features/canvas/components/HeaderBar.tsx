@@ -4,7 +4,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 type HeaderBarProps = {
   workspaceLabel: string;
   workspacePath: string | null;
-  hasAnyTiles: boolean;
+  hasArchivedTiles: boolean;
   status: GatewayStatus;
   showArchived: boolean;
   onToggleArchived: () => void;
@@ -32,7 +32,7 @@ const statusLabel: Record<GatewayStatus, string> = {
 export const HeaderBar = ({
   workspaceLabel,
   workspacePath,
-  hasAnyTiles,
+  hasArchivedTiles,
   status,
   showArchived,
   onToggleArchived,
@@ -51,7 +51,7 @@ export const HeaderBar = ({
         <div className="flex min-w-0 items-center gap-4">
           <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-              Workspace
+              Default workspace
             </p>
             <p className="truncate text-sm font-semibold text-foreground">
               {workspaceLabel}
@@ -60,7 +60,7 @@ export const HeaderBar = ({
               <p className="truncate text-xs text-muted-foreground">{workspacePath}</p>
             ) : null}
           </div>
-          {hasAnyTiles ? (
+          {hasArchivedTiles ? (
             <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
               <input
                 className="h-4 w-4 rounded border border-input text-primary"
@@ -89,7 +89,7 @@ export const HeaderBar = ({
               onClick={onWorkspaceSettings}
               data-testid="workspace-settings-toggle"
             >
-              Workspace Settings
+              Change Default Workspace
             </button>
             <button
               className="rounded-lg border border-transparent bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:brightness-110 disabled:cursor-not-allowed disabled:border-border disabled:bg-muted disabled:text-muted-foreground disabled:opacity-100"
