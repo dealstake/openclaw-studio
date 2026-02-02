@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
   fetchWorkspaceSettings,
@@ -11,6 +11,17 @@ type WorkspaceSettingsPanelProps = {
   onSaved: () => void;
 };
 
+const validateWorkspacePathFormat = (raw: string): string | null => {
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return null;
+  }
+  if (trimmed === "~" || trimmed.startsWith("~/") || trimmed.startsWith("/")) {
+    return null;
+  }
+  return "Workspace path must be an absolute path (e.g. /home/ubuntu/...) or start with ~/.";
+};
+
 export const WorkspaceSettingsPanel = ({
   onClose,
   onSaved,
@@ -21,6 +32,11 @@ export const WorkspaceSettingsPanel = ({
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  const formatError = useMemo(
+    () => validateWorkspacePathFormat(workspacePath),
+    [workspacePath]
+  );
 
   useEffect(() => {
     let mounted = true;
@@ -48,15 +64,23 @@ export const WorkspaceSettingsPanel = ({
   }, []);
 
   const handleSave = useCallback(async () => {
-    if (!workspacePath.trim()) {
+    const trimmed = workspacePath.trim();
+    if (!trimmed) {
       setError("Workspace path is required.");
       return;
     }
+
+    const formatIssue = validateWorkspacePathFormat(trimmed);
+    if (formatIssue) {
+      setError(formatIssue);
+      return;
+    }
+
     setSaving(true);
     setError(null);
     try {
       const result = await updateWorkspaceSettings({
-        workspacePath: workspacePath.trim(),
+        workspacePath: trimmed,
       });
       setWarnings(result.warnings ?? []);
       if (result.warnings.length > 0) {
@@ -98,18 +122,26 @@ export const WorkspaceSettingsPanel = ({
           </button>
         </div>
 
-        <div className="grid gap-4">
+        <div className="grid gap-2">
           <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
             Default workspace path
             <input
               className="h-11 rounded-lg border border-input bg-background px-4 text-sm text-foreground outline-none transition focus:border-ring"
               value={workspacePath}
               onChange={(event) => setWorkspacePath(event.target.value)}
-              placeholder="~/.clawdbot/workspace"
+              placeholder="~/.openclaw/workspace"
               disabled={loading || saving}
               data-testid="workspace-settings-path"
+              aria-invalid={Boolean(formatError)}
             />
           </label>
+          <p className="text-xs text-muted-foreground">
+            Must be an existing directory. Use an absolute path (e.g. <span className="font-mono">/home/ubuntu/…</span>)
+            or <span className="font-mono">~/…</span>. Permissions are validated on save.
+          </p>
+          {formatError ? (
+            <div className="text-xs text-destructive">{formatError}</div>
+          ) : null}
         </div>
 
         <div className="flex flex-wrap items-center gap-3">

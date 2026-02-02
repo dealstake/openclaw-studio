@@ -6,6 +6,8 @@ import { CanvasFlow } from "@/features/canvas/components/CanvasFlow";
 import { AgentInspectPanel } from "@/features/canvas/components/AgentInspectPanel";
 import { HeaderBar } from "@/features/canvas/components/HeaderBar";
 import { WorkspaceSettingsPanel } from "@/features/canvas/components/WorkspaceSettingsPanel";
+import { GatewayStatusBanner } from "@/features/canvas/components/GatewayStatusBanner";
+import { WorkspaceEmptyState } from "@/features/canvas/components/WorkspaceEmptyState";
 import { useToast } from "@/components/ui/toast";
 import { useConfirm } from "@/components/ui/confirm";
 import { MAX_TILE_HEIGHT, MIN_TILE_SIZE } from "@/lib/canvasTileDefaults";
@@ -268,7 +270,14 @@ const findTileByRunId = (
 };
 
 const AgentCanvasPage = () => {
-  const { client, status } = useGatewayConnection();
+  const {
+    client,
+    status,
+    connect: connectGateway,
+    disconnect: disconnectGateway,
+    gatewayUrl,
+    error: gatewayError,
+  } = useGatewayConnection();
   const { toast } = useToast();
   const { confirm } = useConfirm();
 
@@ -320,6 +329,7 @@ const AgentCanvasPage = () => {
     () => filterArchivedItems(project?.tiles ?? [], showArchived),
     [project?.tiles, showArchived]
   );
+  const hasAnyTiles = (project?.tiles?.length ?? 0) > 0;
   const faviconSeed = useMemo(() => {
     const firstTile = project?.tiles[0];
     const seed = firstTile?.avatarSeed ?? firstTile?.agentId ?? "";
@@ -335,7 +345,7 @@ const AgentCanvasPage = () => {
     if (!inspectTileId || !project) return null;
     return project.tiles.find((entry) => entry.id === inspectTileId) ?? null;
   }, [inspectTileId, project]);
-  const errorMessage = state.error ?? gatewayModelsError;
+  const errorMessage = state.error ?? gatewayModelsError ?? gatewayError;
 
   useEffect(() => {
     const selector = 'link[data-agent-favicon="true"]';
@@ -1681,6 +1691,11 @@ const AgentCanvasPage = () => {
     [project, renameTile, toast]
   );
 
+  const handleReconnectGateway = useCallback(() => {
+    disconnectGateway();
+    void connectGateway();
+  }, [connectGateway, disconnectGateway]);
+
   return (
     <div className="relative h-screen w-screen overflow-hidden">
       <CanvasFlow
@@ -1799,6 +1814,26 @@ const AgentCanvasPage = () => {
             canCleanupArchived={hasArchivedTiles}
           />
         </div>
+
+        {status !== "connected" ? (
+          <div className="pointer-events-auto mx-auto w-full max-w-4xl">
+            <GatewayStatusBanner
+              status={status}
+              gatewayUrl={gatewayUrl}
+              onReconnect={handleReconnectGateway}
+            />
+          </div>
+        ) : null}
+
+        {!state.loading && (needsWorkspace || !hasAnyTiles) && !showWorkspaceSettings ? (
+          <div className="pointer-events-auto mx-auto w-full max-w-4xl">
+            <WorkspaceEmptyState
+              needsWorkspace={needsWorkspace}
+              onOpenWorkspaceSettings={handleOpenWorkspaceSettings}
+              onNewAgent={handleNewAgent}
+            />
+          </div>
+        ) : null}
 
         {state.loading ? (
           <div className="pointer-events-auto mx-auto w-full max-w-4xl">

@@ -9,3 +9,6 @@
 # Temporary
 last-touched
 *.tmp
+
+# CLI history
+.br_history/
