@@ -9,6 +9,3 @@
 # Temporary
 last-touched
 *.tmp
-
-# Export history backups
-.br_history/
