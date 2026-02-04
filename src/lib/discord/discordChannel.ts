@@ -1,7 +1,12 @@
 import fs from "node:fs";
 
 import { slugifyName } from "../ids/slugify";
-import { loadClawdbotConfig, saveClawdbotConfig } from "../clawdbot/config";
+import {
+  loadClawdbotConfig,
+  readAgentList,
+  saveClawdbotConfig,
+  writeAgentList,
+} from "../clawdbot/config";
 import { resolveClawdbotEnvPath } from "@/lib/clawdbot/paths";
 
 type DiscordChannelCreateResult = {
@@ -67,16 +72,13 @@ const ensureAgentConfig = (
   agentName: string,
   workspaceDir: string
 ) => {
-  const agents = (config.agents ?? {}) as Record<string, unknown>;
-  const list = Array.isArray(agents.list) ? [...agents.list] : [];
-  const exists = list.some((entry) => {
-    if (!entry || typeof entry !== "object") return false;
-    return (entry as Record<string, unknown>).id === agentId;
-  });
+  const list = readAgentList(config);
+  const exists = list.some((entry) => entry.id === agentId);
   if (!exists) {
-    list.push({ id: agentId, name: agentName, workspace: workspaceDir });
-    agents.list = list;
-    config.agents = agents;
+    writeAgentList(config, [
+      ...list,
+      { id: agentId, name: agentName, workspace: workspaceDir },
+    ]);
     return true;
   }
   return false;
