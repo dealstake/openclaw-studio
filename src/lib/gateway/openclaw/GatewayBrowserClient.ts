@@ -1,13 +1,300 @@
-import { generateUUID } from "./uuid";
-import {
-  GATEWAY_CLIENT_MODES,
-  GATEWAY_CLIENT_NAMES,
-  type GatewayClientMode,
-  type GatewayClientName,
-} from "./client-info";
-import { buildDeviceAuthPayload } from "./device-auth-payload";
-import { loadOrCreateDeviceIdentity, signDevicePayload } from "./device-identity";
-import { clearDeviceAuthToken, loadDeviceAuthToken, storeDeviceAuthToken } from "./device-auth";
+import { getPublicKeyAsync, signAsync, utils } from "@noble/ed25519";
+
+const GATEWAY_CLIENT_NAMES = {
+  CONTROL_UI: "openclaw-control-ui",
+} as const;
+
+const GATEWAY_CLIENT_MODES = {
+  WEBCHAT: "webchat",
+} as const;
+
+type CryptoLike = {
+  randomUUID?: (() => string) | undefined;
+  getRandomValues?: ((array: Uint8Array) => Uint8Array) | undefined;
+};
+
+let warnedWeakCrypto = false;
+
+function uuidFromBytes(bytes: Uint8Array): string {
+  bytes[6] = (bytes[6] & 0x0f) | 0x40; // version 4
+  bytes[8] = (bytes[8] & 0x3f) | 0x80; // variant 1
+
+  let hex = "";
+  for (let i = 0; i < bytes.length; i++) {
+    hex += bytes[i]!.toString(16).padStart(2, "0");
+  }
+
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(
+    16,
+    20
+  )}-${hex.slice(20)}`;
+}
+
+function weakRandomBytes(): Uint8Array {
+  const bytes = new Uint8Array(16);
+  const now = Date.now();
+  for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);
+  bytes[0] ^= now & 0xff;
+  bytes[1] ^= (now >>> 8) & 0xff;
+  bytes[2] ^= (now >>> 16) & 0xff;
+  bytes[3] ^= (now >>> 24) & 0xff;
+  return bytes;
+}
+
+function warnWeakCryptoOnce() {
+  if (warnedWeakCrypto) return;
+  warnedWeakCrypto = true;
+  console.warn("[uuid] crypto API missing; falling back to weak randomness");
+}
+
+function generateUUID(cryptoLike: CryptoLike | null = globalThis.crypto): string {
+  if (cryptoLike && typeof cryptoLike.randomUUID === "function") return cryptoLike.randomUUID();
+
+  if (cryptoLike && typeof cryptoLike.getRandomValues === "function") {
+    const bytes = new Uint8Array(16);
+    cryptoLike.getRandomValues(bytes);
+    return uuidFromBytes(bytes);
+  }
+
+  warnWeakCryptoOnce();
+  return uuidFromBytes(weakRandomBytes());
+}
+
+type DeviceAuthPayloadParams = {
+  deviceId: string;
+  clientId: string;
+  clientMode: string;
+  role: string;
+  scopes: string[];
+  signedAtMs: number;
+  token?: string | null;
+  nonce?: string | null;
+  version?: "v1" | "v2";
+};
+
+function buildDeviceAuthPayload(params: DeviceAuthPayloadParams): string {
+  const version = params.version ?? (params.nonce ? "v2" : "v1");
+  const scopes = params.scopes.join(",");
+  const token = params.token ?? "";
+  const base = [
+    version,
+    params.deviceId,
+    params.clientId,
+    params.clientMode,
+    params.role,
+    scopes,
+    String(params.signedAtMs),
+    token,
+  ];
+  if (version === "v2") {
+    base.push(params.nonce ?? "");
+  }
+  return base.join("|");
+}
+
+type DeviceAuthEntry = {
+  token: string;
+  role: string;
+  scopes: string[];
+  updatedAtMs: number;
+};
+
+type DeviceAuthStore = {
+  version: 1;
+  deviceId: string;
+  tokens: Record<string, DeviceAuthEntry>;
+};
+
+const DEVICE_AUTH_STORAGE_KEY = "openclaw.device.auth.v1";
+
+function normalizeRole(role: string): string {
+  return role.trim();
+}
+
+function normalizeScopes(scopes: string[] | undefined): string[] {
+  if (!Array.isArray(scopes)) return [];
+  const out = new Set<string>();
+  for (const scope of scopes) {
+    const trimmed = scope.trim();
+    if (trimmed) out.add(trimmed);
+  }
+  return [...out].sort();
+}
+
+function readDeviceAuthStore(): DeviceAuthStore | null {
+  try {
+    const raw = window.localStorage.getItem(DEVICE_AUTH_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as DeviceAuthStore;
+    if (!parsed || parsed.version !== 1) return null;
+    if (!parsed.deviceId || typeof parsed.deviceId !== "string") return null;
+    if (!parsed.tokens || typeof parsed.tokens !== "object") return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function writeDeviceAuthStore(store: DeviceAuthStore) {
+  try {
+    window.localStorage.setItem(DEVICE_AUTH_STORAGE_KEY, JSON.stringify(store));
+  } catch {
+    // best-effort
+  }
+}
+
+function loadDeviceAuthToken(params: { deviceId: string; role: string }): DeviceAuthEntry | null {
+  const store = readDeviceAuthStore();
+  if (!store || store.deviceId !== params.deviceId) return null;
+  const role = normalizeRole(params.role);
+  const entry = store.tokens[role];
+  if (!entry || typeof entry.token !== "string") return null;
+  return entry;
+}
+
+function storeDeviceAuthToken(params: {
+  deviceId: string;
+  role: string;
+  token: string;
+  scopes?: string[];
+}): DeviceAuthEntry {
+  const role = normalizeRole(params.role);
+  const next: DeviceAuthStore = {
+    version: 1,
+    deviceId: params.deviceId,
+    tokens: {},
+  };
+  const existing = readDeviceAuthStore();
+  if (existing && existing.deviceId === params.deviceId) {
+    next.tokens = { ...existing.tokens };
+  }
+  const entry: DeviceAuthEntry = {
+    token: params.token,
+    role,
+    scopes: normalizeScopes(params.scopes),
+    updatedAtMs: Date.now(),
+  };
+  next.tokens[role] = entry;
+  writeDeviceAuthStore(next);
+  return entry;
+}
+
+function clearDeviceAuthToken(params: { deviceId: string; role: string }) {
+  const store = readDeviceAuthStore();
+  if (!store || store.deviceId !== params.deviceId) return;
+  const role = normalizeRole(params.role);
+  if (!store.tokens[role]) return;
+  const next = { ...store, tokens: { ...store.tokens } };
+  delete next.tokens[role];
+  writeDeviceAuthStore(next);
+}
+
+type StoredIdentity = {
+  version: 1;
+  deviceId: string;
+  publicKey: string;
+  privateKey: string;
+  createdAtMs: number;
+};
+
+type DeviceIdentity = {
+  deviceId: string;
+  publicKey: string;
+  privateKey: string;
+};
+
+const DEVICE_IDENTITY_STORAGE_KEY = "openclaw-device-identity-v1";
+
+function base64UrlEncode(bytes: Uint8Array): string {
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/g, "");
+}
+
+function base64UrlDecode(input: string): Uint8Array {
+  const normalized = input.replaceAll("-", "+").replaceAll("_", "/");
+  const padded = normalized + "=".repeat((4 - (normalized.length % 4)) % 4);
+  const binary = atob(padded);
+  const out = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) out[i] = binary.charCodeAt(i);
+  return out;
+}
+
+function bytesToHex(bytes: Uint8Array): string {
+  return Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+async function fingerprintPublicKey(publicKey: Uint8Array): Promise<string> {
+  const hash = await crypto.subtle.digest("SHA-256", new Uint8Array(publicKey));
+  return bytesToHex(new Uint8Array(hash));
+}
+
+async function generateIdentity(): Promise<DeviceIdentity> {
+  const privateKey = utils.randomSecretKey();
+  const publicKey = await getPublicKeyAsync(privateKey);
+  const deviceId = await fingerprintPublicKey(publicKey);
+  return {
+    deviceId,
+    publicKey: base64UrlEncode(publicKey),
+    privateKey: base64UrlEncode(privateKey),
+  };
+}
+
+async function loadOrCreateDeviceIdentity(): Promise<DeviceIdentity> {
+  try {
+    const raw = localStorage.getItem(DEVICE_IDENTITY_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as StoredIdentity;
+      if (
+        parsed?.version === 1 &&
+        typeof parsed.deviceId === "string" &&
+        typeof parsed.publicKey === "string" &&
+        typeof parsed.privateKey === "string"
+      ) {
+        const derivedId = await fingerprintPublicKey(base64UrlDecode(parsed.publicKey));
+        if (derivedId !== parsed.deviceId) {
+          const updated: StoredIdentity = {
+            ...parsed,
+            deviceId: derivedId,
+          };
+          localStorage.setItem(DEVICE_IDENTITY_STORAGE_KEY, JSON.stringify(updated));
+          return {
+            deviceId: derivedId,
+            publicKey: parsed.publicKey,
+            privateKey: parsed.privateKey,
+          };
+        }
+        return {
+          deviceId: parsed.deviceId,
+          publicKey: parsed.publicKey,
+          privateKey: parsed.privateKey,
+        };
+      }
+    }
+  } catch {
+    // fall through to regenerate
+  }
+
+  const identity = await generateIdentity();
+  const stored: StoredIdentity = {
+    version: 1,
+    deviceId: identity.deviceId,
+    publicKey: identity.publicKey,
+    privateKey: identity.privateKey,
+    createdAtMs: Date.now(),
+  };
+  localStorage.setItem(DEVICE_IDENTITY_STORAGE_KEY, JSON.stringify(stored));
+  return identity;
+}
+
+async function signDevicePayload(privateKeyBase64Url: string, payload: string) {
+  const key = base64UrlDecode(privateKeyBase64Url);
+  const data = new TextEncoder().encode(payload);
+  const sig = await signAsync(data, key);
+  return base64UrlEncode(sig);
+}
 
 export type GatewayEventFrame = {
   type: "event";
@@ -48,10 +335,10 @@ export type GatewayBrowserClientOptions = {
   url: string;
   token?: string;
   password?: string;
-  clientName?: GatewayClientName;
+  clientName?: string;
   clientVersion?: string;
   platform?: string;
-  mode?: GatewayClientMode;
+  mode?: string;
   instanceId?: string;
   onHello?: (hello: GatewayHelloOk) => void;
   onEvent?: (evt: GatewayEventFrame) => void;

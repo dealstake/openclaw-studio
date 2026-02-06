@@ -2,6 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { GatewayBrowserClient } from "@/lib/gateway/openclaw/GatewayBrowserClient";
 
+const UUID_V4_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 class MockWebSocket {
   static OPEN = 1;
   static CLOSED = 3;
@@ -83,5 +86,8 @@ describe("GatewayBrowserClient", () => {
     const frame = JSON.parse(MockWebSocket.sent[0] ?? "{}");
     expect(frame.type).toBe("req");
     expect(frame.method).toBe("connect");
+    expect(typeof frame.id).toBe("string");
+    expect(frame.id).toMatch(UUID_V4_RE);
+    expect(frame.params?.client?.id).toBe("openclaw-control-ui");
   });
 });
