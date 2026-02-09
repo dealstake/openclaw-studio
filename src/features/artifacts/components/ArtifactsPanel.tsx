@@ -294,7 +294,7 @@ export const ArtifactsPanel = memo(function ArtifactsPanel({ isSelected }: Artif
   const hasPinned = sortedFiles.pinned.length > 0;
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full w-full flex-col">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border/50 px-4 py-3">
         <div>
