@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { useMemo } from "react";
 
-import { buildAvatarDataUrl } from "@/lib/avatars/multiavatar";
+const TRIDENT_FALLBACK = "/branding/trident.svg";
 
 type AgentAvatarProps = {
   seed: string;
@@ -21,8 +21,8 @@ export const AgentAvatar = ({
   const src = useMemo(() => {
     const trimmed = avatarUrl?.trim();
     if (trimmed) return trimmed;
-    return buildAvatarDataUrl(seed);
-  }, [avatarUrl, seed]);
+    return TRIDENT_FALLBACK;
+  }, [avatarUrl]);
 
   return (
     <div
@@ -30,7 +30,7 @@ export const AgentAvatar = ({
       style={{ width: size, height: size }}
     >
       <Image
-        className="pointer-events-none h-full w-full select-none"
+        className="pointer-events-none h-3/4 w-3/4 select-none object-contain text-primary"
         src={src}
         alt={`Avatar for ${name}`}
         width={size}

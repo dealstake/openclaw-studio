@@ -61,7 +61,6 @@ import {
   triggerHeartbeatNow,
   type AgentHeartbeatSummary,
 } from "@/lib/gateway/agentConfig";
-import { buildAvatarDataUrl } from "@/lib/avatars/multiavatar";
 import { createStudioSettingsCoordinator } from "@/lib/studio/coordinator";
 import { resolveAgentAvatarSeed, resolveFocusedPreference } from "@/lib/studio/settings";
 import { applySessionSettingMutation } from "@/features/agents/state/sessionSettingsMutations";
@@ -289,15 +288,7 @@ const AgentStudioPage = () => {
   const selectedBrainAgentId = useMemo(() => {
     return focusedAgent?.agentId ?? agents[0]?.agentId ?? null;
   }, [agents, focusedAgent]);
-  const faviconSeed = useMemo(() => {
-    const firstAgent = agents[0];
-    const seed = firstAgent?.avatarSeed ?? firstAgent?.agentId ?? "";
-    return seed.trim() || null;
-  }, [agents]);
-  const faviconHref = useMemo(
-    () => (faviconSeed ? buildAvatarDataUrl(faviconSeed) : null),
-    [faviconSeed]
-  );
+  const faviconHref = "/branding/trident.svg";
   const errorMessage = state.error ?? gatewayModelsError;
   const runningAgentCount = useMemo(
     () => agents.filter((agent) => agent.status === "running").length,

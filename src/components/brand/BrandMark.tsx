@@ -1,10 +1,9 @@
 import { TridentLogo } from "./TridentLogo";
-import { BRANDING } from "@/lib/branding/config";
 
 const variants = {
-  sm: { logo: 28 as const, text: "text-2xl", gap: "gap-2.5" },
-  md: { logo: 36 as const, text: "text-3xl", gap: "gap-3" },
-  lg: { logo: 48 as const, text: "text-4xl", gap: "gap-3.5" },
+  sm: { logo: 28 as const, main: "text-lg", sub: "text-[11px]", gap: "gap-2.5" },
+  md: { logo: 36 as const, main: "text-2xl", sub: "text-xs", gap: "gap-3" },
+  lg: { logo: 48 as const, main: "text-3xl", sub: "text-sm", gap: "gap-3.5" },
 } as const;
 
 type BrandMarkProps = {
@@ -17,9 +16,14 @@ export function BrandMark({ size = "md", className }: BrandMarkProps) {
   return (
     <div className={`flex items-center ${v.gap} ${className ?? ""}`}>
       <TridentLogo size={v.logo} className="shrink-0 text-primary" />
-      <p className={`console-title leading-none text-foreground ${v.text}`}>
-        {BRANDING.shortName}
-      </p>
+      <div className="leading-none">
+        <span className={`console-title text-foreground ${v.main} tracking-wide`}>
+          TRIDENT{" "}
+        </span>
+        <span className={`console-title italic text-primary ${v.main} tracking-wide`}>
+          FUNDING SOLUTIONS
+        </span>
+      </div>
     </div>
   );
 }

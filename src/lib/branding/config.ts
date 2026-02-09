@@ -6,7 +6,7 @@ export const BRANDING = {
   /** Full company name */
   name: "Trident Funding Solutions",
   /** Short name for headers / tight spaces */
-  shortName: "TRIDENT",
+  shortName: "TRIDENT FUNDING SOLUTIONS",
   /** Subtitle shown in italic gold */
   subtitle: "Funding Solutions",
   /** Dashboard subtitle */
