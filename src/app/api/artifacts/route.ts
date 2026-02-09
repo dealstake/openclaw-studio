@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { existsSync } from "node:fs";
 
 export const runtime = "nodejs";
 
@@ -28,6 +29,42 @@ interface CachedResult {
 
 let cache: CachedResult | null = null;
 
+/**
+ * Parse gog CLI JSON output into DriveFile array.
+ * gog drive ls --json returns { files: [...] } with fields like:
+ *   id, name, mimeType, modifiedTime, size, webViewLink
+ */
+function parseGogOutput(stdout: string): DriveFile[] {
+  const parsed = JSON.parse(stdout) as { files?: DriveFile[] };
+  const files = parsed.files ?? [];
+  files.sort((a, b) => {
+    const ta = new Date(a.modifiedTime).getTime();
+    const tb = new Date(b.modifiedTime).getTime();
+    return tb - ta;
+  });
+  return files;
+}
+
+/**
+ * Fetch files by spawning gog locally (works when Studio runs on the same machine).
+ */
+async function fetchLocal(): Promise<DriveFile[]> {
+  const { stdout } = await execFileAsync(GOG_PATH, [
+    "drive",
+    "ls",
+    "--account",
+    GOG_ACCOUNT,
+    "--json",
+  ], {
+    timeout: 15_000,
+    env: {
+      ...process.env,
+      PATH: "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin",
+    },
+  });
+  return parseGogOutput(stdout);
+}
+
 async function fetchDriveFiles(): Promise<DriveFile[]> {
   const now = Date.now();
   if (cache && now - cache.fetchedAt < CACHE_TTL_MS) {
@@ -35,35 +72,23 @@ async function fetchDriveFiles(): Promise<DriveFile[]> {
   }
 
   try {
-    const { stdout } = await execFileAsync(GOG_PATH, [
-      "drive",
-      "ls",
-      "--account",
-      GOG_ACCOUNT,
-      "--json",
-    ], {
-      timeout: 15_000,
-      env: {
-        ...process.env,
-        PATH: "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin",
-      },
-    });
+    // Try local gog binary first (works when Studio runs on Mac Mini)
+    const canRunLocal = existsSync(GOG_PATH);
+    let files: DriveFile[];
 
-    const parsed = JSON.parse(stdout) as { files?: DriveFile[] };
-    const files = parsed.files ?? [];
-
-    // Sort by modified time descending (most recent first)
-    files.sort((a, b) => {
-      const ta = new Date(a.modifiedTime).getTime();
-      const tb = new Date(b.modifiedTime).getTime();
-      return tb - ta;
-    });
+    if (canRunLocal) {
+      files = await fetchLocal();
+    } else {
+      // gog not available (Cloud Run deployment) — return empty with helpful message
+      // Files are still accessible through the gateway's built-in Control UI
+      // TODO: proxy through gateway HTTP API when available
+      return [];
+    }
 
     cache = { files, fetchedAt: now };
     return files;
   } catch (err) {
     console.error("[artifacts] Failed to fetch Drive files:", err);
-    // Return stale cache if available
     if (cache) return cache.files;
     throw err;
   }
