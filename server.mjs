@@ -17,6 +17,16 @@ app.prepare().then(() => {
     const ts = new Date().toISOString();
     console.log(`[${ts}] HTTP ${req.method} ${req.url} from=${req.socket.remoteAddress}`);
     const parsedUrl = parse(req.url, true);
+    // Override cache headers for HTML pages so Cloudflare doesn't cache stale builds
+    const origWriteHead = res.writeHead.bind(res);
+    res.writeHead = (statusCode, ...args) => {
+      const isAsset = parsedUrl.pathname?.startsWith("/_next/static/");
+      if (!isAsset) {
+        res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+        res.removeHeader("s-maxage");
+      }
+      return origWriteHead(statusCode, ...args);
+    };
     await handle(req, res, parsedUrl);
   });
 
