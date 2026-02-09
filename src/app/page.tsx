@@ -1999,8 +1999,8 @@ const AgentStudioPage = () => {
 
   if (status === "connecting" || (status === "connected" && !agentsLoadedOnce)) {
     return (
-      <div className="relative min-h-screen w-screen overflow-hidden bg-background">
-        <div className="flex min-h-screen items-center justify-center px-6">
+      <div className="relative w-screen overflow-hidden bg-background" style={{ minHeight: '100dvh' }}>
+        <div className="flex items-center justify-center px-6" style={{ minHeight: '100dvh' }}>
           <div className="glass-panel w-full max-w-md px-6 py-8 flex flex-col items-center gap-4">
             <BrandMark size="lg" />
             <div className="text-sm text-muted-foreground">
@@ -2016,7 +2016,7 @@ const AgentStudioPage = () => {
   }
 
   return (
-    <div className="relative min-h-screen w-screen overflow-hidden bg-background">
+    <div className="relative w-screen overflow-hidden bg-background" style={{ minHeight: '100dvh' }}>
       {state.loading ? (
         <div className="pointer-events-none fixed bottom-4 left-0 right-0 z-50 flex justify-center px-3">
           <div className="glass-panel px-6 py-3 font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
@@ -2024,7 +2024,7 @@ const AgentStudioPage = () => {
           </div>
         </div>
       ) : null}
-      <div className="relative z-10 flex h-screen flex-col gap-4 px-3 py-3 sm:px-4 sm:py-4 md:px-6 md:py-6">
+      <div className="relative z-10 flex flex-col gap-4 px-3 py-3 sm:px-4 sm:py-4 md:px-6 md:py-6" style={{ height: '100dvh' }}>
         <div className="w-full">
           <HeaderBar
             status={status}

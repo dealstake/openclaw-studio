@@ -25,11 +25,23 @@ export const HeaderBar = ({
   const [identity, setIdentity] = useState<CfIdentity | null>(null);
 
   useEffect(() => {
-    getCfIdentity().then(setIdentity);
+    let cancelled = false;
+    const fetchIdentity = async () => {
+      const id = await getCfIdentity();
+      if (!cancelled) setIdentity(id);
+      // Retry once after 2s if first attempt returned null
+      if (!id && !cancelled) {
+        await new Promise((r) => setTimeout(r, 2000));
+        const retry = await getCfIdentity();
+        if (!cancelled) setIdentity(retry);
+      }
+    };
+    fetchIdentity();
+    return () => { cancelled = true; };
   }, []);
 
   return (
-    <div className="glass-panel fade-up relative overflow-hidden px-4 py-2">
+    <div className="glass-panel fade-up relative overflow-visible px-4 py-2">
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(120deg,transparent_0%,color-mix(in_oklch,var(--primary)_7%,transparent)_48%,transparent_100%)] opacity-55" />
       <div className="relative grid items-center gap-4 lg:grid-cols-[minmax(0,1fr)_auto]">
         <div className="min-w-0">

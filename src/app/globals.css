@@ -365,3 +365,28 @@ textarea:focus::-webkit-scrollbar {
     transform: translateY(-1px);
   }
 }
+
+/* ============================================================
+ * Mobile viewport fixes
+ * ============================================================ */
+
+/* Ensure the app uses dynamic viewport height on mobile */
+@supports (height: 100dvh) {
+  .h-screen {
+    height: 100dvh !important;
+  }
+  .min-h-screen {
+    min-height: 100dvh !important;
+  }
+}
+
+/* When virtual keyboard is open, keep input visible */
+@media (max-width: 640px) {
+  html, body {
+    overflow: hidden;
+    overscroll-behavior: none;
+    position: fixed;
+    width: 100%;
+    height: 100%;
+  }
+}
