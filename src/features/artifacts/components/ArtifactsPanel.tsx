@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   File,
   FileCode,
@@ -12,6 +12,9 @@ import {
   RefreshCw,
   ExternalLink,
   AlertCircle,
+  ArrowUp,
+  ArrowDown,
+  Pin,
 } from "lucide-react";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -27,6 +30,44 @@ interface DriveFile {
 
 interface ArtifactsPanelProps {
   isSelected: boolean;
+}
+
+type SortDirection = "newest" | "oldest";
+
+// ── localStorage helpers ───────────────────────────────────────────────────────
+
+const PINS_KEY = "trident-artifacts-pins";
+const SORT_KEY = "trident-artifacts-sort";
+
+function loadPins(): Set<string> {
+  try {
+    const raw = localStorage.getItem(PINS_KEY);
+    if (!raw) return new Set();
+    return new Set(JSON.parse(raw) as string[]);
+  } catch {
+    return new Set();
+  }
+}
+
+function savePins(pins: Set<string>) {
+  try {
+    localStorage.setItem(PINS_KEY, JSON.stringify([...pins]));
+  } catch { /* quota exceeded — silently ignore */ }
+}
+
+function loadSort(): SortDirection {
+  try {
+    const raw = localStorage.getItem(SORT_KEY);
+    return raw === "oldest" ? "oldest" : "newest";
+  } catch {
+    return "newest";
+  }
+}
+
+function saveSort(dir: SortDirection) {
+  try {
+    localStorage.setItem(SORT_KEY, dir);
+  } catch { /* silently ignore */ }
 }
 
 // ── MIME → Icon mapping ────────────────────────────────────────────────────────
@@ -93,14 +134,40 @@ function formatTimestamp(iso: string): string {
   }
 }
 
+// ── Sort helper ────────────────────────────────────────────────────────────────
+
+function sortFiles(files: DriveFile[], dir: SortDirection): DriveFile[] {
+  return [...files].sort((a, b) => {
+    const ta = new Date(a.modifiedTime).getTime();
+    const tb = new Date(b.modifiedTime).getTime();
+    return dir === "newest" ? tb - ta : ta - tb;
+  });
+}
+
 // ── File row ───────────────────────────────────────────────────────────────────
 
-const ArtifactRow = memo(function ArtifactRow({ file }: { file: DriveFile }) {
+const ArtifactRow = memo(function ArtifactRow({
+  file,
+  isPinned,
+  onTogglePin,
+}: {
+  file: DriveFile;
+  isPinned: boolean;
+  onTogglePin: (id: string) => void;
+}) {
   const handleClick = useCallback(() => {
     if (file.webViewLink) {
       window.open(file.webViewLink, "_blank", "noopener,noreferrer");
     }
   }, [file.webViewLink]);
+
+  const handlePin = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      onTogglePin(file.id);
+    },
+    [file.id, onTogglePin]
+  );
 
   return (
     <button
@@ -121,7 +188,23 @@ const ArtifactRow = memo(function ArtifactRow({ file }: { file: DriveFile }) {
           <span>{formatTimestamp(file.modifiedTime)}</span>
         </div>
       </div>
-      <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-0 transition group-hover:opacity-60" />
+      <div className="flex shrink-0 items-center gap-1">
+        <span
+          role="button"
+          tabIndex={0}
+          onClick={handlePin}
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); onTogglePin(file.id); } }}
+          className={`rounded p-1 transition ${
+            isPinned
+              ? "text-primary opacity-100 hover:bg-muted/50"
+              : "text-muted-foreground opacity-0 group-hover:opacity-60 hover:opacity-100 hover:bg-muted/50"
+          }`}
+          title={isPinned ? "Unpin" : "Pin to top"}
+        >
+          <Pin className={`h-3 w-3 ${isPinned ? "fill-primary" : ""}`} />
+        </span>
+        <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-0 transition group-hover:opacity-60" />
+      </div>
     </button>
   );
 });
@@ -133,7 +216,44 @@ export const ArtifactsPanel = memo(function ArtifactsPanel({ isSelected }: Artif
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [sortDir, setSortDir] = useState<SortDirection>("newest");
+  const [pins, setPins] = useState<Set<string>>(new Set());
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const hydrated = useRef(false);
+
+  // Hydrate from localStorage on mount (client only)
+  useEffect(() => {
+    if (hydrated.current) return;
+    hydrated.current = true;
+    setPins(loadPins());
+    setSortDir(loadSort());
+  }, []);
+
+  const toggleSort = useCallback(() => {
+    setSortDir((prev) => {
+      const next = prev === "newest" ? "oldest" : "newest";
+      saveSort(next);
+      return next;
+    });
+  }, []);
+
+  const togglePin = useCallback((id: string) => {
+    setPins((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      savePins(next);
+      return next;
+    });
+  }, []);
+
+  // Sort files, then partition pinned to top
+  const sortedFiles = useMemo(() => {
+    const sorted = sortFiles(files, sortDir);
+    const pinned = sorted.filter((f) => pins.has(f.id));
+    const unpinned = sorted.filter((f) => !pins.has(f.id));
+    return { pinned, unpinned };
+  }, [files, sortDir, pins]);
 
   const fetchFiles = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
@@ -160,7 +280,6 @@ export const ArtifactsPanel = memo(function ArtifactsPanel({ isSelected }: Artif
     if (!isSelected) return;
     void fetchFiles();
 
-    // Auto-refresh every 60 seconds
     intervalRef.current = setInterval(() => void fetchFiles(true), 60_000);
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
@@ -168,6 +287,8 @@ export const ArtifactsPanel = memo(function ArtifactsPanel({ isSelected }: Artif
   }, [isSelected, fetchFiles]);
 
   if (!isSelected) return null;
+
+  const hasPinned = sortedFiles.pinned.length > 0;
 
   return (
     <div className="flex h-full flex-col">
@@ -181,15 +302,30 @@ export const ArtifactsPanel = memo(function ArtifactsPanel({ isSelected }: Artif
             Google Drive · {files.length} file{files.length !== 1 ? "s" : ""}
           </div>
         </div>
-        <button
-          type="button"
-          onClick={() => void fetchFiles(true)}
-          disabled={refreshing}
-          className="rounded-md p-1.5 text-muted-foreground transition hover:bg-muted/50 hover:text-foreground disabled:opacity-40"
-          title="Refresh"
-        >
-          <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={toggleSort}
+            className="flex items-center gap-1 rounded-md px-2 py-1.5 font-mono text-[9px] font-semibold uppercase tracking-[0.1em] text-muted-foreground transition hover:bg-muted/50 hover:text-foreground"
+            title={sortDir === "newest" ? "Sorted newest first" : "Sorted oldest first"}
+          >
+            {sortDir === "newest" ? (
+              <ArrowDown className="h-3 w-3" />
+            ) : (
+              <ArrowUp className="h-3 w-3" />
+            )}
+            <span className="hidden sm:inline">{sortDir === "newest" ? "Newest" : "Oldest"}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => void fetchFiles(true)}
+            disabled={refreshing}
+            className="rounded-md p-1.5 text-muted-foreground transition hover:bg-muted/50 hover:text-foreground disabled:opacity-40"
+            title="Refresh"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
+          </button>
+        </div>
       </div>
 
       {/* Content */}
@@ -215,8 +351,14 @@ export const ArtifactsPanel = memo(function ArtifactsPanel({ isSelected }: Artif
           </div>
         ) : (
           <div className="flex flex-col gap-0.5">
-            {files.map((file) => (
-              <ArtifactRow key={file.id} file={file} />
+            {sortedFiles.pinned.map((file) => (
+              <ArtifactRow key={file.id} file={file} isPinned onTogglePin={togglePin} />
+            ))}
+            {hasPinned && sortedFiles.unpinned.length > 0 && (
+              <div className="mx-3 my-1 border-t border-border/30" />
+            )}
+            {sortedFiles.unpinned.map((file) => (
+              <ArtifactRow key={file.id} file={file} isPinned={false} onTogglePin={togglePin} />
             ))}
           </div>
         )}
