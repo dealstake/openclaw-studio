@@ -11,6 +11,11 @@ FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+
+# Next.js inlines NEXT_PUBLIC_* at build time
+ARG NEXT_PUBLIC_GATEWAY_URL=wss://gateway.tridentfundingsolutions.com
+ENV NEXT_PUBLIC_GATEWAY_URL=$NEXT_PUBLIC_GATEWAY_URL
+
 RUN npm run build
 
 # Stage 3: Production runner
