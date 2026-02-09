@@ -2195,7 +2195,6 @@ const AgentStudioPage = () => {
                       setSettingsAgentId(focusedAgent.agentId);
                     }
                   }}
-                  hasSettings={!!settingsAgent}
                   tasksContent={<TasksPanel isSelected />}
                   brainContent={
                     <AgentBrainPanel

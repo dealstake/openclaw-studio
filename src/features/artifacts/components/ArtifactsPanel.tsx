@@ -10,7 +10,6 @@ import {
   ClipboardList,
   Presentation,
   RefreshCw,
-  ExternalLink,
   AlertCircle,
   ArrowUp,
   ArrowDown,
@@ -173,40 +172,36 @@ const ArtifactRow = memo(function ArtifactRow({
     <button
       type="button"
       onClick={handleClick}
-      className="group flex w-full items-center gap-3 rounded-md border border-border/70 bg-card/65 px-3 py-2.5 text-left transition hover:border-border hover:bg-muted/55"
+      className="group flex w-full items-start gap-3.5 rounded-lg border border-border/70 bg-card/65 px-4 py-3.5 text-left transition hover:border-border hover:bg-muted/55"
     >
-      {fileIcon(file.mimeType)}
+      <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted/40">
+        {fileIcon(file.mimeType)}
+      </div>
       <div className="min-w-0 flex-1">
-        <div className="truncate text-[11px] font-medium text-foreground group-hover:text-primary">
+        <div className="truncate text-[12px] font-medium leading-tight text-foreground group-hover:text-primary">
           {file.name}
         </div>
-        <div className="mt-0.5 flex items-center gap-2 text-[10px] text-muted-foreground">
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground">
           <span className="font-mono uppercase tracking-wide">{fileTypeLabel(file.mimeType)}</span>
-          <span className="opacity-40">·</span>
           <span>{formatSize(file.size)}</span>
-          <span className="opacity-40 sm:hidden">·</span>
-          <span className="sm:hidden">{formatTimestamp(file.modifiedTime)}</span>
+          <span>{formatTimestamp(file.modifiedTime)}</span>
         </div>
       </div>
-      <div className="hidden shrink-0 text-[10px] text-muted-foreground sm:block">
-        {formatTimestamp(file.modifiedTime)}
-      </div>
-      <div className="flex shrink-0 items-center">
+      <div className="mt-0.5 flex shrink-0 items-center gap-1">
         <span
           role="button"
           tabIndex={0}
           onClick={handlePin}
           onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); onTogglePin(file.id); } }}
-          className={`-mr-1 flex h-7 w-7 items-center justify-center rounded transition ${
+          className={`flex h-7 w-7 items-center justify-center rounded transition ${
             isPinned
               ? "text-primary opacity-100 hover:bg-muted/50"
-              : "text-muted-foreground opacity-40 sm:opacity-0 sm:group-hover:opacity-60 hover:opacity-100 hover:bg-muted/50"
+              : "text-muted-foreground opacity-0 group-hover:opacity-60 hover:opacity-100 hover:bg-muted/50"
           }`}
           title={isPinned ? "Unpin" : "Pin to top"}
         >
           <Pin className={`h-3 w-3 ${isPinned ? "fill-primary" : ""}`} />
         </span>
-        <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-0 transition group-hover:opacity-60" />
       </div>
     </button>
   );
@@ -348,7 +343,7 @@ export const ArtifactsPanel = memo(function ArtifactsPanel({ isSelected }: Artif
             </button>
           </div>
         ) : (
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2.5">
             {sortedFiles.pinned.map((file) => (
               <ArtifactRow key={file.id} file={file} isPinned onTogglePin={togglePin} />
             ))}

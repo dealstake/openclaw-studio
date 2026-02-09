@@ -3,7 +3,7 @@ import { HeaderIconButton } from "@/components/HeaderIconButton";
 import type { GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { BrandMark } from "@/components/brand/BrandMark";
 import { LogoutButton } from "@/components/brand/LogoutButton";
-import { FolderOpen, Ellipsis } from "lucide-react";
+import { FolderOpen, Ellipsis, PanelRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getCfIdentity, type CfIdentity } from "@/lib/cloudflare-auth";
 
@@ -84,10 +84,14 @@ export const HeaderBar = ({
             onClick={onFilesToggle}
             active={filesActive}
             disabled={filesDisabled}
-            aria-label="Files"
+            aria-label={filesActive ? "Back to context" : "Files"}
             data-testid="files-toggle"
           >
-            <FolderOpen className="h-[15px] w-[15px]" />
+            {filesActive ? (
+              <PanelRight className="h-[15px] w-[15px]" />
+            ) : (
+              <FolderOpen className="h-[15px] w-[15px]" />
+            )}
           </HeaderIconButton>
 
           <details className="group relative">

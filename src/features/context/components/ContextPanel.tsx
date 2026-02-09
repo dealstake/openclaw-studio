@@ -10,8 +10,6 @@ interface ContextPanelProps {
   tasksContent: ReactNode;
   brainContent: ReactNode;
   settingsContent: ReactNode;
-  /** When true, settings tab is available (an agent is selected) */
-  hasSettings: boolean;
 }
 
 const TAB_OPTIONS: Array<{ value: ContextTab; label: string }> = [
@@ -26,7 +24,6 @@ export const ContextPanel = memo(function ContextPanel({
   tasksContent,
   brainContent,
   settingsContent,
-  hasSettings,
 }: ContextPanelProps) {
   return (
     <div className="flex h-full w-full flex-col">
@@ -34,17 +31,15 @@ export const ContextPanel = memo(function ContextPanel({
       <div className="flex items-center gap-1 border-b border-border/40 px-3 pt-3 pb-2">
         {TAB_OPTIONS.map((tab) => {
           const isActive = activeTab === tab.value;
-          const isDisabled = tab.value === "settings" && !hasSettings;
           return (
             <button
               key={tab.value}
               type="button"
-              disabled={isDisabled}
               className={`rounded-md border px-2.5 py-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.13em] transition ${
                 isActive
                   ? "border-border bg-muted text-foreground shadow-xs"
                   : "border-border/80 bg-card/65 text-muted-foreground hover:border-border hover:bg-muted/70"
-              } disabled:cursor-not-allowed disabled:opacity-40`}
+              }`}
               onClick={() => onTabChange(tab.value)}
               data-testid={`context-tab-${tab.value}`}
             >
