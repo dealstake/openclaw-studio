@@ -188,13 +188,13 @@ const ArtifactRow = memo(function ArtifactRow({
           <span>{formatTimestamp(file.modifiedTime)}</span>
         </div>
       </div>
-      <div className="flex shrink-0 items-center gap-1">
+      <div className="flex shrink-0 items-center">
         <span
           role="button"
           tabIndex={0}
           onClick={handlePin}
           onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); onTogglePin(file.id); } }}
-          className={`rounded p-1.5 transition ${
+          className={`-mr-1 flex h-7 w-7 items-center justify-center rounded transition ${
             isPinned
               ? "text-primary opacity-100 hover:bg-muted/50"
               : "text-muted-foreground opacity-40 sm:opacity-0 sm:group-hover:opacity-60 hover:opacity-100 hover:bg-muted/50"
