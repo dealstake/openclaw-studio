@@ -14,6 +14,9 @@ const CACHE_TTL_MS = 30_000;
 // When running remotely (Cloud Run), proxy to this URL to run gog on the gateway host
 const ARTIFACTS_PROXY_URL = process.env.ARTIFACTS_PROXY_URL || "";
 
+// Shared secret for machine-to-machine auth on api-internal endpoint
+const ARTIFACTS_INTERNAL_KEY = process.env.ARTIFACTS_INTERNAL_KEY || "";
+
 interface DriveFile {
   id: string;
   name: string;
@@ -57,8 +60,12 @@ async function fetchLocal(): Promise<DriveFile[]> {
  * Fetch files by proxying to the gateway host's artifacts endpoint.
  */
 async function fetchProxy(): Promise<DriveFile[]> {
+  const headers: Record<string, string> = { "Accept": "application/json" };
+  if (ARTIFACTS_INTERNAL_KEY) {
+    headers["X-Internal-Key"] = ARTIFACTS_INTERNAL_KEY;
+  }
   const res = await fetch(ARTIFACTS_PROXY_URL, {
-    headers: { "Accept": "application/json" },
+    headers,
     signal: AbortSignal.timeout(15_000),
   });
   if (!res.ok) throw new Error(`Proxy returned ${res.status}`);
@@ -101,7 +108,18 @@ async function fetchDriveFiles(): Promise<DriveFile[]> {
   }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  // When ARTIFACTS_INTERNAL_KEY is set, require it for incoming requests.
+  // This protects the api-internal endpoint from unauthorized access.
+  // Skip auth check when we're the one proxying out (i.e. gog not available locally).
+  const canRunLocal = existsSync(GOG_PATH);
+  if (ARTIFACTS_INTERNAL_KEY && canRunLocal) {
+    const providedKey = request.headers.get("X-Internal-Key") || "";
+    if (providedKey !== ARTIFACTS_INTERNAL_KEY) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+  }
+
   try {
     const files = await fetchDriveFiles();
     return NextResponse.json({ files, count: files.length });

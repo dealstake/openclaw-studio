@@ -45,3 +45,4 @@ jobs:
             NODE_ENV=production
             HOSTNAME=0.0.0.0
             ARTIFACTS_PROXY_URL=https://api-internal.tridentfundingsolutions.com/api/artifacts
+            ARTIFACTS_INTERNAL_KEY=99adec757bed105d3b03627c776c876a3daeda863f128517
