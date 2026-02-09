@@ -10,6 +10,7 @@ import { FleetSidebar } from "@/features/agents/components/FleetSidebar";
 import { HeaderBar } from "@/features/agents/components/HeaderBar";
 import { ConnectionPanel } from "@/features/agents/components/ConnectionPanel";
 import { EmptyStatePanel } from "@/features/agents/components/EmptyStatePanel";
+import { BrandMark } from "@/components/brand/BrandMark";
 import {
   buildAgentInstruction,
   extractText,
@@ -2009,12 +2010,13 @@ const AgentStudioPage = () => {
     return (
       <div className="relative min-h-screen w-screen overflow-hidden bg-background">
         <div className="flex min-h-screen items-center justify-center px-6">
-          <div className="glass-panel w-full max-w-md px-6 py-6 text-center">
-            <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-              TRIDENT
-            </div>
-            <div className="mt-3 text-sm text-muted-foreground">
+          <div className="glass-panel w-full max-w-md px-6 py-8 flex flex-col items-center gap-4">
+            <BrandMark size="lg" />
+            <div className="text-sm text-muted-foreground">
               {status === "connecting" ? "Connecting to gateway…" : "Loading agents…"}
+            </div>
+            <div className="typing-dots mt-1">
+              <span /><span /><span />
             </div>
           </div>
         </div>

@@ -3,7 +3,7 @@
  * Reads the CF_Authorization JWT cookie to extract user email.
  */
 
-import { BRANDING } from "./branding";
+import { BRANDING } from "./branding/config";
 
 export type CfIdentity = {
   email: string;
