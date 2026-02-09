@@ -1,8 +1,8 @@
-name: Deploy to Cloud Run
+name: Deploy Dev
 
 on:
   push:
-    branches: [main]
+    branches: [dev]
 
 env:
   PROJECT_ID: gen-lang-client-0284620106
@@ -47,5 +47,3 @@ jobs:
           env_vars: |
             NODE_ENV=production
             HOSTNAME=0.0.0.0
-            ARTIFACTS_PROXY_URL=https://api-internal.tridentfundingsolutions.com/api/artifacts
-            ARTIFACTS_INTERNAL_KEY=${{ secrets.ARTIFACTS_INTERNAL_KEY }}
