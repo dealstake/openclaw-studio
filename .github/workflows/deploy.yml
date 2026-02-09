@@ -41,3 +41,7 @@ jobs:
           service: ${{ env.SERVICE }}
           region: ${{ env.REGION }}
           image: ${{ env.AR_REPO }}:${{ github.sha }}
+          env_vars: |
+            NODE_ENV=production
+            HOSTNAME=0.0.0.0
+            ARTIFACTS_PROXY_URL=https://api-internal.tridentfundingsolutions.com/api/artifacts
