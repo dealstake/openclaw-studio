@@ -356,6 +356,7 @@ const AgentChatComposer = memo(function AgentChatComposer({
         rows={1}
         value={value}
         className="flex-1 resize-none rounded-md border border-border/80 bg-card/75 px-3 py-2 text-[11px] text-foreground outline-none transition focus:border-ring"
+        style={{ maxHeight: 160 }}
         onChange={onChange}
         onKeyDown={onKeyDown}
         placeholder="type a message"
@@ -406,8 +407,9 @@ export const AgentChatPanel = ({
     const el = draftRef.current;
     if (!el) return;
     el.style.height = "auto";
-    el.style.height = `${el.scrollHeight}px`;
-    el.style.overflowY = el.scrollHeight > el.clientHeight ? "auto" : "hidden";
+    const maxH = Math.min(el.scrollHeight, 160); // cap at ~8 lines
+    el.style.height = `${maxH}px`;
+    el.style.overflowY = el.scrollHeight > maxH ? "auto" : "hidden";
   }, []);
 
   const handleDraftRef = useCallback((el: HTMLTextAreaElement | HTMLInputElement | null) => {
@@ -419,7 +421,9 @@ export const AgentChatPanel = ({
     plainDraftRef.current = agent.draft;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setDraftValue(agent.draft);
-  }, [agent.draft]);
+    // Reset textarea height when draft changes externally (e.g. after send)
+    requestAnimationFrame(() => resizeDraft());
+  }, [agent.draft, resizeDraft]);
 
   useEffect(() => {
     if (pendingResizeFrameRef.current !== null) {

@@ -2136,7 +2136,7 @@ const AgentStudioPage = () => {
               </div>
             </div>
             <div
-              className={`${mobilePane === "fleet" ? "block" : "hidden"} min-h-0 xl:block xl:min-h-0`}
+              className={`${mobilePane === "fleet" ? "flex" : "hidden"} min-h-0 flex-1 xl:flex xl:flex-initial xl:min-h-0`}
             >
               <FleetSidebar
                 agents={filteredAgents}
@@ -2203,7 +2203,7 @@ const AgentStudioPage = () => {
             </div>
             {brainPanelOpen ? (
               <div
-                className={`${mobilePane === "brain" ? "block" : "hidden"} glass-panel min-h-0 w-full shrink-0 overflow-hidden p-0 xl:block xl:min-w-[360px] xl:max-w-[430px]`}
+                className={`${mobilePane === "brain" ? "flex" : "hidden"} glass-panel min-h-0 w-full flex-1 shrink-0 overflow-hidden p-0 xl:flex xl:flex-initial xl:min-w-[360px] xl:max-w-[430px]`}
               >
                 <AgentBrainPanel
                   client={client}
@@ -2218,7 +2218,7 @@ const AgentStudioPage = () => {
             ) : null}
             {settingsAgent ? (
               <div
-                className={`${mobilePane === "settings" ? "block" : "hidden"} glass-panel min-h-0 w-full shrink-0 overflow-hidden p-0 xl:block xl:min-w-[360px] xl:max-w-[430px]`}
+                className={`${mobilePane === "settings" ? "flex" : "hidden"} glass-panel min-h-0 w-full flex-1 shrink-0 overflow-hidden p-0 xl:flex xl:flex-initial xl:min-w-[360px] xl:max-w-[430px]`}
               >
                 <AgentSettingsPanel
                   key={settingsAgent.agentId}
@@ -2259,7 +2259,7 @@ const AgentStudioPage = () => {
               </div>
             ) : null}
             <div
-              className={`${mobilePane === "artifacts" ? "block" : "hidden"} glass-panel min-h-0 w-full shrink-0 overflow-hidden p-0 xl:block xl:min-w-[360px] xl:max-w-[430px]`}
+              className={`${mobilePane === "artifacts" ? "flex" : "hidden"} glass-panel min-h-0 w-full flex-1 shrink-0 overflow-hidden p-0 xl:flex xl:flex-initial xl:min-w-[360px] xl:max-w-[430px]`}
             >
               <ArtifactsPanel isSelected />
             </div>
