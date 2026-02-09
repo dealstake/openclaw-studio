@@ -184,9 +184,12 @@ const ArtifactRow = memo(function ArtifactRow({
           <span className="font-mono uppercase tracking-wide">{fileTypeLabel(file.mimeType)}</span>
           <span className="opacity-40">·</span>
           <span>{formatSize(file.size)}</span>
-          <span className="opacity-40">·</span>
-          <span>{formatTimestamp(file.modifiedTime)}</span>
+          <span className="opacity-40 sm:hidden">·</span>
+          <span className="sm:hidden">{formatTimestamp(file.modifiedTime)}</span>
         </div>
+      </div>
+      <div className="hidden shrink-0 text-[10px] text-muted-foreground sm:block">
+        {formatTimestamp(file.modifiedTime)}
       </div>
       <div className="flex shrink-0 items-center">
         <span
