@@ -930,12 +930,16 @@ const AgentStudioPage = () => {
     }
   }, [setLoading, status]);
 
+  // When the selected agent changes, update settings to follow if the settings tab is active
   useEffect(() => {
-    if (!settingsAgentId) return;
-    if (state.selectedAgentId && state.selectedAgentId !== settingsAgentId) {
+    if (!state.selectedAgentId) return;
+    if (contextTab === "settings" && state.selectedAgentId !== settingsAgentId) {
+      setSettingsAgentId(state.selectedAgentId);
+    } else if (settingsAgentId && state.selectedAgentId !== settingsAgentId) {
+      // Settings tab not active — clear stale settingsAgentId
       setSettingsAgentId(null);
     }
-  }, [settingsAgentId, state.selectedAgentId]);
+  }, [contextTab, settingsAgentId, state.selectedAgentId]);
 
   useEffect(() => {
     if (settingsAgentId && !settingsAgent) {
