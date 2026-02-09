@@ -1147,8 +1147,16 @@ const AgentStudioPage = () => {
   );
 
   const handleFilesToggle = useCallback(() => {
-    setContextMode((prev) => prev === "files" ? null : "files");
-    setMobilePane((prev) => prev === "context" ? "chat" : "context");
+    setContextMode((prev) => {
+      if (prev === "files") {
+        // Toggling files off — go back to chat on mobile
+        setMobilePane("chat");
+        return null;
+      }
+      // Toggling files on — show context panel
+      setMobilePane("context");
+      return "files";
+    });
   }, []);
 
   const handleDeleteAgent = useCallback(
@@ -2174,7 +2182,7 @@ const AgentStudioPage = () => {
             </div>
             {/* Context Panel: agent-scoped (Tasks/Brain/Settings) or global (Files) */}
             <div
-              className={`${mobilePane === "context" ? "flex" : "hidden"} glass-panel min-h-0 w-full shrink-0 overflow-hidden p-0 2xl:flex 2xl:w-[360px]`}
+              className={`${mobilePane === "context" ? "flex" : "hidden"} glass-panel min-h-0 w-full shrink-0 overflow-hidden p-0 ${contextMode !== null ? "xl:flex xl:w-[360px]" : ""} 2xl:flex 2xl:w-[360px]`}
             >
               {contextMode === "files" ? (
                 <ArtifactsPanel isSelected />
