@@ -2116,7 +2116,7 @@ const AgentStudioPage = () => {
               </div>
             </div>
             <div
-              className={`${mobilePane === "fleet" ? "flex" : "hidden"} min-h-0 flex-1 xl:flex xl:flex-initial xl:min-h-0 xl:min-w-[280px] xl:max-w-[320px]`}
+              className={`${mobilePane === "fleet" ? "flex" : "hidden"} min-h-0 flex-1 xl:flex xl:flex-[0_0_auto] xl:min-h-0 xl:w-[280px]`}
             >
               <FleetSidebar
                 agents={filteredAgents}
@@ -2136,7 +2136,7 @@ const AgentStudioPage = () => {
               />
             </div>
             <div
-              className={`${mobilePane === "chat" ? "flex" : "hidden"} glass-panel min-h-0 flex-1 overflow-hidden p-2 sm:p-3 xl:flex xl:min-w-[400px]`}
+              className={`${mobilePane === "chat" ? "flex" : "hidden"} glass-panel min-h-0 flex-1 overflow-hidden p-2 sm:p-3 xl:flex`}
               data-testid="focused-agent-panel"
             >
               {focusedAgent ? (
@@ -2183,7 +2183,7 @@ const AgentStudioPage = () => {
             </div>
             {brainPanelOpen ? (
               <div
-                className="glass-panel min-h-0 w-full shrink-0 overflow-hidden p-0 hidden xl:flex xl:min-w-[300px] xl:max-w-[380px]"
+                className="glass-panel min-h-0 w-full shrink-0 overflow-hidden p-0 hidden xl:flex xl:w-[340px]"
               >
                 <AgentBrainPanel
                   client={client}
@@ -2198,7 +2198,7 @@ const AgentStudioPage = () => {
             ) : null}
             {settingsAgent ? (
               <div
-                className={`${mobilePane === "settings" ? "flex" : "hidden"} glass-panel min-h-0 w-full shrink-0 overflow-hidden p-0 xl:flex xl:min-w-[300px] xl:max-w-[380px]`}
+                className={`${mobilePane === "settings" ? "flex" : "hidden"} glass-panel min-h-0 w-full shrink-0 overflow-hidden p-0 xl:flex xl:w-[340px]`}
               >
                 <AgentSettingsPanel
                   key={settingsAgent.agentId}
@@ -2238,15 +2238,16 @@ const AgentStudioPage = () => {
                 />
               </div>
             ) : null}
+            {/* Right sidebar: Tasks + Files — visible at 2xl, stacked vertically */}
             <div
-              className={`${mobilePane === "tasks" ? "flex" : "hidden"} glass-panel min-h-0 w-full shrink-0 overflow-hidden p-0 xl:flex xl:min-w-[300px] xl:max-w-[380px]`}
+              className={`${mobilePane === "tasks" || mobilePane === "artifacts" ? "flex" : "hidden"} min-h-0 w-full shrink-0 flex-col gap-4 2xl:flex 2xl:w-[340px]`}
             >
-              <TasksPanel isSelected />
-            </div>
-            <div
-              className={`${mobilePane === "artifacts" ? "flex" : "hidden"} glass-panel min-h-0 w-full shrink-0 overflow-hidden p-0 xl:flex xl:min-w-[300px] xl:max-w-[380px]`}
-            >
-              <ArtifactsPanel isSelected />
+              <div className={`${mobilePane === "tasks" ? "flex" : "hidden"} glass-panel min-h-0 flex-1 overflow-hidden p-0 2xl:flex`}>
+                <TasksPanel isSelected />
+              </div>
+              <div className={`${mobilePane === "artifacts" ? "flex" : "hidden"} glass-panel min-h-0 flex-1 overflow-hidden p-0 2xl:flex`}>
+                <ArtifactsPanel isSelected />
+              </div>
             </div>
           </div>
         ) : (
