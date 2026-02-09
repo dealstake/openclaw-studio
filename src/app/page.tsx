@@ -2264,7 +2264,7 @@ const AgentStudioPage = () => {
               </div>
             ) : null}
             <div
-              className={`${mobilePane === "artifacts" ? "flex" : "hidden"} glass-panel min-h-0 w-full flex-1 shrink-0 overflow-hidden p-0 xl:flex xl:flex-initial xl:min-w-[360px] xl:max-w-[430px]`}
+              className={`${mobilePane === "artifacts" ? "flex" : "hidden"} glass-panel min-h-0 w-full flex-1 shrink-0 overflow-hidden p-0 xl:flex`}
             >
               <ArtifactsPanel isSelected />
             </div>
