@@ -81,6 +81,7 @@ import {
 } from "@/features/agents/operations/deleteAgentTransaction";
 import { ArtifactsPanel } from "@/features/artifacts/components/ArtifactsPanel";
 import { TasksPanel } from "@/features/tasks/components/TasksPanel";
+import { ContextPanel, type ContextTab } from "@/features/context/components/ContextPanel";
 
 type ChatHistoryMessage = Record<string, unknown>;
 
@@ -122,7 +123,7 @@ type SessionsListResult = {
   sessions?: SessionsListEntry[];
 };
 
-type MobilePane = "fleet" | "chat" | "settings" | "tasks" | "artifacts";
+type MobilePane = "fleet" | "chat" | "context";
 type DeleteAgentBlockPhase = "queued" | "deleting" | "awaiting-restart";
 type DeleteAgentBlockState = {
   agentId: string;
@@ -249,7 +250,9 @@ const AgentStudioPage = () => {
   const [settingsHeartbeatError, setSettingsHeartbeatError] = useState<string | null>(null);
   const [heartbeatRunBusyId, setHeartbeatRunBusyId] = useState<string | null>(null);
   const [heartbeatDeleteBusyId, setHeartbeatDeleteBusyId] = useState<string | null>(null);
-  const [brainPanelOpen, setBrainPanelOpen] = useState(false);
+  /** "agent" = show ContextPanel (Tasks/Brain/Settings), "files" = show Files, null = hidden on desktop */
+  const [contextMode, setContextMode] = useState<"agent" | "files" | null>(null);
+  const [contextTab, setContextTab] = useState<ContextTab>("tasks");
   const [deleteAgentBlock, setDeleteAgentBlock] = useState<DeleteAgentBlockState | null>(null);
   const [createAgentBlock, setCreateAgentBlock] = useState<CreateAgentBlockState | null>(null);
   const [renameAgentBlock, setRenameAgentBlock] = useState<RenameAgentBlockState | null>(null);
@@ -958,19 +961,19 @@ const AgentStudioPage = () => {
     void loadHeartbeatsForSettingsAgent(settingsAgentId);
   }, [loadCronJobsForSettingsAgent, loadHeartbeatsForSettingsAgent, settingsAgentId, status]);
 
+  // Auto-close brain tab in context panel if no agents
   useEffect(() => {
-    if (!brainPanelOpen) return;
+    if (contextTab !== "brain" || contextMode !== "agent") return;
     if (selectedBrainAgentId) return;
-    setBrainPanelOpen(false);
-  }, [brainPanelOpen, selectedBrainAgentId]);
+    setContextTab("tasks");
+  }, [contextMode, contextTab, selectedBrainAgentId]);
 
+  // Auto-close context panel settings tab if no agent selected
   useEffect(() => {
-    if (mobilePane !== "settings") return;
+    if (contextTab !== "settings" || contextMode !== "agent") return;
     if (settingsAgent) return;
-    setMobilePane("chat");
-  }, [mobilePane, settingsAgent]);
-
-  // Brain panel auto-close is handled by the brainPanelOpen + selectedBrainAgentId guard below
+    setContextTab("tasks");
+  }, [contextMode, contextTab, settingsAgent]);
 
   useEffect(() => {
     if (status !== "connected") {
@@ -1134,22 +1137,18 @@ const AgentStudioPage = () => {
   const handleOpenAgentSettings = useCallback(
     (agentId: string) => {
       flushPendingDraft(focusedAgent?.agentId ?? null);
-      setBrainPanelOpen(false);
       setSettingsAgentId(agentId);
-      setMobilePane("settings");
+      setContextMode("agent");
+      setContextTab("settings");
+      setMobilePane("context");
       dispatch({ type: "selectAgent", agentId });
     },
     [dispatch, flushPendingDraft, focusedAgent]
   );
 
-  const handleBrainToggle = useCallback(() => {
-    setBrainPanelOpen((prev) => {
-      const next = !prev;
-      if (!next) return false;
-      setSettingsAgentId(null);
-      setMobilePane("chat");
-      return true;
-    });
+  const handleFilesToggle = useCallback(() => {
+    setContextMode((prev) => prev === "files" ? null : "files");
+    setMobilePane((prev) => prev === "context" ? "chat" : "context");
   }, []);
 
   const handleDeleteAgent = useCallback(
@@ -2027,9 +2026,9 @@ const AgentStudioPage = () => {
           <HeaderBar
             status={status}
             onConnectionSettings={() => setShowConnectionPanel((prev) => !prev)}
-            onBrainFiles={handleBrainToggle}
-            brainFilesOpen={brainPanelOpen}
-            brainDisabled={!hasAnyAgents}
+            onFilesToggle={handleFilesToggle}
+            filesActive={contextMode === "files"}
+            filesDisabled={false}
           />
         </div>
 
@@ -2068,7 +2067,7 @@ const AgentStudioPage = () => {
         {showFleetLayout ? (
           <div className="flex min-h-0 flex-1 flex-col gap-4 xl:flex-row">
             <div className="glass-panel p-2 xl:hidden" data-testid="mobile-pane-toggle">
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <button
                   type="button"
                   className={`rounded-md border px-2 py-2 font-mono text-[10px] font-semibold uppercase tracking-[0.13em] transition ${
@@ -2094,24 +2093,16 @@ const AgentStudioPage = () => {
                 <button
                   type="button"
                   className={`rounded-md border px-2 py-2 font-mono text-[10px] font-semibold uppercase tracking-[0.13em] transition ${
-                    mobilePane === "tasks"
+                    mobilePane === "context"
                       ? "border-border bg-muted text-foreground shadow-xs"
                       : "border-border/80 bg-card/65 text-muted-foreground hover:border-border hover:bg-muted/70"
                   }`}
-                  onClick={() => setMobilePane("tasks")}
+                  onClick={() => {
+                    if (!contextMode) setContextMode("agent");
+                    setMobilePane("context");
+                  }}
                 >
-                  Tasks
-                </button>
-                <button
-                  type="button"
-                  className={`rounded-md border px-2 py-2 font-mono text-[10px] font-semibold uppercase tracking-[0.13em] transition ${
-                    mobilePane === "artifacts"
-                      ? "border-border bg-muted text-foreground shadow-xs"
-                      : "border-border/80 bg-card/65 text-muted-foreground hover:border-border hover:bg-muted/70"
-                  }`}
-                  onClick={() => setMobilePane("artifacts")}
-                >
-                  Files
+                  {contextMode === "files" ? "Files" : "Context"}
                 </button>
               </div>
             </div>
@@ -2181,73 +2172,80 @@ const AgentStudioPage = () => {
                 />
               )}
             </div>
-            {brainPanelOpen ? (
-              <div
-                className="glass-panel min-h-0 w-full shrink-0 overflow-hidden p-0 hidden xl:flex xl:w-[340px]"
-              >
-                <AgentBrainPanel
-                  client={client}
-                  agents={agents}
-                  selectedAgentId={selectedBrainAgentId}
-                  onClose={() => {
-                    setBrainPanelOpen(false);
-                    setMobilePane("chat");
-                  }}
-                />
-              </div>
-            ) : null}
-            {settingsAgent ? (
-              <div
-                className={`${mobilePane === "settings" ? "flex" : "hidden"} glass-panel min-h-0 w-full shrink-0 overflow-hidden p-0 xl:flex xl:w-[340px]`}
-              >
-                <AgentSettingsPanel
-                  key={settingsAgent.agentId}
-                  agent={settingsAgent}
-                  onClose={() => {
-                    setSettingsAgentId(null);
-                    setMobilePane("chat");
-                  }}
-                  onRename={(name) => handleRenameAgent(settingsAgent.agentId, name)}
-                  onNewSession={() => handleNewSession(settingsAgent.agentId)}
-                  onDelete={() => handleDeleteAgent(settingsAgent.agentId)}
-                  canDelete={settingsAgent.agentId !== RESERVED_MAIN_AGENT_ID}
-                  onToolCallingToggle={(enabled) =>
-                    handleToolCallingToggle(settingsAgent.agentId, enabled)
-                  }
-                  onThinkingTracesToggle={(enabled) =>
-                    handleThinkingTracesToggle(settingsAgent.agentId, enabled)
-                  }
-                  cronJobs={settingsCronJobs}
-                  cronLoading={settingsCronLoading}
-                  cronError={settingsCronError}
-                  cronRunBusyJobId={cronRunBusyJobId}
-                  cronDeleteBusyJobId={cronDeleteBusyJobId}
-                  onRunCronJob={(jobId) => handleRunCronJob(settingsAgent.agentId, jobId)}
-                  onDeleteCronJob={(jobId) => handleDeleteCronJob(settingsAgent.agentId, jobId)}
-                  heartbeats={settingsHeartbeats}
-                  heartbeatLoading={settingsHeartbeatLoading}
-                  heartbeatError={settingsHeartbeatError}
-                  heartbeatRunBusyId={heartbeatRunBusyId}
-                  heartbeatDeleteBusyId={heartbeatDeleteBusyId}
-                  onRunHeartbeat={(heartbeatId) =>
-                    handleRunHeartbeat(settingsAgent.agentId, heartbeatId)
-                  }
-                  onDeleteHeartbeat={(heartbeatId) =>
-                    handleDeleteHeartbeat(settingsAgent.agentId, heartbeatId)
-                  }
-                />
-              </div>
-            ) : null}
-            {/* Right sidebar: Tasks + Files — visible at 2xl, stacked vertically */}
+            {/* Context Panel: agent-scoped (Tasks/Brain/Settings) or global (Files) */}
             <div
-              className={`${mobilePane === "tasks" || mobilePane === "artifacts" ? "flex" : "hidden"} min-h-0 w-full shrink-0 flex-col gap-4 2xl:flex 2xl:w-[340px]`}
+              className={`${mobilePane === "context" ? "flex" : "hidden"} glass-panel min-h-0 w-full shrink-0 overflow-hidden p-0 2xl:flex 2xl:w-[360px]`}
             >
-              <div className={`${mobilePane === "tasks" ? "flex" : "hidden"} glass-panel min-h-0 flex-1 overflow-hidden p-0 2xl:flex`}>
-                <TasksPanel isSelected />
-              </div>
-              <div className={`${mobilePane === "artifacts" ? "flex" : "hidden"} glass-panel min-h-0 flex-1 overflow-hidden p-0 2xl:flex`}>
+              {contextMode === "files" ? (
                 <ArtifactsPanel isSelected />
-              </div>
+              ) : (
+                <ContextPanel
+                  activeTab={contextTab}
+                  onTabChange={(tab) => {
+                    setContextTab(tab);
+                    if (tab === "settings" && focusedAgent && !settingsAgentId) {
+                      setSettingsAgentId(focusedAgent.agentId);
+                    }
+                  }}
+                  hasSettings={!!settingsAgent}
+                  tasksContent={<TasksPanel isSelected />}
+                  brainContent={
+                    <AgentBrainPanel
+                      client={client}
+                      agents={agents}
+                      selectedAgentId={selectedBrainAgentId}
+                      onClose={() => {
+                        setContextMode(null);
+                        setMobilePane("chat");
+                      }}
+                    />
+                  }
+                  settingsContent={
+                    settingsAgent ? (
+                      <AgentSettingsPanel
+                        key={settingsAgent.agentId}
+                        agent={settingsAgent}
+                        onClose={() => {
+                          setSettingsAgentId(null);
+                          setContextTab("tasks");
+                        }}
+                        onRename={(name) => handleRenameAgent(settingsAgent.agentId, name)}
+                        onNewSession={() => handleNewSession(settingsAgent.agentId)}
+                        onDelete={() => handleDeleteAgent(settingsAgent.agentId)}
+                        canDelete={settingsAgent.agentId !== RESERVED_MAIN_AGENT_ID}
+                        onToolCallingToggle={(enabled) =>
+                          handleToolCallingToggle(settingsAgent.agentId, enabled)
+                        }
+                        onThinkingTracesToggle={(enabled) =>
+                          handleThinkingTracesToggle(settingsAgent.agentId, enabled)
+                        }
+                        cronJobs={settingsCronJobs}
+                        cronLoading={settingsCronLoading}
+                        cronError={settingsCronError}
+                        cronRunBusyJobId={cronRunBusyJobId}
+                        cronDeleteBusyJobId={cronDeleteBusyJobId}
+                        onRunCronJob={(jobId) => handleRunCronJob(settingsAgent.agentId, jobId)}
+                        onDeleteCronJob={(jobId) => handleDeleteCronJob(settingsAgent.agentId, jobId)}
+                        heartbeats={settingsHeartbeats}
+                        heartbeatLoading={settingsHeartbeatLoading}
+                        heartbeatError={settingsHeartbeatError}
+                        heartbeatRunBusyId={heartbeatRunBusyId}
+                        heartbeatDeleteBusyId={heartbeatDeleteBusyId}
+                        onRunHeartbeat={(heartbeatId) =>
+                          handleRunHeartbeat(settingsAgent.agentId, heartbeatId)
+                        }
+                        onDeleteHeartbeat={(heartbeatId) =>
+                          handleDeleteHeartbeat(settingsAgent.agentId, heartbeatId)
+                        }
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center p-6 text-center text-[11px] text-muted-foreground">
+                        Select an agent to view settings.
+                      </div>
+                    )
+                  }
+                />
+              )}
             </div>
           </div>
         ) : (

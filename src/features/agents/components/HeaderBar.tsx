@@ -3,17 +3,16 @@ import { HeaderIconButton } from "@/components/HeaderIconButton";
 import type { GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { BrandMark } from "@/components/brand/BrandMark";
 import { LogoutButton } from "@/components/brand/LogoutButton";
-import { Brain, Ellipsis } from "lucide-react";
+import { FolderOpen, Ellipsis } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getCfIdentity, type CfIdentity } from "@/lib/cloudflare-auth";
 
 type HeaderBarProps = {
   status: GatewayStatus;
   onConnectionSettings: () => void;
-  onBrainFiles: () => void;
-  brainFilesOpen: boolean;
-  brainDisabled?: boolean;
-  className?: string;
+  onFilesToggle: () => void;
+  filesActive: boolean;
+  filesDisabled?: boolean;
 };
 
 /* ── Avatar button with hover label ──────────────────────────────────── */
@@ -23,7 +22,6 @@ function AvatarButton({ identity }: { identity: CfIdentity | null }) {
   const initial = identity.email[0]?.toUpperCase() ?? "?";
   return (
     <div className="group hidden items-center sm:flex">
-      {/* Inline label — appears on hover to the left */}
       <span className="mr-2 max-w-0 overflow-hidden whitespace-nowrap text-[10px] font-semibold text-muted-foreground opacity-0 transition-all duration-200 group-hover:max-w-[200px] group-hover:opacity-100">
         {identity.email}
       </span>
@@ -39,10 +37,9 @@ function AvatarButton({ identity }: { identity: CfIdentity | null }) {
 export const HeaderBar = ({
   status,
   onConnectionSettings,
-  onBrainFiles,
-  brainFilesOpen,
-  brainDisabled = false,
-  className,
+  onFilesToggle,
+  filesActive,
+  filesDisabled = false,
 }: HeaderBarProps) => {
   const [identity, setIdentity] = useState<CfIdentity | null>(null);
 
@@ -62,7 +59,7 @@ export const HeaderBar = ({
   }, []);
 
   return (
-    <div className={`glass-panel fade-up relative z-30 overflow-visible px-4 py-2 ${className ?? ""}`}>
+    <div className="glass-panel fade-up relative z-30 overflow-visible px-4 py-2">
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(120deg,transparent_0%,color-mix(in_oklch,var(--primary)_7%,transparent)_48%,transparent_100%)] opacity-55" />
       <div className="relative flex items-center gap-4">
         <div className="min-w-0 flex-1">
@@ -84,13 +81,13 @@ export const HeaderBar = ({
           <ThemeToggle />
 
           <HeaderIconButton
-            onClick={onBrainFiles}
-            active={brainFilesOpen}
-            disabled={brainDisabled}
-            aria-label="Brain files"
-            data-testid="brain-files-toggle"
+            onClick={onFilesToggle}
+            active={filesActive}
+            disabled={filesDisabled}
+            aria-label="Files"
+            data-testid="files-toggle"
           >
-            <Brain className="h-[15px] w-[15px]" />
+            <FolderOpen className="h-[15px] w-[15px]" />
           </HeaderIconButton>
 
           <details className="group relative">
