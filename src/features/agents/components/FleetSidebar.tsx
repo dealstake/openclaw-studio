@@ -49,7 +49,7 @@ export const FleetSidebar = ({
 }: FleetSidebarProps) => {
   return (
     <aside
-      className="glass-panel fade-up-delay relative flex h-full w-full min-w-72 flex-col gap-3 p-3 xl:max-w-[320px]"
+      className="glass-panel fade-up-delay relative flex h-full w-full min-w-0 flex-col gap-3 p-3"
       data-testid="fleet-sidebar"
     >
       <div className="flex items-center justify-between gap-2 px-1">

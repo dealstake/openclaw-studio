@@ -22,16 +22,16 @@ function AvatarButton({ identity }: { identity: CfIdentity | null }) {
   if (!identity?.email) return null;
   const initial = identity.email[0]?.toUpperCase() ?? "?";
   return (
-    <div className="group relative hidden sm:block">
-      <HeaderIconButton aria-label={identity.email} className="relative">
+    <div className="group hidden items-center sm:flex">
+      {/* Inline label — appears on hover to the left */}
+      <span className="mr-2 max-w-0 overflow-hidden whitespace-nowrap text-[10px] font-semibold text-muted-foreground opacity-0 transition-all duration-200 group-hover:max-w-[200px] group-hover:opacity-100">
+        {identity.email}
+      </span>
+      <HeaderIconButton aria-label={identity.email}>
         <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/15 text-[10px] font-bold text-primary">
           {initial}
         </span>
       </HeaderIconButton>
-      {/* Hover tooltip */}
-      <span className="pointer-events-none absolute right-0 top-full mt-1.5 whitespace-nowrap rounded-md border border-border/80 bg-popover/95 px-2.5 py-1.5 text-[10px] font-semibold text-foreground opacity-0 shadow-lg backdrop-blur transition group-hover:opacity-100">
-        {identity.email}
-      </span>
     </div>
   );
 }

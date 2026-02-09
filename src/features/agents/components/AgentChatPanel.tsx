@@ -12,7 +12,7 @@ import {
 import type { AgentState as AgentRecord } from "@/features/agents/state/store";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Cog, Shuffle } from "lucide-react";
+import { Settings, Shuffle } from "lucide-react";
 import type { GatewayModelChoice } from "@/lib/gateway/models";
 import { isToolMarkdown, isTraceMarkdown } from "@/lib/text/message-extract";
 import { isNearBottom } from "@/lib/dom";
@@ -627,14 +627,14 @@ export const AgentChatPanel = ({
                   {agent.name}
                 </div>
                 <button
-                  className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border/80 bg-card/60 text-muted-foreground transition hover:border-border hover:bg-muted/65"
+                  className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-input/90 bg-background/75 text-foreground shadow-sm transition hover:border-ring hover:bg-card"
                   type="button"
                   data-testid="agent-settings-toggle"
                   aria-label="Open agent settings"
                   title="Agent settings"
                   onClick={onOpenSettings}
                 >
-                  <Cog className="h-3.5 w-3.5" />
+                  <Settings className="h-3.5 w-3.5" />
                 </button>
                 <span aria-hidden className="shrink-0 text-[11px] text-muted-foreground/80">
                   •

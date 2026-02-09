@@ -2116,7 +2116,7 @@ const AgentStudioPage = () => {
               </div>
             </div>
             <div
-              className={`${mobilePane === "fleet" ? "flex" : "hidden"} min-h-0 flex-1 xl:flex xl:flex-initial xl:min-h-0`}
+              className={`${mobilePane === "fleet" ? "flex" : "hidden"} min-h-0 flex-1 xl:flex xl:flex-initial xl:min-h-0 xl:min-w-[280px] xl:max-w-[320px]`}
             >
               <FleetSidebar
                 agents={filteredAgents}
@@ -2136,7 +2136,7 @@ const AgentStudioPage = () => {
               />
             </div>
             <div
-              className={`${mobilePane === "chat" ? "flex" : "hidden"} glass-panel min-h-0 flex-1 overflow-hidden p-2 sm:p-3 xl:flex`}
+              className={`${mobilePane === "chat" ? "flex" : "hidden"} glass-panel min-h-0 flex-1 overflow-hidden p-2 sm:p-3 xl:flex xl:min-w-[400px]`}
               data-testid="focused-agent-panel"
             >
               {focusedAgent ? (
@@ -2183,7 +2183,7 @@ const AgentStudioPage = () => {
             </div>
             {brainPanelOpen ? (
               <div
-                className="hidden glass-panel min-h-0 w-full flex-1 shrink-0 overflow-hidden p-0 xl:flex xl:flex-initial xl:min-w-[360px] xl:max-w-[430px]"
+                className="glass-panel min-h-0 w-full shrink-0 overflow-hidden p-0 hidden xl:flex xl:min-w-[300px] xl:max-w-[380px]"
               >
                 <AgentBrainPanel
                   client={client}
@@ -2198,7 +2198,7 @@ const AgentStudioPage = () => {
             ) : null}
             {settingsAgent ? (
               <div
-                className={`${mobilePane === "settings" ? "flex" : "hidden"} glass-panel min-h-0 w-full flex-1 shrink-0 overflow-hidden p-0 xl:flex xl:flex-initial xl:min-w-[360px] xl:max-w-[430px]`}
+                className={`${mobilePane === "settings" ? "flex" : "hidden"} glass-panel min-h-0 w-full shrink-0 overflow-hidden p-0 xl:flex xl:min-w-[300px] xl:max-w-[380px]`}
               >
                 <AgentSettingsPanel
                   key={settingsAgent.agentId}
@@ -2239,12 +2239,12 @@ const AgentStudioPage = () => {
               </div>
             ) : null}
             <div
-              className={`${mobilePane === "tasks" ? "flex" : "hidden"} glass-panel min-h-0 w-full flex-1 shrink-0 overflow-hidden p-0 xl:flex`}
+              className={`${mobilePane === "tasks" ? "flex" : "hidden"} glass-panel min-h-0 w-full shrink-0 overflow-hidden p-0 xl:flex xl:min-w-[300px] xl:max-w-[380px]`}
             >
               <TasksPanel isSelected />
             </div>
             <div
-              className={`${mobilePane === "artifacts" ? "flex" : "hidden"} glass-panel min-h-0 w-full flex-1 shrink-0 overflow-hidden p-0 xl:flex`}
+              className={`${mobilePane === "artifacts" ? "flex" : "hidden"} glass-panel min-h-0 w-full shrink-0 overflow-hidden p-0 xl:flex xl:min-w-[300px] xl:max-w-[380px]`}
             >
               <ArtifactsPanel isSelected />
             </div>
