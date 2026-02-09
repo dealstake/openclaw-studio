@@ -3,7 +3,7 @@ import { HeaderIconButton } from "@/components/HeaderIconButton";
 import type { GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { BrandMark } from "@/components/brand/BrandMark";
 import { LogoutButton } from "@/components/brand/LogoutButton";
-import { Brain, Ellipsis, Settings } from "lucide-react";
+import { Brain, Ellipsis } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getCfIdentity, type CfIdentity } from "@/lib/cloudflare-auth";
 
@@ -13,6 +13,7 @@ type HeaderBarProps = {
   onBrainFiles: () => void;
   brainFilesOpen: boolean;
   brainDisabled?: boolean;
+  className?: string;
 };
 
 /* ── Avatar button with hover label ──────────────────────────────────── */
@@ -41,6 +42,7 @@ export const HeaderBar = ({
   onBrainFiles,
   brainFilesOpen,
   brainDisabled = false,
+  className,
 }: HeaderBarProps) => {
   const [identity, setIdentity] = useState<CfIdentity | null>(null);
 
@@ -60,14 +62,14 @@ export const HeaderBar = ({
   }, []);
 
   return (
-    <div className="glass-panel fade-up relative z-30 overflow-visible px-4 py-2">
+    <div className={`glass-panel fade-up relative z-30 overflow-visible px-4 py-2 ${className ?? ""}`}>
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(120deg,transparent_0%,color-mix(in_oklch,var(--primary)_7%,transparent)_48%,transparent_100%)] opacity-55" />
-      <div className="relative grid items-center gap-4 lg:grid-cols-[minmax(0,1fr)_auto]">
-        <div className="min-w-0">
+      <div className="relative flex items-center gap-4">
+        <div className="min-w-0 flex-1">
           <BrandMark size="sm" />
         </div>
 
-        <div className="flex items-center justify-end gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           {status === "connecting" ? (
             <span
               className="inline-flex items-center rounded-md border border-border/70 bg-secondary px-3 py-2 font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-secondary-foreground"
@@ -89,14 +91,6 @@ export const HeaderBar = ({
             data-testid="brain-files-toggle"
           >
             <Brain className="h-[15px] w-[15px]" />
-          </HeaderIconButton>
-
-          <HeaderIconButton
-            onClick={onConnectionSettings}
-            aria-label="Settings"
-            data-testid="gateway-settings-toggle"
-          >
-            <Settings className="h-[15px] w-[15px]" />
           </HeaderIconButton>
 
           <details className="group relative">

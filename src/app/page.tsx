@@ -80,6 +80,7 @@ import {
   type TrashAgentStateResult,
 } from "@/features/agents/operations/deleteAgentTransaction";
 import { ArtifactsPanel } from "@/features/artifacts/components/ArtifactsPanel";
+import { TasksPanel } from "@/features/tasks/components/TasksPanel";
 
 type ChatHistoryMessage = Record<string, unknown>;
 
@@ -121,7 +122,7 @@ type SessionsListResult = {
   sessions?: SessionsListEntry[];
 };
 
-type MobilePane = "fleet" | "chat" | "settings" | "brain" | "artifacts";
+type MobilePane = "fleet" | "chat" | "settings" | "tasks" | "artifacts";
 type DeleteAgentBlockPhase = "queued" | "deleting" | "awaiting-restart";
 type DeleteAgentBlockState = {
   agentId: string;
@@ -969,11 +970,7 @@ const AgentStudioPage = () => {
     setMobilePane("chat");
   }, [mobilePane, settingsAgent]);
 
-  useEffect(() => {
-    if (mobilePane !== "brain") return;
-    if (brainPanelOpen && selectedBrainAgentId) return;
-    setMobilePane("chat");
-  }, [brainPanelOpen, mobilePane, selectedBrainAgentId]);
+  // Brain panel auto-close is handled by the brainPanelOpen + selectedBrainAgentId guard below
 
   useEffect(() => {
     if (status !== "connected") {
@@ -1150,7 +1147,7 @@ const AgentStudioPage = () => {
       const next = !prev;
       if (!next) return false;
       setSettingsAgentId(null);
-      setMobilePane("brain");
+      setMobilePane("chat");
       return true;
     });
   }, []);
@@ -2071,7 +2068,7 @@ const AgentStudioPage = () => {
         {showFleetLayout ? (
           <div className="flex min-h-0 flex-1 flex-col gap-4 xl:flex-row">
             <div className="glass-panel p-2 xl:hidden" data-testid="mobile-pane-toggle">
-              <div className="grid grid-cols-5 gap-2">
+              <div className="grid grid-cols-4 gap-2">
                 <button
                   type="button"
                   className={`rounded-md border px-2 py-2 font-mono text-[10px] font-semibold uppercase tracking-[0.13em] transition ${
@@ -2097,19 +2094,13 @@ const AgentStudioPage = () => {
                 <button
                   type="button"
                   className={`rounded-md border px-2 py-2 font-mono text-[10px] font-semibold uppercase tracking-[0.13em] transition ${
-                    mobilePane === "settings"
+                    mobilePane === "tasks"
                       ? "border-border bg-muted text-foreground shadow-xs"
                       : "border-border/80 bg-card/65 text-muted-foreground hover:border-border hover:bg-muted/70"
                   }`}
-                  onClick={() => {
-                    if (focusedAgent && !settingsAgentId) {
-                      handleOpenAgentSettings(focusedAgent.agentId);
-                    }
-                    setMobilePane("settings");
-                  }}
-                  disabled={!focusedAgent}
+                  onClick={() => setMobilePane("tasks")}
                 >
-                  Config
+                  Tasks
                 </button>
                 <button
                   type="button"
@@ -2121,22 +2112,6 @@ const AgentStudioPage = () => {
                   onClick={() => setMobilePane("artifacts")}
                 >
                   Files
-                </button>
-                <button
-                  type="button"
-                  className={`rounded-md border px-2 py-2 font-mono text-[10px] font-semibold uppercase tracking-[0.13em] transition ${
-                    mobilePane === "brain"
-                      ? "border-border bg-muted text-foreground shadow-xs"
-                      : "border-border/80 bg-card/65 text-muted-foreground hover:border-border hover:bg-muted/70"
-                  }`}
-                  onClick={() => {
-                    setBrainPanelOpen(true);
-                    setSettingsAgentId(null);
-                    setMobilePane("brain");
-                  }}
-                  disabled={!hasAnyAgents}
-                >
-                  Brain
                 </button>
               </div>
             </div>
@@ -2208,7 +2183,7 @@ const AgentStudioPage = () => {
             </div>
             {brainPanelOpen ? (
               <div
-                className={`${mobilePane === "brain" ? "flex" : "hidden"} glass-panel min-h-0 w-full flex-1 shrink-0 overflow-hidden p-0 xl:flex xl:flex-initial xl:min-w-[360px] xl:max-w-[430px]`}
+                className="hidden glass-panel min-h-0 w-full flex-1 shrink-0 overflow-hidden p-0 xl:flex xl:flex-initial xl:min-w-[360px] xl:max-w-[430px]"
               >
                 <AgentBrainPanel
                   client={client}
@@ -2263,6 +2238,11 @@ const AgentStudioPage = () => {
                 />
               </div>
             ) : null}
+            <div
+              className={`${mobilePane === "tasks" ? "flex" : "hidden"} glass-panel min-h-0 w-full flex-1 shrink-0 overflow-hidden p-0 xl:flex`}
+            >
+              <TasksPanel isSelected />
+            </div>
             <div
               className={`${mobilePane === "artifacts" ? "flex" : "hidden"} glass-panel min-h-0 w-full flex-1 shrink-0 overflow-hidden p-0 xl:flex`}
             >

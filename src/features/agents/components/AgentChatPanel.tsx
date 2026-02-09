@@ -596,8 +596,8 @@ export const AgentChatPanel = ({
   return (
     <div data-agent-panel className="group fade-up relative flex h-full w-full flex-col">
       <div className="px-3 pt-3 sm:px-4 sm:pt-4">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex min-w-0 items-start gap-3">
+        <div className="flex items-start gap-4">
+          <div className="flex min-w-0 flex-1 items-start gap-3">
             <div className="group/avatar relative">
               <AgentAvatar
                 seed={avatarSeed}
@@ -626,6 +626,16 @@ export const AgentChatPanel = ({
                 <div className="min-w-0 truncate text-xs font-semibold uppercase tracking-[0.16em] text-foreground sm:text-sm">
                   {agent.name}
                 </div>
+                <button
+                  className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border/80 bg-card/60 text-muted-foreground transition hover:border-border hover:bg-muted/65"
+                  type="button"
+                  data-testid="agent-settings-toggle"
+                  aria-label="Open agent settings"
+                  title="Agent settings"
+                  onClick={onOpenSettings}
+                >
+                  <Cog className="h-3.5 w-3.5" />
+                </button>
                 <span aria-hidden className="shrink-0 text-[11px] text-muted-foreground/80">
                   •
                 </span>
@@ -636,7 +646,7 @@ export const AgentChatPanel = ({
                 </span>
               </div>
 
-              <div className="mt-2 grid gap-2 sm:grid-cols-[minmax(0,1fr)_128px]">
+              <div className="mt-2 grid max-w-md gap-2 sm:grid-cols-[minmax(0,1fr)_128px]">
                 <label className="flex min-w-0 flex-col gap-1 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                   <span>Model</span>
                   <select
@@ -685,17 +695,6 @@ export const AgentChatPanel = ({
               </div>
             </div>
           </div>
-
-          <button
-            className="nodrag mt-0.5 flex h-9 w-9 items-center justify-center rounded-md border border-border/80 bg-card/60 text-muted-foreground transition hover:border-border hover:bg-muted/65"
-            type="button"
-            data-testid="agent-settings-toggle"
-            aria-label="Open agent settings"
-            title="Agent settings"
-            onClick={onOpenSettings}
-          >
-            <Cog className="h-4 w-4" />
-          </button>
         </div>
       </div>
 
