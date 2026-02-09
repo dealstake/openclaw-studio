@@ -17,11 +17,8 @@ export function BrandMark({ size = "md", className }: BrandMarkProps) {
     <div className={`flex items-center ${v.gap} ${className ?? ""}`}>
       <TridentLogo size={v.logo} className="shrink-0 text-primary" />
       <div className="leading-none">
-        <span className={`console-title text-foreground ${v.main} tracking-wide`}>
-          TRIDENT{" "}
-        </span>
-        <span className={`console-title italic text-primary ${v.main} tracking-wide`}>
-          FUNDING SOLUTIONS
+        <span className={`console-title text-primary ${v.main} tracking-wide`}>
+          TRIDENT FUNDING SOLUTIONS
         </span>
       </div>
     </div>

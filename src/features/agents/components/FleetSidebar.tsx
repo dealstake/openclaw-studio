@@ -116,7 +116,7 @@ export const FleetSidebar = ({
                     isSelected={selected}
                   />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-[11px] font-semibold uppercase tracking-[0.13em] text-foreground">
+                    <p className="truncate text-[11px] font-semibold uppercase tracking-[0.13em] text-foreground transition group-hover:text-primary">
                       {agent.name}
                     </p>
                     <div className="mt-1 flex flex-wrap items-center gap-2">

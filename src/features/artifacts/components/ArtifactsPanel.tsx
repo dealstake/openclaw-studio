@@ -173,7 +173,7 @@ const ArtifactRow = memo(function ArtifactRow({
     <button
       type="button"
       onClick={handleClick}
-      className="group flex w-full items-center gap-3 rounded-md border border-transparent px-3 py-2.5 text-left transition hover:border-border/60 hover:bg-muted/40"
+      className="group flex w-full items-center gap-3 rounded-md border border-border/70 bg-card/65 px-3 py-2.5 text-left transition hover:border-border hover:bg-muted/55"
     >
       {fileIcon(file.mimeType)}
       <div className="min-w-0 flex-1">
@@ -296,15 +296,10 @@ export const ArtifactsPanel = memo(function ArtifactsPanel({ isSelected }: Artif
   return (
     <div className="flex h-full w-full flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-border/50 px-4 py-3">
-        <div>
-          <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-            Shared Artifacts
-          </div>
-          <div className="mt-0.5 font-mono text-[10px] text-muted-foreground/60">
-            Google Drive · {files.length} file{files.length !== 1 ? "s" : ""}
-          </div>
-        </div>
+      <div className="flex items-center justify-between px-4 py-3">
+        <p className="console-title text-2xl leading-none text-foreground">
+          Files ({files.length})
+        </p>
         <div className="flex items-center gap-1">
           <button
             type="button"
@@ -332,7 +327,7 @@ export const ArtifactsPanel = memo(function ArtifactsPanel({ isSelected }: Artif
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto p-2">
+      <div className="flex-1 overflow-auto px-3 pb-3">
         {loading && !files.length ? (
           <div className="flex items-center justify-center py-12">
             <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground" />
@@ -353,7 +348,7 @@ export const ArtifactsPanel = memo(function ArtifactsPanel({ isSelected }: Artif
             </button>
           </div>
         ) : (
-          <div className="flex flex-col gap-0.5">
+          <div className="flex flex-col gap-2">
             {sortedFiles.pinned.map((file) => (
               <ArtifactRow key={file.id} file={file} isPinned onTogglePin={togglePin} />
             ))}

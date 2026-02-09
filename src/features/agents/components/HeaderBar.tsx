@@ -1,9 +1,9 @@
 import { ThemeToggle } from "@/components/theme-toggle";
+import { HeaderIconButton } from "@/components/HeaderIconButton";
 import type { GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { BrandMark } from "@/components/brand/BrandMark";
-import { UserBadge } from "@/components/brand/UserBadge";
 import { LogoutButton } from "@/components/brand/LogoutButton";
-import { Brain, Ellipsis } from "lucide-react";
+import { Brain, Ellipsis, Settings } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getCfIdentity, type CfIdentity } from "@/lib/cloudflare-auth";
 
@@ -14,6 +14,26 @@ type HeaderBarProps = {
   brainFilesOpen: boolean;
   brainDisabled?: boolean;
 };
+
+/* ── Avatar button with hover label ──────────────────────────────────── */
+
+function AvatarButton({ identity }: { identity: CfIdentity | null }) {
+  if (!identity?.email) return null;
+  const initial = identity.email[0]?.toUpperCase() ?? "?";
+  return (
+    <div className="group relative hidden sm:block">
+      <HeaderIconButton aria-label={identity.email} className="relative">
+        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/15 text-[10px] font-bold text-primary">
+          {initial}
+        </span>
+      </HeaderIconButton>
+      {/* Hover tooltip */}
+      <span className="pointer-events-none absolute right-0 top-full mt-1.5 whitespace-nowrap rounded-md border border-border/80 bg-popover/95 px-2.5 py-1.5 text-[10px] font-semibold text-foreground opacity-0 shadow-lg backdrop-blur transition group-hover:opacity-100">
+        {identity.email}
+      </span>
+    </div>
+  );
+}
 
 export const HeaderBar = ({
   status,
@@ -29,7 +49,6 @@ export const HeaderBar = ({
     const fetchIdentity = async () => {
       const id = await getCfIdentity();
       if (!cancelled) setIdentity(id);
-      // Retry once after 2s if first attempt returned null
       if (!id && !cancelled) {
         await new Promise((r) => setTimeout(r, 2000));
         const retry = await getCfIdentity();
@@ -58,29 +77,34 @@ export const HeaderBar = ({
             </span>
           ) : null}
 
-          <UserBadge identity={identity} />
+          <AvatarButton identity={identity} />
 
           <ThemeToggle />
-          <button
-            className={`flex items-center gap-2 rounded-md border px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] transition ${
-              brainFilesOpen
-                ? "border-border bg-muted text-foreground"
-                : "border-input/90 bg-background/75 text-foreground hover:border-ring hover:bg-card"
-            }`}
-            type="button"
+
+          <HeaderIconButton
             onClick={onBrainFiles}
-            data-testid="brain-files-toggle"
+            active={brainFilesOpen}
             disabled={brainDisabled}
+            aria-label="Brain files"
+            data-testid="brain-files-toggle"
           >
-            <Brain className="h-4 w-4" />
-            Brain
-          </button>
+            <Brain className="h-[15px] w-[15px]" />
+          </HeaderIconButton>
+
+          <HeaderIconButton
+            onClick={onConnectionSettings}
+            aria-label="Settings"
+            data-testid="gateway-settings-toggle"
+          >
+            <Settings className="h-[15px] w-[15px]" />
+          </HeaderIconButton>
+
           <details className="group relative">
             <summary
-              className="flex h-9 w-9 cursor-pointer list-none items-center justify-center rounded-md border border-input/80 bg-background/70 text-muted-foreground transition hover:border-ring hover:bg-card hover:text-foreground [&::-webkit-details-marker]:hidden"
+              className="inline-flex h-10 w-10 cursor-pointer list-none items-center justify-center rounded-md border border-input/90 bg-background/75 text-foreground shadow-sm transition hover:border-ring hover:bg-card [&::-webkit-details-marker]:hidden"
               data-testid="studio-menu-toggle"
             >
-              <Ellipsis className="h-4 w-4" />
+              <Ellipsis className="h-[15px] w-[15px]" />
               <span className="sr-only">Open studio menu</span>
             </summary>
             <div className="absolute right-0 top-11 z-20 min-w-44 rounded-md border border-border/80 bg-popover/95 p-1 shadow-lg backdrop-blur">
@@ -89,11 +113,8 @@ export const HeaderBar = ({
                 type="button"
                 onClick={(event) => {
                   onConnectionSettings();
-                  (event.currentTarget.closest("details") as HTMLDetailsElement | null)?.removeAttribute(
-                    "open"
-                  );
+                  (event.currentTarget.closest("details") as HTMLDetailsElement | null)?.removeAttribute("open");
                 }}
-                data-testid="gateway-settings-toggle"
               >
                 Gateway Connection
               </button>

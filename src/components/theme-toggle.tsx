@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Moon, Sun } from "lucide-react";
+import { HeaderIconButton } from "@/components/HeaderIconButton";
 
 const THEME_STORAGE_KEY = "theme";
 
@@ -20,7 +21,6 @@ const applyTheme = (mode: ThemeMode) => {
 };
 
 export const ThemeToggle = () => {
-  // Keep SSR + initial hydration stable ("dark") to avoid markup mismatch.
   const [theme, setTheme] = useState<ThemeMode>("dark");
 
   useEffect(() => {
@@ -44,13 +44,11 @@ export const ThemeToggle = () => {
   const isDark = theme === "dark";
 
   return (
-    <button
-      type="button"
+    <HeaderIconButton
       onClick={toggleTheme}
       aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
-      className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-input/90 bg-background/75 text-foreground shadow-sm transition hover:border-ring hover:bg-card"
     >
       {isDark ? <Sun className="h-[15px] w-[15px]" /> : <Moon className="h-[15px] w-[15px]" />}
-    </button>
+    </HeaderIconButton>
   );
 };
