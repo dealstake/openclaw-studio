@@ -79,6 +79,7 @@ import {
   type RestoreAgentStateResult,
   type TrashAgentStateResult,
 } from "@/features/agents/operations/deleteAgentTransaction";
+import { ArtifactsPanel } from "@/features/artifacts/components/ArtifactsPanel";
 
 type ChatHistoryMessage = Record<string, unknown>;
 
@@ -120,7 +121,7 @@ type SessionsListResult = {
   sessions?: SessionsListEntry[];
 };
 
-type MobilePane = "fleet" | "chat" | "settings" | "brain";
+type MobilePane = "fleet" | "chat" | "settings" | "brain" | "artifacts";
 type DeleteAgentBlockPhase = "queued" | "deleting" | "awaiting-restart";
 type DeleteAgentBlockState = {
   agentId: string;
@@ -2070,7 +2071,7 @@ const AgentStudioPage = () => {
         {showFleetLayout ? (
           <div className="flex min-h-0 flex-1 flex-col gap-4 xl:flex-row">
             <div className="glass-panel p-2 xl:hidden" data-testid="mobile-pane-toggle">
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-5 gap-2">
                 <button
                   type="button"
                   className={`rounded-md border px-2 py-2 font-mono text-[10px] font-semibold uppercase tracking-[0.13em] transition ${
@@ -2104,6 +2105,17 @@ const AgentStudioPage = () => {
                   disabled={!settingsAgent}
                 >
                   Settings
+                </button>
+                <button
+                  type="button"
+                  className={`rounded-md border px-2 py-2 font-mono text-[10px] font-semibold uppercase tracking-[0.13em] transition ${
+                    mobilePane === "artifacts"
+                      ? "border-border bg-muted text-foreground shadow-xs"
+                      : "border-border/80 bg-card/65 text-muted-foreground hover:border-border hover:bg-muted/70"
+                  }`}
+                  onClick={() => setMobilePane("artifacts")}
+                >
+                  Files
                 </button>
                 <button
                   type="button"
@@ -2246,6 +2258,11 @@ const AgentStudioPage = () => {
                 />
               </div>
             ) : null}
+            <div
+              className={`${mobilePane === "artifacts" ? "block" : "hidden"} glass-panel min-h-0 w-full shrink-0 overflow-hidden p-0 xl:block xl:min-w-[360px] xl:max-w-[430px]`}
+            >
+              <ArtifactsPanel isSelected />
+            </div>
           </div>
         ) : (
           <div className="glass-panel fade-up-delay flex min-h-0 flex-1 flex-col overflow-hidden p-5 sm:p-6">
