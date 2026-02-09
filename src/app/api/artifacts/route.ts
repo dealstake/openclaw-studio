@@ -11,6 +11,9 @@ const GOG_ACCOUNT = process.env.GOG_ACCOUNT || "alex@tridentfundingsolutions.com
 const GOG_PATH = process.env.GOG_PATH || "/opt/homebrew/bin/gog";
 const CACHE_TTL_MS = 30_000;
 
+// When running remotely (Cloud Run), proxy to this URL to run gog on the gateway host
+const ARTIFACTS_PROXY_URL = process.env.ARTIFACTS_PROXY_URL || "";
+
 interface DriveFile {
   id: string;
   name: string;
@@ -30,22 +33,6 @@ interface CachedResult {
 let cache: CachedResult | null = null;
 
 /**
- * Parse gog CLI JSON output into DriveFile array.
- * gog drive ls --json returns { files: [...] } with fields like:
- *   id, name, mimeType, modifiedTime, size, webViewLink
- */
-function parseGogOutput(stdout: string): DriveFile[] {
-  const parsed = JSON.parse(stdout) as { files?: DriveFile[] };
-  const files = parsed.files ?? [];
-  files.sort((a, b) => {
-    const ta = new Date(a.modifiedTime).getTime();
-    const tb = new Date(b.modifiedTime).getTime();
-    return tb - ta;
-  });
-  return files;
-}
-
-/**
  * Fetch files by spawning gog locally (works when Studio runs on the same machine).
  */
 async function fetchLocal(): Promise<DriveFile[]> {
@@ -62,7 +49,21 @@ async function fetchLocal(): Promise<DriveFile[]> {
       PATH: "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin",
     },
   });
-  return parseGogOutput(stdout);
+  const parsed = JSON.parse(stdout) as { files?: DriveFile[] };
+  return parsed.files ?? [];
+}
+
+/**
+ * Fetch files by proxying to the gateway host's artifacts endpoint.
+ */
+async function fetchProxy(): Promise<DriveFile[]> {
+  const res = await fetch(ARTIFACTS_PROXY_URL, {
+    headers: { "Accept": "application/json" },
+    signal: AbortSignal.timeout(15_000),
+  });
+  if (!res.ok) throw new Error(`Proxy returned ${res.status}`);
+  const data = (await res.json()) as { files?: DriveFile[] };
+  return data.files ?? [];
 }
 
 async function fetchDriveFiles(): Promise<DriveFile[]> {
@@ -72,18 +73,24 @@ async function fetchDriveFiles(): Promise<DriveFile[]> {
   }
 
   try {
-    // Try local gog binary first (works when Studio runs on Mac Mini)
     const canRunLocal = existsSync(GOG_PATH);
     let files: DriveFile[];
 
     if (canRunLocal) {
       files = await fetchLocal();
+    } else if (ARTIFACTS_PROXY_URL) {
+      files = await fetchProxy();
     } else {
-      // gog not available (Cloud Run deployment) — return empty with helpful message
-      // Files are still accessible through the gateway's built-in Control UI
-      // TODO: proxy through gateway HTTP API when available
+      // No local gog and no proxy configured
       return [];
     }
+
+    // Sort by modified time descending
+    files.sort((a, b) => {
+      const ta = new Date(a.modifiedTime).getTime();
+      const tb = new Date(b.modifiedTime).getTime();
+      return tb - ta;
+    });
 
     cache = { files, fetchedAt: now };
     return files;
