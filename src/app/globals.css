@@ -5,6 +5,21 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* ============================================================
+ * Brand colors — sync from src/lib/branding/theme.ts
+ *
+ * theme.ts is the single source of truth for all color values.
+ * When rebranding, update theme.ts first, then copy values here.
+ *
+ * Brand hex reference:
+ *   Navy:      #0F1B2D  →  oklch(0.155 0.02 250)
+ *   Gold:      #D4A843  →  oklch(0.76 0.14 85)
+ *   Off-white: #E8DCC8  →  oklch(0.90 0.02 70)
+ *
+ * :root     = lightTheme from theme.ts
+ * .dark     = darkTheme from theme.ts
+ * ============================================================ */
+
 :root {
   --background: oklch(0.971 0.005 245);
   --foreground: oklch(0.19 0.015 250);

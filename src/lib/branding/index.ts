@@ -1,2 +1,2 @@
 export { BRANDING } from "./config";
-export { themeTokens } from "./theme";
+export { lightTheme, darkTheme, brandHex } from "./theme";
