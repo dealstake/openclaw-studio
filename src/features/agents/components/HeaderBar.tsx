@@ -41,7 +41,7 @@ export const HeaderBar = ({
   }, []);
 
   return (
-    <div className="glass-panel fade-up relative overflow-visible px-4 py-2">
+    <div className="glass-panel fade-up relative z-30 overflow-visible px-4 py-2">
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(120deg,transparent_0%,color-mix(in_oklch,var(--primary)_7%,transparent)_48%,transparent_100%)] opacity-55" />
       <div className="relative grid items-center gap-4 lg:grid-cols-[minmax(0,1fr)_auto]">
         <div className="min-w-0">

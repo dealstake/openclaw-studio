@@ -11,8 +11,7 @@ const getPreferredTheme = (): ThemeMode => {
   if (typeof window === "undefined") return "light";
   const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
   if (stored === "light" || stored === "dark") return stored;
-  const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-  return prefersDark ? "dark" : "light";
+  return "dark";
 };
 
 const applyTheme = (mode: ThemeMode) => {
@@ -21,8 +20,8 @@ const applyTheme = (mode: ThemeMode) => {
 };
 
 export const ThemeToggle = () => {
-  // Keep SSR + initial hydration stable ("light") to avoid markup mismatch.
-  const [theme, setTheme] = useState<ThemeMode>("light");
+  // Keep SSR + initial hydration stable ("dark") to avoid markup mismatch.
+  const [theme, setTheme] = useState<ThemeMode>("dark");
 
   useEffect(() => {
     const preferred = getPreferredTheme();
