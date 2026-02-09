@@ -32,7 +32,10 @@ jobs:
 
       - name: Build and Push
         run: |
-          docker build -t ${{ env.AR_REPO }}:${{ github.sha }} -t ${{ env.AR_REPO }}:latest .
+          docker build \
+            --build-arg NEXT_PUBLIC_GATEWAY_TOKEN=${{ secrets.GATEWAY_TOKEN }} \
+            -t ${{ env.AR_REPO }}:${{ github.sha }} \
+            -t ${{ env.AR_REPO }}:latest .
           docker push ${{ env.AR_REPO }} --all-tags
 
       - name: Deploy to Cloud Run

@@ -71,6 +71,9 @@ export const isSameSessionKey = (a: string, b: string) => {
 const DEFAULT_GATEWAY_URL =
   process.env.NEXT_PUBLIC_GATEWAY_URL ?? "ws://127.0.0.1:18789";
 
+const DEFAULT_GATEWAY_TOKEN =
+  process.env.NEXT_PUBLIC_GATEWAY_TOKEN ?? "";
+
 type StatusHandler = (status: GatewayStatus) => void;
 
 type EventHandler = (event: EventFrame) => void;
@@ -334,7 +337,7 @@ export const useGatewayConnection = (
   const loadedGatewaySettings = useRef<{ gatewayUrl: string; token: string } | null>(null);
 
   const [gatewayUrl, setGatewayUrl] = useState(DEFAULT_GATEWAY_URL);
-  const [token, setToken] = useState("");
+  const [token, setToken] = useState(DEFAULT_GATEWAY_TOKEN);
   const [status, setStatus] = useState<GatewayStatus>("disconnected");
   const [error, setError] = useState<string | null>(null);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
@@ -347,7 +350,7 @@ export const useGatewayConnection = (
         const gateway = settings?.gateway ?? null;
         if (cancelled) return;
         const nextGatewayUrl = gateway?.url?.trim() ? gateway.url : DEFAULT_GATEWAY_URL;
-        const nextToken = typeof gateway?.token === "string" ? gateway.token : "";
+        const nextToken = typeof gateway?.token === "string" ? gateway.token : DEFAULT_GATEWAY_TOKEN;
         loadedGatewaySettings.current = {
           gatewayUrl: nextGatewayUrl.trim(),
           token: nextToken,
