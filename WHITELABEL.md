@@ -51,7 +51,7 @@ Replace `public/branding/trident.svg` and `public/branding/trident.png`. Update 
 
 ### 4. Update BrandMark Layout
 
-Edit `src/components/brand/BrandMark.tsx` to match your brand's text layout. The current implementation splits "TRIDENT" (off-white) and "FUNDING SOLUTIONS" (gold italic). Adjust for your brand's typography.
+Edit `src/components/brand/BrandMark.tsx` to match your brand's text layout. The current implementation shows "TRIDENT FUNDING SOLUTIONS" in all gold. Adjust for your brand's typography.
 
 ### 5. Update Agent Avatar Default
 
