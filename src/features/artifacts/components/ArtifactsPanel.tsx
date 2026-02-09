@@ -194,10 +194,10 @@ const ArtifactRow = memo(function ArtifactRow({
           tabIndex={0}
           onClick={handlePin}
           onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); onTogglePin(file.id); } }}
-          className={`rounded p-1 transition ${
+          className={`rounded p-1.5 transition ${
             isPinned
               ? "text-primary opacity-100 hover:bg-muted/50"
-              : "text-muted-foreground opacity-0 group-hover:opacity-60 hover:opacity-100 hover:bg-muted/50"
+              : "text-muted-foreground opacity-40 sm:opacity-0 sm:group-hover:opacity-60 hover:opacity-100 hover:bg-muted/50"
           }`}
           title={isPinned ? "Unpin" : "Pin to top"}
         >
