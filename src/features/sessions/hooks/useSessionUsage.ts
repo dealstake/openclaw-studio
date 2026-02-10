@@ -92,7 +92,7 @@ export const useCumulativeUsage = (client: GatewayClient, status: GatewayStatus)
     }
     setCumulativeUsageLoading(true);
     try {
-      const result = await client.call<UsageRpcResult>("sessions.usage", { limit: 5000 });
+      const result = await client.call<UsageRpcResult>("sessions.usage", { limit: 500 });
       setCumulativeUsage(parseUsageResult(result));
     } catch (err) {
       if (!isGatewayDisconnectLikeError(err)) {

@@ -30,7 +30,7 @@ export const useAllSessions = (client: GatewayClient, status: GatewayStatus) => 
       const result = await client.call<SessionsListResult>("sessions.list", {
         includeGlobal: true,
         includeUnknown: true,
-        limit: 2000,
+        limit: 200,
       });
       const entries: SessionEntry[] = (result.sessions ?? []).map((s) => ({
         key: s.key,

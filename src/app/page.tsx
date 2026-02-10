@@ -130,6 +130,7 @@ const AgentStudioPage = () => {
   const [agentsLoadedOnce, setAgentsLoadedOnce] = useState(false);
   const stateRef = useRef(state);
   const focusFilterTouchedRef = useRef(false);
+  const sessionsUpdateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const {
     gatewayModels,
     gatewayModelsError,
@@ -1208,7 +1209,11 @@ const AgentStudioPage = () => {
         void loadChannelsStatus();
       },
       onSessionsUpdate: () => {
-        void loadAllSessions();
+        if (sessionsUpdateTimerRef.current) clearTimeout(sessionsUpdateTimerRef.current);
+        sessionsUpdateTimerRef.current = setTimeout(() => {
+          sessionsUpdateTimerRef.current = null;
+          void loadAllSessions();
+        }, 2000);
       },
       onCronUpdate: () => {
         void loadAllCronJobs();
@@ -1220,6 +1225,10 @@ const AgentStudioPage = () => {
       runtimeEventHandlerRef.current = null;
       handler.dispose();
       unsubscribe();
+      if (sessionsUpdateTimerRef.current) {
+        clearTimeout(sessionsUpdateTimerRef.current);
+        sessionsUpdateTimerRef.current = null;
+      }
     };
   }, [
     bumpHeartbeatTick,

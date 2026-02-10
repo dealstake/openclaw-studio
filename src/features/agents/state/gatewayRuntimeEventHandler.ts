@@ -370,7 +370,13 @@ export function createGatewayRuntimeEventHandler(
     const agentsSnapshot = deps.getAgents();
     const directMatch = payload.sessionKey ? findAgentBySessionKey(agentsSnapshot, payload.sessionKey) : null;
     const match = directMatch ?? findAgentByRunId(agentsSnapshot, payload.runId);
-    if (!match) return;
+    if (!match) {
+      // Sub-agent lifecycle events: refresh sessions so Fleet sidebar updates Running/Done
+      if (payload.stream === "lifecycle" && payload.sessionKey && /^agent:[^:]+:subagent:/.test(payload.sessionKey)) {
+        deps.onSessionsUpdate?.();
+      }
+      return;
+    }
     const agent = agentsSnapshot.find((entry) => entry.agentId === match);
     if (!agent) return;
 
