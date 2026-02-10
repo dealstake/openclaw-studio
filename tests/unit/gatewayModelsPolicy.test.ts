@@ -87,7 +87,7 @@ describe("gateway model policy helpers", () => {
       {
         provider: "openai",
         id: "o3",
-        name: "openai/o3",
+        name: "O3",
       },
     ]);
   });
