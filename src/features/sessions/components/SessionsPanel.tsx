@@ -502,7 +502,7 @@ export const SessionsPanel = memo(function SessionsPanel({
             <span>{formatCost(aggregateUsage.totalCost, "USD")}</span>
           ) : null}
           <span>{aggregateUsage.messageCount.toLocaleString()} messages</span>
-          <span className="text-[10px]">across {sessions.length} sessions</span>
+          <span className="text-[10px]">current session</span>
         </div>
       ) : null}
 

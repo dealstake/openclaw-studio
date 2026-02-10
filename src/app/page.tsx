@@ -168,7 +168,7 @@ const AgentStudioPage = () => {
   } = useGatewayStatus(client, status);
 
   const {
-    sessionUsage,
+    sessionUsage, sessionUsageLoading,
     loadSessionUsage, resetSessionUsage,
   } = useSessionUsage(client, status);
 
@@ -345,42 +345,18 @@ const AgentStudioPage = () => {
     return () => clearInterval(interval);
   }, [focusedAgent, status, loadSessionUsage]);
 
-  // Aggregate usage across all sessions
-  const [aggregateUsage, setAggregateUsage] = useState<{
-    inputTokens: number; outputTokens: number; totalCost: number | null; messageCount: number;
-  } | null>(null);
-  const [aggregateUsageLoading, setAggregateUsageLoading] = useState(false);
-
-  useEffect(() => {
-    if (status !== "connected") return;
-    setAggregateUsageLoading(true);
-    // Pass a wide date range to ensure all sessions are discovered
-    const now = new Date();
-    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    client.call<{
-      totals?: { input?: number; output?: number; totalCost?: number };
-      sessions?: Array<{ usage?: { messageCounts?: { total?: number } } }>;
-    }>("sessions.usage", {
-      startDate: thirtyDaysAgo.toISOString(),
-      endDate: now.toISOString(),
-      limit: 100,
-    }).then((result) => {
-      const totals = result.totals;
-      const msgTotal = (result.sessions ?? []).reduce(
-        (sum, s) => sum + (s.usage?.messageCounts?.total ?? 0), 0
-      );
-      setAggregateUsage({
-        inputTokens: totals?.input ?? 0,
-        outputTokens: totals?.output ?? 0,
-        totalCost: totals?.totalCost != null && totals.totalCost > 0 ? totals.totalCost : null,
-        messageCount: msgTotal,
-      });
-    }).catch(() => {
-      setAggregateUsage(null);
-    }).finally(() => {
-      setAggregateUsageLoading(false);
-    });
-  }, [client, status]);
+  // Aggregate usage: use the focused session's usage as the primary data source
+  // (per-session usage loads lazily in SessionsPanel cards)
+  const aggregateUsage = useMemo(() => {
+    if (!sessionUsage) return null;
+    return {
+      inputTokens: sessionUsage.inputTokens,
+      outputTokens: sessionUsage.outputTokens,
+      totalCost: sessionUsage.totalCost,
+      messageCount: sessionUsage.messageCount,
+    };
+  }, [sessionUsage]);
+  const aggregateUsageLoading = sessionUsageLoading;
 
   useEffect(() => {
     const selector = 'link[data-agent-favicon="true"]';
