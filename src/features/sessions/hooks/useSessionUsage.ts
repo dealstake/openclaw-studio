@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { isGatewayDisconnectLikeError } from "@/lib/gateway/GatewayClient";
 
@@ -44,13 +44,15 @@ function parseUsageResult(result: UsageRpcResult): SessionUsage {
 export const useSessionUsage = (client: GatewayClient, status: GatewayStatus) => {
   const [sessionUsage, setSessionUsage] = useState<SessionUsage | null>(null);
   const [sessionUsageLoading, setSessionUsageLoading] = useState(false);
+  const loadingRef = useRef(false);
 
   const loadSessionUsage = useCallback(
     async (sessionKey: string) => {
-      if (!sessionKey || status !== "connected") {
+      if (!sessionKey || status !== "connected" || loadingRef.current) {
         setSessionUsage(null);
         return;
       }
+      loadingRef.current = true;
       setSessionUsageLoading(true);
       try {
         const result = await client.call<UsageRpcResult>("sessions.usage", { key: sessionKey });
@@ -61,6 +63,7 @@ export const useSessionUsage = (client: GatewayClient, status: GatewayStatus) =>
         }
         setSessionUsage(null);
       } finally {
+        loadingRef.current = false;
         setSessionUsageLoading(false);
       }
     },
@@ -84,12 +87,14 @@ export const useSessionUsage = (client: GatewayClient, status: GatewayStatus) =>
 export const useCumulativeUsage = (client: GatewayClient, status: GatewayStatus) => {
   const [cumulativeUsage, setCumulativeUsage] = useState<SessionUsage | null>(null);
   const [cumulativeUsageLoading, setCumulativeUsageLoading] = useState(false);
+  const cumulativeLoadingRef = useRef(false);
 
   const loadCumulativeUsage = useCallback(async () => {
-    if (status !== "connected") {
+    if (status !== "connected" || cumulativeLoadingRef.current) {
       setCumulativeUsage(null);
       return;
     }
+    cumulativeLoadingRef.current = true;
     setCumulativeUsageLoading(true);
     try {
       const result = await client.call<UsageRpcResult>("sessions.usage", { limit: 500 });
@@ -100,6 +105,7 @@ export const useCumulativeUsage = (client: GatewayClient, status: GatewayStatus)
       }
       setCumulativeUsage(null);
     } finally {
+      cumulativeLoadingRef.current = false;
       setCumulativeUsageLoading(false);
     }
   }, [client, status]);

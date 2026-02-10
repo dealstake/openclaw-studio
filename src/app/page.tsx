@@ -131,6 +131,10 @@ const AgentStudioPage = () => {
   const stateRef = useRef(state);
   const focusFilterTouchedRef = useRef(false);
   const sessionsUpdateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cronUpdateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastCronRefresh = useRef(0);
+  const lastSessionsRefresh = useRef(0);
+  const [subAgentRunningKeys, setSubAgentRunningKeys] = useState<Set<string>>(new Set());
   const {
     gatewayModels,
     gatewayModelsError,
@@ -184,7 +188,7 @@ const AgentStudioPage = () => {
 
   const {
     allSessions, allSessionsLoading, allSessionsError,
-    totalSessionCount, loadAllSessions,
+    totalSessionCount, aggregateTokensFromList, loadAllSessions,
   } = useAllSessions(client, status);
 
   const {
@@ -227,8 +231,6 @@ const AgentStudioPage = () => {
   }, [agents, focusedAgent]);
   const subAgentSessions = useMemo(() => {
     const map = new Map<string, SubAgentEntry[]>();
-    const now = Date.now();
-    const FIVE_MINUTES = 5 * 60 * 1000;
     for (const session of allSessions) {
       const key = session.key;
       // Pattern: agent:<name>:subagent:<uuid>
@@ -237,7 +239,7 @@ const AgentStudioPage = () => {
       const parentAgentId = match[1];
       const subId = match[2];
       const updatedAt = session.updatedAt ?? null;
-      const isRunning = updatedAt != null && now - updatedAt < FIVE_MINUTES;
+      const isRunning = subAgentRunningKeys.has(key);
       const entry: SubAgentEntry = {
         sessionKey: key,
         sessionIdShort: subId.slice(0, 6),
@@ -258,7 +260,7 @@ const AgentStudioPage = () => {
       if (entries.length > 5) map.set(agentId, entries.slice(0, 5));
     }
     return map;
-  }, [allSessions]);
+  }, [allSessions, subAgentRunningKeys]);
 
   // Build token info map for Fleet sidebar progress bars
   // Match a model key (could be "claude-opus-4-6" or "anthropic/claude-opus-4-6") against gateway model list
@@ -1209,14 +1211,45 @@ const AgentStudioPage = () => {
         void loadChannelsStatus();
       },
       onSessionsUpdate: () => {
+        const now = Date.now();
+        if (now - lastSessionsRefresh.current < 3000) {
+          if (!sessionsUpdateTimerRef.current) {
+            sessionsUpdateTimerRef.current = setTimeout(() => {
+              sessionsUpdateTimerRef.current = null;
+              lastSessionsRefresh.current = Date.now();
+              void loadAllSessions();
+            }, 3000);
+          }
+          return;
+        }
+        lastSessionsRefresh.current = now;
         if (sessionsUpdateTimerRef.current) clearTimeout(sessionsUpdateTimerRef.current);
-        sessionsUpdateTimerRef.current = setTimeout(() => {
-          sessionsUpdateTimerRef.current = null;
-          void loadAllSessions();
-        }, 2000);
+        sessionsUpdateTimerRef.current = null;
+        void loadAllSessions();
       },
       onCronUpdate: () => {
+        const now = Date.now();
+        if (now - lastCronRefresh.current < 3000) {
+          if (!cronUpdateTimerRef.current) {
+            cronUpdateTimerRef.current = setTimeout(() => {
+              cronUpdateTimerRef.current = null;
+              lastCronRefresh.current = Date.now();
+              void loadAllCronJobs();
+            }, 3000);
+          }
+          return;
+        }
+        lastCronRefresh.current = now;
+        if (cronUpdateTimerRef.current) clearTimeout(cronUpdateTimerRef.current);
+        cronUpdateTimerRef.current = null;
         void loadAllCronJobs();
+      },
+      onSubAgentLifecycle: (sessionKey: string, phase: string) => {
+        if (phase === "start") {
+          setSubAgentRunningKeys(prev => { const next = new Set(prev); next.add(sessionKey); return next; });
+        } else if (phase === "end" || phase === "error") {
+          setSubAgentRunningKeys(prev => { const next = new Set(prev); next.delete(sessionKey); return next; });
+        }
       },
     });
     runtimeEventHandlerRef.current = handler;
@@ -1228,6 +1261,10 @@ const AgentStudioPage = () => {
       if (sessionsUpdateTimerRef.current) {
         clearTimeout(sessionsUpdateTimerRef.current);
         sessionsUpdateTimerRef.current = null;
+      }
+      if (cronUpdateTimerRef.current) {
+        clearTimeout(cronUpdateTimerRef.current);
+        cronUpdateTimerRef.current = null;
       }
     };
   }, [
@@ -1537,11 +1574,16 @@ const AgentStudioPage = () => {
                       activeSessionKey={focusedAgent?.sessionKey ?? null}
                       aggregateUsage={aggregateUsage}
                       aggregateUsageLoading={aggregateUsageLoading}
-                      cumulativeUsage={cumulativeUsage ? {
+                      cumulativeUsage={cumulativeUsage && (cumulativeUsage.inputTokens + cumulativeUsage.outputTokens) > 0 ? {
                         inputTokens: cumulativeUsage.inputTokens,
                         outputTokens: cumulativeUsage.outputTokens,
                         totalCost: cumulativeUsage.totalCost,
                         messageCount: cumulativeUsage.messageCount,
+                      } : aggregateTokensFromList ? {
+                        inputTokens: aggregateTokensFromList.inputTokens,
+                        outputTokens: aggregateTokensFromList.outputTokens,
+                        totalCost: null,
+                        messageCount: 0,
                       } : null}
                       cumulativeUsageLoading={cumulativeUsageLoading}
                       onSessionClick={(sessionKey, agentId) => {

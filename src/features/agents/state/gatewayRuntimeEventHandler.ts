@@ -56,6 +56,7 @@ export type GatewayRuntimeEventHandlerDeps = {
   onChannelsUpdate?: () => void;
   onSessionsUpdate?: () => void;
   onCronUpdate?: () => void;
+  onSubAgentLifecycle?: (sessionKey: string, phase: string) => void;
 };
 
 export type GatewayRuntimeEventHandler = {
@@ -373,6 +374,9 @@ export function createGatewayRuntimeEventHandler(
     if (!match) {
       // Sub-agent lifecycle events: refresh sessions so Fleet sidebar updates Running/Done
       if (payload.stream === "lifecycle" && payload.sessionKey && /^agent:[^:]+:subagent:/.test(payload.sessionKey)) {
+        const pData = payload.data && typeof payload.data === "object" ? (payload.data as Record<string, unknown>) : null;
+        const phase = typeof pData?.phase === "string" ? pData.phase : "";
+        deps.onSubAgentLifecycle?.(payload.sessionKey, phase);
         deps.onSessionsUpdate?.();
       }
       return;
