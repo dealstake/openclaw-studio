@@ -596,18 +596,28 @@ const AgentStudioPage = () => {
       setSessionUsageLoading(true);
       try {
         const result = await client.call<{
-          inputTokens?: number;
-          outputTokens?: number;
-          totalCost?: number | null;
-          currency?: string;
-          messageCount?: number;
+          totals?: {
+            input?: number;
+            output?: number;
+            totalTokens?: number;
+            totalCost?: number;
+          };
+          sessions?: Array<{
+            usage?: {
+              messageCounts?: {
+                total?: number;
+              };
+            };
+          }>;
         }>("sessions.usage", { key: sessionKey });
+        const totals = result.totals;
+        const firstSession = result.sessions?.[0];
         setSessionUsage({
-          inputTokens: result.inputTokens ?? 0,
-          outputTokens: result.outputTokens ?? 0,
-          totalCost: result.totalCost ?? null,
-          currency: result.currency ?? "USD",
-          messageCount: result.messageCount ?? 0,
+          inputTokens: totals?.input ?? 0,
+          outputTokens: totals?.output ?? 0,
+          totalCost: totals?.totalCost != null && totals.totalCost > 0 ? totals.totalCost : null,
+          currency: "USD",
+          messageCount: firstSession?.usage?.messageCounts?.total ?? 0,
         });
       } catch (err) {
         if (!isGatewayDisconnectLikeError(err)) {
