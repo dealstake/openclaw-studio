@@ -12,7 +12,7 @@ import {
 import type { AgentState as AgentRecord } from "@/features/agents/state/store";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { ChevronRight, Settings, Shuffle } from "lucide-react";
+import { ArrowLeft, ChevronRight, RefreshCw, Settings, Shuffle } from "lucide-react";
 import type { GatewayModelChoice } from "@/lib/gateway/models";
 import { isToolMarkdown, isTraceMarkdown } from "@/lib/text/message-extract";
 import { isNearBottom } from "@/lib/dom";
@@ -24,6 +24,7 @@ import {
   type AgentChatItem,
 } from "./chatItems";
 import { EmptyStatePanel } from "./EmptyStatePanel";
+import { TokenProgressBar } from "@/components/TokenProgressBar";
 
 type AgentChatPanelProps = {
   agent: AgentRecord;
@@ -38,6 +39,12 @@ type AgentChatPanelProps = {
   onSend: (message: string) => void;
   onStopRun: () => void;
   onAvatarShuffle: () => void;
+  tokenUsed?: number;
+  tokenLimit?: number;
+  viewingSessionKey?: string | null;
+  viewingSessionHistory?: string[];
+  viewingSessionLoading?: boolean;
+  onExitSessionView?: () => void;
 };
 
 const AgentChatFinalItems = memo(function AgentChatFinalItems({
@@ -109,7 +116,7 @@ const AgentChatFinalItems = memo(function AgentChatFinalItems({
         return (
           <div
             key={`chat-${agentId}-assistant-${index}`}
-            className="agent-markdown rounded-md border border-transparent px-0.5"
+            className="agent-markdown min-w-0 overflow-hidden rounded-md border border-transparent px-0.5"
           >
             <ReactMarkdown remarkPlugins={[remarkGfm]}>{item.text}</ReactMarkdown>
           </div>
@@ -183,7 +190,7 @@ const AgentChatTranscript = memo(function AgentChatTranscript({
           scrollHeight: el.scrollHeight,
           clientHeight: el.clientHeight,
         },
-        48
+        150
       )
     );
   }, [setPinned]);
@@ -237,7 +244,7 @@ const AgentChatTranscript = memo(function AgentChatTranscript({
       <div
         ref={chatRef}
         data-testid="agent-chat-scroll"
-        className="h-full overflow-auto p-3 sm:p-4"
+        className="h-full overflow-y-auto overflow-x-hidden p-3 sm:p-4"
         onScroll={() => updatePinnedFromScroll()}
         onWheel={(event) => {
           event.stopPropagation();
@@ -246,7 +253,7 @@ const AgentChatTranscript = memo(function AgentChatTranscript({
           event.stopPropagation();
         }}
       >
-        <div className="flex flex-col gap-3 text-xs text-foreground">
+        <div className="flex min-w-0 flex-col gap-3 text-xs text-foreground">
           {chatItems.length === 0 ? (
             <EmptyStatePanel title="No messages yet." compact className="p-3 text-xs" />
           ) : (
@@ -283,7 +290,7 @@ const AgentChatTranscript = memo(function AgentChatTranscript({
                 </details>
               ) : null}
               {liveAssistantText ? (
-                <div className="agent-markdown rounded-md border border-transparent px-0.5 opacity-85">
+                <div className="agent-markdown min-w-0 overflow-hidden rounded-md border border-transparent px-0.5 opacity-85">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>{liveAssistantText}</ReactMarkdown>
                 </div>
               ) : null}
@@ -398,6 +405,12 @@ export const AgentChatPanel = ({
   onSend,
   onStopRun,
   onAvatarShuffle,
+  tokenUsed,
+  tokenLimit,
+  viewingSessionKey,
+  viewingSessionHistory = [],
+  viewingSessionLoading = false,
+  onExitSessionView,
 }: AgentChatPanelProps) => {
   const [draftValue, setDraftValue] = useState(agent.draft);
   const draftRef = useRef<HTMLTextAreaElement | null>(null);
@@ -596,7 +609,7 @@ export const AgentChatPanel = ({
   }, [draftValue, handleSend]);
 
   return (
-    <div data-agent-panel className="group fade-up relative flex h-full w-full flex-col">
+    <div data-agent-panel className="group fade-up relative flex h-full w-full min-w-0 flex-col overflow-hidden">
       <div className="px-3 pt-3 sm:px-4 sm:pt-4">
         <div className="flex items-start gap-4">
           <div className="flex min-w-0 flex-1 items-start gap-3">
@@ -706,12 +719,66 @@ export const AgentChatPanel = ({
                   <div />
                 )}
               </div>
+              {typeof tokenUsed === "number" && tokenLimit ? (
+                <div className="mt-2 max-w-md">
+                  <TokenProgressBar used={tokenUsed} limit={tokenLimit} />
+                </div>
+              ) : null}
             </div>
           </div>
         </div>
       </div>
 
       <div className="mt-3 flex min-h-0 flex-1 flex-col gap-3 px-3 pb-3 sm:px-4 sm:pb-4">
+        {viewingSessionKey ? (
+          <div className="relative flex flex-1 flex-col overflow-hidden rounded-md border border-border/80 bg-card/75">
+            <div className="flex items-center gap-2 border-b border-border/60 px-3 py-2">
+              <button
+                type="button"
+                className="flex items-center gap-1.5 rounded-md px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground transition hover:bg-muted/50 hover:text-foreground"
+                onClick={onExitSessionView}
+              >
+                <ArrowLeft className="h-3 w-3" />
+                Back to live session
+              </button>
+              <span className="truncate font-mono text-[9px] text-muted-foreground">
+                {viewingSessionKey}
+              </span>
+            </div>
+            <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4">
+              {viewingSessionLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground" />
+                  <span className="ml-2 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                    Loading history…
+                  </span>
+                </div>
+              ) : viewingSessionHistory.length === 0 ? (
+                <EmptyStatePanel title="No messages in this session." compact className="p-3 text-xs" />
+              ) : (
+                <div className="flex min-w-0 flex-col gap-3 text-xs text-foreground">
+                  {viewingSessionHistory.map((line, i) =>
+                    line.startsWith("> ") ? (
+                      <div
+                        key={`hist-${i}`}
+                        className="rounded-md border border-border/70 bg-muted/70 px-3 py-2 text-foreground"
+                      >
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{line}</ReactMarkdown>
+                      </div>
+                    ) : (
+                      <div
+                        key={`hist-${i}`}
+                        className="agent-markdown min-w-0 overflow-hidden rounded-md border border-transparent px-0.5"
+                      >
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{line}</ReactMarkdown>
+                      </div>
+                    )
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
         <AgentChatTranscript
           agentId={agent.agentId}
           name={agent.name}
@@ -729,6 +796,7 @@ export const AgentChatPanel = ({
           liveThinkingCharCount={agent.thinkingTrace?.length ?? 0}
           scrollToBottomNextOutputRef={scrollToBottomNextOutputRef}
         />
+        )}
 
         <AgentChatComposer
           value={draftValue}

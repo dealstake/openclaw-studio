@@ -14,6 +14,14 @@ export type SessionEntry = {
   origin?: { label?: string | null } | null;
 };
 
+type SessionUsage = {
+  inputTokens: number;
+  outputTokens: number;
+  totalCost: number | null;
+  currency: string;
+  messageCount: number;
+};
+
 type SessionsPanelProps = {
   client: GatewayClient;
   sessions: SessionEntry[];
@@ -21,6 +29,8 @@ type SessionsPanelProps = {
   error: string | null;
   onRefresh: () => void;
   onSessionClick?: (sessionKey: string, agentId: string | null) => void;
+  usage?: SessionUsage | null;
+  usageLoading?: boolean;
 };
 
 const CHANNEL_TYPE_LABELS: Record<string, string> = {
@@ -119,6 +129,8 @@ export const SessionsPanel = memo(function SessionsPanel({
   error,
   onRefresh,
   onSessionClick,
+  usage = null,
+  usageLoading = false,
 }: SessionsPanelProps) {
   const [confirmDeleteKey, setConfirmDeleteKey] = useState<string | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
@@ -169,7 +181,7 @@ export const SessionsPanel = memo(function SessionsPanel({
   );
 
   return (
-    <div className="flex h-full w-full flex-col overflow-hidden">
+    <div className="flex h-full w-full min-w-0 flex-col overflow-hidden">
       <div className="flex items-center justify-between border-b border-border/40 px-4 py-3">
         <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
           Sessions
@@ -186,6 +198,56 @@ export const SessionsPanel = memo(function SessionsPanel({
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto p-4">
+        {/* Usage summary */}
+        {usageLoading ? (
+          <div className="mb-3 grid grid-cols-2 gap-2">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="h-12 animate-pulse rounded-md bg-muted/40" />
+            ))}
+          </div>
+        ) : usage ? (
+          <div className="mb-3 grid grid-cols-2 gap-2">
+            <div className="rounded-md border border-border/60 bg-card/60 px-2.5 py-1.5">
+              <div className="font-mono text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                Input
+              </div>
+              <div className="text-xs font-semibold text-foreground">
+                {usage.inputTokens.toLocaleString()}
+              </div>
+            </div>
+            <div className="rounded-md border border-border/60 bg-card/60 px-2.5 py-1.5">
+              <div className="font-mono text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                Output
+              </div>
+              <div className="text-xs font-semibold text-foreground">
+                {usage.outputTokens.toLocaleString()}
+              </div>
+            </div>
+            <div className="rounded-md border border-border/60 bg-card/60 px-2.5 py-1.5">
+              <div className="font-mono text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                Cost
+              </div>
+              <div className="text-xs font-semibold text-foreground">
+                {usage.totalCost !== null
+                  ? new Intl.NumberFormat(undefined, {
+                      style: "currency",
+                      currency: usage.currency || "USD",
+                      minimumFractionDigits: 4,
+                    }).format(usage.totalCost)
+                  : "—"}
+              </div>
+            </div>
+            <div className="rounded-md border border-border/60 bg-card/60 px-2.5 py-1.5">
+              <div className="font-mono text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                Messages
+              </div>
+              <div className="text-xs font-semibold text-foreground">
+                {usage.messageCount.toLocaleString()}
+              </div>
+            </div>
+          </div>
+        ) : null}
+
         {error || actionError ? (
           <div className="mb-3 rounded-md border border-destructive bg-destructive px-3 py-2 text-xs text-destructive-foreground">
             {error ?? actionError}

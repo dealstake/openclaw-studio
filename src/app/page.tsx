@@ -140,6 +140,9 @@ const AgentStudioPage = () => {
   /** "agent" = show ContextPanel (Tasks/Brain/Settings), "files" = show Files */
   const [contextMode, setContextMode] = useState<"agent" | "files">("agent");
   const [contextTab, setContextTab] = useState<ContextTab>("settings");
+  const [viewingSessionKey, setViewingSessionKey] = useState<string | null>(null);
+  const [viewingSessionHistory, setViewingSessionHistory] = useState<string[]>([]);
+  const [viewingSessionLoading, setViewingSessionLoading] = useState(false);
   const runtimeEventHandlerRef = useRef<ReturnType<typeof createGatewayRuntimeEventHandler> | null>(
     null
   );
@@ -286,14 +289,14 @@ const AgentStudioPage = () => {
     void loadAllCronJobs();
   }, [loadChannelsStatus, loadGatewayStatus, parsePresenceFromStatus, loadAllSessions, loadAllCronJobs, resetChannelsStatus, resetExecApprovals, resetPresence, resetSessionUsage, status]);
 
-  // ── Load session usage when settings agent changes ──────────────
+  // ── Load session usage for the focused agent ──────────────
   useEffect(() => {
-    if (!settingsAgent) {
+    if (!focusedAgent) {
       resetSessionUsage();
       return;
     }
-    void loadSessionUsage(settingsAgent.sessionKey);
-  }, [settingsAgent, loadSessionUsage, resetSessionUsage]);
+    void loadSessionUsage(focusedAgent.sessionKey);
+  }, [focusedAgent, loadSessionUsage, resetSessionUsage]);
 
   useEffect(() => {
     const selector = 'link[data-agent-favicon="true"]';
@@ -760,6 +763,15 @@ const AgentStudioPage = () => {
     if (status !== "connected") return;
     void loadSummarySnapshot();
   }, [loadSummarySnapshot, status]);
+
+  // Poll summary every 10s when any agent is running
+  useEffect(() => {
+    if (status !== "connected" || !hasRunningAgents) return;
+    const interval = setInterval(() => {
+      void loadSummarySnapshot();
+    }, 10_000);
+    return () => clearInterval(interval);
+  }, [hasRunningAgents, loadSummarySnapshot, status]);
 
   useEffect(() => {
     if (!state.selectedAgentId) return;
@@ -1278,17 +1290,29 @@ const AgentStudioPage = () => {
                   onDraftChange={(value) =>
                     handleDraftChange(focusedAgent.agentId, value)
                   }
-                  onSend={(message) =>
+                  onSend={(message) => {
+                    setViewingSessionKey(null);
                     handleSend(
                       focusedAgent.agentId,
                       focusedAgent.sessionKey,
                       message
-                    )
-                  }
+                    );
+                  }}
                   onStopRun={() =>
                     handleStopRun(focusedAgent.agentId, focusedAgent.sessionKey)
                   }
                   onAvatarShuffle={() => handleAvatarShuffle(focusedAgent.agentId)}
+                  tokenUsed={sessionUsage ? sessionUsage.inputTokens + sessionUsage.outputTokens : undefined}
+                  tokenLimit={(() => {
+                    const modelKey = focusedAgent.model;
+                    if (!modelKey) return undefined;
+                    const match = gatewayModels.find((m) => `${m.provider}/${m.id}` === modelKey);
+                    return match?.contextWindow;
+                  })()}
+                  viewingSessionKey={viewingSessionKey}
+                  viewingSessionHistory={viewingSessionHistory}
+                  viewingSessionLoading={viewingSessionLoading}
+                  onExitSessionView={() => setViewingSessionKey(null)}
                 />
               ) : (
                 <EmptyStatePanel
@@ -1349,12 +1373,37 @@ const AgentStudioPage = () => {
                       onRefresh={() => {
                         void loadAllSessions();
                       }}
-                      onSessionClick={(_sessionKey, agentId) => {
+                      usage={sessionUsage}
+                      usageLoading={sessionUsageLoading}
+                      onSessionClick={(sessionKey, agentId) => {
                         if (agentId) {
                           flushPendingDraft(focusedAgent?.agentId ?? null);
                           dispatch({ type: "selectAgent", agentId });
                           setMobilePane("chat");
                         }
+                        // Load session history
+                        setViewingSessionKey(sessionKey);
+                        setViewingSessionLoading(true);
+                        setViewingSessionHistory([]);
+                        client.call<{ messages?: Array<{ role?: string; content?: string; text?: string }> }>("sessions.history", { sessionKey, limit: 50 })
+                          .then((result) => {
+                            const lines: string[] = [];
+                            for (const msg of result.messages ?? []) {
+                              const text = msg.text ?? msg.content ?? "";
+                              if (!text) continue;
+                              if (msg.role === "user") {
+                                lines.push(`> ${text}`);
+                              } else {
+                                lines.push(text);
+                              }
+                            }
+                            setViewingSessionHistory(lines);
+                          })
+                          .catch((err) => {
+                            console.error("Failed to load session history:", err);
+                            setViewingSessionHistory([`Error loading session history: ${err instanceof Error ? err.message : "Unknown error"}`]);
+                          })
+                          .finally(() => setViewingSessionLoading(false));
                       }}
                     />
                   }
@@ -1414,8 +1463,6 @@ const AgentStudioPage = () => {
                         onDeleteHeartbeat={(heartbeatId) =>
                           handleDeleteHeartbeat(settingsAgent.agentId, heartbeatId)
                         }
-                        usage={sessionUsage}
-                        usageLoading={sessionUsageLoading}
                       />
                     ) : (
                       <div className="flex h-full items-center justify-center p-6 text-center text-[11px] text-muted-foreground">

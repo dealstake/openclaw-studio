@@ -88,8 +88,10 @@ async function fetchDriveFiles(): Promise<DriveFile[]> {
     } else if (ARTIFACTS_PROXY_URL) {
       files = await fetchProxy();
     } else {
-      // No local gog and no proxy configured
-      return [];
+      // No local gog and no proxy configured — surface a clear error
+      throw new Error(
+        "Files are not available in this environment. The gog binary was not found and ARTIFACTS_PROXY_URL is not configured. Connect to a local gateway with gog installed, or set ARTIFACTS_PROXY_URL."
+      );
     }
 
     // Sort by modified time descending
