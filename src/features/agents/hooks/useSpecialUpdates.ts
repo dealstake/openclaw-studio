@@ -28,6 +28,8 @@ type SessionsListEntry = {
   thinkingLevel?: string;
   modelProvider?: string;
   model?: string;
+  totalTokens?: number | null;
+  contextTokens?: number | null;
 };
 type SessionsListResult = {
   sessions?: SessionsListEntry[];

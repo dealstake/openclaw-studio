@@ -99,6 +99,8 @@ type SessionsListEntry = {
   thinkingLevel?: string;
   modelProvider?: string;
   model?: string;
+  totalTokens?: number | null;
+  contextTokens?: number | null;
 };
 
 type SessionsListResult = {
@@ -145,6 +147,8 @@ const AgentStudioPage = () => {
   const [viewingSessionLoading, setViewingSessionLoading] = useState(false);
   const [isCompacting, setIsCompacting] = useState(false);
   const [lastCompactedAt, setLastCompactedAt] = useState<number | null>(null);
+  /** Context window utilization per agent — totalTokens = last turn's prompt size, contextTokens = model limit */
+  const [agentContextWindow, setAgentContextWindow] = useState<Map<string, { totalTokens: number; contextTokens: number }>>(new Map());
   const runtimeEventHandlerRef = useRef<ReturnType<typeof createGatewayRuntimeEventHandler> | null>(
     null
   );
@@ -264,15 +268,26 @@ const AgentStudioPage = () => {
 
   const agentTokenInfo = useMemo(() => {
     const map = new Map<string, AgentTokenInfo>();
-    if (focusedAgent && sessionUsage) {
-      const match = findModelMatch(focusedAgent.model);
-      map.set(focusedAgent.agentId, {
-        used: sessionUsage.inputTokens + sessionUsage.outputTokens,
-        limit: match?.contextWindow,
-      });
+    if (focusedAgent) {
+      const cw = agentContextWindow.get(focusedAgent.agentId);
+      if (cw && cw.totalTokens > 0) {
+        // Use last turn's totalTokens (actual context utilization) and contextTokens from gateway
+        const limit = cw.contextTokens > 0 ? cw.contextTokens : findModelMatch(focusedAgent.model)?.contextWindow;
+        map.set(focusedAgent.agentId, {
+          used: cw.totalTokens,
+          limit,
+        });
+      } else if (sessionUsage) {
+        // Fallback: use cumulative usage (less accurate but better than nothing)
+        const match = findModelMatch(focusedAgent.model);
+        map.set(focusedAgent.agentId, {
+          used: sessionUsage.inputTokens + sessionUsage.outputTokens,
+          limit: match?.contextWindow,
+        });
+      }
     }
     return map;
-  }, [focusedAgent, sessionUsage, findModelMatch]);
+  }, [focusedAgent, agentContextWindow, sessionUsage, findModelMatch]);
 
   const faviconHref = "/branding/trident.svg";
   const errorMessage = state.error ?? gatewayModelsError;
@@ -315,6 +330,34 @@ const AgentStudioPage = () => {
     void loadAllCronJobs();
   }, [loadChannelsStatus, loadGatewayStatus, parsePresenceFromStatus, loadAllSessions, loadAllCronJobs, resetChannelsStatus, resetExecApprovals, resetPresence, resetSessionUsage, status]);
 
+  // ── Refresh context window utilization from sessions.list ──────────────
+  const refreshContextWindow = useCallback(async (agentId: string, sessionKey: string) => {
+    if (status !== "connected") return;
+    try {
+      const result = await client.call<SessionsListResult>("sessions.list", {
+        agentId,
+        includeGlobal: false,
+        includeUnknown: false,
+        search: sessionKey,
+        limit: 4,
+      });
+      const entries = Array.isArray(result.sessions) ? result.sessions : [];
+      const match = entries.find((e) => isSameSessionKey(e.key ?? "", sessionKey));
+      if (match && typeof match.totalTokens === "number" && match.totalTokens > 0) {
+        setAgentContextWindow((prev) => {
+          const next = new Map(prev);
+          next.set(agentId, {
+            totalTokens: match.totalTokens!,
+            contextTokens: typeof match.contextTokens === "number" ? match.contextTokens : 0,
+          });
+          return next;
+        });
+      }
+    } catch {
+      // Silently ignore — progress bar will use fallback
+    }
+  }, [client, status]);
+
   // ── Load session usage for the focused agent ──────────────
   useEffect(() => {
     if (!focusedAgent) {
@@ -322,7 +365,8 @@ const AgentStudioPage = () => {
       return;
     }
     void loadSessionUsage(focusedAgent.sessionKey);
-  }, [focusedAgent, loadSessionUsage, resetSessionUsage]);
+    void refreshContextWindow(focusedAgent.agentId, focusedAgent.sessionKey);
+  }, [focusedAgent, loadSessionUsage, resetSessionUsage, refreshContextWindow]);
 
   // Reload usage after each turn completes (status → idle) and periodically
   const prevStatusRef = useRef<string | undefined>(undefined);
@@ -333,17 +377,19 @@ const AgentStudioPage = () => {
     // Reload when transitioning from running → idle (turn just finished)
     if (prev === "running" && focusedAgent.status === "idle") {
       void loadSessionUsage(focusedAgent.sessionKey);
+      void refreshContextWindow(focusedAgent.agentId, focusedAgent.sessionKey);
     }
-  }, [focusedAgent, loadSessionUsage]);
+  }, [focusedAgent, loadSessionUsage, refreshContextWindow]);
 
   // Periodic usage refresh every 30s while connected
   useEffect(() => {
     if (!focusedAgent || status !== "connected") return;
     const interval = setInterval(() => {
       void loadSessionUsage(focusedAgent.sessionKey);
+      void refreshContextWindow(focusedAgent.agentId, focusedAgent.sessionKey);
     }, 30_000);
     return () => clearInterval(interval);
-  }, [focusedAgent, status, loadSessionUsage]);
+  }, [focusedAgent, status, loadSessionUsage, refreshContextWindow]);
 
   // Aggregate usage: use the focused session's usage as the primary data source
   // (per-session usage loads lazily in SessionsPanel cards)
@@ -494,6 +540,8 @@ const AgentStudioPage = () => {
         };
       });
       hydrateAgents(seeds);
+      // Capture context window utilization from sessions.list
+      const cwMap = new Map<string, { totalTokens: number; contextTokens: number }>();
       for (const seed of seeds) {
         const mainSession = mainSessionKeyByAgent.get(seed.agentId) ?? null;
         if (!mainSession) continue;
@@ -502,7 +550,14 @@ const AgentStudioPage = () => {
           agentId: seed.agentId,
           patch: { sessionCreated: true, sessionSettingsSynced: true },
         });
+        if (typeof mainSession.totalTokens === "number" && mainSession.totalTokens > 0) {
+          cwMap.set(seed.agentId, {
+            totalTokens: mainSession.totalTokens,
+            contextTokens: typeof mainSession.contextTokens === "number" ? mainSession.contextTokens : 0,
+          });
+        }
       }
+      if (cwMap.size > 0) setAgentContextWindow(cwMap);
 
       try {
         const activeAgents: SummarySnapshotAgent[] = [];
@@ -1383,8 +1438,16 @@ const AgentStudioPage = () => {
                   onCompact={handleCompact}
                   isCompacting={isCompacting}
                   lastCompactedAt={lastCompactedAt}
-                  tokenUsed={sessionUsage ? sessionUsage.inputTokens + sessionUsage.outputTokens : undefined}
-                  tokenLimit={findModelMatch(focusedAgent.model)?.contextWindow}
+                  tokenUsed={(() => {
+                    const cw = agentContextWindow.get(focusedAgent.agentId);
+                    if (cw && cw.totalTokens > 0) return cw.totalTokens;
+                    return sessionUsage ? sessionUsage.inputTokens + sessionUsage.outputTokens : undefined;
+                  })()}
+                  tokenLimit={(() => {
+                    const cw = agentContextWindow.get(focusedAgent.agentId);
+                    if (cw && cw.contextTokens > 0) return cw.contextTokens;
+                    return findModelMatch(focusedAgent.model)?.contextWindow;
+                  })()}
                   viewingSessionKey={viewingSessionKey}
                   viewingSessionHistory={viewingSessionHistory}
                   viewingSessionLoading={viewingSessionLoading}
