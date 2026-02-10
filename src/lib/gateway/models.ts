@@ -109,6 +109,21 @@ const humanizeModelId = (id: string): string => {
     .join(" ");
 };
 
+const KNOWN_CONTEXT_WINDOWS: Record<string, number> = {
+  "claude-opus-4-6": 200000,
+  "claude-sonnet-4-6": 200000,
+  "claude-sonnet-4-5": 200000,
+  "claude-haiku-3.5": 200000,
+  "gemini-1.5-flash": 1000000,
+  "gemini-1.5-pro": 2000000,
+  "gemini-2.0-flash": 1000000,
+  "gemini-2.0-flash-lite": 1000000,
+  "gemini-2.5-flash": 1000000,
+  "gemini-2.5-pro": 1000000,
+  "gemini-3-flash-preview": 1000000,
+  "gemini-3-pro-preview": 1000000,
+};
+
 export const buildGatewayModelChoices = (
   catalog: GatewayModelChoice[],
   snapshot: GatewayModelPolicySnapshot | null
@@ -123,7 +138,15 @@ export const buildGatewayModelChoices = (
     const [provider, ...idParts] = key.split("/");
     const id = idParts.join("/");
     if (!provider || !id) continue;
-    extras.push({ provider, id, name: humanizeModelId(id) });
+    extras.push({ provider, id, name: humanizeModelId(id), contextWindow: KNOWN_CONTEXT_WINDOWS[id] });
   }
-  return [...filtered, ...extras];
+  // Apply fallback context windows for models missing them
+  const result = [...filtered, ...extras];
+  for (const model of result) {
+    if (!model.contextWindow) {
+      const fallback = KNOWN_CONTEXT_WINDOWS[model.id];
+      if (fallback) model.contextWindow = fallback;
+    }
+  }
+  return result;
 };

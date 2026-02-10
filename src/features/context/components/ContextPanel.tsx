@@ -64,7 +64,7 @@ export const ContextPanel = memo(function ContextPanel({
   const activeOverflowTab = OVERFLOW_TABS.find((t) => t.value === activeTab);
 
   return (
-    <div className="flex h-full w-full flex-col">
+    <div className="flex h-full w-full flex-col overflow-visible">
       {/* Tab bar — mobile: scrollable row; desktop: primary tabs + More dropdown */}
       {/* Mobile */}
       <div className="flex items-center gap-1 overflow-x-auto border-b border-border/40 px-3 pt-3 pb-2 lg:hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="tablist">

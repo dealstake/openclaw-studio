@@ -9,10 +9,26 @@ import {
   type KeyboardEvent,
   type MutableRefObject,
 } from "react";
+
+function useRecentlyCompacted(lastCompactedAt: number | null | undefined): boolean {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    if (!lastCompactedAt) return;
+    const elapsed = Date.now() - lastCompactedAt;
+    if (elapsed >= 60000) return;
+    // Use a microtask to avoid synchronous setState in effect
+    void Promise.resolve().then(() => setVisible(true));
+    const timer = window.setTimeout(() => setVisible(false), 60000 - elapsed);
+    return () => window.clearTimeout(timer);
+  }, [lastCompactedAt]);
+
+  return visible;
+}
 import type { AgentState as AgentRecord } from "@/features/agents/state/store";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { ArrowLeft, ChevronRight, RefreshCw, Settings, Shuffle } from "lucide-react";
+import { Archive, ArrowLeft, ChevronRight, RefreshCw, Settings, Shuffle } from "lucide-react";
 import type { GatewayModelChoice } from "@/lib/gateway/models";
 import { isToolMarkdown, isTraceMarkdown } from "@/lib/text/message-extract";
 import { isNearBottom } from "@/lib/dom";
@@ -41,6 +57,9 @@ type AgentChatPanelProps = {
   onAvatarShuffle: () => void;
   tokenUsed?: number;
   tokenLimit?: number;
+  onCompact?: () => void;
+  isCompacting?: boolean;
+  lastCompactedAt?: number | null;
   viewingSessionKey?: string | null;
   viewingSessionHistory?: string[];
   viewingSessionLoading?: boolean;
@@ -424,11 +443,15 @@ export const AgentChatPanel = ({
   onAvatarShuffle,
   tokenUsed,
   tokenLimit,
+  onCompact,
+  isCompacting = false,
+  lastCompactedAt = null,
   viewingSessionKey,
   viewingSessionHistory = [],
   viewingSessionLoading = false,
   onExitSessionView,
 }: AgentChatPanelProps) => {
+  const recentlyCompacted = useRecentlyCompacted(lastCompactedAt);
   const [draftValue, setDraftValue] = useState(agent.draft);
   const draftRef = useRef<HTMLTextAreaElement | null>(null);
   const scrollToBottomNextOutputRef = useRef(false);
@@ -737,8 +760,27 @@ export const AgentChatPanel = ({
                 )}
               </div>
               {typeof tokenUsed === "number" && tokenLimit ? (
-                <div className="mt-2 w-full max-w-lg">
-                  <TokenProgressBar used={tokenUsed} limit={tokenLimit} />
+                <div className="mt-2 flex w-full max-w-lg items-center gap-2">
+                  <div className="min-w-0 flex-1">
+                    <TokenProgressBar used={tokenUsed} limit={tokenLimit} />
+                  </div>
+                  {onCompact ? (
+                    <button
+                      type="button"
+                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border/80 bg-card/70 text-muted-foreground transition hover:border-border hover:bg-muted/65 disabled:cursor-not-allowed disabled:opacity-60"
+                      aria-label="Compact context & save to memory"
+                      title="Compact context & save to memory"
+                      onClick={onCompact}
+                      disabled={isCompacting}
+                    >
+                      <Archive className={`h-3.5 w-3.5 ${isCompacting ? "animate-spin" : ""}`} />
+                    </button>
+                  ) : null}
+                  {recentlyCompacted ? (
+                    <span className="shrink-0 font-mono text-[9px] text-emerald-500 animate-pulse">
+                      ✓ Compacted
+                    </span>
+                  ) : null}
                 </div>
               ) : null}
             </div>

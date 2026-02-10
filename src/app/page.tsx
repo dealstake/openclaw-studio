@@ -143,6 +143,8 @@ const AgentStudioPage = () => {
   const [viewingSessionKey, setViewingSessionKey] = useState<string | null>(null);
   const [viewingSessionHistory, setViewingSessionHistory] = useState<string[]>([]);
   const [viewingSessionLoading, setViewingSessionLoading] = useState(false);
+  const [isCompacting, setIsCompacting] = useState(false);
+  const [lastCompactedAt, setLastCompactedAt] = useState<number | null>(null);
   const runtimeEventHandlerRef = useRef<ReturnType<typeof createGatewayRuntimeEventHandler> | null>(
     null
   );
@@ -956,6 +958,23 @@ const AgentStudioPage = () => {
     [client, dispatch, pendingDraftTimersRef, pendingDraftValuesRef]
   );
 
+  const handleCompact = useCallback(async () => {
+    if (!focusedAgent || !client || isCompacting) return;
+    setIsCompacting(true);
+    try {
+      await client.call("chat.send", {
+        sessionKey: focusedAgent.sessionKey,
+        message: "/compact",
+        deliver: false,
+      });
+      setLastCompactedAt(Date.now());
+    } catch (err) {
+      console.error("Compact failed:", err);
+    } finally {
+      setIsCompacting(false);
+    }
+  }, [focusedAgent, client, isCompacting]);
+
   const handleStopRun = useCallback(
     async (agentId: string, sessionKey: string) => {
       if (status !== "connected") {
@@ -1317,6 +1336,9 @@ const AgentStudioPage = () => {
                     handleStopRun(focusedAgent.agentId, focusedAgent.sessionKey)
                   }
                   onAvatarShuffle={() => handleAvatarShuffle(focusedAgent.agentId)}
+                  onCompact={handleCompact}
+                  isCompacting={isCompacting}
+                  lastCompactedAt={lastCompactedAt}
                   tokenUsed={sessionUsage ? sessionUsage.inputTokens + sessionUsage.outputTokens : undefined}
                   tokenLimit={(() => {
                     const modelKey = focusedAgent.model;

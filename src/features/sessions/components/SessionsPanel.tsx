@@ -200,13 +200,13 @@ export const SessionsPanel = memo(function SessionsPanel({
       <div className="min-h-0 flex-1 overflow-y-auto p-4">
         {/* Usage summary */}
         {usageLoading ? (
-          <div className="mb-3 grid grid-cols-2 gap-2">
+          <div className="mb-3 min-h-[104px] grid grid-cols-2 gap-2 transition-all duration-200">
             {[0, 1, 2, 3].map((i) => (
               <div key={i} className="h-12 animate-pulse rounded-md bg-muted/40" />
             ))}
           </div>
         ) : usage ? (
-          <div className="mb-3 grid grid-cols-2 gap-2">
+          <div className="mb-3 min-h-[104px] grid grid-cols-2 gap-2 transition-all duration-200">
             <div className="rounded-md border border-border/60 bg-card/60 px-2.5 py-1.5">
               <div className="font-mono text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                 Input

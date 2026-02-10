@@ -83,6 +83,7 @@ describe("gateway model policy helpers", () => {
         provider: "anthropic",
         id: "claude-sonnet-4-5",
         name: "Claude Sonnet 4.5",
+        contextWindow: 200000,
       },
       {
         provider: "openai",
