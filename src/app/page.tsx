@@ -354,10 +354,17 @@ const AgentStudioPage = () => {
   useEffect(() => {
     if (status !== "connected") return;
     setAggregateUsageLoading(true);
+    // Pass a wide date range to ensure all sessions are discovered
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     client.call<{
       totals?: { input?: number; output?: number; totalCost?: number };
       sessions?: Array<{ usage?: { messageCounts?: { total?: number } } }>;
-    }>("sessions.usage", {}).then((result) => {
+    }>("sessions.usage", {
+      startDate: thirtyDaysAgo.toISOString(),
+      endDate: now.toISOString(),
+      limit: 100,
+    }).then((result) => {
       const totals = result.totals;
       const msgTotal = (result.sessions ?? []).reduce(
         (sum, s) => sum + (s.usage?.messageCounts?.total ?? 0), 0
