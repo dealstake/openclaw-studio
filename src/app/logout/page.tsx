@@ -16,7 +16,7 @@ export default function LogoutPage() {
   }, [router]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[var(--background)] p-4">
+    <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="w-full max-w-sm space-y-8">
         {/* Brand */}
         <div className="flex flex-col items-center gap-3 text-center">
@@ -24,17 +24,17 @@ export default function LogoutPage() {
         </div>
 
         {/* Card */}
-        <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-8 shadow-lg text-center space-y-4">
-          <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
+        <div className="space-y-4 rounded-xl border border-border bg-card p-8 text-center shadow-lg">
+          <h2 className="text-xl font-semibold text-card-foreground">
             You&apos;ve been signed out
           </h2>
-          <div className="flex items-center justify-center gap-2 text-sm text-[var(--muted-foreground)]">
+          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
             Redirecting to sign in…
           </div>
           <a
             href="/login"
-            className="mt-2 inline-block text-sm font-medium text-[var(--primary)] underline underline-offset-4 transition hover:brightness-110"
+            className="mt-2 inline-block text-sm font-medium text-primary underline underline-offset-4 transition hover:brightness-110"
           >
             Return to sign in
           </a>

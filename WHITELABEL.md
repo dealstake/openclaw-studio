@@ -90,6 +90,34 @@ The favicon is set dynamically in `src/app/page.tsx` as `/branding/trident.svg`.
 | `src/features/agents/components/FleetSidebar.tsx` | Fleet UI — uses AgentAvatar component |
 | `src/lib/studio/` | Settings coordinator — brand-agnostic |
 
+## Login & Logout Pages
+
+The app includes branded `/login` and `/logout` routes. Currently Cloudflare Access handles actual authentication — these pages are UI-ready for when the app manages its own auth layer.
+
+### Sign-in method configuration
+
+SSO button visibility is controlled by environment variables (baked at build time via `NEXT_PUBLIC_*`):
+
+| Variable | Default | Effect |
+|---|---|---|
+| `NEXT_PUBLIC_SSO_GOOGLE_ENABLED` | `"true"` | Show/enable "Continue with Google" button |
+| `NEXT_PUBLIC_SSO_MICROSOFT_ENABLED` | `"false"` | Show/enable "Continue with Microsoft" button |
+| `NEXT_PUBLIC_EMAIL_AUTH_ENABLED` | `"false"` | Show/enable email/password field |
+
+Set via GitHub repo **Variables** (not Secrets) — they flow through as Docker build args in CI.
+
+Disabled methods appear dimmed with a "Your organization has disabled this sign-in method" tooltip.
+
+### Files to touch
+
+| File | What to change |
+|---|---|
+| `src/app/login/page.tsx` | Login card layout, copy, flow |
+| `src/app/logout/page.tsx` | Logout card layout, redirect timing |
+| `src/lib/auth/sign-in-methods.ts` | Default enabled states, env var names |
+| `src/components/brand/SSOGoogleIcon.tsx` | Google logo SVG (brand-accurate) |
+| `src/components/brand/SSOMicrosoftIcon.tsx` | Microsoft logo SVG (brand-accurate) |
+
 ## Authentication
 
 Auth is handled by Cloudflare Access. To rebrand auth:
@@ -117,8 +145,10 @@ To change fonts, update the imports in `layout.tsx` and the CSS variable referen
 - [ ] Updated `BrandMark.tsx` text layout
 - [ ] Updated `AgentAvatar.tsx` fallback
 - [ ] Updated `layout.tsx` metadata (or verified it pulls from branding config)
+- [ ] Set SSO env vars in GitHub repo Variables (Google/Microsoft/Email enabled flags)
 - [ ] Updated Cloudflare Access application + policy
 - [ ] Ran `npm run build` — no errors
 - [ ] Visually inspected light and dark modes
+- [ ] Visually inspected `/login` and `/logout` pages
 - [ ] Tested all user flows (connect, chat, settings, brain, create/delete agent)
 - [ ] Committed and pushed to client's repo

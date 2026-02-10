@@ -81,8 +81,11 @@ The launchd service (`com.trident.studio`) runs the standalone Next.js server wi
 ```
 src/
 ├── app/                        # Next.js App Router (layout, page, globals.css)
+│   ├── login/                  # Branded SSO login page
+│   └── logout/                 # Branded sign-out page with redirect
 ├── components/
-│   ├── brand/                  # BrandMark, TridentLogo, UserBadge, LogoutButton
+│   ├── brand/                  # BrandMark, TridentLogo, UserBadge, LogoutButton,
+│   │                           # SSOGoogleIcon, SSOMicrosoftIcon
 │   ├── ui/                     # Shadcn-style primitives
 │   ├── HeaderIconButton.tsx    # Shared h-10 w-10 icon button (toolbar)
 │   └── theme-toggle.tsx        # Dark/light theme toggle
@@ -95,6 +98,7 @@ src/
 │   └── tasks/
 │       └── components/         # TasksPanel (placeholder)
 ├── lib/
+│   ├── auth/                   # Sign-in method config (env var driven)
 │   ├── branding/               # Centralized brand config (config.ts, theme.ts)
 │   ├── gateway/                # Vendored gateway WebSocket client
 │   ├── avatars/                # Avatar generation
@@ -164,10 +168,12 @@ Prod uses a WebSocket proxy (`server.mjs`) because the studio and gateway share 
 ## Deployment
 
 ### Dev (Cloud Run) — Automatic
-Push to `main` triggers `.github/workflows/deploy.yml`:
-1. Docker build with `NEXT_PUBLIC_GATEWAY_TOKEN` baked in
+Push to `main` triggers `.github/workflows/deploy-prod.yml` (push to `dev` branch triggers `deploy-dev.yml`):
+1. Docker build with `NEXT_PUBLIC_GATEWAY_TOKEN` + SSO env vars baked in
 2. Push to Artifact Registry
-3. Deploy to Cloud Run (`openclaw-studio-dev`, us-central1)
+3. Deploy to Cloud Run (`openclaw-studio-dev` or `openclaw-studio-prod`)
+
+SSO button visibility is configured via GitHub **Variables** (not Secrets): `SSO_GOOGLE_ENABLED`, `SSO_MICROSOFT_ENABLED`, `EMAIL_AUTH_ENABLED`.
 
 ### Prod (Mac Mini) — Manual
 ```bash
@@ -196,7 +202,7 @@ git fetch upstream
 git merge upstream/main
 ```
 
-Our customizations are isolated to: `src/lib/branding/`, `src/components/brand/`, `src/lib/cloudflare-auth.ts`, `HeaderBar.tsx`, `AgentAvatar.tsx`, `globals.css`, `layout.tsx`, `page.tsx`, `public/branding/`, `HeaderIconButton.tsx`, `ContextPanel.tsx`, `TasksPanel.tsx`.
+Our customizations are isolated to: `src/lib/branding/`, `src/lib/auth/`, `src/components/brand/`, `src/lib/cloudflare-auth.ts`, `HeaderBar.tsx`, `AgentAvatar.tsx`, `globals.css`, `layout.tsx`, `page.tsx`, `src/app/login/`, `src/app/logout/`, `public/branding/`, `HeaderIconButton.tsx`, `ContextPanel.tsx`, `TasksPanel.tsx`.
 
 ## Infrastructure
 

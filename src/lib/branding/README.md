@@ -25,6 +25,8 @@ Everything needed to rebrand the dashboard lives in this directory and a few rel
 
 - `theme.ts` is the **single source of truth** for all color values
 - `globals.css` consumes these as CSS custom properties (manual sync required since CSS can't import TS)
-- Components never hardcode hex colors — they use Tailwind classes that reference CSS custom properties
+- Components never hardcode hex colors — they use Tailwind semantic classes (`bg-card`, `text-foreground`, `border-border`, etc.) that reference CSS custom properties via the `@theme inline` block
 - Brand text/URLs come from `config.ts`, never hardcoded in components
-- Visual brand elements use `src/components/brand/` components (TridentLogo, BrandMark, UserBadge, LogoutButton)
+- Visual brand elements use `src/components/brand/` components (TridentLogo, BrandMark, UserBadge, LogoutButton, SSOGoogleIcon, SSOMicrosoftIcon)
+- Login/logout pages (`src/app/login/`, `src/app/logout/`) are brand surfaces that use `BrandMark` and `BRANDING` config
+- SSO button visibility is controlled by `src/lib/auth/sign-in-methods.ts` (reads `NEXT_PUBLIC_SSO_*` env vars)

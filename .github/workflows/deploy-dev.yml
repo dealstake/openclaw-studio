@@ -34,6 +34,9 @@ jobs:
         run: |
           docker build \
             --build-arg NEXT_PUBLIC_GATEWAY_TOKEN=${{ secrets.GATEWAY_TOKEN }} \
+            --build-arg NEXT_PUBLIC_SSO_GOOGLE_ENABLED=${{ vars.SSO_GOOGLE_ENABLED || 'true' }} \
+            --build-arg NEXT_PUBLIC_SSO_MICROSOFT_ENABLED=${{ vars.SSO_MICROSOFT_ENABLED || 'false' }} \
+            --build-arg NEXT_PUBLIC_EMAIL_AUTH_ENABLED=${{ vars.EMAIL_AUTH_ENABLED || 'false' }} \
             -t ${{ env.AR_REPO }}:${{ github.sha }} \
             -t ${{ env.AR_REPO }}:latest .
           docker push ${{ env.AR_REPO }} --all-tags
