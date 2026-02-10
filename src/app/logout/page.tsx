@@ -1,19 +1,28 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { BrandMark } from "@/components/brand/BrandMark";
+import { clearSession } from "@/lib/auth/cf-access";
 
 export default function LogoutPage() {
   const router = useRouter();
+  const [cleared, setCleared] = useState(false);
 
+  // Clear CF Access session cookie on mount
   useEffect(() => {
+    clearSession().then(() => setCleared(true));
+  }, []);
+
+  // Redirect to login after session is cleared
+  useEffect(() => {
+    if (!cleared) return;
     const timer = setTimeout(() => {
       router.push("/login");
     }, 3000);
     return () => clearTimeout(timer);
-  }, [router]);
+  }, [cleared, router]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">

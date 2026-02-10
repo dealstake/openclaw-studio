@@ -37,6 +37,9 @@ jobs:
             --build-arg NEXT_PUBLIC_SSO_GOOGLE_ENABLED=${{ vars.SSO_GOOGLE_ENABLED || 'true' }} \
             --build-arg NEXT_PUBLIC_SSO_MICROSOFT_ENABLED=${{ vars.SSO_MICROSOFT_ENABLED || 'false' }} \
             --build-arg NEXT_PUBLIC_EMAIL_AUTH_ENABLED=${{ vars.EMAIL_AUTH_ENABLED || 'false' }} \
+            --build-arg NEXT_PUBLIC_CF_TEAM_DOMAIN=${{ vars.CF_TEAM_DOMAIN || 'tridentfundingsolutions.cloudflareaccess.com' }} \
+            --build-arg NEXT_PUBLIC_CF_GOOGLE_IDP_ID=${{ vars.CF_GOOGLE_IDP_ID }} \
+            --build-arg NEXT_PUBLIC_CF_MICROSOFT_IDP_ID=${{ vars.CF_MICROSOFT_IDP_ID }} \
             -t ${{ env.AR_REPO }}:${{ github.sha }} \
             -t ${{ env.AR_REPO }}:latest .
           docker push ${{ env.AR_REPO }} --all-tags

@@ -1,55 +1,91 @@
 "use client";
 
-import { useState } from "react";
-import { Mail, ArrowRight } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Mail, ArrowRight, Loader2 } from "lucide-react";
 import { BrandMark } from "@/components/brand/BrandMark";
 import { SSOGoogleIcon } from "@/components/brand/SSOGoogleIcon";
 import { SSOMicrosoftIcon } from "@/components/brand/SSOMicrosoftIcon";
 import { getSignInMethods } from "@/lib/auth/sign-in-methods";
+import {
+  getGoogleLoginUrl,
+  getMicrosoftLoginUrl,
+  checkAuth,
+} from "@/lib/auth/cf-access";
 import { BRANDING } from "@/lib/branding/config";
 
 const methods = getSignInMethods();
 
 const DISABLED_TOOLTIP = "Your organization has disabled this sign-in method";
 
-// TODO: Wire SSO buttons to actual Cloudflare Access IdP-specific login URLs.
-// Currently Cloudflare Access intercepts all unauthenticated requests before
-// this page is reached.  These handlers are placeholders for when the app
-// manages its own auth layer.  See sign-in-methods.ts for details.
-function handleGoogleSSO() {
-  window.location.href = "/cdn-cgi/access/login";
-}
-function handleMicrosoftSSO() {
-  window.location.href = "/cdn-cgi/access/login";
-}
-
 function SSOButton({
   enabled,
   icon,
   label,
-  onClick,
+  href,
 }: {
   enabled: boolean;
   icon: React.ReactNode;
   label: string;
-  onClick: () => void;
+  href: string;
 }) {
+  const base =
+    "flex w-full items-center justify-center gap-3 rounded-lg border border-border bg-card px-4 py-3 text-sm font-medium text-card-foreground";
+
+  if (!enabled) {
+    return (
+      <button
+        type="button"
+        disabled
+        title={DISABLED_TOOLTIP}
+        className={`${base} disabled:cursor-not-allowed disabled:opacity-50`}
+      >
+        {icon}
+        {label}
+      </button>
+    );
+  }
+
   return (
-    <button
-      type="button"
-      disabled={!enabled}
-      onClick={enabled ? onClick : undefined}
-      title={!enabled ? DISABLED_TOOLTIP : undefined}
-      className="flex w-full items-center justify-center gap-3 rounded-lg border border-border bg-card px-4 py-3 text-sm font-medium text-card-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
-    >
+    <a href={href} className={`${base} transition hover:bg-muted`}>
       {icon}
       {label}
-    </button>
+    </a>
   );
 }
 
 export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
+  const [checking, setChecking] = useState(true);
+
+  // Redirect to dashboard if already authenticated
+  useEffect(() => {
+    checkAuth().then((identity) => {
+      if (identity) {
+        router.replace("/");
+      } else {
+        setChecking(false);
+      }
+    });
+  }, [router]);
+
+  // Build IdP URLs on the client (needs window.location.hostname)
+  const [googleUrl, setGoogleUrl] = useState("#");
+  const [microsoftUrl, setMicrosoftUrl] = useState("#");
+
+  useEffect(() => {
+    setGoogleUrl(getGoogleLoginUrl());
+    setMicrosoftUrl(getMicrosoftLoginUrl());
+  }, []);
+
+  if (checking) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
@@ -74,13 +110,13 @@ export default function LoginPage() {
               enabled={methods.google}
               icon={<SSOGoogleIcon />}
               label="Continue with Google"
-              onClick={handleGoogleSSO}
+              href={googleUrl}
             />
             <SSOButton
               enabled={methods.microsoft}
               icon={<SSOMicrosoftIcon />}
               label="Continue with Microsoft"
-              onClick={handleMicrosoftSSO}
+              href={microsoftUrl}
             />
           </div>
 
@@ -124,7 +160,9 @@ export default function LoginPage() {
         {/* Footer */}
         <div className="space-y-1 text-center text-xs text-muted-foreground">
           <p>Powered by OpenClaw</p>
-          <p>&copy; {new Date().getFullYear()} {BRANDING.name}</p>
+          <p>
+            &copy; {new Date().getFullYear()} {BRANDING.name}
+          </p>
         </div>
       </div>
     </div>

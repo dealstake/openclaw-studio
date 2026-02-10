@@ -16,6 +16,8 @@ export const BRANDING = {
   /** Meta description */
   pageDescription:
     "AI agent operations dashboard for Trident Funding Solutions.",
+  /** Cloudflare Access team domain (used to build IdP login URLs) */
+  cfTeamDomain: "tridentfundingsolutions.cloudflareaccess.com",
   /** Cloudflare Access logout URL */
   logoutUrl:
     "https://tridentfundingsolutions.cloudflareaccess.com/cdn-cgi/access/logout",

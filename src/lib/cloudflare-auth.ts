@@ -39,5 +39,5 @@ export async function getCfIdentity(): Promise<CfIdentity | null> {
 }
 
 export function logout() {
-  window.location.href = BRANDING.logoutUrl;
+  window.location.href = "/logout";
 }
