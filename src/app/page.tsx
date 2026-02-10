@@ -148,6 +148,8 @@ const AgentStudioPage = () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const loadAgentHistoryRef = useRef<(agentId: string) => Promise<any>>(() => Promise.resolve());
   const refreshHeartbeatLatestUpdateRef = useRef<() => void>(() => {});
+  const loadSessionUsageRef = useRef<(key: string) => Promise<void>>(() => Promise.resolve());
+  const refreshContextWindowRef = useRef<(agentId: string, sessionKey: string) => Promise<void>>(() => Promise.resolve());
   const {
     gatewayModels,
     gatewayModelsError,
@@ -353,12 +355,11 @@ const AgentStudioPage = () => {
       resetCumulativeUsage();
       return;
     }
-    void loadChannelsStatusRef.current();
     void loadGatewayStatus();
     void parsePresenceFromStatus();
-    void loadAllSessionsRef.current();
-    void loadAllCronJobsRef.current();
     void loadCumulativeUsageRef.current();
+    // Note: loadAllSessions, loadAllCronJobs, loadChannelsStatus are called
+    // from the agent-load effect below (with mutation guards) to avoid duplicates.
   }, [loadGatewayStatus, parsePresenceFromStatus, resetChannelsStatus, resetExecApprovals, resetPresence, resetSessionUsage, resetCumulativeUsage, status]);
 
   // ── Refresh context window utilization from sessions.list ──────────────
@@ -389,39 +390,35 @@ const AgentStudioPage = () => {
     }
   }, [client, status]);
 
-  // ── Load session usage for the focused agent ──────────────
+  // Keep refs current for session usage and context window
+  loadSessionUsageRef.current = loadSessionUsage;
+  refreshContextWindowRef.current = refreshContextWindow;
+
+  // ── Load session usage for the focused agent (primitive deps to avoid cascade) ──
+  const focusedSessionKey = focusedAgent?.sessionKey ?? null;
+  const focusedAgentStatus = focusedAgent?.status ?? null;
+
   useEffect(() => {
-    if (!focusedAgent) {
+    if (!focusedSessionKey || !focusedAgentId) {
       resetSessionUsage();
       return;
     }
-    void loadSessionUsage(focusedAgent.sessionKey);
-    void refreshContextWindow(focusedAgent.agentId, focusedAgent.sessionKey);
-  }, [focusedAgent, loadSessionUsage, resetSessionUsage, refreshContextWindow]);
+    void loadSessionUsageRef.current(focusedSessionKey);
+    void refreshContextWindowRef.current(focusedAgentId, focusedSessionKey);
+  }, [focusedAgentId, focusedSessionKey, resetSessionUsage]);
 
-  // Reload usage after each turn completes (status → idle) and periodically
+  // Reload usage when turn completes (running → idle). No polling — event-driven only.
   const prevStatusRef = useRef<string | undefined>(undefined);
   useEffect(() => {
-    if (!focusedAgent) return;
+    if (!focusedSessionKey || !focusedAgentId) return;
     const prev = prevStatusRef.current;
-    prevStatusRef.current = focusedAgent.status;
-    // Reload when transitioning from running → idle (turn just finished)
-    if (prev === "running" && focusedAgent.status === "idle") {
-      void loadSessionUsage(focusedAgent.sessionKey);
-      void refreshContextWindow(focusedAgent.agentId, focusedAgent.sessionKey);
+    prevStatusRef.current = focusedAgentStatus ?? undefined;
+    if (prev === "running" && focusedAgentStatus === "idle") {
+      void loadSessionUsageRef.current(focusedSessionKey);
+      void refreshContextWindowRef.current(focusedAgentId, focusedSessionKey);
       void loadCumulativeUsageRef.current();
     }
-  }, [focusedAgent, loadSessionUsage, refreshContextWindow]);
-
-  // Periodic usage refresh every 30s while connected
-  useEffect(() => {
-    if (!focusedAgent || status !== "connected") return;
-    const interval = setInterval(() => {
-      void loadSessionUsage(focusedAgent.sessionKey);
-      void refreshContextWindow(focusedAgent.agentId, focusedAgent.sessionKey);
-    }, 30_000);
-    return () => clearInterval(interval);
-  }, [focusedAgent, status, loadSessionUsage, refreshContextWindow]);
+  }, [focusedAgentId, focusedSessionKey, focusedAgentStatus]);
 
   // Aggregate usage: use the focused session's usage as the primary data source
   // (per-session usage loads lazily in SessionsPanel cards)

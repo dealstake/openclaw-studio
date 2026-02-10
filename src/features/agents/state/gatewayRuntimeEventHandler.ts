@@ -156,6 +156,8 @@ export function createGatewayRuntimeEventHandler(
   const lastActivityMarkByAgent = new Map<string, number>();
 
   let summaryRefreshTimer: number | null = null;
+  let sessionsRefreshTimer: number | null = null;
+  let cronRefreshTimer: number | null = null;
 
   const appendUniqueToolLines = (agentId: string, runId: string | null | undefined, lines: string[]) => {
     if (lines.length === 0) return;
@@ -198,6 +200,14 @@ export function createGatewayRuntimeEventHandler(
     if (summaryRefreshTimer !== null) {
       deps.clearTimeout(summaryRefreshTimer);
       summaryRefreshTimer = null;
+    }
+    if (sessionsRefreshTimer !== null) {
+      deps.clearTimeout(sessionsRefreshTimer);
+      sessionsRefreshTimer = null;
+    }
+    if (cronRefreshTimer !== null) {
+      deps.clearTimeout(cronRefreshTimer);
+      cronRefreshTimer = null;
     }
     chatRunSeen.clear();
     assistantStreamByRun.clear();
@@ -594,11 +604,19 @@ export function createGatewayRuntimeEventHandler(
       return;
     }
     if (eventKind === "sessions-update") {
-      deps.onSessionsUpdate?.();
+      if (sessionsRefreshTimer !== null) deps.clearTimeout(sessionsRefreshTimer);
+      sessionsRefreshTimer = deps.setTimeout(() => {
+        sessionsRefreshTimer = null;
+        deps.onSessionsUpdate?.();
+      }, 750);
       return;
     }
     if (eventKind === "cron-update") {
-      deps.onCronUpdate?.();
+      if (cronRefreshTimer !== null) deps.clearTimeout(cronRefreshTimer);
+      cronRefreshTimer = deps.setTimeout(() => {
+        cronRefreshTimer = null;
+        deps.onCronUpdate?.();
+      }, 750);
       return;
     }
   };
