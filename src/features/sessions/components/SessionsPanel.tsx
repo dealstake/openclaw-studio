@@ -36,7 +36,7 @@ const CHANNEL_TYPE_LABELS: Record<string, string> = {
 function humanizeSessionKey(key: string): string {
   // Pattern: agent:<name>:<type>[:<id>]
   const parts = key.split(":");
-  if (parts.length < 3) return key;
+  if (parts.length < 3) return humanizeFallbackKey(key);
   const type = parts[2];
   const rest = parts.slice(3).join(":");
 
@@ -56,9 +56,50 @@ function humanizeSessionKey(key: string): string {
         if (subtype === "dm") return `${channelLabel} DM`;
         return channelLabel;
       }
-      return key;
+      return humanizeFallbackKey(key);
     }
   }
+}
+
+/** Handle gateway-style keys like "webchat:g-agent-alex-main" or raw display names */
+function humanizeFallbackKey(key: string): string {
+  // Gateway display name pattern: "WEBCHAT:G-AGENT-<NAME>-MAIN"
+  const gatewayAgentRe = /^([A-Za-z]+):G-AGENT-([A-Za-z0-9]+)-(.+)$/i;
+  const match = key.match(gatewayAgentRe);
+  if (match) {
+    const channel = CHANNEL_TYPE_LABELS[match[1].toLowerCase()] ?? match[1];
+    const agentName = match[2].charAt(0).toUpperCase() + match[2].slice(1).toLowerCase();
+    const suffix = match[3].toLowerCase();
+    if (suffix === "main") return `${channel} · ${agentName}`;
+    if (suffix.startsWith("subagent")) return `${channel} · ${agentName} Sub-agent`;
+    return `${channel} · ${agentName} (${suffix.slice(0, 8)})`;
+  }
+
+  // Gateway channel pattern: "GOOGLECHAT:G-SPACES-XXXX" / "GOOGLECHAT:G-USERS-XXXX"
+  const gatewayChannelRe = /^([A-Za-z]+):G-(SPACES|USERS|GROUPS|DMS)-(.+)$/i;
+  const chanMatch = key.match(gatewayChannelRe);
+  if (chanMatch) {
+    const channel = CHANNEL_TYPE_LABELS[chanMatch[1].toLowerCase()] ?? chanMatch[1];
+    const scope = chanMatch[2].toLowerCase();
+    const id = chanMatch[3].slice(0, 8);
+    if (scope === "spaces") return `${channel} Space ${id}`;
+    if (scope === "users") return `${channel} DM ${id}`;
+    if (scope === "groups") return `${channel} Group ${id}`;
+    return `${channel} ${scope} ${id}`;
+  }
+
+  // Cron job pattern: "CRON: <name>"
+  if (/^cron:\s*/i.test(key)) {
+    return key.replace(/^cron:\s*/i, "Cron: ");
+  }
+
+  // Last resort: clean up common prefixes and make readable
+  return key
+    .replace(/^(webchat|telegram|discord|whatsapp|signal|googlechat|slack|imessage):/i, (_, ch) => {
+      const label = CHANNEL_TYPE_LABELS[ch.toLowerCase()];
+      return label ? `${label}: ` : `${ch}: `;
+    })
+    .replace(/^G-/i, "");
 }
 
 function humanizeOriginLabel(label: string): string {

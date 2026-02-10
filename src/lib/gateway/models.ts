@@ -73,6 +73,42 @@ export const buildAllowedModelKeys = (snapshot: GatewayModelPolicySnapshot | nul
   return allowedList;
 };
 
+/**
+ * Generate a human-readable model name from a provider/model-id string.
+ * e.g. "claude-sonnet-4-6" → "Claude Sonnet 4.6"
+ *      "gemini-2.5-flash-lite" → "Gemini 2.5 Flash Lite"
+ */
+const humanizeModelId = (id: string): string => {
+  // Version-like segments: digit-digit (e.g. "4-6" → "4.6", "3-5" → "3.5")
+  const versionRe = /^(\d+)-(\d+)$/;
+  return id
+    .split("-")
+    .reduce<string[]>((acc, segment, i, arr) => {
+      // Check if this segment and the previous form a version pair
+      if (i > 0) {
+        const combined = `${arr[i - 1]}-${segment}`;
+        if (versionRe.test(combined)) {
+          // Replace the last segment with the dotted version
+          acc[acc.length - 1] = combined.replace(versionRe, "$1.$2");
+          return acc;
+        }
+      }
+      // Skip if this segment was already consumed as part of a version
+      if (i < arr.length - 1) {
+        const next = `${segment}-${arr[i + 1]}`;
+        if (versionRe.test(next)) {
+          // Will be handled in the next iteration
+          acc.push(segment);
+          return acc;
+        }
+      }
+      // Title-case normal words
+      acc.push(segment.charAt(0).toUpperCase() + segment.slice(1));
+      return acc;
+    }, [])
+    .join(" ");
+};
+
 export const buildGatewayModelChoices = (
   catalog: GatewayModelChoice[],
   snapshot: GatewayModelPolicySnapshot | null
@@ -84,9 +120,10 @@ export const buildGatewayModelChoices = (
   const extras: GatewayModelChoice[] = [];
   for (const key of allowedKeys) {
     if (filteredKeys.has(key)) continue;
-    const [provider, id] = key.split("/");
+    const [provider, ...idParts] = key.split("/");
+    const id = idParts.join("/");
     if (!provider || !id) continue;
-    extras.push({ provider, id, name: key });
+    extras.push({ provider, id, name: humanizeModelId(id) });
   }
   return [...filtered, ...extras];
 };
