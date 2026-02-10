@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { AgentState, FocusFilter } from "@/features/agents/state/store";
 import { getAttentionForAgent } from "@/features/agents/state/store";
 import { AgentAvatar } from "./AgentAvatar";
@@ -38,7 +39,61 @@ const statusClassName: Record<AgentState["status"], string> = {
   error: "border border-destructive/35 bg-destructive/12 text-destructive",
 };
 
-export const FleetSidebar = ({
+type AgentRowProps = {
+  agent: AgentState;
+  selected: boolean;
+  hasPresence: boolean;
+  onSelect: (agentId: string) => void;
+};
+
+const AgentRow = memo(function AgentRow({ agent, selected, hasPresence, onSelect }: AgentRowProps) {
+  const attention = getAttentionForAgent(agent, selected ? agent.agentId : null);
+  const avatarSeed = agent.avatarSeed ?? agent.agentId;
+  return (
+    <button
+      type="button"
+      data-testid={`fleet-agent-row-${agent.agentId}`}
+      className={`group flex w-full items-center gap-3 rounded-md border px-3 py-2 text-left transition ${
+        selected
+          ? "border-ring/40 bg-muted/60 shadow-xs"
+          : "border-border/70 bg-card/65 hover:border-border hover:bg-muted/55"
+      }`}
+      onClick={() => onSelect(agent.agentId)}
+    >
+      <div className="relative">
+        <AgentAvatar
+          seed={avatarSeed}
+          name={agent.name}
+          avatarUrl={agent.avatarUrl ?? null}
+          size={28}
+          isSelected={selected}
+        />
+        {hasPresence ? (
+          <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-primary ring-2 ring-card" />
+        ) : null}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[11px] font-semibold uppercase tracking-[0.13em] text-foreground transition group-hover:text-primary">
+          {agent.name}
+        </p>
+        <div className="mt-1 flex flex-wrap items-center gap-2">
+          <span
+            className={`rounded px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] ${statusClassName[agent.status]}`}
+          >
+            {statusLabel[agent.status]}
+          </span>
+          {attention === "needs-attention" ? (
+            <span className="rounded border border-border/80 bg-card/75 px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+              Attention
+            </span>
+          ) : null}
+        </div>
+      </div>
+    </button>
+  );
+});
+
+export const FleetSidebar = memo(function FleetSidebar({
   agents,
   selectedAgentId,
   filter,
@@ -48,7 +103,7 @@ export const FleetSidebar = ({
   createDisabled = false,
   createBusy = false,
   presenceAgentIds,
-}: FleetSidebarProps) => {
+}: FleetSidebarProps) {
   return (
     <aside
       className="glass-panel fade-up-delay relative flex h-full w-full min-w-0 flex-col gap-3 p-3"
@@ -94,57 +149,18 @@ export const FleetSidebar = ({
           <EmptyStatePanel title="No agents available." compact className="p-3 text-xs" />
         ) : (
           <div className="flex flex-col gap-2">
-            {agents.map((agent) => {
-              const selected = selectedAgentId === agent.agentId;
-              const attention = getAttentionForAgent(agent, selectedAgentId);
-              const avatarSeed = agent.avatarSeed ?? agent.agentId;
-              return (
-                <button
-                  key={agent.agentId}
-                  type="button"
-                  data-testid={`fleet-agent-row-${agent.agentId}`}
-                  className={`group flex w-full items-center gap-3 rounded-md border px-3 py-2 text-left transition ${
-                    selected
-                      ? "border-ring/40 bg-muted/60 shadow-xs"
-                      : "border-border/70 bg-card/65 hover:border-border hover:bg-muted/55"
-                  }`}
-                  onClick={() => onSelectAgent(agent.agentId)}
-                >
-                  <div className="relative">
-                    <AgentAvatar
-                      seed={avatarSeed}
-                      name={agent.name}
-                      avatarUrl={agent.avatarUrl ?? null}
-                      size={28}
-                      isSelected={selected}
-                    />
-                    {presenceAgentIds?.has(agent.agentId) ? (
-                      <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-card" />
-                    ) : null}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[11px] font-semibold uppercase tracking-[0.13em] text-foreground transition group-hover:text-primary">
-                      {agent.name}
-                    </p>
-                    <div className="mt-1 flex flex-wrap items-center gap-2">
-                      <span
-                        className={`rounded px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] ${statusClassName[agent.status]}`}
-                      >
-                        {statusLabel[agent.status]}
-                      </span>
-                      {attention === "needs-attention" ? (
-                        <span className="rounded border border-border/80 bg-card/75 px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                          Attention
-                        </span>
-                      ) : null}
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
+            {agents.map((agent) => (
+              <AgentRow
+                key={agent.agentId}
+                agent={agent}
+                selected={selectedAgentId === agent.agentId}
+                hasPresence={presenceAgentIds?.has(agent.agentId) ?? false}
+                onSelect={onSelectAgent}
+              />
+            ))}
           </div>
         )}
       </div>
     </aside>
   );
-};
+});

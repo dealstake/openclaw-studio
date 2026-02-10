@@ -150,6 +150,8 @@ export const AgentSettingsPanel = ({
         return;
       }
       setNameDraft(next);
+    } catch (err) {
+      setRenameError(err instanceof Error ? err.message : "Failed to rename agent.");
     } finally {
       setRenameSaving(false);
     }
@@ -800,6 +802,7 @@ export const AgentBrainPanel = ({
               </div>
             ) : (
               <textarea
+                aria-label={`Edit ${agentFileTab} file`}
                 className="h-full min-h-0 w-full resize-none overflow-y-auto rounded-md border border-border/80 bg-background/80 px-3 py-2 font-mono text-xs text-foreground outline-none"
                 value={agentFiles[agentFileTab].content}
                 placeholder={

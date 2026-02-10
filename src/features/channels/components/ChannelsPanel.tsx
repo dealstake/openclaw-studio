@@ -1,6 +1,6 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useMemo } from "react";
 import { RefreshCw } from "lucide-react";
 import type { ChannelsStatusSnapshot } from "@/lib/gateway/channels";
 import { resolveChannelLabel, resolveChannelHealth, type ChannelHealth } from "@/lib/gateway/channels";
@@ -35,10 +35,14 @@ export const ChannelsPanel = memo(function ChannelsPanel({
   onRefresh,
 }: ChannelsPanelProps) {
   const channels = snapshot?.channels ?? {};
-  const keys = Object.keys(channels).filter((key) => {
-    const entry = channels[key];
-    return entry?.configured || entry?.running || entry?.connected;
-  });
+  const keys = useMemo(
+    () =>
+      Object.keys(channels).filter((key) => {
+        const entry = channels[key];
+        return entry?.configured || entry?.running || entry?.connected;
+      }),
+    [channels]
+  );
 
   return (
     <div className="flex h-full w-full flex-col p-4">
