@@ -4,6 +4,7 @@ import type { AgentState, FocusFilter } from "@/features/agents/state/store";
 import { getAttentionForAgent } from "@/features/agents/state/store";
 import { AgentAvatar } from "./AgentAvatar";
 import { EmptyStatePanel } from "./EmptyStatePanel";
+import { TokenProgressBar } from "@/components/TokenProgressBar";
 
 export type SubAgentEntry = {
   sessionKey: string;
@@ -12,6 +13,8 @@ export type SubAgentEntry = {
   updatedAt: number | null;
   isRunning: boolean;
 };
+
+export type AgentTokenInfo = { used: number; limit: number | undefined };
 
 type FleetSidebarProps = {
   agents: AgentState[];
@@ -24,6 +27,7 @@ type FleetSidebarProps = {
   createBusy?: boolean;
   presenceAgentIds?: Set<string>;
   subAgentSessions?: Map<string, SubAgentEntry[]>;
+  agentTokenInfo?: Map<string, AgentTokenInfo>;
 };
 
 const FILTER_OPTIONS: Array<{ value: FocusFilter; label: string; testId: string }> = [
@@ -54,9 +58,10 @@ type AgentRowProps = {
   selected: boolean;
   hasPresence: boolean;
   onSelect: (agentId: string) => void;
+  tokenInfo?: AgentTokenInfo;
 };
 
-const AgentRow = memo(function AgentRow({ agent, selected, hasPresence, onSelect }: AgentRowProps) {
+const AgentRow = memo(function AgentRow({ agent, selected, hasPresence, onSelect, tokenInfo }: AgentRowProps) {
   const attention = getAttentionForAgent(agent, selected ? agent.agentId : null);
   const avatarSeed = agent.avatarSeed ?? agent.agentId;
   return (
@@ -101,6 +106,9 @@ const AgentRow = memo(function AgentRow({ agent, selected, hasPresence, onSelect
             </span>
           ) : null}
         </div>
+        {tokenInfo && tokenInfo.limit ? (
+          <TokenProgressBar used={tokenInfo.used} limit={tokenInfo.limit} compact className="mt-1.5" />
+        ) : null}
       </div>
     </button>
   );
@@ -139,6 +147,7 @@ export const FleetSidebar = memo(function FleetSidebar({
   createBusy = false,
   presenceAgentIds,
   subAgentSessions,
+  agentTokenInfo,
 }: FleetSidebarProps) {
   return (
     <aside
@@ -194,6 +203,7 @@ export const FleetSidebar = memo(function FleetSidebar({
                     selected={selectedAgentId === agent.agentId}
                     hasPresence={presenceAgentIds?.has(agent.agentId) ?? false}
                     onSelect={onSelectAgent}
+                    tokenInfo={agentTokenInfo?.get(agent.agentId)}
                   />
                   {subs && subs.length > 0 ? (
                     <div className="mt-1 flex flex-col">

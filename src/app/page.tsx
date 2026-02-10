@@ -6,7 +6,7 @@ import {
   AgentBrainPanel,
   AgentSettingsPanel,
 } from "@/features/agents/components/AgentInspectPanels";
-import { FleetSidebar, type SubAgentEntry } from "@/features/agents/components/FleetSidebar";
+import { FleetSidebar, type SubAgentEntry, type AgentTokenInfo } from "@/features/agents/components/FleetSidebar";
 import { HeaderBar } from "@/features/agents/components/HeaderBar";
 import { ConnectionPanel } from "@/features/agents/components/ConnectionPanel";
 import { EmptyStatePanel } from "@/features/agents/components/EmptyStatePanel";
@@ -247,6 +247,20 @@ const AgentStudioPage = () => {
     }
     return map;
   }, [allSessions]);
+
+  // Build token info map for Fleet sidebar progress bars
+  const agentTokenInfo = useMemo(() => {
+    const map = new Map<string, AgentTokenInfo>();
+    if (focusedAgent && sessionUsage) {
+      const modelKey = focusedAgent.model;
+      const match = modelKey ? gatewayModels.find((m) => `${m.provider}/${m.id}` === modelKey) : undefined;
+      map.set(focusedAgent.agentId, {
+        used: sessionUsage.inputTokens + sessionUsage.outputTokens,
+        limit: match?.contextWindow,
+      });
+    }
+    return map;
+  }, [focusedAgent, sessionUsage, gatewayModels]);
 
   const faviconHref = "/branding/trident.svg";
   const errorMessage = state.error ?? gatewayModelsError;
@@ -1267,6 +1281,7 @@ const AgentStudioPage = () => {
                 }}
                 presenceAgentIds={presenceAgentIds}
                 subAgentSessions={subAgentSessions}
+                agentTokenInfo={agentTokenInfo}
               />
             </div>
             <div
@@ -1329,7 +1344,7 @@ const AgentStudioPage = () => {
             </div>
             {/* Context Panel: agent-scoped (Tasks/Brain/Settings) or global (Files) */}
             <div
-              className={`${mobilePane === "context" ? "flex" : "hidden"} glass-panel min-h-0 w-full shrink-0 overflow-hidden p-0 xl:flex xl:w-[360px]`}
+              className={`${mobilePane === "context" ? "flex" : "hidden"} glass-panel min-h-0 w-full shrink-0 p-0 xl:flex xl:w-[360px]`}
             >
               {contextMode === "files" ? (
                 <ArtifactsPanel isSelected />

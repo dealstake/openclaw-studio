@@ -163,6 +163,7 @@ const AgentChatTranscript = memo(function AgentChatTranscript({
   const chatBottomRef = useRef<HTMLDivElement | null>(null);
   const scrollFrameRef = useRef<number | null>(null);
   const pinnedRef = useRef(true);
+  const initialScrollDone = useRef(false);
   const [isPinned, setIsPinned] = useState(true);
 
   const scrollChatToBottom = useCallback(() => {
@@ -206,6 +207,22 @@ const AgentChatTranscript = memo(function AgentChatTranscript({
   useEffect(() => {
     updatePinnedFromScroll();
   }, [updatePinnedFromScroll]);
+
+  // Force scroll to bottom on initial content load and when switching agents
+  useEffect(() => {
+    if (outputLineCount > 0 && !initialScrollDone.current) {
+      initialScrollDone.current = true;
+      // Use double rAF to ensure DOM has fully rendered content
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          scrollChatToBottom();
+        });
+      });
+    }
+    if (outputLineCount === 0) {
+      initialScrollDone.current = false;
+    }
+  }, [outputLineCount, scrollChatToBottom]);
 
   const showJumpToLatest =
     !isPinned && (outputLineCount > 0 || liveAssistantCharCount > 0 || liveThinkingCharCount > 0);
@@ -720,7 +737,7 @@ export const AgentChatPanel = ({
                 )}
               </div>
               {typeof tokenUsed === "number" && tokenLimit ? (
-                <div className="mt-2 max-w-md">
+                <div className="mt-2 w-full max-w-lg">
                   <TokenProgressBar used={tokenUsed} limit={tokenLimit} />
                 </div>
               ) : null}

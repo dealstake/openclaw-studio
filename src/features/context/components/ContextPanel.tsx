@@ -127,7 +127,7 @@ export const ContextPanel = memo(function ContextPanel({
               <ChevronDown className={`h-3 w-3 transition-transform ${moreOpen ? "rotate-180" : ""}`} />
             </button>
             {moreOpen ? (
-              <div className="absolute left-0 top-full z-20 mt-1 min-w-[120px] rounded-md border border-border bg-card p-1 shadow-lg">
+              <div className="absolute right-0 top-full z-20 mt-1 min-w-[120px] rounded-md border border-border bg-card p-1 shadow-lg">
                 {OVERFLOW_TABS.map((tab) => (
                   <button
                     key={tab.value}
