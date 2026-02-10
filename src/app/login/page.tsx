@@ -1,5 +1,4 @@
-import { cookies, headers } from "next/headers";
-import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { Mail, ArrowRight } from "lucide-react";
 import { BrandMark } from "@/components/brand/BrandMark";
 import { SSOGoogleIcon } from "@/components/brand/SSOGoogleIcon";
@@ -59,13 +58,6 @@ function SSOButton({
 export const dynamic = "force-dynamic";
 
 export default async function LoginPage() {
-  // If user already has a CF session cookie, redirect to dashboard
-  const cookieStore = await cookies();
-  const cfAuth = cookieStore.get("CF_Authorization");
-  if (cfAuth?.value) {
-    redirect("/");
-  }
-
   // Build IdP login URLs using the request hostname
   const headerStore = await headers();
   const host = headerStore.get("host") || "";
