@@ -32,6 +32,8 @@ type SessionsPanelProps = {
   activeSessionKey?: string | null;
   aggregateUsage?: { inputTokens: number; outputTokens: number; totalCost: number | null; messageCount: number } | null;
   aggregateUsageLoading?: boolean;
+  cumulativeUsage?: { inputTokens: number; outputTokens: number; totalCost: number | null; messageCount: number } | null;
+  cumulativeUsageLoading?: boolean;
 };
 
 const CHANNEL_TYPE_LABELS: Record<string, string> = {
@@ -394,6 +396,8 @@ export const SessionsPanel = memo(function SessionsPanel({
   activeSessionKey = null,
   aggregateUsage = null,
   aggregateUsageLoading = false,
+  cumulativeUsage = null,
+  cumulativeUsageLoading = false,
 }: SessionsPanelProps) {
   const [confirmDeleteKey, setConfirmDeleteKey] = useState<string | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
@@ -487,22 +491,49 @@ export const SessionsPanel = memo(function SessionsPanel({
         </button>
       </div>
 
-      {/* Aggregate usage summary */}
-      {aggregateUsageLoading && !aggregateUsage ? (
+      {/* Cumulative usage summary (all sessions) */}
+      {(cumulativeUsageLoading || aggregateUsageLoading) && !cumulativeUsage && !aggregateUsage ? (
         <div className="border-b border-border/40 px-4 py-3">
           <div className="h-4 w-48 animate-pulse rounded bg-muted/30" />
         </div>
       ) : null}
-      {aggregateUsage ? (
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-border/40 px-4 py-2.5 text-[11px] text-muted-foreground">
-          <span className="font-semibold text-foreground">
-            {formatTokens(aggregateUsage.inputTokens + aggregateUsage.outputTokens)} tokens
-          </span>
-          {aggregateUsage.totalCost !== null ? (
-            <span>{formatCost(aggregateUsage.totalCost, "USD")}</span>
+      {cumulativeUsage || aggregateUsage ? (
+        <div className="flex flex-col gap-1 border-b border-border/40 px-4 py-2.5">
+          {cumulativeUsage ? (
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+              <span className="font-semibold text-foreground">
+                {formatTokens(cumulativeUsage.inputTokens + cumulativeUsage.outputTokens)} tokens
+              </span>
+              {cumulativeUsage.totalCost !== null ? (
+                <span className="font-semibold text-foreground">{formatCost(cumulativeUsage.totalCost, "USD")}</span>
+              ) : null}
+              <span>{cumulativeUsage.messageCount.toLocaleString()} messages</span>
+              <span className="text-[10px]">all sessions</span>
+            </div>
           ) : null}
-          <span>{aggregateUsage.messageCount.toLocaleString()} messages</span>
-          <span className="text-[10px]">current session</span>
+          {aggregateUsage && cumulativeUsage ? (
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-muted-foreground/80">
+              <span>
+                {formatTokens(aggregateUsage.inputTokens + aggregateUsage.outputTokens)} tokens
+              </span>
+              {aggregateUsage.totalCost !== null ? (
+                <span>{formatCost(aggregateUsage.totalCost, "USD")}</span>
+              ) : null}
+              <span>current session</span>
+            </div>
+          ) : null}
+          {aggregateUsage && !cumulativeUsage ? (
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+              <span className="font-semibold text-foreground">
+                {formatTokens(aggregateUsage.inputTokens + aggregateUsage.outputTokens)} tokens
+              </span>
+              {aggregateUsage.totalCost !== null ? (
+                <span>{formatCost(aggregateUsage.totalCost, "USD")}</span>
+              ) : null}
+              <span>{aggregateUsage.messageCount.toLocaleString()} messages</span>
+              <span className="text-[10px]">current session</span>
+            </div>
+          ) : null}
         </div>
       ) : null}
 

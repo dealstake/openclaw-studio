@@ -61,7 +61,7 @@ import { useChannelsStatus } from "@/features/channels/hooks/useChannelsStatus";
 import { useAllSessions } from "@/features/sessions/hooks/useAllSessions";
 import { useAllCronJobs } from "@/features/cron/hooks/useAllCronJobs";
 import { useExecApprovals } from "@/features/exec-approvals/hooks/useExecApprovals";
-import { useSessionUsage } from "@/features/sessions/hooks/useSessionUsage";
+import { useSessionUsage, useCumulativeUsage } from "@/features/sessions/hooks/useSessionUsage";
 import { useGatewayStatus } from "@/features/status/hooks/useGatewayStatus";
 import { ConfigMutationModals } from "@/features/agents/components/ConfigMutationModals";
 import { MobilePaneToggle, type MobilePane } from "@/features/agents/components/MobilePaneToggle";
@@ -175,6 +175,11 @@ const AgentStudioPage = () => {
     sessionUsage, sessionUsageLoading,
     loadSessionUsage, resetSessionUsage,
   } = useSessionUsage(client, status);
+
+  const {
+    cumulativeUsage, cumulativeUsageLoading,
+    loadCumulativeUsage, resetCumulativeUsage,
+  } = useCumulativeUsage(client, status);
 
   const {
     allSessions, allSessionsLoading, allSessionsError,
@@ -321,6 +326,7 @@ const AgentStudioPage = () => {
       resetExecApprovals();
       resetPresence();
       resetSessionUsage();
+      resetCumulativeUsage();
       return;
     }
     void loadChannelsStatus();
@@ -328,7 +334,8 @@ const AgentStudioPage = () => {
     void parsePresenceFromStatus();
     void loadAllSessions();
     void loadAllCronJobs();
-  }, [loadChannelsStatus, loadGatewayStatus, parsePresenceFromStatus, loadAllSessions, loadAllCronJobs, resetChannelsStatus, resetExecApprovals, resetPresence, resetSessionUsage, status]);
+    void loadCumulativeUsage();
+  }, [loadChannelsStatus, loadGatewayStatus, parsePresenceFromStatus, loadAllSessions, loadAllCronJobs, resetChannelsStatus, resetExecApprovals, resetPresence, resetSessionUsage, resetCumulativeUsage, loadCumulativeUsage, status]);
 
   // ── Refresh context window utilization from sessions.list ──────────────
   const refreshContextWindow = useCallback(async (agentId: string, sessionKey: string) => {
@@ -378,8 +385,9 @@ const AgentStudioPage = () => {
     if (prev === "running" && focusedAgent.status === "idle") {
       void loadSessionUsage(focusedAgent.sessionKey);
       void refreshContextWindow(focusedAgent.agentId, focusedAgent.sessionKey);
+      void loadCumulativeUsage();
     }
-  }, [focusedAgent, loadSessionUsage, refreshContextWindow]);
+  }, [focusedAgent, loadSessionUsage, refreshContextWindow, loadCumulativeUsage]);
 
   // Periodic usage refresh every 30s while connected
   useEffect(() => {
@@ -1515,10 +1523,18 @@ const AgentStudioPage = () => {
                       error={allSessionsError}
                       onRefresh={() => {
                         void loadAllSessions();
+                        void loadCumulativeUsage();
                       }}
                       activeSessionKey={focusedAgent?.sessionKey ?? null}
                       aggregateUsage={aggregateUsage}
                       aggregateUsageLoading={aggregateUsageLoading}
+                      cumulativeUsage={cumulativeUsage ? {
+                        inputTokens: cumulativeUsage.inputTokens,
+                        outputTokens: cumulativeUsage.outputTokens,
+                        totalCost: cumulativeUsage.totalCost,
+                        messageCount: cumulativeUsage.messageCount,
+                      } : null}
+                      cumulativeUsageLoading={cumulativeUsageLoading}
                       onSessionClick={(sessionKey, agentId) => {
                         if (agentId) {
                           flushPendingDraft(focusedAgent?.agentId ?? null);
