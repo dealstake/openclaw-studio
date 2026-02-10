@@ -13,12 +13,8 @@ import { EmptyStatePanel } from "@/features/agents/components/EmptyStatePanel";
 import { BrandMark } from "@/components/brand/BrandMark";
 import {
   buildAgentInstruction,
-  extractText,
-  isHeartbeatPrompt,
-  stripUiMetadata,
 } from "@/lib/text/message-extract";
 import { useGatewayConnection } from "@/lib/gateway/GatewayClient";
-import { createRafBatcher } from "@/lib/dom";
 import {
   buildGatewayModelChoices,
   type GatewayModelChoice,
@@ -34,7 +30,6 @@ import {
   useAgentStore,
 } from "@/features/agents/state/store";
 import {
-  buildHistorySyncPatch,
   buildSummarySnapshotPatches,
   type SummaryPreviewSnapshot,
   type SummarySnapshotAgent,
@@ -45,17 +40,11 @@ import { createGatewayRuntimeEventHandler } from "@/features/agents/state/gatewa
 import {
   type CronJobSummary,
   filterCronJobsForAgent,
-  formatCronJobDisplay,
   listCronJobs,
   removeCronJob,
-  removeCronJobsForAgent,
-  resolveLatestCronJobForAgent,
   runCronJobNow,
 } from "@/lib/cron/types";
 import {
-  createGatewayAgent,
-  deleteGatewayAgent,
-  renameGatewayAgent,
   removeGatewayHeartbeatOverride,
   listHeartbeatsForAgent,
   triggerHeartbeatNow,
@@ -67,18 +56,10 @@ import { applySessionSettingMutation } from "@/features/agents/state/sessionSett
 import {
   buildAgentMainSessionKey,
   isSameSessionKey,
-  parseAgentIdFromSessionKey,
   isGatewayDisconnectLikeError,
   syncGatewaySessionSettings,
   type EventFrame,
 } from "@/lib/gateway/GatewayClient";
-import { fetchJson } from "@/lib/http";
-import { bootstrapAgentBrainFilesFromTemplate } from "@/lib/gateway/agentFiles";
-import {
-  runDeleteAgentTransaction,
-  type RestoreAgentStateResult,
-  type TrashAgentStateResult,
-} from "@/features/agents/operations/deleteAgentTransaction";
 import { ArtifactsPanel } from "@/features/artifacts/components/ArtifactsPanel";
 import { TasksPanel } from "@/features/tasks/components/TasksPanel";
 import { ContextPanel, type ContextTab } from "@/features/context/components/ContextPanel";
@@ -87,10 +68,9 @@ import {
   parseExecApprovalRequested,
   parseExecApprovalResolved,
   pruneExpired,
-  type ExecApprovalRequest,
 } from "@/features/exec-approvals/types";
 import { ChannelsPanel } from "@/features/channels/components/ChannelsPanel";
-import { SessionsPanel, type SessionEntry } from "@/features/sessions/components/SessionsPanel";
+import { SessionsPanel } from "@/features/sessions/components/SessionsPanel";
 import { CronPanel } from "@/features/cron/components/CronPanel";
 import { StatusBar } from "@/features/status/components/StatusBar";
 import { useChannelsStatus } from "@/features/channels/hooks/useChannelsStatus";
@@ -101,15 +81,12 @@ import { useSessionUsage } from "@/features/sessions/hooks/useSessionUsage";
 import { useGatewayStatus } from "@/features/status/hooks/useGatewayStatus";
 import { ConfigMutationModals } from "@/features/agents/components/ConfigMutationModals";
 import { MobilePaneToggle, type MobilePane } from "@/features/agents/components/MobilePaneToggle";
-
-type ChatHistoryMessage = Record<string, unknown>;
-
-type ChatHistoryResult = {
-  sessionKey: string;
-  sessionId?: string;
-  messages: ChatHistoryMessage[];
-  thinkingLevel?: string;
-};
+import { useConfigMutationQueue } from "@/features/agents/hooks/useConfigMutationQueue";
+import { useDraftBatching } from "@/features/agents/hooks/useDraftBatching";
+import { useLivePatchBatching } from "@/features/agents/hooks/useLivePatchBatching";
+import { useSpecialUpdates } from "@/features/agents/hooks/useSpecialUpdates";
+import { useAgentHistorySync } from "@/features/agents/hooks/useAgentHistorySync";
+import { useAgentLifecycle } from "@/features/agents/hooks/useAgentLifecycle";
 
 type AgentsListResult = {
   defaultId: string;
@@ -142,90 +119,10 @@ type SessionsListResult = {
   sessions?: SessionsListEntry[];
 };
 
-type DeleteAgentBlockPhase = "queued" | "deleting" | "awaiting-restart";
-type DeleteAgentBlockState = {
-  agentId: string;
-  agentName: string;
-  phase: DeleteAgentBlockPhase;
-  startedAt: number;
-  sawDisconnect: boolean;
-};
-type CreateAgentBlockPhase = "queued" | "creating" | "awaiting-restart" | "bootstrapping-files";
-type CreateAgentBlockState = {
-  agentId: string | null;
-  agentName: string;
-  phase: CreateAgentBlockPhase;
-  startedAt: number;
-  sawDisconnect: boolean;
-};
-type RenameAgentBlockPhase = "queued" | "renaming" | "awaiting-restart";
-type RenameAgentBlockState = {
-  agentId: string;
-  agentName: string;
-  phase: RenameAgentBlockPhase;
-  startedAt: number;
-  sawDisconnect: boolean;
-};
-type ConfigMutationKind = "create-agent" | "rename-agent" | "delete-agent";
-type QueuedConfigMutation = {
-  id: string;
-  kind: ConfigMutationKind;
-  label: string;
-  run: () => Promise<void>;
-  resolve: () => void;
-  reject: (error: unknown) => void;
-};
-
 const RESERVED_MAIN_AGENT_ID = "main";
-const SPECIAL_UPDATE_HEARTBEAT_RE = /\bheartbeat\b/i;
-const SPECIAL_UPDATE_CRON_RE = /\bcron\b/i;
-
-const resolveSpecialUpdateKind = (message: string) => {
-  const lowered = message.toLowerCase();
-  const heartbeatIndex = lowered.search(SPECIAL_UPDATE_HEARTBEAT_RE);
-  const cronIndex = lowered.search(SPECIAL_UPDATE_CRON_RE);
-  if (heartbeatIndex === -1 && cronIndex === -1) return null;
-  if (heartbeatIndex === -1) return "cron";
-  if (cronIndex === -1) return "heartbeat";
-  return cronIndex > heartbeatIndex ? "cron" : "heartbeat";
-};
 
 const sortCronJobsByUpdatedAt = (jobs: CronJobSummary[]) =>
   [...jobs].sort((a, b) => b.updatedAtMs - a.updatedAtMs);
-
-const findLatestHeartbeatResponse = (messages: ChatHistoryMessage[]) => {
-  let awaitingHeartbeatReply = false;
-  let latestResponse: string | null = null;
-  for (const message of messages) {
-    const role = typeof message.role === "string" ? message.role : "";
-    if (role === "user") {
-      const text = stripUiMetadata(extractText(message) ?? "").trim();
-      awaitingHeartbeatReply = isHeartbeatPrompt(text);
-      continue;
-    }
-    if (role === "assistant" && awaitingHeartbeatReply) {
-      const text = stripUiMetadata(extractText(message) ?? "").trim();
-      if (text) {
-        latestResponse = text;
-      }
-    }
-  }
-  return latestResponse;
-};
-
-const resolveNextNewAgentName = (agents: AgentState[]) => {
-  const baseName = "New Agent";
-  const existing = new Set(
-    agents.map((agent) => agent.name.trim().toLowerCase()).filter((name) => name.length > 0)
-  );
-  const baseLower = baseName.toLowerCase();
-  if (!existing.has(baseLower)) return baseName;
-  for (let index = 2; index < 10000; index += 1) {
-    const candidate = `${baseName} ${index}`;
-    if (!existing.has(candidate.toLowerCase())) return candidate;
-  }
-  throw new Error("Unable to allocate a unique agent name.");
-};
 
 const AgentStudioPage = () => {
   const [settingsCoordinator] = useState(() => createStudioSettingsCoordinator());
@@ -246,15 +143,12 @@ const AgentStudioPage = () => {
   const [focusFilter, setFocusFilter] = useState<FocusFilter>("all");
   const [focusedPreferencesLoaded, setFocusedPreferencesLoaded] = useState(false);
   const [agentsLoadedOnce, setAgentsLoadedOnce] = useState(false);
-  const [heartbeatTick, setHeartbeatTick] = useState(0);
-  const historyInFlightRef = useRef<Set<string>>(new Set());
   const stateRef = useRef(state);
   const focusFilterTouchedRef = useRef(false);
   const [gatewayModels, setGatewayModels] = useState<GatewayModelChoice[]>([]);
   const [gatewayModelsError, setGatewayModelsError] = useState<string | null>(null);
   const [gatewayConfigSnapshot, setGatewayConfigSnapshot] =
     useState<GatewayModelPolicySnapshot | null>(null);
-  const [createAgentBusy, setCreateAgentBusy] = useState(false);
   const [stopBusyAgentId, setStopBusyAgentId] = useState<string | null>(null);
   const [mobilePane, setMobilePane] = useState<MobilePane>("chat");
   const [settingsAgentId, setSettingsAgentId] = useState<string | null>(null);
@@ -271,26 +165,9 @@ const AgentStudioPage = () => {
   /** "agent" = show ContextPanel (Tasks/Brain/Settings), "files" = show Files, null = hidden on desktop */
   const [contextMode, setContextMode] = useState<"agent" | "files" | null>(null);
   const [contextTab, setContextTab] = useState<ContextTab>("settings");
-  const [deleteAgentBlock, setDeleteAgentBlock] = useState<DeleteAgentBlockState | null>(null);
-  const [createAgentBlock, setCreateAgentBlock] = useState<CreateAgentBlockState | null>(null);
-  const [renameAgentBlock, setRenameAgentBlock] = useState<RenameAgentBlockState | null>(null);
-  const [queuedConfigMutations, setQueuedConfigMutations] = useState<QueuedConfigMutation[]>([]);
-  const [activeConfigMutation, setActiveConfigMutation] = useState<QueuedConfigMutation | null>(
-    null
-  );
-  const specialUpdateRef = useRef<Map<string, string>>(new Map());
-  const specialUpdateInFlightRef = useRef<Set<string>>(new Set());
-  const pendingDraftValuesRef = useRef<Map<string, string>>(new Map());
-  const pendingDraftTimersRef = useRef<Map<string, number>>(new Map());
-  const pendingLivePatchesRef = useRef<Map<string, Partial<AgentState>>>(new Map());
-  const flushLivePatchesRef = useRef<() => void>(() => {});
-  const livePatchBatcherRef = useRef(createRafBatcher(() => flushLivePatchesRef.current()));
   const runtimeEventHandlerRef = useRef<ReturnType<typeof createGatewayRuntimeEventHandler> | null>(
     null
   );
-
-  // Delete agent confirmation
-  const [deleteConfirmAgentId, setDeleteConfirmAgentId] = useState<string | null>(null);
 
   // Extracted hooks
   const {
@@ -326,6 +203,11 @@ const AgentStudioPage = () => {
     loadAllCronJobs, handleAllCronRunJob, handleAllCronDeleteJob,
   } = useAllCronJobs(client, status);
 
+  const { flushPendingDraft, handleDraftChange, pendingDraftValuesRef, pendingDraftTimersRef } =
+    useDraftBatching(dispatch);
+
+  const { queueLivePatch } = useLivePatchBatching(dispatch);
+
   const agents = state.agents;
   const selectedAgent = useMemo(() => getSelectedAgent(state), [state]);
   const filteredAgents = useMemo(
@@ -355,27 +237,14 @@ const AgentStudioPage = () => {
     [agents]
   );
   const hasRunningAgents = runningAgentCount > 0;
-  const queuedConfigMutationCount = queuedConfigMutations.length;
 
-  const flushPendingDraft = useCallback(
-    (agentId: string | null) => {
-      if (!agentId) return;
-      const timer = pendingDraftTimersRef.current.get(agentId) ?? null;
-      if (timer !== null) {
-        window.clearTimeout(timer);
-        pendingDraftTimersRef.current.delete(agentId);
-      }
-      const value = pendingDraftValuesRef.current.get(agentId);
-      if (value === undefined) return;
-      pendingDraftValuesRef.current.delete(agentId);
-      dispatch({
-        type: "updateAgent",
-        agentId,
-        patch: { draft: value },
-      });
-    },
-    [dispatch]
-  );
+  const {
+    specialUpdateRef,
+    specialUpdateInFlightRef,
+    updateSpecialLatestUpdate,
+    refreshHeartbeatLatestUpdate,
+    bumpHeartbeatTick,
+  } = useSpecialUpdates({ client, dispatch, agents, stateRef });
 
   const handleFocusFilterChange = useCallback(
     (next: FocusFilter) => {
@@ -384,69 +253,6 @@ const AgentStudioPage = () => {
       setFocusFilter(next);
     },
     [flushPendingDraft, focusedAgent]
-  );
-
-  useEffect(() => {
-    const timers = pendingDraftTimersRef.current;
-    const values = pendingDraftValuesRef.current;
-    return () => {
-      for (const timer of timers.values()) {
-        window.clearTimeout(timer);
-      }
-      timers.clear();
-      values.clear();
-    };
-  }, []);
-
-  useEffect(() => {
-    const batcher = livePatchBatcherRef.current;
-    const pending = pendingLivePatchesRef.current;
-    return () => {
-      batcher.cancel();
-      pending.clear();
-    };
-  }, []);
-
-  const flushPendingLivePatches = useCallback(() => {
-    const pending = pendingLivePatchesRef.current;
-    if (pending.size === 0) return;
-    const entries = [...pending.entries()];
-    pending.clear();
-    for (const [agentId, patch] of entries) {
-      dispatch({ type: "updateAgent", agentId, patch });
-    }
-  }, [dispatch]);
-
-  useEffect(() => {
-    flushLivePatchesRef.current = flushPendingLivePatches;
-  }, [flushPendingLivePatches]);
-
-  const queueLivePatch = useCallback((agentId: string, patch: Partial<AgentState>) => {
-    const key = agentId.trim();
-    if (!key) return;
-    const existing = pendingLivePatchesRef.current.get(key);
-    pendingLivePatchesRef.current.set(key, existing ? { ...existing, ...patch } : patch);
-    livePatchBatcherRef.current.schedule();
-  }, []);
-
-  const enqueueConfigMutation = useCallback(
-    (params: {
-      kind: ConfigMutationKind;
-      label: string;
-      run: () => Promise<void>;
-    }) =>
-      new Promise<void>((resolve, reject) => {
-        const queued: QueuedConfigMutation = {
-          id: crypto.randomUUID(),
-          kind: params.kind,
-          label: params.label,
-          run: params.run,
-          resolve,
-          reject,
-        };
-        setQueuedConfigMutations((current) => [...current, queued]);
-      }),
-    []
   );
 
   // ── Load additional data on connect ─────────────────────────────
@@ -494,11 +300,6 @@ const AgentStudioPage = () => {
     link.setAttribute("data-agent-favicon", "true");
     document.head.appendChild(link);
   }, [faviconHref]);
-
-
-  const resolveCronJobForAgent = useCallback((jobs: CronJobSummary[], agent: AgentState) => {
-    return resolveLatestCronJobForAgent(jobs, agent.agentId);
-  }, []);
 
   const loadCronJobsForSettingsAgent = useCallback(
     async (agentId: string) => {
@@ -554,104 +355,6 @@ const AgentStudioPage = () => {
     },
     [client]
   );
-
-  const updateSpecialLatestUpdate = useCallback(
-    async (agentId: string, agent: AgentState, message: string) => {
-      const key = agentId;
-      const kind = resolveSpecialUpdateKind(message);
-      if (!kind) {
-        if (agent.latestOverride || agent.latestOverrideKind) {
-          dispatch({
-            type: "updateAgent",
-            agentId: agent.agentId,
-            patch: { latestOverride: null, latestOverrideKind: null },
-          });
-        }
-        return;
-      }
-      if (specialUpdateInFlightRef.current.has(key)) return;
-      specialUpdateInFlightRef.current.add(key);
-      try {
-        if (kind === "heartbeat") {
-          const resolvedId =
-            agent.agentId?.trim() || parseAgentIdFromSessionKey(agent.sessionKey);
-          if (!resolvedId) {
-            dispatch({
-              type: "updateAgent",
-              agentId: agent.agentId,
-              patch: { latestOverride: null, latestOverrideKind: null },
-            });
-            return;
-          }
-          const sessions = await client.call<SessionsListResult>("sessions.list", {
-            agentId: resolvedId,
-            includeGlobal: false,
-            includeUnknown: false,
-            limit: 48,
-          });
-          const entries = Array.isArray(sessions.sessions) ? sessions.sessions : [];
-          const heartbeatSessions = entries.filter((entry) => {
-            const label = entry.origin?.label;
-            return typeof label === "string" && label.toLowerCase() === "heartbeat";
-          });
-          const candidates = heartbeatSessions.length > 0 ? heartbeatSessions : entries;
-          const sorted = [...candidates].sort(
-            (a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0)
-          );
-          const sessionKey = sorted[0]?.key;
-          if (!sessionKey) {
-            dispatch({
-              type: "updateAgent",
-              agentId: agent.agentId,
-              patch: { latestOverride: null, latestOverrideKind: null },
-            });
-            return;
-          }
-          const history = await client.call<ChatHistoryResult>("chat.history", {
-            sessionKey,
-            limit: 200,
-          });
-          const content = findLatestHeartbeatResponse(history.messages ?? []) ?? "";
-          dispatch({
-            type: "updateAgent",
-            agentId: agent.agentId,
-            patch: {
-              latestOverride: content || null,
-              latestOverrideKind: content ? "heartbeat" : null,
-            },
-          });
-          return;
-        }
-        const cronResult = await listCronJobs(client, { includeDisabled: true });
-        const job = resolveCronJobForAgent(cronResult.jobs, agent);
-        const content = job ? formatCronJobDisplay(job) : "";
-        dispatch({
-          type: "updateAgent",
-          agentId: agent.agentId,
-          patch: {
-            latestOverride: content || null,
-            latestOverrideKind: content ? "cron" : null,
-          },
-        });
-      } catch (err) {
-        if (!isGatewayDisconnectLikeError(err)) {
-          const message =
-            err instanceof Error ? err.message : "Failed to load latest cron/heartbeat update.";
-          console.error(message);
-        }
-      } finally {
-        specialUpdateInFlightRef.current.delete(key);
-      }
-    },
-    [client, dispatch, resolveCronJobForAgent]
-  );
-
-  const refreshHeartbeatLatestUpdate = useCallback(() => {
-    const agents = stateRef.current.agents;
-    for (const agent of agents) {
-      void updateSpecialLatestUpdate(agent.agentId, agent, "heartbeat");
-    }
-  }, [updateSpecialLatestUpdate]);
 
   const resolveAgentName = useCallback((agent: AgentsListResult["agents"][number]) => {
     const fromList = typeof agent.name === "string" ? agent.name.trim() : "";
@@ -733,9 +436,6 @@ const AgentStudioPage = () => {
       const mainKey = agentsResult.mainKey?.trim() || "main";
 
       // Filter out phantom agents injected by the gateway's mainKey fallback.
-      // The gateway always injects session.mainKey (default "main") into the
-      // agent list even when no such agent is configured.  We cross-reference
-      // against the config's explicit agents.list to keep only real agents.
       const configuredAgentIds = new Set(
         (configSnapshot?.config?.agents?.list ?? [])
           .map((entry: { id?: string }) => entry?.id?.trim()?.toLowerCase())
@@ -896,6 +596,74 @@ const AgentStudioPage = () => {
     status,
   ]);
 
+  // Break circular dependency: useAgentLifecycle needs enqueueConfigMutation,
+  // useConfigMutationQueue needs lifecycle block phases. Use a ref.
+  const enqueueConfigMutationRef = useRef<(params: {
+    kind: "create-agent" | "rename-agent" | "delete-agent";
+    label: string;
+    run: () => Promise<void>;
+  }) => Promise<void>>(async () => {});
+
+  const {
+    deleteAgentBlock,
+    createAgentBlock,
+    renameAgentBlock,
+    deleteConfirmAgentId,
+    setDeleteConfirmAgentId,
+    createAgentBusy,
+    handleCreateAgent,
+    handleConfirmDeleteAgent,
+    handleDeleteAgent,
+    handleRenameAgent,
+  } = useAgentLifecycle({
+    client,
+    dispatch,
+    agents,
+    stateRef,
+    status,
+    setError,
+    enqueueConfigMutation: useCallback(
+      (params: { kind: "create-agent" | "rename-agent" | "delete-agent"; label: string; run: () => Promise<void> }) =>
+        enqueueConfigMutationRef.current(params),
+      []
+    ),
+    loadAgents,
+    flushPendingDraft,
+    focusedAgentId: focusedAgent?.agentId ?? null,
+    setFocusFilter,
+    focusFilterTouchedRef,
+    setSettingsAgentId,
+    setMobilePane,
+  });
+
+  const {
+    queuedConfigMutations,
+    activeConfigMutation,
+    enqueueConfigMutation,
+    queuedConfigMutationCount,
+  } = useConfigMutationQueue({
+    hasRunningAgents,
+    deleteAgentBlockPhase: deleteAgentBlock?.phase ?? null,
+    createAgentBlockPhase: createAgentBlock?.phase ?? null,
+    renameAgentBlockPhase: renameAgentBlock?.phase ?? null,
+    status,
+  });
+
+  // Wire the real enqueueConfigMutation into the ref
+  useEffect(() => {
+    enqueueConfigMutationRef.current = enqueueConfigMutation;
+  }, [enqueueConfigMutation]);
+
+  const { historyInFlightRef, loadAgentHistory } = useAgentHistorySync({
+    client,
+    dispatch,
+    agents,
+    stateRef,
+    status,
+    focusedAgentId,
+    focusedAgentRunning,
+  });
+
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
@@ -904,48 +672,6 @@ const AgentStudioPage = () => {
     if (status === "connected") return;
     setAgentsLoadedOnce(false);
   }, [gatewayUrl, status]);
-
-	  useEffect(() => {
-	    if (status !== "connected") return;
-	    if (activeConfigMutation) return;
-	    if (deleteAgentBlock && deleteAgentBlock.phase !== "queued") return;
-	    if (createAgentBlock && createAgentBlock.phase !== "queued") return;
-	    if (renameAgentBlock && renameAgentBlock.phase !== "queued") return;
-	    if (hasRunningAgents) return;
-	    const next = queuedConfigMutations[0];
-	    if (!next) return;
-	    setQueuedConfigMutations((current) => current.slice(1));
-	    setActiveConfigMutation(next);
-	  }, [
-	    activeConfigMutation,
-	    createAgentBlock,
-	    deleteAgentBlock,
-	    renameAgentBlock,
-	    hasRunningAgents,
-	    queuedConfigMutations,
-	    status,
-	  ]);
-
-  useEffect(() => {
-    if (!activeConfigMutation) return;
-    let mounted = true;
-    const run = async () => {
-      try {
-        await activeConfigMutation.run();
-        activeConfigMutation.resolve();
-      } catch (error) {
-        activeConfigMutation.reject(error);
-      } finally {
-        if (mounted) {
-          setActiveConfigMutation(null);
-        }
-      }
-    };
-    void run();
-    return () => {
-      mounted = false;
-    };
-  }, [activeConfigMutation]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1041,7 +767,6 @@ const AgentStudioPage = () => {
     if (contextTab === "settings" && state.selectedAgentId !== settingsAgentId) {
       setSettingsAgentId(state.selectedAgentId);
     } else if (settingsAgentId && state.selectedAgentId !== settingsAgentId) {
-      // Settings tab not active — clear stale settingsAgentId
       setSettingsAgentId(null);
     }
   }, [contextTab, settingsAgentId, state.selectedAgentId]);
@@ -1184,65 +909,6 @@ const AgentStudioPage = () => {
     dispatch({ type: "selectAgent", agentId: nextId });
   }, [dispatch, focusedAgent, state.selectedAgentId]);
 
-  useEffect(() => {
-    for (const agent of agents) {
-      const lastMessage = agent.lastUserMessage?.trim() ?? "";
-      const kind = resolveSpecialUpdateKind(lastMessage);
-      const key = agent.agentId;
-      const marker = kind === "heartbeat" ? `${lastMessage}:${heartbeatTick}` : lastMessage;
-      const previous = specialUpdateRef.current.get(key);
-      if (previous === marker) continue;
-      specialUpdateRef.current.set(key, marker);
-      void updateSpecialLatestUpdate(agent.agentId, agent, lastMessage);
-    }
-  }, [agents, heartbeatTick, updateSpecialLatestUpdate]);
-
-  const loadAgentHistory = useCallback(
-    async (agentId: string) => {
-      const agent = stateRef.current.agents.find((entry) => entry.agentId === agentId);
-      const sessionKey = agent?.sessionKey?.trim();
-      if (!agent || !agent.sessionCreated || !sessionKey) return;
-      if (historyInFlightRef.current.has(sessionKey)) return;
-
-      historyInFlightRef.current.add(sessionKey);
-      const loadedAt = Date.now();
-      try {
-        const result = await client.call<ChatHistoryResult>("chat.history", {
-          sessionKey,
-          limit: 200,
-        });
-        const patch = buildHistorySyncPatch({
-          messages: result.messages ?? [],
-          currentLines: agent.outputLines,
-          loadedAt,
-          status: agent.status,
-          runId: agent.runId,
-        });
-        dispatch({
-          type: "updateAgent",
-          agentId,
-          patch,
-        });
-      } catch (err) {
-        if (!isGatewayDisconnectLikeError(err)) {
-          const msg = err instanceof Error ? err.message : "Failed to load chat history.";
-          console.error(msg);
-        }
-      } finally {
-        historyInFlightRef.current.delete(sessionKey);
-      }
-    },
-    [client, dispatch]
-  );
-
-  useEffect(() => {
-    if (status !== "connected") return;
-    for (const agent of agents) {
-      if (!agent.sessionCreated || agent.historyLoadedAt) continue;
-      void loadAgentHistory(agent.agentId);
-    }
-  }, [agents, loadAgentHistory, status]);
-
   const handleOpenAgentSettings = useCallback(
     (agentId: string) => {
       flushPendingDraft(focusedAgent?.agentId ?? null);
@@ -1258,155 +924,13 @@ const AgentStudioPage = () => {
   const handleFilesToggle = useCallback(() => {
     setContextMode((prev) => {
       if (prev === "files") {
-        // Toggling files off — go back to chat on mobile
         setMobilePane("chat");
         return null;
       }
-      // Toggling files on — show context panel
       setMobilePane("context");
       return "files";
     });
   }, []);
-
-  const handleConfirmDeleteAgent = useCallback(
-    async (agentId: string) => {
-      const agent = agents.find((entry) => entry.agentId === agentId);
-      if (!agent) return;
-      setDeleteAgentBlock({
-        agentId,
-        agentName: agent.name,
-        phase: "queued",
-        startedAt: Date.now(),
-        sawDisconnect: false,
-      });
-      try {
-        await enqueueConfigMutation({
-          kind: "delete-agent",
-          label: `Delete ${agent.name}`,
-          run: async () => {
-            setDeleteAgentBlock((current) => {
-              if (!current || current.agentId !== agentId) return current;
-              return {
-                ...current,
-                phase: "deleting",
-              };
-            });
-            await runDeleteAgentTransaction(
-              {
-                trashAgentState: async (agentId) => {
-                  const { result } = await fetchJson<{ result: TrashAgentStateResult }>(
-                    "/api/gateway/agent-state",
-                    {
-                      method: "POST",
-                      headers: { "content-type": "application/json" },
-                      body: JSON.stringify({ agentId }),
-                    }
-                  );
-                  return result;
-                },
-                restoreAgentState: async (agentId, trashDir) => {
-                  const { result } = await fetchJson<{ result: RestoreAgentStateResult }>(
-                    "/api/gateway/agent-state",
-                    {
-                      method: "PUT",
-                      headers: { "content-type": "application/json" },
-                      body: JSON.stringify({ agentId, trashDir }),
-                    }
-                  );
-                  return result;
-                },
-                removeCronJobsForAgent: async (agentId) => {
-                  await removeCronJobsForAgent(client, agentId);
-                },
-                deleteGatewayAgent: async (agentId) => {
-                  await deleteGatewayAgent({ client, agentId });
-                },
-                logError: (message, error) => console.error(message, error),
-              },
-              agentId
-            );
-            setSettingsAgentId(null);
-            setDeleteAgentBlock((current) => {
-              if (!current || current.agentId !== agentId) return current;
-              return {
-                ...current,
-                phase: "awaiting-restart",
-                sawDisconnect: false,
-              };
-            });
-          },
-        });
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : "Failed to delete agent.";
-        setDeleteAgentBlock(null);
-        setError(msg);
-      }
-    },
-    [
-      agents,
-      client,
-      enqueueConfigMutation,
-      setError,
-    ]
-  );
-
-  const handleDeleteAgent = useCallback(
-    (agentId: string) => {
-      if (deleteAgentBlock) return;
-      if (createAgentBlock) return;
-      if (renameAgentBlock) return;
-      if (agentId === RESERVED_MAIN_AGENT_ID) {
-        setError("The main agent cannot be deleted.");
-        return;
-      }
-      const agent = agents.find((entry) => entry.agentId === agentId);
-      if (!agent) return;
-      setDeleteConfirmAgentId(agentId);
-    },
-    [agents, createAgentBlock, deleteAgentBlock, renameAgentBlock, setError]
-  );
-
-  useEffect(() => {
-    if (!deleteAgentBlock || deleteAgentBlock.phase !== "awaiting-restart") return;
-    if (status !== "connected") {
-      if (!deleteAgentBlock.sawDisconnect) {
-        setDeleteAgentBlock((current) => {
-          if (!current || current.phase !== "awaiting-restart" || current.sawDisconnect) {
-            return current;
-          }
-          return { ...current, sawDisconnect: true };
-        });
-      }
-      return;
-    }
-    if (!deleteAgentBlock.sawDisconnect) return;
-    let cancelled = false;
-    const finalize = async () => {
-      await loadAgents();
-      if (cancelled) return;
-      setDeleteAgentBlock(null);
-      setMobilePane("chat");
-    };
-    void finalize();
-    return () => {
-      cancelled = true;
-    };
-  }, [deleteAgentBlock, loadAgents, status]);
-
-  useEffect(() => {
-    if (!deleteAgentBlock) return;
-    if (deleteAgentBlock.phase === "queued") return;
-    const maxWaitMs = 90_000;
-    const elapsed = Date.now() - deleteAgentBlock.startedAt;
-    const remaining = Math.max(0, maxWaitMs - elapsed);
-    const timeoutId = window.setTimeout(() => {
-      setDeleteAgentBlock(null);
-      setError("Gateway restart timed out after deleting the agent.");
-    }, remaining);
-    return () => {
-      window.clearTimeout(timeoutId);
-    };
-  }, [deleteAgentBlock, setError]);
 
   const handleRunCronJob = useCallback(
     async (agentId: string, jobId: string) => {
@@ -1509,174 +1033,6 @@ const AgentStudioPage = () => {
     [client, heartbeatDeleteBusyId, heartbeatRunBusyId, loadHeartbeatsForSettingsAgent]
   );
 
-  const handleCreateAgent = useCallback(async () => {
-    if (createAgentBusy) return;
-    if (createAgentBlock) return;
-    if (deleteAgentBlock) return;
-    if (renameAgentBlock) return;
-    if (status !== "connected") {
-      setError("Connect to gateway before creating an agent.");
-      return;
-    }
-    setCreateAgentBusy(true);
-    try {
-      const name = resolveNextNewAgentName(stateRef.current.agents);
-      setCreateAgentBlock({
-        agentId: null,
-        agentName: name,
-        phase: "queued",
-        startedAt: Date.now(),
-        sawDisconnect: false,
-      });
-      await enqueueConfigMutation({
-        kind: "create-agent",
-        label: `Create ${name}`,
-        run: async () => {
-          setCreateAgentBlock((current) => {
-            if (!current || current.agentName !== name) return current;
-            return { ...current, phase: "creating" };
-          });
-          const created = await createGatewayAgent({ client, name });
-          flushPendingDraft(focusedAgent?.agentId ?? null);
-          focusFilterTouchedRef.current = true;
-          setFocusFilter("all");
-          dispatch({ type: "selectAgent", agentId: created.id });
-          setSettingsAgentId(null);
-          setMobilePane("chat");
-          setCreateAgentBlock((current) => {
-            if (!current || current.agentName !== name) return current;
-            return {
-              ...current,
-              agentId: created.id,
-              phase: "awaiting-restart",
-              sawDisconnect: false,
-            };
-          });
-        },
-      });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to create agent.";
-      setCreateAgentBlock(null);
-      setError(message);
-    } finally {
-      setCreateAgentBusy(false);
-    }
-  }, [
-    client,
-    createAgentBusy,
-    createAgentBlock,
-    deleteAgentBlock,
-    flushPendingDraft,
-    focusedAgent,
-    renameAgentBlock,
-    dispatch,
-    enqueueConfigMutation,
-    setError,
-    status,
-  ]);
-
-  useEffect(() => {
-    if (!createAgentBlock || createAgentBlock.phase !== "awaiting-restart") return;
-    if (status !== "connected") {
-      if (!createAgentBlock.sawDisconnect) {
-        setCreateAgentBlock((current) => {
-          if (!current || current.phase !== "awaiting-restart" || current.sawDisconnect) {
-            return current;
-          }
-          return { ...current, sawDisconnect: true };
-        });
-      }
-      return;
-    }
-	    if (!createAgentBlock.sawDisconnect) return;
-	    let cancelled = false;
-	    const finalize = async () => {
-	      await loadAgents();
-	      if (cancelled) return;
-	      const newAgentId = createAgentBlock.agentId?.trim() ?? "";
-	      if (newAgentId) {
-	        dispatch({ type: "selectAgent", agentId: newAgentId });
-	        setCreateAgentBlock((current) => {
-	          if (!current || current.agentId !== newAgentId) return current;
-	          return { ...current, phase: "bootstrapping-files" };
-	        });
-	        try {
-	          await bootstrapAgentBrainFilesFromTemplate({ client, agentId: newAgentId });
-	        } catch (err) {
-	          const message =
-	            err instanceof Error
-	              ? err.message
-	              : "Failed to bootstrap brain files for the new agent.";
-	          console.error(message, err);
-	          setError(message);
-	        }
-	      }
-	      setCreateAgentBlock(null);
-	      setMobilePane("chat");
-	    };
-	    void finalize();
-	    return () => {
-	      cancelled = true;
-	    };
-	  }, [client, createAgentBlock, dispatch, loadAgents, setError, status]);
-
-  useEffect(() => {
-    if (!createAgentBlock) return;
-    if (createAgentBlock.phase === "queued") return;
-    const maxWaitMs = 90_000;
-    const elapsed = Date.now() - createAgentBlock.startedAt;
-    const remaining = Math.max(0, maxWaitMs - elapsed);
-    const timeoutId = window.setTimeout(() => {
-      setCreateAgentBlock(null);
-      setError("Gateway restart timed out after creating the agent.");
-    }, remaining);
-    return () => {
-      window.clearTimeout(timeoutId);
-    };
-  }, [createAgentBlock, setError]);
-
-  useEffect(() => {
-    if (!renameAgentBlock || renameAgentBlock.phase !== "awaiting-restart") return;
-    if (status !== "connected") {
-      if (!renameAgentBlock.sawDisconnect) {
-        setRenameAgentBlock((current) => {
-          if (!current || current.phase !== "awaiting-restart" || current.sawDisconnect) {
-            return current;
-          }
-          return { ...current, sawDisconnect: true };
-        });
-      }
-      return;
-    }
-    if (!renameAgentBlock.sawDisconnect) return;
-    let cancelled = false;
-    const finalize = async () => {
-      await loadAgents();
-      if (cancelled) return;
-      setRenameAgentBlock(null);
-      setMobilePane("chat");
-    };
-    void finalize();
-    return () => {
-      cancelled = true;
-    };
-  }, [loadAgents, renameAgentBlock, status]);
-
-  useEffect(() => {
-    if (!renameAgentBlock) return;
-    if (renameAgentBlock.phase === "queued") return;
-    const maxWaitMs = 90_000;
-    const elapsed = Date.now() - renameAgentBlock.startedAt;
-    const remaining = Math.max(0, maxWaitMs - elapsed);
-    const timeoutId = window.setTimeout(() => {
-      setRenameAgentBlock(null);
-      setError("Gateway restart timed out after renaming the agent.");
-    }, remaining);
-    return () => {
-      window.clearTimeout(timeoutId);
-    };
-  }, [renameAgentBlock, setError]);
-
   const handleNewSession = useCallback(
     async (agentId: string) => {
       const agent = agents.find((entry) => entry.agentId === agentId);
@@ -1712,23 +1068,8 @@ const AgentStudioPage = () => {
         });
       }
     },
-    [agents, client, dispatch, setError]
+    [agents, client, dispatch, historyInFlightRef, setError, specialUpdateInFlightRef, specialUpdateRef]
   );
-
-  useEffect(() => {
-    if (status !== "connected") return;
-    if (!focusedAgentId) return;
-    if (!focusedAgentRunning) return;
-    void loadAgentHistory(focusedAgentId);
-    const timer = window.setInterval(() => {
-      const latest = stateRef.current.agents.find((entry) => entry.agentId === focusedAgentId);
-      if (!latest || latest.status !== "running") return;
-      void loadAgentHistory(focusedAgentId);
-    }, 4500);
-    return () => {
-      window.clearInterval(timer);
-    };
-  }, [focusedAgentId, focusedAgentRunning, loadAgentHistory, status]);
 
   const handleSend = useCallback(
     async (agentId: string, sessionKey: string, message: string) => {
@@ -1823,7 +1164,7 @@ const AgentStudioPage = () => {
         });
       }
     },
-    [client, dispatch]
+    [client, dispatch, pendingDraftTimersRef, pendingDraftValuesRef]
   );
 
   const handleStopRun = useCallback(
@@ -1895,7 +1236,6 @@ const AgentStudioPage = () => {
     [handleSessionSettingChange]
   );
 
-
   const handleToolCallingToggle = useCallback(
     (agentId: string, enabled: boolean) => {
       dispatch({
@@ -1927,7 +1267,7 @@ const AgentStudioPage = () => {
       loadSummarySnapshot,
       loadAgentHistory,
       refreshHeartbeatLatestUpdate,
-      bumpHeartbeatTick: () => setHeartbeatTick((prev) => prev + 1),
+      bumpHeartbeatTick,
       setTimeout: (fn, delayMs) => window.setTimeout(fn, delayMs),
       clearTimeout: (id) => window.clearTimeout(id),
       isDisconnectLikeError: isGatewayDisconnectLikeError,
@@ -1965,6 +1305,7 @@ const AgentStudioPage = () => {
       unsubscribe();
     };
   }, [
+    bumpHeartbeatTick,
     client,
     dispatch,
     loadAgentHistory,
@@ -1974,73 +1315,10 @@ const AgentStudioPage = () => {
     loadSummarySnapshot,
     queueLivePatch,
     refreshHeartbeatLatestUpdate,
+    setExecApprovalQueue,
     status,
     updateSpecialLatestUpdate,
   ]);
-
-  const handleRenameAgent = useCallback(
-    async (agentId: string, name: string) => {
-      if (deleteAgentBlock) return false;
-      if (createAgentBlock) return false;
-      if (renameAgentBlock) return false;
-      const agent = agents.find((entry) => entry.agentId === agentId);
-      if (!agent) return false;
-      try {
-        setRenameAgentBlock({
-          agentId,
-          agentName: name,
-          phase: "queued",
-          startedAt: Date.now(),
-          sawDisconnect: false,
-        });
-        await enqueueConfigMutation({
-          kind: "rename-agent",
-          label: `Rename ${agent.name}`,
-          run: async () => {
-            setRenameAgentBlock((current) => {
-              if (!current || current.agentId !== agentId) return current;
-              return { ...current, phase: "renaming" };
-            });
-            await renameGatewayAgent({
-              client,
-              agentId,
-              name,
-              sessionKey: agent.sessionKey,
-            });
-            dispatch({
-              type: "updateAgent",
-              agentId,
-              patch: { name },
-            });
-            setRenameAgentBlock((current) => {
-              if (!current || current.agentId !== agentId) return current;
-              return {
-                ...current,
-                phase: "awaiting-restart",
-                sawDisconnect: false,
-              };
-            });
-          },
-        });
-        return true;
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to rename agent.";
-        setRenameAgentBlock(null);
-        setError(message);
-        return false;
-      }
-    },
-    [
-      agents,
-      client,
-      createAgentBlock,
-      deleteAgentBlock,
-      dispatch,
-      enqueueConfigMutation,
-      renameAgentBlock,
-      setError,
-    ]
-  );
 
   const handleAvatarShuffle = useCallback(
     async (agentId: string) => {
@@ -2064,29 +1342,6 @@ const AgentStudioPage = () => {
       );
     },
     [dispatch, gatewayUrl, settingsCoordinator]
-  );
-
-  const handleDraftChange = useCallback(
-    (agentId: string, value: string) => {
-      pendingDraftValuesRef.current.set(agentId, value);
-      const existingTimer = pendingDraftTimersRef.current.get(agentId) ?? null;
-      if (existingTimer !== null) {
-        window.clearTimeout(existingTimer);
-      }
-      const timer = window.setTimeout(() => {
-        pendingDraftTimersRef.current.delete(agentId);
-        const pending = pendingDraftValuesRef.current.get(agentId);
-        if (pending === undefined) return;
-        pendingDraftValuesRef.current.delete(agentId);
-        dispatch({
-          type: "updateAgent",
-          agentId,
-          patch: { draft: pending },
-        });
-      }, 250);
-      pendingDraftTimersRef.current.set(agentId, timer);
-    },
-    [dispatch]
   );
 
   const connectionPanelVisible = showConnectionPanel;
