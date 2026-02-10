@@ -168,7 +168,7 @@ const AgentStudioPage = () => {
   } = useGatewayStatus(client, status);
 
   const {
-    sessionUsage, sessionUsageLoading,
+    sessionUsage,
     loadSessionUsage, resetSessionUsage,
   } = useSessionUsage(client, status);
 
@@ -1431,8 +1431,7 @@ const AgentStudioPage = () => {
                       onRefresh={() => {
                         void loadAllSessions();
                       }}
-                      usage={sessionUsage}
-                      usageLoading={sessionUsageLoading}
+                      activeSessionKey={focusedAgent?.sessionKey ?? null}
                       onSessionClick={(sessionKey, agentId) => {
                         if (agentId) {
                           flushPendingDraft(focusedAgent?.agentId ?? null);
