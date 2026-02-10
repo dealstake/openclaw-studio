@@ -58,9 +58,11 @@ function SSOButton({
 export const dynamic = "force-dynamic";
 
 export default async function LoginPage() {
-  // Build IdP login URLs using the request hostname
+  // Build IdP login URLs using the public-facing hostname.
+  // Behind Cloudflare/reverse proxy, the real hostname is in x-forwarded-host.
   const headerStore = await headers();
-  const host = headerStore.get("host") || "";
+  const host =
+    headerStore.get("x-forwarded-host") || headerStore.get("host") || "";
   const hostname = host.split(":")[0]; // strip port if present
 
   const methods = getSignInMethods();
