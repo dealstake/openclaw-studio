@@ -651,9 +651,28 @@ const AgentStudioPage = () => {
       }
       const agentsResult = await client.call<AgentsListResult>("agents.list", {});
       const mainKey = agentsResult.mainKey?.trim() || "main";
+
+      // Filter out phantom agents injected by the gateway's mainKey fallback.
+      // The gateway always injects session.mainKey (default "main") into the
+      // agent list even when no such agent is configured.  We cross-reference
+      // against the config's explicit agents.list to keep only real agents.
+      const configuredAgentIds = new Set(
+        (configSnapshot?.config?.agents?.list ?? [])
+          .map((entry: { id?: string }) => entry?.id?.trim()?.toLowerCase())
+          .filter(Boolean)
+      );
+      const realAgents =
+        configuredAgentIds.size > 0
+          ? agentsResult.agents.filter(
+              (agent) =>
+                configuredAgentIds.has(agent.id?.toLowerCase()) ||
+                agent.id === agentsResult.defaultId
+            )
+          : agentsResult.agents;
+
       const mainSessionKeyByAgent = new Map<string, SessionsListEntry | null>();
       await Promise.all(
-        agentsResult.agents.map(async (agent) => {
+        realAgents.map(async (agent) => {
           try {
             const expectedMainKey = buildAgentMainSessionKey(agent.id, mainKey);
             const sessions = await client.call<SessionsListResult>("sessions.list", {
@@ -675,7 +694,7 @@ const AgentStudioPage = () => {
           }
         })
       );
-      const seeds: AgentStoreSeed[] = agentsResult.agents.map((agent) => {
+      const seeds: AgentStoreSeed[] = realAgents.map((agent) => {
         const persistedSeed =
           settings && gatewayKey ? resolveAgentAvatarSeed(settings, gatewayKey, agent.id) : null;
         const avatarSeed = persistedSeed ?? agent.id;
