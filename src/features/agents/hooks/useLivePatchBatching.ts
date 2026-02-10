@@ -32,6 +32,16 @@ export function useLivePatchBatching(dispatch: Dispatch) {
     livePatchBatcherRef.current.schedule();
   }, []);
 
+  /** Drop any pending rAF-batched patches for the given agent.
+   *  Call this before dispatching a lifecycle terminal transition so that
+   *  a stale `status: "running"` queued in the rAF batch cannot overwrite
+   *  the `status: "idle"` set by the lifecycle dispatch. */
+  const clearPendingLivePatch = useCallback((agentId: string) => {
+    const key = agentId.trim();
+    if (!key) return;
+    pendingLivePatchesRef.current.delete(key);
+  }, []);
+
   // Cleanup on unmount
   useEffect(() => {
     const batcher = livePatchBatcherRef.current;
@@ -44,5 +54,6 @@ export function useLivePatchBatching(dispatch: Dispatch) {
 
   return {
     queueLivePatch,
+    clearPendingLivePatch,
   };
 }

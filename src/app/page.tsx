@@ -190,7 +190,7 @@ const AgentStudioPage = () => {
   const { flushPendingDraft, handleDraftChange, pendingDraftValuesRef, pendingDraftTimersRef } =
     useDraftBatching(dispatch);
 
-  const { queueLivePatch } = useLivePatchBatching(dispatch);
+  const { queueLivePatch, clearPendingLivePatch } = useLivePatchBatching(dispatch);
 
   const agents = state.agents;
   const {
@@ -712,9 +712,10 @@ const AgentStudioPage = () => {
     focusedAgentRunning,
   });
 
-  useEffect(() => {
-    stateRef.current = state;
-  }, [state]);
+  // Update stateRef synchronously during render (not in useEffect) so that
+  // WebSocket event handlers reading stateRef.current always see the latest
+  // dispatched state, not the state from the previous render cycle.
+  stateRef.current = state;
 
   useEffect(() => {
     if (status === "connected") return;
@@ -1171,6 +1172,7 @@ const AgentStudioPage = () => {
       getAgents: () => stateRef.current.agents,
       dispatch,
       queueLivePatch,
+      clearPendingLivePatch,
       loadSummarySnapshot,
       loadAgentHistory,
       refreshHeartbeatLatestUpdate,
@@ -1213,6 +1215,7 @@ const AgentStudioPage = () => {
     };
   }, [
     bumpHeartbeatTick,
+    clearPendingLivePatch,
     client,
     dispatch,
     loadAgentHistory,

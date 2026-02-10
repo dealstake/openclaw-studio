@@ -35,6 +35,7 @@ export type GatewayRuntimeEventHandlerDeps = {
   getAgents: () => AgentState[];
   dispatch: (action: RuntimeDispatchAction) => void;
   queueLivePatch: (agentId: string, patch: Partial<AgentState>) => void;
+  clearPendingLivePatch: (agentId: string) => void;
   now?: () => number;
 
   loadSummarySnapshot: () => Promise<void>;
@@ -264,6 +265,9 @@ export function createGatewayRuntimeEventHandler(
 
     if (payload.state === "final") {
       clearRunTracking(payload.runId ?? null);
+      // Clear any pending rAF-batched live patches so stale "running" status
+      // from streaming frames cannot overwrite the idle transition below.
+      deps.clearPendingLivePatch(agentId);
       if (!nextThinking && role === "assistant" && !thinkingDebugBySession.has(payload.sessionKey)) {
         thinkingDebugBySession.add(payload.sessionKey);
         logWarn("No thinking trace extracted from chat event.", {
@@ -314,6 +318,11 @@ export function createGatewayRuntimeEventHandler(
         type: "updateAgent",
         agentId,
         patch: {
+          // The gateway only emits chat "final" when the run lifecycle ends,
+          // so this is a safe place to transition status to idle as a backup
+          // in case the agent lifecycle event races or is missed.
+          status: "idle",
+          runId: null,
           streamText: null,
           thinkingTrace: null,
           ...(typeof assistantCompletionAt === "number"
@@ -326,6 +335,7 @@ export function createGatewayRuntimeEventHandler(
 
     if (payload.state === "aborted") {
       clearRunTracking(payload.runId ?? null);
+      deps.clearPendingLivePatch(agentId);
       deps.dispatch({
         type: "appendOutput",
         agentId,
@@ -334,13 +344,14 @@ export function createGatewayRuntimeEventHandler(
       deps.dispatch({
         type: "updateAgent",
         agentId,
-        patch: { streamText: null, thinkingTrace: null },
+        patch: { status: "idle", runId: null, streamText: null, thinkingTrace: null },
       });
       return;
     }
 
     if (payload.state === "error") {
       clearRunTracking(payload.runId ?? null);
+      deps.clearPendingLivePatch(agentId);
       deps.dispatch({
         type: "appendOutput",
         agentId,
@@ -349,7 +360,7 @@ export function createGatewayRuntimeEventHandler(
       deps.dispatch({
         type: "updateAgent",
         agentId,
-        patch: { streamText: null, thinkingTrace: null },
+        patch: { status: "error", runId: null, streamText: null, thinkingTrace: null },
       });
     }
   };
@@ -519,6 +530,10 @@ export function createGatewayRuntimeEventHandler(
     }
     if (transition.clearRunTracking) {
       clearRunTracking(payload.runId);
+      // Flush any pending rAF-batched live patches for this agent so that a
+      // stale `status: "running"` queued from a prior streaming frame cannot
+      // overwrite the terminal `status: "idle"` dispatched below.
+      deps.clearPendingLivePatch(match);
     }
     deps.dispatch({
       type: "updateAgent",

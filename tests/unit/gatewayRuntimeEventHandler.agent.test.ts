@@ -45,6 +45,7 @@ describe("gateway runtime event handler (agent)", () => {
       getAgents: () => agents,
       dispatch: vi.fn(),
       queueLivePatch,
+      clearPendingLivePatch: vi.fn(),
       now: () => 1000,
       loadSummarySnapshot: vi.fn(async () => {}),
       loadAgentHistory: vi.fn(async () => {}),
@@ -98,6 +99,7 @@ describe("gateway runtime event handler (agent)", () => {
       getAgents: () => agents,
       dispatch: vi.fn(),
       queueLivePatch,
+      clearPendingLivePatch: vi.fn(),
       now: () => 1000,
       loadSummarySnapshot: vi.fn(async () => {}),
       loadAgentHistory: vi.fn(async () => {}),
@@ -152,6 +154,7 @@ describe("gateway runtime event handler (agent)", () => {
         actions.push(action as never);
       }),
       queueLivePatch: vi.fn(),
+      clearPendingLivePatch: vi.fn(),
       now: () => 1000,
       loadSummarySnapshot: vi.fn(async () => {}),
       loadAgentHistory: vi.fn(async () => {}),
@@ -201,6 +204,7 @@ describe("gateway runtime event handler (agent)", () => {
         actions.push(action as never);
       }),
       queueLivePatch: vi.fn(),
+      clearPendingLivePatch: vi.fn(),
       now: () => 1000,
       loadSummarySnapshot: vi.fn(async () => {}),
       loadAgentHistory: vi.fn(async () => {}),
