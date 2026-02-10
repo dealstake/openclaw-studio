@@ -1,22 +1,26 @@
-"use client";
-
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { Mail, ArrowRight, Loader2 } from "lucide-react";
+import { cookies, headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { Mail, ArrowRight } from "lucide-react";
 import { BrandMark } from "@/components/brand/BrandMark";
 import { SSOGoogleIcon } from "@/components/brand/SSOGoogleIcon";
 import { SSOMicrosoftIcon } from "@/components/brand/SSOMicrosoftIcon";
 import { getSignInMethods } from "@/lib/auth/sign-in-methods";
-import {
-  getGoogleLoginUrl,
-  getMicrosoftLoginUrl,
-  checkAuth,
-} from "@/lib/auth/cf-access";
 import { BRANDING } from "@/lib/branding/config";
 
-const methods = getSignInMethods();
-
 const DISABLED_TOOLTIP = "Your organization has disabled this sign-in method";
+
+const CF_TEAM_DOMAIN =
+  process.env.NEXT_PUBLIC_CF_TEAM_DOMAIN || BRANDING.cfTeamDomain;
+const CF_GOOGLE_IDP_ID = process.env.NEXT_PUBLIC_CF_GOOGLE_IDP_ID || "";
+const CF_MICROSOFT_IDP_ID = process.env.NEXT_PUBLIC_CF_MICROSOFT_IDP_ID || "";
+
+function buildLoginUrl(hostname: string, idpId?: string): string {
+  if (!CF_TEAM_DOMAIN || !hostname) return "/";
+  const base = `https://${CF_TEAM_DOMAIN}/cdn-cgi/access/login/${hostname}`;
+  const params = new URLSearchParams({ redirect_url: "/" });
+  if (idpId) params.set("idp", idpId);
+  return `${base}?${params}`;
+}
 
 function SSOButton({
   enabled,
@@ -34,15 +38,13 @@ function SSOButton({
 
   if (!enabled) {
     return (
-      <button
-        type="button"
-        disabled
+      <span
         title={DISABLED_TOOLTIP}
-        className={`${base} disabled:cursor-not-allowed disabled:opacity-50`}
+        className={`${base} cursor-not-allowed opacity-50`}
       >
         {icon}
         {label}
-      </button>
+      </span>
     );
   }
 
@@ -54,38 +56,24 @@ function SSOButton({
   );
 }
 
-export default function LoginPage() {
-  const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [checking, setChecking] = useState(true);
+export const dynamic = "force-dynamic";
 
-  // Redirect to dashboard if already authenticated
-  useEffect(() => {
-    checkAuth().then((identity) => {
-      if (identity) {
-        router.replace("/");
-      } else {
-        setChecking(false);
-      }
-    });
-  }, [router]);
-
-  // Build IdP URLs on the client (needs window.location.hostname)
-  const [googleUrl, setGoogleUrl] = useState("#");
-  const [microsoftUrl, setMicrosoftUrl] = useState("#");
-
-  useEffect(() => {
-    setGoogleUrl(getGoogleLoginUrl());
-    setMicrosoftUrl(getMicrosoftLoginUrl());
-  }, []);
-
-  if (checking) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    );
+export default async function LoginPage() {
+  // If user already has a CF session cookie, redirect to dashboard
+  const cookieStore = await cookies();
+  const cfAuth = cookieStore.get("CF_Authorization");
+  if (cfAuth?.value) {
+    redirect("/");
   }
+
+  // Build IdP login URLs using the request hostname
+  const headerStore = await headers();
+  const host = headerStore.get("host") || "";
+  const hostname = host.split(":")[0]; // strip port if present
+
+  const methods = getSignInMethods();
+  const googleUrl = buildLoginUrl(hostname, CF_GOOGLE_IDP_ID || undefined);
+  const microsoftUrl = buildLoginUrl(hostname, CF_MICROSOFT_IDP_ID || undefined);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
@@ -129,7 +117,7 @@ export default function LoginPage() {
             <div className="h-px flex-1 bg-border" />
           </div>
 
-          {/* Email field — disabled by default, enable via env var */}
+          {/* Email field — disabled by default */}
           <div
             className={`space-y-3 ${!methods.email ? "opacity-50" : ""}`}
             title={!methods.email ? DISABLED_TOOLTIP : undefined}
@@ -139,8 +127,6 @@ export default function LoginPage() {
               <input
                 type="email"
                 placeholder="Email address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
                 disabled={!methods.email}
                 className="w-full rounded-lg border border-border bg-input py-3 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed"
               />
