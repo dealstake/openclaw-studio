@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import { isGatewayDisconnectLikeError, type GatewayStatus } from "@/lib/gateway/GatewayClient";
 import {
@@ -97,6 +97,12 @@ export function useSettingsPanel({ client, status, agents }: UseSettingsPanelPar
     [client]
   );
 
+  // Stable refs to avoid useEffect dep cascade when `client` identity changes
+  const loadCronRef = useRef(loadCronJobsForSettingsAgent);
+  loadCronRef.current = loadCronJobsForSettingsAgent;
+  const loadHeartbeatsRef = useRef(loadHeartbeatsForSettingsAgent);
+  loadHeartbeatsRef.current = loadHeartbeatsForSettingsAgent;
+
   // Reset settings panel state when agent is cleared or disconnected
   useEffect(() => {
     if (!settingsAgentId || status !== "connected") {
@@ -112,9 +118,9 @@ export function useSettingsPanel({ client, status, agents }: UseSettingsPanelPar
       setHeartbeatDeleteBusyId(null);
       return;
     }
-    void loadCronJobsForSettingsAgent(settingsAgentId);
-    void loadHeartbeatsForSettingsAgent(settingsAgentId);
-  }, [loadCronJobsForSettingsAgent, loadHeartbeatsForSettingsAgent, settingsAgentId, status]);
+    void loadCronRef.current(settingsAgentId);
+    void loadHeartbeatsRef.current(settingsAgentId);
+  }, [settingsAgentId, status]);
 
   // Auto-clear settings agent if it no longer exists
   useEffect(() => {

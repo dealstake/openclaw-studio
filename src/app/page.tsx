@@ -907,17 +907,22 @@ const AgentStudioPage = () => {
 
   useEffect(() => {
     if (status !== "connected") return;
-    void loadSummarySnapshot();
-  }, [loadSummarySnapshot, status]);
+    void loadSummarySnapshotRef.current();
+  }, [status]);
 
-  // Poll summary every 10s when any agent is running
+  // Poll summary every 10s when any agent is running.
+  // Use refs for `hasRunningAgents` and `loadSummarySnapshot` so the interval
+  // is only created/destroyed when `status` changes (not on every running toggle).
+  const hasRunningAgentsRef = useRef(hasRunningAgents);
+  hasRunningAgentsRef.current = hasRunningAgents;
   useEffect(() => {
-    if (status !== "connected" || !hasRunningAgents) return;
+    if (status !== "connected") return;
     const interval = setInterval(() => {
-      void loadSummarySnapshot();
+      if (!hasRunningAgentsRef.current) return;
+      void loadSummarySnapshotRef.current();
     }, 10_000);
     return () => clearInterval(interval);
-  }, [hasRunningAgents, loadSummarySnapshot, status]);
+  }, [status]);
 
   useEffect(() => {
     if (!state.selectedAgentId) return;
