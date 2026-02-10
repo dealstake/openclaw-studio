@@ -26,21 +26,21 @@ describe("HeaderBar brain toggle", () => {
   });
 
   it("renders_brain_toggle_and_calls_handler", () => {
-    const onBrainFiles = vi.fn();
+    const onFilesToggle = vi.fn();
 
     render(
       createElement(HeaderBar, {
         status: "disconnected",
         onConnectionSettings: vi.fn(),
-        onBrainFiles,
-        brainFilesOpen: false,
+        onFilesToggle,
+        filesActive: false,
       })
     );
 
-    const brainToggle = screen.getByTestId("brain-files-toggle");
+    const brainToggle = screen.getByTestId("files-toggle");
     expect(brainToggle).toBeInTheDocument();
 
     fireEvent.click(brainToggle);
-    expect(onBrainFiles).toHaveBeenCalledTimes(1);
+    expect(onFilesToggle).toHaveBeenCalledTimes(1);
   });
 });

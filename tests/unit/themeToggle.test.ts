@@ -31,13 +31,14 @@ describe("ThemeToggle", () => {
   it("applies and persists theme when toggled", () => {
     render(createElement(ThemeToggle));
 
-    fireEvent.click(screen.getByRole("button", { name: "Switch to dark mode" }));
-    expect(document.documentElement).toHaveClass("dark");
-    expect(window.localStorage.getItem("theme")).toBe("dark");
-
+    // Default state is dark, so button offers "Switch to light mode"
     fireEvent.click(screen.getByRole("button", { name: "Switch to light mode" }));
     expect(document.documentElement).not.toHaveClass("dark");
     expect(window.localStorage.getItem("theme")).toBe("light");
+
+    fireEvent.click(screen.getByRole("button", { name: "Switch to dark mode" }));
+    expect(document.documentElement).toHaveClass("dark");
+    expect(window.localStorage.getItem("theme")).toBe("dark");
   });
 
   it("reads and applies stored theme on mount", async () => {
