@@ -71,6 +71,9 @@ export const isSameSessionKey = (a: string, b: string) => {
 const DEFAULT_GATEWAY_URL =
   process.env.NEXT_PUBLIC_GATEWAY_URL ?? "ws://127.0.0.1:18789";
 
+// NOTE: NEXT_PUBLIC_GATEWAY_TOKEN is visible in the client bundle. This is
+// acceptable because the app is behind Cloudflare Access — only authenticated
+// users can reach the page, so the token is not exposed to the public internet.
 const DEFAULT_GATEWAY_TOKEN =
   process.env.NEXT_PUBLIC_GATEWAY_TOKEN ?? "";
 

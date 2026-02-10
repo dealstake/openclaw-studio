@@ -11,6 +11,7 @@ type AgentAvatarProps = {
 };
 
 export const AgentAvatar = ({
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- seed kept for API compat
   seed,
   name,
   avatarUrl,

@@ -16,10 +16,7 @@ import {
 } from "@/lib/text/message-extract";
 import { useGatewayConnection } from "@/lib/gateway/GatewayClient";
 import {
-  buildGatewayModelChoices,
-  type GatewayModelChoice,
   type GatewayModelPolicySnapshot,
-  resolveConfiguredModelKey,
 } from "@/lib/gateway/models";
 import {
   AgentStoreProvider,
@@ -35,21 +32,8 @@ import {
   type SummarySnapshotAgent,
   type SummaryStatusSnapshot,
 } from "@/features/agents/state/runtimeEventBridge";
-import type { AgentStoreSeed, AgentState } from "@/features/agents/state/store";
+import type { AgentStoreSeed } from "@/features/agents/state/store";
 import { createGatewayRuntimeEventHandler } from "@/features/agents/state/gatewayRuntimeEventHandler";
-import {
-  type CronJobSummary,
-  filterCronJobsForAgent,
-  listCronJobs,
-  removeCronJob,
-  runCronJobNow,
-} from "@/lib/cron/types";
-import {
-  removeGatewayHeartbeatOverride,
-  listHeartbeatsForAgent,
-  triggerHeartbeatNow,
-  type AgentHeartbeatSummary,
-} from "@/lib/gateway/agentConfig";
 import { createStudioSettingsCoordinator } from "@/lib/studio/coordinator";
 import { resolveAgentAvatarSeed, resolveFocusedPreference } from "@/lib/studio/settings";
 import { applySessionSettingMutation } from "@/features/agents/state/sessionSettingsMutations";
@@ -87,6 +71,8 @@ import { useLivePatchBatching } from "@/features/agents/hooks/useLivePatchBatchi
 import { useSpecialUpdates } from "@/features/agents/hooks/useSpecialUpdates";
 import { useAgentHistorySync } from "@/features/agents/hooks/useAgentHistorySync";
 import { useAgentLifecycle } from "@/features/agents/hooks/useAgentLifecycle";
+import { useGatewayModels } from "@/features/agents/hooks/useGatewayModels";
+import { useSettingsPanel } from "@/features/agents/hooks/useSettingsPanel";
 
 type AgentsListResult = {
   defaultId: string;
@@ -121,9 +107,6 @@ type SessionsListResult = {
 
 const RESERVED_MAIN_AGENT_ID = "main";
 
-const sortCronJobsByUpdatedAt = (jobs: CronJobSummary[]) =>
-  [...jobs].sort((a, b) => b.updatedAtMs - a.updatedAtMs);
-
 const AgentStudioPage = () => {
   const [settingsCoordinator] = useState(() => createStudioSettingsCoordinator());
   const {
@@ -145,23 +128,15 @@ const AgentStudioPage = () => {
   const [agentsLoadedOnce, setAgentsLoadedOnce] = useState(false);
   const stateRef = useRef(state);
   const focusFilterTouchedRef = useRef(false);
-  const [gatewayModels, setGatewayModels] = useState<GatewayModelChoice[]>([]);
-  const [gatewayModelsError, setGatewayModelsError] = useState<string | null>(null);
-  const [gatewayConfigSnapshot, setGatewayConfigSnapshot] =
-    useState<GatewayModelPolicySnapshot | null>(null);
+  const {
+    gatewayModels,
+    gatewayModelsError,
+    gatewayConfigSnapshot,
+    setGatewayConfigSnapshot,
+    resolveDefaultModelForAgent,
+  } = useGatewayModels(client, status);
   const [stopBusyAgentId, setStopBusyAgentId] = useState<string | null>(null);
   const [mobilePane, setMobilePane] = useState<MobilePane>("chat");
-  const [settingsAgentId, setSettingsAgentId] = useState<string | null>(null);
-  const [settingsCronJobs, setSettingsCronJobs] = useState<CronJobSummary[]>([]);
-  const [settingsCronLoading, setSettingsCronLoading] = useState(false);
-  const [settingsCronError, setSettingsCronError] = useState<string | null>(null);
-  const [cronRunBusyJobId, setCronRunBusyJobId] = useState<string | null>(null);
-  const [cronDeleteBusyJobId, setCronDeleteBusyJobId] = useState<string | null>(null);
-  const [settingsHeartbeats, setSettingsHeartbeats] = useState<AgentHeartbeatSummary[]>([]);
-  const [settingsHeartbeatLoading, setSettingsHeartbeatLoading] = useState(false);
-  const [settingsHeartbeatError, setSettingsHeartbeatError] = useState<string | null>(null);
-  const [heartbeatRunBusyId, setHeartbeatRunBusyId] = useState<string | null>(null);
-  const [heartbeatDeleteBusyId, setHeartbeatDeleteBusyId] = useState<string | null>(null);
   /** "agent" = show ContextPanel (Tasks/Brain/Settings), "files" = show Files */
   const [contextMode, setContextMode] = useState<"agent" | "files">("agent");
   const [contextTab, setContextTab] = useState<ContextTab>("settings");
@@ -209,6 +184,15 @@ const AgentStudioPage = () => {
   const { queueLivePatch } = useLivePatchBatching(dispatch);
 
   const agents = state.agents;
+  const {
+    settingsAgentId, setSettingsAgentId, settingsAgent,
+    settingsCronJobs, settingsCronLoading, settingsCronError,
+    cronRunBusyJobId, cronDeleteBusyJobId,
+    settingsHeartbeats, settingsHeartbeatLoading, settingsHeartbeatError,
+    heartbeatRunBusyId, heartbeatDeleteBusyId,
+    handleRunCronJob, handleDeleteCronJob,
+    handleRunHeartbeat, handleDeleteHeartbeat,
+  } = useSettingsPanel({ client, status, agents });
   const selectedAgent = useMemo(() => getSelectedAgent(state), [state]);
   const filteredAgents = useMemo(
     () => getFilteredAgents(state, focusFilter),
@@ -223,10 +207,6 @@ const AgentStudioPage = () => {
   }, [filteredAgents, selectedAgent]);
   const focusedAgentId = focusedAgent?.agentId ?? null;
   const focusedAgentRunning = focusedAgent?.status === "running";
-  const settingsAgent = useMemo(() => {
-    if (!settingsAgentId) return null;
-    return agents.find((entry) => entry.agentId === settingsAgentId) ?? null;
-  }, [agents, settingsAgentId]);
   const selectedBrainAgentId = useMemo(() => {
     return focusedAgent?.agentId ?? agents[0]?.agentId ?? null;
   }, [agents, focusedAgent]);
@@ -304,7 +284,7 @@ const AgentStudioPage = () => {
     void parsePresenceFromStatus();
     void loadAllSessions();
     void loadAllCronJobs();
-  }, [loadChannelsStatus, loadGatewayStatus, parsePresenceFromStatus, loadAllSessions, loadAllCronJobs, status]);
+  }, [loadChannelsStatus, loadGatewayStatus, parsePresenceFromStatus, loadAllSessions, loadAllCronJobs, resetChannelsStatus, resetExecApprovals, resetPresence, resetSessionUsage, status]);
 
   // ── Load session usage when settings agent changes ──────────────
   useEffect(() => {
@@ -313,7 +293,7 @@ const AgentStudioPage = () => {
       return;
     }
     void loadSessionUsage(settingsAgent.sessionKey);
-  }, [settingsAgent, loadSessionUsage]);
+  }, [settingsAgent, loadSessionUsage, resetSessionUsage]);
 
   useEffect(() => {
     const selector = 'link[data-agent-favicon="true"]';
@@ -336,61 +316,6 @@ const AgentStudioPage = () => {
     document.head.appendChild(link);
   }, [faviconHref]);
 
-  const loadCronJobsForSettingsAgent = useCallback(
-    async (agentId: string) => {
-      const resolvedAgentId = agentId.trim();
-      if (!resolvedAgentId) {
-        setSettingsCronJobs([]);
-        setSettingsCronError("Failed to load cron jobs: missing agent id.");
-        return;
-      }
-      setSettingsCronLoading(true);
-      setSettingsCronError(null);
-      try {
-        const result = await listCronJobs(client, { includeDisabled: true });
-        const filtered = filterCronJobsForAgent(result.jobs, resolvedAgentId);
-        setSettingsCronJobs(sortCronJobsByUpdatedAt(filtered));
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to load cron jobs.";
-        setSettingsCronJobs([]);
-        setSettingsCronError(message);
-        if (!isGatewayDisconnectLikeError(err)) {
-          console.error(message);
-        }
-      } finally {
-        setSettingsCronLoading(false);
-      }
-    },
-    [client]
-  );
-
-  const loadHeartbeatsForSettingsAgent = useCallback(
-    async (agentId: string) => {
-      const resolvedAgentId = agentId.trim();
-      if (!resolvedAgentId) {
-        setSettingsHeartbeats([]);
-        setSettingsHeartbeatError("Failed to load heartbeats: missing agent id.");
-        return;
-      }
-      setSettingsHeartbeatLoading(true);
-      setSettingsHeartbeatError(null);
-      try {
-        const result = await listHeartbeatsForAgent(client, resolvedAgentId);
-        setSettingsHeartbeats(result.heartbeats);
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to load heartbeats.";
-        setSettingsHeartbeats([]);
-        setSettingsHeartbeatError(message);
-        if (!isGatewayDisconnectLikeError(err)) {
-          console.error(message);
-        }
-      } finally {
-        setSettingsHeartbeatLoading(false);
-      }
-    },
-    [client]
-  );
-
   const resolveAgentName = useCallback((agent: AgentsListResult["agents"][number]) => {
     const fromList = typeof agent.name === "string" ? agent.name.trim() : "";
     if (fromList) return fromList;
@@ -409,36 +334,6 @@ const AgentStudioPage = () => {
       if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return trimmed;
       if (trimmed.startsWith("data:image/")) return trimmed;
       return null;
-    },
-    []
-  );
-
-  const resolveDefaultModelForAgent = useCallback(
-    (agentId: string, snapshot: GatewayModelPolicySnapshot | null): string | null => {
-      const resolvedAgentId = agentId.trim();
-      if (!resolvedAgentId) return null;
-      const defaults = snapshot?.config?.agents?.defaults;
-      const modelAliases = defaults?.models;
-      const agentEntry =
-        snapshot?.config?.agents?.list?.find((entry) => entry?.id?.trim() === resolvedAgentId) ??
-        null;
-      const agentModel = agentEntry?.model;
-      let raw: string | null = null;
-      if (typeof agentModel === "string") {
-        raw = agentModel;
-      } else if (agentModel && typeof agentModel === "object") {
-        raw = agentModel.primary ?? null;
-      }
-      if (!raw) {
-        const defaultModel = defaults?.model;
-        if (typeof defaultModel === "string") {
-          raw = defaultModel;
-        } else if (defaultModel && typeof defaultModel === "object") {
-          raw = defaultModel.primary ?? null;
-        }
-      }
-      if (!raw) return null;
-      return resolveConfiguredModelKey(raw, modelAliases);
     },
     []
   );
@@ -625,6 +520,7 @@ const AgentStudioPage = () => {
     resolveDefaultModelForAgent,
     setError,
     setLoading,
+    setGatewayConfigSnapshot,
     gatewayUrl,
     gatewayConfigSnapshot,
     settingsCoordinator,
@@ -672,7 +568,6 @@ const AgentStudioPage = () => {
   });
 
   const {
-    queuedConfigMutations,
     activeConfigMutation,
     enqueueConfigMutation,
     queuedConfigMutationCount,
@@ -804,31 +699,9 @@ const AgentStudioPage = () => {
     } else if (settingsAgentId && state.selectedAgentId !== settingsAgentId) {
       setSettingsAgentId(null);
     }
-  }, [contextTab, settingsAgentId, state.selectedAgentId]);
+  }, [contextTab, settingsAgentId, setSettingsAgentId, state.selectedAgentId]);
 
-  useEffect(() => {
-    if (settingsAgentId && !settingsAgent) {
-      setSettingsAgentId(null);
-    }
-  }, [settingsAgentId, settingsAgent]);
-
-  useEffect(() => {
-    if (!settingsAgentId || status !== "connected") {
-      setSettingsCronJobs([]);
-      setSettingsCronLoading(false);
-      setSettingsCronError(null);
-      setCronRunBusyJobId(null);
-      setCronDeleteBusyJobId(null);
-      setSettingsHeartbeats([]);
-      setSettingsHeartbeatLoading(false);
-      setSettingsHeartbeatError(null);
-      setHeartbeatRunBusyId(null);
-      setHeartbeatDeleteBusyId(null);
-      return;
-    }
-    void loadCronJobsForSettingsAgent(settingsAgentId);
-    void loadHeartbeatsForSettingsAgent(settingsAgentId);
-  }, [loadCronJobsForSettingsAgent, loadHeartbeatsForSettingsAgent, settingsAgentId, status]);
+  // Settings agent reset + cron/heartbeat loading handled by useSettingsPanel hook
 
   // Auto-close brain tab in context panel if no agents
   useEffect(() => {
@@ -844,51 +717,7 @@ const AgentStudioPage = () => {
     setContextTab("tasks");
   }, [contextMode, contextTab, settingsAgent]);
 
-  useEffect(() => {
-    if (status !== "connected") {
-      setGatewayModels([]);
-      setGatewayModelsError(null);
-      setGatewayConfigSnapshot(null);
-      return;
-    }
-    let cancelled = false;
-    const loadModels = async () => {
-      let configSnapshot: GatewayModelPolicySnapshot | null = null;
-      try {
-        configSnapshot = await client.call<GatewayModelPolicySnapshot>("config.get", {});
-        if (!cancelled) {
-          setGatewayConfigSnapshot(configSnapshot);
-        }
-      } catch (err) {
-        if (!isGatewayDisconnectLikeError(err)) {
-          console.error("Failed to load gateway config.", err);
-        }
-      }
-      try {
-        const result = await client.call<{ models: GatewayModelChoice[] }>(
-          "models.list",
-          {}
-        );
-        if (cancelled) return;
-        const catalog = Array.isArray(result.models) ? result.models : [];
-        setGatewayModels(buildGatewayModelChoices(catalog, configSnapshot));
-        setGatewayModelsError(null);
-      } catch (err) {
-        if (cancelled) return;
-        const message =
-          err instanceof Error ? err.message : "Failed to load models.";
-        setGatewayModelsError(message);
-        setGatewayModels([]);
-        if (!isGatewayDisconnectLikeError(err)) {
-          console.error("Failed to load gateway models.", err);
-        }
-      }
-    };
-    void loadModels();
-    return () => {
-      cancelled = true;
-    };
-  }, [client, status]);
+  // Model loading is handled by useGatewayModels hook
 
   const loadSummarySnapshot = useCallback(async () => {
     const activeAgents = stateRef.current.agents.filter((agent) => agent.sessionCreated);
@@ -953,7 +782,7 @@ const AgentStudioPage = () => {
       setMobilePane("context");
       dispatch({ type: "selectAgent", agentId });
     },
-    [dispatch, flushPendingDraft, focusedAgent]
+    [dispatch, flushPendingDraft, focusedAgent, setSettingsAgentId]
   );
 
   const handleFilesToggle = useCallback(() => {
@@ -966,107 +795,6 @@ const AgentStudioPage = () => {
       return "files";
     });
   }, []);
-
-  const handleRunCronJob = useCallback(
-    async (agentId: string, jobId: string) => {
-      const resolvedJobId = jobId.trim();
-      const resolvedAgentId = agentId.trim();
-      if (!resolvedJobId || !resolvedAgentId) return;
-      if (cronRunBusyJobId || cronDeleteBusyJobId) return;
-      setCronRunBusyJobId(resolvedJobId);
-      setSettingsCronError(null);
-      try {
-        await runCronJobNow(client, resolvedJobId);
-        await loadCronJobsForSettingsAgent(resolvedAgentId);
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to run cron job.";
-        setSettingsCronError(message);
-        console.error(message);
-      } finally {
-        setCronRunBusyJobId((current) => (current === resolvedJobId ? null : current));
-      }
-    },
-    [client, cronDeleteBusyJobId, cronRunBusyJobId, loadCronJobsForSettingsAgent]
-  );
-
-  const handleDeleteCronJob = useCallback(
-    async (agentId: string, jobId: string) => {
-      const resolvedJobId = jobId.trim();
-      const resolvedAgentId = agentId.trim();
-      if (!resolvedJobId || !resolvedAgentId) return;
-      if (cronRunBusyJobId || cronDeleteBusyJobId) return;
-      setCronDeleteBusyJobId(resolvedJobId);
-      setSettingsCronError(null);
-      try {
-        const result = await removeCronJob(client, resolvedJobId);
-        if (result.ok && result.removed) {
-          setSettingsCronJobs((jobs) => jobs.filter((job) => job.id !== resolvedJobId));
-        }
-        await loadCronJobsForSettingsAgent(resolvedAgentId);
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to delete cron job.";
-        setSettingsCronError(message);
-        console.error(message);
-      } finally {
-        setCronDeleteBusyJobId((current) => (current === resolvedJobId ? null : current));
-      }
-    },
-    [client, cronDeleteBusyJobId, cronRunBusyJobId, loadCronJobsForSettingsAgent]
-  );
-
-  const handleRunHeartbeat = useCallback(
-    async (agentId: string, heartbeatId: string) => {
-      const resolvedAgentId = agentId.trim();
-      const resolvedHeartbeatId = heartbeatId.trim();
-      if (!resolvedAgentId || !resolvedHeartbeatId) return;
-      if (heartbeatRunBusyId || heartbeatDeleteBusyId) return;
-      setHeartbeatRunBusyId(resolvedHeartbeatId);
-      setSettingsHeartbeatError(null);
-      try {
-        await triggerHeartbeatNow(client, resolvedAgentId);
-        await loadHeartbeatsForSettingsAgent(resolvedAgentId);
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to trigger heartbeat.";
-        setSettingsHeartbeatError(message);
-        console.error(message);
-      } finally {
-        setHeartbeatRunBusyId((current) =>
-          current === resolvedHeartbeatId ? null : current
-        );
-      }
-    },
-    [client, heartbeatDeleteBusyId, heartbeatRunBusyId, loadHeartbeatsForSettingsAgent]
-  );
-
-  const handleDeleteHeartbeat = useCallback(
-    async (agentId: string, heartbeatId: string) => {
-      const resolvedAgentId = agentId.trim();
-      const resolvedHeartbeatId = heartbeatId.trim();
-      if (!resolvedAgentId || !resolvedHeartbeatId) return;
-      if (heartbeatRunBusyId || heartbeatDeleteBusyId) return;
-      setHeartbeatDeleteBusyId(resolvedHeartbeatId);
-      setSettingsHeartbeatError(null);
-      try {
-        await removeGatewayHeartbeatOverride({
-          client,
-          agentId: resolvedAgentId,
-        });
-        setSettingsHeartbeats((heartbeats) =>
-          heartbeats.filter((heartbeat) => heartbeat.id !== resolvedHeartbeatId)
-        );
-        await loadHeartbeatsForSettingsAgent(resolvedAgentId);
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to delete heartbeat.";
-        setSettingsHeartbeatError(message);
-        console.error(message);
-      } finally {
-        setHeartbeatDeleteBusyId((current) =>
-          current === resolvedHeartbeatId ? null : current
-        );
-      }
-    },
-    [client, heartbeatDeleteBusyId, heartbeatRunBusyId, loadHeartbeatsForSettingsAgent]
-  );
 
   const handleNewSession = useCallback(
     async (agentId: string) => {
@@ -1103,7 +831,7 @@ const AgentStudioPage = () => {
         });
       }
     },
-    [agents, client, dispatch, historyInFlightRef, setError, specialUpdateInFlightRef, specialUpdateRef]
+    [agents, client, dispatch, historyInFlightRef, setError, setSettingsAgentId, specialUpdateInFlightRef, specialUpdateRef]
   );
 
   const handleSend = useCallback(

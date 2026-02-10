@@ -11,8 +11,8 @@ export default function LogoutPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       {/* Clear CF Access session via hidden iframe */}
-      {/* eslint-disable-next-line jsx-a11y/iframe-has-title */}
       <iframe
+        title="Cloudflare Access logout"
         src="/cdn-cgi/access/logout"
         className="hidden"
         aria-hidden="true"

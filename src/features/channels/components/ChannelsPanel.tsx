@@ -35,7 +35,7 @@ export const ChannelsPanel = memo(function ChannelsPanel({
   error,
   onRefresh,
 }: ChannelsPanelProps) {
-  const channels = snapshot?.channels ?? {};
+  const channels = useMemo(() => snapshot?.channels ?? {}, [snapshot]);
   const keys = useMemo(
     () =>
       Object.keys(channels).filter((key) => {
