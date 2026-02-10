@@ -40,9 +40,7 @@ function SSOButton({
       disabled={!enabled}
       onClick={enabled ? onClick : undefined}
       title={!enabled ? DISABLED_TOOLTIP : undefined}
-      className={`flex w-full items-center justify-center gap-3 rounded-lg border border-border bg-card px-4 py-3 text-sm font-medium text-card-foreground transition hover:bg-muted ${
-        !enabled ? "cursor-not-allowed opacity-50" : ""
-      }`}
+      className="flex w-full items-center justify-center gap-3 rounded-lg border border-border bg-card px-4 py-3 text-sm font-medium text-card-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
     >
       {icon}
       {label}
@@ -108,18 +106,14 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={!methods.email}
-                className={`w-full rounded-lg border border-border bg-input py-3 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring ${
-                  !methods.email ? "cursor-not-allowed" : ""
-                }`}
+                className="w-full rounded-lg border border-border bg-input py-3 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed"
               />
             </div>
             <button
               type="button"
               disabled={!methods.email}
               title={!methods.email ? DISABLED_TOOLTIP : undefined}
-              className={`flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:brightness-110 ${
-                !methods.email ? "cursor-not-allowed" : ""
-              }`}
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:brightness-110 disabled:cursor-not-allowed"
             >
               Continue with Email
               <ArrowRight className="h-4 w-4" />
