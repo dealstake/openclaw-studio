@@ -88,14 +88,19 @@ import {
   parseExecApprovalResolved,
   pruneExpired,
   type ExecApprovalRequest,
-  type ExecApprovalDecision,
 } from "@/features/exec-approvals/types";
-import type { ChannelsStatusSnapshot } from "@/lib/gateway/channels";
-import { resolveChannelHealth } from "@/lib/gateway/channels";
 import { ChannelsPanel } from "@/features/channels/components/ChannelsPanel";
 import { SessionsPanel, type SessionEntry } from "@/features/sessions/components/SessionsPanel";
 import { CronPanel } from "@/features/cron/components/CronPanel";
 import { StatusBar } from "@/features/status/components/StatusBar";
+import { useChannelsStatus } from "@/features/channels/hooks/useChannelsStatus";
+import { useAllSessions } from "@/features/sessions/hooks/useAllSessions";
+import { useAllCronJobs } from "@/features/cron/hooks/useAllCronJobs";
+import { useExecApprovals } from "@/features/exec-approvals/hooks/useExecApprovals";
+import { useSessionUsage } from "@/features/sessions/hooks/useSessionUsage";
+import { useGatewayStatus } from "@/features/status/hooks/useGatewayStatus";
+import { ConfigMutationModals } from "@/features/agents/components/ConfigMutationModals";
+import { MobilePaneToggle, type MobilePane } from "@/features/agents/components/MobilePaneToggle";
 
 type ChatHistoryMessage = Record<string, unknown>;
 
@@ -137,7 +142,6 @@ type SessionsListResult = {
   sessions?: SessionsListEntry[];
 };
 
-type MobilePane = "fleet" | "chat" | "context";
 type DeleteAgentBlockPhase = "queued" | "deleting" | "awaiting-restart";
 type DeleteAgentBlockState = {
   agentId: string;
@@ -288,47 +292,39 @@ const AgentStudioPage = () => {
   // Delete agent confirmation
   const [deleteConfirmAgentId, setDeleteConfirmAgentId] = useState<string | null>(null);
 
-  // Exec approvals
-  const [execApprovalQueue, setExecApprovalQueue] = useState<ExecApprovalRequest[]>([]);
-  const [execApprovalBusy, setExecApprovalBusy] = useState(false);
-  const [execApprovalError, setExecApprovalError] = useState<string | null>(null);
+  // Extracted hooks
+  const {
+    execApprovalQueue, setExecApprovalQueue,
+    execApprovalBusy, execApprovalError,
+    handleExecApprovalDecision, resetExecApprovals,
+  } = useExecApprovals(client);
 
-  // Channels
-  const [channelsSnapshot, setChannelsSnapshot] = useState<ChannelsStatusSnapshot | null>(null);
-  const [channelsLoading, setChannelsLoading] = useState(false);
-  const [channelsError, setChannelsError] = useState<string | null>(null);
+  const {
+    channelsSnapshot, channelsLoading, channelsError,
+    connectedChannelCount, totalChannelCount,
+    loadChannelsStatus, resetChannelsStatus,
+  } = useChannelsStatus(client, status);
 
-  // Presence
-  const [presenceAgentIds, setPresenceAgentIds] = useState<Set<string>>(new Set());
+  const {
+    gatewayVersion, gatewayUptime, presenceAgentIds,
+    loadGatewayStatus, parsePresenceFromStatus, resetPresence,
+  } = useGatewayStatus(client, status);
 
-  // Session usage (for settings panel)
-  const [sessionUsage, setSessionUsage] = useState<{
-    inputTokens: number;
-    outputTokens: number;
-    totalCost: number | null;
-    currency: string;
-    messageCount: number;
-  } | null>(null);
-  const [sessionUsageLoading, setSessionUsageLoading] = useState(false);
+  const {
+    sessionUsage, sessionUsageLoading,
+    loadSessionUsage, resetSessionUsage,
+  } = useSessionUsage(client, status);
 
-  // Gateway status
-  const [gatewayVersion, setGatewayVersion] = useState<string | undefined>();
-  const [gatewayUptime, setGatewayUptime] = useState<number | undefined>();
-  const [totalSessionCount, setTotalSessionCount] = useState(0);
-  const [connectedChannelCount, setConnectedChannelCount] = useState(0);
-  const [totalChannelCount, setTotalChannelCount] = useState(0);
+  const {
+    allSessions, allSessionsLoading, allSessionsError,
+    totalSessionCount, loadAllSessions,
+  } = useAllSessions(client, status);
 
-  // All sessions (for sessions panel)
-  const [allSessions, setAllSessions] = useState<SessionEntry[]>([]);
-  const [allSessionsLoading, setAllSessionsLoading] = useState(false);
-  const [allSessionsError, setAllSessionsError] = useState<string | null>(null);
-
-  // All cron jobs (for cron panel)
-  const [allCronJobs, setAllCronJobs] = useState<CronJobSummary[]>([]);
-  const [allCronLoading, setAllCronLoading] = useState(false);
-  const [allCronError, setAllCronError] = useState<string | null>(null);
-  const [allCronRunBusyJobId, setAllCronRunBusyJobId] = useState<string | null>(null);
-  const [allCronDeleteBusyJobId, setAllCronDeleteBusyJobId] = useState<string | null>(null);
+  const {
+    allCronJobs, allCronLoading, allCronError,
+    allCronRunBusyJobId, allCronDeleteBusyJobId,
+    loadAllCronJobs, handleAllCronRunJob, handleAllCronDeleteJob,
+  } = useAllCronJobs(client, status);
 
   const agents = state.agents;
   const selectedAgent = useMemo(() => getSelectedAgent(state), [state]);
@@ -453,233 +449,13 @@ const AgentStudioPage = () => {
     []
   );
 
-  // ── Channels status loading ───────────────────────────────────────
-  const loadChannelsStatus = useCallback(async () => {
-    if (status !== "connected") return;
-    setChannelsLoading(true);
-    try {
-      const result = await client.call<ChannelsStatusSnapshot>("channels.status", {});
-      setChannelsSnapshot(result);
-      setChannelsError(null);
-      // Count connected channels for status bar
-      const channels = result?.channels ?? {};
-      let connected = 0;
-      for (const key of Object.keys(channels)) {
-        const health = resolveChannelHealth(channels[key]);
-        if (health === "connected" || health === "running") connected++;
-      }
-      setConnectedChannelCount(connected);
-      // Count total configured channels
-      const total = Object.keys(channels).filter((k) => {
-        const entry = channels[k];
-        return entry?.configured || entry?.running || entry?.connected;
-      }).length;
-      setTotalChannelCount(total);
-    } catch (err) {
-      if (!isGatewayDisconnectLikeError(err)) {
-        const message = err instanceof Error ? err.message : "Failed to load channels status.";
-        setChannelsError(message);
-      }
-    } finally {
-      setChannelsLoading(false);
-    }
-  }, [client, status]);
-
-  // ── All sessions loading ─────────────────────────────────────────
-  const loadAllSessions = useCallback(async () => {
-    if (status !== "connected") return;
-    setAllSessionsLoading(true);
-    try {
-      const result = await client.call<SessionsListResult>("sessions.list", {
-        includeGlobal: true,
-        includeUnknown: true,
-        limit: 200,
-      });
-      const entries: SessionEntry[] = (result.sessions ?? []).map((s) => ({
-        key: s.key,
-        updatedAt: s.updatedAt ?? null,
-        displayName: s.displayName,
-        origin: s.origin ?? null,
-      }));
-      setAllSessions(entries);
-      setTotalSessionCount(entries.length);
-      setAllSessionsError(null);
-    } catch (err) {
-      if (!isGatewayDisconnectLikeError(err)) {
-        const message = err instanceof Error ? err.message : "Failed to load sessions.";
-        setAllSessionsError(message);
-      }
-    } finally {
-      setAllSessionsLoading(false);
-    }
-  }, [client, status]);
-
-  // ── All cron jobs loading ────────────────────────────────────────
-  const loadAllCronJobs = useCallback(async () => {
-    if (status !== "connected") return;
-    setAllCronLoading(true);
-    try {
-      const result = await listCronJobs(client, { includeDisabled: true });
-      setAllCronJobs(sortCronJobsByUpdatedAt(result.jobs));
-      setAllCronError(null);
-    } catch (err) {
-      if (!isGatewayDisconnectLikeError(err)) {
-        const message = err instanceof Error ? err.message : "Failed to load cron jobs.";
-        setAllCronError(message);
-      }
-    } finally {
-      setAllCronLoading(false);
-    }
-  }, [client, status]);
-
-  // ── Exec approval decision handler ──────────────────────────────
-  const handleExecApprovalDecision = useCallback(
-    async (id: string, decision: ExecApprovalDecision) => {
-      setExecApprovalBusy(true);
-      setExecApprovalError(null);
-      try {
-        await client.call("exec.approval.resolve", { id, decision });
-        setExecApprovalQueue((prev) => prev.filter((r) => r.id !== id));
-      } catch (err) {
-        setExecApprovalError(
-          err instanceof Error ? err.message : "Failed to resolve approval"
-        );
-      } finally {
-        setExecApprovalBusy(false);
-      }
-    },
-    [client]
-  );
-
-  // ── All cron panel handlers ─────────────────────────────────────
-  const handleAllCronRunJob = useCallback(
-    async (jobId: string) => {
-      if (allCronRunBusyJobId || allCronDeleteBusyJobId) return;
-      setAllCronRunBusyJobId(jobId);
-      setAllCronError(null);
-      try {
-        await runCronJobNow(client, jobId);
-        await loadAllCronJobs();
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to run cron job.";
-        setAllCronError(message);
-      } finally {
-        setAllCronRunBusyJobId(null);
-      }
-    },
-    [client, allCronRunBusyJobId, allCronDeleteBusyJobId, loadAllCronJobs]
-  );
-
-  const handleAllCronDeleteJob = useCallback(
-    async (jobId: string) => {
-      if (allCronRunBusyJobId || allCronDeleteBusyJobId) return;
-      setAllCronDeleteBusyJobId(jobId);
-      setAllCronError(null);
-      try {
-        await removeCronJob(client, jobId);
-        setAllCronJobs((jobs) => jobs.filter((j) => j.id !== jobId));
-        await loadAllCronJobs();
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to delete cron job.";
-        setAllCronError(message);
-      } finally {
-        setAllCronDeleteBusyJobId(null);
-      }
-    },
-    [client, allCronRunBusyJobId, allCronDeleteBusyJobId, loadAllCronJobs]
-  );
-
-  // ── Session usage loading ───────────────────────────────────────
-  const loadSessionUsage = useCallback(
-    async (sessionKey: string) => {
-      if (!sessionKey || status !== "connected") {
-        setSessionUsage(null);
-        return;
-      }
-      setSessionUsageLoading(true);
-      try {
-        const result = await client.call<{
-          totals?: {
-            input?: number;
-            output?: number;
-            totalTokens?: number;
-            totalCost?: number;
-          };
-          sessions?: Array<{
-            usage?: {
-              messageCounts?: {
-                total?: number;
-              };
-            };
-          }>;
-        }>("sessions.usage", { key: sessionKey });
-        const totals = result.totals;
-        const firstSession = result.sessions?.[0];
-        setSessionUsage({
-          inputTokens: totals?.input ?? 0,
-          outputTokens: totals?.output ?? 0,
-          totalCost: totals?.totalCost != null && totals.totalCost > 0 ? totals.totalCost : null,
-          currency: "USD",
-          messageCount: firstSession?.usage?.messageCounts?.total ?? 0,
-        });
-      } catch (err) {
-        if (!isGatewayDisconnectLikeError(err)) {
-          console.error("Failed to load session usage.", err);
-        }
-        setSessionUsage(null);
-      } finally {
-        setSessionUsageLoading(false);
-      }
-    },
-    [client, status]
-  );
-
-  // ── Gateway status parsing ──────────────────────────────────────
-  const loadGatewayStatus = useCallback(async () => {
-    if (status !== "connected") return;
-    try {
-      const hello = client.getLastHello();
-      if (hello && typeof hello === "object") {
-        const h = hello as Record<string, unknown>;
-        if (typeof h.version === "string") setGatewayVersion(h.version);
-        if (typeof h.startedAtMs === "number") setGatewayUptime(h.startedAtMs);
-      }
-    } catch {
-      // ignore
-    }
-  }, [client, status]);
-
-  // ── Presence parsing ────────────────────────────────────────────
-  const parsePresenceFromStatus = useCallback(async () => {
-    if (status !== "connected") return;
-    try {
-      const result = await client.call<{
-        presence?: Array<{ agentId?: string; active?: boolean }>;
-      }>("status", {});
-      const active = new Set<string>();
-      for (const entry of result.presence ?? []) {
-        if (entry.active && typeof entry.agentId === "string") {
-          active.add(entry.agentId);
-        }
-      }
-      setPresenceAgentIds(active);
-    } catch (err) {
-      if (!isGatewayDisconnectLikeError(err)) {
-        console.error("Failed to parse presence.", err);
-      }
-    }
-  }, [client, status]);
-
   // ── Load additional data on connect ─────────────────────────────
   useEffect(() => {
     if (status !== "connected") {
-      setChannelsSnapshot(null);
-      setChannelsLoading(false);
-      setExecApprovalQueue([]);
-      setExecApprovalBusy(false);
-      setExecApprovalError(null);
-      setPresenceAgentIds(new Set());
-      setSessionUsage(null);
+      resetChannelsStatus();
+      resetExecApprovals();
+      resetPresence();
+      resetSessionUsage();
       return;
     }
     void loadChannelsStatus();
@@ -692,8 +468,7 @@ const AgentStudioPage = () => {
   // ── Load session usage when settings agent changes ──────────────
   useEffect(() => {
     if (!settingsAgent) {
-      setSessionUsage(null);
-      setSessionUsageLoading(false);
+      resetSessionUsage();
       return;
     }
     void loadSessionUsage(settingsAgent.sessionKey);
@@ -2436,46 +2211,12 @@ const AgentStudioPage = () => {
 
         {showFleetLayout ? (
           <div className="flex min-h-0 flex-1 flex-col gap-4 xl:flex-row">
-            <div className="glass-panel p-2 xl:hidden" data-testid="mobile-pane-toggle">
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  type="button"
-                  className={`rounded-md border px-2 py-2 font-mono text-[10px] font-semibold uppercase tracking-[0.13em] transition ${
-                    mobilePane === "fleet"
-                      ? "border-border bg-muted text-foreground shadow-xs"
-                      : "border-border/80 bg-card/65 text-muted-foreground hover:border-border hover:bg-muted/70"
-                  }`}
-                  onClick={() => setMobilePane("fleet")}
-                >
-                  Fleet
-                </button>
-                <button
-                  type="button"
-                  className={`rounded-md border px-2 py-2 font-mono text-[10px] font-semibold uppercase tracking-[0.13em] transition ${
-                    mobilePane === "chat"
-                      ? "border-border bg-muted text-foreground shadow-xs"
-                      : "border-border/80 bg-card/65 text-muted-foreground hover:border-border hover:bg-muted/70"
-                  }`}
-                  onClick={() => setMobilePane("chat")}
-                >
-                  Chat
-                </button>
-                <button
-                  type="button"
-                  className={`rounded-md border px-2 py-2 font-mono text-[10px] font-semibold uppercase tracking-[0.13em] transition ${
-                    mobilePane === "context"
-                      ? "border-border bg-muted text-foreground shadow-xs"
-                      : "border-border/80 bg-card/65 text-muted-foreground hover:border-border hover:bg-muted/70"
-                  }`}
-                  onClick={() => {
-                    if (!contextMode) setContextMode("agent");
-                    setMobilePane("context");
-                  }}
-                >
-                  {contextMode === "files" ? "Files" : "Context"}
-                </button>
-              </div>
-            </div>
+            <MobilePaneToggle
+              mobilePane={mobilePane}
+              contextMode={contextMode}
+              onPaneChange={setMobilePane}
+              onEnsureContextMode={() => { if (!contextMode) setContextMode("agent"); }}
+            />
             <div
               className={`${mobilePane === "fleet" ? "flex" : "hidden"} min-h-0 flex-1 xl:flex xl:flex-[0_0_auto] xl:min-h-0 xl:w-[280px]`}
             >
@@ -2686,58 +2427,6 @@ const AgentStudioPage = () => {
           </div>
         ) : null}
 	      </div>
-      {createAgentBlock && createAgentBlock.phase !== "queued" ? (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-background/70 backdrop-blur-sm"
-          data-testid="agent-create-restart-modal"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Creating agent and restarting gateway"
-        >
-          <div className="w-full max-w-md rounded-lg border border-border bg-card/95 p-6 shadow-2xl">
-            <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-              Agent create in progress
-            </div>
-            <div className="mt-2 text-base font-semibold text-foreground">
-              {createAgentBlock.agentName}
-            </div>
-            <div className="mt-3 text-sm text-muted-foreground">
-              Studio is temporarily locked until the gateway restarts.
-            </div>
-            {createBlockStatusLine ? (
-              <div className="mt-4 rounded-md border border-border/70 bg-muted/40 px-3 py-2 font-mono text-[11px] uppercase tracking-[0.12em] text-foreground">
-                {createBlockStatusLine}
-              </div>
-            ) : null}
-          </div>
-        </div>
-      ) : null}
-      {renameAgentBlock && renameAgentBlock.phase !== "queued" ? (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-background/70 backdrop-blur-sm"
-          data-testid="agent-rename-restart-modal"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Renaming agent and restarting gateway"
-        >
-          <div className="w-full max-w-md rounded-lg border border-border bg-card/95 p-6 shadow-2xl">
-            <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-              Agent rename in progress
-            </div>
-            <div className="mt-2 text-base font-semibold text-foreground">
-              {renameAgentBlock.agentName}
-            </div>
-            <div className="mt-3 text-sm text-muted-foreground">
-              Studio is temporarily locked until the gateway restarts.
-            </div>
-            {renameBlockStatusLine ? (
-              <div className="mt-4 rounded-md border border-border/70 bg-muted/40 px-3 py-2 font-mono text-[11px] uppercase tracking-[0.12em] text-foreground">
-                {renameBlockStatusLine}
-              </div>
-            ) : null}
-          </div>
-        </div>
-      ) : null}
       {execApprovalQueue.length > 0 ? (
         <ExecApprovalOverlay
           queue={execApprovalQueue}
@@ -2748,45 +2437,18 @@ const AgentStudioPage = () => {
           }}
         />
       ) : null}
-      {deleteConfirmAgentId ? (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/70 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Confirm delete agent">
-          <div className="w-full max-w-md rounded-lg border border-border bg-card/95 p-6 shadow-2xl">
-            <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-destructive">Confirm deletion</div>
-            <div className="mt-2 text-base font-semibold text-foreground">{agents.find(a => a.agentId === deleteConfirmAgentId)?.name ?? "Agent"}</div>
-            <div className="mt-3 text-sm text-muted-foreground">This removes the agent from gateway config, deletes cron jobs, and moves workspace to trash. This cannot be undone.</div>
-            <div className="mt-4 flex justify-end gap-2">
-              <button className="rounded-md border border-border/80 bg-card/70 px-4 py-2 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground transition hover:bg-muted/65" type="button" onClick={() => setDeleteConfirmAgentId(null)}>Cancel</button>
-              <button className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-2 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-destructive transition hover:bg-destructive/20" type="button" onClick={() => { setDeleteConfirmAgentId(null); void handleConfirmDeleteAgent(deleteConfirmAgentId); }}>Delete Agent</button>
-            </div>
-          </div>
-        </div>
-      ) : null}
-      {deleteAgentBlock && deleteAgentBlock.phase !== "queued" ? (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-background/70 backdrop-blur-sm"
-          data-testid="agent-delete-restart-modal"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Deleting agent and restarting gateway"
-        >
-          <div className="w-full max-w-md rounded-lg border border-border bg-card/95 p-6 shadow-2xl">
-            <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-              Agent delete in progress
-            </div>
-            <div className="mt-2 text-base font-semibold text-foreground">
-              {deleteAgentBlock.agentName}
-            </div>
-            <div className="mt-3 text-sm text-muted-foreground">
-              Studio is temporarily locked until the gateway restarts.
-            </div>
-            {deleteBlockStatusLine ? (
-              <div className="mt-4 rounded-md border border-border/70 bg-muted/40 px-3 py-2 font-mono text-[11px] uppercase tracking-[0.12em] text-foreground">
-                {deleteBlockStatusLine}
-              </div>
-            ) : null}
-          </div>
-        </div>
-      ) : null}
+      <ConfigMutationModals
+        createAgentBlock={createAgentBlock}
+        createBlockStatusLine={createBlockStatusLine}
+        renameAgentBlock={renameAgentBlock}
+        renameBlockStatusLine={renameBlockStatusLine}
+        deleteAgentBlock={deleteAgentBlock}
+        deleteBlockStatusLine={deleteBlockStatusLine}
+        deleteConfirmAgentId={deleteConfirmAgentId}
+        agents={agents}
+        onCancelDelete={() => setDeleteConfirmAgentId(null)}
+        onConfirmDelete={(agentId) => { setDeleteConfirmAgentId(null); void handleConfirmDeleteAgent(agentId); }}
+      />
     </div>
   );
 };
