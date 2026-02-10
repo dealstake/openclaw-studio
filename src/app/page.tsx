@@ -132,9 +132,22 @@ const AgentStudioPage = () => {
   const focusFilterTouchedRef = useRef(false);
   const sessionsUpdateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cronUpdateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastCronRefresh = useRef(0);
-  const lastSessionsRefresh = useRef(0);
   const [subAgentRunningKeys, setSubAgentRunningKeys] = useState<Set<string>>(new Set());
+
+  // Stable refs for load functions — avoids useEffect dependency cascades that
+  // cause event handler teardown/recreation loops and RPC call storms.
+  // Initialized with no-ops; updated after their hooks define them below.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const loadAllCronJobsRef = useRef<() => Promise<any>>(() => Promise.resolve());
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const loadAllSessionsRef = useRef<() => Promise<any>>(() => Promise.resolve());
+  const loadChannelsStatusRef = useRef<() => Promise<void>>(() => Promise.resolve());
+  const loadCumulativeUsageRef = useRef<() => Promise<void>>(() => Promise.resolve());
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const loadSummarySnapshotRef = useRef<() => Promise<any>>(() => Promise.resolve());
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const loadAgentHistoryRef = useRef<(agentId: string) => Promise<any>>(() => Promise.resolve());
+  const refreshHeartbeatLatestUpdateRef = useRef<() => void>(() => {});
   const {
     gatewayModels,
     gatewayModelsError,
@@ -196,6 +209,12 @@ const AgentStudioPage = () => {
     allCronRunBusyJobId, allCronDeleteBusyJobId,
     loadAllCronJobs, handleAllCronRunJob, handleAllCronDeleteJob,
   } = useAllCronJobs(client, status);
+
+  // Keep load-function refs current (avoids stale closures)
+  loadAllCronJobsRef.current = loadAllCronJobs;
+  loadAllSessionsRef.current = loadAllSessions;
+  loadChannelsStatusRef.current = loadChannelsStatus;
+  loadCumulativeUsageRef.current = loadCumulativeUsage;
 
   const { flushPendingDraft, handleDraftChange, pendingDraftValuesRef, pendingDraftTimersRef } =
     useDraftBatching(dispatch);
@@ -313,6 +332,8 @@ const AgentStudioPage = () => {
     bumpHeartbeatTick,
   } = useSpecialUpdates({ client, dispatch, agents, stateRef });
 
+  refreshHeartbeatLatestUpdateRef.current = refreshHeartbeatLatestUpdate;
+
   const handleFocusFilterChange = useCallback(
     (next: FocusFilter) => {
       flushPendingDraft(focusedAgent?.agentId ?? null);
@@ -332,13 +353,13 @@ const AgentStudioPage = () => {
       resetCumulativeUsage();
       return;
     }
-    void loadChannelsStatus();
+    void loadChannelsStatusRef.current();
     void loadGatewayStatus();
     void parsePresenceFromStatus();
-    void loadAllSessions();
-    void loadAllCronJobs();
-    void loadCumulativeUsage();
-  }, [loadChannelsStatus, loadGatewayStatus, parsePresenceFromStatus, loadAllSessions, loadAllCronJobs, resetChannelsStatus, resetExecApprovals, resetPresence, resetSessionUsage, resetCumulativeUsage, loadCumulativeUsage, status]);
+    void loadAllSessionsRef.current();
+    void loadAllCronJobsRef.current();
+    void loadCumulativeUsageRef.current();
+  }, [loadGatewayStatus, parsePresenceFromStatus, resetChannelsStatus, resetExecApprovals, resetPresence, resetSessionUsage, resetCumulativeUsage, status]);
 
   // ── Refresh context window utilization from sessions.list ──────────────
   const refreshContextWindow = useCallback(async (agentId: string, sessionKey: string) => {
@@ -388,9 +409,9 @@ const AgentStudioPage = () => {
     if (prev === "running" && focusedAgent.status === "idle") {
       void loadSessionUsage(focusedAgent.sessionKey);
       void refreshContextWindow(focusedAgent.agentId, focusedAgent.sessionKey);
-      void loadCumulativeUsage();
+      void loadCumulativeUsageRef.current();
     }
-  }, [focusedAgent, loadSessionUsage, refreshContextWindow, loadCumulativeUsage]);
+  }, [focusedAgent, loadSessionUsage, refreshContextWindow]);
 
   // Periodic usage refresh every 30s while connected
   useEffect(() => {
@@ -723,6 +744,8 @@ const AgentStudioPage = () => {
     focusedAgentRunning,
   });
 
+  loadAgentHistoryRef.current = loadAgentHistory;
+
   // Update stateRef synchronously during render (not in useEffect) so that
   // WebSocket event handlers reading stateRef.current always see the latest
   // dispatched state, not the state from the previous render cycle.
@@ -799,18 +822,15 @@ const AgentStudioPage = () => {
     if (createAgentBlock && createAgentBlock.phase !== "queued") return;
     if (renameAgentBlock && renameAgentBlock.phase !== "queued") return;
     void loadAgents();
-    void loadChannelsStatus();
-    void loadAllSessions();
-    void loadAllCronJobs();
+    void loadChannelsStatusRef.current();
+    void loadAllSessionsRef.current();
+    void loadAllCronJobsRef.current();
   }, [
     createAgentBlock,
     deleteAgentBlock,
     focusedPreferencesLoaded,
     gatewayUrl,
     loadAgents,
-    loadChannelsStatus,
-    loadAllSessions,
-    loadAllCronJobs,
     renameAgentBlock,
     status,
   ]);
@@ -885,6 +905,8 @@ const AgentStudioPage = () => {
       }
     }
   }, [client, dispatch]);
+
+  loadSummarySnapshotRef.current = loadSummarySnapshot;
 
   useEffect(() => {
     if (status !== "connected") return;
@@ -1184,9 +1206,9 @@ const AgentStudioPage = () => {
       dispatch,
       queueLivePatch,
       clearPendingLivePatch,
-      loadSummarySnapshot,
-      loadAgentHistory,
-      refreshHeartbeatLatestUpdate,
+      loadSummarySnapshot: () => loadSummarySnapshotRef.current(),
+      loadAgentHistory: (agentId: string) => loadAgentHistoryRef.current(agentId),
+      refreshHeartbeatLatestUpdate: () => refreshHeartbeatLatestUpdateRef.current(),
       bumpHeartbeatTick,
       setTimeout: (fn, delayMs) => window.setTimeout(fn, delayMs),
       clearTimeout: (id) => window.clearTimeout(id),
@@ -1208,41 +1230,13 @@ const AgentStudioPage = () => {
         }
       },
       onChannelsUpdate: () => {
-        void loadChannelsStatus();
+        void loadChannelsStatusRef.current();
       },
       onSessionsUpdate: () => {
-        const now = Date.now();
-        if (now - lastSessionsRefresh.current < 3000) {
-          if (!sessionsUpdateTimerRef.current) {
-            sessionsUpdateTimerRef.current = setTimeout(() => {
-              sessionsUpdateTimerRef.current = null;
-              lastSessionsRefresh.current = Date.now();
-              void loadAllSessions();
-            }, 3000);
-          }
-          return;
-        }
-        lastSessionsRefresh.current = now;
-        if (sessionsUpdateTimerRef.current) clearTimeout(sessionsUpdateTimerRef.current);
-        sessionsUpdateTimerRef.current = null;
-        void loadAllSessions();
+        void loadAllSessionsRef.current();
       },
       onCronUpdate: () => {
-        const now = Date.now();
-        if (now - lastCronRefresh.current < 3000) {
-          if (!cronUpdateTimerRef.current) {
-            cronUpdateTimerRef.current = setTimeout(() => {
-              cronUpdateTimerRef.current = null;
-              lastCronRefresh.current = Date.now();
-              void loadAllCronJobs();
-            }, 3000);
-          }
-          return;
-        }
-        lastCronRefresh.current = now;
-        if (cronUpdateTimerRef.current) clearTimeout(cronUpdateTimerRef.current);
-        cronUpdateTimerRef.current = null;
-        void loadAllCronJobs();
+        void loadAllCronJobsRef.current();
       },
       onSubAgentLifecycle: (sessionKey: string, phase: string) => {
         if (phase === "start") {
@@ -1272,13 +1266,7 @@ const AgentStudioPage = () => {
     clearPendingLivePatch,
     client,
     dispatch,
-    loadAgentHistory,
-    loadAllCronJobs,
-    loadAllSessions,
-    loadChannelsStatus,
-    loadSummarySnapshot,
     queueLivePatch,
-    refreshHeartbeatLatestUpdate,
     setExecApprovalQueue,
     status,
     updateSpecialLatestUpdate,
