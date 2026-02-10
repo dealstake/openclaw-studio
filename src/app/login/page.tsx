@@ -1,4 +1,3 @@
-import { headers } from "next/headers";
 import { Mail, ArrowRight } from "lucide-react";
 import { BrandMark } from "@/components/brand/BrandMark";
 import { SSOGoogleIcon } from "@/components/brand/SSOGoogleIcon";
@@ -7,19 +6,6 @@ import { getSignInMethods } from "@/lib/auth/sign-in-methods";
 import { BRANDING } from "@/lib/branding/config";
 
 const DISABLED_TOOLTIP = "Your organization has disabled this sign-in method";
-
-const CF_TEAM_DOMAIN =
-  process.env.NEXT_PUBLIC_CF_TEAM_DOMAIN || BRANDING.cfTeamDomain;
-const CF_GOOGLE_IDP_ID = process.env.NEXT_PUBLIC_CF_GOOGLE_IDP_ID || "";
-const CF_MICROSOFT_IDP_ID = process.env.NEXT_PUBLIC_CF_MICROSOFT_IDP_ID || "";
-
-function buildLoginUrl(hostname: string, idpId?: string): string {
-  if (!CF_TEAM_DOMAIN || !hostname) return "/";
-  const base = `https://${CF_TEAM_DOMAIN}/cdn-cgi/access/login/${hostname}`;
-  const params = new URLSearchParams({ redirect_url: "/" });
-  if (idpId) params.set("idp", idpId);
-  return `${base}?${params}`;
-}
 
 function SSOButton({
   enabled,
@@ -55,19 +41,13 @@ function SSOButton({
   );
 }
 
-export const dynamic = "force-dynamic";
-
-export default async function LoginPage() {
-  // Build IdP login URLs using the public-facing hostname.
-  // Behind Cloudflare/reverse proxy, the real hostname is in x-forwarded-host.
-  const headerStore = await headers();
-  const host =
-    headerStore.get("x-forwarded-host") || headerStore.get("host") || "";
-  const hostname = host.split(":")[0]; // strip port if present
-
+export default function LoginPage() {
   const methods = getSignInMethods();
-  const googleUrl = buildLoginUrl(hostname, CF_GOOGLE_IDP_ID || undefined);
-  const microsoftUrl = buildLoginUrl(hostname, CF_MICROSOFT_IDP_ID || undefined);
+
+  // SSO buttons link to "/" — a protected path. Cloudflare Access intercepts
+  // and auto-redirects to the configured IdP (Google). After OAuth, the user
+  // lands back on "/" with a valid CF_Authorization cookie.
+  const ssoUrl = "/";
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
@@ -92,13 +72,13 @@ export default async function LoginPage() {
               enabled={methods.google}
               icon={<SSOGoogleIcon />}
               label="Continue with Google"
-              href={googleUrl}
+              href={ssoUrl}
             />
             <SSOButton
               enabled={methods.microsoft}
               icon={<SSOMicrosoftIcon />}
               label="Continue with Microsoft"
-              href={microsoftUrl}
+              href={ssoUrl}
             />
           </div>
 
