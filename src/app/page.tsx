@@ -1435,6 +1435,7 @@ const AgentStudioPage = () => {
                     handleStopRun(focusedAgent.agentId, focusedAgent.sessionKey)
                   }
                   onAvatarShuffle={() => handleAvatarShuffle(focusedAgent.agentId)}
+                  onNewSession={() => handleNewSession(focusedAgent.agentId)}
                   onCompact={handleCompact}
                   isCompacting={isCompacting}
                   lastCompactedAt={lastCompactedAt}

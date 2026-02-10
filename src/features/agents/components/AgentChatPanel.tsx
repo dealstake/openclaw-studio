@@ -28,7 +28,7 @@ function useRecentlyCompacted(lastCompactedAt: number | null | undefined): boole
 import type { AgentState as AgentRecord } from "@/features/agents/state/store";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Archive, ArrowLeft, ChevronRight, RefreshCw, Settings, Shuffle } from "lucide-react";
+import { Archive, ArrowLeft, ChevronRight, RefreshCw, Settings, Shuffle, SquarePen } from "lucide-react";
 import type { GatewayModelChoice } from "@/lib/gateway/models";
 import { isToolMarkdown, isTraceMarkdown } from "@/lib/text/message-extract";
 import { isNearBottom } from "@/lib/dom";
@@ -57,6 +57,7 @@ type AgentChatPanelProps = {
   onAvatarShuffle: () => void;
   tokenUsed?: number;
   tokenLimit?: number;
+  onNewSession?: () => void;
   onCompact?: () => void;
   isCompacting?: boolean;
   lastCompactedAt?: number | null;
@@ -443,6 +444,7 @@ export const AgentChatPanel = ({
   onAvatarShuffle,
   tokenUsed,
   tokenLimit,
+  onNewSession,
   onCompact,
   isCompacting = false,
   lastCompactedAt = null,
@@ -692,6 +694,19 @@ export const AgentChatPanel = ({
                 <div className="min-w-0 truncate text-xs font-semibold uppercase tracking-[0.16em] text-foreground sm:text-sm">
                   {agent.name}
                 </div>
+                {onNewSession ? (
+                  <button
+                    className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-input/90 bg-background/75 text-foreground shadow-sm transition hover:border-ring hover:bg-card disabled:cursor-not-allowed disabled:opacity-60"
+                    type="button"
+                    data-testid="agent-new-session"
+                    aria-label="New session"
+                    title="New session"
+                    onClick={onNewSession}
+                    disabled={running}
+                  >
+                    <SquarePen className="h-3.5 w-3.5" />
+                  </button>
+                ) : null}
                 <button
                   className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-input/90 bg-background/75 text-foreground shadow-sm transition hover:border-ring hover:bg-card"
                   type="button"
