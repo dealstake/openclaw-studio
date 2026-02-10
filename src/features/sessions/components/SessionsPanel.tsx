@@ -20,6 +20,7 @@ type SessionsPanelProps = {
   loading: boolean;
   error: string | null;
   onRefresh: () => void;
+  onSessionClick?: (sessionKey: string, agentId: string | null) => void;
 };
 
 const CHANNEL_TYPE_LABELS: Record<string, string> = {
@@ -117,6 +118,7 @@ export const SessionsPanel = memo(function SessionsPanel({
   loading,
   error,
   onRefresh,
+  onSessionClick,
 }: SessionsPanelProps) {
   const [confirmDeleteKey, setConfirmDeleteKey] = useState<string | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
@@ -208,7 +210,18 @@ export const SessionsPanel = memo(function SessionsPanel({
               return (
                 <div
                   key={session.key}
-                  className="group/session rounded-md border border-border/80 bg-card/70 p-3"
+                  role={onSessionClick ? "button" : undefined}
+                  tabIndex={onSessionClick ? 0 : undefined}
+                  className={`group/session rounded-md border border-border/80 bg-card/70 p-3${onSessionClick ? " cursor-pointer transition hover:border-border hover:bg-muted/55" : ""}`}
+                  onClick={() => {
+                    if (onSessionClick) onSessionClick(session.key, agentId);
+                  }}
+                  onKeyDown={(e) => {
+                    if (onSessionClick && (e.key === "Enter" || e.key === " ")) {
+                      e.preventDefault();
+                      onSessionClick(session.key, agentId);
+                    }
+                  }}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">

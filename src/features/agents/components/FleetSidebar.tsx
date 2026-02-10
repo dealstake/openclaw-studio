@@ -1,8 +1,17 @@
 import { memo } from "react";
+import { GitBranch } from "lucide-react";
 import type { AgentState, FocusFilter } from "@/features/agents/state/store";
 import { getAttentionForAgent } from "@/features/agents/state/store";
 import { AgentAvatar } from "./AgentAvatar";
 import { EmptyStatePanel } from "./EmptyStatePanel";
+
+export type SubAgentEntry = {
+  sessionKey: string;
+  sessionIdShort: string;
+  parentAgentId: string;
+  updatedAt: number | null;
+  isRunning: boolean;
+};
 
 type FleetSidebarProps = {
   agents: AgentState[];
@@ -14,6 +23,7 @@ type FleetSidebarProps = {
   createDisabled?: boolean;
   createBusy?: boolean;
   presenceAgentIds?: Set<string>;
+  subAgentSessions?: Map<string, SubAgentEntry[]>;
 };
 
 const FILTER_OPTIONS: Array<{ value: FocusFilter; label: string; testId: string }> = [
@@ -69,7 +79,10 @@ const AgentRow = memo(function AgentRow({ agent, selected, hasPresence, onSelect
           isSelected={selected}
         />
         {hasPresence ? (
-          <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-primary ring-2 ring-card" />
+          <span
+            className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-card"
+            title="Connected"
+          />
         ) : null}
       </div>
       <div className="min-w-0 flex-1">
@@ -93,6 +106,28 @@ const AgentRow = memo(function AgentRow({ agent, selected, hasPresence, onSelect
   );
 });
 
+const SubAgentRow = memo(function SubAgentRow({ entry }: { entry: SubAgentEntry }) {
+  return (
+    <div className="ml-5 flex items-center gap-2 border-l-2 border-border/50 pl-3 py-1.5">
+      <GitBranch className="h-3 w-3 shrink-0 text-muted-foreground/60" />
+      <div className="min-w-0 flex-1">
+        <span className="font-mono text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+          Sub-agent {entry.sessionIdShort}
+        </span>
+      </div>
+      <span
+        className={`rounded px-1.5 py-0.5 font-mono text-[8px] font-semibold uppercase tracking-[0.12em] ${
+          entry.isRunning
+            ? "border border-primary/30 bg-primary/15 text-foreground"
+            : "border border-border/70 bg-muted text-muted-foreground"
+        }`}
+      >
+        {entry.isRunning ? "Running" : "Done"}
+      </span>
+    </div>
+  );
+});
+
 export const FleetSidebar = memo(function FleetSidebar({
   agents,
   selectedAgentId,
@@ -103,6 +138,7 @@ export const FleetSidebar = memo(function FleetSidebar({
   createDisabled = false,
   createBusy = false,
   presenceAgentIds,
+  subAgentSessions,
 }: FleetSidebarProps) {
   return (
     <aside
@@ -149,15 +185,26 @@ export const FleetSidebar = memo(function FleetSidebar({
           <EmptyStatePanel title="No agents available." compact className="p-3 text-xs" />
         ) : (
           <div className="flex flex-col gap-2">
-            {agents.map((agent) => (
-              <AgentRow
-                key={agent.agentId}
-                agent={agent}
-                selected={selectedAgentId === agent.agentId}
-                hasPresence={presenceAgentIds?.has(agent.agentId) ?? false}
-                onSelect={onSelectAgent}
-              />
-            ))}
+            {agents.map((agent) => {
+              const subs = subAgentSessions?.get(agent.agentId);
+              return (
+                <div key={agent.agentId}>
+                  <AgentRow
+                    agent={agent}
+                    selected={selectedAgentId === agent.agentId}
+                    hasPresence={presenceAgentIds?.has(agent.agentId) ?? false}
+                    onSelect={onSelectAgent}
+                  />
+                  {subs && subs.length > 0 ? (
+                    <div className="mt-1 flex flex-col">
+                      {subs.map((sub) => (
+                        <SubAgentRow key={sub.sessionKey} entry={sub} />
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

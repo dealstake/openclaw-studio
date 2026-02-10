@@ -6,7 +6,7 @@ import {
   AgentBrainPanel,
   AgentSettingsPanel,
 } from "@/features/agents/components/AgentInspectPanels";
-import { FleetSidebar } from "@/features/agents/components/FleetSidebar";
+import { FleetSidebar, type SubAgentEntry } from "@/features/agents/components/FleetSidebar";
 import { HeaderBar } from "@/features/agents/components/HeaderBar";
 import { ConnectionPanel } from "@/features/agents/components/ConnectionPanel";
 import { EmptyStatePanel } from "@/features/agents/components/EmptyStatePanel";
@@ -162,8 +162,8 @@ const AgentStudioPage = () => {
   const [settingsHeartbeatError, setSettingsHeartbeatError] = useState<string | null>(null);
   const [heartbeatRunBusyId, setHeartbeatRunBusyId] = useState<string | null>(null);
   const [heartbeatDeleteBusyId, setHeartbeatDeleteBusyId] = useState<string | null>(null);
-  /** "agent" = show ContextPanel (Tasks/Brain/Settings), "files" = show Files, null = hidden on desktop */
-  const [contextMode, setContextMode] = useState<"agent" | "files" | null>(null);
+  /** "agent" = show ContextPanel (Tasks/Brain/Settings), "files" = show Files */
+  const [contextMode, setContextMode] = useState<"agent" | "files">("agent");
   const [contextTab, setContextTab] = useState<ContextTab>("settings");
   const runtimeEventHandlerRef = useRef<ReturnType<typeof createGatewayRuntimeEventHandler> | null>(
     null
@@ -230,6 +230,41 @@ const AgentStudioPage = () => {
   const selectedBrainAgentId = useMemo(() => {
     return focusedAgent?.agentId ?? agents[0]?.agentId ?? null;
   }, [agents, focusedAgent]);
+  const subAgentSessions = useMemo(() => {
+    const map = new Map<string, SubAgentEntry[]>();
+    const now = Date.now();
+    const FIVE_MINUTES = 5 * 60 * 1000;
+    for (const session of allSessions) {
+      const key = session.key;
+      // Pattern: agent:<name>:subagent:<uuid>
+      const match = key.match(/^agent:([^:]+):subagent:(.+)$/);
+      if (!match) continue;
+      const parentAgentId = match[1];
+      const subId = match[2];
+      const updatedAt = session.updatedAt ?? null;
+      const isRunning = updatedAt != null && now - updatedAt < FIVE_MINUTES;
+      const entry: SubAgentEntry = {
+        sessionKey: key,
+        sessionIdShort: subId.slice(0, 6),
+        parentAgentId,
+        updatedAt,
+        isRunning,
+      };
+      const existing = map.get(parentAgentId);
+      if (existing) {
+        existing.push(entry);
+      } else {
+        map.set(parentAgentId, [entry]);
+      }
+    }
+    // Sort each agent's sub-agents by updatedAt desc, limit to 5
+    for (const [agentId, entries] of map) {
+      entries.sort((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0));
+      if (entries.length > 5) map.set(agentId, entries.slice(0, 5));
+    }
+    return map;
+  }, [allSessions]);
+
   const faviconHref = "/branding/trident.svg";
   const errorMessage = state.error ?? gatewayModelsError;
   const runningAgentCount = useMemo(
@@ -925,7 +960,7 @@ const AgentStudioPage = () => {
     setContextMode((prev) => {
       if (prev === "files") {
         setMobilePane("chat");
-        return null;
+        return "agent";
       }
       setMobilePane("context");
       return "files";
@@ -1470,7 +1505,7 @@ const AgentStudioPage = () => {
               mobilePane={mobilePane}
               contextMode={contextMode}
               onPaneChange={setMobilePane}
-              onEnsureContextMode={() => { if (!contextMode) setContextMode("agent"); }}
+              onEnsureContextMode={() => { if (contextMode !== "agent" && contextMode !== "files") setContextMode("agent"); }}
             />
             <div
               className={`${mobilePane === "fleet" ? "flex" : "hidden"} min-h-0 flex-1 xl:flex xl:flex-[0_0_auto] xl:min-h-0 xl:w-[280px]`}
@@ -1491,6 +1526,7 @@ const AgentStudioPage = () => {
                   setMobilePane("chat");
                 }}
                 presenceAgentIds={presenceAgentIds}
+                subAgentSessions={subAgentSessions}
               />
             </div>
             <div
@@ -1541,7 +1577,7 @@ const AgentStudioPage = () => {
             </div>
             {/* Context Panel: agent-scoped (Tasks/Brain/Settings) or global (Files) */}
             <div
-              className={`${mobilePane === "context" ? "flex" : "hidden"} glass-panel min-h-0 w-full shrink-0 overflow-hidden p-0 ${contextMode !== null ? "xl:flex xl:w-[360px]" : ""} 2xl:flex 2xl:w-[360px]`}
+              className={`${mobilePane === "context" ? "flex" : "hidden"} glass-panel min-h-0 w-full shrink-0 overflow-hidden p-0 xl:flex xl:w-[360px]`}
             >
               {contextMode === "files" ? (
                 <ArtifactsPanel isSelected />
@@ -1561,7 +1597,7 @@ const AgentStudioPage = () => {
                       agents={agents}
                       selectedAgentId={selectedBrainAgentId}
                       onClose={() => {
-                        setContextMode(null);
+                        setContextMode("agent");
                         setMobilePane("chat");
                       }}
                     />
@@ -1584,6 +1620,13 @@ const AgentStudioPage = () => {
                       error={allSessionsError}
                       onRefresh={() => {
                         void loadAllSessions();
+                      }}
+                      onSessionClick={(_sessionKey, agentId) => {
+                        if (agentId) {
+                          flushPendingDraft(focusedAgent?.agentId ?? null);
+                          dispatch({ type: "selectAgent", agentId });
+                          setMobilePane("chat");
+                        }
                       }}
                     />
                   }

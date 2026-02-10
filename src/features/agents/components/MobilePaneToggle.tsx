@@ -4,7 +4,7 @@ export type MobilePane = "fleet" | "chat" | "context";
 
 export type MobilePaneToggleProps = {
   mobilePane: MobilePane;
-  contextMode: "agent" | "files" | null;
+  contextMode: "agent" | "files";
   onPaneChange: (pane: MobilePane) => void;
   onEnsureContextMode: () => void;
 };
