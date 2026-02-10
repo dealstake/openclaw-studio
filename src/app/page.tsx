@@ -314,6 +314,27 @@ const AgentStudioPage = () => {
     void loadSessionUsage(focusedAgent.sessionKey);
   }, [focusedAgent, loadSessionUsage, resetSessionUsage]);
 
+  // Reload usage after each turn completes (status → idle) and periodically
+  const prevStatusRef = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (!focusedAgent) return;
+    const prev = prevStatusRef.current;
+    prevStatusRef.current = focusedAgent.status;
+    // Reload when transitioning from running → idle (turn just finished)
+    if (prev === "running" && focusedAgent.status === "idle") {
+      void loadSessionUsage(focusedAgent.sessionKey);
+    }
+  }, [focusedAgent, loadSessionUsage]);
+
+  // Periodic usage refresh every 30s while connected
+  useEffect(() => {
+    if (!focusedAgent || status !== "connected") return;
+    const interval = setInterval(() => {
+      void loadSessionUsage(focusedAgent.sessionKey);
+    }, 30_000);
+    return () => clearInterval(interval);
+  }, [focusedAgent, status, loadSessionUsage]);
+
   useEffect(() => {
     const selector = 'link[data-agent-favicon="true"]';
     const existing = document.querySelector(selector) as HTMLLinkElement | null;
