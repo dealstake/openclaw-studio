@@ -8,6 +8,7 @@ type StatusBarProps = {
   agentCount: number;
   sessionCount: number;
   channelCount: number;
+  totalChannelCount?: number;
   visible: boolean;
 };
 
@@ -35,6 +36,7 @@ export const StatusBar = memo(function StatusBar({
   agentCount,
   sessionCount,
   channelCount,
+  totalChannelCount,
   visible,
 }: StatusBarProps) {
   const [, setTick] = useState(0);
@@ -49,10 +51,10 @@ export const StatusBar = memo(function StatusBar({
 
   return (
     <div className="glass-panel px-4 py-1.5" data-testid="gateway-status-bar">
-      <div className="flex items-center gap-3 font-mono text-[9px] font-semibold uppercase tracking-[0.14em]">
+      <div className="flex items-center gap-3 overflow-x-auto font-mono text-[9px] font-semibold uppercase tracking-[0.14em] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {gatewayVersion ? (
           <>
-            <span className="text-muted-foreground">
+            <span className="shrink-0 text-muted-foreground">
               Version{" "}
               <span className="text-foreground">{gatewayVersion}</span>
             </span>
@@ -61,26 +63,26 @@ export const StatusBar = memo(function StatusBar({
         ) : null}
         {gatewayUptime ? (
           <>
-            <span className="text-muted-foreground">
+            <span className="shrink-0 text-muted-foreground">
               Uptime{" "}
               <span className="text-foreground">{formatUptime(gatewayUptime)}</span>
             </span>
             <Separator />
           </>
         ) : null}
-        <span className="text-muted-foreground">
+        <span className="shrink-0 text-muted-foreground">
           Agents{" "}
           <span className="text-foreground">{agentCount}</span>
         </span>
         <Separator />
-        <span className="text-muted-foreground">
+        <span className="shrink-0 text-muted-foreground">
           Sessions{" "}
           <span className="text-foreground">{sessionCount}</span>
         </span>
         <Separator />
-        <span className="text-muted-foreground">
+        <span className="shrink-0 text-muted-foreground">
           Channels{" "}
-          <span className="text-foreground">{channelCount}</span>
+          <span className="text-foreground">{totalChannelCount != null ? `${channelCount}/${totalChannelCount}` : channelCount}</span>
         </span>
       </div>
     </div>

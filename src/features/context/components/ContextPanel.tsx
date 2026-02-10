@@ -37,14 +37,16 @@ export const ContextPanel = memo(function ContextPanel({
   return (
     <div className="flex h-full w-full flex-col">
       {/* Tab bar */}
-      <div className="flex items-center gap-1 border-b border-border/40 px-3 pt-3 pb-2">
+      <div className="flex items-center gap-1 overflow-x-auto border-b border-border/40 px-3 pt-3 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="tablist">
         {TAB_OPTIONS.map((tab) => {
           const isActive = activeTab === tab.value;
           return (
             <button
               key={tab.value}
               type="button"
-              className={`rounded-md border px-2.5 py-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.13em] transition ${
+              role="tab"
+              aria-selected={isActive}
+              className={`flex-shrink-0 rounded-md border px-2 py-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.08em] transition ${
                 isActive
                   ? "border-border bg-muted text-foreground shadow-xs"
                   : "border-border/80 bg-card/65 text-muted-foreground hover:border-border hover:bg-muted/70"
@@ -60,22 +62,22 @@ export const ContextPanel = memo(function ContextPanel({
 
       {/* Tab content */}
       <div className="min-h-0 flex-1 overflow-hidden">
-        <div className={activeTab === "tasks" ? "flex h-full w-full" : "hidden"}>
+        <div role="tabpanel" className={activeTab === "tasks" ? "flex h-full w-full" : "hidden"}>
           {tasksContent}
         </div>
-        <div className={activeTab === "brain" ? "flex h-full w-full" : "hidden"}>
+        <div role="tabpanel" className={activeTab === "brain" ? "flex h-full w-full" : "hidden"}>
           {brainContent}
         </div>
-        <div className={activeTab === "settings" ? "flex h-full w-full" : "hidden"}>
+        <div role="tabpanel" className={activeTab === "settings" ? "flex h-full w-full" : "hidden"}>
           {settingsContent}
         </div>
-        <div className={activeTab === "channels" ? "flex h-full w-full" : "hidden"}>
+        <div role="tabpanel" className={activeTab === "channels" ? "flex h-full w-full" : "hidden"}>
           {channelsContent ?? null}
         </div>
-        <div className={activeTab === "sessions" ? "flex h-full w-full" : "hidden"}>
+        <div role="tabpanel" className={activeTab === "sessions" ? "flex h-full w-full" : "hidden"}>
           {sessionsContent ?? null}
         </div>
-        <div className={activeTab === "cron" ? "flex h-full w-full" : "hidden"}>
+        <div role="tabpanel" className={activeTab === "cron" ? "flex h-full w-full" : "hidden"}>
           {cronContent ?? null}
         </div>
       </div>

@@ -10,16 +10,33 @@ type ChannelStatusPillsProps = {
 };
 
 const DOT_CLASS: Record<ChannelHealth, string> = {
-  connected: "bg-emerald-500",
-  running: "bg-yellow-500",
+  connected: "bg-primary",
+  running: "bg-accent",
   configured: "bg-muted-foreground/50",
   error: "bg-destructive",
   off: "bg-muted-foreground/30",
 };
 
+const CHANNEL_ABBREV: Record<string, string> = {
+  webchat: "WEB",
+  telegram: "TG",
+  discord: "DC",
+  whatsapp: "WA",
+  signal: "SIG",
+  googlechat: "GCHAT",
+  slack: "SLK",
+  imessage: "iMSG",
+};
+
 const abbreviate = (label: string): string => {
-  if (label.length <= 4) return label;
-  return label.slice(0, 3).toUpperCase();
+  const lower = label.toLowerCase().replace(/[\s_-]/g, "");
+  if (CHANNEL_ABBREV[lower]) return CHANNEL_ABBREV[lower];
+  // Try partial match
+  for (const [key, abbrev] of Object.entries(CHANNEL_ABBREV)) {
+    if (lower.includes(key)) return abbrev;
+  }
+  if (label.length <= 5) return label.toUpperCase();
+  return label.slice(0, 4).toUpperCase();
 };
 
 export const ChannelStatusPills = memo(function ChannelStatusPills({
@@ -48,10 +65,10 @@ export const ChannelStatusPills = memo(function ChannelStatusPills({
       {entries.map((entry) => (
         <span
           key={entry.key}
-          className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] border border-border/70 bg-card/65 text-muted-foreground"
+          className="inline-flex max-w-[80px] items-center gap-1 truncate rounded border border-border/70 bg-card/65 px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground"
           title={`${entry.label}: ${entry.health}`}
         >
-          <span className={`inline-block h-1.5 w-1.5 rounded-full ${DOT_CLASS[entry.health]}`} />
+          <span className={`inline-block h-1.5 w-1.5 shrink-0 rounded-full ${DOT_CLASS[entry.health]}`} />
           {abbreviate(entry.label)}
         </span>
       ))}

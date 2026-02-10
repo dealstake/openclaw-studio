@@ -13,8 +13,8 @@ type ChannelsPanelProps = {
 };
 
 const HEALTH_COLORS: Record<ChannelHealth, string> = {
-  connected: "bg-emerald-500",
-  running: "bg-yellow-500",
+  connected: "bg-primary",
+  running: "bg-accent",
   configured: "bg-muted-foreground/50",
   error: "bg-destructive",
   off: "bg-muted-foreground/30",

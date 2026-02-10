@@ -313,6 +313,7 @@ const AgentStudioPage = () => {
   const [gatewayUptime, setGatewayUptime] = useState<number | undefined>();
   const [totalSessionCount, setTotalSessionCount] = useState(0);
   const [connectedChannelCount, setConnectedChannelCount] = useState(0);
+  const [totalChannelCount, setTotalChannelCount] = useState(0);
 
   // All sessions (for sessions panel)
   const [allSessions, setAllSessions] = useState<SessionEntry[]>([]);
@@ -465,6 +466,12 @@ const AgentStudioPage = () => {
         if (health === "connected" || health === "running") connected++;
       }
       setConnectedChannelCount(connected);
+      // Count total configured channels
+      const total = Object.keys(channels).filter((k) => {
+        const entry = channels[k];
+        return entry?.configured || entry?.running || entry?.connected;
+      }).length;
+      setTotalChannelCount(total);
     } catch (err) {
       if (!isGatewayDisconnectLikeError(err)) {
         const message = err instanceof Error ? err.message : "Failed to load channels status.";
@@ -2658,6 +2665,7 @@ const AgentStudioPage = () => {
               agentCount={agents.length}
               sessionCount={totalSessionCount}
               channelCount={connectedChannelCount}
+              totalChannelCount={totalChannelCount}
               visible={status === "connected"}
             />
           </div>

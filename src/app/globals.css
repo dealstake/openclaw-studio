@@ -297,6 +297,15 @@ textarea:focus::-webkit-scrollbar {
     0 8px 20px -15px color-mix(in oklch, var(--shadow-color) 68%, transparent);
 }
 
+.header-gradient-overlay {
+  background: linear-gradient(
+    120deg,
+    transparent 0%,
+    color-mix(in oklch, var(--primary) 7%, transparent) 48%,
+    transparent 100%
+  );
+}
+
 .agent-inspect-panel {
   position: relative;
   height: 100%;

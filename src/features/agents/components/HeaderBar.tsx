@@ -66,7 +66,7 @@ export const HeaderBar = ({
 
   return (
     <div className="glass-panel fade-up relative z-30 overflow-visible px-4 py-2">
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(120deg,transparent_0%,color-mix(in_oklch,var(--primary)_7%,transparent)_48%,transparent_100%)] opacity-55" />
+      <div className="pointer-events-none absolute inset-0 header-gradient-overlay opacity-55" />
       <div className="relative flex items-center gap-4">
         <div className="flex min-w-0 flex-1 items-center gap-3">
           <BrandMark size="sm" />

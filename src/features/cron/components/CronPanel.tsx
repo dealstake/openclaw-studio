@@ -6,6 +6,7 @@ import { EmptyStatePanel } from "@/features/agents/components/EmptyStatePanel";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import { isGatewayDisconnectLikeError } from "@/lib/gateway/GatewayClient";
 import { formatCronPayload, formatCronSchedule, type CronJobSummary } from "@/lib/cron/types";
+import { formatRelativeTime } from "@/lib/text/time";
 
 type CronRunEntry = {
   id: string;
@@ -32,22 +33,8 @@ type CronPanelProps = {
   onRefresh: () => void;
 };
 
-const formatRelativeTime = (timestamp: number | null | undefined): string => {
-  if (!timestamp) return "—";
-  const elapsed = Date.now() - timestamp;
-  if (elapsed < 0) return "just now";
-  const seconds = Math.floor(elapsed / 1000);
-  if (seconds < 60) return `${seconds}s ago`;
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
-};
-
 const STATUS_PILL_CLASS: Record<string, string> = {
-  ok: "border-emerald-500/30 bg-emerald-500/15 text-emerald-600",
+  ok: "border-primary/30 bg-primary/15 text-primary",
   error: "border-destructive/35 bg-destructive/12 text-destructive",
   skipped: "border-border/70 bg-muted text-muted-foreground",
 };
@@ -134,7 +121,7 @@ export const CronPanel = memo(function CronPanel({
         ) : null}
 
         {!loading && !error && cronJobs.length === 0 ? (
-          <EmptyStatePanel title="No cron jobs found." compact className="p-3 text-xs" />
+          <EmptyStatePanel title="No cron jobs found." compact className="w-full p-4 text-center text-xs" />
         ) : null}
 
         {cronJobs.length > 0 ? (

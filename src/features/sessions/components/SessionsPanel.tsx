@@ -5,6 +5,7 @@ import { Archive, RefreshCw, Trash2 } from "lucide-react";
 import { EmptyStatePanel } from "@/features/agents/components/EmptyStatePanel";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import { isGatewayDisconnectLikeError, parseAgentIdFromSessionKey } from "@/lib/gateway/GatewayClient";
+import { formatRelativeTime } from "@/lib/text/time";
 
 export type SessionEntry = {
   key: string;
@@ -21,19 +22,53 @@ type SessionsPanelProps = {
   onRefresh: () => void;
 };
 
-const formatRelativeTime = (timestamp: number | null | undefined): string => {
-  if (!timestamp) return "—";
-  const elapsed = Date.now() - timestamp;
-  if (elapsed < 0) return "just now";
-  const seconds = Math.floor(elapsed / 1000);
-  if (seconds < 60) return `${seconds}s ago`;
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
+const CHANNEL_TYPE_LABELS: Record<string, string> = {
+  webchat: "Webchat",
+  telegram: "Telegram",
+  discord: "Discord",
+  whatsapp: "WhatsApp",
+  signal: "Signal",
+  googlechat: "Google Chat",
+  slack: "Slack",
+  imessage: "iMessage",
 };
+
+function humanizeSessionKey(key: string): string {
+  // Pattern: agent:<name>:<type>[:<id>]
+  const parts = key.split(":");
+  if (parts.length < 3) return key;
+  const type = parts[2];
+  const rest = parts.slice(3).join(":");
+
+  switch (type) {
+    case "main":
+      return "Main Session";
+    case "subagent":
+      return `Sub-agent ${rest.slice(0, 6)}`;
+    case "cron":
+      return `Cron ${rest.slice(0, 6)}`;
+    default: {
+      // Channel-based sessions like googlechat:group:spaces/...
+      const channelLabel = CHANNEL_TYPE_LABELS[type.toLowerCase()];
+      if (channelLabel) {
+        const subtype = parts[3];
+        if (subtype === "group") return `${channelLabel} Group`;
+        if (subtype === "dm") return `${channelLabel} DM`;
+        return channelLabel;
+      }
+      return key;
+    }
+  }
+}
+
+function humanizeOriginLabel(label: string): string {
+  // e.g. "GOOGLECHAT:GROUP:SPACES/S_MOKSAAAAE" → extract channel type
+  const lower = label.toLowerCase();
+  for (const [key, name] of Object.entries(CHANNEL_TYPE_LABELS)) {
+    if (lower.startsWith(key)) return name;
+  }
+  return label;
+}
 
 export const SessionsPanel = memo(function SessionsPanel({
   client,
@@ -137,14 +172,14 @@ export const SessionsPanel = memo(function SessionsPanel({
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
                       <div className="truncate font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-foreground">
-                        {session.displayName ?? session.key}
+                        {session.displayName ?? humanizeSessionKey(session.key)}
                       </div>
                       <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
                         {agentId ? <span>Agent: {agentId}</span> : null}
                         <span>{formatRelativeTime(session.updatedAt)}</span>
                         {session.origin?.label ? (
-                          <span className="rounded px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] border border-border/70 bg-muted text-muted-foreground">
-                            {session.origin.label}
+                          <span className="max-w-[140px] truncate rounded px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] border border-border/70 bg-muted text-muted-foreground">
+                            {humanizeOriginLabel(session.origin.label)}
                           </span>
                         ) : null}
                       </div>
