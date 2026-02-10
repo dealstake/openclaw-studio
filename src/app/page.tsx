@@ -251,18 +251,28 @@ const AgentStudioPage = () => {
   }, [allSessions]);
 
   // Build token info map for Fleet sidebar progress bars
+  // Match a model key (could be "claude-opus-4-6" or "anthropic/claude-opus-4-6") against gateway model list
+  const findModelMatch = useCallback(
+    (modelKey: string | undefined | null) => {
+      if (!modelKey) return undefined;
+      return gatewayModels.find(
+        (m) => `${m.provider}/${m.id}` === modelKey || m.id === modelKey
+      );
+    },
+    [gatewayModels]
+  );
+
   const agentTokenInfo = useMemo(() => {
     const map = new Map<string, AgentTokenInfo>();
     if (focusedAgent && sessionUsage) {
-      const modelKey = focusedAgent.model;
-      const match = modelKey ? gatewayModels.find((m) => `${m.provider}/${m.id}` === modelKey) : undefined;
+      const match = findModelMatch(focusedAgent.model);
       map.set(focusedAgent.agentId, {
         used: sessionUsage.inputTokens + sessionUsage.outputTokens,
         limit: match?.contextWindow,
       });
     }
     return map;
-  }, [focusedAgent, sessionUsage, gatewayModels]);
+  }, [focusedAgent, sessionUsage, findModelMatch]);
 
   const faviconHref = "/branding/trident.svg";
   const errorMessage = state.error ?? gatewayModelsError;
@@ -334,6 +344,36 @@ const AgentStudioPage = () => {
     }, 30_000);
     return () => clearInterval(interval);
   }, [focusedAgent, status, loadSessionUsage]);
+
+  // Aggregate usage across all sessions
+  const [aggregateUsage, setAggregateUsage] = useState<{
+    inputTokens: number; outputTokens: number; totalCost: number | null; messageCount: number;
+  } | null>(null);
+  const [aggregateUsageLoading, setAggregateUsageLoading] = useState(false);
+
+  useEffect(() => {
+    if (status !== "connected") return;
+    setAggregateUsageLoading(true);
+    client.call<{
+      totals?: { input?: number; output?: number; totalCost?: number };
+      sessions?: Array<{ usage?: { messageCounts?: { total?: number } } }>;
+    }>("sessions.usage", {}).then((result) => {
+      const totals = result.totals;
+      const msgTotal = (result.sessions ?? []).reduce(
+        (sum, s) => sum + (s.usage?.messageCounts?.total ?? 0), 0
+      );
+      setAggregateUsage({
+        inputTokens: totals?.input ?? 0,
+        outputTokens: totals?.output ?? 0,
+        totalCost: totals?.totalCost != null && totals.totalCost > 0 ? totals.totalCost : null,
+        messageCount: msgTotal,
+      });
+    }).catch(() => {
+      setAggregateUsage(null);
+    }).finally(() => {
+      setAggregateUsageLoading(false);
+    });
+  }, [client, status]);
 
   useEffect(() => {
     const selector = 'link[data-agent-favicon="true"]';
@@ -1361,12 +1401,7 @@ const AgentStudioPage = () => {
                   isCompacting={isCompacting}
                   lastCompactedAt={lastCompactedAt}
                   tokenUsed={sessionUsage ? sessionUsage.inputTokens + sessionUsage.outputTokens : undefined}
-                  tokenLimit={(() => {
-                    const modelKey = focusedAgent.model;
-                    if (!modelKey) return undefined;
-                    const match = gatewayModels.find((m) => `${m.provider}/${m.id}` === modelKey);
-                    return match?.contextWindow;
-                  })()}
+                  tokenLimit={findModelMatch(focusedAgent.model)?.contextWindow}
                   viewingSessionKey={viewingSessionKey}
                   viewingSessionHistory={viewingSessionHistory}
                   viewingSessionLoading={viewingSessionLoading}
@@ -1432,6 +1467,8 @@ const AgentStudioPage = () => {
                         void loadAllSessions();
                       }}
                       activeSessionKey={focusedAgent?.sessionKey ?? null}
+                      aggregateUsage={aggregateUsage}
+                      aggregateUsageLoading={aggregateUsageLoading}
                       onSessionClick={(sessionKey, agentId) => {
                         if (agentId) {
                           flushPendingDraft(focusedAgent?.agentId ?? null);
