@@ -2,6 +2,7 @@
 
 import { memo, useMemo } from "react";
 import { RefreshCw } from "lucide-react";
+import { Skeleton } from "@/components/Skeleton";
 import type { ChannelsStatusSnapshot } from "@/lib/gateway/channels";
 import { resolveChannelLabel, resolveChannelHealth, type ChannelHealth } from "@/lib/gateway/channels";
 
@@ -15,7 +16,7 @@ type ChannelsPanelProps = {
 const HEALTH_COLORS: Record<ChannelHealth, string> = {
   connected: "bg-primary",
   running: "bg-accent",
-  configured: "bg-muted-foreground/50",
+  configured: "bg-amber-500",
   error: "bg-destructive",
   off: "bg-muted-foreground/30",
 };
@@ -23,7 +24,7 @@ const HEALTH_COLORS: Record<ChannelHealth, string> = {
 const HEALTH_LABELS: Record<ChannelHealth, string> = {
   connected: "Connected",
   running: "Running",
-  configured: "Configured",
+  configured: "Not connected",
   error: "Error",
   off: "Off",
 };
@@ -69,7 +70,17 @@ export const ChannelsPanel = memo(function ChannelsPanel({
 
       <div className="mt-3 flex flex-1 flex-col gap-2 overflow-y-auto">
         {loading && keys.length === 0 ? (
-          <div className="text-[11px] text-muted-foreground">Loading channels…</div>
+          <div className="flex flex-col gap-2">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-3 rounded-md border border-border/80 bg-card/75 px-3 py-2">
+                <Skeleton className="h-2 w-2 rounded-full" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-3 w-24" />
+                  <Skeleton className="h-2.5 w-16" />
+                </div>
+              </div>
+            ))}
+          </div>
         ) : keys.length === 0 ? (
           <div className="text-[11px] text-muted-foreground">No channels configured.</div>
         ) : (

@@ -3,6 +3,7 @@
 import { memo, useCallback, useState } from "react";
 import { ChevronDown, ChevronRight, Play, RefreshCw, Trash2 } from "lucide-react";
 import { EmptyStatePanel } from "@/features/agents/components/EmptyStatePanel";
+import { Skeleton } from "@/components/Skeleton";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import { isGatewayDisconnectLikeError } from "@/lib/gateway/GatewayClient";
 import { formatCronPayload, formatCronSchedule, type CronJobSummary } from "@/lib/cron/types";
@@ -117,7 +118,15 @@ export const CronPanel = memo(function CronPanel({
         ) : null}
 
         {loading && cronJobs.length === 0 ? (
-          <div className="text-[11px] text-muted-foreground">Loading cron jobs…</div>
+          <div className="flex flex-col gap-2">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="rounded-md border border-border/80 bg-card/70 p-3 space-y-2">
+                <Skeleton className="h-3 w-32" />
+                <Skeleton className="h-2.5 w-48" />
+                <Skeleton className="h-2.5 w-24" />
+              </div>
+            ))}
+          </div>
         ) : null}
 
         {!loading && !error && cronJobs.length === 0 ? (

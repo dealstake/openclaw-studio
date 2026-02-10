@@ -85,7 +85,9 @@ export const HeaderBar = ({
 
           <AvatarButton identity={identity} />
 
-          <ThemeToggle />
+          <div className="hidden sm:flex">
+            <ThemeToggle />
+          </div>
 
           <HeaderIconButton
             onClick={onFilesToggle}

@@ -12,7 +12,7 @@ import {
 import type { AgentState as AgentRecord } from "@/features/agents/state/store";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Settings, Shuffle } from "lucide-react";
+import { ChevronRight, Settings, Shuffle } from "lucide-react";
 import type { GatewayModelChoice } from "@/lib/gateway/models";
 import { isToolMarkdown, isTraceMarkdown } from "@/lib/text/message-extract";
 import { isNearBottom } from "@/lib/dom";
@@ -69,6 +69,7 @@ const AgentChatFinalItems = memo(function AgentChatFinalItems({
             >
               <summary className="flex cursor-pointer list-none items-center gap-2 px-2 py-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.11em] [&::-webkit-details-marker]:hidden">
                 <AgentAvatar seed={avatarSeed} name={name} avatarUrl={avatarUrl} size={22} />
+                <ChevronRight className="h-3 w-3 shrink-0 transition-transform duration-200 [[open]>&]:rotate-90" />
                 <span>Thinking</span>
               </summary>
               <div className="agent-markdown px-2 pb-2 text-foreground">
@@ -266,6 +267,7 @@ const AgentChatTranscript = memo(function AgentChatTranscript({
                 >
                   <summary className="flex cursor-pointer list-none items-center gap-2 px-2 py-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.11em] [&::-webkit-details-marker]:hidden">
                     <AgentAvatar seed={avatarSeed} name={name} avatarUrl={avatarUrl} size={22} />
+                    <ChevronRight className="h-3 w-3 shrink-0 transition-transform duration-200 [[open]>&]:rotate-90" />
                     <span>Thinking</span>
                     {status === "running" ? (
                       <span className="typing-dots" aria-hidden="true">
@@ -282,7 +284,7 @@ const AgentChatTranscript = memo(function AgentChatTranscript({
               ) : null}
               {liveAssistantText ? (
                 <div className="agent-markdown rounded-md border border-transparent px-0.5 opacity-85">
-                  {liveAssistantText}
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{liveAssistantText}</ReactMarkdown>
                 </div>
               ) : null}
               {showTypingIndicator ? (
@@ -312,7 +314,7 @@ const AgentChatTranscript = memo(function AgentChatTranscript({
       {showJumpToLatest ? (
         <button
           type="button"
-          className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-md border border-border/80 bg-card/95 px-3 py-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-foreground shadow-sm transition hover:bg-muted/70"
+          className="absolute bottom-3 left-1/2 z-10 max-w-[calc(100%-2rem)] -translate-x-1/2 rounded-md border border-border/80 bg-card/95 px-3 py-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-foreground shadow-sm transition hover:bg-muted/70"
           onClick={() => {
             setPinned(true);
             scrollChatToBottom();
@@ -599,15 +601,26 @@ export const AgentChatPanel = ({
         <div className="flex items-start gap-4">
           <div className="flex min-w-0 flex-1 items-start gap-3">
             <div className="group/avatar relative">
-              <AgentAvatar
-                seed={avatarSeed}
-                name={agent.name}
-                avatarUrl={agent.avatarUrl ?? null}
-                size={96}
-                isSelected={isSelected}
-              />
+              <div className="hidden sm:block">
+                <AgentAvatar
+                  seed={avatarSeed}
+                  name={agent.name}
+                  avatarUrl={agent.avatarUrl ?? null}
+                  size={96}
+                  isSelected={isSelected}
+                />
+              </div>
+              <div className="sm:hidden">
+                <AgentAvatar
+                  seed={avatarSeed}
+                  name={agent.name}
+                  avatarUrl={agent.avatarUrl ?? null}
+                  size={48}
+                  isSelected={isSelected}
+                />
+              </div>
               <button
-                className="nodrag pointer-events-none absolute bottom-1 right-1 flex h-7 w-7 items-center justify-center rounded-full border border-border/80 bg-card/90 text-muted-foreground opacity-0 shadow-sm transition group-focus-within/avatar:pointer-events-auto group-focus-within/avatar:opacity-100 group-hover/avatar:pointer-events-auto group-hover/avatar:opacity-100 hover:border-border hover:bg-muted/65"
+                className="nodrag pointer-events-none absolute bottom-1 right-1 hidden h-7 w-7 items-center justify-center rounded-full border border-border/80 bg-card/90 text-muted-foreground opacity-0 shadow-sm transition group-focus-within/avatar:pointer-events-auto group-focus-within/avatar:opacity-100 group-hover/avatar:pointer-events-auto group-hover/avatar:opacity-100 hover:border-border hover:bg-muted/65 sm:flex"
                 type="button"
                 aria-label="Shuffle avatar"
                 data-testid="agent-avatar-shuffle"

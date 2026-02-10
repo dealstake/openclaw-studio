@@ -213,7 +213,7 @@ export const SessionsPanel = memo(function SessionsPanel({
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
                       <div className="truncate font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-foreground">
-                        {session.displayName ?? humanizeSessionKey(session.key)}
+                        {humanizeSessionKey(session.displayName ?? session.key)}
                       </div>
                       <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
                         {agentId ? <span>Agent: {agentId}</span> : null}

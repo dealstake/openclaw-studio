@@ -266,7 +266,7 @@ const AgentStudioPage = () => {
   const [heartbeatDeleteBusyId, setHeartbeatDeleteBusyId] = useState<string | null>(null);
   /** "agent" = show ContextPanel (Tasks/Brain/Settings), "files" = show Files, null = hidden on desktop */
   const [contextMode, setContextMode] = useState<"agent" | "files" | null>(null);
-  const [contextTab, setContextTab] = useState<ContextTab>("tasks");
+  const [contextTab, setContextTab] = useState<ContextTab>("settings");
   const [deleteAgentBlock, setDeleteAgentBlock] = useState<DeleteAgentBlockState | null>(null);
   const [createAgentBlock, setCreateAgentBlock] = useState<CreateAgentBlockState | null>(null);
   const [renameAgentBlock, setRenameAgentBlock] = useState<RenameAgentBlockState | null>(null);
@@ -284,6 +284,9 @@ const AgentStudioPage = () => {
   const runtimeEventHandlerRef = useRef<ReturnType<typeof createGatewayRuntimeEventHandler> | null>(
     null
   );
+
+  // Delete agent confirmation
+  const [deleteConfirmAgentId, setDeleteConfirmAgentId] = useState<string | null>(null);
 
   // Exec approvals
   const [execApprovalQueue, setExecApprovalQueue] = useState<ExecApprovalRequest[]>([]);
@@ -1490,21 +1493,10 @@ const AgentStudioPage = () => {
     });
   }, []);
 
-  const handleDeleteAgent = useCallback(
+  const handleConfirmDeleteAgent = useCallback(
     async (agentId: string) => {
-      if (deleteAgentBlock) return;
-      if (createAgentBlock) return;
-      if (renameAgentBlock) return;
-      if (agentId === RESERVED_MAIN_AGENT_ID) {
-        setError("The main agent cannot be deleted.");
-        return;
-      }
       const agent = agents.find((entry) => entry.agentId === agentId);
       if (!agent) return;
-      const confirmed = window.confirm(
-        `Delete ${agent.name}? This removes the agent from gateway config + cron and moves its workspace/state into ~/.openclaw/trash on the gateway host.`
-      );
-      if (!confirmed) return;
       setDeleteAgentBlock({
         agentId,
         agentName: agent.name,
@@ -1578,12 +1570,25 @@ const AgentStudioPage = () => {
     [
       agents,
       client,
-      createAgentBlock,
-      deleteAgentBlock,
       enqueueConfigMutation,
-      renameAgentBlock,
       setError,
     ]
+  );
+
+  const handleDeleteAgent = useCallback(
+    (agentId: string) => {
+      if (deleteAgentBlock) return;
+      if (createAgentBlock) return;
+      if (renameAgentBlock) return;
+      if (agentId === RESERVED_MAIN_AGENT_ID) {
+        setError("The main agent cannot be deleted.");
+        return;
+      }
+      const agent = agents.find((entry) => entry.agentId === agentId);
+      if (!agent) return;
+      setDeleteConfirmAgentId(agentId);
+    },
+    [agents, createAgentBlock, deleteAgentBlock, renameAgentBlock, setError]
   );
 
   useEffect(() => {
@@ -2742,6 +2747,19 @@ const AgentStudioPage = () => {
             void handleExecApprovalDecision(id, decision);
           }}
         />
+      ) : null}
+      {deleteConfirmAgentId ? (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/70 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Confirm delete agent">
+          <div className="w-full max-w-md rounded-lg border border-border bg-card/95 p-6 shadow-2xl">
+            <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-destructive">Confirm deletion</div>
+            <div className="mt-2 text-base font-semibold text-foreground">{agents.find(a => a.agentId === deleteConfirmAgentId)?.name ?? "Agent"}</div>
+            <div className="mt-3 text-sm text-muted-foreground">This removes the agent from gateway config, deletes cron jobs, and moves workspace to trash. This cannot be undone.</div>
+            <div className="mt-4 flex justify-end gap-2">
+              <button className="rounded-md border border-border/80 bg-card/70 px-4 py-2 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground transition hover:bg-muted/65" type="button" onClick={() => setDeleteConfirmAgentId(null)}>Cancel</button>
+              <button className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-2 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-destructive transition hover:bg-destructive/20" type="button" onClick={() => { setDeleteConfirmAgentId(null); void handleConfirmDeleteAgent(deleteConfirmAgentId); }}>Delete Agent</button>
+            </div>
+          </div>
+        </div>
       ) : null}
       {deleteAgentBlock && deleteAgentBlock.phase !== "queued" ? (
         <div
