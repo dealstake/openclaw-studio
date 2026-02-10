@@ -82,6 +82,20 @@ import {
 import { ArtifactsPanel } from "@/features/artifacts/components/ArtifactsPanel";
 import { TasksPanel } from "@/features/tasks/components/TasksPanel";
 import { ContextPanel, type ContextTab } from "@/features/context/components/ContextPanel";
+import { ExecApprovalOverlay } from "@/features/exec-approvals/components/ExecApprovalOverlay";
+import {
+  parseExecApprovalRequested,
+  parseExecApprovalResolved,
+  pruneExpired,
+  type ExecApprovalRequest,
+  type ExecApprovalDecision,
+} from "@/features/exec-approvals/types";
+import type { ChannelsStatusSnapshot } from "@/lib/gateway/channels";
+import { resolveChannelHealth } from "@/lib/gateway/channels";
+import { ChannelsPanel } from "@/features/channels/components/ChannelsPanel";
+import { SessionsPanel, type SessionEntry } from "@/features/sessions/components/SessionsPanel";
+import { CronPanel } from "@/features/cron/components/CronPanel";
+import { StatusBar } from "@/features/status/components/StatusBar";
 
 type ChatHistoryMessage = Record<string, unknown>;
 
@@ -271,6 +285,47 @@ const AgentStudioPage = () => {
     null
   );
 
+  // Exec approvals
+  const [execApprovalQueue, setExecApprovalQueue] = useState<ExecApprovalRequest[]>([]);
+  const [execApprovalBusy, setExecApprovalBusy] = useState(false);
+  const [execApprovalError, setExecApprovalError] = useState<string | null>(null);
+
+  // Channels
+  const [channelsSnapshot, setChannelsSnapshot] = useState<ChannelsStatusSnapshot | null>(null);
+  const [channelsLoading, setChannelsLoading] = useState(false);
+  const [channelsError, setChannelsError] = useState<string | null>(null);
+
+  // Presence
+  const [presenceAgentIds, setPresenceAgentIds] = useState<Set<string>>(new Set());
+
+  // Session usage (for settings panel)
+  const [sessionUsage, setSessionUsage] = useState<{
+    inputTokens: number;
+    outputTokens: number;
+    totalCost: number | null;
+    currency: string;
+    messageCount: number;
+  } | null>(null);
+  const [sessionUsageLoading, setSessionUsageLoading] = useState(false);
+
+  // Gateway status
+  const [gatewayVersion, setGatewayVersion] = useState<string | undefined>();
+  const [gatewayUptime, setGatewayUptime] = useState<number | undefined>();
+  const [totalSessionCount, setTotalSessionCount] = useState(0);
+  const [connectedChannelCount, setConnectedChannelCount] = useState(0);
+
+  // All sessions (for sessions panel)
+  const [allSessions, setAllSessions] = useState<SessionEntry[]>([]);
+  const [allSessionsLoading, setAllSessionsLoading] = useState(false);
+  const [allSessionsError, setAllSessionsError] = useState<string | null>(null);
+
+  // All cron jobs (for cron panel)
+  const [allCronJobs, setAllCronJobs] = useState<CronJobSummary[]>([]);
+  const [allCronLoading, setAllCronLoading] = useState(false);
+  const [allCronError, setAllCronError] = useState<string | null>(null);
+  const [allCronRunBusyJobId, setAllCronRunBusyJobId] = useState<string | null>(null);
+  const [allCronDeleteBusyJobId, setAllCronDeleteBusyJobId] = useState<string | null>(null);
+
   const agents = state.agents;
   const selectedAgent = useMemo(() => getSelectedAgent(state), [state]);
   const filteredAgents = useMemo(
@@ -393,6 +448,236 @@ const AgentStudioPage = () => {
       }),
     []
   );
+
+  // ── Channels status loading ───────────────────────────────────────
+  const loadChannelsStatus = useCallback(async () => {
+    if (status !== "connected") return;
+    setChannelsLoading(true);
+    try {
+      const result = await client.call<ChannelsStatusSnapshot>("channels.status", {});
+      setChannelsSnapshot(result);
+      setChannelsError(null);
+      // Count connected channels for status bar
+      const channels = result?.channels ?? {};
+      let connected = 0;
+      for (const key of Object.keys(channels)) {
+        const health = resolveChannelHealth(channels[key]);
+        if (health === "connected" || health === "running") connected++;
+      }
+      setConnectedChannelCount(connected);
+    } catch (err) {
+      if (!isGatewayDisconnectLikeError(err)) {
+        const message = err instanceof Error ? err.message : "Failed to load channels status.";
+        setChannelsError(message);
+      }
+    } finally {
+      setChannelsLoading(false);
+    }
+  }, [client, status]);
+
+  // ── All sessions loading ─────────────────────────────────────────
+  const loadAllSessions = useCallback(async () => {
+    if (status !== "connected") return;
+    setAllSessionsLoading(true);
+    try {
+      const result = await client.call<SessionsListResult>("sessions.list", {
+        includeGlobal: true,
+        includeUnknown: true,
+        limit: 200,
+      });
+      const entries: SessionEntry[] = (result.sessions ?? []).map((s) => ({
+        key: s.key,
+        updatedAt: s.updatedAt ?? null,
+        displayName: s.displayName,
+        origin: s.origin ?? null,
+      }));
+      setAllSessions(entries);
+      setTotalSessionCount(entries.length);
+      setAllSessionsError(null);
+    } catch (err) {
+      if (!isGatewayDisconnectLikeError(err)) {
+        const message = err instanceof Error ? err.message : "Failed to load sessions.";
+        setAllSessionsError(message);
+      }
+    } finally {
+      setAllSessionsLoading(false);
+    }
+  }, [client, status]);
+
+  // ── All cron jobs loading ────────────────────────────────────────
+  const loadAllCronJobs = useCallback(async () => {
+    if (status !== "connected") return;
+    setAllCronLoading(true);
+    try {
+      const result = await listCronJobs(client, { includeDisabled: true });
+      setAllCronJobs(sortCronJobsByUpdatedAt(result.jobs));
+      setAllCronError(null);
+    } catch (err) {
+      if (!isGatewayDisconnectLikeError(err)) {
+        const message = err instanceof Error ? err.message : "Failed to load cron jobs.";
+        setAllCronError(message);
+      }
+    } finally {
+      setAllCronLoading(false);
+    }
+  }, [client, status]);
+
+  // ── Exec approval decision handler ──────────────────────────────
+  const handleExecApprovalDecision = useCallback(
+    async (id: string, decision: ExecApprovalDecision) => {
+      setExecApprovalBusy(true);
+      setExecApprovalError(null);
+      try {
+        await client.call("exec.approval.resolve", { id, decision });
+        setExecApprovalQueue((prev) => prev.filter((r) => r.id !== id));
+      } catch (err) {
+        setExecApprovalError(
+          err instanceof Error ? err.message : "Failed to resolve approval"
+        );
+      } finally {
+        setExecApprovalBusy(false);
+      }
+    },
+    [client]
+  );
+
+  // ── All cron panel handlers ─────────────────────────────────────
+  const handleAllCronRunJob = useCallback(
+    async (jobId: string) => {
+      if (allCronRunBusyJobId || allCronDeleteBusyJobId) return;
+      setAllCronRunBusyJobId(jobId);
+      setAllCronError(null);
+      try {
+        await runCronJobNow(client, jobId);
+        await loadAllCronJobs();
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Failed to run cron job.";
+        setAllCronError(message);
+      } finally {
+        setAllCronRunBusyJobId(null);
+      }
+    },
+    [client, allCronRunBusyJobId, allCronDeleteBusyJobId, loadAllCronJobs]
+  );
+
+  const handleAllCronDeleteJob = useCallback(
+    async (jobId: string) => {
+      if (allCronRunBusyJobId || allCronDeleteBusyJobId) return;
+      setAllCronDeleteBusyJobId(jobId);
+      setAllCronError(null);
+      try {
+        await removeCronJob(client, jobId);
+        setAllCronJobs((jobs) => jobs.filter((j) => j.id !== jobId));
+        await loadAllCronJobs();
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Failed to delete cron job.";
+        setAllCronError(message);
+      } finally {
+        setAllCronDeleteBusyJobId(null);
+      }
+    },
+    [client, allCronRunBusyJobId, allCronDeleteBusyJobId, loadAllCronJobs]
+  );
+
+  // ── Session usage loading ───────────────────────────────────────
+  const loadSessionUsage = useCallback(
+    async (sessionKey: string) => {
+      if (!sessionKey || status !== "connected") {
+        setSessionUsage(null);
+        return;
+      }
+      setSessionUsageLoading(true);
+      try {
+        const result = await client.call<{
+          inputTokens?: number;
+          outputTokens?: number;
+          totalCost?: number | null;
+          currency?: string;
+          messageCount?: number;
+        }>("sessions.usage", { key: sessionKey });
+        setSessionUsage({
+          inputTokens: result.inputTokens ?? 0,
+          outputTokens: result.outputTokens ?? 0,
+          totalCost: result.totalCost ?? null,
+          currency: result.currency ?? "USD",
+          messageCount: result.messageCount ?? 0,
+        });
+      } catch (err) {
+        if (!isGatewayDisconnectLikeError(err)) {
+          console.error("Failed to load session usage.", err);
+        }
+        setSessionUsage(null);
+      } finally {
+        setSessionUsageLoading(false);
+      }
+    },
+    [client, status]
+  );
+
+  // ── Gateway status parsing ──────────────────────────────────────
+  const loadGatewayStatus = useCallback(async () => {
+    if (status !== "connected") return;
+    try {
+      const hello = client.getLastHello();
+      if (hello && typeof hello === "object") {
+        const h = hello as Record<string, unknown>;
+        if (typeof h.version === "string") setGatewayVersion(h.version);
+        if (typeof h.startedAtMs === "number") setGatewayUptime(h.startedAtMs);
+      }
+    } catch {
+      // ignore
+    }
+  }, [client, status]);
+
+  // ── Presence parsing ────────────────────────────────────────────
+  const parsePresenceFromStatus = useCallback(async () => {
+    if (status !== "connected") return;
+    try {
+      const result = await client.call<{
+        presence?: Array<{ agentId?: string; active?: boolean }>;
+      }>("status", {});
+      const active = new Set<string>();
+      for (const entry of result.presence ?? []) {
+        if (entry.active && typeof entry.agentId === "string") {
+          active.add(entry.agentId);
+        }
+      }
+      setPresenceAgentIds(active);
+    } catch (err) {
+      if (!isGatewayDisconnectLikeError(err)) {
+        console.error("Failed to parse presence.", err);
+      }
+    }
+  }, [client, status]);
+
+  // ── Load additional data on connect ─────────────────────────────
+  useEffect(() => {
+    if (status !== "connected") {
+      setChannelsSnapshot(null);
+      setChannelsLoading(false);
+      setExecApprovalQueue([]);
+      setExecApprovalBusy(false);
+      setExecApprovalError(null);
+      setPresenceAgentIds(new Set());
+      setSessionUsage(null);
+      return;
+    }
+    void loadChannelsStatus();
+    void loadGatewayStatus();
+    void parsePresenceFromStatus();
+    void loadAllSessions();
+    void loadAllCronJobs();
+  }, [loadChannelsStatus, loadGatewayStatus, parsePresenceFromStatus, loadAllSessions, loadAllCronJobs, status]);
+
+  // ── Load session usage when settings agent changes ──────────────
+  useEffect(() => {
+    if (!settingsAgent) {
+      setSessionUsage(null);
+      setSessionUsageLoading(false);
+      return;
+    }
+    void loadSessionUsage(settingsAgent.sessionKey);
+  }, [settingsAgent, loadSessionUsage]);
 
   useEffect(() => {
     const selector = 'link[data-agent-favicon="true"]';
@@ -933,12 +1218,18 @@ const AgentStudioPage = () => {
     if (createAgentBlock && createAgentBlock.phase !== "queued") return;
     if (renameAgentBlock && renameAgentBlock.phase !== "queued") return;
     void loadAgents();
+    void loadChannelsStatus();
+    void loadAllSessions();
+    void loadAllCronJobs();
   }, [
     createAgentBlock,
     deleteAgentBlock,
     focusedPreferencesLoaded,
     gatewayUrl,
     loadAgents,
+    loadChannelsStatus,
+    loadAllSessions,
+    loadAllCronJobs,
     renameAgentBlock,
     status,
   ]);
@@ -1847,6 +2138,27 @@ const AgentStudioPage = () => {
       updateSpecialLatestUpdate: (agentId, agent, message) => {
         void updateSpecialLatestUpdate(agentId, agent, message);
       },
+      onExecApprovalRequested: (payload) => {
+        const parsed = parseExecApprovalRequested(payload);
+        if (parsed) {
+          setExecApprovalQueue((prev) => pruneExpired([...prev, parsed]));
+        }
+      },
+      onExecApprovalResolved: (payload) => {
+        const parsed = parseExecApprovalResolved(payload);
+        if (parsed) {
+          setExecApprovalQueue((prev) => prev.filter((r) => r.id !== parsed.id));
+        }
+      },
+      onChannelsUpdate: () => {
+        void loadChannelsStatus();
+      },
+      onSessionsUpdate: () => {
+        void loadAllSessions();
+      },
+      onCronUpdate: () => {
+        void loadAllCronJobs();
+      },
     });
     runtimeEventHandlerRef.current = handler;
     const unsubscribe = client.onEvent((event: EventFrame) => handler.handleEvent(event));
@@ -1859,6 +2171,9 @@ const AgentStudioPage = () => {
     client,
     dispatch,
     loadAgentHistory,
+    loadAllCronJobs,
+    loadAllSessions,
+    loadChannelsStatus,
     loadSummarySnapshot,
     queueLivePatch,
     refreshHeartbeatLatestUpdate,
@@ -2060,6 +2375,8 @@ const AgentStudioPage = () => {
             onFilesToggle={handleFilesToggle}
             filesActive={contextMode === "files"}
             filesDisabled={false}
+            channelsSnapshot={channelsSnapshot}
+            channelsLoading={channelsLoading}
           />
         </div>
 
@@ -2155,6 +2472,7 @@ const AgentStudioPage = () => {
                   dispatch({ type: "selectAgent", agentId });
                   setMobilePane("chat");
                 }}
+                presenceAgentIds={presenceAgentIds}
               />
             </div>
             <div
@@ -2230,6 +2548,46 @@ const AgentStudioPage = () => {
                       }}
                     />
                   }
+                  channelsContent={
+                    <ChannelsPanel
+                      snapshot={channelsSnapshot}
+                      loading={channelsLoading}
+                      error={channelsError}
+                      onRefresh={() => {
+                        void loadChannelsStatus();
+                      }}
+                    />
+                  }
+                  sessionsContent={
+                    <SessionsPanel
+                      client={client}
+                      sessions={allSessions}
+                      loading={allSessionsLoading}
+                      error={allSessionsError}
+                      onRefresh={() => {
+                        void loadAllSessions();
+                      }}
+                    />
+                  }
+                  cronContent={
+                    <CronPanel
+                      client={client}
+                      cronJobs={allCronJobs}
+                      loading={allCronLoading}
+                      error={allCronError}
+                      runBusyJobId={allCronRunBusyJobId}
+                      deleteBusyJobId={allCronDeleteBusyJobId}
+                      onRunJob={(jobId) => {
+                        void handleAllCronRunJob(jobId);
+                      }}
+                      onDeleteJob={(jobId) => {
+                        void handleAllCronDeleteJob(jobId);
+                      }}
+                      onRefresh={() => {
+                        void loadAllCronJobs();
+                      }}
+                    />
+                  }
                   settingsContent={
                     settingsAgent ? (
                       <AgentSettingsPanel
@@ -2267,6 +2625,8 @@ const AgentStudioPage = () => {
                         onDeleteHeartbeat={(heartbeatId) =>
                           handleDeleteHeartbeat(settingsAgent.agentId, heartbeatId)
                         }
+                        usage={sessionUsage}
+                        usageLoading={sessionUsageLoading}
                       />
                     ) : (
                       <div className="flex h-full items-center justify-center p-6 text-center text-[11px] text-muted-foreground">
@@ -2290,6 +2650,18 @@ const AgentStudioPage = () => {
             />
           </div>
 	        )}
+        {showFleetLayout ? (
+          <div className="w-full">
+            <StatusBar
+              gatewayVersion={gatewayVersion}
+              gatewayUptime={gatewayUptime}
+              agentCount={agents.length}
+              sessionCount={totalSessionCount}
+              channelCount={connectedChannelCount}
+              visible={status === "connected"}
+            />
+          </div>
+        ) : null}
 	      </div>
       {createAgentBlock && createAgentBlock.phase !== "queued" ? (
         <div
@@ -2342,6 +2714,16 @@ const AgentStudioPage = () => {
             ) : null}
           </div>
         </div>
+      ) : null}
+      {execApprovalQueue.length > 0 ? (
+        <ExecApprovalOverlay
+          queue={execApprovalQueue}
+          busy={execApprovalBusy}
+          error={execApprovalError}
+          onDecision={(id, decision) => {
+            void handleExecApprovalDecision(id, decision);
+          }}
+        />
       ) : null}
       {deleteAgentBlock && deleteAgentBlock.phase !== "queued" ? (
         <div

@@ -136,6 +136,12 @@ export type GatewayEventKind =
   | "summary-refresh"
   | "runtime-chat"
   | "runtime-agent"
+  | "exec-approval"
+  | "channels-update"
+  | "sessions-update"
+  | "cron-update"
+  | "nodes-update"
+  | "config-update"
   | "ignore";
 
 const REASONING_STREAM_NAME_HINTS = ["reason", "think", "analysis", "trace"];
@@ -144,6 +150,12 @@ export const classifyGatewayEventKind = (event: string): GatewayEventKind => {
   if (event === "presence" || event === "heartbeat") return "summary-refresh";
   if (event === "chat") return "runtime-chat";
   if (event === "agent") return "runtime-agent";
+  if (event === "exec.approval.requested" || event === "exec.approval.resolved") return "exec-approval";
+  if (event === "channels") return "channels-update";
+  if (event === "sessions") return "sessions-update";
+  if (event === "cron") return "cron-update";
+  if (event === "nodes" || event === "node") return "nodes-update";
+  if (event === "config") return "config-update";
   return "ignore";
 };
 

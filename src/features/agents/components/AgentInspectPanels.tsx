@@ -76,6 +76,14 @@ type AgentSettingsPanelProps = {
   heartbeatDeleteBusyId?: string | null;
   onRunHeartbeat?: (heartbeatId: string) => Promise<void> | void;
   onDeleteHeartbeat?: (heartbeatId: string) => Promise<void> | void;
+  usage?: {
+    inputTokens: number;
+    outputTokens: number;
+    totalCost: number | null;
+    currency: string;
+    messageCount: number;
+  } | null;
+  usageLoading?: boolean;
 };
 
 const formatHeartbeatSchedule = (heartbeat: AgentHeartbeatSummary) =>
@@ -110,6 +118,8 @@ export const AgentSettingsPanel = ({
   heartbeatDeleteBusyId = null,
   onRunHeartbeat = () => {},
   onDeleteHeartbeat = () => {},
+  usage = null,
+  usageLoading = false,
 }: AgentSettingsPanelProps) => {
   const [nameDraft, setNameDraft] = useState(agent.name);
   const [renameSaving, setRenameSaving] = useState(false);
@@ -255,6 +265,63 @@ export const AgentSettingsPanel = ({
           >
             {sessionBusy ? "Starting..." : "New session"}
           </button>
+        </section>
+
+        <section
+          className="rounded-md border border-border/80 bg-card/70 p-4"
+          data-testid="agent-settings-usage"
+        >
+          <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+            Session usage
+          </div>
+          {usageLoading ? (
+            <div className="mt-3 text-[11px] text-muted-foreground">Loading usage…</div>
+          ) : usage ? (
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              <div className="rounded-md border border-border/80 bg-card/75 px-3 py-2">
+                <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                  Input tokens
+                </div>
+                <div className="mt-1 text-sm font-semibold text-foreground">
+                  {usage.inputTokens.toLocaleString()}
+                </div>
+              </div>
+              <div className="rounded-md border border-border/80 bg-card/75 px-3 py-2">
+                <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                  Output tokens
+                </div>
+                <div className="mt-1 text-sm font-semibold text-foreground">
+                  {usage.outputTokens.toLocaleString()}
+                </div>
+              </div>
+              <div className="rounded-md border border-border/80 bg-card/75 px-3 py-2">
+                <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                  Total cost
+                </div>
+                <div className="mt-1 text-sm font-semibold text-foreground">
+                  {usage.totalCost !== null
+                    ? new Intl.NumberFormat(undefined, {
+                        style: "currency",
+                        currency: usage.currency || "USD",
+                        minimumFractionDigits: 4,
+                      }).format(usage.totalCost)
+                    : "—"}
+                </div>
+              </div>
+              <div className="rounded-md border border-border/80 bg-card/75 px-3 py-2">
+                <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                  Messages
+                </div>
+                <div className="mt-1 text-sm font-semibold text-foreground">
+                  {usage.messageCount.toLocaleString()}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-3 text-[11px] text-muted-foreground">
+              No usage data available.
+            </div>
+          )}
         </section>
 
         <section

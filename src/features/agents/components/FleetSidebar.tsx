@@ -12,6 +12,7 @@ type FleetSidebarProps = {
   onCreateAgent: () => void;
   createDisabled?: boolean;
   createBusy?: boolean;
+  presenceAgentIds?: Set<string>;
 };
 
 const FILTER_OPTIONS: Array<{ value: FocusFilter; label: string; testId: string }> = [
@@ -46,6 +47,7 @@ export const FleetSidebar = ({
   onCreateAgent,
   createDisabled = false,
   createBusy = false,
+  presenceAgentIds,
 }: FleetSidebarProps) => {
   return (
     <aside
@@ -108,13 +110,18 @@ export const FleetSidebar = ({
                   }`}
                   onClick={() => onSelectAgent(agent.agentId)}
                 >
-                  <AgentAvatar
-                    seed={avatarSeed}
-                    name={agent.name}
-                    avatarUrl={agent.avatarUrl ?? null}
-                    size={28}
-                    isSelected={selected}
-                  />
+                  <div className="relative">
+                    <AgentAvatar
+                      seed={avatarSeed}
+                      name={agent.name}
+                      avatarUrl={agent.avatarUrl ?? null}
+                      size={28}
+                      isSelected={selected}
+                    />
+                    {presenceAgentIds?.has(agent.agentId) ? (
+                      <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-card" />
+                    ) : null}
+                  </div>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[11px] font-semibold uppercase tracking-[0.13em] text-foreground transition group-hover:text-primary">
                       {agent.name}

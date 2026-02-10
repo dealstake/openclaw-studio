@@ -2,7 +2,7 @@
 
 import { memo, type ReactNode } from "react";
 
-export type ContextTab = "tasks" | "brain" | "settings";
+export type ContextTab = "tasks" | "brain" | "settings" | "channels" | "sessions" | "cron";
 
 interface ContextPanelProps {
   activeTab: ContextTab;
@@ -10,12 +10,18 @@ interface ContextPanelProps {
   tasksContent: ReactNode;
   brainContent: ReactNode;
   settingsContent: ReactNode;
+  channelsContent?: ReactNode;
+  sessionsContent?: ReactNode;
+  cronContent?: ReactNode;
 }
 
 const TAB_OPTIONS: Array<{ value: ContextTab; label: string }> = [
   { value: "tasks", label: "Tasks" },
   { value: "brain", label: "Brain" },
   { value: "settings", label: "Settings" },
+  { value: "channels", label: "Channels" },
+  { value: "sessions", label: "Sessions" },
+  { value: "cron", label: "Cron" },
 ];
 
 export const ContextPanel = memo(function ContextPanel({
@@ -24,6 +30,9 @@ export const ContextPanel = memo(function ContextPanel({
   tasksContent,
   brainContent,
   settingsContent,
+  channelsContent,
+  sessionsContent,
+  cronContent,
 }: ContextPanelProps) {
   return (
     <div className="flex h-full w-full flex-col">
@@ -59,6 +68,15 @@ export const ContextPanel = memo(function ContextPanel({
         </div>
         <div className={activeTab === "settings" ? "flex h-full w-full" : "hidden"}>
           {settingsContent}
+        </div>
+        <div className={activeTab === "channels" ? "flex h-full w-full" : "hidden"}>
+          {channelsContent ?? null}
+        </div>
+        <div className={activeTab === "sessions" ? "flex h-full w-full" : "hidden"}>
+          {sessionsContent ?? null}
+        </div>
+        <div className={activeTab === "cron" ? "flex h-full w-full" : "hidden"}>
+          {cronContent ?? null}
         </div>
       </div>
     </div>

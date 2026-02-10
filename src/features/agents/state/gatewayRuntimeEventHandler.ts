@@ -49,6 +49,12 @@ export type GatewayRuntimeEventHandlerDeps = {
   logWarn?: (message: string, meta?: unknown) => void;
 
   updateSpecialLatestUpdate: (agentId: string, agent: AgentState, message: string) => void;
+
+  onExecApprovalRequested?: (payload: unknown) => void;
+  onExecApprovalResolved?: (payload: unknown) => void;
+  onChannelsUpdate?: () => void;
+  onSessionsUpdate?: () => void;
+  onCronUpdate?: () => void;
 };
 
 export type GatewayRuntimeEventHandler = {
@@ -548,6 +554,26 @@ export function createGatewayRuntimeEventHandler(
       const payload = event.payload as AgentEventPayload | undefined;
       if (!payload) return;
       handleRuntimeAgentEvent(payload);
+      return;
+    }
+    if (eventKind === "exec-approval") {
+      if (event.event === "exec.approval.requested") {
+        deps.onExecApprovalRequested?.(event.payload);
+      } else if (event.event === "exec.approval.resolved") {
+        deps.onExecApprovalResolved?.(event.payload);
+      }
+      return;
+    }
+    if (eventKind === "channels-update") {
+      deps.onChannelsUpdate?.();
+      return;
+    }
+    if (eventKind === "sessions-update") {
+      deps.onSessionsUpdate?.();
+      return;
+    }
+    if (eventKind === "cron-update") {
+      deps.onCronUpdate?.();
       return;
     }
   };

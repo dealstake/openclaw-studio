@@ -3,6 +3,8 @@ import { HeaderIconButton } from "@/components/HeaderIconButton";
 import type { GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { BrandMark } from "@/components/brand/BrandMark";
 import { LogoutButton } from "@/components/brand/LogoutButton";
+import { ChannelStatusPills } from "@/features/channels/components/ChannelStatusPills";
+import type { ChannelsStatusSnapshot } from "@/lib/gateway/channels";
 import { FolderOpen, Ellipsis, PanelRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getCfIdentity, type CfIdentity } from "@/lib/cloudflare-auth";
@@ -13,6 +15,8 @@ type HeaderBarProps = {
   onFilesToggle: () => void;
   filesActive: boolean;
   filesDisabled?: boolean;
+  channelsSnapshot?: ChannelsStatusSnapshot | null;
+  channelsLoading?: boolean;
 };
 
 /* ── Avatar button with hover label ──────────────────────────────────── */
@@ -40,6 +44,8 @@ export const HeaderBar = ({
   onFilesToggle,
   filesActive,
   filesDisabled = false,
+  channelsSnapshot = null,
+  channelsLoading = false,
 }: HeaderBarProps) => {
   const [identity, setIdentity] = useState<CfIdentity | null>(null);
 
@@ -62,8 +68,9 @@ export const HeaderBar = ({
     <div className="glass-panel fade-up relative z-30 overflow-visible px-4 py-2">
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(120deg,transparent_0%,color-mix(in_oklch,var(--primary)_7%,transparent)_48%,transparent_100%)] opacity-55" />
       <div className="relative flex items-center gap-4">
-        <div className="min-w-0 flex-1">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
           <BrandMark size="sm" />
+          <ChannelStatusPills snapshot={channelsSnapshot} loading={channelsLoading} />
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
