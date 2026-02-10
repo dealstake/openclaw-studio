@@ -40,18 +40,18 @@ export const ExecApprovalOverlay = ({
   error,
   onDecision,
 }: ExecApprovalOverlayProps) => {
-  const [, setTick] = useState(0);
+  const [now, setNow] = useState(() => Date.now());
   const current = queue[0] ?? null;
 
   useEffect(() => {
     if (!current) return;
-    const interval = setInterval(() => setTick((prev) => prev + 1), 1000);
+    const interval = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(interval);
   }, [current]);
 
   if (!current) return null;
 
-  const expired = current.expiresAtMs <= Date.now();
+  const expired = current.expiresAtMs <= now;
 
   return (
     <div
