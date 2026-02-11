@@ -28,7 +28,7 @@ function useRecentlyCompacted(lastCompactedAt: number | null | undefined): boole
 import type { AgentState as AgentRecord } from "@/features/agents/state/store";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Archive, ArrowLeft, ChevronRight, RefreshCw, Settings, Shuffle, SquarePen } from "lucide-react";
+import { Archive, ArrowLeft, ChevronDown, ChevronRight, ChevronUp, RefreshCw, Settings, Shuffle, SquarePen } from "lucide-react";
 import type { GatewayModelChoice } from "@/lib/gateway/models";
 import { isToolMarkdown, isTraceMarkdown } from "@/lib/text/message-extract";
 import { isNearBottom } from "@/lib/dom";
@@ -251,7 +251,12 @@ const AgentChatTranscript = memo(function AgentChatTranscript({
     const shouldForceScroll = scrollToBottomNextOutputRef.current;
     if (shouldForceScroll) {
       scrollToBottomNextOutputRef.current = false;
-      scheduleScrollToBottom();
+      // Double-rAF to ensure DOM has painted the new message
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          scrollChatToBottom();
+        });
+      });
       return;
     }
 
@@ -264,6 +269,7 @@ const AgentChatTranscript = memo(function AgentChatTranscript({
     liveThinkingCharCount,
     outputLineCount,
     scheduleScrollToBottom,
+    scrollChatToBottom,
     scrollToBottomNextOutputRef,
   ]);
 
@@ -402,6 +408,15 @@ const AgentChatComposer = memo(function AgentChatComposer({
     inputRef(el);
   }, [inputRef]);
 
+  const handleFocus = useCallback(() => {
+    const el = localRef.current;
+    if (el) {
+      requestAnimationFrame(() => {
+        el.scrollIntoView({ block: "nearest" });
+      });
+    }
+  }, []);
+
   const handleChange = useCallback(
     (event: ChangeEvent<HTMLTextAreaElement>) => {
       const value = event.target.value;
@@ -464,15 +479,15 @@ const AgentChatComposer = memo(function AgentChatComposer({
   const sendDisabled = !canSend || running || isEmpty;
 
   return (
-    <div className="flex items-end gap-2">
+    <div className="flex shrink-0 items-end gap-2">
       <textarea
         ref={handleRef}
         rows={1}
         defaultValue={initialDraft}
-        className="flex-1 resize-none rounded-md border border-border/80 bg-card/75 px-3 py-2 text-[11px] text-foreground outline-none transition focus:border-ring"
-        style={{ maxHeight: 160 }}
+        className="max-h-[80px] flex-1 resize-none rounded-md border border-border/80 bg-card/75 px-3 py-2 text-[11px] text-foreground outline-none transition focus:border-ring sm:max-h-[160px]"
         onChange={handleChange}
         onKeyDown={handleKeyDown}
+        onFocus={handleFocus}
         placeholder="type a message"
       />
       {running ? (
@@ -525,12 +540,19 @@ export const AgentChatPanel = memo(function AgentChatPanel({
   const draftRef = useRef<HTMLTextAreaElement | null>(null);
   const scrollToBottomNextOutputRef = useRef(false);
   const plainDraftRef = useRef(agent.draft);
+  const [mobileHeaderExpanded, setMobileHeaderExpanded] = useState(false);
+
+  const toggleMobileHeader = useCallback(() => {
+    setMobileHeaderExpanded((prev) => !prev);
+  }, []);
 
   const resizeDraft = useCallback(() => {
     const el = draftRef.current;
     if (!el) return;
     el.style.height = "auto";
-    const maxH = Math.min(el.scrollHeight, 160); // cap at ~8 lines
+    const isMobile = window.matchMedia("(max-width: 639px)").matches;
+    const cap = isMobile ? 80 : 160;
+    const maxH = Math.min(el.scrollHeight, cap);
     el.style.height = `${maxH}px`;
     el.style.overflowY = el.scrollHeight > maxH ? "auto" : "hidden";
   }, []);
@@ -751,77 +773,100 @@ export const AgentChatPanel = memo(function AgentChatPanel({
                 </span>
               </div>
 
-              <div className="mt-2 grid max-w-md gap-2 sm:grid-cols-[minmax(0,1fr)_128px]">
-                <label className="flex min-w-0 flex-col gap-1 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                  <span>Model</span>
-                  <select
-                    className="h-8 w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap rounded-md border border-border bg-card/75 px-2 text-[11px] font-semibold text-foreground"
-                    aria-label="Model"
-                    value={modelValue}
-                    onChange={(event) => {
-                      const value = event.target.value.trim();
-                      onModelChange(value ? value : null);
-                    }}
-                  >
-                    {modelOptionsWithFallback.length === 0 ? (
-                      <option value="">No models found</option>
-                    ) : null}
-                    {modelOptionsWithFallback.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                {allowThinking ? (
-                  <label className="flex flex-col gap-1 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                    <span>Thinking</span>
+              {/* Mobile: toggle button for model/thinking/token */}
+              <button
+                type="button"
+                className="mt-1.5 flex items-center gap-1 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground transition hover:text-foreground sm:hidden"
+                onClick={toggleMobileHeader}
+                aria-label={mobileHeaderExpanded ? "Collapse model settings" : "Expand model settings"}
+              >
+                {mobileHeaderExpanded ? (
+                  <ChevronUp className="h-3 w-3" />
+                ) : (
+                  <ChevronDown className="h-3 w-3" />
+                )}
+                <span>{selectedModel ? selectedModel.label.split(" (")[0] : "Settings"}</span>
+                {typeof tokenUsed === "number" && tokenLimit ? (
+                  <span className="ml-1 text-muted-foreground/60">
+                    · {Math.round((tokenUsed / tokenLimit) * 100)}%
+                  </span>
+                ) : null}
+              </button>
+
+              {/* Desktop: always visible; Mobile: only when expanded */}
+              <div className={`${mobileHeaderExpanded ? "block" : "hidden"} sm:block`}>
+                <div className="mt-2 grid max-w-md gap-2 sm:grid-cols-[minmax(0,1fr)_128px]">
+                  <label className="flex min-w-0 flex-col gap-1 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                    <span>Model</span>
                     <select
-                      className="h-8 rounded-md border border-border bg-card/75 px-2 text-[11px] font-semibold text-foreground"
-                      aria-label="Thinking"
-                      value={agent.thinkingLevel ?? ""}
+                      className="h-8 w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap rounded-md border border-border bg-card/75 px-2 text-[11px] font-semibold text-foreground"
+                      aria-label="Model"
+                      value={modelValue}
                       onChange={(event) => {
                         const value = event.target.value.trim();
-                        onThinkingChange(value ? value : null);
+                        onModelChange(value ? value : null);
                       }}
                     >
-                      <option value="">Default</option>
-                      <option value="off">Off</option>
-                      <option value="minimal">Minimal</option>
-                      <option value="low">Low</option>
-                      <option value="medium">Medium</option>
-                      <option value="high">High</option>
-                      <option value="xhigh">XHigh</option>
+                      {modelOptionsWithFallback.length === 0 ? (
+                        <option value="">No models found</option>
+                      ) : null}
+                      {modelOptionsWithFallback.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
                     </select>
                   </label>
-                ) : (
-                  <div />
-                )}
-              </div>
-              {typeof tokenUsed === "number" && tokenLimit ? (
-                <div className="mt-2 flex w-full max-w-lg items-center gap-2">
-                  <div className="min-w-0 flex-1">
-                    <TokenProgressBar used={tokenUsed} limit={tokenLimit} />
-                  </div>
-                  {onCompact ? (
-                    <button
-                      type="button"
-                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border/80 bg-card/70 text-muted-foreground transition hover:border-border hover:bg-muted/65 disabled:cursor-not-allowed disabled:opacity-60"
-                      aria-label="Compact context & save to memory"
-                      title="Compact context & save to memory"
-                      onClick={onCompact}
-                      disabled={isCompacting}
-                    >
-                      <Archive className={`h-3.5 w-3.5 ${isCompacting ? "animate-spin" : ""}`} />
-                    </button>
-                  ) : null}
-                  {recentlyCompacted ? (
-                    <span className="shrink-0 font-mono text-[9px] text-emerald-500 animate-pulse">
-                      ✓ Compacted
-                    </span>
-                  ) : null}
+                  {allowThinking ? (
+                    <label className="flex flex-col gap-1 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                      <span>Thinking</span>
+                      <select
+                        className="h-8 rounded-md border border-border bg-card/75 px-2 text-[11px] font-semibold text-foreground"
+                        aria-label="Thinking"
+                        value={agent.thinkingLevel ?? ""}
+                        onChange={(event) => {
+                          const value = event.target.value.trim();
+                          onThinkingChange(value ? value : null);
+                        }}
+                      >
+                        <option value="">Default</option>
+                        <option value="off">Off</option>
+                        <option value="minimal">Minimal</option>
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                        <option value="xhigh">XHigh</option>
+                      </select>
+                    </label>
+                  ) : (
+                    <div />
+                  )}
                 </div>
-              ) : null}
+                {typeof tokenUsed === "number" && tokenLimit ? (
+                  <div className="mt-2 flex w-full max-w-lg items-center gap-2">
+                    <div className="min-w-0 flex-1">
+                      <TokenProgressBar used={tokenUsed} limit={tokenLimit} />
+                    </div>
+                    {onCompact ? (
+                      <button
+                        type="button"
+                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border/80 bg-card/70 text-muted-foreground transition hover:border-border hover:bg-muted/65 disabled:cursor-not-allowed disabled:opacity-60"
+                        aria-label="Compact context & save to memory"
+                        title="Compact context & save to memory"
+                        onClick={onCompact}
+                        disabled={isCompacting}
+                      >
+                        <Archive className={`h-3.5 w-3.5 ${isCompacting ? "animate-spin" : ""}`} />
+                      </button>
+                    ) : null}
+                    {recentlyCompacted ? (
+                      <span className="shrink-0 font-mono text-[9px] text-emerald-500 animate-pulse">
+                        ✓ Compacted
+                      </span>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
             </div>
           </div>
         </div>
