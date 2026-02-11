@@ -62,30 +62,38 @@ export function useAgentHistorySync(params: {
     [client, dispatch, stateRef]
   );
 
-  // Load history for agents without it
+  // Stable ref avoids putting `loadAgentHistory` in useEffect deps below
+  const loadAgentHistoryRef = useRef(loadAgentHistory);
+  loadAgentHistoryRef.current = loadAgentHistory;
+
+  // Load history for agents that don't have it yet.
+  // Uses stateRef to read the latest agents list instead of putting `agents`
+  // in the dep array (which changes identity on every state update and would
+  // cause this effect to re-fire on every render during streaming).
+  const agentsVersion = agents.length; // cheap primitive proxy — new agents added/removed
   useEffect(() => {
     if (status !== "connected") return;
-    for (const agent of agents) {
+    for (const agent of stateRef.current.agents) {
       if (!agent.sessionCreated || agent.historyLoadedAt) continue;
-      void loadAgentHistory(agent.agentId);
+      void loadAgentHistoryRef.current(agent.agentId);
     }
-  }, [agents, loadAgentHistory, status]);
+  }, [agentsVersion, stateRef, status]);
 
   // Poll history for running focused agent
   useEffect(() => {
     if (status !== "connected") return;
     if (!focusedAgentId) return;
     if (!focusedAgentRunning) return;
-    void loadAgentHistory(focusedAgentId);
+    void loadAgentHistoryRef.current(focusedAgentId);
     const timer = window.setInterval(() => {
       const latest = stateRef.current.agents.find((entry) => entry.agentId === focusedAgentId);
       if (!latest || latest.status !== "running") return;
-      void loadAgentHistory(focusedAgentId);
+      void loadAgentHistoryRef.current(focusedAgentId);
     }, 4500);
     return () => {
       window.clearInterval(timer);
     };
-  }, [focusedAgentId, focusedAgentRunning, loadAgentHistory, stateRef, status]);
+  }, [focusedAgentId, focusedAgentRunning, stateRef, status]);
 
   return {
     historyInFlightRef,

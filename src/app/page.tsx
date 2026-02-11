@@ -130,6 +130,26 @@ const AgentStudioPage = () => {
   const [agentsLoadedOnce, setAgentsLoadedOnce] = useState(false);
   const stateRef = useRef(state);
   const focusFilterTouchedRef = useRef(false);
+  const sessionsUpdateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cronUpdateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [subAgentRunningKeys, setSubAgentRunningKeys] = useState<Set<string>>(new Set());
+
+  // Stable refs for load functions — avoids useEffect dependency cascades that
+  // cause event handler teardown/recreation loops and RPC call storms.
+  // Initialized with no-ops; updated after their hooks define them below.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const loadAllCronJobsRef = useRef<() => Promise<any>>(() => Promise.resolve());
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const loadAllSessionsRef = useRef<() => Promise<any>>(() => Promise.resolve());
+  const loadChannelsStatusRef = useRef<() => Promise<void>>(() => Promise.resolve());
+  const loadCumulativeUsageRef = useRef<() => Promise<void>>(() => Promise.resolve());
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const loadSummarySnapshotRef = useRef<() => Promise<any>>(() => Promise.resolve());
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const loadAgentHistoryRef = useRef<(agentId: string) => Promise<any>>(() => Promise.resolve());
+  const refreshHeartbeatLatestUpdateRef = useRef<() => void>(() => {});
+  const loadSessionUsageRef = useRef<(key: string) => Promise<void>>(() => Promise.resolve());
+  const refreshContextWindowRef = useRef<(agentId: string, sessionKey: string) => Promise<void>>(() => Promise.resolve());
   const {
     gatewayModels,
     gatewayModelsError,
@@ -149,6 +169,9 @@ const AgentStudioPage = () => {
   const [lastCompactedAt, setLastCompactedAt] = useState<number | null>(null);
   /** Context window utilization per agent — totalTokens = last turn's prompt size, contextTokens = model limit */
   const [agentContextWindow, setAgentContextWindow] = useState<Map<string, { totalTokens: number; contextTokens: number }>>(new Map());
+  const gatewayConfigSnapshotRef = useRef(gatewayConfigSnapshot);
+  gatewayConfigSnapshotRef.current = gatewayConfigSnapshot;
+
   const runtimeEventHandlerRef = useRef<ReturnType<typeof createGatewayRuntimeEventHandler> | null>(
     null
   );
@@ -183,7 +206,7 @@ const AgentStudioPage = () => {
 
   const {
     allSessions, allSessionsLoading, allSessionsError,
-    totalSessionCount, loadAllSessions,
+    totalSessionCount, aggregateTokensFromList, loadAllSessions,
   } = useAllSessions(client, status);
 
   const {
@@ -191,6 +214,12 @@ const AgentStudioPage = () => {
     allCronRunBusyJobId, allCronDeleteBusyJobId,
     loadAllCronJobs, handleAllCronRunJob, handleAllCronDeleteJob,
   } = useAllCronJobs(client, status);
+
+  // Keep load-function refs current (avoids stale closures)
+  loadAllCronJobsRef.current = loadAllCronJobs;
+  loadAllSessionsRef.current = loadAllSessions;
+  loadChannelsStatusRef.current = loadChannelsStatus;
+  loadCumulativeUsageRef.current = loadCumulativeUsage;
 
   const { flushPendingDraft, handleDraftChange, pendingDraftValuesRef, pendingDraftTimersRef } =
     useDraftBatching(dispatch);
@@ -226,8 +255,6 @@ const AgentStudioPage = () => {
   }, [agents, focusedAgent]);
   const subAgentSessions = useMemo(() => {
     const map = new Map<string, SubAgentEntry[]>();
-    const now = Date.now();
-    const FIVE_MINUTES = 5 * 60 * 1000;
     for (const session of allSessions) {
       const key = session.key;
       // Pattern: agent:<name>:subagent:<uuid>
@@ -236,7 +263,7 @@ const AgentStudioPage = () => {
       const parentAgentId = match[1];
       const subId = match[2];
       const updatedAt = session.updatedAt ?? null;
-      const isRunning = updatedAt != null && now - updatedAt < FIVE_MINUTES;
+      const isRunning = subAgentRunningKeys.has(key);
       const entry: SubAgentEntry = {
         sessionKey: key,
         sessionIdShort: subId.slice(0, 6),
@@ -257,7 +284,7 @@ const AgentStudioPage = () => {
       if (entries.length > 5) map.set(agentId, entries.slice(0, 5));
     }
     return map;
-  }, [allSessions]);
+  }, [allSessions, subAgentRunningKeys]);
 
   // Build token info map for Fleet sidebar progress bars
   // Match a model key (could be "claude-opus-4-6" or "anthropic/claude-opus-4-6") against gateway model list
@@ -310,6 +337,8 @@ const AgentStudioPage = () => {
     bumpHeartbeatTick,
   } = useSpecialUpdates({ client, dispatch, agents, stateRef });
 
+  refreshHeartbeatLatestUpdateRef.current = refreshHeartbeatLatestUpdate;
+
   const handleFocusFilterChange = useCallback(
     (next: FocusFilter) => {
       flushPendingDraft(focusedAgent?.agentId ?? null);
@@ -329,13 +358,12 @@ const AgentStudioPage = () => {
       resetCumulativeUsage();
       return;
     }
-    void loadChannelsStatus();
     void loadGatewayStatus();
     void parsePresenceFromStatus();
-    void loadAllSessions();
-    void loadAllCronJobs();
-    void loadCumulativeUsage();
-  }, [loadChannelsStatus, loadGatewayStatus, parsePresenceFromStatus, loadAllSessions, loadAllCronJobs, resetChannelsStatus, resetExecApprovals, resetPresence, resetSessionUsage, resetCumulativeUsage, loadCumulativeUsage, status]);
+    void loadCumulativeUsageRef.current();
+    // Note: loadAllSessions, loadAllCronJobs, loadChannelsStatus are called
+    // from the agent-load effect below (with mutation guards) to avoid duplicates.
+  }, [loadGatewayStatus, parsePresenceFromStatus, resetChannelsStatus, resetExecApprovals, resetPresence, resetSessionUsage, resetCumulativeUsage, status]);
 
   // ── Refresh context window utilization from sessions.list ──────────────
   const refreshContextWindow = useCallback(async (agentId: string, sessionKey: string) => {
@@ -365,39 +393,35 @@ const AgentStudioPage = () => {
     }
   }, [client, status]);
 
-  // ── Load session usage for the focused agent ──────────────
+  // Keep refs current for session usage and context window
+  loadSessionUsageRef.current = loadSessionUsage;
+  refreshContextWindowRef.current = refreshContextWindow;
+
+  // ── Load session usage for the focused agent (primitive deps to avoid cascade) ──
+  const focusedSessionKey = focusedAgent?.sessionKey ?? null;
+  const focusedAgentStatus = focusedAgent?.status ?? null;
+
   useEffect(() => {
-    if (!focusedAgent) {
+    if (!focusedSessionKey || !focusedAgentId) {
       resetSessionUsage();
       return;
     }
-    void loadSessionUsage(focusedAgent.sessionKey);
-    void refreshContextWindow(focusedAgent.agentId, focusedAgent.sessionKey);
-  }, [focusedAgent, loadSessionUsage, resetSessionUsage, refreshContextWindow]);
+    void loadSessionUsageRef.current(focusedSessionKey);
+    void refreshContextWindowRef.current(focusedAgentId, focusedSessionKey);
+  }, [focusedAgentId, focusedSessionKey, resetSessionUsage]);
 
-  // Reload usage after each turn completes (status → idle) and periodically
+  // Reload usage when turn completes (running → idle). No polling — event-driven only.
   const prevStatusRef = useRef<string | undefined>(undefined);
   useEffect(() => {
-    if (!focusedAgent) return;
+    if (!focusedSessionKey || !focusedAgentId) return;
     const prev = prevStatusRef.current;
-    prevStatusRef.current = focusedAgent.status;
-    // Reload when transitioning from running → idle (turn just finished)
-    if (prev === "running" && focusedAgent.status === "idle") {
-      void loadSessionUsage(focusedAgent.sessionKey);
-      void refreshContextWindow(focusedAgent.agentId, focusedAgent.sessionKey);
-      void loadCumulativeUsage();
+    prevStatusRef.current = focusedAgentStatus ?? undefined;
+    if (prev === "running" && focusedAgentStatus === "idle") {
+      void loadSessionUsageRef.current(focusedSessionKey);
+      void refreshContextWindowRef.current(focusedAgentId, focusedSessionKey);
+      void loadCumulativeUsageRef.current();
     }
-  }, [focusedAgent, loadSessionUsage, refreshContextWindow, loadCumulativeUsage]);
-
-  // Periodic usage refresh every 30s while connected
-  useEffect(() => {
-    if (!focusedAgent || status !== "connected") return;
-    const interval = setInterval(() => {
-      void loadSessionUsage(focusedAgent.sessionKey);
-      void refreshContextWindow(focusedAgent.agentId, focusedAgent.sessionKey);
-    }, 30_000);
-    return () => clearInterval(interval);
-  }, [focusedAgent, status, loadSessionUsage, refreshContextWindow]);
+  }, [focusedAgentId, focusedSessionKey, focusedAgentStatus]);
 
   // Aggregate usage: use the focused session's usage as the primary data source
   // (per-session usage loads lazily in SessionsPanel cards)
@@ -459,11 +483,12 @@ const AgentStudioPage = () => {
     if (status !== "connected") return;
     setLoading(true);
     try {
-      let configSnapshot = gatewayConfigSnapshot;
+      let configSnapshot = gatewayConfigSnapshotRef.current;
       if (!configSnapshot) {
         try {
           configSnapshot = await client.call<GatewayModelPolicySnapshot>("config.get", {});
           setGatewayConfigSnapshot(configSnapshot);
+          gatewayConfigSnapshotRef.current = configSnapshot;
         } catch (err) {
           if (!isGatewayDisconnectLikeError(err)) {
             console.error("Failed to load gateway config while loading agents.", err);
@@ -648,7 +673,6 @@ const AgentStudioPage = () => {
     setLoading,
     setGatewayConfigSnapshot,
     gatewayUrl,
-    gatewayConfigSnapshot,
     settingsCoordinator,
     status,
   ]);
@@ -719,6 +743,8 @@ const AgentStudioPage = () => {
     focusedAgentId,
     focusedAgentRunning,
   });
+
+  loadAgentHistoryRef.current = loadAgentHistory;
 
   // Update stateRef synchronously during render (not in useEffect) so that
   // WebSocket event handlers reading stateRef.current always see the latest
@@ -796,18 +822,15 @@ const AgentStudioPage = () => {
     if (createAgentBlock && createAgentBlock.phase !== "queued") return;
     if (renameAgentBlock && renameAgentBlock.phase !== "queued") return;
     void loadAgents();
-    void loadChannelsStatus();
-    void loadAllSessions();
-    void loadAllCronJobs();
+    void loadChannelsStatusRef.current();
+    void loadAllSessionsRef.current();
+    void loadAllCronJobsRef.current();
   }, [
     createAgentBlock,
     deleteAgentBlock,
     focusedPreferencesLoaded,
     gatewayUrl,
     loadAgents,
-    loadChannelsStatus,
-    loadAllSessions,
-    loadAllCronJobs,
     renameAgentBlock,
     status,
   ]);
@@ -883,19 +906,26 @@ const AgentStudioPage = () => {
     }
   }, [client, dispatch]);
 
+  loadSummarySnapshotRef.current = loadSummarySnapshot;
+
   useEffect(() => {
     if (status !== "connected") return;
-    void loadSummarySnapshot();
-  }, [loadSummarySnapshot, status]);
+    void loadSummarySnapshotRef.current();
+  }, [status]);
 
-  // Poll summary every 10s when any agent is running
+  // Poll summary every 10s when any agent is running.
+  // Use refs for `hasRunningAgents` and `loadSummarySnapshot` so the interval
+  // is only created/destroyed when `status` changes (not on every running toggle).
+  const hasRunningAgentsRef = useRef(hasRunningAgents);
+  hasRunningAgentsRef.current = hasRunningAgents;
   useEffect(() => {
-    if (status !== "connected" || !hasRunningAgents) return;
+    if (status !== "connected") return;
     const interval = setInterval(() => {
-      void loadSummarySnapshot();
+      if (!hasRunningAgentsRef.current) return;
+      void loadSummarySnapshotRef.current();
     }, 10_000);
     return () => clearInterval(interval);
-  }, [hasRunningAgents, loadSummarySnapshot, status]);
+  }, [status]);
 
   useEffect(() => {
     if (!state.selectedAgentId) return;
@@ -1181,9 +1211,9 @@ const AgentStudioPage = () => {
       dispatch,
       queueLivePatch,
       clearPendingLivePatch,
-      loadSummarySnapshot,
-      loadAgentHistory,
-      refreshHeartbeatLatestUpdate,
+      loadSummarySnapshot: () => loadSummarySnapshotRef.current(),
+      loadAgentHistory: (agentId: string) => loadAgentHistoryRef.current(agentId),
+      refreshHeartbeatLatestUpdate: () => refreshHeartbeatLatestUpdateRef.current(),
       bumpHeartbeatTick,
       setTimeout: (fn, delayMs) => window.setTimeout(fn, delayMs),
       clearTimeout: (id) => window.clearTimeout(id),
@@ -1205,13 +1235,20 @@ const AgentStudioPage = () => {
         }
       },
       onChannelsUpdate: () => {
-        void loadChannelsStatus();
+        void loadChannelsStatusRef.current();
       },
       onSessionsUpdate: () => {
-        void loadAllSessions();
+        void loadAllSessionsRef.current();
       },
       onCronUpdate: () => {
-        void loadAllCronJobs();
+        void loadAllCronJobsRef.current();
+      },
+      onSubAgentLifecycle: (sessionKey: string, phase: string) => {
+        if (phase === "start") {
+          setSubAgentRunningKeys(prev => { const next = new Set(prev); next.add(sessionKey); return next; });
+        } else if (phase === "end" || phase === "error") {
+          setSubAgentRunningKeys(prev => { const next = new Set(prev); next.delete(sessionKey); return next; });
+        }
       },
     });
     runtimeEventHandlerRef.current = handler;
@@ -1220,19 +1257,21 @@ const AgentStudioPage = () => {
       runtimeEventHandlerRef.current = null;
       handler.dispose();
       unsubscribe();
+      if (sessionsUpdateTimerRef.current) {
+        clearTimeout(sessionsUpdateTimerRef.current);
+        sessionsUpdateTimerRef.current = null;
+      }
+      if (cronUpdateTimerRef.current) {
+        clearTimeout(cronUpdateTimerRef.current);
+        cronUpdateTimerRef.current = null;
+      }
     };
   }, [
     bumpHeartbeatTick,
     clearPendingLivePatch,
     client,
     dispatch,
-    loadAgentHistory,
-    loadAllCronJobs,
-    loadAllSessions,
-    loadChannelsStatus,
-    loadSummarySnapshot,
     queueLivePatch,
-    refreshHeartbeatLatestUpdate,
     setExecApprovalQueue,
     status,
     updateSpecialLatestUpdate,
@@ -1528,11 +1567,16 @@ const AgentStudioPage = () => {
                       activeSessionKey={focusedAgent?.sessionKey ?? null}
                       aggregateUsage={aggregateUsage}
                       aggregateUsageLoading={aggregateUsageLoading}
-                      cumulativeUsage={cumulativeUsage ? {
+                      cumulativeUsage={cumulativeUsage && (cumulativeUsage.inputTokens + cumulativeUsage.outputTokens) > 0 ? {
                         inputTokens: cumulativeUsage.inputTokens,
                         outputTokens: cumulativeUsage.outputTokens,
                         totalCost: cumulativeUsage.totalCost,
                         messageCount: cumulativeUsage.messageCount,
+                      } : aggregateTokensFromList ? {
+                        inputTokens: aggregateTokensFromList.inputTokens,
+                        outputTokens: aggregateTokensFromList.outputTokens,
+                        totalCost: null,
+                        messageCount: 0,
                       } : null}
                       cumulativeUsageLoading={cumulativeUsageLoading}
                       onSessionClick={(sessionKey, agentId) => {

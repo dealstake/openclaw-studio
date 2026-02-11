@@ -492,32 +492,40 @@ export const SessionsPanel = memo(function SessionsPanel({
       </div>
 
       {/* Usage summary */}
-      {aggregateUsageLoading && !aggregateUsage ? (
-        <div className="border-b border-border/40 px-4 py-3">
-          <div className="h-4 w-48 animate-pulse rounded bg-muted/30" />
-        </div>
-      ) : null}
-      {aggregateUsage ? (
-        <div className="flex flex-col gap-1 border-b border-border/40 px-4 py-2.5">
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
-            <span className="font-semibold text-foreground">
-              {formatTokens(aggregateUsage.inputTokens + aggregateUsage.outputTokens)} tokens
-            </span>
-            {aggregateUsage.totalCost !== null ? (
-              <span className="font-semibold text-foreground">{formatCost(aggregateUsage.totalCost, "USD")}</span>
-            ) : null}
-            <span>{aggregateUsage.messageCount.toLocaleString()} messages</span>
-            <span className="text-[10px]">current session</span>
-          </div>
+      {(cumulativeUsage || aggregateUsage || cumulativeUsageLoading || aggregateUsageLoading) ? (
+        <div className="flex flex-col gap-1.5 border-b border-border/40 px-4 py-2.5">
           {cumulativeUsage && (cumulativeUsage.inputTokens + cumulativeUsage.outputTokens) > 0 ? (
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-muted-foreground/80">
-              <span>
-                {formatTokens(cumulativeUsage.inputTokens + cumulativeUsage.outputTokens)} tokens
-              </span>
-              {cumulativeUsage.totalCost !== null ? (
-                <span>{formatCost(cumulativeUsage.totalCost, "USD")}</span>
-              ) : null}
-              <span>all sessions</span>
+            <div className="flex flex-col gap-1">
+              <div className="font-mono text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                All Sessions
+              </div>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
+                <span className="font-semibold text-foreground">
+                  {formatTokens(cumulativeUsage.inputTokens + cumulativeUsage.outputTokens)} tokens
+                </span>
+                {cumulativeUsage.totalCost !== null ? (
+                  <span className="font-semibold text-foreground">{formatCost(cumulativeUsage.totalCost, "USD")}</span>
+                ) : null}
+                <span className="text-muted-foreground">{cumulativeUsage.messageCount.toLocaleString()} messages</span>
+              </div>
+            </div>
+          ) : cumulativeUsageLoading ? (
+            <div className="h-8 w-48 animate-pulse rounded bg-muted/30" />
+          ) : null}
+          {aggregateUsage ? (
+            <div className="flex flex-col gap-0.5">
+              <div className="font-mono text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                Current Session
+              </div>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-muted-foreground/80">
+                <span>
+                  {formatTokens(aggregateUsage.inputTokens + aggregateUsage.outputTokens)} tokens
+                </span>
+                {aggregateUsage.totalCost !== null ? (
+                  <span>{formatCost(aggregateUsage.totalCost, "USD")}</span>
+                ) : null}
+                <span>{aggregateUsage.messageCount.toLocaleString()} messages</span>
+              </div>
             </div>
           ) : null}
         </div>

@@ -56,6 +56,7 @@ export type GatewayRuntimeEventHandlerDeps = {
   onChannelsUpdate?: () => void;
   onSessionsUpdate?: () => void;
   onCronUpdate?: () => void;
+  onSubAgentLifecycle?: (sessionKey: string, phase: string) => void;
 };
 
 export type GatewayRuntimeEventHandler = {
@@ -155,6 +156,8 @@ export function createGatewayRuntimeEventHandler(
   const lastActivityMarkByAgent = new Map<string, number>();
 
   let summaryRefreshTimer: number | null = null;
+  let sessionsRefreshTimer: number | null = null;
+  let cronRefreshTimer: number | null = null;
 
   const appendUniqueToolLines = (agentId: string, runId: string | null | undefined, lines: string[]) => {
     if (lines.length === 0) return;
@@ -197,6 +200,14 @@ export function createGatewayRuntimeEventHandler(
     if (summaryRefreshTimer !== null) {
       deps.clearTimeout(summaryRefreshTimer);
       summaryRefreshTimer = null;
+    }
+    if (sessionsRefreshTimer !== null) {
+      deps.clearTimeout(sessionsRefreshTimer);
+      sessionsRefreshTimer = null;
+    }
+    if (cronRefreshTimer !== null) {
+      deps.clearTimeout(cronRefreshTimer);
+      cronRefreshTimer = null;
     }
     chatRunSeen.clear();
     assistantStreamByRun.clear();
@@ -370,7 +381,16 @@ export function createGatewayRuntimeEventHandler(
     const agentsSnapshot = deps.getAgents();
     const directMatch = payload.sessionKey ? findAgentBySessionKey(agentsSnapshot, payload.sessionKey) : null;
     const match = directMatch ?? findAgentByRunId(agentsSnapshot, payload.runId);
-    if (!match) return;
+    if (!match) {
+      // Sub-agent lifecycle events: refresh sessions so Fleet sidebar updates Running/Done
+      if (payload.stream === "lifecycle" && payload.sessionKey && /^agent:[^:]+:subagent:/.test(payload.sessionKey)) {
+        const pData = payload.data && typeof payload.data === "object" ? (payload.data as Record<string, unknown>) : null;
+        const phase = typeof pData?.phase === "string" ? pData.phase : "";
+        deps.onSubAgentLifecycle?.(payload.sessionKey, phase);
+        deps.onSessionsUpdate?.();
+      }
+      return;
+    }
     const agent = agentsSnapshot.find((entry) => entry.agentId === match);
     if (!agent) return;
 
@@ -584,11 +604,19 @@ export function createGatewayRuntimeEventHandler(
       return;
     }
     if (eventKind === "sessions-update") {
-      deps.onSessionsUpdate?.();
+      if (sessionsRefreshTimer !== null) deps.clearTimeout(sessionsRefreshTimer);
+      sessionsRefreshTimer = deps.setTimeout(() => {
+        sessionsRefreshTimer = null;
+        deps.onSessionsUpdate?.();
+      }, 750);
       return;
     }
     if (eventKind === "cron-update") {
-      deps.onCronUpdate?.();
+      if (cronRefreshTimer !== null) deps.clearTimeout(cronRefreshTimer);
+      cronRefreshTimer = deps.setTimeout(() => {
+        cronRefreshTimer = null;
+        deps.onCronUpdate?.();
+      }, 750);
       return;
     }
   };

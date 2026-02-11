@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { isGatewayDisconnectLikeError } from "@/lib/gateway/GatewayClient";
 import {
@@ -18,8 +18,11 @@ export const useAllCronJobs = (client: GatewayClient, status: GatewayStatus) => 
   const [allCronRunBusyJobId, setAllCronRunBusyJobId] = useState<string | null>(null);
   const [allCronDeleteBusyJobId, setAllCronDeleteBusyJobId] = useState<string | null>(null);
 
+  const loadingRef = useRef(false);
+
   const loadAllCronJobs = useCallback(async () => {
-    if (status !== "connected") return;
+    if (status !== "connected" || loadingRef.current) return;
+    loadingRef.current = true;
     setAllCronLoading(true);
     try {
       const result = await listCronJobs(client, { includeDisabled: true });
@@ -31,6 +34,7 @@ export const useAllCronJobs = (client: GatewayClient, status: GatewayStatus) => 
         setAllCronError(message);
       }
     } finally {
+      loadingRef.current = false;
       setAllCronLoading(false);
     }
   }, [client, status]);
