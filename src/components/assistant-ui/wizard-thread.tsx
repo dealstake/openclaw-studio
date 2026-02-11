@@ -42,12 +42,26 @@ function extractTaskConfig(text: string): WizardTaskConfig | null {
 }
 
 function stripConfigBlock(text: string): string {
-  // Remove all fenced code blocks (json:task-config, json, or any that contain config keys)
-  return text
+  // Remove all fenced code blocks (json:task-config, json, or bare JSON)
+  let stripped = text
     .replace(/```json:task-config\s*\n[\s\S]*?```/g, "")
     .replace(/```json\s*\n[\s\S]*?```/g, "")
-    .replace(/```\s*\n\{[\s\S]*?\}\s*\n```/g, "")
+    .replace(/```\s*\n\{[\s\S]*?\}\s*\n```/g, "");
+  // Remove residual JSON fragments — lines that are mostly punctuation/JSON syntax
+  // (Gemini sometimes echoes partial config outside fenced blocks)
+  stripped = stripped
+    .split("\n")
+    .filter((line) => {
+      const t = line.trim();
+      if (!t) return true;
+      // Drop lines that are just JSON noise: braces, quoted keys, commas
+      if (/^["{}\[\],:\s]*$/.test(t)) return false;
+      if (/^"?\s*\}/.test(t) && t.length < 10) return false;
+      return true;
+    })
+    .join("\n")
     .trim();
+  return stripped;
 }
 
 // ─── Starters ────────────────────────────────────────────────────────────────
