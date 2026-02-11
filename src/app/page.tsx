@@ -169,6 +169,9 @@ const AgentStudioPage = () => {
   const [lastCompactedAt, setLastCompactedAt] = useState<number | null>(null);
   /** Context window utilization per agent — totalTokens = last turn's prompt size, contextTokens = model limit */
   const [agentContextWindow, setAgentContextWindow] = useState<Map<string, { totalTokens: number; contextTokens: number }>>(new Map());
+  const gatewayConfigSnapshotRef = useRef(gatewayConfigSnapshot);
+  gatewayConfigSnapshotRef.current = gatewayConfigSnapshot;
+
   const runtimeEventHandlerRef = useRef<ReturnType<typeof createGatewayRuntimeEventHandler> | null>(
     null
   );
@@ -480,11 +483,12 @@ const AgentStudioPage = () => {
     if (status !== "connected") return;
     setLoading(true);
     try {
-      let configSnapshot = gatewayConfigSnapshot;
+      let configSnapshot = gatewayConfigSnapshotRef.current;
       if (!configSnapshot) {
         try {
           configSnapshot = await client.call<GatewayModelPolicySnapshot>("config.get", {});
           setGatewayConfigSnapshot(configSnapshot);
+          gatewayConfigSnapshotRef.current = configSnapshot;
         } catch (err) {
           if (!isGatewayDisconnectLikeError(err)) {
             console.error("Failed to load gateway config while loading agents.", err);
@@ -669,7 +673,6 @@ const AgentStudioPage = () => {
     setLoading,
     setGatewayConfigSnapshot,
     gatewayUrl,
-    gatewayConfigSnapshot,
     settingsCoordinator,
     status,
   ]);
