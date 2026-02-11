@@ -249,6 +249,8 @@ const AgentStudioPage = () => {
     return selectedInFilter ?? filteredAgents[0] ?? null;
   }, [filteredAgents, selectedAgent]);
   const focusedAgentId = focusedAgent?.agentId ?? null;
+  const focusedAgentRef = useRef(focusedAgent);
+  focusedAgentRef.current = focusedAgent;
   const focusedAgentRunning = focusedAgent?.status === "running";
   const selectedBrainAgentId = useMemo(() => {
     return focusedAgent?.agentId ?? agents[0]?.agentId ?? null;
@@ -1349,6 +1351,68 @@ const AgentStudioPage = () => {
           : "Gateway restart in progress"
       : null;
 
+  // ── Stable callbacks for AgentChatPanel (avoid inline arrows that defeat memo) ──
+  const stableChatOnOpenSettings = useCallback(() => {
+    const fa = focusedAgentRef.current;
+    if (fa) handleOpenAgentSettings(fa.agentId);
+  }, [handleOpenAgentSettings]);
+
+  const stableChatOnModelChange = useCallback((value: string | null) => {
+    const fa = focusedAgentRef.current;
+    if (fa) handleModelChange(fa.agentId, fa.sessionKey, value);
+  }, [handleModelChange]);
+
+  const stableChatOnThinkingChange = useCallback((value: string | null) => {
+    const fa = focusedAgentRef.current;
+    if (fa) handleThinkingChange(fa.agentId, fa.sessionKey, value);
+  }, [handleThinkingChange]);
+
+  const stableChatOnDraftChange = useCallback((value: string) => {
+    const fa = focusedAgentRef.current;
+    if (fa) handleDraftChange(fa.agentId, value);
+  }, [handleDraftChange]);
+
+  const stableChatOnSend = useCallback((message: string) => {
+    const fa = focusedAgentRef.current;
+    if (fa) {
+      setViewingSessionKey(null);
+      handleSend(fa.agentId, fa.sessionKey, message);
+    }
+  }, [handleSend]);
+
+  const stableChatOnStopRun = useCallback(() => {
+    const fa = focusedAgentRef.current;
+    if (fa) handleStopRun(fa.agentId, fa.sessionKey);
+  }, [handleStopRun]);
+
+  const stableChatOnAvatarShuffle = useCallback(() => {
+    const fa = focusedAgentRef.current;
+    if (fa) handleAvatarShuffle(fa.agentId);
+  }, [handleAvatarShuffle]);
+
+  const stableChatOnNewSession = useCallback(() => {
+    const fa = focusedAgentRef.current;
+    if (fa) handleNewSession(fa.agentId);
+  }, [handleNewSession]);
+
+  const stableChatOnExitSessionView = useCallback(() => {
+    setViewingSessionKey(null);
+  }, []);
+
+  const stableChatTokenUsed = useMemo(() => {
+    if (!focusedAgent) return undefined;
+    const cw = agentContextWindow.get(focusedAgent.agentId);
+    if (cw && cw.totalTokens > 0) return cw.totalTokens;
+    return sessionUsage ? sessionUsage.inputTokens + sessionUsage.outputTokens : undefined;
+  }, [focusedAgent, agentContextWindow, sessionUsage]);
+
+  const stableChatTokenLimit = useMemo(() => {
+    if (!focusedAgent) return undefined;
+    const cw = agentContextWindow.get(focusedAgent.agentId);
+    if (cw && cw.contextTokens > 0) return cw.contextTokens;
+    return findModelMatch(focusedAgent.model)?.contextWindow;
+  }, [focusedAgent, agentContextWindow, findModelMatch]);
+
   if (status === "connecting" || (status === "connected" && !agentsLoadedOnce)) {
     return (
       <div className="relative w-screen overflow-hidden bg-background" style={{ minHeight: '100dvh' }}>
@@ -1463,46 +1527,23 @@ const AgentStudioPage = () => {
                   canSend={status === "connected"}
                   models={gatewayModels}
                   stopBusy={stopBusyAgentId === focusedAgent.agentId}
-                  onOpenSettings={() => handleOpenAgentSettings(focusedAgent.agentId)}
-                  onModelChange={(value) =>
-                    handleModelChange(focusedAgent.agentId, focusedAgent.sessionKey, value)
-                  }
-                  onThinkingChange={(value) =>
-                    handleThinkingChange(focusedAgent.agentId, focusedAgent.sessionKey, value)
-                  }
-                  onDraftChange={(value) =>
-                    handleDraftChange(focusedAgent.agentId, value)
-                  }
-                  onSend={(message) => {
-                    setViewingSessionKey(null);
-                    handleSend(
-                      focusedAgent.agentId,
-                      focusedAgent.sessionKey,
-                      message
-                    );
-                  }}
-                  onStopRun={() =>
-                    handleStopRun(focusedAgent.agentId, focusedAgent.sessionKey)
-                  }
-                  onAvatarShuffle={() => handleAvatarShuffle(focusedAgent.agentId)}
-                  onNewSession={() => handleNewSession(focusedAgent.agentId)}
+                  onOpenSettings={stableChatOnOpenSettings}
+                  onModelChange={stableChatOnModelChange}
+                  onThinkingChange={stableChatOnThinkingChange}
+                  onDraftChange={stableChatOnDraftChange}
+                  onSend={stableChatOnSend}
+                  onStopRun={stableChatOnStopRun}
+                  onAvatarShuffle={stableChatOnAvatarShuffle}
+                  onNewSession={stableChatOnNewSession}
                   onCompact={handleCompact}
                   isCompacting={isCompacting}
                   lastCompactedAt={lastCompactedAt}
-                  tokenUsed={(() => {
-                    const cw = agentContextWindow.get(focusedAgent.agentId);
-                    if (cw && cw.totalTokens > 0) return cw.totalTokens;
-                    return sessionUsage ? sessionUsage.inputTokens + sessionUsage.outputTokens : undefined;
-                  })()}
-                  tokenLimit={(() => {
-                    const cw = agentContextWindow.get(focusedAgent.agentId);
-                    if (cw && cw.contextTokens > 0) return cw.contextTokens;
-                    return findModelMatch(focusedAgent.model)?.contextWindow;
-                  })()}
+                  tokenUsed={stableChatTokenUsed}
+                  tokenLimit={stableChatTokenLimit}
                   viewingSessionKey={viewingSessionKey}
                   viewingSessionHistory={viewingSessionHistory}
                   viewingSessionLoading={viewingSessionLoading}
-                  onExitSessionView={() => setViewingSessionKey(null)}
+                  onExitSessionView={stableChatOnExitSessionView}
                 />
               ) : (
                 <EmptyStatePanel

@@ -485,7 +485,7 @@ const AgentChatComposer = memo(function AgentChatComposer({
   );
 });
 
-export const AgentChatPanel = ({
+export const AgentChatPanel = memo(function AgentChatPanel({
   agent,
   isSelected,
   canSend,
@@ -508,7 +508,7 @@ export const AgentChatPanel = ({
   viewingSessionHistory = [],
   viewingSessionLoading = false,
   onExitSessionView,
-}: AgentChatPanelProps) => {
+}: AgentChatPanelProps) {
   const recentlyCompacted = useRecentlyCompacted(lastCompactedAt);
   const draftRef = useRef<HTMLTextAreaElement | null>(null);
   const scrollToBottomNextOutputRef = useRef(false);
@@ -898,4 +898,4 @@ export const AgentChatPanel = ({
       </div>
     </div>
   );
-};
+});
