@@ -315,7 +315,7 @@ const AgentChatTranscript = memo(function AgentChatTranscript({
               />
               {liveThinkingText ? (
                 <details
-                  className="rounded-md border border-border/70 bg-muted/55 text-[11px] text-muted-foreground"
+                  className={`rounded-md border border-border/70 bg-muted/55 text-[11px] text-muted-foreground${status === "running" ? " thinking-active" : ""}`}
                   open={status === "running" && autoExpandThinking}
                 >
                   <summary className="flex cursor-pointer list-none items-center gap-2 px-2 py-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.11em] [&::-webkit-details-marker]:hidden">
@@ -342,7 +342,7 @@ const AgentChatTranscript = memo(function AgentChatTranscript({
               ) : null}
               {showTypingIndicator ? (
                 <div
-                  className="flex items-center gap-2 rounded-md border border-border/70 bg-muted/55 px-2 py-1.5 text-[11px] text-muted-foreground"
+                  className="thinking-active flex items-center gap-2 rounded-md border border-border/70 bg-muted/55 px-2 py-1.5 text-[11px] text-muted-foreground"
                   role="status"
                   aria-live="polite"
                   data-testid="agent-typing-indicator"

@@ -376,6 +376,39 @@ textarea:focus::-webkit-scrollbar {
 }
 
 /* ============================================================
+ * Batch 3: Micro-Interactions — "The Feel"
+ * ============================================================ */
+
+/* 1. Button press active states — subtle scale-down on press */
+button:not(:disabled):active,
+[role="button"]:not(:disabled):active,
+summary:active {
+  transform: scale(0.97);
+  transition: transform 80ms ease-out;
+}
+
+/* 2. Thinking indicator shimmer glow */
+@keyframes thinkingShimmer {
+  0%, 100% {
+    border-color: var(--border);
+    box-shadow: 0 0 0 0 transparent;
+  }
+  50% {
+    border-color: color-mix(in oklch, var(--primary) 40%, var(--border));
+    box-shadow: 0 0 8px -2px color-mix(in oklch, var(--primary) 18%, transparent);
+  }
+}
+
+.thinking-active {
+  animation: thinkingShimmer 2.4s ease-in-out infinite;
+}
+
+/* 3. Smooth scroll for chat transcript */
+[role="log"] {
+  scroll-behavior: smooth;
+}
+
+/* ============================================================
  * Mobile viewport fixes
  * ============================================================ */
 
