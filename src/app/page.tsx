@@ -46,6 +46,7 @@ import {
 } from "@/lib/gateway/GatewayClient";
 import { ArtifactsPanel } from "@/features/artifacts/components/ArtifactsPanel";
 import { TasksPanel } from "@/features/tasks/components/TasksPanel";
+import { TaskWizardModal } from "@/features/tasks/components/TaskWizardModal";
 import { useAgentTasks } from "@/features/tasks/hooks/useAgentTasks";
 import { ContextPanel, type ContextTab } from "@/features/context/components/ContextPanel";
 import { ExecApprovalOverlay } from "@/features/exec-approvals/components/ExecApprovalOverlay";
@@ -128,6 +129,7 @@ const AgentStudioPage = () => {
 
   const { state, dispatch, hydrateAgents, setError, setLoading } = useAgentStore();
   const [showConnectionPanel, setShowConnectionPanel] = useState(false);
+  const [showTaskWizard, setShowTaskWizard] = useState(false);
   const [focusFilter, setFocusFilter] = useState<FocusFilter>("all");
   const [focusedPreferencesLoaded, setFocusedPreferencesLoaded] = useState(false);
   const [agentsLoadedOnce, setAgentsLoadedOnce] = useState(false);
@@ -261,6 +263,7 @@ const AgentStudioPage = () => {
     error: tasksError,
     busyTaskId,
     loadTasks,
+    createTask,
     toggleTask,
     runTask,
     deleteTask,
@@ -1622,10 +1625,7 @@ const AgentStudioPage = () => {
                       onRun={runTask}
                       onDelete={deleteTask}
                       onRefresh={() => { void loadTasks(); }}
-                      onNewTask={() => {
-                        // Phase 2: open TaskWizardModal
-                        // For now, placeholder
-                      }}
+                      onNewTask={() => setShowTaskWizard(true)}
                     />
                   }
                   brainContent={
@@ -1809,6 +1809,13 @@ const AgentStudioPage = () => {
           }}
         />
       ) : null}
+      <TaskWizardModal
+        open={showTaskWizard}
+        agents={agents.map((a) => a.agentId)}
+        creating={busyTaskId !== null}
+        onClose={() => setShowTaskWizard(false)}
+        onCreateTask={createTask}
+      />
       <ConfigMutationModals
         createAgentBlock={createAgentBlock}
         createBlockStatusLine={createBlockStatusLine}
