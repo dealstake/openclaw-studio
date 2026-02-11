@@ -1577,7 +1577,7 @@ const AgentStudioPage = () => {
             </div>
             {/* Context Panel: agent-scoped (Tasks/Brain/Settings) or global (Files) */}
             <div
-              className={`${mobilePane === "context" ? "flex" : "hidden"} glass-panel min-h-0 w-full shrink-0 p-0 xl:flex xl:w-[360px]`}
+              className={`${mobilePane === "context" ? "flex" : "hidden"} glass-panel min-h-0 w-full shrink-0 overflow-hidden p-0 xl:flex xl:w-[360px]`}
             >
               {contextMode === "files" ? (
                 <ArtifactsPanel isSelected />
