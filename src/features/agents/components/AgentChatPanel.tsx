@@ -28,7 +28,7 @@ function useRecentlyCompacted(lastCompactedAt: number | null | undefined): boole
 import type { AgentState as AgentRecord } from "@/features/agents/state/store";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Archive, ArrowLeft, ChevronDown, ChevronRight, ChevronUp, RefreshCw, Settings, Shuffle, SquarePen } from "lucide-react";
+import { Archive, ArrowLeft, ArrowUp, ChevronDown, ChevronRight, ChevronUp, RefreshCw, Settings, Shuffle, SquarePen } from "lucide-react";
 import type { GatewayModelChoice } from "@/lib/gateway/models";
 import { isToolMarkdown, isTraceMarkdown } from "@/lib/text/message-extract";
 import { isNearBottom } from "@/lib/dom";
@@ -99,7 +99,7 @@ const AgentChatFinalItems = memo(function AgentChatFinalItems({
                 <ChevronRight className="h-3 w-3 shrink-0 transition-transform duration-200 [[open]>&]:rotate-90" />
                 <span>Thinking</span>
               </summary>
-              <div className="agent-markdown px-2 pb-2 text-foreground">
+              <div className="agent-markdown leading-relaxed px-2 pb-2 text-foreground">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>{item.text}</ReactMarkdown>
               </div>
             </details>
@@ -126,7 +126,7 @@ const AgentChatFinalItems = memo(function AgentChatFinalItems({
                 {summaryText}
               </summary>
               {body ? (
-                <div className="agent-markdown mt-1 text-foreground">
+                <div className="agent-markdown leading-relaxed mt-1 text-foreground">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>{body}</ReactMarkdown>
                 </div>
               ) : null}
@@ -136,7 +136,7 @@ const AgentChatFinalItems = memo(function AgentChatFinalItems({
         return (
           <div
             key={`chat-${agentId}-assistant-${index}`}
-            className="agent-markdown min-w-0 overflow-hidden rounded-md border border-transparent px-0.5"
+            className="agent-markdown leading-relaxed min-w-0 overflow-hidden px-0.5"
           >
             <ReactMarkdown remarkPlugins={[remarkGfm]}>{item.text}</ReactMarkdown>
           </div>
@@ -290,7 +290,7 @@ const AgentChatTranscript = memo(function AgentChatTranscript({
         role="log"
         aria-label="Chat messages"
         aria-live="polite"
-        className="h-full overflow-y-auto overflow-x-hidden p-3 sm:p-4"
+        className="h-full overflow-y-auto overflow-x-hidden p-3 pb-20 sm:p-4 sm:pb-4"
         onScroll={() => updatePinnedFromScroll()}
         onWheel={(event) => {
           event.stopPropagation();
@@ -336,7 +336,7 @@ const AgentChatTranscript = memo(function AgentChatTranscript({
                 </details>
               ) : null}
               {liveAssistantText ? (
-                <div className="agent-markdown min-w-0 overflow-hidden rounded-md border border-transparent px-0.5 opacity-85">
+                <div className="agent-markdown leading-relaxed min-w-0 overflow-hidden px-0.5 opacity-85">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>{liveAssistantText}</ReactMarkdown>
                 </div>
               ) : null}
@@ -482,38 +482,41 @@ const AgentChatComposer = memo(function AgentChatComposer({
   const sendDisabled = !canSend || running || isEmpty;
 
   return (
-    <div className="flex shrink-0 items-end gap-2">
-      <textarea
-        ref={handleRef}
-        rows={1}
-        defaultValue={initialDraft}
-        className="max-h-[80px] flex-1 resize-none rounded-md border border-border/80 bg-card/75 px-3 py-2 text-base text-foreground outline-none transition focus:border-ring sm:max-h-[160px] sm:text-[11px]"
-        aria-label="Message to agent"
-        onChange={handleChange}
-        onKeyDown={handleKeyDown}
-        onFocus={handleFocus}
-        placeholder="type a message"
-      />
-      {running ? (
+    <div className="fixed inset-x-0 bottom-0 z-20 px-3 pb-3 backdrop-blur-md sm:absolute sm:inset-x-0 sm:bottom-0 sm:z-20 sm:bg-gradient-to-t sm:from-background sm:via-background/90 sm:to-transparent sm:px-4 sm:pb-6 sm:pt-4">
+      <div className="mx-auto flex w-full max-w-3xl items-end gap-2 rounded-xl border border-border/80 bg-card/90 p-2 shadow-lg sm:rounded-2xl sm:border-border sm:bg-card sm:p-3 sm:shadow-xl">
+        <textarea
+          ref={handleRef}
+          rows={1}
+          defaultValue={initialDraft}
+          className="max-h-[80px] flex-1 resize-none bg-transparent px-2 py-1 text-base text-foreground outline-none placeholder:text-muted-foreground/50 transition sm:max-h-[200px] sm:text-sm"
+          aria-label="Message to agent"
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
+          onFocus={handleFocus}
+          placeholder="Type a message..."
+        />
+        {running ? (
+          <button
+            className="flex h-8 min-w-[32px] items-center justify-center rounded-lg border border-border/80 bg-card/50 text-foreground shadow-sm transition hover:bg-muted/70 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none sm:h-9 sm:px-3"
+            type="button"
+            aria-label="Stop agent"
+            onClick={onStop}
+            disabled={!canSend || stopBusy}
+          >
+            <span className="sr-only">Stop</span>
+            <div className="h-2.5 w-2.5 rounded-[1px] bg-foreground" />
+          </button>
+        ) : null}
         <button
-          className="min-h-[44px] rounded-md border border-border/80 bg-card/70 px-3 py-2 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-foreground shadow-sm transition hover:bg-muted/70 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none sm:min-h-0"
+          className="flex h-8 items-center justify-center rounded-lg bg-primary px-3 text-primary-foreground shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50 sm:h-9"
           type="button"
-          aria-label="Stop agent"
-          onClick={onStop}
-          disabled={!canSend || stopBusy}
+          aria-label="Send message"
+          onClick={handleClickSend}
+          disabled={sendDisabled}
         >
-          {stopBusy ? "Stopping" : "Stop"}
+          <ArrowUp className="h-4 w-4" />
         </button>
-      ) : null}
-      <button
-        className="min-h-[44px] rounded-md border border-transparent bg-primary px-3 py-2 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-primary-foreground shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:border-border disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none sm:min-h-0"
-        type="button"
-        aria-label="Send message"
-        onClick={handleClickSend}
-        disabled={sendDisabled}
-      >
-        Send
-      </button>
+      </div>
     </div>
   );
 });
@@ -880,7 +883,7 @@ export const AgentChatPanel = memo(function AgentChatPanel({
         </div>
       </div>
 
-      <div className="mt-3 flex min-h-0 flex-1 flex-col gap-3 px-3 pb-3 sm:px-4 sm:pb-4">
+      <div className="mt-3 flex min-h-0 flex-1 flex-col gap-3 px-3 pb-24 sm:px-4 sm:pb-32">
         {viewingSessionKey ? (
           <div className="relative flex flex-1 flex-col overflow-hidden rounded-md border border-border/80 bg-card/75">
             <div className="flex items-center gap-2 border-b border-border/60 px-3 py-2">
