@@ -67,3 +67,4 @@ jobs:
           env_vars: |
             NODE_ENV=production
             HOSTNAME=0.0.0.0
+            GOOGLE_SERVICE_ACCOUNT_JSON=${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}

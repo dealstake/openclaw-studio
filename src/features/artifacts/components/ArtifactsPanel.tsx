@@ -14,6 +14,8 @@ import {
   ArrowUp,
   ArrowDown,
   Pin,
+  Upload,
+  X,
 } from "lucide-react";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -216,7 +218,11 @@ export const ArtifactsPanel = memo(function ArtifactsPanel({ isSelected }: Artif
   const [refreshing, setRefreshing] = useState(false);
   const [sortDir, setSortDir] = useState<SortDirection>("newest");
   const [pins, setPins] = useState<Set<string>>(new Set());
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const hydrated = useRef(false);
 
   // Hydrate from localStorage on mount (client only)
@@ -274,6 +280,46 @@ export const ArtifactsPanel = memo(function ArtifactsPanel({ isSelected }: Artif
     }
   }, []);
 
+  const handleUpload = useCallback(async (fileList: FileList | null) => {
+    if (!fileList || fileList.length === 0) return;
+    setUploading(true);
+    setUploadError(null);
+
+    try {
+      for (const file of Array.from(fileList)) {
+        const formData = new FormData();
+        formData.append("file", file);
+        const res = await fetch("/api/artifacts/upload", { method: "POST", body: formData });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body.error || `Upload failed (${res.status})`);
+        }
+      }
+      await fetchFiles(true);
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : "Upload failed.");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }, [fetchFiles]);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    void handleUpload(e.dataTransfer.files);
+  }, [handleUpload]);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+  }, []);
+
   useEffect(() => {
     if (!isSelected) return;
     void fetchFiles();
@@ -290,12 +336,31 @@ export const ArtifactsPanel = memo(function ArtifactsPanel({ isSelected }: Artif
 
   return (
     <div className="flex h-full w-full flex-col">
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        className="hidden"
+        onChange={(e) => void handleUpload(e.target.files)}
+      />
+
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3">
         <p className="console-title text-2xl leading-none text-foreground">
           Files ({files.length})
         </p>
         <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            className="flex items-center gap-1 rounded-md px-2 py-1.5 font-mono text-[9px] font-semibold uppercase tracking-[0.1em] text-muted-foreground transition hover:bg-muted/50 hover:text-foreground disabled:opacity-40"
+            title="Upload file"
+          >
+            <Upload className={`h-3 w-3 ${uploading ? "animate-pulse" : ""}`} />
+            <span className="hidden sm:inline">{uploading ? "Uploading…" : "Upload"}</span>
+          </button>
           <button
             type="button"
             onClick={toggleSort}
@@ -321,8 +386,24 @@ export const ArtifactsPanel = memo(function ArtifactsPanel({ isSelected }: Artif
         </div>
       </div>
 
+      {/* Upload error */}
+      {uploadError && (
+        <div className="mx-3 mb-2 flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-[11px] text-destructive">
+          <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+          <span className="flex-1">{uploadError}</span>
+          <button type="button" onClick={() => setUploadError(null)} className="shrink-0 rounded p-0.5 hover:bg-destructive/20">
+            <X className="h-3 w-3" />
+          </button>
+        </div>
+      )}
+
       {/* Content */}
-      <div className="flex-1 overflow-auto px-3 pb-3">
+      <div
+        className={`flex-1 overflow-auto px-3 pb-3 transition ${dragOver ? "ring-2 ring-inset ring-primary/50 rounded-lg bg-primary/5" : ""}`}
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+      >
         {loading && !files.length ? (
           <div className="flex items-center justify-center py-12">
             <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground" />
