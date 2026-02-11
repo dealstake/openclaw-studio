@@ -166,11 +166,11 @@ export const TaskWizardModal = memo(function TaskWizardModal({
     setConfirmBusy(true);
     try {
       await onCreateTask(payload);
+      // Only close on success — errors are shown in TasksPanel
       wizard.reset();
       onClose();
     } catch {
-      // Error is handled by the parent hook
-    } finally {
+      // Error is surfaced by useAgentTasks — keep wizard open for retry
       setConfirmBusy(false);
     }
   }, [wizard, onCreateTask, onClose]);

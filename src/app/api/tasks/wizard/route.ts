@@ -1,5 +1,4 @@
 import { NextResponse, type NextRequest } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
 import type { WizardMessage, TaskType } from "@/features/tasks/types";
 
 export const runtime = "nodejs";
@@ -78,6 +77,20 @@ Does this look right? I can adjust anything before we create it.
 - When generating the prompt for the task config, prefix it with [TASK:{taskId}]`;
 }
 
+// ─── Gemini API helpers ──────────────────────────────────────────────────────
+
+interface GeminiContent {
+  role: "user" | "model";
+  parts: Array<{ text: string }>;
+}
+
+function toGeminiContents(messages: WizardMessage[]): GeminiContent[] {
+  return messages.map((m) => ({
+    role: m.role === "assistant" ? "model" : "user",
+    parts: [{ text: m.content }],
+  }));
+}
+
 // ─── POST /api/tasks/wizard ──────────────────────────────────────────────────
 
 export async function POST(request: NextRequest) {
@@ -104,44 +117,94 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const apiKey = process.env.ANTHROPIC_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      console.error("[wizard] ANTHROPIC_API_KEY not configured");
+      console.error("[wizard] GEMINI_API_KEY not configured");
       return NextResponse.json(
-        { error: "Wizard AI is not configured. Missing API key." },
+        { error: "Wizard AI is not configured. Missing GEMINI_API_KEY." },
         { status: 500 }
       );
     }
 
-    const client = new Anthropic({ apiKey });
     const systemPrompt = buildSystemPrompt(taskType, agents);
+    const contents = toGeminiContents(messages);
 
-    // Stream the response
-    const stream = await client.messages.stream({
-      model: "claude-sonnet-4-6-20250514",
-      max_tokens: 2048,
-      system: systemPrompt,
-      messages: messages.map((m) => ({
-        role: m.role,
-        content: m.content,
-      })),
+    // Use Gemini streaming API
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse&key=${apiKey}`;
+
+    const geminiRes = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: systemPrompt }] },
+        contents,
+        generationConfig: {
+          maxOutputTokens: 2048,
+          temperature: 0.7,
+        },
+      }),
     });
 
-    // Create a ReadableStream that sends text chunks
+    if (!geminiRes.ok) {
+      const errText = await geminiRes.text();
+      console.error("[wizard] Gemini API error:", geminiRes.status, errText);
+      return NextResponse.json(
+        { error: `Wizard AI error (${geminiRes.status})` },
+        { status: 502 }
+      );
+    }
+
+    if (!geminiRes.body) {
+      return NextResponse.json(
+        { error: "No response body from Gemini." },
+        { status: 502 }
+      );
+    }
+
+    // Transform Gemini SSE stream into our simpler SSE format
     const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
+
     const readable = new ReadableStream({
       async start(controller) {
         try {
-          for await (const event of stream) {
-            if (
-              event.type === "content_block_delta" &&
-              event.delta.type === "text_delta"
-            ) {
-              controller.enqueue(
-                encoder.encode(`data: ${JSON.stringify({ text: event.delta.text })}\n\n`)
-              );
+          const reader = geminiRes.body!.getReader();
+          let buffer = "";
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n");
+            buffer = lines.pop() ?? "";
+
+            for (const line of lines) {
+              if (!line.startsWith("data: ")) continue;
+              const payload = line.slice(6).trim();
+              if (!payload || payload === "[DONE]") continue;
+
+              try {
+                const parsed = JSON.parse(payload) as {
+                  candidates?: Array<{
+                    content?: { parts?: Array<{ text?: string }> };
+                  }>;
+                };
+                const text =
+                  parsed.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (text) {
+                  controller.enqueue(
+                    encoder.encode(
+                      `data: ${JSON.stringify({ text })}\n\n`
+                    )
+                  );
+                }
+              } catch {
+                // Skip malformed chunks
+              }
             }
           }
+
           controller.enqueue(encoder.encode("data: [DONE]\n\n"));
           controller.close();
         } catch (err) {

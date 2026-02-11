@@ -152,7 +152,9 @@ export const useAgentTasks = (
 
   const createTask = useCallback(
     async (payload: CreateTaskPayload) => {
-      if (!agentId || status !== "connected") return;
+      if (!agentId || status !== "connected") {
+        throw new Error("Gateway is not connected.");
+      }
       setError(null);
       const taskId = generateTaskId();
       const now = new Date().toISOString();
@@ -175,7 +177,8 @@ export const useAgentTasks = (
         });
 
         if (!result.ok) {
-          throw new Error("Gateway rejected cron job creation.");
+          const detail = "error" in result ? (result as { error?: string }).error : "";
+          throw new Error(`Gateway rejected cron job creation.${detail ? ` ${detail}` : ""}`);
         }
 
         // 2. Save metadata

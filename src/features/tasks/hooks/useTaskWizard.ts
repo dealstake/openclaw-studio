@@ -157,7 +157,7 @@ export function useTaskWizard(agents: string[]): UseTaskWizardReturn {
 
   const confirm = useCallback((): CreateTaskPayload | null => {
     if (!taskConfig) return null;
-    setStep("confirm");
+    // Don't transition step here — caller does it after successful creation
     return {
       agentId: taskConfig.agentId,
       name: taskConfig.name,
