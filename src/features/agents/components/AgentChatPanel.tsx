@@ -287,6 +287,9 @@ const AgentChatTranscript = memo(function AgentChatTranscript({
       <div
         ref={chatRef}
         data-testid="agent-chat-scroll"
+        role="log"
+        aria-label="Chat messages"
+        aria-live="polite"
         className="h-full overflow-y-auto overflow-x-hidden p-3 sm:p-4"
         onScroll={() => updatePinnedFromScroll()}
         onWheel={(event) => {
@@ -484,7 +487,8 @@ const AgentChatComposer = memo(function AgentChatComposer({
         ref={handleRef}
         rows={1}
         defaultValue={initialDraft}
-        className="max-h-[80px] flex-1 resize-none rounded-md border border-border/80 bg-card/75 px-3 py-2 text-[11px] text-foreground outline-none transition focus:border-ring sm:max-h-[160px]"
+        className="max-h-[80px] flex-1 resize-none rounded-md border border-border/80 bg-card/75 px-3 py-2 text-base text-foreground outline-none transition focus:border-ring sm:max-h-[160px] sm:text-[11px]"
+        aria-label="Message to agent"
         onChange={handleChange}
         onKeyDown={handleKeyDown}
         onFocus={handleFocus}
@@ -492,8 +496,9 @@ const AgentChatComposer = memo(function AgentChatComposer({
       />
       {running ? (
         <button
-          className="rounded-md border border-border/80 bg-card/70 px-3 py-2 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-foreground shadow-sm transition hover:bg-muted/70 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
+          className="min-h-[44px] rounded-md border border-border/80 bg-card/70 px-3 py-2 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-foreground shadow-sm transition hover:bg-muted/70 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none sm:min-h-0"
           type="button"
+          aria-label="Stop agent"
           onClick={onStop}
           disabled={!canSend || stopBusy}
         >
@@ -501,8 +506,9 @@ const AgentChatComposer = memo(function AgentChatComposer({
         </button>
       ) : null}
       <button
-        className="rounded-md border border-transparent bg-primary px-3 py-2 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-primary-foreground shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:border-border disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
+        className="min-h-[44px] rounded-md border border-transparent bg-primary px-3 py-2 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-primary-foreground shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:border-border disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none sm:min-h-0"
         type="button"
+        aria-label="Send message"
         onClick={handleClickSend}
         disabled={sendDisabled}
       >
@@ -778,6 +784,8 @@ export const AgentChatPanel = memo(function AgentChatPanel({
                 type="button"
                 className="mt-1.5 flex items-center gap-1 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground transition hover:text-foreground sm:hidden"
                 onClick={toggleMobileHeader}
+                aria-expanded={mobileHeaderExpanded}
+                aria-controls="mobile-model-settings"
                 aria-label={mobileHeaderExpanded ? "Collapse model settings" : "Expand model settings"}
               >
                 {mobileHeaderExpanded ? (
@@ -794,7 +802,7 @@ export const AgentChatPanel = memo(function AgentChatPanel({
               </button>
 
               {/* Desktop: always visible; Mobile: only when expanded */}
-              <div className={`${mobileHeaderExpanded ? "block" : "hidden"} sm:block`}>
+              <div id="mobile-model-settings" className={`${mobileHeaderExpanded ? "block" : "hidden"} sm:block`}>
                 <div className="mt-2 grid max-w-md gap-2 sm:grid-cols-[minmax(0,1fr)_128px]">
                   <label className="flex min-w-0 flex-col gap-1 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                     <span>Model</span>
