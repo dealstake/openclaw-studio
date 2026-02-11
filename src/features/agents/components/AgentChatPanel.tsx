@@ -418,6 +418,16 @@ const AgentChatComposer = memo(function AgentChatComposer({
     [onDraftChange, onResize]
   );
 
+  const clearAfterSend = useCallback(() => {
+    const el = localRef.current;
+    if (el) {
+      el.value = "";
+      el.style.height = "auto";
+    }
+    setIsEmpty(true);
+    onDraftChange("");
+  }, [onDraftChange]);
+
   const handleKeyDown = useCallback(
     (event: KeyboardEvent<HTMLTextAreaElement>) => {
       if (event.key !== "Enter" || event.shiftKey) return;
@@ -427,9 +437,10 @@ const AgentChatComposer = memo(function AgentChatComposer({
       const trimmed = value.trim();
       if (trimmed) {
         onSend(trimmed);
+        clearAfterSend();
       }
     },
-    [onSend]
+    [onSend, clearAfterSend]
   );
 
   const handleClickSend = useCallback(() => {
@@ -437,8 +448,9 @@ const AgentChatComposer = memo(function AgentChatComposer({
     const trimmed = value.trim();
     if (trimmed) {
       onSend(trimmed);
+      clearAfterSend();
     }
-  }, [onSend]);
+  }, [onSend, clearAfterSend]);
 
   // Cleanup rAF on unmount
   useEffect(() => {
