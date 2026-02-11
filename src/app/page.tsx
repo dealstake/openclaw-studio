@@ -1613,6 +1613,7 @@ const AgentStudioPage = () => {
                   tasksContent={
                     <TasksPanel
                       isSelected
+                      client={client}
                       tasks={agentTasks}
                       loading={tasksLoading}
                       error={tasksError}

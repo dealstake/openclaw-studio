@@ -1,11 +1,13 @@
 "use client";
 
-import { memo, useState } from "react";
+import { memo, useCallback, useState } from "react";
 import { Plus, RefreshCw, Zap, Clock, Calendar } from "lucide-react";
 import { EmptyStatePanel } from "@/features/agents/components/EmptyStatePanel";
 import { Skeleton } from "@/components/Skeleton";
+import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import type { StudioTask, TaskType } from "@/features/tasks/types";
 import { TaskCard } from "./TaskCard";
+import { TaskDetailDrawer } from "./TaskDetailDrawer";
 
 // ─── Filter tabs ─────────────────────────────────────────────────────────────
 
@@ -22,6 +24,7 @@ const FILTER_TABS: Array<{ value: FilterTab; label: string }> = [
 
 interface TasksPanelProps {
   isSelected: boolean;
+  client: GatewayClient;
   tasks: StudioTask[];
   loading: boolean;
   error: string | null;
@@ -37,6 +40,7 @@ interface TasksPanelProps {
 
 export const TasksPanel = memo(function TasksPanel({
   isSelected,
+  client,
   tasks,
   loading,
   error,
@@ -48,8 +52,29 @@ export const TasksPanel = memo(function TasksPanel({
   onNewTask,
 }: TasksPanelProps) {
   const [filter, setFilter] = useState<FilterTab>("all");
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+
+  const handleSelect = useCallback((taskId: string) => {
+    setSelectedTaskId((prev) => (prev === taskId ? null : taskId));
+  }, []);
+
+  const handleCloseDrawer = useCallback(() => {
+    setSelectedTaskId(null);
+  }, []);
+
+  const handleDelete = useCallback(
+    (taskId: string) => {
+      if (selectedTaskId === taskId) setSelectedTaskId(null);
+      onDelete(taskId);
+    },
+    [onDelete, selectedTaskId]
+  );
 
   if (!isSelected) return null;
+
+  const selectedTask = selectedTaskId
+    ? tasks.find((t) => t.id === selectedTaskId) ?? null
+    : null;
 
   const filtered =
     filter === "all" ? tasks : tasks.filter((t) => t.type === filter);
@@ -60,6 +85,21 @@ export const TasksPanel = memo(function TasksPanel({
     periodic: tasks.filter((t) => t.type === "periodic").length,
     scheduled: tasks.filter((t) => t.type === "scheduled").length,
   };
+
+  // When a task is selected, show the detail drawer instead of the list
+  if (selectedTask) {
+    return (
+      <TaskDetailDrawer
+        task={selectedTask}
+        client={client}
+        busy={busyTaskId === selectedTask.id}
+        onClose={handleCloseDrawer}
+        onToggle={onToggle}
+        onRun={onRun}
+        onDelete={handleDelete}
+      />
+    );
+  }
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden">
@@ -181,9 +221,11 @@ export const TasksPanel = memo(function TasksPanel({
                 key={task.id}
                 task={task}
                 busy={busyTaskId === task.id}
+                selected={selectedTaskId === task.id}
+                onSelect={handleSelect}
                 onToggle={onToggle}
                 onRun={onRun}
-                onDelete={onDelete}
+                onDelete={handleDelete}
               />
             ))}
           </div>

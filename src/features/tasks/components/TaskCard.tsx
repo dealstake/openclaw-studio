@@ -40,6 +40,8 @@ const STATUS_DOT: Record<string, string> = {
 interface TaskCardProps {
   task: StudioTask;
   busy: boolean;
+  selected: boolean;
+  onSelect: (taskId: string) => void;
   onToggle: (taskId: string, enabled: boolean) => void;
   onRun: (taskId: string) => void;
   onDelete: (taskId: string) => void;
@@ -48,6 +50,8 @@ interface TaskCardProps {
 export const TaskCard = memo(function TaskCard({
   task,
   busy,
+  selected,
+  onSelect,
   onToggle,
   onRun,
   onDelete,
@@ -70,12 +74,26 @@ export const TaskCard = memo(function TaskCard({
     onRun(task.id);
   }, [onRun, task.id]);
 
+  const handleSelect = useCallback(() => {
+    onSelect(task.id);
+  }, [onSelect, task.id]);
+
   const handleDelete = useCallback(() => {
     onDelete(task.id);
   }, [onDelete, task.id]);
 
   return (
-    <div className="group/task rounded-md border border-border/80 bg-card/70 px-3 py-2.5">
+    <div
+      className={`group/task rounded-md border bg-card/70 px-3 py-2.5 cursor-pointer transition ${
+        selected
+          ? "border-primary/50 bg-primary/5"
+          : "border-border/80 hover:border-border"
+      }`}
+      onClick={handleSelect}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") handleSelect(); }}
+    >
       <div className="flex items-start justify-between gap-2">
         {/* Left: status dot + info */}
         <div className="min-w-0 flex-1">
