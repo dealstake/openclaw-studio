@@ -335,7 +335,7 @@ export const ArtifactsPanel = memo(function ArtifactsPanel({ isSelected }: Artif
   const hasPinned = sortedFiles.pinned.length > 0;
 
   return (
-    <div className="flex h-full w-full flex-col">
+    <div className="flex h-full w-full min-w-0 flex-col overflow-hidden">
       {/* Hidden file input */}
       <input
         ref={fileInputRef}
@@ -399,7 +399,7 @@ export const ArtifactsPanel = memo(function ArtifactsPanel({ isSelected }: Artif
 
       {/* Content */}
       <div
-        className={`flex-1 overflow-auto px-3 pb-3 transition ${dragOver ? "ring-2 ring-inset ring-primary/50 rounded-lg bg-primary/5" : ""}`}
+        className={`min-h-0 flex-1 overflow-y-auto px-3 pb-3 transition ${dragOver ? "ring-2 ring-inset ring-primary/50 rounded-lg bg-primary/5" : ""}`}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
