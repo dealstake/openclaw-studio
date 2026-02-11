@@ -13,11 +13,18 @@ interface ServiceAccountKey {
 }
 
 function getServiceAccountCredentials(): ServiceAccountKey {
+  // Try inline JSON (plain or base64-encoded)
   const inline = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
   if (inline) {
-    return JSON.parse(inline) as ServiceAccountKey;
+    const trimmed = inline.trim();
+    // If it starts with '{', it's plain JSON; otherwise assume base64
+    const json = trimmed.startsWith("{")
+      ? trimmed
+      : Buffer.from(trimmed, "base64").toString("utf-8");
+    return JSON.parse(json) as ServiceAccountKey;
   }
 
+  // Try file path
   const filePath = process.env.GOOGLE_SERVICE_ACCOUNT_FILE;
   if (filePath) {
     const raw = readFileSync(filePath, "utf-8");
@@ -25,7 +32,7 @@ function getServiceAccountCredentials(): ServiceAccountKey {
   }
 
   throw new Error(
-    "Google Drive not configured: set GOOGLE_SERVICE_ACCOUNT_JSON or GOOGLE_SERVICE_ACCOUNT_FILE"
+    "Google Drive not configured: set GOOGLE_SERVICE_ACCOUNT_JSON (plain or base64) or GOOGLE_SERVICE_ACCOUNT_FILE"
   );
 }
 
