@@ -34,7 +34,12 @@ function extractTaskConfig(text: string): WizardTaskConfig | null {
 }
 
 function stripConfigBlock(text: string): string {
-  return text.replace(/```json:task-config\s*\n[\s\S]*?```/g, "").trim();
+  // Remove all fenced code blocks (json:task-config, json, or any that contain config keys)
+  return text
+    .replace(/```json:task-config\s*\n[\s\S]*?```/g, "")
+    .replace(/```json\s*\n[\s\S]*?```/g, "")
+    .replace(/```\s*\n\{[\s\S]*?\}\s*\n```/g, "")
+    .trim();
 }
 
 // ─── Starters ────────────────────────────────────────────────────────────────
