@@ -290,7 +290,7 @@ const AgentChatTranscript = memo(function AgentChatTranscript({
         role="log"
         aria-label="Chat messages"
         aria-live="polite"
-        className="h-full overflow-y-auto overflow-x-hidden p-3 pb-24 sm:p-4 sm:pb-32"
+        className="h-full overflow-y-auto overflow-x-hidden p-3 pb-24 sm:p-4 sm:pb-24"
         onScroll={() => updatePinnedFromScroll()}
         onWheel={(event) => {
           event.stopPropagation();
@@ -299,7 +299,7 @@ const AgentChatTranscript = memo(function AgentChatTranscript({
           event.stopPropagation();
         }}
       >
-        <div className="flex min-w-0 flex-col gap-3 text-xs text-foreground">
+        <div className="mx-auto flex w-full max-w-3xl min-w-0 flex-col gap-3 text-xs text-foreground">
           {chatItems.length === 0 ? (
             <EmptyStatePanel title="No messages yet." compact className="p-3 text-xs" />
           ) : (
@@ -482,7 +482,7 @@ const AgentChatComposer = memo(function AgentChatComposer({
   const sendDisabled = !canSend || running || isEmpty;
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-20 px-3 pb-3 backdrop-blur-md sm:absolute sm:inset-x-0 sm:bottom-0 sm:z-20 sm:bg-gradient-to-t sm:from-background sm:via-background/90 sm:to-transparent sm:px-4 sm:pb-6 sm:pt-4">
+    <div className="fixed inset-x-0 bottom-0 z-20 px-3 pb-3 backdrop-blur-md sm:absolute sm:inset-x-0 sm:bottom-0 sm:z-20 sm:px-4 sm:pb-6 sm:pt-4">
       <div className="mx-auto flex w-full max-w-3xl items-end gap-2 rounded-xl border border-border/80 bg-card/90 p-2 shadow-lg sm:rounded-2xl sm:border-border sm:bg-card sm:p-3 sm:shadow-xl">
         <textarea
           ref={handleRef}
@@ -883,7 +883,7 @@ export const AgentChatPanel = memo(function AgentChatPanel({
         </div>
       </div>
 
-      <div className="mt-3 flex min-h-0 flex-1 flex-col gap-3 px-3 pb-24 sm:px-4 sm:pb-32">
+      <div className="mt-3 flex min-h-0 flex-1 flex-col gap-3 px-3 pb-24 sm:px-4 sm:pb-24">
         {viewingSessionKey ? (
           <div className="relative flex flex-1 flex-col overflow-hidden rounded-md border border-border/80 bg-card/75">
             <div className="flex items-center gap-2 border-b border-border/60 px-3 py-2">
