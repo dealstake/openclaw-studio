@@ -5,7 +5,7 @@ import { BrandMark } from "@/components/brand/BrandMark";
 import { LogoutButton } from "@/components/brand/LogoutButton";
 import { ChannelStatusPills } from "@/features/channels/components/ChannelStatusPills";
 import type { ChannelsStatusSnapshot } from "@/lib/gateway/channels";
-import { FolderOpen, Ellipsis, PanelRight } from "lucide-react";
+import { FolderOpen, Ellipsis, Menu, PanelRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getCfIdentity, type CfIdentity } from "@/lib/cloudflare-auth";
 
@@ -17,6 +17,8 @@ type HeaderBarProps = {
   filesDisabled?: boolean;
   channelsSnapshot?: ChannelsStatusSnapshot | null;
   channelsLoading?: boolean;
+  onOpenFleet?: () => void;
+  onOpenContext?: () => void;
 };
 
 /* ── Avatar button with hover label ──────────────────────────────────── */
@@ -46,6 +48,8 @@ export const HeaderBar = ({
   filesDisabled = false,
   channelsSnapshot = null,
   channelsLoading = false,
+  onOpenFleet,
+  onOpenContext,
 }: HeaderBarProps) => {
   const [identity, setIdentity] = useState<CfIdentity | null>(null);
 
@@ -65,10 +69,19 @@ export const HeaderBar = ({
   }, []);
 
   return (
-    <div className="glass-panel fade-up relative z-30 overflow-visible px-4 py-2">
+    <div className="fade-up relative z-30 overflow-visible rounded-xl border border-border bg-background/80 px-4 py-2 shadow-lg backdrop-blur-xl">
       <div className="pointer-events-none absolute inset-0 header-gradient-overlay opacity-55" />
       <div className="relative flex items-center gap-4">
         <div className="flex min-w-0 flex-1 items-center gap-3">
+          {onOpenFleet ? (
+            <HeaderIconButton
+              onClick={onOpenFleet}
+              aria-label="Open fleet menu"
+              className="md:hidden"
+            >
+              <Menu className="h-[15px] w-[15px]" />
+            </HeaderIconButton>
+          ) : null}
           <BrandMark size="sm" />
           <ChannelStatusPills snapshot={channelsSnapshot} loading={channelsLoading} />
         </div>
@@ -102,6 +115,16 @@ export const HeaderBar = ({
               <FolderOpen className="h-[15px] w-[15px]" />
             )}
           </HeaderIconButton>
+
+          {onOpenContext ? (
+            <HeaderIconButton
+              onClick={onOpenContext}
+              aria-label="Open context panel"
+              className="md:hidden"
+            >
+              <PanelRight className="h-[15px] w-[15px]" />
+            </HeaderIconButton>
+          ) : null}
 
           <details className="group relative">
             <summary

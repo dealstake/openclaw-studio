@@ -64,7 +64,7 @@ import { useExecApprovals } from "@/features/exec-approvals/hooks/useExecApprova
 import { useSessionUsage, useCumulativeUsage } from "@/features/sessions/hooks/useSessionUsage";
 import { useGatewayStatus } from "@/features/status/hooks/useGatewayStatus";
 import { ConfigMutationModals } from "@/features/agents/components/ConfigMutationModals";
-import { MobilePaneToggle, type MobilePane } from "@/features/agents/components/MobilePaneToggle";
+import type { MobilePane } from "@/features/agents/components/MobilePaneToggle";
 import { useConfigMutationQueue } from "@/features/agents/hooks/useConfigMutationQueue";
 import { useDraftBatching } from "@/features/agents/hooks/useDraftBatching";
 import { useLivePatchBatching } from "@/features/agents/hooks/useLivePatchBatching";
@@ -1467,6 +1467,8 @@ const AgentStudioPage = () => {
             filesDisabled={false}
             channelsSnapshot={channelsSnapshot}
             channelsLoading={channelsLoading}
+            onOpenFleet={() => setMobilePane("fleet")}
+            onOpenContext={() => setMobilePane("context")}
           />
         </div>
 
@@ -1504,14 +1506,15 @@ const AgentStudioPage = () => {
 
         {showFleetLayout ? (
           <div className="flex min-h-0 flex-1 flex-col gap-4 xl:flex-row">
-            <MobilePaneToggle
-              mobilePane={mobilePane}
-              contextMode={contextMode}
-              onPaneChange={setMobilePane}
-              onEnsureContextMode={() => { if (contextMode !== "agent" && contextMode !== "files") setContextMode("agent"); }}
-            />
+            {/* Backdrop for mobile drawers */}
+            {mobilePane !== "chat" ? (
+              <div
+                className="fixed inset-0 z-40 bg-black/50 xl:hidden"
+                onClick={() => setMobilePane("chat")}
+              />
+            ) : null}
             <div
-              className={`${mobilePane === "fleet" ? "flex" : "hidden"} min-h-0 flex-1 xl:flex xl:flex-[0_0_auto] xl:min-h-0 xl:w-[280px]`}
+              className={`fixed inset-y-0 left-0 z-50 w-[280px] transform transition-transform duration-300 xl:static xl:flex xl:flex-[0_0_auto] xl:min-h-0 xl:w-[280px] xl:translate-x-0 ${mobilePane === "fleet" ? "translate-x-0" : "-translate-x-full"}`}
             >
               <FleetSidebar
                 agents={filteredAgents}
@@ -1534,7 +1537,7 @@ const AgentStudioPage = () => {
               />
             </div>
             <div
-              className={`${mobilePane === "chat" ? "flex" : "hidden"} glass-panel min-h-0 flex-1 overflow-hidden p-2 sm:p-3 xl:flex`}
+              className="glass-panel flex min-h-0 flex-1 overflow-hidden p-2 sm:p-3"
               data-testid="focused-agent-panel"
             >
               {focusedAgent ? (
@@ -1577,7 +1580,7 @@ const AgentStudioPage = () => {
             </div>
             {/* Context Panel: agent-scoped (Tasks/Brain/Settings) or global (Files) */}
             <div
-              className={`${mobilePane === "context" ? "flex" : "hidden"} glass-panel min-h-0 w-full flex-1 overflow-hidden p-0 xl:flex xl:shrink-0 xl:flex-none xl:w-[360px]`}
+              className={`fixed inset-y-0 right-0 z-50 w-[360px] transform transition-transform duration-300 xl:static xl:flex xl:shrink-0 xl:flex-none xl:w-[360px] xl:translate-x-0 ${mobilePane === "context" ? "translate-x-0" : "translate-x-full"} glass-panel min-h-0 overflow-hidden p-0`}
             >
               {contextMode === "files" ? (
                 <ArtifactsPanel isSelected />
