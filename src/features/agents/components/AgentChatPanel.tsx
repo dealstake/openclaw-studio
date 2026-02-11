@@ -373,38 +373,94 @@ const AgentChatTranscript = memo(function AgentChatTranscript({
 });
 
 const AgentChatComposer = memo(function AgentChatComposer({
-  value,
-  onChange,
-  onKeyDown,
+  onDraftChange,
   onSend,
   onStop,
+  onResize,
   canSend,
   stopBusy,
   running,
-  sendDisabled,
   inputRef,
+  initialDraft,
 }: {
-  value: string;
-  onChange: (event: ChangeEvent<HTMLTextAreaElement>) => void;
-  onKeyDown: (event: KeyboardEvent<HTMLTextAreaElement>) => void;
-  onSend: () => void;
+  onDraftChange: (value: string) => void;
+  onSend: (message: string) => void;
   onStop: () => void;
+  onResize: () => void;
   canSend: boolean;
   stopBusy: boolean;
   running: boolean;
-  sendDisabled: boolean;
   inputRef: (el: HTMLTextAreaElement | HTMLInputElement | null) => void;
+  initialDraft: string;
 }) {
+  const localRef = useRef<HTMLTextAreaElement | null>(null);
+  const pendingResizeRef = useRef<number | null>(null);
+  const [isEmpty, setIsEmpty] = useState(!initialDraft.trim());
+
+  const handleRef = useCallback((el: HTMLTextAreaElement | HTMLInputElement | null) => {
+    localRef.current = el instanceof HTMLTextAreaElement ? el : null;
+    inputRef(el);
+  }, [inputRef]);
+
+  const handleChange = useCallback(
+    (event: ChangeEvent<HTMLTextAreaElement>) => {
+      const value = event.target.value;
+      setIsEmpty(!value.trim());
+      onDraftChange(value);
+      if (pendingResizeRef.current !== null) {
+        cancelAnimationFrame(pendingResizeRef.current);
+      }
+      pendingResizeRef.current = requestAnimationFrame(() => {
+        pendingResizeRef.current = null;
+        onResize();
+      });
+    },
+    [onDraftChange, onResize]
+  );
+
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent<HTMLTextAreaElement>) => {
+      if (event.key !== "Enter" || event.shiftKey) return;
+      if (event.defaultPrevented) return;
+      event.preventDefault();
+      const value = localRef.current?.value ?? "";
+      const trimmed = value.trim();
+      if (trimmed) {
+        onSend(trimmed);
+      }
+    },
+    [onSend]
+  );
+
+  const handleClickSend = useCallback(() => {
+    const value = localRef.current?.value ?? "";
+    const trimmed = value.trim();
+    if (trimmed) {
+      onSend(trimmed);
+    }
+  }, [onSend]);
+
+  // Cleanup rAF on unmount
+  useEffect(() => {
+    return () => {
+      if (pendingResizeRef.current !== null) {
+        cancelAnimationFrame(pendingResizeRef.current);
+      }
+    };
+  }, []);
+
+  const sendDisabled = !canSend || running || isEmpty;
+
   return (
     <div className="flex items-end gap-2">
       <textarea
-        ref={inputRef}
+        ref={handleRef}
         rows={1}
-        value={value}
+        defaultValue={initialDraft}
         className="flex-1 resize-none rounded-md border border-border/80 bg-card/75 px-3 py-2 text-[11px] text-foreground outline-none transition focus:border-ring"
         style={{ maxHeight: 160 }}
-        onChange={onChange}
-        onKeyDown={onKeyDown}
+        onChange={handleChange}
+        onKeyDown={handleKeyDown}
         placeholder="type a message"
       />
       {running ? (
@@ -420,7 +476,7 @@ const AgentChatComposer = memo(function AgentChatComposer({
       <button
         className="rounded-md border border-transparent bg-primary px-3 py-2 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-primary-foreground shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:border-border disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
         type="button"
-        onClick={onSend}
+        onClick={handleClickSend}
         disabled={sendDisabled}
       >
         Send
@@ -454,11 +510,9 @@ export const AgentChatPanel = ({
   onExitSessionView,
 }: AgentChatPanelProps) => {
   const recentlyCompacted = useRecentlyCompacted(lastCompactedAt);
-  const [draftValue, setDraftValue] = useState(agent.draft);
   const draftRef = useRef<HTMLTextAreaElement | null>(null);
   const scrollToBottomNextOutputRef = useRef(false);
   const plainDraftRef = useRef(agent.draft);
-  const pendingResizeFrameRef = useRef<number | null>(null);
 
   const resizeDraft = useCallback(() => {
     const el = draftRef.current;
@@ -472,31 +526,6 @@ export const AgentChatPanel = ({
   const handleDraftRef = useCallback((el: HTMLTextAreaElement | HTMLInputElement | null) => {
     draftRef.current = el instanceof HTMLTextAreaElement ? el : null;
   }, []);
-
-  useEffect(() => {
-    if (agent.draft === plainDraftRef.current) return;
-    plainDraftRef.current = agent.draft;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setDraftValue(agent.draft);
-    // Reset textarea height when draft changes externally (e.g. after send)
-    requestAnimationFrame(() => resizeDraft());
-  }, [agent.draft, resizeDraft]);
-
-  useEffect(() => {
-    if (pendingResizeFrameRef.current !== null) {
-      cancelAnimationFrame(pendingResizeFrameRef.current);
-    }
-    pendingResizeFrameRef.current = requestAnimationFrame(() => {
-      pendingResizeFrameRef.current = null;
-      resizeDraft();
-    });
-    return () => {
-      if (pendingResizeFrameRef.current !== null) {
-        cancelAnimationFrame(pendingResizeFrameRef.current);
-        pendingResizeFrameRef.current = null;
-      }
-    };
-  }, [resizeDraft, agent.draft]);
 
   const handleSend = useCallback(
     (message: string) => {
@@ -617,38 +646,21 @@ export const AgentChatPanel = ({
 
   const avatarSeed = agent.avatarSeed ?? agent.agentId;
   const running = agent.status === "running";
-  const sendDisabled = !canSend || running || !draftValue.trim();
 
-  const handleComposerChange = useCallback(
-    (event: ChangeEvent<HTMLTextAreaElement>) => {
-      const value = event.target.value;
+  const handleComposerDraftChange = useCallback(
+    (value: string) => {
       plainDraftRef.current = value;
-      setDraftValue(value);
       onDraftChange(value);
-      if (pendingResizeFrameRef.current !== null) {
-        cancelAnimationFrame(pendingResizeFrameRef.current);
-      }
-      pendingResizeFrameRef.current = requestAnimationFrame(() => {
-        pendingResizeFrameRef.current = null;
-        resizeDraft();
-      });
     },
-    [onDraftChange, resizeDraft]
+    [onDraftChange]
   );
 
-  const handleComposerKeyDown = useCallback(
-    (event: KeyboardEvent<HTMLTextAreaElement>) => {
-      if (event.key !== "Enter" || event.shiftKey) return;
-      if (event.defaultPrevented) return;
-      event.preventDefault();
-      handleSend(draftValue);
+  const handleComposerSend = useCallback(
+    (message: string) => {
+      handleSend(message);
     },
-    [draftValue, handleSend]
+    [handleSend]
   );
-
-  const handleComposerSend = useCallback(() => {
-    handleSend(draftValue);
-  }, [draftValue, handleSend]);
 
   return (
     <div data-agent-panel className="group fade-up relative flex h-full w-full min-w-0 flex-col overflow-hidden">
@@ -873,16 +885,15 @@ export const AgentChatPanel = ({
         )}
 
         <AgentChatComposer
-          value={draftValue}
           inputRef={handleDraftRef}
-          onChange={handleComposerChange}
-          onKeyDown={handleComposerKeyDown}
+          initialDraft={agent.draft}
+          onDraftChange={handleComposerDraftChange}
           onSend={handleComposerSend}
           onStop={onStopRun}
+          onResize={resizeDraft}
           canSend={canSend}
           stopBusy={stopBusy}
           running={running}
-          sendDisabled={sendDisabled}
         />
       </div>
     </div>
