@@ -290,7 +290,7 @@ const AgentChatTranscript = memo(function AgentChatTranscript({
         role="log"
         aria-label="Chat messages"
         aria-live="polite"
-        className="h-full overflow-y-auto overflow-x-hidden p-3 pb-20 sm:p-4 sm:pb-4"
+        className="h-full overflow-y-auto overflow-x-hidden p-3 pb-24 sm:p-4 sm:pb-32"
         onScroll={() => updatePinnedFromScroll()}
         onWheel={(event) => {
           event.stopPropagation();
