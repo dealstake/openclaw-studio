@@ -24,10 +24,18 @@ import type { TaskType, WizardTaskConfig } from "@/features/tasks/types";
 // ─── Config extraction helpers ───────────────────────────────────────────────
 
 function extractTaskConfig(text: string): WizardTaskConfig | null {
-  const match = text.match(/```json:task-config\s*\n([\s\S]*?)```/);
+  // Try json:task-config first (preferred), then fall back to plain json blocks
+  const match =
+    text.match(/```json:task-config\s*\n([\s\S]*?)```/) ??
+    text.match(/```json\s*\n([\s\S]*?)```/);
   if (!match) return null;
   try {
-    return JSON.parse(match[1]) as WizardTaskConfig;
+    const parsed = JSON.parse(match[1]);
+    // Validate it looks like a task config (has at least name + schedule or prompt)
+    if (parsed && typeof parsed === "object" && ("schedule" in parsed || "prompt" in parsed)) {
+      return parsed as WizardTaskConfig;
+    }
+    return null;
   } catch {
     return null;
   }
