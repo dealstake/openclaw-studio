@@ -99,6 +99,8 @@ type SessionsListEntry = {
   thinkingLevel?: string;
   modelProvider?: string;
   model?: string;
+  inputTokens?: number | null;
+  outputTokens?: number | null;
   totalTokens?: number | null;
   contextTokens?: number | null;
 };
@@ -381,14 +383,23 @@ const AgentStudioPage = () => {
       const entries = Array.isArray(result.sessions) ? result.sessions : [];
       const match = entries.find((e) => isSameSessionKey(e.key ?? "", sessionKey));
       if (match && typeof match.totalTokens === "number" && match.totalTokens > 0) {
-        setAgentContextWindow((prev) => {
-          const next = new Map(prev);
-          next.set(agentId, {
-            totalTokens: match.totalTokens!,
-            contextTokens: typeof match.contextTokens === "number" ? match.contextTokens : 0,
+        const ct = typeof match.contextTokens === "number" ? match.contextTokens : 0;
+        // Detect stale token counts: when totalTokens == contextTokens (maxed out)
+        // but actual usage (inputTokens + outputTokens) is much smaller, the session
+        // was reset but the gateway didn't clear the counters. Skip stale data.
+        const actualUsage = (typeof match.inputTokens === "number" ? match.inputTokens : 0)
+          + (typeof match.outputTokens === "number" ? match.outputTokens : 0);
+        const looksStale = ct > 0 && match.totalTokens >= ct && actualUsage < ct * 0.5;
+        if (!looksStale) {
+          setAgentContextWindow((prev) => {
+            const next = new Map(prev);
+            next.set(agentId, {
+              totalTokens: match.totalTokens!,
+              contextTokens: ct,
+            });
+            return next;
           });
-          return next;
-        });
+        }
       }
     } catch {
       // Silently ignore — progress bar will use fallback
@@ -586,10 +597,16 @@ const AgentStudioPage = () => {
           patch: { sessionCreated: true, sessionSettingsSynced: true },
         });
         if (typeof mainSession.totalTokens === "number" && mainSession.totalTokens > 0) {
-          cwMap.set(seed.agentId, {
-            totalTokens: mainSession.totalTokens,
-            contextTokens: typeof mainSession.contextTokens === "number" ? mainSession.contextTokens : 0,
-          });
+          const ct = typeof mainSession.contextTokens === "number" ? mainSession.contextTokens : 0;
+          const actualUsage = (typeof mainSession.inputTokens === "number" ? mainSession.inputTokens : 0)
+            + (typeof mainSession.outputTokens === "number" ? mainSession.outputTokens : 0);
+          const looksStale = ct > 0 && mainSession.totalTokens >= ct && actualUsage < ct * 0.5;
+          if (!looksStale) {
+            cwMap.set(seed.agentId, {
+              totalTokens: mainSession.totalTokens,
+              contextTokens: ct,
+            });
+          }
         }
       }
       if (cwMap.size > 0) setAgentContextWindow(cwMap);
