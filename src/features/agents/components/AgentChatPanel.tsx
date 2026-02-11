@@ -299,7 +299,7 @@ const AgentChatTranscript = memo(function AgentChatTranscript({
           event.stopPropagation();
         }}
       >
-        <div className="mx-auto flex w-full max-w-3xl min-w-0 flex-col gap-3 text-xs text-foreground">
+        <div className="flex w-full min-w-0 flex-col gap-3 px-4 text-xs text-foreground sm:px-8 lg:px-16">
           {chatItems.length === 0 ? (
             <EmptyStatePanel title="No messages yet." compact className="p-3 text-xs" />
           ) : (
@@ -483,7 +483,7 @@ const AgentChatComposer = memo(function AgentChatComposer({
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-20 px-3 pb-3 backdrop-blur-md sm:absolute sm:inset-x-0 sm:bottom-0 sm:z-20 sm:px-4 sm:pb-6 sm:pt-4">
-      <div className="mx-auto flex w-full max-w-3xl items-end gap-2 rounded-xl border border-border/80 bg-card/90 p-2 shadow-lg sm:rounded-2xl sm:border-border sm:bg-card sm:p-3 sm:shadow-xl">
+      <div className="mx-4 flex items-end gap-2 rounded-xl border border-border/80 bg-card/90 p-2 shadow-lg sm:mx-8 sm:rounded-2xl sm:border-border sm:bg-card sm:p-3 sm:shadow-xl lg:mx-16">
         <textarea
           ref={handleRef}
           rows={1}
