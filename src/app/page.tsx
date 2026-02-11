@@ -46,6 +46,7 @@ import {
 } from "@/lib/gateway/GatewayClient";
 import { ArtifactsPanel } from "@/features/artifacts/components/ArtifactsPanel";
 import { TasksPanel } from "@/features/tasks/components/TasksPanel";
+import { useAgentTasks } from "@/features/tasks/hooks/useAgentTasks";
 import { ContextPanel, type ContextTab } from "@/features/context/components/ContextPanel";
 import { ExecApprovalOverlay } from "@/features/exec-approvals/components/ExecApprovalOverlay";
 import {
@@ -141,6 +142,8 @@ const AgentStudioPage = () => {
   // Initialized with no-ops; updated after their hooks define them below.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const loadAllCronJobsRef = useRef<() => Promise<any>>(() => Promise.resolve());
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const loadTasksRef = useRef<() => Promise<any>>(() => Promise.resolve());
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const loadAllSessionsRef = useRef<() => Promise<any>>(() => Promise.resolve());
   const loadChannelsStatusRef = useRef<() => Promise<void>>(() => Promise.resolve());
@@ -251,6 +254,19 @@ const AgentStudioPage = () => {
     return selectedInFilter ?? filteredAgents[0] ?? null;
   }, [filteredAgents, selectedAgent]);
   const focusedAgentId = focusedAgent?.agentId ?? null;
+
+  const {
+    tasks: agentTasks,
+    loading: tasksLoading,
+    error: tasksError,
+    busyTaskId,
+    loadTasks,
+    toggleTask,
+    runTask,
+    deleteTask,
+  } = useAgentTasks(client, status, focusedAgentId, allCronJobs);
+  loadTasksRef.current = loadTasks;
+
   const focusedAgentRef = useRef(focusedAgent);
   focusedAgentRef.current = focusedAgent;
   const focusedAgentRunning = focusedAgent?.status === "running";
@@ -844,6 +860,7 @@ const AgentStudioPage = () => {
     void loadChannelsStatusRef.current();
     void loadAllSessionsRef.current();
     void loadAllCronJobsRef.current();
+    void loadTasksRef.current();
   }, [
     createAgentBlock,
     deleteAgentBlock,
@@ -1593,7 +1610,23 @@ const AgentStudioPage = () => {
                       setSettingsAgentId(focusedAgent.agentId);
                     }
                   }}
-                  tasksContent={<TasksPanel isSelected />}
+                  tasksContent={
+                    <TasksPanel
+                      isSelected
+                      tasks={agentTasks}
+                      loading={tasksLoading}
+                      error={tasksError}
+                      busyTaskId={busyTaskId}
+                      onToggle={toggleTask}
+                      onRun={runTask}
+                      onDelete={deleteTask}
+                      onRefresh={() => { void loadTasks(); }}
+                      onNewTask={() => {
+                        // Phase 2: open TaskWizardModal
+                        // For now, placeholder
+                      }}
+                    />
+                  }
                   brainContent={
                     <AgentBrainPanel
                       client={client}
