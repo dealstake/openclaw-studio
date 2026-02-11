@@ -6,16 +6,22 @@ import { Readable } from "node:stream";
 
 let cachedDrive: drive_v3.Drive | null = null;
 
-function getServiceAccountCredentials(): Record<string, unknown> {
+interface ServiceAccountKey {
+  client_email: string;
+  private_key: string;
+  [key: string]: unknown;
+}
+
+function getServiceAccountCredentials(): ServiceAccountKey {
   const inline = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
   if (inline) {
-    return JSON.parse(inline) as Record<string, unknown>;
+    return JSON.parse(inline) as ServiceAccountKey;
   }
 
   const filePath = process.env.GOOGLE_SERVICE_ACCOUNT_FILE;
   if (filePath) {
     const raw = readFileSync(filePath, "utf-8");
-    return JSON.parse(raw) as Record<string, unknown>;
+    return JSON.parse(raw) as ServiceAccountKey;
   }
 
   throw new Error(
@@ -24,16 +30,21 @@ function getServiceAccountCredentials(): Record<string, unknown> {
 }
 
 /**
- * Get an authenticated Google Drive v3 client using service account credentials.
+ * Get an authenticated Google Drive v3 client using service account credentials
+ * with domain-wide delegation (impersonating GOOGLE_IMPERSONATE_EMAIL).
  * The client is cached for the process lifetime.
  */
 export function getDriveClient(): drive_v3.Drive {
   if (cachedDrive) return cachedDrive;
 
   const credentials = getServiceAccountCredentials();
-  const auth = new google.auth.GoogleAuth({
-    credentials,
+  const impersonateEmail = process.env.GOOGLE_IMPERSONATE_EMAIL;
+
+  const auth = new google.auth.JWT({
+    email: credentials.client_email,
+    key: credentials.private_key,
     scopes: ["https://www.googleapis.com/auth/drive"],
+    subject: impersonateEmail || undefined,
   });
 
   cachedDrive = google.drive({ version: "v3", auth });
