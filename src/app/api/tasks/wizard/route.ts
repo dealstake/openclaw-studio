@@ -206,9 +206,9 @@ export async function POST(request: NextRequest) {
         system_instruction: { parts: [{ text: systemPrompt }] },
         contents,
         generationConfig: {
-          maxOutputTokens: 16384,
+          maxOutputTokens: 65536,
           temperature: 0.7,
-          thinkingConfig: { thinkingBudget: 4096 },
+          thinkingConfig: { thinkingBudget: 1024 },
         },
       }),
     });
