@@ -83,6 +83,16 @@ export const TaskWizardModal = memo(function TaskWizardModal({
   const [showTemplates, setShowTemplates] = useState(false);
   const [localAgents, setLocalAgents] = useState<string[]>(agents);
 
+  // Mount animation: delay "visible" state by one frame so CSS transitions fire
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    if (open) {
+      const raf = requestAnimationFrame(() => setVisible(true));
+      return () => cancelAnimationFrame(raf);
+    }
+    setVisible(false);
+  }, [open]);
+
   // Close on Escape key
   useEffect(() => {
     if (!open) return;
@@ -166,7 +176,8 @@ export const TaskWizardModal = memo(function TaskWizardModal({
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-end justify-center bg-background/70 backdrop-blur-sm sm:items-center"
+      data-state={visible ? "open" : "closed"}
+      className="fixed inset-0 z-[100] flex items-end justify-center bg-background/70 backdrop-blur-sm transition-opacity duration-300 ease-out data-[state=closed]:opacity-0 sm:items-center"
       role="dialog"
       aria-modal="true"
       aria-label="Task Creation Wizard"
@@ -175,7 +186,7 @@ export const TaskWizardModal = memo(function TaskWizardModal({
       }}
     >
       {/* Mobile: full-height sheet from bottom; Desktop: centered card */}
-      <div data-state={open ? "open" : "closed"} className="flex h-full w-full flex-col overflow-hidden bg-card shadow-2xl transition-all duration-300 ease-out data-[state=closed]:translate-y-full data-[state=closed]:opacity-0 sm:data-[state=closed]:scale-95 sm:data-[state=closed]:translate-y-0 sm:h-[min(85vh,680px)] sm:max-w-lg sm:rounded-xl sm:border sm:border-border">
+      <div data-state={visible ? "open" : "closed"} className="flex h-full w-full flex-col overflow-hidden bg-card shadow-2xl transition-all duration-300 ease-out data-[state=closed]:translate-y-full data-[state=closed]:opacity-0 sm:data-[state=closed]:scale-95 sm:data-[state=closed]:translate-y-0 sm:h-[min(85vh,680px)] sm:max-w-lg sm:rounded-xl sm:border sm:border-border">
         {/* Modal header */}
         <div className="flex shrink-0 items-center justify-between border-b border-border/40 px-4 py-3">
           <div className="flex items-center gap-2">
