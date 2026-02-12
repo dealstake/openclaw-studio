@@ -1,6 +1,10 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Bebas_Neue, IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import "./globals.css";
+
+export const viewport: Viewport = {
+  interactiveWidget: "resizes-content",
+};
 
 export const metadata: Metadata = {
   title: "Trident Control Center",

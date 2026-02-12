@@ -167,7 +167,7 @@ describe("AgentChatPanel controls", () => {
       })
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Stop" }));
+    fireEvent.click(screen.getByRole("button", { name: "Stop agent" }));
     expect(onStopRun).toHaveBeenCalledTimes(1);
   });
 

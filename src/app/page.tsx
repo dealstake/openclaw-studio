@@ -46,6 +46,8 @@ import {
 } from "@/lib/gateway/GatewayClient";
 import { ArtifactsPanel } from "@/features/artifacts/components/ArtifactsPanel";
 import { TasksPanel } from "@/features/tasks/components/TasksPanel";
+import { TaskWizardModal } from "@/features/tasks/components/TaskWizardModal";
+import { useAgentTasks } from "@/features/tasks/hooks/useAgentTasks";
 import { ContextPanel, type ContextTab } from "@/features/context/components/ContextPanel";
 import { ExecApprovalOverlay } from "@/features/exec-approvals/components/ExecApprovalOverlay";
 import {
@@ -64,7 +66,7 @@ import { useExecApprovals } from "@/features/exec-approvals/hooks/useExecApprova
 import { useSessionUsage, useCumulativeUsage } from "@/features/sessions/hooks/useSessionUsage";
 import { useGatewayStatus } from "@/features/status/hooks/useGatewayStatus";
 import { ConfigMutationModals } from "@/features/agents/components/ConfigMutationModals";
-import { MobilePaneToggle, type MobilePane } from "@/features/agents/components/MobilePaneToggle";
+import type { MobilePane } from "@/features/agents/components/MobilePaneToggle";
 import { useConfigMutationQueue } from "@/features/agents/hooks/useConfigMutationQueue";
 import { useDraftBatching } from "@/features/agents/hooks/useDraftBatching";
 import { useLivePatchBatching } from "@/features/agents/hooks/useLivePatchBatching";
@@ -99,6 +101,8 @@ type SessionsListEntry = {
   thinkingLevel?: string;
   modelProvider?: string;
   model?: string;
+  inputTokens?: number | null;
+  outputTokens?: number | null;
   totalTokens?: number | null;
   contextTokens?: number | null;
 };
@@ -125,6 +129,7 @@ const AgentStudioPage = () => {
 
   const { state, dispatch, hydrateAgents, setError, setLoading } = useAgentStore();
   const [showConnectionPanel, setShowConnectionPanel] = useState(false);
+  const [showTaskWizard, setShowTaskWizard] = useState(false);
   const [focusFilter, setFocusFilter] = useState<FocusFilter>("all");
   const [focusedPreferencesLoaded, setFocusedPreferencesLoaded] = useState(false);
   const [agentsLoadedOnce, setAgentsLoadedOnce] = useState(false);
@@ -139,6 +144,8 @@ const AgentStudioPage = () => {
   // Initialized with no-ops; updated after their hooks define them below.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const loadAllCronJobsRef = useRef<() => Promise<any>>(() => Promise.resolve());
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const loadTasksRef = useRef<() => Promise<any>>(() => Promise.resolve());
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const loadAllSessionsRef = useRef<() => Promise<any>>(() => Promise.resolve());
   const loadChannelsStatusRef = useRef<() => Promise<void>>(() => Promise.resolve());
@@ -249,6 +256,22 @@ const AgentStudioPage = () => {
     return selectedInFilter ?? filteredAgents[0] ?? null;
   }, [filteredAgents, selectedAgent]);
   const focusedAgentId = focusedAgent?.agentId ?? null;
+
+  const {
+    tasks: agentTasks,
+    loading: tasksLoading,
+    error: tasksError,
+    busyTaskId,
+    loadTasks,
+    createTask,
+    toggleTask,
+    runTask,
+    deleteTask,
+  } = useAgentTasks(client, status, focusedAgentId, allCronJobs);
+  loadTasksRef.current = loadTasks;
+
+  const focusedAgentRef = useRef(focusedAgent);
+  focusedAgentRef.current = focusedAgent;
   const focusedAgentRunning = focusedAgent?.status === "running";
   const selectedBrainAgentId = useMemo(() => {
     return focusedAgent?.agentId ?? agents[0]?.agentId ?? null;
@@ -379,14 +402,23 @@ const AgentStudioPage = () => {
       const entries = Array.isArray(result.sessions) ? result.sessions : [];
       const match = entries.find((e) => isSameSessionKey(e.key ?? "", sessionKey));
       if (match && typeof match.totalTokens === "number" && match.totalTokens > 0) {
-        setAgentContextWindow((prev) => {
-          const next = new Map(prev);
-          next.set(agentId, {
-            totalTokens: match.totalTokens!,
-            contextTokens: typeof match.contextTokens === "number" ? match.contextTokens : 0,
+        const ct = typeof match.contextTokens === "number" ? match.contextTokens : 0;
+        // Detect stale token counts: when totalTokens == contextTokens (maxed out)
+        // but actual usage (inputTokens + outputTokens) is much smaller, the session
+        // was reset but the gateway didn't clear the counters. Skip stale data.
+        const actualUsage = (typeof match.inputTokens === "number" ? match.inputTokens : 0)
+          + (typeof match.outputTokens === "number" ? match.outputTokens : 0);
+        const looksStale = ct > 0 && match.totalTokens >= ct && actualUsage < ct * 0.5;
+        if (!looksStale) {
+          setAgentContextWindow((prev) => {
+            const next = new Map(prev);
+            next.set(agentId, {
+              totalTokens: match.totalTokens!,
+              contextTokens: ct,
+            });
+            return next;
           });
-          return next;
-        });
+        }
       }
     } catch {
       // Silently ignore — progress bar will use fallback
@@ -584,10 +616,16 @@ const AgentStudioPage = () => {
           patch: { sessionCreated: true, sessionSettingsSynced: true },
         });
         if (typeof mainSession.totalTokens === "number" && mainSession.totalTokens > 0) {
-          cwMap.set(seed.agentId, {
-            totalTokens: mainSession.totalTokens,
-            contextTokens: typeof mainSession.contextTokens === "number" ? mainSession.contextTokens : 0,
-          });
+          const ct = typeof mainSession.contextTokens === "number" ? mainSession.contextTokens : 0;
+          const actualUsage = (typeof mainSession.inputTokens === "number" ? mainSession.inputTokens : 0)
+            + (typeof mainSession.outputTokens === "number" ? mainSession.outputTokens : 0);
+          const looksStale = ct > 0 && mainSession.totalTokens >= ct && actualUsage < ct * 0.5;
+          if (!looksStale) {
+            cwMap.set(seed.agentId, {
+              totalTokens: mainSession.totalTokens,
+              contextTokens: ct,
+            });
+          }
         }
       }
       if (cwMap.size > 0) setAgentContextWindow(cwMap);
@@ -825,6 +863,7 @@ const AgentStudioPage = () => {
     void loadChannelsStatusRef.current();
     void loadAllSessionsRef.current();
     void loadAllCronJobsRef.current();
+    void loadTasksRef.current();
   }, [
     createAgentBlock,
     deleteAgentBlock,
@@ -1349,6 +1388,68 @@ const AgentStudioPage = () => {
           : "Gateway restart in progress"
       : null;
 
+  // ── Stable callbacks for AgentChatPanel (avoid inline arrows that defeat memo) ──
+  const stableChatOnOpenSettings = useCallback(() => {
+    const fa = focusedAgentRef.current;
+    if (fa) handleOpenAgentSettings(fa.agentId);
+  }, [handleOpenAgentSettings]);
+
+  const stableChatOnModelChange = useCallback((value: string | null) => {
+    const fa = focusedAgentRef.current;
+    if (fa) handleModelChange(fa.agentId, fa.sessionKey, value);
+  }, [handleModelChange]);
+
+  const stableChatOnThinkingChange = useCallback((value: string | null) => {
+    const fa = focusedAgentRef.current;
+    if (fa) handleThinkingChange(fa.agentId, fa.sessionKey, value);
+  }, [handleThinkingChange]);
+
+  const stableChatOnDraftChange = useCallback((value: string) => {
+    const fa = focusedAgentRef.current;
+    if (fa) handleDraftChange(fa.agentId, value);
+  }, [handleDraftChange]);
+
+  const stableChatOnSend = useCallback((message: string) => {
+    const fa = focusedAgentRef.current;
+    if (fa) {
+      setViewingSessionKey(null);
+      handleSend(fa.agentId, fa.sessionKey, message);
+    }
+  }, [handleSend]);
+
+  const stableChatOnStopRun = useCallback(() => {
+    const fa = focusedAgentRef.current;
+    if (fa) handleStopRun(fa.agentId, fa.sessionKey);
+  }, [handleStopRun]);
+
+  const stableChatOnAvatarShuffle = useCallback(() => {
+    const fa = focusedAgentRef.current;
+    if (fa) handleAvatarShuffle(fa.agentId);
+  }, [handleAvatarShuffle]);
+
+  const stableChatOnNewSession = useCallback(() => {
+    const fa = focusedAgentRef.current;
+    if (fa) handleNewSession(fa.agentId);
+  }, [handleNewSession]);
+
+  const stableChatOnExitSessionView = useCallback(() => {
+    setViewingSessionKey(null);
+  }, []);
+
+  const stableChatTokenUsed = useMemo(() => {
+    if (!focusedAgent) return undefined;
+    const cw = agentContextWindow.get(focusedAgent.agentId);
+    if (cw && cw.totalTokens > 0) return cw.totalTokens;
+    return sessionUsage ? sessionUsage.inputTokens + sessionUsage.outputTokens : undefined;
+  }, [focusedAgent, agentContextWindow, sessionUsage]);
+
+  const stableChatTokenLimit = useMemo(() => {
+    if (!focusedAgent) return undefined;
+    const cw = agentContextWindow.get(focusedAgent.agentId);
+    if (cw && cw.contextTokens > 0) return cw.contextTokens;
+    return findModelMatch(focusedAgent.model)?.contextWindow;
+  }, [focusedAgent, agentContextWindow, findModelMatch]);
+
   if (status === "connecting" || (status === "connected" && !agentsLoadedOnce)) {
     return (
       <div className="relative w-screen overflow-hidden bg-background" style={{ minHeight: '100dvh' }}>
@@ -1386,6 +1487,8 @@ const AgentStudioPage = () => {
             filesDisabled={false}
             channelsSnapshot={channelsSnapshot}
             channelsLoading={channelsLoading}
+            onOpenFleet={() => setMobilePane("fleet")}
+            onOpenContext={() => setMobilePane("context")}
           />
         </div>
 
@@ -1423,14 +1526,15 @@ const AgentStudioPage = () => {
 
         {showFleetLayout ? (
           <div className="flex min-h-0 flex-1 flex-col gap-4 xl:flex-row">
-            <MobilePaneToggle
-              mobilePane={mobilePane}
-              contextMode={contextMode}
-              onPaneChange={setMobilePane}
-              onEnsureContextMode={() => { if (contextMode !== "agent" && contextMode !== "files") setContextMode("agent"); }}
-            />
+            {/* Backdrop for mobile drawers */}
+            {mobilePane !== "chat" ? (
+              <div
+                className="fixed inset-0 z-40 bg-black/50 xl:hidden"
+                onClick={() => setMobilePane("chat")}
+              />
+            ) : null}
             <div
-              className={`${mobilePane === "fleet" ? "flex" : "hidden"} min-h-0 flex-1 xl:flex xl:flex-[0_0_auto] xl:min-h-0 xl:w-[280px]`}
+              className={`fixed inset-y-0 left-0 z-50 w-[280px] transform transition-transform duration-300 xl:static xl:flex xl:flex-[0_0_auto] xl:min-h-0 xl:w-[280px] xl:translate-x-0 ${mobilePane === "fleet" ? "translate-x-0" : "-translate-x-full"}`}
             >
               <FleetSidebar
                 agents={filteredAgents}
@@ -1453,7 +1557,7 @@ const AgentStudioPage = () => {
               />
             </div>
             <div
-              className={`${mobilePane === "chat" ? "flex" : "hidden"} glass-panel min-h-0 flex-1 overflow-hidden p-2 sm:p-3 xl:flex`}
+              className="glass-panel flex min-h-0 flex-1 overflow-hidden p-2 sm:p-3"
               data-testid="focused-agent-panel"
             >
               {focusedAgent ? (
@@ -1463,46 +1567,23 @@ const AgentStudioPage = () => {
                   canSend={status === "connected"}
                   models={gatewayModels}
                   stopBusy={stopBusyAgentId === focusedAgent.agentId}
-                  onOpenSettings={() => handleOpenAgentSettings(focusedAgent.agentId)}
-                  onModelChange={(value) =>
-                    handleModelChange(focusedAgent.agentId, focusedAgent.sessionKey, value)
-                  }
-                  onThinkingChange={(value) =>
-                    handleThinkingChange(focusedAgent.agentId, focusedAgent.sessionKey, value)
-                  }
-                  onDraftChange={(value) =>
-                    handleDraftChange(focusedAgent.agentId, value)
-                  }
-                  onSend={(message) => {
-                    setViewingSessionKey(null);
-                    handleSend(
-                      focusedAgent.agentId,
-                      focusedAgent.sessionKey,
-                      message
-                    );
-                  }}
-                  onStopRun={() =>
-                    handleStopRun(focusedAgent.agentId, focusedAgent.sessionKey)
-                  }
-                  onAvatarShuffle={() => handleAvatarShuffle(focusedAgent.agentId)}
-                  onNewSession={() => handleNewSession(focusedAgent.agentId)}
+                  onOpenSettings={stableChatOnOpenSettings}
+                  onModelChange={stableChatOnModelChange}
+                  onThinkingChange={stableChatOnThinkingChange}
+                  onDraftChange={stableChatOnDraftChange}
+                  onSend={stableChatOnSend}
+                  onStopRun={stableChatOnStopRun}
+                  onAvatarShuffle={stableChatOnAvatarShuffle}
+                  onNewSession={stableChatOnNewSession}
                   onCompact={handleCompact}
                   isCompacting={isCompacting}
                   lastCompactedAt={lastCompactedAt}
-                  tokenUsed={(() => {
-                    const cw = agentContextWindow.get(focusedAgent.agentId);
-                    if (cw && cw.totalTokens > 0) return cw.totalTokens;
-                    return sessionUsage ? sessionUsage.inputTokens + sessionUsage.outputTokens : undefined;
-                  })()}
-                  tokenLimit={(() => {
-                    const cw = agentContextWindow.get(focusedAgent.agentId);
-                    if (cw && cw.contextTokens > 0) return cw.contextTokens;
-                    return findModelMatch(focusedAgent.model)?.contextWindow;
-                  })()}
+                  tokenUsed={stableChatTokenUsed}
+                  tokenLimit={stableChatTokenLimit}
                   viewingSessionKey={viewingSessionKey}
                   viewingSessionHistory={viewingSessionHistory}
                   viewingSessionLoading={viewingSessionLoading}
-                  onExitSessionView={() => setViewingSessionKey(null)}
+                  onExitSessionView={stableChatOnExitSessionView}
                 />
               ) : (
                 <EmptyStatePanel
@@ -1519,7 +1600,7 @@ const AgentStudioPage = () => {
             </div>
             {/* Context Panel: agent-scoped (Tasks/Brain/Settings) or global (Files) */}
             <div
-              className={`${mobilePane === "context" ? "flex" : "hidden"} glass-panel min-h-0 w-full shrink-0 p-0 xl:flex xl:w-[360px]`}
+              className={`fixed inset-y-0 right-0 z-50 w-[360px] transform transition-transform duration-300 xl:static xl:flex xl:shrink-0 xl:flex-none xl:w-[360px] xl:translate-x-0 ${mobilePane === "context" ? "translate-x-0" : "translate-x-full"} glass-panel min-h-0 overflow-hidden p-0`}
             >
               {contextMode === "files" ? (
                 <ArtifactsPanel isSelected />
@@ -1532,7 +1613,21 @@ const AgentStudioPage = () => {
                       setSettingsAgentId(focusedAgent.agentId);
                     }
                   }}
-                  tasksContent={<TasksPanel isSelected />}
+                  tasksContent={
+                    <TasksPanel
+                      isSelected
+                      client={client}
+                      tasks={agentTasks}
+                      loading={tasksLoading}
+                      error={tasksError}
+                      busyTaskId={busyTaskId}
+                      onToggle={toggleTask}
+                      onRun={runTask}
+                      onDelete={deleteTask}
+                      onRefresh={() => { void loadTasks(); }}
+                      onNewTask={() => setShowTaskWizard(true)}
+                    />
+                  }
                   brainContent={
                     <AgentBrainPanel
                       client={client}
@@ -1714,6 +1809,15 @@ const AgentStudioPage = () => {
           }}
         />
       ) : null}
+      <TaskWizardModal
+        open={showTaskWizard}
+        agents={agents.map((a) => a.agentId)}
+        creating={busyTaskId !== null}
+        client={client}
+        onClose={() => setShowTaskWizard(false)}
+        onCreateTask={createTask}
+        onAgentCreated={() => void loadAgents()}
+      />
       <ConfigMutationModals
         createAgentBlock={createAgentBlock}
         createBlockStatusLine={createBlockStatusLine}

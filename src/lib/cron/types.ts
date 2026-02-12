@@ -165,6 +165,58 @@ export const removeCronJob = async (
   });
 };
 
+// ─── Add / Update ────────────────────────────────────────────────────────────
+
+export type CronAddParams = {
+  name: string;
+  schedule: CronSchedule;
+  sessionTarget: CronSessionTarget;
+  payload: CronPayload;
+  agentId?: string;
+  enabled?: boolean;
+  delivery?: CronDelivery;
+};
+
+/** Gateway returns the full job object on success, or {ok:false} on error. */
+export type CronAddResult = { ok: true; jobId: string } | { ok: false };
+
+export const addCronJob = async (
+  client: GatewayClient,
+  params: CronAddParams
+): Promise<CronAddResult> => {
+  const raw = await client.call<Record<string, unknown>>("cron.add", { job: params });
+  // Gateway returns the full job object (with `id`) on success — normalize.
+  if (raw && typeof raw === "object" && "id" in raw && typeof raw.id === "string") {
+    return { ok: true, jobId: raw.id };
+  }
+  // Fallback: already in expected shape or error.
+  if (raw && typeof raw === "object" && "ok" in raw) {
+    return raw as CronAddResult;
+  }
+  return { ok: false };
+};
+
+export type CronUpdateParams = {
+  name?: string;
+  schedule?: CronSchedule;
+  payload?: CronPayload;
+  enabled?: boolean;
+  delivery?: CronDelivery;
+};
+
+export type CronUpdateResult = { ok: true } | { ok: false };
+
+export const updateCronJob = async (
+  client: GatewayClient,
+  jobId: string,
+  patch: CronUpdateParams
+): Promise<CronUpdateResult> => {
+  const id = resolveJobId(jobId);
+  return client.call<CronUpdateResult>("cron.update", { jobId: id, patch });
+};
+
+// ─── Bulk remove ─────────────────────────────────────────────────────────────
+
 export const removeCronJobsForAgent = async (client: GatewayClient, agentId: string): Promise<number> => {
   const id = resolveAgentId(agentId);
   const result = await listCronJobs(client, { includeDisabled: true });
