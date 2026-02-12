@@ -455,6 +455,18 @@ const AgentStudioPage = () => {
     }
   }, [focusedAgentId, focusedSessionKey, focusedAgentStatus]);
 
+  // ── Escape key closes mobile drawers ────────────────────────────────────
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && mobilePane !== "chat") {
+        e.preventDefault();
+        setMobilePane("chat");
+      }
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [mobilePane]);
+
   // Aggregate usage: use the focused session's usage as the primary data source
   // (per-session usage loads lazily in SessionsPanel cards)
   const aggregateUsage = useMemo(() => {
