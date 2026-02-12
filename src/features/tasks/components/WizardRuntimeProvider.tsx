@@ -1,13 +1,37 @@
 "use client";
 
-import { memo, type ReactNode } from "react";
+import { memo, useMemo, type ReactNode } from "react";
 import {
   useLocalRuntime,
   AssistantRuntimeProvider,
   type ChatModelAdapter,
   type ChatModelRunOptions,
 } from "@assistant-ui/react";
-import type { TaskType, WizardMessage } from "@/features/tasks/types";
+import type { TaskType, WizardMessage, WizardTaskConfig } from "@/features/tasks/types";
+
+// ─── Validate config via structured output endpoint ──────────────────────────
+
+export async function validateTaskConfig(
+  rawConfig: Record<string, unknown>,
+  taskType: TaskType,
+): Promise<WizardTaskConfig> {
+  try {
+    const res = await fetch("/api/tasks/wizard", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rawConfig, taskType }),
+    });
+    if (res.ok) {
+      const data = (await res.json()) as { config: WizardTaskConfig };
+      return data.config;
+    }
+  } catch {
+    // Fall through — return raw
+  }
+  return rawConfig as unknown as WizardTaskConfig;
+}
+
+// ─── Chat model adapter ─────────────────────────────────────────────────────
 
 function createWizardAdapter(
   taskType: TaskType,
@@ -45,9 +69,7 @@ function createWizardAdapter(
         const data = (await res.json().catch(() => ({}))) as {
           error?: string;
         };
-        throw new Error(
-          data.error ?? `Wizard error (${res.status})`,
-        );
+        throw new Error(data.error ?? `Wizard error (${res.status})`);
       }
 
       if (!res.body) throw new Error("No response body.");
@@ -83,6 +105,8 @@ function createWizardAdapter(
   };
 }
 
+// ─── Provider component ─────────────────────────────────────────────────────
+
 interface WizardRuntimeProviderProps {
   taskType: TaskType;
   agents: string[];
@@ -94,7 +118,11 @@ export const WizardRuntimeProvider = memo(function WizardRuntimeProvider({
   agents,
   children,
 }: WizardRuntimeProviderProps) {
-  const adapter = createWizardAdapter(taskType, agents);
+  // Memoize adapter to avoid recreating on every render
+  const adapter = useMemo(
+    () => createWizardAdapter(taskType, agents),
+    [taskType, agents],
+  );
   const runtime = useLocalRuntime(adapter);
 
   return (

@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useEffect, useMemo, type FC } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, type FC } from "react";
 import {
   ActionBarPrimitive,
   ComposerPrimitive,
@@ -19,21 +19,33 @@ import remarkGfm from "remark-gfm";
 import { MarkdownText } from "@/components/assistant-ui/markdown-text";
 import { TooltipIconButton } from "@/components/assistant-ui/tooltip-icon-button";
 import { TaskPreviewCard } from "@/features/tasks/components/TaskPreviewCard";
+import { validateTaskConfig } from "@/features/tasks/components/WizardRuntimeProvider";
 import type { TaskType, WizardTaskConfig } from "@/features/tasks/types";
 
 // ─── Config extraction helpers ───────────────────────────────────────────────
 
-function extractTaskConfig(text: string): WizardTaskConfig | null {
+function extractTaskConfig(
+  text: string,
+): { config: WizardTaskConfig; fullMatch: string; startIndex: number } | null {
   // Try json:task-config first (preferred), then fall back to plain json blocks
   const match =
     text.match(/```json:task-config\s*\n([\s\S]*?)```/) ??
     text.match(/```json\s*\n([\s\S]*?)```/);
-  if (!match) return null;
+  if (!match || match.index === undefined) return null;
+
   try {
     const parsed = JSON.parse(match[1]);
     // Validate it looks like a task config (has at least name + schedule or prompt)
-    if (parsed && typeof parsed === "object" && ("schedule" in parsed || "prompt" in parsed)) {
-      return parsed as WizardTaskConfig;
+    if (
+      parsed &&
+      typeof parsed === "object" &&
+      ("schedule" in parsed || "prompt" in parsed)
+    ) {
+      return {
+        config: parsed as WizardTaskConfig,
+        fullMatch: match[0],
+        startIndex: match.index,
+      };
     }
     return null;
   } catch {
@@ -42,19 +54,15 @@ function extractTaskConfig(text: string): WizardTaskConfig | null {
 }
 
 function stripConfigBlock(text: string): string {
-  // Remove all fenced code blocks (json:task-config, json, or bare JSON)
   let stripped = text
     .replace(/```json:task-config\s*\n[\s\S]*?```/g, "")
     .replace(/```json\s*\n[\s\S]*?```/g, "")
     .replace(/```\s*\n\{[\s\S]*?\}\s*\n```/g, "");
-  // Remove residual JSON fragments — lines that are mostly punctuation/JSON syntax
-  // (Gemini sometimes echoes partial config outside fenced blocks)
   stripped = stripped
     .split("\n")
     .filter((line) => {
       const t = line.trim();
       if (!t) return true;
-      // Drop lines that are just JSON noise: braces, quoted keys, commas
       if (/^["{}\[\],:\s]*$/.test(t)) return false;
       if (/^"?\s*\}/.test(t) && t.length < 10) return false;
       return true;
@@ -66,24 +74,45 @@ function stripConfigBlock(text: string): string {
 
 // ─── Starters ────────────────────────────────────────────────────────────────
 
-const STARTERS: Record<
-  TaskType,
-  Array<{ prompt: string; text: string }>
-> = {
+const STARTERS: Record<TaskType, Array<{ prompt: string; text: string }>> = {
   constant: [
-    { prompt: "Monitor my inbox for urgent emails", text: "Monitor my inbox" },
-    { prompt: "Watch for new MCA applications", text: "Watch for new applications" },
+    {
+      prompt: "Monitor my inbox for urgent emails",
+      text: "Monitor my inbox",
+    },
+    {
+      prompt: "Watch for new MCA applications",
+      text: "Watch for new applications",
+    },
     { prompt: "Track deal status changes", text: "Track deal changes" },
   ],
   periodic: [
-    { prompt: "Summarize new emails every hour", text: "Summarize new emails" },
-    { prompt: "Check for pending approvals", text: "Check pending approvals" },
-    { prompt: "Update deal pipeline spreadsheet", text: "Update pipeline" },
+    {
+      prompt: "Summarize new emails every hour",
+      text: "Summarize new emails",
+    },
+    {
+      prompt: "Check for pending approvals",
+      text: "Check pending approvals",
+    },
+    {
+      prompt: "Update deal pipeline spreadsheet",
+      text: "Update pipeline",
+    },
   ],
   scheduled: [
-    { prompt: "Send me a daily pipeline summary at 9am", text: "Daily pipeline summary" },
-    { prompt: "Generate a weekly recap every Sunday", text: "Weekly recap" },
-    { prompt: "Prepare a funding report on Mondays", text: "Monday funding report" },
+    {
+      prompt: "Send me a daily pipeline summary at 9am",
+      text: "Daily pipeline summary",
+    },
+    {
+      prompt: "Generate a weekly recap every Sunday",
+      text: "Weekly recap",
+    },
+    {
+      prompt: "Prepare a funding report on Mondays",
+      text: "Monday funding report",
+    },
   ],
 };
 
@@ -121,6 +150,7 @@ export const WizardThread: FC<WizardThreadProps> = memo(
               UserMessage: WizardUserMessage,
               AssistantMessage: () => (
                 <WizardAssistantMessage
+                  taskType={taskType}
                   onTaskConfig={onTaskConfig}
                   onConfirm={onConfirm}
                   onAdjust={onAdjust}
@@ -146,11 +176,11 @@ const WizardWelcome: FC<{
   starters: Array<{ prompt: string; text: string }>;
 }> = memo(function WizardWelcome({ starters }) {
   return (
-    <div className="flex grow flex-col items-center justify-center">
+    <div className="flex grow flex-col items-center justify-center px-2">
       <div className="rounded-lg bg-muted/30 px-4 py-3 text-center text-sm text-foreground">
         <p>
-          What do you want this task to do? Describe it in your own words — I&apos;ll
-          help you set it up.
+          What do you want this task to do? Describe it in your own words
+          — I&apos;ll help you set it up.
         </p>
       </div>
       <div className="mt-4 flex w-full flex-col gap-1.5">
@@ -187,11 +217,13 @@ const WizardUserMessage: FC = memo(function WizardUserMessage() {
 // ─── Assistant message ───────────────────────────────────────────────────────
 
 const WizardAssistantMessage: FC<{
+  taskType: TaskType;
   onTaskConfig: (config: WizardTaskConfig | null) => void;
   onConfirm: () => void;
   onAdjust: () => void;
   confirmBusy: boolean;
 }> = memo(function WizardAssistantMessage({
+  taskType,
   onTaskConfig,
   onConfirm,
   onAdjust,
@@ -204,6 +236,7 @@ const WizardAssistantMessage: FC<{
           components={{
             Text: () => (
               <WizardTextPart
+                taskType={taskType}
                 onTaskConfig={onTaskConfig}
                 onConfirm={onConfirm}
                 onAdjust={onAdjust}
@@ -218,14 +251,16 @@ const WizardAssistantMessage: FC<{
   );
 });
 
-// ─── Custom text part with config extraction ─────────────────────────────────
+// ─── Custom text part with config extraction + validation ────────────────────
 
 const WizardTextPart: FC<{
+  taskType: TaskType;
   onTaskConfig: (config: WizardTaskConfig | null) => void;
   onConfirm: () => void;
   onAdjust: () => void;
   confirmBusy: boolean;
 }> = memo(function WizardTextPart({
+  taskType,
   onTaskConfig,
   onConfirm,
   onAdjust,
@@ -237,20 +272,41 @@ const WizardTextPart: FC<{
     .map((p) => p.text)
     .join("");
 
-  const config = useMemo(() => extractTaskConfig(fullText), [fullText]);
+  const configResult = useMemo(() => extractTaskConfig(fullText), [fullText]);
+  const config = configResult?.config ?? null;
   const hasConfig = config !== null;
   const isComplete = message.status?.type !== "running";
 
-  useEffect(() => {
-    if (isComplete && hasConfig) {
-      onTaskConfig(config);
-    }
-  }, [isComplete, hasConfig, config, onTaskConfig]);
+  // Track whether we already validated to avoid double-calls
+  const validatedRef = useRef(false);
 
-  // If there's a config block, we need to show stripped text + card
-  // Otherwise just render normal markdown
-  if (hasConfig) {
+  const handleValidateAndSet = useCallback(
+    async (rawConfig: WizardTaskConfig) => {
+      if (validatedRef.current) return;
+      validatedRef.current = true;
+      try {
+        const validated = await validateTaskConfig(
+          rawConfig as unknown as Record<string, unknown>,
+          taskType,
+        );
+        onTaskConfig(validated);
+      } catch {
+        // Fallback to raw config if validation fails
+        onTaskConfig(rawConfig);
+      }
+    },
+    [taskType, onTaskConfig],
+  );
+
+  useEffect(() => {
+    if (isComplete && hasConfig && configResult) {
+      void handleValidateAndSet(configResult.config);
+    }
+  }, [isComplete, hasConfig, configResult, handleValidateAndSet]);
+
+  if (hasConfig && configResult) {
     const stripped = stripConfigBlock(fullText);
+
     return (
       <>
         {stripped ? (
@@ -303,21 +359,23 @@ const AssistantActionBar: FC = memo(function AssistantActionBar() {
 });
 
 // ─── Composer ────────────────────────────────────────────────────────────────
+// Mobile fix: use env(safe-area-inset-bottom) and proper padding so the
+// composer stays visible above the on-screen keyboard.
 
 const WizardComposer: FC = memo(function WizardComposer() {
   return (
-    <ComposerPrimitive.Root className="aui-composer-root flex w-full items-end gap-2">
+    <ComposerPrimitive.Root className="aui-composer-root flex w-full items-end gap-2 pb-[env(safe-area-inset-bottom)]">
       <ComposerPrimitive.Input
         autoFocus
         placeholder="Describe what you want this task to do…"
-        className="aui-composer-input min-h-[36px] max-h-[120px] flex-1 resize-none rounded-md border border-border/80 bg-muted/30 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none"
+        className="aui-composer-input min-h-[40px] max-h-[120px] flex-1 resize-none rounded-lg border border-border/80 bg-muted/30 px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none"
         submitOnEnter
       />
       <ComposerPrimitive.Send asChild>
         <TooltipIconButton
           tooltip="Send"
           variant="default"
-          className="aui-composer-send h-9 w-9 shrink-0 rounded-md transition"
+          className="aui-composer-send h-10 w-10 shrink-0 rounded-lg transition"
         >
           <SendIcon />
         </TooltipIconButton>

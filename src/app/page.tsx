@@ -1813,8 +1813,10 @@ const AgentStudioPage = () => {
         open={showTaskWizard}
         agents={agents.map((a) => a.agentId)}
         creating={busyTaskId !== null}
+        client={client}
         onClose={() => setShowTaskWizard(false)}
         onCreateTask={createTask}
+        onAgentCreated={() => void loadAgents()}
       />
       <ConfigMutationModals
         createAgentBlock={createAgentBlock}

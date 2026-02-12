@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useState } from "react";
+import { memo, useCallback, useEffect, useState } from "react";
 import {
   X,
   ArrowLeft,
@@ -14,7 +14,10 @@ import type { TaskType, CreateTaskPayload } from "@/features/tasks/types";
 import { useTaskWizard } from "@/features/tasks/hooks/useTaskWizard";
 import { WizardRuntimeProvider } from "./WizardRuntimeProvider";
 import { WizardThread } from "@/components/assistant-ui/wizard-thread";
+import { AgentCreationWizard } from "./AgentCreationWizard";
+import { TaskTemplatesSheet } from "./TaskTemplatesSheet";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 
 // ─── Type selector cards ─────────────────────────────────────────────────────
 
@@ -30,21 +33,24 @@ const TYPE_CARDS: Array<{
     icon: Zap,
     title: "Constant (24/7)",
     desc: "Always watching. Runs continuously until you turn it off.",
-    color: "border-amber-500/40 hover:border-amber-500/70 hover:bg-amber-500/5",
+    color:
+      "border-amber-500/40 hover:border-amber-500/70 hover:bg-amber-500/5",
   },
   {
     type: "periodic",
     icon: Clock,
     title: "Periodic",
     desc: "Runs at regular intervals. Every 15 min, every hour, etc.",
-    color: "border-blue-500/40 hover:border-blue-500/70 hover:bg-blue-500/5",
+    color:
+      "border-blue-500/40 hover:border-blue-500/70 hover:bg-blue-500/5",
   },
   {
     type: "scheduled",
     icon: Calendar,
     title: "Scheduled",
     desc: "Runs at specific times. Every weekday at 9am, etc.",
-    color: "border-violet-500/40 hover:border-violet-500/70 hover:bg-violet-500/5",
+    color:
+      "border-violet-500/40 hover:border-violet-500/70 hover:bg-violet-500/5",
   },
 ];
 
@@ -54,8 +60,10 @@ interface TaskWizardModalProps {
   open: boolean;
   agents: string[];
   creating: boolean;
+  client: GatewayClient;
   onClose: () => void;
   onCreateTask: (payload: CreateTaskPayload) => Promise<void>;
+  onAgentCreated?: () => void;
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -64,11 +72,39 @@ export const TaskWizardModal = memo(function TaskWizardModal({
   open,
   agents,
   creating,
+  client,
   onClose,
   onCreateTask,
+  onAgentCreated,
 }: TaskWizardModalProps) {
   const wizard = useTaskWizard();
   const [confirmBusy, setConfirmBusy] = useState(false);
+  const [showAgentCreation, setShowAgentCreation] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [localAgents, setLocalAgents] = useState<string[]>(agents);
+
+  // Close on Escape key
+  useEffect(() => {
+    if (!open) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        wizard.reset();
+        onClose();
+      }
+    };
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [open, wizard, onClose]);
+
+  // Prevent body scroll when modal is open (mobile)
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
 
   const handleConfirm = useCallback(async () => {
     const payload = wizard.confirm();
@@ -89,21 +125,59 @@ export const TaskWizardModal = memo(function TaskWizardModal({
 
   const handleClose = useCallback(() => {
     wizard.reset();
+    setShowAgentCreation(false);
+    setShowTemplates(false);
     onClose();
   }, [wizard, onClose]);
+
+  const handleTemplateCreate = useCallback(
+    async (payload: CreateTaskPayload) => {
+      await onCreateTask(payload);
+      wizard.reset();
+      setShowTemplates(false);
+      onClose();
+    },
+    [onCreateTask, wizard, onClose],
+  );
+
+  const handleShowAgentCreation = useCallback(() => {
+    setShowAgentCreation(true);
+  }, []);
+
+  const handleAgentCreated = useCallback(
+    (agentId: string) => {
+      setLocalAgents((prev) => [...prev, agentId]);
+      setShowAgentCreation(false);
+      onAgentCreated?.();
+    },
+    [onAgentCreated],
+  );
+
+  const handleCancelAgentCreation = useCallback(() => {
+    setShowAgentCreation(false);
+  }, []);
+
+  // Keep localAgents in sync with prop
+  useEffect(() => {
+    setLocalAgents(agents);
+  }, [agents]);
 
   if (!open) return null;
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-background/70 backdrop-blur-sm"
+      className="fixed inset-0 z-[100] flex items-end justify-center bg-background/70 backdrop-blur-sm sm:items-center"
       role="dialog"
       aria-modal="true"
       aria-label="Task Creation Wizard"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) handleClose();
+      }}
     >
-      <div className="flex h-[min(85vh,680px)] w-full max-w-lg flex-col overflow-hidden rounded-xl border border-border bg-card shadow-2xl">
+      {/* Mobile: full-height sheet from bottom; Desktop: centered card */}
+      <div className="flex h-[100dvh] w-full flex-col overflow-hidden bg-card shadow-2xl sm:h-[min(85vh,680px)] sm:max-w-lg sm:rounded-xl sm:border sm:border-border">
         {/* Modal header */}
-        <div className="flex items-center justify-between border-b border-border/40 px-4 py-3">
+        <div className="flex shrink-0 items-center justify-between border-b border-border/40 px-4 py-3">
           <div className="flex items-center gap-2">
             {wizard.step !== "type-select" ? (
               <button
@@ -118,11 +192,15 @@ export const TaskWizardModal = memo(function TaskWizardModal({
             <div className="flex items-center gap-1.5">
               <Sparkles className="h-4 w-4 text-primary" />
               <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                {wizard.step === "type-select"
-                  ? "New Task"
-                  : wizard.step === "chat"
-                    ? "Task Wizard"
-                    : "Task Created"}
+                {showTemplates
+                  ? "Templates"
+                  : showAgentCreation
+                    ? "New Agent"
+                    : wizard.step === "type-select"
+                      ? "New Task"
+                      : wizard.step === "chat"
+                        ? "Task Wizard"
+                        : "Task Created"}
               </span>
             </div>
           </div>
@@ -138,33 +216,71 @@ export const TaskWizardModal = memo(function TaskWizardModal({
 
         {/* Step content */}
         <div className="min-h-0 flex-1 overflow-hidden">
-          {wizard.step === "type-select" && (
-            <div className="h-full overflow-y-auto">
-              <TypeSelectStep onSelect={wizard.selectType} />
-            </div>
-          )}
-          {wizard.step === "chat" && wizard.taskType && (
-            <TooltipProvider>
-              <WizardRuntimeProvider
-                taskType={wizard.taskType}
-                agents={agents}
-              >
-                <WizardThread
-                  taskType={wizard.taskType}
-                  onTaskConfig={wizard.setTaskConfig}
-                  onConfirm={handleConfirm}
-                  onAdjust={handleAdjust}
-                  confirmBusy={confirmBusy || creating}
+          {wizard.step === "type-select" &&
+            !showAgentCreation &&
+            !showTemplates && (
+              <div className="h-full overflow-y-auto">
+                <TypeSelectStep
+                  onSelect={wizard.selectType}
+                  onShowTemplates={() => setShowTemplates(true)}
                 />
-              </WizardRuntimeProvider>
-            </TooltipProvider>
+              </div>
+            )}
+          {showTemplates && !showAgentCreation && (
+            <TaskTemplatesSheet
+              agents={localAgents}
+              onUseTemplate={handleTemplateCreate}
+              onBack={() => setShowTemplates(false)}
+            />
           )}
-          {wizard.step === "confirm" && (
+          {wizard.step === "chat" &&
+            wizard.taskType &&
+            !showAgentCreation && (
+              <TooltipProvider>
+                <WizardRuntimeProvider
+                  taskType={wizard.taskType}
+                  agents={localAgents}
+                >
+                  <WizardThread
+                    taskType={wizard.taskType}
+                    onTaskConfig={wizard.setTaskConfig}
+                    onConfirm={handleConfirm}
+                    onAdjust={handleAdjust}
+                    confirmBusy={confirmBusy || creating}
+                  />
+                </WizardRuntimeProvider>
+              </TooltipProvider>
+            )}
+          {wizard.step === "confirm" && !showAgentCreation && (
             <div className="h-full overflow-y-auto">
               <ConfirmStep />
             </div>
           )}
+          {showAgentCreation && (
+            <div className="h-full overflow-y-auto">
+              <AgentCreationWizard
+                client={client}
+                onCreated={handleAgentCreated}
+                onCancel={handleCancelAgentCreation}
+              />
+            </div>
+          )}
         </div>
+        {/* Create agent button — shown during chat step */}
+        {wizard.step === "chat" && !showAgentCreation && (
+          <div className="flex shrink-0 items-center justify-between border-t border-border/30 px-4 py-2">
+            <button
+              type="button"
+              className="flex items-center gap-1.5 text-[10px] text-muted-foreground transition hover:text-foreground"
+              onClick={handleShowAgentCreation}
+            >
+              <Sparkles className="h-3 w-3" />
+              <span className="font-mono uppercase tracking-wider">
+                Need a new agent?
+              </span>
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -174,8 +290,10 @@ export const TaskWizardModal = memo(function TaskWizardModal({
 
 const TypeSelectStep = memo(function TypeSelectStep({
   onSelect,
+  onShowTemplates,
 }: {
   onSelect: (type: TaskType) => void;
+  onShowTemplates: () => void;
 }) {
   return (
     <div className="flex flex-col gap-4 p-6">
@@ -211,6 +329,19 @@ const TypeSelectStep = memo(function TypeSelectStep({
             </button>
           );
         })}
+      </div>
+
+      {/* Templates shortcut */}
+      <div className="border-t border-border/30 pt-4 text-center">
+        <button
+          type="button"
+          className="text-xs text-muted-foreground transition hover:text-foreground"
+          onClick={onShowTemplates}
+        >
+          Or choose from{" "}
+          <span className="font-semibold text-primary">pre-built templates</span>{" "}
+          →
+        </button>
       </div>
     </div>
   );
