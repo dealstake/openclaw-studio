@@ -1,6 +1,7 @@
 "use client";
 
 import { memo, useCallback, useEffect, useMemo, useRef, type FC } from "react";
+import { cn } from "@/lib/utils";
 import {
   ActionBarPrimitive,
   ComposerPrimitive,
@@ -329,7 +330,12 @@ const WizardTextPart: FC<{
   }
 
   return (
-    <div className="prose prose-sm prose-invert max-w-none [&_p]:my-1 [&_ul]:my-1 [&_li]:my-0">
+    <div
+      className={cn(
+        "prose prose-sm prose-invert max-w-none [&_p]:my-1 [&_ul]:my-1 [&_li]:my-0",
+        !isComplete && "after:content-['|'] after:animate-pulse",
+      )}
+    >
       <MarkdownText />
     </div>
   );

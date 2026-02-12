@@ -175,7 +175,7 @@ export const TaskWizardModal = memo(function TaskWizardModal({
       }}
     >
       {/* Mobile: full-height sheet from bottom; Desktop: centered card */}
-      <div className="flex h-[100dvh] w-full flex-col overflow-hidden bg-card shadow-2xl sm:h-[min(85vh,680px)] sm:max-w-lg sm:rounded-xl sm:border sm:border-border">
+      <div className="flex h-full w-full flex-col overflow-hidden bg-card shadow-2xl transition-[height] duration-300 ease-out sm:h-[min(85vh,680px)] sm:max-w-lg sm:rounded-xl sm:border sm:border-border">
         {/* Modal header */}
         <div className="flex shrink-0 items-center justify-between border-b border-border/40 px-4 py-3">
           <div className="flex items-center gap-2">
@@ -273,13 +273,13 @@ export const TaskWizardModal = memo(function TaskWizardModal({
         </div>
         {/* Create agent button — shown during chat step */}
         {wizard.step === "chat" && !showAgentCreation && (
-          <div className="flex shrink-0 items-center justify-between border-t border-border/30 px-4 py-2">
+          <div className="flex shrink-0 items-center justify-between border-t border-border/30 px-4 py-3 pb-safe">
             <button
               type="button"
-              className="flex items-center gap-1.5 text-[10px] text-muted-foreground transition hover:text-foreground"
+              className="flex items-center gap-2 text-[11px] font-medium text-muted-foreground transition hover:text-primary"
               onClick={handleShowAgentCreation}
             >
-              <Sparkles className="h-3 w-3" />
+              <Sparkles className="h-3.5 w-3.5" />
               <span className="font-mono uppercase tracking-wider">
                 Need a new agent?
               </span>
@@ -317,17 +317,17 @@ const TypeSelectStep = memo(function TypeSelectStep({
             <button
               key={card.type}
               type="button"
-              className={`flex items-start gap-3 rounded-xl border bg-card/70 p-4 text-left transition ${card.color}`}
+              className={`flex items-start gap-4 rounded-xl border bg-card/70 p-5 text-left transition ${card.color}`}
               onClick={() => onSelect(card.type)}
             >
-              <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted/50">
-                <Icon className="h-4 w-4 text-foreground" />
+              <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted/50">
+                <Icon className="h-5 w-5 text-foreground" />
               </div>
               <div>
                 <div className="text-sm font-semibold text-foreground">
                   {card.title}
                 </div>
-                <div className="mt-0.5 text-xs text-muted-foreground">
+                <div className="mt-1 text-xs leading-relaxed text-muted-foreground">
                   {card.desc}
                 </div>
               </div>

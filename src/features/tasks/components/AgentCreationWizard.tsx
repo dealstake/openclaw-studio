@@ -113,7 +113,7 @@ export const AgentCreationWizard = memo(function AgentCreationWizard({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Email Monitor, Deal Tracker"
-              className="rounded-lg border border-border/80 bg-muted/30 px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none"
+              className="rounded-lg border border-border/60 bg-muted/20 px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/70 transition-all focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/50"
               autoFocus
             />
           </div>
@@ -131,7 +131,7 @@ export const AgentCreationWizard = memo(function AgentCreationWizard({
               value={purpose}
               onChange={(e) => setPurpose(e.target.value)}
               placeholder="Describe the agent's primary purpose and responsibilities…"
-              className="min-h-[80px] resize-none rounded-lg border border-border/80 bg-muted/30 px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none"
+              className="min-h-[80px] resize-none rounded-lg border border-border/60 bg-muted/20 px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/70 transition-all focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/50"
               rows={3}
             />
           </div>

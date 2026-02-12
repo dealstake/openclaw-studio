@@ -60,7 +60,7 @@ export const TaskPreviewCard = memo(function TaskPreviewCard({
   return (
     <div className="my-3 rounded-xl border border-border bg-card/90 shadow-lg overflow-hidden">
       {/* Header */}
-      <div className="border-b border-border/40 px-4 py-3">
+      <div className="border-b border-border/40 px-4 py-3 bg-gradient-to-b from-transparent to-primary/5">
         <div className="flex items-center gap-2">
           <span
             className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.08em] ${meta.color}`}
