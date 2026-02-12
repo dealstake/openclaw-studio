@@ -77,6 +77,7 @@ function createWizardAdapter(
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
+      let fullText = "";
 
       while (true) {
         const { done, value } = await reader.read();
@@ -93,8 +94,9 @@ function createWizardAdapter(
 
           try {
             const parsed = JSON.parse(payload) as { text: string };
+            fullText += parsed.text;
             yield {
-              content: [{ type: "text" as const, text: parsed.text }],
+              content: [{ type: "text" as const, text: fullText }],
             };
           } catch {
             // Skip malformed chunks
