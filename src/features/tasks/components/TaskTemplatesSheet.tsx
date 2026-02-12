@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useCallback, useState } from "react";
-import { ArrowLeft, Loader2, Zap, Clock, Calendar } from "lucide-react";
+import { Loader2, Zap, Clock, Calendar } from "lucide-react";
 import type { CreateTaskPayload, TaskType } from "@/features/tasks/types";
 import { TASK_TEMPLATES, type TaskTemplate } from "@/features/tasks/lib/templates";
 import { humanReadableSchedule } from "@/features/tasks/lib/schedule";
@@ -28,7 +28,6 @@ const TYPE_BADGE: Record<TaskType, { icon: typeof Zap; className: string }> = {
 interface TaskTemplatesSheetProps {
   agents: string[];
   onUseTemplate: (payload: CreateTaskPayload) => Promise<void>;
-  onBack: () => void;
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -36,7 +35,6 @@ interface TaskTemplatesSheetProps {
 export const TaskTemplatesSheet = memo(function TaskTemplatesSheet({
   agents,
   onUseTemplate,
-  onBack,
 }: TaskTemplatesSheetProps) {
   const [busyId, setBusyId] = useState<string | null>(null);
   const defaultAgent = agents[0] ?? "alex";
@@ -64,21 +62,6 @@ export const TaskTemplatesSheet = memo(function TaskTemplatesSheet({
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      {/* Header */}
-      <div className="flex shrink-0 items-center gap-2 border-b border-border/40 px-4 py-3">
-        <button
-          type="button"
-          className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted/65"
-          onClick={onBack}
-          aria-label="Go back"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </button>
-        <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-          Task Templates
-        </span>
-      </div>
-
       {/* Templates list */}
       <div className="min-h-0 flex-1 overflow-y-auto p-4">
         <p className="mb-4 text-xs text-muted-foreground">

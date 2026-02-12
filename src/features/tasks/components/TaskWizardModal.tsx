@@ -179,11 +179,17 @@ export const TaskWizardModal = memo(function TaskWizardModal({
         {/* Modal header */}
         <div className="flex shrink-0 items-center justify-between border-b border-border/40 px-4 py-3">
           <div className="flex items-center gap-2">
-            {wizard.step !== "type-select" ? (
+            {wizard.step !== "type-select" || showTemplates || showAgentCreation ? (
               <button
                 type="button"
                 className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted/65"
-                onClick={wizard.goBack}
+                onClick={
+                  showTemplates
+                    ? () => setShowTemplates(false)
+                    : showAgentCreation
+                      ? handleCancelAgentCreation
+                      : wizard.goBack
+                }
                 aria-label="Go back"
               >
                 <ArrowLeft className="h-4 w-4" />
@@ -230,7 +236,6 @@ export const TaskWizardModal = memo(function TaskWizardModal({
             <TaskTemplatesSheet
               agents={localAgents}
               onUseTemplate={handleTemplateCreate}
-              onBack={() => setShowTemplates(false)}
             />
           )}
           {wizard.step === "chat" &&
