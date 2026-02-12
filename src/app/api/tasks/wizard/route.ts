@@ -245,16 +245,26 @@ export async function POST(request: NextRequest) {
             if (done) break;
 
             buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split("\n");
-            buffer = lines.pop() ?? "";
 
-            for (const line of lines) {
-              if (!line.startsWith("data: ")) continue;
-              const payload = line.slice(6).trim();
-              if (!payload || payload === "[DONE]") continue;
+            // SSE events are delimited by double newlines (\r\n\r\n or \n\n).
+            // We split on \n\n to get complete events, since JSON payloads
+            // may contain \n characters inside text values.
+            const events = buffer.split(/\r?\n\r?\n/);
+            // Last element may be incomplete — keep it in the buffer
+            buffer = events.pop() ?? "";
+
+            for (const event of events) {
+              // Each event may have multiple lines; find the data line(s)
+              const dataLine = event
+                .split(/\r?\n/)
+                .filter((l) => l.startsWith("data: "))
+                .map((l) => l.slice(6))
+                .join("");
+
+              if (!dataLine || dataLine.trim() === "[DONE]") continue;
 
               try {
-                const parsed = JSON.parse(payload) as {
+                const parsed = JSON.parse(dataLine.trim()) as {
                   candidates?: Array<{
                     content?: {
                       parts?: Array<{ text?: string; thought?: boolean }>;
