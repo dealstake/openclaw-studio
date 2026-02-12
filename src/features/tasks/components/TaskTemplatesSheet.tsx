@@ -71,7 +71,7 @@ export const TaskTemplatesSheet = memo(function TaskTemplatesSheet({
 
         {[...categories.entries()].map(([category, templates]) => (
           <div key={category} className="mb-5">
-            <h3 className="mb-2 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+            <h3 className="mb-2 font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
               {category}
             </h3>
             <div className="flex flex-col gap-2">
@@ -87,7 +87,7 @@ export const TaskTemplatesSheet = memo(function TaskTemplatesSheet({
                     key={template.id}
                     type="button"
                     disabled={busyId !== null}
-                    className="flex items-start gap-3 rounded-xl border border-border/80 bg-card/70 p-3 text-left transition hover:border-border hover:bg-muted/30 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="flex items-start gap-3 rounded-xl border border-border/80 bg-card/70 p-3 text-left transition hover:border-border hover:bg-muted/30 hover:border-primary/50 disabled:cursor-not-allowed disabled:opacity-60"
                     onClick={() => void handleUse(template)}
                   >
                     <span className="mt-0.5 text-lg">{template.icon}</span>

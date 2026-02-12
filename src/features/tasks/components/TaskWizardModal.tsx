@@ -175,7 +175,7 @@ export const TaskWizardModal = memo(function TaskWizardModal({
       }}
     >
       {/* Mobile: full-height sheet from bottom; Desktop: centered card */}
-      <div className="flex h-full w-full flex-col overflow-hidden bg-card shadow-2xl transition-[height] duration-300 ease-out sm:h-[min(85vh,680px)] sm:max-w-lg sm:rounded-xl sm:border sm:border-border">
+      <div data-state={open ? "open" : "closed"} className="flex h-full w-full flex-col overflow-hidden bg-card shadow-2xl transition-all duration-300 ease-out data-[state=closed]:translate-y-full data-[state=closed]:opacity-0 sm:data-[state=closed]:scale-95 sm:data-[state=closed]:translate-y-0 sm:h-[min(85vh,680px)] sm:max-w-lg sm:rounded-xl sm:border sm:border-border">
         {/* Modal header */}
         <div className="flex shrink-0 items-center justify-between border-b border-border/40 px-4 py-3">
           <div className="flex items-center gap-2">
