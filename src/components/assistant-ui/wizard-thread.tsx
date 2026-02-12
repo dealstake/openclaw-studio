@@ -141,7 +141,7 @@ export const WizardThread: FC<WizardThreadProps> = memo(
 
     return (
       <ThreadPrimitive.Root className="aui-root aui-thread-root flex h-full flex-col">
-        <ThreadPrimitive.Viewport className="aui-thread-viewport relative flex flex-1 flex-col overflow-y-auto scroll-smooth px-4 pt-4">
+        <ThreadPrimitive.Viewport className="aui-thread-viewport relative flex min-h-0 flex-1 flex-col overflow-y-auto scroll-smooth px-4 pt-4">
           <ThreadPrimitive.Empty>
             <WizardWelcome starters={starters} />
           </ThreadPrimitive.Empty>
@@ -161,7 +161,10 @@ export const WizardThread: FC<WizardThreadProps> = memo(
             }}
           />
 
-          <ThreadPrimitive.ViewportFooter className="sticky bottom-0 flex flex-col items-center justify-end bg-gradient-to-t from-card from-40% pb-3 pt-4">
+          {/* Spacer pushes composer to bottom when content is short */}
+          <div className="grow" />
+
+          <ThreadPrimitive.ViewportFooter className="sticky bottom-0 flex shrink-0 flex-col items-center justify-end bg-gradient-to-t from-card from-40% pb-3 pt-4">
             <ThreadScrollToBottom />
             <WizardComposer />
           </ThreadPrimitive.ViewportFooter>
@@ -177,7 +180,7 @@ const WizardWelcome: FC<{
   starters: Array<{ prompt: string; text: string }>;
 }> = memo(function WizardWelcome({ starters }) {
   return (
-    <div className="flex grow flex-col items-center justify-center px-2">
+    <div className="flex grow flex-col items-center justify-end px-2 pb-4">
       <div className="rounded-lg bg-muted/30 px-4 py-3 text-center text-sm text-foreground">
         <p>
           What do you want this task to do? Describe it in your own words
