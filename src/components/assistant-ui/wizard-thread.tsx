@@ -8,8 +8,10 @@ import {
   MessagePrimitive,
   ThreadPrimitive,
   useMessage,
+  useMessageRuntime,
 } from "@assistant-ui/react";
 import {
+  AlertTriangle,
   ArrowDownIcon,
   CopyIcon,
   RefreshCwIcon,
@@ -233,23 +235,73 @@ const WizardAssistantMessage: FC<{
   onAdjust,
   confirmBusy,
 }) {
+  const message = useMessage();
+  const messageRuntime = useMessageRuntime();
+  const isError =
+    message.status?.type === "incomplete" &&
+    "reason" in message.status &&
+    (message.status as { reason?: string }).reason === "error";
+  const errorMessage =
+    isError && message.status && "error" in message.status
+      ? String((message.status as { error?: unknown }).error ?? "")
+      : null;
+  const hasContent = message.content.some(
+    (p) => p.type === "text" && (p as { text: string }).text.length > 0,
+  );
+
   return (
     <MessagePrimitive.Root className="aui-assistant-message pb-3">
-      <div className="max-w-[85%] rounded-lg bg-muted/30 px-3 py-2 text-sm text-foreground">
-        <MessagePrimitive.Content
-          components={{
-            Text: () => (
-              <WizardTextPart
-                taskType={taskType}
-                onTaskConfig={onTaskConfig}
-                onConfirm={onConfirm}
-                onAdjust={onAdjust}
-                confirmBusy={confirmBusy}
-              />
-            ),
-          }}
-        />
-      </div>
+      {isError && !hasContent ? (
+        <div className="flex max-w-[85%] items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2.5 text-sm text-destructive">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+          <div className="min-w-0 flex-1">
+            <p className="font-medium">Something went wrong</p>
+            <p className="mt-0.5 text-xs text-destructive/80">
+              {errorMessage || "The AI wizard couldn\u2019t respond. Please try again."}
+            </p>
+            <button
+              type="button"
+              className="mt-2 rounded-md border border-destructive/30 bg-destructive/10 px-2.5 py-1 text-xs font-medium text-destructive transition hover:bg-destructive/20"
+              onClick={() => {
+                messageRuntime.reload();
+              }}
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="max-w-[85%] rounded-lg bg-muted/30 px-3 py-2 text-sm text-foreground">
+          <MessagePrimitive.Content
+            components={{
+              Text: () => (
+                <WizardTextPart
+                  taskType={taskType}
+                  onTaskConfig={onTaskConfig}
+                  onConfirm={onConfirm}
+                  onAdjust={onAdjust}
+                  confirmBusy={confirmBusy}
+                />
+              ),
+            }}
+          />
+          {isError && (
+            <div className="mt-2 flex items-center gap-1.5 text-xs text-destructive">
+              <AlertTriangle className="h-3 w-3" />
+              <span>Response incomplete — {errorMessage || "an error occurred"}</span>
+              <button
+                type="button"
+                className="ml-1 underline hover:no-underline"
+                onClick={() => {
+                  messageRuntime.reload();
+                }}
+              >
+                Retry
+              </button>
+            </div>
+          )}
+        </div>
+      )}
       <AssistantActionBar />
     </MessagePrimitive.Root>
   );
