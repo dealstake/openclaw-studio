@@ -369,8 +369,22 @@ const AssistantActionBar: FC = memo(function AssistantActionBar() {
 // composer stays visible above the on-screen keyboard.
 
 const WizardComposer: FC = memo(function WizardComposer() {
+  const composerRef = useRef<HTMLFormElement>(null);
+
+  // When the mobile keyboard opens, scroll the composer into view
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const handleResize = () => {
+      // Small viewport = keyboard is open — scroll composer into view
+      composerRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    };
+    vv.addEventListener("resize", handleResize);
+    return () => vv.removeEventListener("resize", handleResize);
+  }, []);
+
   return (
-    <ComposerPrimitive.Root className="aui-composer-root flex w-full items-end gap-2 pb-[env(safe-area-inset-bottom)]">
+    <ComposerPrimitive.Root ref={composerRef} className="aui-composer-root flex w-full items-end gap-2 pb-[env(safe-area-inset-bottom)]">
       <ComposerPrimitive.Input
         autoFocus
         placeholder="Describe what you want this task to do…"
