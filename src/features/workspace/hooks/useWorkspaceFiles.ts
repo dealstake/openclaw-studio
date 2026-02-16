@@ -3,9 +3,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { WorkspaceEntry, WorkspaceFileContent } from "../types";
+import type { GatewayClient } from "@/lib/gateway/GatewayClient";
+import { readGatewayAgentFile, writeGatewayAgentFile } from "@/lib/gateway/agentFiles";
+import { AGENT_FILE_NAMES, type AgentFileName, isAgentFileName } from "@/lib/agents/agentFiles";
 
 type UseWorkspaceFilesParams = {
   agentId: string | null | undefined;
+  client?: GatewayClient | null;
 };
 
 type UseWorkspaceFilesResult = {
@@ -43,6 +47,7 @@ type UseWorkspaceFilesResult = {
  */
 export const useWorkspaceFiles = ({
   agentId,
+  client,
 }: UseWorkspaceFilesParams): UseWorkspaceFilesResult => {
   const [entries, setEntries] = useState<WorkspaceEntry[]>([]);
   const [viewingFile, setViewingFile] = useState<WorkspaceFileContent | null>(null);
@@ -51,12 +56,20 @@ export const useWorkspaceFiles = ({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Track the latest agentId to avoid stale fetches
+  // Track refs
   const agentIdRef = useRef(agentId);
-  agentIdRef.current = agentId;
+  const clientRef = useRef(client);
+
+  useEffect(() => {
+    agentIdRef.current = agentId;
+    clientRef.current = client;
+  }, [agentId, client]);
 
   const fetchDir = useCallback(
     async (dirPath: string) => {
+      // Ensure async execution to avoid synchronous state updates
+      await Promise.resolve();
+
       const id = agentIdRef.current?.trim();
       if (!id) {
         setEntries([]);
@@ -65,27 +78,81 @@ export const useWorkspaceFiles = ({
       }
       setLoading(true);
       setError(null);
+      
+      let apiFailed = false;
+
       try {
         const params = new URLSearchParams({ agentId: id });
         if (dirPath) params.set("path", dirPath);
         const res = await fetch(`/api/workspace/files?${params.toString()}`);
+        
         if (!res.ok) {
-          const body = await res.json().catch(() => ({ error: res.statusText }));
-          throw new Error(body.error ?? `HTTP ${res.status}`);
+           apiFailed = true;
+        } else {
+            const data = (await res.json()) as { entries: WorkspaceEntry[] };
+            if (agentIdRef.current?.trim() === id) {
+                // Treat empty root as potential failure to trigger fallback on remote
+                if (dirPath === "" && data.entries.length === 0) {
+                    apiFailed = true;
+                } else {
+                    setEntries(data.entries);
+                    setViewingFile(null);
+                    setLoading(false);
+                    return; // Success
+                }
+            }
         }
-        const data = (await res.json()) as { entries: WorkspaceEntry[] };
-        if (agentIdRef.current?.trim() === id) {
-          setEntries(data.entries);
-          setViewingFile(null);
+      } catch {
+        apiFailed = true;
+      }
+
+      // Fallback: Use GatewayClient to list standard brain files if at root
+      if (apiFailed && dirPath === "" && clientRef.current) {
+        try {
+           const results = await Promise.all(
+             AGENT_FILE_NAMES.map(async (name) => {
+               try {
+                 const file = await readGatewayAgentFile({ 
+                    client: clientRef.current!, 
+                    agentId: id, 
+                    name 
+                 });
+                 return { name, exists: file.exists, size: file.content.length };
+               } catch {
+                 return { name, exists: false, size: 0 };
+               }
+             })
+           );
+
+           const fallbackEntries: WorkspaceEntry[] = results
+             .filter(r => r.exists)
+             .map(r => ({
+               name: r.name,
+               path: r.name,
+               type: "file",
+               size: r.size,
+               updatedAt: Date.now() // Fake timestamp
+             }));
+           
+           if (agentIdRef.current?.trim() === id) {
+             setEntries(fallbackEntries);
+             setViewingFile(null);
+             setError(null); 
+           }
+        } catch {
+           if (agentIdRef.current?.trim() === id) {
+             setError("Failed to list files (local & remote).");
+           }
         }
-      } catch (err) {
-        if (agentIdRef.current?.trim() === id) {
-          setError(err instanceof Error ? err.message : "Failed to list files.");
-        }
-      } finally {
-        if (agentIdRef.current?.trim() === id) {
+      } else if (apiFailed) {
+         if (agentIdRef.current?.trim() === id) {
+            // Keep the previous entries if just a refresh failed? No, show error.
+            setError("Failed to list files.");
+         }
+      }
+      
+      if (agentIdRef.current?.trim() === id) {
           setLoading(false);
-        }
       }
     },
     []
@@ -93,65 +160,109 @@ export const useWorkspaceFiles = ({
 
   const fetchFile = useCallback(
     async (filePath: string) => {
-      const id = agentIdRef.current?.trim();
-      if (!id) return;
-      setLoading(true);
-      setError(null);
-      try {
-        const params = new URLSearchParams({ agentId: id, path: filePath });
-        const res = await fetch(`/api/workspace/file?${params.toString()}`);
-        if (!res.ok) {
-          const body = await res.json().catch(() => ({ error: res.statusText }));
-          throw new Error(body.error ?? `HTTP ${res.status}`);
+        const id = agentIdRef.current?.trim();
+        if (!id) return;
+        setLoading(true);
+        setError(null);
+        
+        // Try API first
+        try {
+            const params = new URLSearchParams({ agentId: id, path: filePath });
+            const res = await fetch(`/api/workspace/file?${params.toString()}`);
+            if (res.ok) {
+                const data = (await res.json()) as WorkspaceFileContent;
+                if (agentIdRef.current?.trim() === id) {
+                    setViewingFile(data);
+                    setLoading(false);
+                    return;
+                }
+            }
+        } catch {
+            // Ignore API error, try fallback
         }
-        const data = (await res.json()) as WorkspaceFileContent;
+
+        // Fallback: Gateway Client
+        if (clientRef.current && isAgentFileName(filePath)) {
+            try {
+                const file = await readGatewayAgentFile({
+                    client: clientRef.current,
+                    agentId: id,
+                    name: filePath as AgentFileName
+                });
+                
+                if (agentIdRef.current?.trim() === id) {
+                    setViewingFile({
+                        content: file.content,
+                        path: filePath,
+                        size: file.content.length,
+                        updatedAt: Date.now(),
+                        isText: true
+                    });
+                    setLoading(false);
+                    return;
+                }
+            } catch {
+                 // Fallback failed
+            }
+        }
+
         if (agentIdRef.current?.trim() === id) {
-          setViewingFile(data);
+            setError("Failed to read file.");
+            setLoading(false);
         }
-      } catch (err) {
-        if (agentIdRef.current?.trim() === id) {
-          setError(err instanceof Error ? err.message : "Failed to read file.");
-        }
-      } finally {
-        if (agentIdRef.current?.trim() === id) {
-          setLoading(false);
-        }
-      }
     },
     []
   );
 
   const saveFile = useCallback(
     async (relativePath: string, content: string): Promise<boolean> => {
-      const id = agentIdRef.current?.trim();
-      if (!id) return false;
-      setSaving(true);
-      setError(null);
-      try {
-        const res = await fetch("/api/workspace/file", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ agentId: id, path: relativePath, content }),
-        });
-        if (!res.ok) {
-          const body = await res.json().catch(() => ({ error: res.statusText }));
-          throw new Error(body.error ?? `HTTP ${res.status}`);
-        }
-        // Refresh the file to get updated metadata
-        if (agentIdRef.current?.trim() === id) {
-          await fetchFile(relativePath);
-        }
-        return true;
-      } catch (err) {
-        if (agentIdRef.current?.trim() === id) {
-          setError(err instanceof Error ? err.message : "Failed to save file.");
-        }
-        return false;
-      } finally {
-        if (agentIdRef.current?.trim() === id) {
-          setSaving(false);
-        }
-      }
+       const id = agentIdRef.current?.trim();
+       if (!id) return false;
+       setSaving(true);
+       setError(null);
+
+       // Try API first
+       try {
+         const res = await fetch("/api/workspace/file", {
+           method: "PUT",
+           headers: { "Content-Type": "application/json" },
+           body: JSON.stringify({ agentId: id, path: relativePath, content }),
+         });
+         if (res.ok) {
+             if (agentIdRef.current?.trim() === id) {
+                await fetchFile(relativePath);
+                setSaving(false);
+             }
+             return true;
+         }
+       } catch {
+          // Ignore
+       }
+
+       // Fallback: Gateway
+       if (clientRef.current && isAgentFileName(relativePath)) {
+           try {
+               await writeGatewayAgentFile({
+                   client: clientRef.current,
+                   agentId: id,
+                   name: relativePath as AgentFileName,
+                   content
+               });
+               if (agentIdRef.current?.trim() === id) {
+                   await fetchFile(relativePath);
+                   setSaving(false);
+               }
+               return true;
+           } catch {
+               // Ignore
+           }
+       }
+
+       if (agentIdRef.current?.trim() === id) {
+           setError("Failed to save file.");
+           setSaving(false);
+       }
+       return false;
     },
     [fetchFile]
   );
@@ -173,10 +284,8 @@ export const useWorkspaceFiles = ({
 
   // Load root on mount or agent change
   useEffect(() => {
-    setCurrentPath("");
-    setViewingFile(null);
-    void fetchDir("");
-  }, [agentId, fetchDir]);
+    queueMicrotask(() => void fetchDir(""));
+  }, [fetchDir]);
 
   const navigateToDir = useCallback(
     (relativePath: string) => {

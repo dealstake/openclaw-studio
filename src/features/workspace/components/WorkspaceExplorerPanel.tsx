@@ -439,12 +439,16 @@ const FileViewer = memo(function FileViewer({
 
 // ── Main Panel ──
 
+import type { GatewayClient } from "@/lib/gateway/GatewayClient";
+
 type WorkspaceExplorerPanelProps = {
   agentId: string | null | undefined;
+  client?: GatewayClient | null;
 };
 
 export const WorkspaceExplorerPanel = memo(function WorkspaceExplorerPanel({
   agentId,
+  client,
 }: WorkspaceExplorerPanelProps) {
   const {
     entries,
@@ -460,7 +464,7 @@ export const WorkspaceExplorerPanel = memo(function WorkspaceExplorerPanel({
     refresh,
     saveFile,
     createFile,
-  } = useWorkspaceFiles({ agentId });
+  } = useWorkspaceFiles({ agentId, client });
 
   const [showNewFile, setShowNewFile] = useState(false);
 

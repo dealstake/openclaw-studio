@@ -1745,7 +1745,11 @@ const AgentStudioPage = () => {
                     />
                   }
                   workspaceContent={
-                    <WorkspaceExplorerPanel agentId={focusedAgent?.agentId ?? null} />
+                    <WorkspaceExplorerPanel
+                      key={focusedAgent?.agentId ?? "none"}
+                      agentId={focusedAgent?.agentId ?? null}
+                      client={client}
+                    />
                   }
                   settingsContent={
                     settingsAgent ? (
