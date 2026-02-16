@@ -59,6 +59,7 @@ import {
 import { ChannelsPanel } from "@/features/channels/components/ChannelsPanel";
 import { SessionsPanel } from "@/features/sessions/components/SessionsPanel";
 import { CronPanel } from "@/features/cron/components/CronPanel";
+import { WorkspaceExplorerPanel } from "@/features/workspace/components/WorkspaceExplorerPanel";
 import { StatusBar } from "@/features/status/components/StatusBar";
 import { useChannelsStatus } from "@/features/channels/hooks/useChannelsStatus";
 import { useAllSessions } from "@/features/sessions/hooks/useAllSessions";
@@ -1742,6 +1743,9 @@ const AgentStudioPage = () => {
                         void loadAllCronJobs();
                       }}
                     />
+                  }
+                  workspaceContent={
+                    <WorkspaceExplorerPanel agentId={focusedAgent?.agentId ?? null} />
                   }
                   settingsContent={
                     settingsAgent ? (

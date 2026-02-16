@@ -3,7 +3,7 @@
 import { memo, useCallback, useRef, useState, useEffect, type ReactNode } from "react";
 import { ChevronDown } from "lucide-react";
 
-export type ContextTab = "tasks" | "brain" | "settings" | "channels" | "sessions" | "cron";
+export type ContextTab = "tasks" | "brain" | "settings" | "channels" | "sessions" | "cron" | "workspace";
 
 interface ContextPanelProps {
   activeTab: ContextTab;
@@ -14,6 +14,7 @@ interface ContextPanelProps {
   channelsContent?: ReactNode;
   sessionsContent?: ReactNode;
   cronContent?: ReactNode;
+  workspaceContent?: ReactNode;
 }
 
 const TAB_OPTIONS: Array<{ value: ContextTab; label: string }> = [
@@ -23,6 +24,7 @@ const TAB_OPTIONS: Array<{ value: ContextTab; label: string }> = [
   { value: "sessions", label: "Sessions" },
   { value: "channels", label: "Channels" },
   { value: "cron", label: "Cron" },
+  { value: "workspace", label: "Files" },
 ];
 
 const PRIMARY_TABS = TAB_OPTIONS.slice(0, 4);
@@ -37,6 +39,7 @@ export const ContextPanel = memo(function ContextPanel({
   channelsContent,
   sessionsContent,
   cronContent,
+  workspaceContent,
 }: ContextPanelProps) {
   const [moreOpen, setMoreOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
@@ -168,6 +171,9 @@ export const ContextPanel = memo(function ContextPanel({
         </div>
         <div role="tabpanel" className={activeTab === "cron" ? "flex h-full w-full" : "hidden"}>
           {cronContent ?? null}
+        </div>
+        <div role="tabpanel" className={activeTab === "workspace" ? "flex h-full w-full" : "hidden"}>
+          {workspaceContent ?? null}
         </div>
       </div>
     </div>
