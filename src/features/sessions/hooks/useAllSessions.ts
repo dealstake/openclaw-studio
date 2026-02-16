@@ -14,15 +14,18 @@ type SessionsListEntry = {
   inputTokens?: number;
   outputTokens?: number;
   totalTokens?: number;
+  messageCount?: number;
 };
 
 type SessionsListResult = {
   sessions?: SessionsListEntry[];
 };
 
-export type AggregateTokensFromList = {
+export type AggregateUsageFromList = {
   inputTokens: number;
   outputTokens: number;
+  messageCount: number;
+  totalCost: number | null;
 };
 
 export const useAllSessions = (client: GatewayClient, status: GatewayStatus) => {
@@ -30,7 +33,7 @@ export const useAllSessions = (client: GatewayClient, status: GatewayStatus) => 
   const [allSessionsLoading, setAllSessionsLoading] = useState(false);
   const [allSessionsError, setAllSessionsError] = useState<string | null>(null);
   const [totalSessionCount, setTotalSessionCount] = useState(0);
-  const [aggregateTokensFromList, setAggregateTokensFromList] = useState<AggregateTokensFromList | null>(null);
+  const [aggregateUsageFromList, setAggregateUsageFromList] = useState<AggregateUsageFromList | null>(null);
 
   const loadingRef = useRef(false);
 
@@ -58,10 +61,20 @@ export const useAllSessions = (client: GatewayClient, status: GatewayStatus) => 
       // Compute aggregate token counts from list data
       const totalInput = rawEntries.reduce((sum, e) => sum + (e.inputTokens ?? 0), 0);
       const totalOutput = rawEntries.reduce((sum, e) => sum + (e.outputTokens ?? 0), 0);
-      if (totalInput > 0 || totalOutput > 0) {
-        setAggregateTokensFromList({ inputTokens: totalInput, outputTokens: totalOutput });
+      const totalMessages = rawEntries.reduce((sum, e) => sum + (e.messageCount ?? 0), 0);
+      
+      // Note: sessions.list doesn't typically return cost, so we default to null
+      // unless we want to estimate it client-side. For now, leave as null.
+      
+      if (totalInput > 0 || totalOutput > 0 || totalMessages > 0) {
+        setAggregateUsageFromList({ 
+          inputTokens: totalInput, 
+          outputTokens: totalOutput,
+          messageCount: totalMessages,
+          totalCost: null
+        });
       } else {
-        setAggregateTokensFromList(null);
+        setAggregateUsageFromList(null);
       }
     } catch (err) {
       if (!isGatewayDisconnectLikeError(err)) {
@@ -79,7 +92,7 @@ export const useAllSessions = (client: GatewayClient, status: GatewayStatus) => 
     allSessionsLoading,
     allSessionsError,
     totalSessionCount,
-    aggregateTokensFromList,
+    aggregateUsageFromList,
     loadAllSessions,
   };
 };

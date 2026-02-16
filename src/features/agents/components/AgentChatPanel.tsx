@@ -28,7 +28,7 @@ function useRecentlyCompacted(lastCompactedAt: number | null | undefined): boole
 import type { AgentState as AgentRecord } from "@/features/agents/state/store";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Archive, ArrowLeft, ArrowUp, ChevronDown, ChevronRight, ChevronUp, RefreshCw, Settings, Shuffle, SquarePen } from "lucide-react";
+import { AlertTriangle, Archive, ArrowLeft, ArrowUp, ChevronDown, ChevronRight, ChevronUp, RefreshCw, Settings, Shuffle, SquarePen, X, Zap } from "lucide-react";
 import type { GatewayModelChoice } from "@/lib/gateway/models";
 import { isToolMarkdown, isTraceMarkdown } from "@/lib/text/message-extract";
 import { isNearBottom } from "@/lib/dom";
@@ -65,6 +65,9 @@ type AgentChatPanelProps = {
   viewingSessionHistory?: AgentChatItem[];
   viewingSessionLoading?: boolean;
   onExitSessionView?: () => void;
+  /** True when the agent's session key changed (session reset detected) */
+  sessionContinued?: boolean;
+  onDismissContinuationBanner?: () => void;
 };
 
 const AgentChatFinalItems = memo(function AgentChatFinalItems({
@@ -544,6 +547,8 @@ export const AgentChatPanel = memo(function AgentChatPanel({
   viewingSessionHistory = [],
   viewingSessionLoading = false,
   onExitSessionView,
+  sessionContinued = false,
+  onDismissContinuationBanner,
 }: AgentChatPanelProps) {
   const recentlyCompacted = useRecentlyCompacted(lastCompactedAt);
   const draftRef = useRef<HTMLTextAreaElement | null>(null);
@@ -882,6 +887,39 @@ export const AgentChatPanel = memo(function AgentChatPanel({
           </div>
         </div>
       </div>
+
+      {/* Context warning banner — yellow at 80%+ utilization */}
+      {typeof tokenUsed === "number" && tokenLimit && tokenLimit > 0 && tokenUsed / tokenLimit >= 0.8 && (
+        <div className="mx-3 mt-2 flex items-center gap-2 rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-3 py-2 sm:mx-4">
+          <AlertTriangle className="h-4 w-4 shrink-0 text-yellow-500" />
+          <span className="text-xs text-yellow-200/90">
+            Session approaching context limit — work will continue in a new session
+          </span>
+          <span className="ml-auto shrink-0 font-mono text-[10px] text-yellow-500/80">
+            {Math.round((tokenUsed / tokenLimit) * 100)}%
+          </span>
+        </div>
+      )}
+
+      {/* Session continuation banner — green after session reset */}
+      {sessionContinued && (
+        <div className="mx-3 mt-2 flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 sm:mx-4">
+          <Zap className="h-4 w-4 shrink-0 text-emerald-500" />
+          <span className="text-xs text-emerald-200/90">
+            Continuing from previous session
+          </span>
+          {onDismissContinuationBanner && (
+            <button
+              type="button"
+              className="ml-auto flex h-5 w-5 shrink-0 items-center justify-center rounded text-emerald-400/60 transition hover:text-emerald-300"
+              aria-label="Dismiss continuation banner"
+              onClick={onDismissContinuationBanner}
+            >
+              <X className="h-3 w-3" />
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="mt-3 flex min-h-0 flex-1 flex-col gap-3 px-3 pb-24 sm:px-4 sm:pb-24">
         {viewingSessionKey ? (

@@ -176,6 +176,10 @@ const AgentStudioPage = () => {
   const [viewingSessionLoading, setViewingSessionLoading] = useState(false);
   const [isCompacting, setIsCompacting] = useState(false);
   const [lastCompactedAt, setLastCompactedAt] = useState<number | null>(null);
+  /** Tracks previous session key per agent to detect session resets */
+  const prevSessionKeyByAgentRef = useRef<Map<string, string>>(new Map());
+  /** Agent IDs that just had a session reset (key changed) — auto-clears after 60s */
+  const [sessionContinuedAgents, setSessionContinuedAgents] = useState<Set<string>>(new Set());
   /** Context window utilization per agent — totalTokens = last turn's prompt size, contextTokens = model limit */
   const [agentContextWindow, setAgentContextWindow] = useState<Map<string, { totalTokens: number; contextTokens: number }>>(new Map());
   const gatewayConfigSnapshotRef = useRef(gatewayConfigSnapshot);
@@ -213,7 +217,7 @@ const AgentStudioPage = () => {
 
   const {
     allSessions, allSessionsLoading, allSessionsError,
-    totalSessionCount, aggregateTokensFromList, loadAllSessions,
+    totalSessionCount, aggregateUsageFromList, loadAllSessions,
   } = useAllSessions(client, status);
 
   const {
@@ -439,6 +443,30 @@ const AgentStudioPage = () => {
     void loadSessionUsageRef.current(focusedSessionKey);
     void refreshContextWindowRef.current(focusedAgentId, focusedSessionKey);
   }, [focusedAgentId, focusedSessionKey, resetSessionUsage]);
+
+  // Detect session key changes (session resets) to show continuation banner
+  useEffect(() => {
+    if (!focusedAgentId || !focusedSessionKey) return;
+    const prevKey = prevSessionKeyByAgentRef.current.get(focusedAgentId);
+    prevSessionKeyByAgentRef.current.set(focusedAgentId, focusedSessionKey);
+    // Only trigger if we had a previous key and it changed (not first load)
+    if (prevKey && prevKey !== focusedSessionKey) {
+      setSessionContinuedAgents((prev) => {
+        const next = new Set(prev);
+        next.add(focusedAgentId);
+        return next;
+      });
+      // Auto-dismiss after 60s
+      const timer = window.setTimeout(() => {
+        setSessionContinuedAgents((prev) => {
+          const next = new Set(prev);
+          next.delete(focusedAgentId);
+          return next;
+        });
+      }, 60_000);
+      return () => window.clearTimeout(timer);
+    }
+  }, [focusedAgentId, focusedSessionKey]);
 
   // Reload usage when turn completes (running → idle). No polling — event-driven only.
   const prevStatusRef = useRef<string | undefined>(undefined);
@@ -1452,6 +1480,17 @@ const AgentStudioPage = () => {
     setViewingSessionKey(null);
   }, []);
 
+  const stableChatOnDismissContinuation = useCallback(() => {
+    const fa = focusedAgentRef.current;
+    if (fa) {
+      setSessionContinuedAgents((prev) => {
+        const next = new Set(prev);
+        next.delete(fa.agentId);
+        return next;
+      });
+    }
+  }, []);
+
   const stableChatTokenUsed = useMemo(() => {
     if (!focusedAgent) return undefined;
     const cw = agentContextWindow.get(focusedAgent.agentId);
@@ -1600,6 +1639,8 @@ const AgentStudioPage = () => {
                   viewingSessionHistory={viewingSessionHistory}
                   viewingSessionLoading={viewingSessionLoading}
                   onExitSessionView={stableChatOnExitSessionView}
+                  sessionContinued={sessionContinuedAgents.has(focusedAgent.agentId)}
+                  onDismissContinuationBanner={stableChatOnDismissContinuation}
                 />
               ) : (
                 <EmptyStatePanel
@@ -1677,11 +1718,11 @@ const AgentStudioPage = () => {
                       activeSessionKey={focusedAgent?.sessionKey ?? null}
                       aggregateUsage={aggregateUsage}
                       aggregateUsageLoading={aggregateUsageLoading}
-                      cumulativeUsage={aggregateTokensFromList ? {
-                        inputTokens: aggregateTokensFromList.inputTokens,
-                        outputTokens: aggregateTokensFromList.outputTokens,
+                      cumulativeUsage={aggregateUsageFromList ? {
+                        inputTokens: aggregateUsageFromList.inputTokens,
+                        outputTokens: aggregateUsageFromList.outputTokens,
                         totalCost: null,
-                        messageCount: 0,
+                        messageCount: aggregateUsageFromList.messageCount,
                       } : null}
                       cumulativeUsageLoading={allSessionsLoading}
                       onSessionClick={(sessionKey, agentId) => {
