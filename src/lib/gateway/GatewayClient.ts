@@ -223,6 +223,11 @@ export class GatewayClient {
     return this.lastHello;
   }
 
+  /** Milliseconds since the current connection was established (0 if not connected). */
+  get connectedForMs(): number {
+    return this.client?.connectedForMs ?? 0;
+  }
+
   private updateStatus(status: GatewayStatus) {
     this.status = status;
     this.statusHandlers.forEach((handler) => handler(status));

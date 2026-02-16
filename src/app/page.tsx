@@ -65,7 +65,7 @@ import { useChannelsStatus } from "@/features/channels/hooks/useChannelsStatus";
 import { useAllSessions } from "@/features/sessions/hooks/useAllSessions";
 import { useAllCronJobs } from "@/features/cron/hooks/useAllCronJobs";
 import { useExecApprovals } from "@/features/exec-approvals/hooks/useExecApprovals";
-import { useSessionUsage, useCumulativeUsage } from "@/features/sessions/hooks/useSessionUsage";
+import { useSessionUsage } from "@/features/sessions/hooks/useSessionUsage";
 import { useGatewayStatus } from "@/features/status/hooks/useGatewayStatus";
 import { ConfigMutationModals } from "@/features/agents/components/ConfigMutationModals";
 import type { MobilePane } from "@/features/agents/components/MobilePaneToggle";
@@ -151,7 +151,7 @@ const AgentStudioPage = () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const loadAllSessionsRef = useRef<() => Promise<any>>(() => Promise.resolve());
   const loadChannelsStatusRef = useRef<() => Promise<void>>(() => Promise.resolve());
-  const loadCumulativeUsageRef = useRef<() => Promise<void>>(() => Promise.resolve());
+  // loadCumulativeUsageRef removed — sessions.usage aggregate eliminated (P0 perf fix)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const loadSummarySnapshotRef = useRef<() => Promise<any>>(() => Promise.resolve());
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -208,10 +208,8 @@ const AgentStudioPage = () => {
     loadSessionUsage, resetSessionUsage,
   } = useSessionUsage(client, status);
 
-  const {
-    cumulativeUsage, cumulativeUsageLoading,
-    loadCumulativeUsage, resetCumulativeUsage,
-  } = useCumulativeUsage(client, status);
+  // P0: sessions.usage aggregate RPC eliminated — use aggregateTokensFromList instead
+  // (sessions.usage was taking 1-8 seconds and causing slow consumer disconnects)
 
   const {
     allSessions, allSessionsLoading, allSessionsError,
@@ -228,7 +226,7 @@ const AgentStudioPage = () => {
   loadAllCronJobsRef.current = loadAllCronJobs;
   loadAllSessionsRef.current = loadAllSessions;
   loadChannelsStatusRef.current = loadChannelsStatus;
-  loadCumulativeUsageRef.current = loadCumulativeUsage;
+  // loadCumulativeUsageRef removed — sessions.usage aggregate eliminated (P0 perf fix)
 
   const { flushPendingDraft, handleDraftChange, pendingDraftValuesRef, pendingDraftTimersRef } =
     useDraftBatching(dispatch);
@@ -380,15 +378,13 @@ const AgentStudioPage = () => {
       resetExecApprovals();
       resetPresence();
       resetSessionUsage();
-      resetCumulativeUsage();
       return;
     }
     void loadGatewayStatus();
     void parsePresenceFromStatus();
-    void loadCumulativeUsageRef.current();
     // Note: loadAllSessions, loadAllCronJobs, loadChannelsStatus are called
     // from the agent-load effect below (with mutation guards) to avoid duplicates.
-  }, [loadGatewayStatus, parsePresenceFromStatus, resetChannelsStatus, resetExecApprovals, resetPresence, resetSessionUsage, resetCumulativeUsage, status]);
+  }, [loadGatewayStatus, parsePresenceFromStatus, resetChannelsStatus, resetExecApprovals, resetPresence, resetSessionUsage, status]);
 
   // ── Refresh context window utilization from sessions.list ──────────────
   const refreshContextWindow = useCallback(async (agentId: string, sessionKey: string) => {
@@ -453,7 +449,7 @@ const AgentStudioPage = () => {
     if (prev === "running" && focusedAgentStatus === "idle") {
       void loadSessionUsageRef.current(focusedSessionKey);
       void refreshContextWindowRef.current(focusedAgentId, focusedSessionKey);
-      void loadCumulativeUsageRef.current();
+      void loadAllSessionsRef.current(); // refresh aggregate tokens from list
     }
   }, [focusedAgentId, focusedSessionKey, focusedAgentStatus]);
 
@@ -873,12 +869,18 @@ const AgentStudioPage = () => {
     if (deleteAgentBlock && deleteAgentBlock.phase !== "queued") return;
     if (createAgentBlock && createAgentBlock.phase !== "queued") return;
     if (renameAgentBlock && renameAgentBlock.phase !== "queued") return;
+    // P0/P1: Stagger initial load — fire agents first, defer heavy RPCs by 2s
+    // to let the WS buffer drain before adding load (prevents slow consumer)
     void loadAgents();
-    void loadChannelsStatusRef.current();
-    void loadAllSessionsRef.current();
-    void loadAllCronJobsRef.current();
-    void loadTasksRef.current();
+    const deferTimer = window.setTimeout(() => {
+      void loadChannelsStatusRef.current();
+      void loadAllSessionsRef.current();
+      void loadAllCronJobsRef.current();
+      void loadTasksRef.current();
+    }, client.connectedForMs < 3_000 ? 2_000 : 0);
+    return () => window.clearTimeout(deferTimer);
   }, [
+    client,
     createAgentBlock,
     deleteAgentBlock,
     focusedPreferencesLoaded,
@@ -976,7 +978,7 @@ const AgentStudioPage = () => {
     const interval = setInterval(() => {
       if (!hasRunningAgentsRef.current) return;
       void loadSummarySnapshotRef.current();
-    }, 10_000);
+    }, 30_000); // P2: increased from 10s to 30s to reduce baseline RPC load
     return () => clearInterval(interval);
   }, [status]);
 
@@ -1671,23 +1673,17 @@ const AgentStudioPage = () => {
                       error={allSessionsError}
                       onRefresh={() => {
                         void loadAllSessions();
-                        void loadCumulativeUsage();
                       }}
                       activeSessionKey={focusedAgent?.sessionKey ?? null}
                       aggregateUsage={aggregateUsage}
                       aggregateUsageLoading={aggregateUsageLoading}
-                      cumulativeUsage={cumulativeUsage && (cumulativeUsage.inputTokens + cumulativeUsage.outputTokens) > 0 ? {
-                        inputTokens: cumulativeUsage.inputTokens,
-                        outputTokens: cumulativeUsage.outputTokens,
-                        totalCost: cumulativeUsage.totalCost,
-                        messageCount: cumulativeUsage.messageCount,
-                      } : aggregateTokensFromList ? {
+                      cumulativeUsage={aggregateTokensFromList ? {
                         inputTokens: aggregateTokensFromList.inputTokens,
                         outputTokens: aggregateTokensFromList.outputTokens,
                         totalCost: null,
                         messageCount: 0,
                       } : null}
-                      cumulativeUsageLoading={cumulativeUsageLoading}
+                      cumulativeUsageLoading={allSessionsLoading}
                       onSessionClick={(sessionKey, agentId) => {
                         if (agentId) {
                           flushPendingDraft(focusedAgent?.agentId ?? null);

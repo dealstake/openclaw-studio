@@ -357,6 +357,7 @@ export class GatewayBrowserClient {
   private connectSent = false;
   private connectTimer: number | null = null;
   private backoffMs = 800;
+  private _connectedAtMs = 0;
 
   constructor(private opts: GatewayBrowserClientOptions) {}
 
@@ -376,26 +377,35 @@ export class GatewayBrowserClient {
     return this.ws?.readyState === WebSocket.OPEN;
   }
 
+  /** Milliseconds since the current connection was established (0 if not connected). */
+  get connectedForMs(): number {
+    return this._connectedAtMs > 0 ? Date.now() - this._connectedAtMs : 0;
+  }
+
   private connect() {
     if (this.closed) return;
+    this._connectedAtMs = 0;
     this.ws = new WebSocket(this.opts.url);
     this.ws.onopen = () => this.queueConnect();
     this.ws.onmessage = (ev) => this.handleMessage(String(ev.data ?? ""));
     this.ws.onclose = (ev) => {
       const reason = String(ev.reason ?? "");
+      const isSlowConsumer = ev.code === 1008;
       this.ws = null;
+      this._connectedAtMs = 0;
       this.flushPending(new Error(`gateway closed (${ev.code}): ${reason}`));
       this.opts.onClose?.({ code: ev.code, reason });
-      this.scheduleReconnect();
+      this.scheduleReconnect(isSlowConsumer);
     };
     this.ws.onerror = () => {
       // ignored; close handler will fire
     };
   }
 
-  private scheduleReconnect() {
+  private scheduleReconnect(isSlowConsumer = false) {
     if (this.closed) return;
-    const delay = this.backoffMs;
+    // Use longer initial backoff for slow consumer disconnects to avoid reconnect storms
+    const delay = isSlowConsumer ? Math.max(this.backoffMs, 5_000) : this.backoffMs;
     this.backoffMs = Math.min(this.backoffMs * 1.7, 15_000);
     window.setTimeout(() => this.connect(), delay);
   }
@@ -500,6 +510,7 @@ export class GatewayBrowserClient {
           });
         }
         this.backoffMs = 800;
+        this._connectedAtMs = Date.now();
         this.opts.onHello?.(hello);
       })
       .catch(() => {
