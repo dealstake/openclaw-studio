@@ -83,6 +83,8 @@ export const TaskWizardModal = memo(function TaskWizardModal({
   const [showTemplates, setShowTemplates] = useState(false);
   const [localAgents, setLocalAgents] = useState<string[]>(agents);
 
+  const [error, setError] = useState<string | null>(null);
+
   // Mount animation: delay "visible" state by one frame so CSS transitions fire
   const [visible, setVisible] = useState(false);
   useEffect(() => {
@@ -120,11 +122,13 @@ export const TaskWizardModal = memo(function TaskWizardModal({
     const payload = wizard.confirm();
     if (!payload) return;
     setConfirmBusy(true);
+    setError(null);
     try {
       await onCreateTask(payload);
       wizard.reset();
       onClose();
-    } catch {
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create task.");
       setConfirmBusy(false);
     }
   }, [wizard, onCreateTask, onClose]);
@@ -230,6 +234,12 @@ export const TaskWizardModal = memo(function TaskWizardModal({
             <X className="h-4 w-4" />
           </button>
         </div>
+
+        {error && (
+          <div className="shrink-0 bg-destructive/10 px-4 py-2 text-center text-xs text-destructive">
+            {error}
+          </div>
+        )}
 
         {/* Step content */}
         <div className="min-h-0 flex-1 overflow-hidden">

@@ -38,6 +38,7 @@ export type CronJobState = {
   lastStatus?: "ok" | "error" | "skipped";
   lastError?: string;
   lastDurationMs?: number;
+  runCount?: number;
 };
 
 export type CronJobSummary = {
@@ -45,6 +46,7 @@ export type CronJobSummary = {
   name: string;
   agentId?: string;
   enabled: boolean;
+  createdAtMs?: number;
   updatedAtMs: number;
   schedule: CronSchedule;
   sessionTarget: CronSessionTarget;

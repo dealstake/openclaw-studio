@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AgentChatPanel } from "@/features/agents/components/AgentChatPanel";
+import { type AgentChatItem, buildFinalAgentChatItems } from "@/features/agents/components/chatItems";
 import {
   AgentBrainPanel,
   AgentSettingsPanel,
@@ -170,7 +171,7 @@ const AgentStudioPage = () => {
   const [contextMode, setContextMode] = useState<"agent" | "files">("agent");
   const [contextTab, setContextTab] = useState<ContextTab>("settings");
   const [viewingSessionKey, setViewingSessionKey] = useState<string | null>(null);
-  const [viewingSessionHistory, setViewingSessionHistory] = useState<string[]>([]);
+  const [viewingSessionHistory, setViewingSessionHistory] = useState<AgentChatItem[]>([]);
   const [viewingSessionLoading, setViewingSessionLoading] = useState(false);
   const [isCompacting, setIsCompacting] = useState(false);
   const [lastCompactedAt, setLastCompactedAt] = useState<number | null>(null);
@@ -1708,11 +1709,16 @@ const AgentStudioPage = () => {
                                 lines.push(text);
                               }
                             }
-                            setViewingSessionHistory(lines);
+                            const items = buildFinalAgentChatItems({
+                              outputLines: lines,
+                              showThinkingTraces: true,
+                              toolCallingEnabled: true,
+                            });
+                            setViewingSessionHistory(items);
                           })
                           .catch((err) => {
                             console.error("Failed to load session history:", err);
-                            setViewingSessionHistory([`Error loading session history: ${err instanceof Error ? err.message : "Unknown error"}`]);
+                            setViewingSessionHistory([{ kind: "assistant", text: `Error loading session history: ${err instanceof Error ? err.message : "Unknown error"}` }]);
                           })
                           .finally(() => setViewingSessionLoading(false));
                       }}

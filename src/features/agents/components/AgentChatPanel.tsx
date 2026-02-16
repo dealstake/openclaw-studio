@@ -62,7 +62,7 @@ type AgentChatPanelProps = {
   isCompacting?: boolean;
   lastCompactedAt?: number | null;
   viewingSessionKey?: string | null;
-  viewingSessionHistory?: string[];
+  viewingSessionHistory?: AgentChatItem[];
   viewingSessionLoading?: boolean;
   onExitSessionView?: () => void;
 };
@@ -910,25 +910,15 @@ export const AgentChatPanel = memo(function AgentChatPanel({
               ) : viewingSessionHistory.length === 0 ? (
                 <EmptyStatePanel title="No messages in this session." compact className="p-3 text-xs" />
               ) : (
-                <div className="flex min-w-0 flex-col gap-3 text-xs text-foreground">
-                  {viewingSessionHistory.map((line, i) =>
-                    line.startsWith("> ") ? (
-                      <div
-                        key={`hist-${i}`}
-                        className="rounded-md border border-border/70 bg-muted/70 px-3 py-2 text-foreground"
-                      >
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{line}</ReactMarkdown>
-                      </div>
-                    ) : (
-                      <div
-                        key={`hist-${i}`}
-                        className="agent-markdown min-w-0 overflow-hidden rounded-md border border-transparent px-0.5"
-                      >
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{line}</ReactMarkdown>
-                      </div>
-                    )
-                  )}
-                </div>
+                <AgentChatFinalItems
+                  agentId={agent.agentId}
+                  name={agent.name}
+                  avatarSeed={avatarSeed}
+                  avatarUrl={agent.avatarUrl ?? null}
+                  chatItems={viewingSessionHistory}
+                  autoExpandThinking={false}
+                  lastThinkingItemIndex={-1}
+                />
               )}
             </div>
           </div>

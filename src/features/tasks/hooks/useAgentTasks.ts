@@ -94,10 +94,13 @@ async function deleteTaskMetadata(agentId: string, taskId: string): Promise<void
 
 function enrichTasksWithCronData(
   tasks: StudioTask[],
-  cronJobs: CronJobSummary[]
+  cronJobs: CronJobSummary[],
+  agentId: string
 ): StudioTask[] {
   const cronMap = new Map(cronJobs.map((j) => [j.id, j]));
-  return tasks.map((task) => {
+  const knownCronJobIds = new Set(tasks.map((t) => t.cronJobId));
+
+  const enrichedTasks = tasks.map((task) => {
     const cron = cronMap.get(task.cronJobId);
     if (!cron) return task;
     return {
@@ -106,13 +109,57 @@ function enrichTasksWithCronData(
       lastRunAt: cron.state.lastRunAtMs
         ? new Date(cron.state.lastRunAtMs).toISOString()
         : task.lastRunAt,
-      lastRunStatus: cron.state.lastStatus === "ok"
-        ? "success"
-        : cron.state.lastStatus === "error"
-          ? "error"
-          : task.lastRunStatus,
+      lastRunStatus:
+        cron.state.lastStatus === "ok"
+          ? "success"
+          : cron.state.lastStatus === "error"
+            ? "error"
+            : task.lastRunStatus,
     };
   });
+
+  // Identify orphan cron jobs (jobs for this agent but not in tasks list)
+  const orphanJobs = cronJobs.filter(
+    (job) =>
+      job.agentId === agentId &&
+      !knownCronJobIds.has(job.id) &&
+      !job.id.startsWith("sys:") // Ignore system jobs if any
+  );
+
+  const synthesizedTasks: StudioTask[] = orphanJobs.map((job) => ({
+    id: job.id, // Use cron job ID as task ID
+    cronJobId: job.id,
+    agentId: job.agentId ?? agentId,
+    name: job.name || "[UNMANAGED] Unknown Task",
+    description: "This task exists in the gateway but has no Studio metadata.",
+    type: "periodic", // Default fallback
+    schedule: { type: "periodic", intervalMs: 3600000 }, // Dummy schedule
+    prompt:
+      job.payload.kind === "agentTurn"
+        ? job.payload.message
+        : job.payload.kind === "systemEvent"
+          ? job.payload.text
+          : JSON.stringify(job.payload),
+    model:
+      job.payload.kind === "agentTurn" ? job.payload.model ?? "default" : "default",
+    deliveryChannel: null,
+    deliveryTarget: null,
+    enabled: job.enabled,
+    createdAt: new Date(job.createdAtMs ?? Date.now()).toISOString(),
+    updatedAt: new Date(job.createdAtMs ?? Date.now()).toISOString(),
+    lastRunAt: job.state.lastRunAtMs
+      ? new Date(job.state.lastRunAtMs).toISOString()
+      : null,
+    lastRunStatus:
+      job.state.lastStatus === "ok"
+        ? "success"
+        : job.state.lastStatus === "error"
+          ? "error"
+          : null,
+    runCount: job.state.runCount ?? 0,
+  }));
+
+  return [...enrichedTasks, ...synthesizedTasks];
 }
 
 // ─── Hook ────────────────────────────────────────────────────────────────────
@@ -136,12 +183,13 @@ export const useAgentTasks = (
     setLoading(true);
     try {
       const raw = await fetchTasks(agentId);
-      const enriched = enrichTasksWithCronData(raw, cronJobs);
+      const enriched = enrichTasksWithCronData(raw, cronJobs, agentId);
       setTasks(enriched);
       setError(null);
     } catch (err) {
       if (!isGatewayDisconnectLikeError(err)) {
-        const message = err instanceof Error ? err.message : "Failed to load tasks.";
+        const message =
+          err instanceof Error ? err.message : "Failed to load tasks.";
         setError(message);
       }
     } finally {
