@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { readTasks, writeTasks, ensureTaskStateDir, removeTaskStateDir } from "@/features/tasks/lib/taskStore";
+import { isSidecarConfigured, sidecarGet, sidecarMutate } from "@/lib/workspace/sidecar";
 import type { StudioTask, UpdateTaskPayload } from "@/features/tasks/types";
 
 export const runtime = "nodejs";
@@ -12,6 +13,13 @@ export async function GET(request: NextRequest) {
     if (!agentId) {
       return NextResponse.json({ error: "agentId query parameter is required." }, { status: 400 });
     }
+
+    if (isSidecarConfigured()) {
+      const resp = await sidecarGet("/tasks", { agentId });
+      const data = await resp.json();
+      return NextResponse.json(data, { status: resp.status });
+    }
+
     const tasks = readTasks(agentId);
     return NextResponse.json({ tasks });
   } catch (err) {
@@ -32,6 +40,12 @@ export async function POST(request: NextRequest) {
     const { task } = body as { task?: StudioTask };
     if (!task?.id || !task?.agentId) {
       return NextResponse.json({ error: "task.id and task.agentId are required." }, { status: 400 });
+    }
+
+    if (isSidecarConfigured()) {
+      const resp = await sidecarMutate("/tasks", "POST", { task });
+      const data = await resp.json();
+      return NextResponse.json(data, { status: resp.status });
     }
 
     const tasks = readTasks(task.agentId);
@@ -64,6 +78,12 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "agentId, taskId, and patch are required." }, { status: 400 });
     }
 
+    if (isSidecarConfigured()) {
+      const resp = await sidecarMutate("/tasks", "PATCH", { agentId, taskId, patch });
+      const data = await resp.json();
+      return NextResponse.json(data, { status: resp.status });
+    }
+
     const tasks = readTasks(agentId);
     const idx = tasks.findIndex((t) => t.id === taskId);
     if (idx === -1) {
@@ -94,6 +114,12 @@ export async function DELETE(request: NextRequest) {
     const { agentId, taskId } = body as { agentId?: string; taskId?: string };
     if (!agentId || !taskId) {
       return NextResponse.json({ error: "agentId and taskId are required." }, { status: 400 });
+    }
+
+    if (isSidecarConfigured()) {
+      const resp = await sidecarMutate("/tasks", "DELETE", { agentId, taskId });
+      const data = await resp.json();
+      return NextResponse.json(data, { status: resp.status });
     }
 
     const tasks = readTasks(agentId);

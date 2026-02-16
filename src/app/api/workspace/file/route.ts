@@ -6,6 +6,7 @@ import {
   readWorkspaceFile,
   writeWorkspaceFile,
 } from "@/lib/workspace/resolve";
+import { isSidecarConfigured, sidecarGet, sidecarMutate } from "@/lib/workspace/sidecar";
 
 export const runtime = "nodejs";
 
@@ -13,7 +14,7 @@ export const runtime = "nodejs";
  * GET /api/workspace/file?agentId=<id>&path=<relative>
  *
  * Read a single file from an agent's workspace.
- * Returns content for text files, metadata-only for binary/large files.
+ * Proxies to sidecar when running on Cloud Run.
  */
 export async function GET(request: Request) {
   try {
@@ -42,6 +43,14 @@ export async function GET(request: Request) {
       );
     }
 
+    // ─── Sidecar proxy ────────────────────────────────────────────────
+    if (isSidecarConfigured()) {
+      const resp = await sidecarGet("/file", { agentId, path: filePath });
+      const data = await resp.json();
+      return NextResponse.json(data, { status: resp.status });
+    }
+
+    // ─── Local filesystem ─────────────────────────────────────────────
     const result = readWorkspaceFile(agentId, filePath);
 
     return NextResponse.json({
@@ -134,6 +143,18 @@ export async function PUT(request: Request) {
       );
     }
 
+    // ─── Sidecar proxy ────────────────────────────────────────────────
+    if (isSidecarConfigured()) {
+      const resp = await sidecarMutate("/file", "PUT", {
+        agentId: trimmedAgentId,
+        path: trimmedPath,
+        content,
+      });
+      const data = await resp.json();
+      return NextResponse.json(data, { status: resp.status });
+    }
+
+    // ─── Local filesystem ─────────────────────────────────────────────
     const result = writeWorkspaceFile(trimmedAgentId, trimmedPath, content);
 
     return NextResponse.json({

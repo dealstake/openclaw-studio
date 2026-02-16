@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { isSafeAgentId, listWorkspaceDir } from "@/lib/workspace/resolve";
+import { isSidecarConfigured, sidecarGet } from "@/lib/workspace/sidecar";
 
 export const runtime = "nodejs";
 
@@ -8,8 +9,7 @@ export const runtime = "nodejs";
  * GET /api/workspace/files?agentId=<id>&path=<relative>
  *
  * List files and directories in an agent's workspace.
- * - `agentId` (required): the agent whose workspace to browse
- * - `path` (optional): relative path within workspace (default: root)
+ * Proxies to sidecar when running on Cloud Run, falls back to local fs.
  */
 export async function GET(request: Request) {
   try {
@@ -31,6 +31,14 @@ export async function GET(request: Request) {
       );
     }
 
+    // ─── Sidecar proxy ────────────────────────────────────────────────
+    if (isSidecarConfigured()) {
+      const resp = await sidecarGet("/files", { agentId, path: relativePath });
+      const data = await resp.json();
+      return NextResponse.json(data, { status: resp.status });
+    }
+
+    // ─── Local filesystem ─────────────────────────────────────────────
     const { entries, workspace } = listWorkspaceDir(agentId, relativePath);
 
     return NextResponse.json({
