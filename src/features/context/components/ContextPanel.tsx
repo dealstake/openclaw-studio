@@ -44,6 +44,19 @@ export const ContextPanel = memo(function ContextPanel({
   const [moreOpen, setMoreOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
 
+  // Lazy mount: track which tabs have been activated at least once.
+  // Once mounted, a tab stays mounted to preserve its internal state.
+  // Updated in handleTabClick and also via derivation when parent changes activeTab directly.
+  const [mountedTabs, setMountedTabs] = useState<Set<ContextTab>>(
+    () => new Set<ContextTab>([activeTab])
+  );
+
+  // Ensure the active tab is always mounted — handles cases where parent sets
+  // activeTab directly (e.g., programmatic tab switches) without going through handleTabClick.
+  const effectiveMountedTabs = mountedTabs.has(activeTab)
+    ? mountedTabs
+    : new Set([...mountedTabs, activeTab]);
+
   // Close dropdown on outside click
   useEffect(() => {
     if (!moreOpen) return;
@@ -60,6 +73,12 @@ export const ContextPanel = memo(function ContextPanel({
     (tab: ContextTab) => {
       onTabChange(tab);
       setMoreOpen(false);
+      setMountedTabs((prev) => {
+        if (prev.has(tab)) return prev;
+        const next = new Set(prev);
+        next.add(tab);
+        return next;
+      });
     },
     [onTabChange]
   );
@@ -152,29 +171,43 @@ export const ContextPanel = memo(function ContextPanel({
         ) : null}
       </div>
 
-      {/* Tab content */}
+      {/* Tab content — lazy mount: tabs mount on first activation, stay mounted to preserve state */}
       <div className="min-h-0 min-w-0 flex-1 overflow-hidden">
-        <div role="tabpanel" className={activeTab === "tasks" ? "flex h-full w-full" : "hidden"}>
-          {tasksContent}
-        </div>
-        <div role="tabpanel" className={activeTab === "brain" ? "flex h-full w-full" : "hidden"}>
-          {brainContent}
-        </div>
-        <div role="tabpanel" className={activeTab === "settings" ? "flex h-full w-full" : "hidden"}>
-          {settingsContent}
-        </div>
-        <div role="tabpanel" className={activeTab === "channels" ? "flex h-full w-full" : "hidden"}>
-          {channelsContent ?? null}
-        </div>
-        <div role="tabpanel" className={activeTab === "sessions" ? "flex h-full w-full" : "hidden"}>
-          {sessionsContent ?? null}
-        </div>
-        <div role="tabpanel" className={activeTab === "cron" ? "flex h-full w-full" : "hidden"}>
-          {cronContent ?? null}
-        </div>
-        <div role="tabpanel" className={activeTab === "workspace" ? "flex h-full w-full" : "hidden"}>
-          {workspaceContent ?? null}
-        </div>
+        {effectiveMountedTabs.has("tasks") && (
+          <div role="tabpanel" className={activeTab === "tasks" ? "flex h-full w-full" : "hidden"}>
+            {tasksContent}
+          </div>
+        )}
+        {effectiveMountedTabs.has("brain") && (
+          <div role="tabpanel" className={activeTab === "brain" ? "flex h-full w-full" : "hidden"}>
+            {brainContent}
+          </div>
+        )}
+        {effectiveMountedTabs.has("settings") && (
+          <div role="tabpanel" className={activeTab === "settings" ? "flex h-full w-full" : "hidden"}>
+            {settingsContent}
+          </div>
+        )}
+        {effectiveMountedTabs.has("channels") && (
+          <div role="tabpanel" className={activeTab === "channels" ? "flex h-full w-full" : "hidden"}>
+            {channelsContent ?? null}
+          </div>
+        )}
+        {effectiveMountedTabs.has("sessions") && (
+          <div role="tabpanel" className={activeTab === "sessions" ? "flex h-full w-full" : "hidden"}>
+            {sessionsContent ?? null}
+          </div>
+        )}
+        {effectiveMountedTabs.has("cron") && (
+          <div role="tabpanel" className={activeTab === "cron" ? "flex h-full w-full" : "hidden"}>
+            {cronContent ?? null}
+          </div>
+        )}
+        {effectiveMountedTabs.has("workspace") && (
+          <div role="tabpanel" className={activeTab === "workspace" ? "flex h-full w-full" : "hidden"}>
+            {workspaceContent ?? null}
+          </div>
+        )}
       </div>
     </div>
   );

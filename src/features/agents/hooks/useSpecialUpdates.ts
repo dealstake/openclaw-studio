@@ -183,7 +183,12 @@ export function useSpecialUpdates(params: {
     }
   }, [stateRef, updateSpecialLatestUpdate]);
 
-  // Track agent special updates
+  // Track agent special updates — debounced to avoid firing on every agents identity change.
+  // Uses a serialized key of agent IDs + last messages to detect actual content changes.
+  const agentsFingerprint = agents
+    .map((a) => `${a.agentId}:${a.lastUserMessage?.trim() ?? ""}`)
+    .join("|");
+
   useEffect(() => {
     for (const agent of agents) {
       const lastMessage = agent.lastUserMessage?.trim() ?? "";
@@ -195,7 +200,8 @@ export function useSpecialUpdates(params: {
       specialUpdateRef.current.set(key, marker);
       void updateSpecialLatestUpdate(agent.agentId, agent, lastMessage);
     }
-  }, [agents, heartbeatTick, updateSpecialLatestUpdate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- agentsFingerprint replaces agents identity dep
+  }, [agentsFingerprint, heartbeatTick, updateSpecialLatestUpdate]);
 
   return {
     heartbeatTick,

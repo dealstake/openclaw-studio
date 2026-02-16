@@ -41,10 +41,13 @@ function parseUsageResult(result: UsageRpcResult): SessionUsage {
   };
 }
 
+const USAGE_THROTTLE_MS = 5000; // Minimum 5s between sessions.usage calls
+
 export const useSessionUsage = (client: GatewayClient, status: GatewayStatus) => {
   const [sessionUsage, setSessionUsage] = useState<SessionUsage | null>(null);
   const [sessionUsageLoading, setSessionUsageLoading] = useState(false);
   const loadingRef = useRef(false);
+  const lastCallRef = useRef(0);
 
   const loadSessionUsage = useCallback(
     async (sessionKey: string) => {
@@ -52,6 +55,9 @@ export const useSessionUsage = (client: GatewayClient, status: GatewayStatus) =>
         setSessionUsage(null);
         return;
       }
+      const now = Date.now();
+      if (now - lastCallRef.current < USAGE_THROTTLE_MS) return;
+      lastCallRef.current = now;
       loadingRef.current = true;
       setSessionUsageLoading(true);
       try {
@@ -88,12 +94,16 @@ export const useCumulativeUsage = (client: GatewayClient, status: GatewayStatus)
   const [cumulativeUsage, setCumulativeUsage] = useState<SessionUsage | null>(null);
   const [cumulativeUsageLoading, setCumulativeUsageLoading] = useState(false);
   const cumulativeLoadingRef = useRef(false);
+  const lastCumulativeCallRef = useRef(0);
 
   const loadCumulativeUsage = useCallback(async () => {
     if (status !== "connected" || cumulativeLoadingRef.current) {
       setCumulativeUsage(null);
       return;
     }
+    const now = Date.now();
+    if (now - lastCumulativeCallRef.current < USAGE_THROTTLE_MS) return;
+    lastCumulativeCallRef.current = now;
     cumulativeLoadingRef.current = true;
     setCumulativeUsageLoading(true);
     try {

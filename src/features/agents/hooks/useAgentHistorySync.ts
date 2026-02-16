@@ -79,17 +79,33 @@ export function useAgentHistorySync(params: {
     }
   }, [agentsVersion, stateRef, status]);
 
-  // Poll history for running focused agent
+  // Poll history for running focused agent — capped at 60 polls per run
+  // to prevent unbounded RPC storms if status gets stuck as "running".
+  const pollCountRef = useRef(0);
+  const prevFocusedRunRef = useRef<string | null>(null);
+
   useEffect(() => {
     if (status !== "connected") return;
     if (!focusedAgentId) return;
     if (!focusedAgentRunning) return;
+
+    // Reset poll count when a new agent run starts
+    const runKey = `${focusedAgentId}:running`;
+    if (prevFocusedRunRef.current !== runKey) {
+      prevFocusedRunRef.current = runKey;
+      pollCountRef.current = 0;
+    }
+
     void loadAgentHistoryRef.current(focusedAgentId);
+    pollCountRef.current++;
+
     const timer = window.setInterval(() => {
       const latest = stateRef.current.agents.find((entry) => entry.agentId === focusedAgentId);
       if (!latest || latest.status !== "running") return;
+      if (pollCountRef.current >= 60) return; // Cap: ~5 min at 5s intervals
+      pollCountRef.current++;
       void loadAgentHistoryRef.current(focusedAgentId);
-    }, 4500);
+    }, 5000);
     return () => {
       window.clearInterval(timer);
     };
