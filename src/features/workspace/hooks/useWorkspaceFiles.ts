@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { WorkspaceEntry, WorkspaceFileContent } from "../types";
 
@@ -19,6 +19,8 @@ type UseWorkspaceFilesResult = {
   breadcrumbs: Array<{ label: string; path: string }>;
   /** Loading state */
   loading: boolean;
+  /** Saving state (for edits) */
+  saving: boolean;
   /** Error message */
   error: string | null;
   /** Navigate into a directory */
@@ -29,6 +31,10 @@ type UseWorkspaceFilesResult = {
   closeFile: () => void;
   /** Refresh current listing */
   refresh: () => void;
+  /** Save edited file content */
+  saveFile: (relativePath: string, content: string) => Promise<boolean>;
+  /** Create a new file */
+  createFile: (relativePath: string, content: string) => Promise<boolean>;
 };
 
 /**
@@ -42,6 +48,7 @@ export const useWorkspaceFiles = ({
   const [viewingFile, setViewingFile] = useState<WorkspaceFileContent | null>(null);
   const [currentPath, setCurrentPath] = useState("");
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Track the latest agentId to avoid stale fetches
@@ -67,7 +74,6 @@ export const useWorkspaceFiles = ({
           throw new Error(body.error ?? `HTTP ${res.status}`);
         }
         const data = (await res.json()) as { entries: WorkspaceEntry[] };
-        // Only update if agentId hasn't changed
         if (agentIdRef.current?.trim() === id) {
           setEntries(data.entries);
           setViewingFile(null);
@@ -115,6 +121,56 @@ export const useWorkspaceFiles = ({
     []
   );
 
+  const saveFile = useCallback(
+    async (relativePath: string, content: string): Promise<boolean> => {
+      const id = agentIdRef.current?.trim();
+      if (!id) return false;
+      setSaving(true);
+      setError(null);
+      try {
+        const res = await fetch("/api/workspace/file", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ agentId: id, path: relativePath, content }),
+        });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({ error: res.statusText }));
+          throw new Error(body.error ?? `HTTP ${res.status}`);
+        }
+        // Refresh the file to get updated metadata
+        if (agentIdRef.current?.trim() === id) {
+          await fetchFile(relativePath);
+        }
+        return true;
+      } catch (err) {
+        if (agentIdRef.current?.trim() === id) {
+          setError(err instanceof Error ? err.message : "Failed to save file.");
+        }
+        return false;
+      } finally {
+        if (agentIdRef.current?.trim() === id) {
+          setSaving(false);
+        }
+      }
+    },
+    [fetchFile]
+  );
+
+  const createFile = useCallback(
+    async (relativePath: string, content: string): Promise<boolean> => {
+      const ok = await saveFile(relativePath, content);
+      if (ok) {
+        // Refresh directory listing to show the new file
+        const id = agentIdRef.current?.trim();
+        if (id) {
+          await fetchDir(currentPath);
+        }
+      }
+      return ok;
+    },
+    [saveFile, fetchDir, currentPath]
+  );
+
   // Load root on mount or agent change
   useEffect(() => {
     setCurrentPath("");
@@ -152,15 +208,18 @@ export const useWorkspaceFiles = ({
   }, [currentPath, fetchDir, fetchFile, viewingFile]);
 
   // Build breadcrumbs
-  const breadcrumbs = [{ label: "~", path: "" }];
-  if (currentPath) {
-    const parts = currentPath.split("/").filter(Boolean);
-    let accumulated = "";
-    for (const part of parts) {
-      accumulated = accumulated ? `${accumulated}/${part}` : part;
-      breadcrumbs.push({ label: part, path: accumulated });
+  const breadcrumbs = useMemo(() => {
+    const crumbs = [{ label: "~", path: "" }];
+    if (currentPath) {
+      const parts = currentPath.split("/").filter(Boolean);
+      let accumulated = "";
+      for (const part of parts) {
+        accumulated = accumulated ? `${accumulated}/${part}` : part;
+        crumbs.push({ label: part, path: accumulated });
+      }
     }
-  }
+    return crumbs;
+  }, [currentPath]);
 
   return {
     entries,
@@ -168,10 +227,13 @@ export const useWorkspaceFiles = ({
     currentPath,
     breadcrumbs,
     loading,
+    saving,
     error,
     navigateToDir,
     openFile,
     closeFile,
     refresh,
+    saveFile,
+    createFile,
   };
 };
