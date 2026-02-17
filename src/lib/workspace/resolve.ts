@@ -108,7 +108,7 @@ const EXCLUDED_DIRS = new Set([
 export const isExcludedEntry = (name: string): boolean =>
   EXCLUDED_DIRS.has(name) || name.startsWith(".");
 
-export type WorkspaceEntry = {
+export type ServerWorkspaceEntry = {
   name: string;
   path: string;
   type: "file" | "directory";
@@ -123,7 +123,7 @@ export type WorkspaceEntry = {
 export const listWorkspaceDir = (
   agentId: string,
   relativePath: string = ""
-): { entries: WorkspaceEntry[]; workspace: string } => {
+): { entries: ServerWorkspaceEntry[]; workspace: string } => {
   const { absolute, workspace } = resolveWorkspacePath(
     agentId,
     relativePath || ""
@@ -139,7 +139,7 @@ export const listWorkspaceDir = (
   }
 
   const dirEntries = fs.readdirSync(absolute, { withFileTypes: true });
-  const entries: WorkspaceEntry[] = [];
+  const entries: ServerWorkspaceEntry[] = [];
 
   for (const entry of dirEntries) {
     if (isExcludedEntry(entry.name)) continue;

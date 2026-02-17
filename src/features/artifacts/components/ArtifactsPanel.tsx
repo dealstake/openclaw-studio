@@ -111,14 +111,9 @@ function fileTypeLabel(mime: string): string {
 
 // ── Format helpers ─────────────────────────────────────────────────────────────
 
-function formatSize(bytes?: string): string {
-  if (!bytes) return "—";
-  const b = parseInt(bytes, 10);
-  if (isNaN(b)) return "—";
-  if (b < 1024) return `${b} B`;
-  if (b < 1024 * 1024) return `${(b / 1024).toFixed(1)} KB`;
-  return `${(b / (1024 * 1024)).toFixed(1)} MB`;
-}
+import { formatSizeFromString } from "@/lib/text/format";
+
+const formatSize = formatSizeFromString;
 
 function formatTimestamp(iso: string): string {
   try {
