@@ -88,11 +88,22 @@ export const ProjectsPanel = memo(function ProjectsPanel({
         </div>
       </div>
 
-      {/* Loading */}
+      {/* Loading Skeletons */}
       {loading && projects.length === 0 && (
-        <div className="flex items-center justify-center py-6">
-          <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground" />
-          <span className="ml-2 font-mono text-[10px] text-muted-foreground">Loading…</span>
+        <div className="flex flex-col gap-2">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="rounded-md border border-border/80 bg-card/70 px-3 py-2.5 animate-pulse">
+              <div className="flex items-center gap-2">
+                <div className="h-4 w-16 rounded bg-muted/40" />
+                <div className="h-2 w-2 rounded-full bg-muted/40" />
+                <div className="h-4 w-32 rounded bg-muted/40" />
+              </div>
+              <div className="mt-2 h-3 w-3/4 rounded bg-muted/30" />
+              <div className="mt-2 border-t border-border/40 pt-2">
+                <div className="h-1.5 w-full rounded-full bg-muted/30" />
+              </div>
+            </div>
+          ))}
         </div>
       )}
 

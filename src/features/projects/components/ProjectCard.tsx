@@ -1,4 +1,4 @@
-import { memo, useState } from "react";
+import { memo, useState, useCallback } from "react";
 import {
   Archive,
   ChevronDown,
@@ -25,6 +25,7 @@ export const ProjectCard = memo(function ProjectCard({
   onArchive,
 }: ProjectCardProps) {
   const [tasksExpanded, setTasksExpanded] = useState(false);
+  const [toggling, setToggling] = useState(false);
   const config = STATUS_CONFIG[project.statusEmoji];
   const StatusIcon = config?.icon ?? ClipboardList;
   const statusLabel = config?.label ?? project.status;
@@ -38,9 +39,33 @@ export const ProjectCard = memo(function ProjectCard({
   const linkedTasks = details?.associatedTasks ?? [];
   const isActive = project.statusEmoji === "🔨";
   const canToggle = !!TOGGLE_MAP[project.statusEmoji];
+  const isDone = project.statusEmoji === "✅";
+
+  const handleToggle = useCallback(async () => {
+    if (toggling) return;
+    setToggling(true);
+    try {
+      await Promise.resolve(onToggleStatus());
+    } finally {
+      setToggling(false);
+    }
+  }, [toggling, onToggleStatus]);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onContinue();
+    }
+  }, [onContinue]);
 
   return (
-    <div className="group/task rounded-md border border-border/80 bg-card/70 px-3 py-2.5 transition hover:border-border">
+    <div
+      className="group/task rounded-md border border-border/80 bg-card/70 px-3 py-2.5 transition hover:border-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-1 focus-visible:ring-offset-card cursor-pointer"
+      role="button"
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
+      aria-label={`${project.name} — ${statusLabel}${details?.continuation?.nextStep ? `. Next: ${details.continuation.nextStep}` : ""}`}
+    >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           {/* Header Row: Status + Priority + Name + Task Badge */}
@@ -94,16 +119,16 @@ export const ProjectCard = memo(function ProjectCard({
                 </div>
               )}
 
-              {/* Next Step */}
-              {details.continuation.nextStep && (
+              {/* Next Step — suppress for Done projects */}
+              {!isDone && details.continuation.nextStep && (
                 <div className="flex items-start gap-1.5 text-[10px] text-muted-foreground">
                   <span className="shrink-0 font-semibold text-primary/80">Next:</span>
                   <span className="line-clamp-1">{details.continuation.nextStep}</span>
                 </div>
               )}
 
-              {/* Blocked Warning */}
-              {isBlocked && (
+              {/* Blocked Warning — suppress for Done projects */}
+              {!isDone && isBlocked && (
                 <div className="flex items-start gap-1.5 text-[10px] text-red-400">
                   <span className="shrink-0 font-semibold">Blocked:</span>
                   <span className="line-clamp-1">{details.continuation.blockedBy}</span>
@@ -116,7 +141,7 @@ export const ProjectCard = memo(function ProjectCard({
                   <button
                     type="button"
                     className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition"
-                    onClick={() => setTasksExpanded((v) => !v)}
+                    onClick={(e) => { e.stopPropagation(); setTasksExpanded((v) => !v); }}
                   >
                     {tasksExpanded ? (
                       <ChevronDown className="h-3 w-3" />
@@ -141,19 +166,22 @@ export const ProjectCard = memo(function ProjectCard({
           )}
         </div>
 
-        {/* Actions (hover-reveal, matching TaskCard) */}
-        <div className="flex items-center gap-1 opacity-0 transition group-focus-within/task:opacity-100 group-hover/task:opacity-100">
+        {/* Actions — always visible on mobile, hover-reveal on desktop */}
+        <div className="flex items-center gap-1 opacity-100 sm:opacity-0 transition sm:group-focus-within/task:opacity-100 sm:group-hover/task:opacity-100">
           {/* Status toggle */}
           {canToggle && (
             <button
               type="button"
               aria-label={isActive ? "Park project" : "Activate project"}
+              disabled={toggling}
               className={`relative h-5 w-9 rounded-full border transition ${
+                toggling ? "opacity-50 cursor-not-allowed" : ""
+              } ${
                 isActive
                   ? "border-emerald-500/40 bg-emerald-500/20"
                   : "border-border/80 bg-muted/40"
               }`}
-              onClick={(e) => { e.stopPropagation(); onToggleStatus(); }}
+              onClick={(e) => { e.stopPropagation(); void handleToggle(); }}
             >
               <span
                 className={`absolute top-0.5 h-3.5 w-3.5 rounded-full transition-all ${
@@ -165,8 +193,8 @@ export const ProjectCard = memo(function ProjectCard({
             </button>
           )}
 
-          {/* Archive (Done projects only) */}
-          {project.statusEmoji === "✅" && (
+          {/* Archive (Done and Parked projects) */}
+          {(project.statusEmoji === "✅" || project.statusEmoji === "⏸️") && (
             <button
               type="button"
               className="flex h-7 w-7 items-center justify-center rounded-md border border-border/80 bg-card/70 text-muted-foreground transition hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-400"

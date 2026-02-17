@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useCallback, useEffect, useState } from "react";
-import { createPortal } from "react-dom";
+import * as Dialog from "@radix-ui/react-dialog";
 import {
   X,
   ArrowLeft,
@@ -79,7 +79,7 @@ const PRIORITY_OPTIONS = [
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function slugify(name: string): string {
+export function slugify(name: string): string {
   return name
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
@@ -87,7 +87,7 @@ function slugify(name: string): string {
     .slice(0, 60);
 }
 
-function generateMarkdown(form: ProjectForm): string {
+export function generateMarkdown(form: ProjectForm): string {
   const now = new Date().toISOString().slice(0, 10);
   return `# ${form.name}
 
@@ -123,8 +123,6 @@ _Updated by the agent at end of each work session_
 `;
 }
 
-// appendToIndex is now shared via ../lib/indexTable.ts → appendRow
-
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export const ProjectWizardModal = memo(function ProjectWizardModal({
@@ -142,42 +140,18 @@ export const ProjectWizardModal = memo(function ProjectWizardModal({
   });
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [visible, setVisible] = useState(false);
 
-  // Animate in
+  // Reset state when dialog opens
   useEffect(() => {
     if (open) {
-      const raf = requestAnimationFrame(() => setVisible(true));
-      return () => cancelAnimationFrame(raf);
+      setStep("type-select");
+      setForm({ type: "feature", name: "", description: "", priority: "🟡 P1" });
+      setError(null);
+      setCreating(false);
     }
-    setVisible(false);
-  }, [open]);
-
-  // Escape key
-  useEffect(() => {
-    if (!open) return;
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") handleClose();
-    };
-    document.addEventListener("keydown", handleKey);
-    return () => document.removeEventListener("keydown", handleKey);
-  });
-
-  // Lock body scroll
-  useEffect(() => {
-    if (!open) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
   }, [open]);
 
   const handleClose = useCallback(() => {
-    setStep("type-select");
-    setForm({ type: "feature", name: "", description: "", priority: "🟡 P1" });
-    setError(null);
-    setCreating(false);
     onClose();
   }, [onClose]);
 
@@ -258,77 +232,69 @@ export const ProjectWizardModal = memo(function ProjectWizardModal({
     }
   }, [form, agentId, onCreated, handleClose]);
 
-  if (!open) return null;
-
-  return createPortal(
-    <div
-      data-state={visible ? "open" : "closed"}
-      className="fixed inset-0 z-[100] flex items-end justify-center bg-background/70 backdrop-blur-sm transition-opacity duration-300 ease-out data-[state=closed]:opacity-0 sm:items-center"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Create Project"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) handleClose();
-      }}
-    >
-      <div
-        data-state={visible ? "open" : "closed"}
-        className="flex w-full flex-col overflow-hidden bg-card shadow-2xl transition-all duration-300 ease-out data-[state=closed]:translate-y-full data-[state=closed]:opacity-0 sm:data-[state=closed]:scale-95 sm:data-[state=closed]:translate-y-0 sm:max-w-lg sm:rounded-xl sm:border sm:border-border"
-      >
-        {/* Header */}
-        <div className="flex shrink-0 items-center justify-between border-b border-border/40 px-4 py-3">
-          <div className="flex items-center gap-2">
-            {step !== "type-select" && (
+  return (
+    <Dialog.Root open={open} onOpenChange={(isOpen) => { if (!isOpen) handleClose(); }}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-[100] bg-background/70 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+        <Dialog.Content
+          className="fixed inset-x-0 bottom-0 z-[100] flex w-full flex-col overflow-hidden bg-card shadow-2xl data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-xl sm:border sm:border-border data-[state=closed]:sm:fade-out-0 data-[state=open]:sm:fade-in-0 data-[state=closed]:sm:zoom-out-95 data-[state=open]:sm:zoom-in-95 data-[state=closed]:sm:slide-out-to-left-1/2 data-[state=closed]:sm:slide-out-to-top-[48%] data-[state=open]:sm:slide-in-from-left-1/2 data-[state=open]:sm:slide-in-from-top-[48%]"
+          aria-describedby={undefined}
+        >
+          {/* Header */}
+          <div className="flex shrink-0 items-center justify-between border-b border-border/40 px-4 py-3">
+            <div className="flex items-center gap-2">
+              {step !== "type-select" && (
+                <button
+                  type="button"
+                  className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted/65"
+                  onClick={() => setStep("type-select")}
+                  aria-label="Go back"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                </button>
+              )}
+              <div className="flex items-center gap-1.5">
+                <Sparkles className="h-4 w-4 text-primary" />
+                <Dialog.Title className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                  New Project
+                </Dialog.Title>
+              </div>
+            </div>
+            <Dialog.Close asChild>
               <button
                 type="button"
                 className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted/65"
-                onClick={() => setStep("type-select")}
-                aria-label="Go back"
+                aria-label="Close"
               >
-                <ArrowLeft className="h-4 w-4" />
+                <X className="h-4 w-4" />
               </button>
-            )}
-            <div className="flex items-center gap-1.5">
-              <Sparkles className="h-4 w-4 text-primary" />
-              <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                New Project
-              </span>
+            </Dialog.Close>
+          </div>
+
+          {/* Error */}
+          {error && (
+            <div className="shrink-0 bg-destructive/10 px-4 py-2 text-center text-xs text-destructive">
+              {error}
             </div>
-          </div>
-          <button
-            type="button"
-            className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted/65"
-            onClick={handleClose}
-            aria-label="Close"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        {/* Error */}
-        {error && (
-          <div className="shrink-0 bg-destructive/10 px-4 py-2 text-center text-xs text-destructive">
-            {error}
-          </div>
-        )}
-
-        {/* Content */}
-        <div className="overflow-y-auto">
-          {step === "type-select" && (
-            <TypeSelectStep onSelect={handleSelectType} />
           )}
-          {step === "details" && (
-            <DetailsStep
-              form={form}
-              creating={creating}
-              onChange={setForm}
-              onCreate={handleCreate}
-            />
-          )}
-        </div>
-      </div>
-    </div>,
-    document.body
+
+          {/* Content */}
+          <div className="overflow-y-auto">
+            {step === "type-select" && (
+              <TypeSelectStep onSelect={handleSelectType} />
+            )}
+            {step === "details" && (
+              <DetailsStep
+                form={form}
+                creating={creating}
+                onChange={setForm}
+                onCreate={handleCreate}
+              />
+            )}
+          </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 });
 
