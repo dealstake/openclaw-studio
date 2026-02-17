@@ -1,8 +1,8 @@
 "use client";
 
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
-import { Archive, ChevronDown, ChevronRight, Clock, RefreshCw, Trash2 } from "lucide-react";
-import type { TranscriptEntry } from "@/features/sessions/hooks/useTranscripts";
+import { Archive, ChevronDown, ChevronRight, Clock, RefreshCw, Search, Trash2, X } from "lucide-react";
+import type { TranscriptEntry, TranscriptSearchResult } from "@/features/sessions/hooks/useTranscripts";
 import { EmptyStatePanel } from "@/features/agents/components/EmptyStatePanel";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import { isGatewayDisconnectLikeError, parseAgentIdFromSessionKey } from "@/lib/gateway/GatewayClient";
@@ -40,6 +40,12 @@ type SessionsPanelProps = {
   transcriptsError?: string | null;
   onTranscriptsRefresh?: () => void;
   onTranscriptClick?: (sessionId: string, agentId: string) => void;
+  searchQuery?: string;
+  onSearchQueryChange?: (query: string) => void;
+  searchResults?: TranscriptSearchResult[];
+  searchLoading?: boolean;
+  searchError?: string | null;
+  onClearSearch?: () => void;
 };
 
 const CHANNEL_TYPE_LABELS: Record<string, string> = {
@@ -446,6 +452,67 @@ const SessionCard = memo(function SessionCard({
   );
 });
 
+/* ─── Search result card ─── */
+const SearchResultCard = memo(function SearchResultCard({
+  result,
+  onClick,
+}: {
+  result: TranscriptSearchResult;
+  onClick?: () => void;
+}) {
+  const displayName = result.sessionKey
+    ? humanizeSessionKey(result.sessionKey)
+    : result.sessionId.slice(0, 12);
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      className="group/result cursor-pointer rounded-md border border-border/80 bg-card/70 p-3 transition-all duration-200 hover:border-border hover:bg-muted/55"
+      onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick?.();
+        }
+      }}
+    >
+      <div className="flex items-center gap-1.5">
+        <Search className="h-3 w-3 flex-shrink-0 text-muted-foreground/60" />
+        <span className="truncate font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-foreground">
+          {displayName}
+        </span>
+        {result.archived && (
+          <span className="rounded border border-border/60 bg-muted/40 px-1 py-0.5 font-mono text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+            Archived
+          </span>
+        )}
+        <span className="ml-auto font-mono text-[9px] text-muted-foreground/60">
+          {result.matches.length} match{result.matches.length !== 1 ? "es" : ""}
+        </span>
+      </div>
+      {result.startedAt && (
+        <div className="mt-1 text-[11px] text-muted-foreground">
+          {formatRelativeTime(new Date(result.startedAt).getTime())}
+        </div>
+      )}
+      <div className="mt-1.5 flex flex-col gap-1">
+        {result.matches.slice(0, 2).map((match, i) => (
+          <div
+            key={i}
+            className="line-clamp-2 rounded bg-muted/30 px-2 py-1 text-[11px] leading-relaxed text-muted-foreground/80"
+          >
+            <span className="font-mono text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/60">
+              {match.role}:{" "}
+            </span>
+            {match.snippet}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+});
+
 export const SessionsPanel = memo(function SessionsPanel({
   client,
   sessions,
@@ -463,6 +530,12 @@ export const SessionsPanel = memo(function SessionsPanel({
   transcriptsError = null,
   onTranscriptsRefresh,
   onTranscriptClick,
+  searchQuery = "",
+  onSearchQueryChange,
+  searchResults = [],
+  searchLoading = false,
+  searchError = null,
+  onClearSearch,
 }: SessionsPanelProps) {
   const [tab, setTab] = useState<"active" | "history">("active");
   const [confirmDeleteKey, setConfirmDeleteKey] = useState<string | null>(null);
@@ -669,40 +742,107 @@ export const SessionsPanel = memo(function SessionsPanel({
 
       {/* ─── History tab ─── */}
       <div className={`min-h-0 flex-1 overflow-y-auto p-4 ${tab === "history" ? "" : "hidden"}`}>
-        {transcriptsError ? (
-          <div className="mb-3 rounded-md border border-destructive bg-destructive px-3 py-2 text-xs text-destructive-foreground">
-            {transcriptsError}
+        {/* Search input */}
+        {onSearchQueryChange ? (
+          <div className="relative mb-3">
+            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/60" />
+            <input
+              type="text"
+              className="w-full rounded-md border border-border/80 bg-card/70 py-1.5 pl-8 pr-8 font-mono text-[11px] text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:outline-none focus:ring-1 focus:ring-primary/20"
+              placeholder="Search transcripts…"
+              value={searchQuery}
+              onChange={(e) => onSearchQueryChange(e.target.value)}
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground/60 hover:text-foreground"
+                onClick={onClearSearch}
+                aria-label="Clear search"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
           </div>
         ) : null}
 
-        {transcriptsLoading && transcripts.length === 0 ? (
-          <div className="flex flex-col gap-2">
-            {[0, 1, 2, 3].map((i) => (
-              <div key={i} className="h-[72px] animate-pulse rounded-md border border-border/50 bg-muted/20" />
-            ))}
-          </div>
-        ) : null}
-
-        {!transcriptsLoading && !transcriptsError && transcripts.length === 0 ? (
-          <EmptyStatePanel title="No session history found." compact className="p-3 text-xs" />
-        ) : null}
-
-        {transcripts.length > 0 ? (
+        {/* Search results */}
+        {searchQuery.trim() ? (
           <>
-            <div className="mb-2 font-mono text-[9px] text-muted-foreground">
-              {transcripts.length} transcript{transcripts.length !== 1 ? "s" : ""}
-            </div>
-            <div className="flex flex-col gap-2">
-              {transcripts.map((t) => (
-                <TranscriptCard
-                  key={t.sessionId}
-                  transcript={t}
-                  onClick={() => onTranscriptClick?.(t.sessionId, t.sessionKey?.split(":")?.[1] ?? "")}
-                />
-              ))}
-            </div>
+            {searchError ? (
+              <div className="mb-3 rounded-md border border-destructive bg-destructive px-3 py-2 text-xs text-destructive-foreground">
+                {searchError}
+              </div>
+            ) : null}
+
+            {searchLoading ? (
+              <div className="flex flex-col gap-2">
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="h-[72px] animate-pulse rounded-md border border-border/50 bg-muted/20" />
+                ))}
+              </div>
+            ) : null}
+
+            {!searchLoading && !searchError && searchResults.length === 0 ? (
+              <EmptyStatePanel title="No results found." compact className="p-3 text-xs" />
+            ) : null}
+
+            {!searchLoading && searchResults.length > 0 ? (
+              <>
+                <div className="mb-2 font-mono text-[9px] text-muted-foreground">
+                  {searchResults.length} session{searchResults.length !== 1 ? "s" : ""} matched
+                </div>
+                <div className="flex flex-col gap-2">
+                  {searchResults.map((r) => (
+                    <SearchResultCard
+                      key={r.sessionId}
+                      result={r}
+                      onClick={() => onTranscriptClick?.(r.sessionId, r.sessionKey?.split(":")?.[1] ?? "")}
+                    />
+                  ))}
+                </div>
+              </>
+            ) : null}
           </>
-        ) : null}
+        ) : (
+          <>
+            {/* Default transcript list (no search active) */}
+            {transcriptsError ? (
+              <div className="mb-3 rounded-md border border-destructive bg-destructive px-3 py-2 text-xs text-destructive-foreground">
+                {transcriptsError}
+              </div>
+            ) : null}
+
+            {transcriptsLoading && transcripts.length === 0 ? (
+              <div className="flex flex-col gap-2">
+                {[0, 1, 2, 3].map((i) => (
+                  <div key={i} className="h-[72px] animate-pulse rounded-md border border-border/50 bg-muted/20" />
+                ))}
+              </div>
+            ) : null}
+
+            {!transcriptsLoading && !transcriptsError && transcripts.length === 0 ? (
+              <EmptyStatePanel title="No session history found." compact className="p-3 text-xs" />
+            ) : null}
+
+            {transcripts.length > 0 ? (
+              <>
+                <div className="mb-2 font-mono text-[9px] text-muted-foreground">
+                  {transcripts.length} transcript{transcripts.length !== 1 ? "s" : ""}
+                </div>
+                <div className="flex flex-col gap-2">
+                  {transcripts.map((t) => (
+                    <TranscriptCard
+                      key={t.sessionId}
+                      transcript={t}
+                      onClick={() => onTranscriptClick?.(t.sessionId, t.sessionKey?.split(":")?.[1] ?? "")}
+                    />
+                  ))}
+                </div>
+              </>
+            ) : null}
+          </>
+        )}
       </div>
     </div>
   );

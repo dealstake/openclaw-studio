@@ -67,7 +67,7 @@ import { useAllSessions } from "@/features/sessions/hooks/useAllSessions";
 import { useAllCronJobs } from "@/features/cron/hooks/useAllCronJobs";
 import { useExecApprovals } from "@/features/exec-approvals/hooks/useExecApprovals";
 import { useSessionUsage } from "@/features/sessions/hooks/useSessionUsage";
-import { useTranscripts, fetchTranscriptMessages } from "@/features/sessions/hooks/useTranscripts";
+import { useTranscripts, useTranscriptSearch, fetchTranscriptMessages } from "@/features/sessions/hooks/useTranscripts";
 import { useGatewayStatus } from "@/features/status/hooks/useGatewayStatus";
 import { ConfigMutationModals } from "@/features/agents/components/ConfigMutationModals";
 import type { MobilePane } from "@/features/agents/components/MobilePaneToggle";
@@ -267,6 +267,15 @@ const AgentStudioPage = () => {
     error: transcriptsError,
     refresh: transcriptsRefresh,
   } = useTranscripts(focusedAgentId);
+
+  const {
+    query: searchQuery,
+    setQuery: setSearchQuery,
+    results: searchResults,
+    searching: searchLoading,
+    error: searchError,
+    clearSearch,
+  } = useTranscriptSearch(focusedAgentId);
 
   const {
     tasks: agentTasks,
@@ -1734,6 +1743,12 @@ const AgentStudioPage = () => {
                       transcriptsLoading={transcriptsLoading}
                       transcriptsError={transcriptsError}
                       onTranscriptsRefresh={transcriptsRefresh}
+                      searchQuery={searchQuery}
+                      onSearchQueryChange={setSearchQuery}
+                      searchResults={searchResults}
+                      searchLoading={searchLoading}
+                      searchError={searchError}
+                      onClearSearch={clearSearch}
                       onTranscriptClick={(sessionId, agentId) => {
                         const effectiveAgentId = agentId || focusedAgent?.agentId || "";
                         if (!effectiveAgentId) return;
