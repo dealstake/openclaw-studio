@@ -477,7 +477,7 @@ const ProjectCard = memo(function ProjectCard({
                   {tasksExpanded && (
                     <div className="mt-1 ml-4 space-y-1">
                       {linkedTasks.map((task) => (
-                        <LinkedTaskRow key={task.cronJobId} task={task} />
+                        <LinkedTaskRow key={task.cronJobId} task={task} isProjectParked={project.statusEmoji === "⏸️"} />
                       ))}
                     </div>
                   )}
@@ -543,18 +543,26 @@ const ProjectCard = memo(function ProjectCard({
 
 const LinkedTaskRow = memo(function LinkedTaskRow({
   task,
+  isProjectParked,
 }: {
   task: AssociatedTask;
+  isProjectParked: boolean;
 }) {
+  const isPaused = isProjectParked && task.autoManage;
   return (
-    <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+    <div className={`flex items-center gap-2 text-[10px] ${isPaused ? "text-muted-foreground/50" : "text-muted-foreground"}`}>
       <span
         className={`h-1.5 w-1.5 shrink-0 rounded-full ${
-          task.autoManage ? "bg-emerald-400" : "bg-zinc-500"
+          isPaused ? "bg-amber-400" : task.autoManage ? "bg-emerald-400" : "bg-zinc-500"
         }`}
-        title={task.autoManage ? "Auto-managed" : "Manual"}
+        title={isPaused ? "Paused (project parked)" : task.autoManage ? "Auto-managed" : "Manual"}
       />
-      <span className="truncate">{task.name}</span>
+      <span className={`truncate ${isPaused ? "line-through" : ""}`}>{task.name}</span>
+      {isPaused && (
+        <span className="shrink-0 rounded border border-amber-500/30 bg-amber-500/10 px-1 py-px font-mono text-[8px] text-amber-400">
+          paused
+        </span>
+      )}
       <span className="ml-auto font-mono text-[8px] text-muted-foreground/50 truncate max-w-[80px]">
         {task.cronJobId}
       </span>
