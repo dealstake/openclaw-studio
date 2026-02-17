@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AgentChatPanel } from "@/features/agents/components/AgentChatPanel";
-import { type AgentChatItem, buildFinalAgentChatItems } from "@/features/agents/components/chatItems";
+import type { AgentChatItem } from "@/features/agents/components/chatItems";
+import { transformMessagesToChatItems } from "@/features/sessions/lib/transformMessages";
 import {
   AgentBrainPanel,
   AgentSettingsPanel,
@@ -1765,24 +1766,7 @@ const AgentStudioPage = () => {
                         setMobilePane("chat");
                         fetchTranscriptMessages(effectiveAgentId, sessionId, 0, 200)
                           .then((result) => {
-                            const lines: string[] = [];
-                            for (const msg of result.messages) {
-                              const text = typeof msg.content === "string"
-                                ? msg.content
-                                : (msg.content?.find((p: { type: string; text?: string }) => p.type === "text") as { text?: string } | undefined)?.text ?? "";
-                              if (!text) continue;
-                              if (msg.role === "user") {
-                                lines.push(`> ${text}`);
-                              } else {
-                                lines.push(text);
-                              }
-                            }
-                            const items = buildFinalAgentChatItems({
-                              outputLines: lines,
-                              showThinkingTraces: true,
-                              toolCallingEnabled: true,
-                            });
-                            setViewingSessionHistory(items);
+                            setViewingSessionHistory(transformMessagesToChatItems(result.messages));
                           })
                           .catch((err) => {
                             console.error("Failed to load transcript:", err);
@@ -1805,22 +1789,7 @@ const AgentStudioPage = () => {
                         setViewingSessionHistory([]);
                         client.call<{ messages?: Array<{ role?: string; content?: string; text?: string }> }>("sessions.history", { sessionKey, limit: 50 })
                           .then((result) => {
-                            const lines: string[] = [];
-                            for (const msg of result.messages ?? []) {
-                              const text = msg.text ?? msg.content ?? "";
-                              if (!text) continue;
-                              if (msg.role === "user") {
-                                lines.push(`> ${text}`);
-                              } else {
-                                lines.push(text);
-                              }
-                            }
-                            const items = buildFinalAgentChatItems({
-                              outputLines: lines,
-                              showThinkingTraces: true,
-                              toolCallingEnabled: true,
-                            });
-                            setViewingSessionHistory(items);
+                            setViewingSessionHistory(transformMessagesToChatItems(result.messages ?? []));
                           })
                           .catch((err) => {
                             console.error("Failed to load session history:", err);

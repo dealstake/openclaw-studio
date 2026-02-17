@@ -1,6 +1,7 @@
 "use client";
 
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { Archive, ChevronDown, ChevronRight, Clock, RefreshCw, Search, Trash2, X } from "lucide-react";
 import type { TranscriptEntry, TranscriptSearchResult } from "@/features/sessions/hooks/useTranscripts";
 import { EmptyStatePanel } from "@/features/agents/components/EmptyStatePanel";
@@ -513,6 +514,113 @@ const SearchResultCard = memo(function SearchResultCard({
   );
 });
 
+/* ─── Virtualized transcript list ─── */
+const TRANSCRIPT_CARD_HEIGHT = 88; // estimated height in px
+const TRANSCRIPT_GAP = 8;
+
+const VirtualTranscriptList = memo(function VirtualTranscriptList({
+  transcripts,
+  onTranscriptClick,
+}: {
+  transcripts: TranscriptEntry[];
+  onTranscriptClick?: (sessionId: string, agentId: string) => void;
+}) {
+  "use no memo"; // TanStack Virtual is incompatible with React Compiler memoization
+  const parentRef = useRef<HTMLDivElement>(null);
+  // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Virtual: memoization handled by "use no memo"
+  const virtualizer = useVirtualizer({
+    count: transcripts.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => TRANSCRIPT_CARD_HEIGHT + TRANSCRIPT_GAP,
+    overscan: 10,
+  });
+
+  return (
+    <div ref={parentRef} className="h-full overflow-y-auto">
+      <div
+        style={{ height: `${virtualizer.getTotalSize()}px`, width: "100%", position: "relative" }}
+      >
+        {virtualizer.getVirtualItems().map((virtualItem) => {
+          const t = transcripts[virtualItem.index];
+          return (
+            <div
+              key={t.sessionId}
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                transform: `translateY(${virtualItem.start}px)`,
+                paddingBottom: `${TRANSCRIPT_GAP}px`,
+              }}
+              ref={virtualizer.measureElement}
+              data-index={virtualItem.index}
+            >
+              <TranscriptCard
+                transcript={t}
+                onClick={() => onTranscriptClick?.(t.sessionId, t.sessionKey?.split(":")?.[1] ?? "")}
+              />
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+});
+
+/* ─── Virtualized search results ─── */
+const SEARCH_CARD_HEIGHT = 100;
+
+const VirtualSearchResults = memo(function VirtualSearchResults({
+  results,
+  onTranscriptClick,
+}: {
+  results: TranscriptSearchResult[];
+  onTranscriptClick?: (sessionId: string, agentId: string) => void;
+}) {
+  "use no memo"; // TanStack Virtual is incompatible with React Compiler memoization
+  const parentRef = useRef<HTMLDivElement>(null);
+  // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Virtual: memoization handled by "use no memo"
+  const virtualizer = useVirtualizer({
+    count: results.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => SEARCH_CARD_HEIGHT + TRANSCRIPT_GAP,
+    overscan: 10,
+  });
+
+  return (
+    <div ref={parentRef} className="h-full overflow-y-auto">
+      <div
+        style={{ height: `${virtualizer.getTotalSize()}px`, width: "100%", position: "relative" }}
+      >
+        {virtualizer.getVirtualItems().map((virtualItem) => {
+          const r = results[virtualItem.index];
+          return (
+            <div
+              key={r.sessionId}
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                transform: `translateY(${virtualItem.start}px)`,
+                paddingBottom: `${TRANSCRIPT_GAP}px`,
+              }}
+              ref={virtualizer.measureElement}
+              data-index={virtualItem.index}
+            >
+              <SearchResultCard
+                result={r}
+                onClick={() => onTranscriptClick?.(r.sessionId, r.sessionKey?.split(":")?.[1] ?? "")}
+              />
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+});
+
 export const SessionsPanel = memo(function SessionsPanel({
   client,
   sessions,
@@ -741,10 +849,10 @@ export const SessionsPanel = memo(function SessionsPanel({
       </div>
 
       {/* ─── History tab ─── */}
-      <div className={`min-h-0 flex-1 overflow-y-auto p-4 ${tab === "history" ? "" : "hidden"}`}>
+      <div className={`min-h-0 flex-1 flex flex-col overflow-hidden ${tab === "history" ? "" : "hidden"}`}>
         {/* Search input */}
         {onSearchQueryChange ? (
-          <div className="relative mb-3">
+          <div className="relative mx-4 mt-4 mb-3 flex-shrink-0">
             <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/60" />
             <input
               type="text"
@@ -768,7 +876,7 @@ export const SessionsPanel = memo(function SessionsPanel({
 
         {/* Search results */}
         {searchQuery.trim() ? (
-          <>
+          <div className="min-h-0 flex-1 overflow-hidden px-4 pb-4">
             {searchError ? (
               <div className="mb-3 rounded-md border border-destructive bg-destructive px-3 py-2 text-xs text-destructive-foreground">
                 {searchError}
@@ -792,20 +900,15 @@ export const SessionsPanel = memo(function SessionsPanel({
                 <div className="mb-2 font-mono text-[9px] text-muted-foreground">
                   {searchResults.length} session{searchResults.length !== 1 ? "s" : ""} matched
                 </div>
-                <div className="flex flex-col gap-2">
-                  {searchResults.map((r) => (
-                    <SearchResultCard
-                      key={r.sessionId}
-                      result={r}
-                      onClick={() => onTranscriptClick?.(r.sessionId, r.sessionKey?.split(":")?.[1] ?? "")}
-                    />
-                  ))}
-                </div>
+                <VirtualSearchResults
+                  results={searchResults}
+                  onTranscriptClick={onTranscriptClick}
+                />
               </>
             ) : null}
-          </>
+          </div>
         ) : (
-          <>
+          <div className="min-h-0 flex-1 overflow-hidden px-4 pb-4">
             {/* Default transcript list (no search active) */}
             {transcriptsError ? (
               <div className="mb-3 rounded-md border border-destructive bg-destructive px-3 py-2 text-xs text-destructive-foreground">
@@ -830,18 +933,13 @@ export const SessionsPanel = memo(function SessionsPanel({
                 <div className="mb-2 font-mono text-[9px] text-muted-foreground">
                   {transcripts.length} transcript{transcripts.length !== 1 ? "s" : ""}
                 </div>
-                <div className="flex flex-col gap-2">
-                  {transcripts.map((t) => (
-                    <TranscriptCard
-                      key={t.sessionId}
-                      transcript={t}
-                      onClick={() => onTranscriptClick?.(t.sessionId, t.sessionKey?.split(":")?.[1] ?? "")}
-                    />
-                  ))}
-                </div>
+                <VirtualTranscriptList
+                  transcripts={transcripts}
+                  onTranscriptClick={onTranscriptClick}
+                />
               </>
             ) : null}
-          </>
+          </div>
         )}
       </div>
     </div>
