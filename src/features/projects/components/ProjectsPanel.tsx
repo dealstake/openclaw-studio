@@ -2,6 +2,7 @@
 
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import {
+  Archive,
   CheckCircle2,
   ChevronDown,
   ChevronRight,
@@ -212,6 +213,28 @@ export const ProjectsPanel = memo(function ProjectsPanel({
     [agentId]
   );
 
+  const handleArchive = useCallback(
+    async (project: ProjectEntry) => {
+      if (!agentId) return;
+      try {
+        const res = await fetch("/api/workspace/project", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ agentId, doc: project.doc }),
+        });
+        if (!res.ok) {
+          const data = (await res.json()) as { error?: string };
+          console.error("Failed to archive project:", data.error);
+          return;
+        }
+        void loadRef.current?.();
+      } catch (err) {
+        console.error("Failed to archive project:", err);
+      }
+    },
+    [agentId]
+  );
+
   const handleContinue = useCallback(
     (project: ProjectEntry) => {
       let prompt = `Read projects/${project.doc} for full context. Check current status and continue where we left off.`;
@@ -297,6 +320,7 @@ Begin implementation of the next step.`;
           project={project}
           onContinue={() => handleContinue(project)}
           onToggleStatus={() => void handleToggleStatus(project)}
+          onArchive={() => void handleArchive(project)}
         />
       ))}
 
@@ -321,10 +345,12 @@ const ProjectCard = memo(function ProjectCard({
   project,
   onContinue,
   onToggleStatus,
+  onArchive,
 }: {
   project: ProjectEntry;
   onContinue: () => void;
   onToggleStatus: () => void;
+  onArchive: () => void;
 }) {
   const [tasksExpanded, setTasksExpanded] = useState(false);
   const config = STATUS_CONFIG[project.statusEmoji];
@@ -464,6 +490,19 @@ const ProjectCard = memo(function ProjectCard({
                     : "left-0.5 bg-muted-foreground"
                 }`}
               />
+            </button>
+          )}
+
+          {/* Archive (Done projects only) */}
+          {project.statusEmoji === "✅" && (
+            <button
+              type="button"
+              className="flex h-7 w-7 items-center justify-center rounded-md border border-border/80 bg-card/70 text-muted-foreground transition hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-400"
+              title="Archive project"
+              aria-label="Archive project"
+              onClick={(e) => { e.stopPropagation(); onArchive(); }}
+            >
+              <Archive className="h-3 w-3" />
             </button>
           )}
 
