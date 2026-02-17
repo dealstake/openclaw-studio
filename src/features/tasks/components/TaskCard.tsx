@@ -1,39 +1,11 @@
 "use client";
 
 import { memo, useCallback } from "react";
-import { Play, Trash2, Zap, Clock, Calendar } from "lucide-react";
-import type { StudioTask, TaskType } from "@/features/tasks/types";
+import { Play, Trash2 } from "lucide-react";
+import type { StudioTask } from "@/features/tasks/types";
 import { humanReadableSchedule } from "@/features/tasks/lib/schedule";
 import { formatRelativeTime } from "@/lib/text/time";
-
-// ─── Type badge config ───────────────────────────────────────────────────────
-
-const TYPE_CONFIG: Record<
-  TaskType,
-  { label: string; icon: typeof Zap; className: string }
-> = {
-  constant: {
-    label: "Constant",
-    icon: Zap,
-    className: "border-amber-500/30 bg-amber-500/10 text-amber-400",
-  },
-  periodic: {
-    label: "Periodic",
-    icon: Clock,
-    className: "border-blue-500/30 bg-blue-500/10 text-blue-400",
-  },
-  scheduled: {
-    label: "Scheduled",
-    icon: Calendar,
-    className: "border-violet-500/30 bg-violet-500/10 text-violet-400",
-  },
-};
-
-const STATUS_DOT: Record<string, string> = {
-  active: "bg-emerald-400",
-  paused: "bg-muted-foreground",
-  error: "bg-destructive",
-};
+import { TYPE_CONFIG, STATUS_DOT_CLASS, getTaskStatusKey } from "@/features/tasks/lib/taskTypeConfig";
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -59,12 +31,8 @@ export const TaskCard = memo(function TaskCard({
   const typeConfig = TYPE_CONFIG[task.type];
   const TypeIcon = typeConfig.icon;
 
-  const statusKey = task.lastRunStatus === "error"
-    ? "error"
-    : task.enabled
-      ? "active"
-      : "paused";
-  const dotClass = STATUS_DOT[statusKey];
+  const statusKey = getTaskStatusKey(task);
+  const dotClass = STATUS_DOT_CLASS[statusKey];
 
   const handleToggle = useCallback(() => {
     onToggle(task.id, !task.enabled);

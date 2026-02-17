@@ -1,9 +1,10 @@
 "use client";
 
 import { memo } from "react";
-import { Zap, Clock, Calendar, Bot, FileText } from "lucide-react";
+import { Calendar, Bot, FileText } from "lucide-react";
 import type { WizardTaskConfig } from "@/features/tasks/types";
 import { humanReadableSchedule } from "@/features/tasks/lib/schedule";
+import { TYPE_CONFIG } from "@/features/tasks/lib/taskTypeConfig";
 
 // ─── Props ───────────────────────────────────────────────────────────────────
 
@@ -13,29 +14,6 @@ interface TaskPreviewCardProps {
   onAdjust: () => void;
   busy?: boolean;
 }
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-const TYPE_META: Record<
-  string,
-  { icon: typeof Zap; label: string; color: string }
-> = {
-  constant: {
-    icon: Zap,
-    label: "Constant",
-    color: "bg-amber-500/10 text-amber-400 border-amber-500/30",
-  },
-  periodic: {
-    icon: Clock,
-    label: "Periodic",
-    color: "bg-blue-500/10 text-blue-400 border-blue-500/30",
-  },
-  scheduled: {
-    icon: Calendar,
-    label: "Scheduled",
-    color: "bg-violet-500/10 text-violet-400 border-violet-500/30",
-  },
-};
 
 function getScheduleLabel(config: WizardTaskConfig): string {
   try {
@@ -53,7 +31,7 @@ export const TaskPreviewCard = memo(function TaskPreviewCard({
   onAdjust,
   busy,
 }: TaskPreviewCardProps) {
-  const meta = TYPE_META[config.type] ?? TYPE_META.periodic;
+  const meta = TYPE_CONFIG[config.type] ?? TYPE_CONFIG.periodic;
   const Icon = meta.icon;
   const scheduleLabel = getScheduleLabel(config);
 
@@ -63,7 +41,7 @@ export const TaskPreviewCard = memo(function TaskPreviewCard({
       <div className="border-b border-border/40 px-4 py-3 bg-gradient-to-b from-transparent to-primary/5">
         <div className="flex items-center gap-2">
           <span
-            className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.08em] ${meta.color}`}
+            className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.08em] ${meta.className}`}
           >
             <Icon className="h-3 w-3" />
             {meta.label}

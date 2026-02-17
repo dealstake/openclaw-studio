@@ -5,9 +5,7 @@ import {
   X,
   Play,
   Trash2,
-  Zap,
   Clock,
-  Calendar,
   ChevronDown,
   ChevronRight,
   AlertCircle,
@@ -16,7 +14,7 @@ import {
 } from "lucide-react";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import { isGatewayDisconnectLikeError } from "@/lib/gateway/GatewayClient";
-import type { StudioTask, TaskType, TaskSchedule } from "@/features/tasks/types";
+import type { StudioTask, TaskSchedule } from "@/features/tasks/types";
 import {
   PERIODIC_INTERVAL_OPTIONS,
   CONSTANT_INTERVAL_OPTIONS,
@@ -24,6 +22,7 @@ import {
 import { humanReadableSchedule } from "@/features/tasks/lib/schedule";
 import { formatRelativeTime } from "@/lib/text/time";
 import { Skeleton } from "@/components/Skeleton";
+import { TYPE_CONFIG, STATUS_DOT_CLASS, STATUS_LABEL, getTaskStatusKey } from "@/features/tasks/lib/taskTypeConfig";
 
 // ─── Run history types ───────────────────────────────────────────────────────
 
@@ -38,29 +37,6 @@ type CronRunEntry = {
 
 type CronRunsResult = {
   runs: CronRunEntry[];
-};
-
-// ─── Type badge config (shared with TaskCard) ────────────────────────────────
-
-const TYPE_CONFIG: Record<
-  TaskType,
-  { label: string; icon: typeof Zap; className: string }
-> = {
-  constant: {
-    label: "Constant",
-    icon: Zap,
-    className: "border-amber-500/30 bg-amber-500/10 text-amber-400",
-  },
-  periodic: {
-    label: "Periodic",
-    icon: Clock,
-    className: "border-blue-500/30 bg-blue-500/10 text-blue-400",
-  },
-  scheduled: {
-    label: "Scheduled",
-    icon: Calendar,
-    className: "border-violet-500/30 bg-violet-500/10 text-violet-400",
-  },
 };
 
 const RUN_STATUS_ICON: Record<string, typeof CheckCircle2> = {
@@ -149,26 +125,9 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
   const typeConfig = TYPE_CONFIG[task.type];
   const TypeIcon = typeConfig.icon;
 
-  const statusKey =
-    task.lastRunStatus === "error"
-      ? "error"
-      : task.enabled
-        ? "active"
-        : "paused";
-
-  const statusLabel =
-    statusKey === "error"
-      ? "Error"
-      : statusKey === "active"
-        ? "Active"
-        : "Paused";
-
-  const statusDotClass =
-    statusKey === "error"
-      ? "bg-destructive"
-      : statusKey === "active"
-        ? "bg-emerald-400"
-        : "bg-muted-foreground";
+  const statusKey = getTaskStatusKey(task);
+  const statusLabel = STATUS_LABEL[statusKey];
+  const statusDotClass = STATUS_DOT_CLASS[statusKey];
 
   const formatDuration = (ms: number | undefined) => {
     if (ms === undefined) return "—";
