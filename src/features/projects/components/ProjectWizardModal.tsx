@@ -11,6 +11,7 @@ import {
   Server,
   Loader2,
 } from "lucide-react";
+import { appendRow } from "../lib/indexTable";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -122,31 +123,7 @@ _Updated by the agent at end of each work session_
 `;
 }
 
-function appendToIndex(
-  indexContent: string,
-  name: string,
-  doc: string,
-  priority: string,
-  oneLiner: string
-): string {
-  const lines = indexContent.split("\n");
-  // Find the last table row (before empty lines or status key section)
-  let insertIdx = -1;
-  for (let i = lines.length - 1; i >= 0; i--) {
-    if (lines[i].startsWith("|") && !lines[i].includes("---") && !lines[i].toLowerCase().includes("project")) {
-      insertIdx = i + 1;
-      break;
-    }
-  }
-  if (insertIdx === -1) {
-    // Fallback: append before "## Status Key" if found
-    const statusKeyIdx = lines.findIndex((l) => l.startsWith("## Status Key"));
-    insertIdx = statusKeyIdx > 0 ? statusKeyIdx - 1 : lines.length;
-  }
-  const newRow = `| ${name} | ${doc} | 📋 Defined | ${priority} | ${oneLiner} |`;
-  lines.splice(insertIdx, 0, newRow);
-  return lines.join("\n");
-}
+// appendToIndex is now shared via ../lib/indexTable.ts → appendRow
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -251,10 +228,11 @@ export const ProjectWizardModal = memo(function ProjectWizardModal({
       }
 
       // 3. Append row and write back
-      const updatedIndex = appendToIndex(
+      const updatedIndex = appendRow(
         indexData.content,
         form.name.trim(),
         doc,
+        "📋 Defined",
         form.priority,
         form.description.trim()
       );

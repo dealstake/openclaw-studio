@@ -55,11 +55,13 @@ export function parseProjectFile(markdown: string): ProjectDetails {
     if (contextNeededMatch) details.continuation.contextNeeded = contextNeededMatch[1].trim();
   }
 
-  // Parse Implementation Plan Checkboxes
-  // Look for "- [x]" and "- [ ]" within the whole file (simplest approach)
-  // Or restrict to "Implementation Plan" section if needed, but global is usually fine/safe enough
-  const completed = (markdown.match(/- \[x\]/gi) || []).length;
-  const pending = (markdown.match(/- \[ \]/g) || []).length;
+  // Parse Implementation Plan Checkboxes — scoped to ## Implementation Plan section only
+  const implMatch = markdown.match(
+    /## Implementation Plan([\s\S]*?)(?:\n## (?!#)|$)/
+  );
+  const implSection = implMatch?.[1] ?? "";
+  const completed = (implSection.match(/- \[x\]/gi) || []).length;
+  const pending = (implSection.match(/- \[ \]/g) || []).length;
   const total = completed + pending;
   
   details.progress = {

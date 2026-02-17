@@ -64,6 +64,36 @@ describe("parseProjectFile", () => {
     expect(result.associatedTasks).toEqual([]);
   });
 
+  it("only counts checkboxes within Implementation Plan section", () => {
+    const md = `# Project
+## Status
+- [x] Gap analysis complete
+
+## Implementation Plan
+- [x] Phase 1
+- [ ] Phase 2
+
+## Key Decisions
+- [x] Decided on React
+`;
+    const result = parseProjectFile(md);
+    // Should only count the 2 checkboxes inside Implementation Plan
+    expect(result.progress.completed).toBe(1);
+    expect(result.progress.total).toBe(2);
+    expect(result.progress.percent).toBe(50);
+  });
+
+  it("returns zero progress when no Implementation Plan section", () => {
+    const md = `# Project
+## Continuation Context
+- **Immediate next step**: Something
+- [x] This should NOT be counted
+`;
+    const result = parseProjectFile(md);
+    expect(result.progress.total).toBe(0);
+    expect(result.progress.completed).toBe(0);
+  });
+
   it("skips header and separator rows in associated tasks", () => {
     const md = `# Project
 ## Associated Tasks

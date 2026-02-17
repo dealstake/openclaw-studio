@@ -2,22 +2,14 @@
 
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import {
-  Archive,
-  CheckCircle2,
-  ChevronDown,
-  ChevronRight,
-  ClipboardList,
   FolderGit2,
-  Hammer,
-  LinkIcon,
-  PauseCircle,
-  Play,
   Plus,
   RefreshCw,
-  Waves,
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
-import { parseProjectFile, type ProjectDetails, type AssociatedTask } from "../lib/parseProject";
+import { parseProjectFile, type ProjectDetails } from "../lib/parseProject";
+import { parseIndex } from "../lib/indexTable";
+import { TOGGLE_MAP } from "../lib/constants";
+import { ProjectCard } from "./ProjectCard";
 import { ProjectWizardModal } from "./ProjectWizardModal";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import { updateCronJob } from "@/lib/cron/types";
@@ -35,72 +27,6 @@ export interface ProjectEntry {
   details?: ProjectDetails;
 }
 
-const STATUS_ORDER: Record<string, number> = {
-  "🔨": 0, // Active
-  "📋": 1, // Defined
-  "🌊": 2, // Stream
-  "⏸️": 3, // Parked
-  "✅": 4, // Done
-};
-
-interface StatusConfig {
-  label: string;
-  icon: LucideIcon;
-  colors: string;
-}
-
-const STATUS_CONFIG: Record<string, StatusConfig> = {
-  "🔨": { label: "Active", icon: Hammer, colors: "border-amber-500/30 bg-amber-500/10 text-amber-400" },
-  "📋": { label: "Defined", icon: ClipboardList, colors: "border-blue-500/30 bg-blue-500/10 text-blue-400" },
-  "🌊": { label: "Stream", icon: Waves, colors: "border-cyan-500/30 bg-cyan-500/10 text-cyan-400" },
-  "⏸️": { label: "Parked", icon: PauseCircle, colors: "border-zinc-500/30 bg-zinc-500/10 text-zinc-400" },
-  "✅": { label: "Done", icon: CheckCircle2, colors: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400" },
-};
-
-const PRIORITY_DOT: Record<string, string> = {
-  "🔴": "bg-red-400",
-  "🟡": "bg-yellow-400",
-  "🟢": "bg-green-400",
-};
-
-// ─── Parse INDEX.md ──────────────────────────────────────────────────────────
-
-function parseProjectIndex(markdown: string): ProjectEntry[] {
-  const lines = markdown.split("\n");
-  const projects: ProjectEntry[] = [];
-
-  for (const line of lines) {
-    const match = line.match(
-      /^\|\s*(.+?)\s*\|\s*(.+?)\s*\|\s*(.+?)\s*\|\s*(.+?)\s*\|\s*(.+?)\s*\|$/
-    );
-    if (!match) continue;
-
-    const [, name, doc, status, priority, oneLiner] = match;
-    if (!name || name.includes("---") || name.toLowerCase() === "project") continue;
-
-    const statusEmoji = status.trim().match(/^(🔨|📋|🌊|⏸️|✅)/)?.[1] ?? "";
-    const priorityEmoji = priority.trim().match(/^(🔴|🟡|🟢)/)?.[1] ?? "";
-
-    projects.push({
-      name: name.trim(),
-      doc: doc.trim(),
-      status: status.trim(),
-      statusEmoji,
-      priority: priority.trim(),
-      priorityEmoji,
-      oneLiner: oneLiner.trim(),
-    });
-  }
-
-  projects.sort((a, b) => {
-    const aOrder = STATUS_ORDER[a.statusEmoji] ?? 99;
-    const bOrder = STATUS_ORDER[b.statusEmoji] ?? 99;
-    return aOrder - bOrder;
-  });
-
-  return projects;
-}
-
 // ─── Props ───────────────────────────────────────────────────────────────────
 
 interface ProjectsPanelProps {
@@ -108,15 +34,6 @@ interface ProjectsPanelProps {
   client: GatewayClient | null;
   onContinue: (message: string) => void;
 }
-
-// Status toggle mappings: what clicking the toggle does
-const TOGGLE_MAP: Record<string, { emoji: string; label: string }> = {
-  "🔨": { emoji: "⏸️", label: "Parked" },   // Active → Parked
-  "📋": { emoji: "🔨", label: "Active" },    // Defined → Active
-  "⏸️": { emoji: "🔨", label: "Active" },    // Parked → Active
-  "🌊": { emoji: "📋", label: "Defined" },   // Stream → Defined
-};
-
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -153,7 +70,7 @@ export const ProjectsPanel = memo(function ProjectsPanel({
         return;
       }
 
-      const parsedProjects = parseProjectIndex(data.content);
+      const parsedProjects = parseIndex(data.content);
 
       // 2. Fetch details for each project in parallel
       const enrichedProjects = await Promise.all(
@@ -232,7 +149,7 @@ export const ProjectsPanel = memo(function ProjectsPanel({
     async (project: ProjectEntry) => {
       if (!agentId) return;
       const toggle = TOGGLE_MAP[project.statusEmoji];
-      if (!toggle) return; // Done projects can't toggle
+      if (!toggle) return;
 
       const newStatus = `${toggle.emoji} ${toggle.label}`;
       try {
@@ -260,7 +177,6 @@ export const ProjectsPanel = memo(function ProjectsPanel({
           }
         }
 
-        // Refresh projects
         void loadRef.current?.();
       } catch (err) {
         console.error("Failed to toggle project status:", err);
@@ -391,219 +307,6 @@ Begin implementation of the next step.`;
           }}
         />
       )}
-    </div>
-  );
-});
-
-// ─── Project Card ────────────────────────────────────────────────────────────
-
-const ProjectCard = memo(function ProjectCard({
-  project,
-  onContinue,
-  onToggleStatus,
-  onArchive,
-}: {
-  project: ProjectEntry;
-  onContinue: () => void;
-  onToggleStatus: () => void;
-  onArchive: () => void;
-}) {
-  const [tasksExpanded, setTasksExpanded] = useState(false);
-  const config = STATUS_CONFIG[project.statusEmoji];
-  const StatusIcon = config?.icon ?? ClipboardList;
-  const statusLabel = config?.label ?? project.status;
-  const statusColors = config?.colors ?? "border-border bg-card/50 text-muted-foreground";
-  const priorityDot = PRIORITY_DOT[project.priorityEmoji];
-
-  const details = project.details;
-  const isBlocked = details?.continuation?.blockedBy && 
-    details.continuation.blockedBy.toLowerCase() !== "nothing" &&
-    details.continuation.blockedBy.toLowerCase() !== "none";
-  const linkedTasks = details?.associatedTasks ?? [];
-  const isActive = project.statusEmoji === "🔨";
-  const canToggle = project.statusEmoji !== "✅"; // Done projects can't toggle
-
-  return (
-    <div className="group/task rounded-md border border-border/80 bg-card/70 px-3 py-2.5 transition hover:border-border">
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0 flex-1">
-          {/* Header Row: Status + Priority + Name + Task Badge */}
-          <div className="flex items-center gap-2">
-            <span
-              className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] ${statusColors}`}
-            >
-              <StatusIcon className="h-3 w-3" />
-              {statusLabel}
-            </span>
-            {priorityDot && (
-              <span
-                className={`h-2 w-2 shrink-0 rounded-full ${priorityDot}`}
-                title={project.priority}
-              />
-            )}
-            <h3 className="truncate text-sm font-semibold text-foreground">
-              {project.name}
-            </h3>
-            {linkedTasks.length > 0 && (
-              <span
-                className="inline-flex items-center gap-0.5 rounded-full border border-border/60 bg-muted/40 px-1.5 py-0.5 font-mono text-[9px] text-muted-foreground"
-                title={`${linkedTasks.length} linked task${linkedTasks.length > 1 ? "s" : ""}`}
-              >
-                <LinkIcon className="h-2.5 w-2.5" />
-                {linkedTasks.length}
-              </span>
-            )}
-          </div>
-          
-          {/* Description */}
-          <p className="mt-1 text-xs leading-relaxed text-muted-foreground/80 line-clamp-2">
-            {project.oneLiner}
-          </p>
-
-          {/* Details (Progress + Next Step) */}
-          {details && (
-            <div className="mt-2 space-y-1.5 border-t border-border/40 pt-2">
-              {/* Progress Bar */}
-              {details.progress.total > 0 && (
-                <div className="flex items-center gap-2">
-                  <div className="h-1.5 flex-1 rounded-full bg-muted/40 overflow-hidden">
-                    <div 
-                      className="h-full bg-primary/60 transition-all duration-500"
-                      style={{ width: `${details.progress.percent}%` }}
-                    />
-                  </div>
-                  <span className="font-mono text-[9px] text-muted-foreground">
-                    {details.progress.completed}/{details.progress.total}
-                  </span>
-                </div>
-              )}
-
-              {/* Next Step */}
-              {details.continuation.nextStep && (
-                <div className="flex items-start gap-1.5 text-[10px] text-muted-foreground">
-                  <span className="shrink-0 font-semibold text-primary/80">Next:</span>
-                  <span className="line-clamp-1">{details.continuation.nextStep}</span>
-                </div>
-              )}
-
-              {/* Blocked Warning */}
-              {isBlocked && (
-                <div className="flex items-start gap-1.5 text-[10px] text-red-400">
-                  <span className="shrink-0 font-semibold">Blocked:</span>
-                  <span className="line-clamp-1">{details.continuation.blockedBy}</span>
-                </div>
-              )}
-
-              {/* Linked Tasks (expandable) */}
-              {linkedTasks.length > 0 && (
-                <div className="pt-0.5">
-                  <button
-                    type="button"
-                    className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition"
-                    onClick={() => setTasksExpanded((v) => !v)}
-                  >
-                    {tasksExpanded ? (
-                      <ChevronDown className="h-3 w-3" />
-                    ) : (
-                      <ChevronRight className="h-3 w-3" />
-                    )}
-                    <LinkIcon className="h-2.5 w-2.5" />
-                    <span className="font-semibold">
-                      {linkedTasks.length} Linked Task{linkedTasks.length > 1 ? "s" : ""}
-                    </span>
-                  </button>
-                  {tasksExpanded && (
-                    <div className="mt-1 ml-4 space-y-1">
-                      {linkedTasks.map((task) => (
-                        <LinkedTaskRow key={task.cronJobId} task={task} isProjectParked={project.statusEmoji === "⏸️"} />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Actions (hover-reveal, matching TaskCard) */}
-        <div className="flex items-center gap-1 opacity-0 transition group-focus-within/task:opacity-100 group-hover/task:opacity-100">
-          {/* Status toggle */}
-          {canToggle && (
-            <button
-              type="button"
-              aria-label={isActive ? "Park project" : "Activate project"}
-              className={`relative h-5 w-9 rounded-full border transition ${
-                isActive
-                  ? "border-emerald-500/40 bg-emerald-500/20"
-                  : "border-border/80 bg-muted/40"
-              }`}
-              onClick={(e) => { e.stopPropagation(); onToggleStatus(); }}
-            >
-              <span
-                className={`absolute top-0.5 h-3.5 w-3.5 rounded-full transition-all ${
-                  isActive
-                    ? "left-[18px] bg-emerald-400"
-                    : "left-0.5 bg-muted-foreground"
-                }`}
-              />
-            </button>
-          )}
-
-          {/* Archive (Done projects only) */}
-          {project.statusEmoji === "✅" && (
-            <button
-              type="button"
-              className="flex h-7 w-7 items-center justify-center rounded-md border border-border/80 bg-card/70 text-muted-foreground transition hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-400"
-              title="Archive project"
-              aria-label="Archive project"
-              onClick={(e) => { e.stopPropagation(); onArchive(); }}
-            >
-              <Archive className="h-3 w-3" />
-            </button>
-          )}
-
-          {/* Continue */}
-          <button
-            type="button"
-            className="flex h-7 w-7 items-center justify-center rounded-md border border-border/80 bg-card/70 text-muted-foreground transition hover:border-border hover:bg-muted/65"
-            title={details?.continuation?.nextStep ? `Continue: ${details.continuation.nextStep}` : "Continue project"}
-            onClick={(e) => { e.stopPropagation(); onContinue(); }}
-          >
-            <Play className="h-3 w-3" />
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-});
-
-// ─── Linked Task Row ─────────────────────────────────────────────────────────
-
-const LinkedTaskRow = memo(function LinkedTaskRow({
-  task,
-  isProjectParked,
-}: {
-  task: AssociatedTask;
-  isProjectParked: boolean;
-}) {
-  const isPaused = isProjectParked && task.autoManage;
-  return (
-    <div className={`flex items-center gap-2 text-[10px] ${isPaused ? "text-muted-foreground/50" : "text-muted-foreground"}`}>
-      <span
-        className={`h-1.5 w-1.5 shrink-0 rounded-full ${
-          isPaused ? "bg-amber-400" : task.autoManage ? "bg-emerald-400" : "bg-zinc-500"
-        }`}
-        title={isPaused ? "Paused (project parked)" : task.autoManage ? "Auto-managed" : "Manual"}
-      />
-      <span className={`truncate ${isPaused ? "line-through" : ""}`}>{task.name}</span>
-      {isPaused && (
-        <span className="shrink-0 rounded border border-amber-500/30 bg-amber-500/10 px-1 py-px font-mono text-[8px] text-amber-400">
-          paused
-        </span>
-      )}
-      <span className="ml-auto font-mono text-[8px] text-muted-foreground/50 truncate max-w-[80px]">
-        {task.cronJobId}
-      </span>
     </div>
   );
 });
