@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { isSafeAgentId, listWorkspaceDir } from "@/lib/workspace/resolve";
-import { isSidecarConfigured, sidecarGet } from "@/lib/workspace/sidecar";
+import { isSidecarConfigured, sidecarGet, SidecarUnavailableError } from "@/lib/workspace/sidecar";
 
 export const runtime = "nodejs";
 
@@ -58,6 +58,13 @@ export async function GET(request: Request) {
       message.includes("Invalid agentId")
     ) {
       return NextResponse.json({ error: message }, { status: 400 });
+    }
+
+    if (err instanceof SidecarUnavailableError) {
+      return NextResponse.json(
+        { error: err.message, code: "SIDECAR_UNAVAILABLE" },
+        { status: 503 }
+      );
     }
 
     console.error("[workspace/files]", message);

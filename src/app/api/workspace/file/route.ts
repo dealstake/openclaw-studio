@@ -6,7 +6,7 @@ import {
   readWorkspaceFile,
   writeWorkspaceFile,
 } from "@/lib/workspace/resolve";
-import { isSidecarConfigured, sidecarGet, sidecarMutate } from "@/lib/workspace/sidecar";
+import { isSidecarConfigured, sidecarGet, sidecarMutate, SidecarUnavailableError } from "@/lib/workspace/sidecar";
 
 export const runtime = "nodejs";
 
@@ -62,6 +62,13 @@ export async function GET(request: Request) {
       isText: result.isText,
     });
   } catch (err) {
+    if (err instanceof SidecarUnavailableError) {
+      return NextResponse.json(
+        { error: err.message, code: "SIDECAR_UNAVAILABLE" },
+        { status: 503 }
+      );
+    }
+
     const message =
       err instanceof Error ? err.message : "Failed to read workspace file.";
 
@@ -164,6 +171,13 @@ export async function PUT(request: Request) {
       ok: true,
     });
   } catch (err) {
+    if (err instanceof SidecarUnavailableError) {
+      return NextResponse.json(
+        { error: err.message, code: "SIDECAR_UNAVAILABLE" },
+        { status: 503 }
+      );
+    }
+
     const message =
       err instanceof Error ? err.message : "Failed to write workspace file.";
 

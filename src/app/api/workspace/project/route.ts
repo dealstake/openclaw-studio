@@ -6,7 +6,7 @@ import {
   writeWorkspaceFile,
   resolveWorkspacePath,
 } from "@/lib/workspace/resolve";
-import { isSidecarConfigured, sidecarGet, sidecarMutate } from "@/lib/workspace/sidecar";
+import { isSidecarConfigured, sidecarGet, sidecarMutate, SidecarUnavailableError } from "@/lib/workspace/sidecar";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -120,6 +120,12 @@ export async function PATCH(request: Request) {
 
     return NextResponse.json({ ok: true, doc, status: newStatus });
   } catch (err) {
+    if (err instanceof SidecarUnavailableError) {
+      return NextResponse.json(
+        { error: err.message, code: "SIDECAR_UNAVAILABLE" },
+        { status: 503 }
+      );
+    }
     console.error("[project PATCH]", err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Unknown error" },
@@ -276,6 +282,12 @@ export async function DELETE(request: Request) {
 
     return NextResponse.json({ ok: true, doc, archived: true });
   } catch (err) {
+    if (err instanceof SidecarUnavailableError) {
+      return NextResponse.json(
+        { error: err.message, code: "SIDECAR_UNAVAILABLE" },
+        { status: 503 }
+      );
+    }
     console.error("[project DELETE]", err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Unknown error" },

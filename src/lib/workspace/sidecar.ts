@@ -10,6 +10,27 @@ export function isSidecarConfigured(): boolean {
   return Boolean(SIDECAR_URL && SIDECAR_TOKEN);
 }
 
+/** Error class for sidecar connectivity failures */
+export class SidecarUnavailableError extends Error {
+  constructor(cause?: unknown) {
+    const msg = "Workspace sidecar is unreachable. File and task operations are temporarily unavailable.";
+    super(msg);
+    this.name = "SidecarUnavailableError";
+    this.cause = cause;
+  }
+}
+
+/** Wraps a fetch call with sidecar-specific error handling */
+async function sidecarFetch(url: string, init: RequestInit): Promise<Response> {
+  try {
+    const res = await fetch(url, init);
+    return res;
+  } catch (err) {
+    // Network errors (ECONNREFUSED, ETIMEDOUT, DNS failures, etc.)
+    throw new SidecarUnavailableError(err);
+  }
+}
+
 /** Proxy a GET request to the sidecar */
 export async function sidecarGet(
   pathname: string,
@@ -19,7 +40,7 @@ export async function sidecarGet(
   for (const [k, v] of Object.entries(params)) {
     if (v) url.searchParams.set(k, v);
   }
-  return fetch(url.toString(), {
+  return sidecarFetch(url.toString(), {
     method: "GET",
     headers: { Authorization: `Bearer ${SIDECAR_TOKEN}` },
   });
@@ -32,7 +53,7 @@ export async function sidecarMutate(
   body: unknown
 ): Promise<Response> {
   const url = new URL(pathname, SIDECAR_URL);
-  return fetch(url.toString(), {
+  return sidecarFetch(url.toString(), {
     method,
     headers: {
       Authorization: `Bearer ${SIDECAR_TOKEN}`,
@@ -40,4 +61,20 @@ export async function sidecarMutate(
     },
     body: JSON.stringify(body),
   });
+}
+
+/** Check sidecar health — returns true if reachable */
+export async function isSidecarHealthy(): Promise<boolean> {
+  if (!isSidecarConfigured()) return false;
+  try {
+    const url = new URL("/health", SIDECAR_URL);
+    const res = await fetch(url.toString(), {
+      method: "GET",
+      headers: { Authorization: `Bearer ${SIDECAR_TOKEN}` },
+      signal: AbortSignal.timeout(3000),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
 }
