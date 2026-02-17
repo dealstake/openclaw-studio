@@ -152,22 +152,39 @@ export const WorkspaceExplorerPanel = memo(function WorkspaceExplorerPanel({
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border/40 px-3 py-2">
         <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto text-xs text-muted-foreground [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {breadcrumbs.map((crumb, i) => (
-            <span key={crumb.path} className="flex flex-shrink-0 items-center gap-1">
-              {i > 0 && <ChevronRight className="h-3 w-3" />}
-              <button
-                type="button"
-                className={`whitespace-nowrap rounded px-1 py-0.5 transition hover:bg-muted/60 ${
-                  i === breadcrumbs.length - 1
-                    ? "font-medium text-foreground"
-                    : "text-muted-foreground"
-                }`}
-                onClick={() => navigateToDir(crumb.path)}
-              >
-                {crumb.label}
-              </button>
-            </span>
-          ))}
+          {breadcrumbs.map((crumb, i) => {
+            // Collapse middle breadcrumbs when path is deep (4+ crumbs)
+            // Show: first, "…", second-to-last, last
+            const total = breadcrumbs.length;
+            if (total >= 4 && i > 0 && i < total - 2) {
+              // Show ellipsis only for the first hidden crumb
+              if (i === 1) {
+                return (
+                  <span key="ellipsis" className="flex flex-shrink-0 items-center gap-1">
+                    <ChevronRight className="h-3 w-3" />
+                    <span className="px-1 py-0.5 text-muted-foreground/60">…</span>
+                  </span>
+                );
+              }
+              return null;
+            }
+            return (
+              <span key={crumb.path} className="flex flex-shrink-0 items-center gap-1">
+                {i > 0 && <ChevronRight className="h-3 w-3" />}
+                <button
+                  type="button"
+                  className={`whitespace-nowrap rounded px-1 py-0.5 transition hover:bg-muted/60 ${
+                    i === total - 1
+                      ? "font-medium text-foreground"
+                      : "text-muted-foreground"
+                  }`}
+                  onClick={() => navigateToDir(crumb.path)}
+                >
+                  {crumb.label}
+                </button>
+              </span>
+            );
+          })}
         </div>
         <div className="flex flex-shrink-0 items-center gap-1 pl-2">
           <button

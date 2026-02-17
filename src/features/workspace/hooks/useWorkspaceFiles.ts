@@ -267,8 +267,32 @@ export const useWorkspaceFiles = ({
     [fetchFile]
   );
 
+  const fileExists = useCallback(
+    async (relativePath: string): Promise<boolean> => {
+      const id = agentIdRef.current?.trim();
+      if (!id) return false;
+      try {
+        const params = new URLSearchParams({ agentId: id, path: relativePath });
+        const res = await fetch(`/api/workspace/file?${params.toString()}`);
+        return res.ok;
+      } catch {
+        return false;
+      }
+    },
+    []
+  );
+
   const createFile = useCallback(
     async (relativePath: string, content: string): Promise<boolean> => {
+      // Check if file already exists
+      const exists = await fileExists(relativePath);
+      if (exists) {
+        const overwrite = window.confirm(
+          `"${relativePath.split("/").pop()}" already exists. Overwrite it?`
+        );
+        if (!overwrite) return false;
+      }
+
       const ok = await saveFile(relativePath, content);
       if (ok) {
         // Refresh directory listing to show the new file
@@ -279,7 +303,7 @@ export const useWorkspaceFiles = ({
       }
       return ok;
     },
-    [saveFile, fetchDir, currentPath]
+    [fileExists, saveFile, fetchDir, currentPath]
   );
 
   // Load root on mount or agent change
