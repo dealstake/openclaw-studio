@@ -94,6 +94,62 @@ describe("parseProjectFile", () => {
     expect(result.progress.completed).toBe(0);
   });
 
+  it("suppresses placeholder nextStep with bracket syntax", () => {
+    const md = `# Project
+## Continuation Context
+- **Immediate next step**: [specific action]
+- **Blocked by**: [nothing / ...]
+`;
+    const result = parseProjectFile(md);
+    expect(result.continuation.nextStep).toBeUndefined();
+    expect(result.continuation.blockedBy).toBeUndefined();
+  });
+
+  it("suppresses placeholder nextStep with underscore syntax", () => {
+    const md = `# Project
+## Continuation Context
+- **Immediate next step**: _Updated by the agent at end of each work session_
+- **Blocked by**: _TBD_
+`;
+    const result = parseProjectFile(md);
+    expect(result.continuation.nextStep).toBeUndefined();
+    expect(result.continuation.blockedBy).toBeUndefined();
+  });
+
+  it("handles missing continuation context section", () => {
+    const md = `# Project
+## Implementation Plan
+- [x] Done
+`;
+    const result = parseProjectFile(md);
+    expect(result.continuation.lastWorkedOn).toBeUndefined();
+    expect(result.continuation.nextStep).toBeUndefined();
+  });
+
+  it("handles malformed markdown gracefully", () => {
+    const md = "just some random text\nno sections at all";
+    const result = parseProjectFile(md);
+    expect(result.progress.total).toBe(0);
+    expect(result.associatedTasks).toEqual([]);
+    expect(result.continuation).toEqual({});
+  });
+
+  it("counts nested checkboxes in Implementation Plan", () => {
+    const md = `# Project
+## Implementation Plan
+### Phase 1
+- [x] Step 1
+  - [x] Sub-step A
+  - [ ] Sub-step B
+### Phase 2
+- [ ] Step 2
+`;
+    const result = parseProjectFile(md);
+    expect(result.progress.completed).toBe(2);
+    expect(result.progress.total).toBe(4);
+    expect(result.progress.percent).toBe(50);
+  });
+
   it("skips header and separator rows in associated tasks", () => {
     const md = `# Project
 ## Associated Tasks
