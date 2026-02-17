@@ -4,6 +4,14 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Archive, ArrowDownAZ, ArrowUpAZ, ChevronDown, ChevronRight, Clock, RefreshCw, Search, Trash2, X } from "lucide-react";
 import type { TranscriptEntry, TranscriptSearchResult } from "@/features/sessions/hooks/useTranscripts";
+import {
+  inferTranscriptType,
+  formatTranscriptDisplayName as formatTranscriptDisplayNameUtil,
+  splitByQuery,
+  TRANSCRIPT_TYPE_LABELS,
+  TRANSCRIPT_TYPE_COLORS,
+  type TranscriptType,
+} from "@/features/sessions/lib/transcriptUtils";
 import { EmptyStatePanel } from "@/features/agents/components/EmptyStatePanel";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import { isGatewayDisconnectLikeError, parseAgentIdFromSessionKey } from "@/lib/gateway/GatewayClient";
@@ -152,52 +160,8 @@ function formatTokens(n: number): string {
 }
 
 /* ─── Transcript type inference ─── */
-type TranscriptType = "main" | "cron" | "subagent" | "channel" | "unknown";
-
-function inferTranscriptType(entry: TranscriptEntry): TranscriptType {
-  const key = entry.sessionKey;
-  if (!key) {
-    // Infer from preview content
-    const preview = entry.preview?.toLowerCase() ?? "";
-    if (preview.includes("cron") || preview.includes("heartbeat")) return "cron";
-    if (preview.includes("sub-agent") || preview.includes("subagent")) return "subagent";
-    return "unknown";
-  }
-  if (/:main$/i.test(key)) return "main";
-  if (/:cron:/i.test(key) || /^cron:/i.test(key)) return "cron";
-  if (/:subagent:/i.test(key)) return "subagent";
-  // Check for channel types
-  for (const ch of Object.keys(CHANNEL_TYPE_LABELS)) {
-    if (key.toLowerCase().startsWith(ch)) return "channel";
-  }
-  return "unknown";
-}
-
-const TRANSCRIPT_TYPE_LABELS: Record<TranscriptType, string> = {
-  main: "Main",
-  cron: "Cron",
-  subagent: "Sub-agent",
-  channel: "Channel",
-  unknown: "Other",
-};
-
-const TRANSCRIPT_TYPE_COLORS: Record<TranscriptType, string> = {
-  main: "border-emerald-500/40 bg-emerald-500/10 text-emerald-400",
-  cron: "border-amber-500/40 bg-amber-500/10 text-amber-400",
-  subagent: "border-blue-500/40 bg-blue-500/10 text-blue-400",
-  channel: "border-purple-500/40 bg-purple-500/10 text-purple-400",
-  unknown: "border-border/60 bg-muted/40 text-muted-foreground",
-};
-
 function formatTranscriptDisplayName(entry: TranscriptEntry): string {
-  if (entry.sessionKey) return humanizeSessionKey(entry.sessionKey);
-  // Fall back to date/time + type
-  if (entry.startedAt) {
-    const d = new Date(entry.startedAt);
-    return d.toLocaleDateString(undefined, { month: "short", day: "numeric" }) +
-      " " + d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
-  }
-  return entry.sessionId.slice(0, 12);
+  return formatTranscriptDisplayNameUtil(entry, humanizeSessionKey);
 }
 
 /* ─── Usage detail grid (shown inside expanded card) ─── */
@@ -510,18 +474,16 @@ const SessionCard = memo(function SessionCard({
 /* ─── Search result card ─── */
 /** Highlight occurrences of `query` within `text` using <mark> tags */
 function HighlightedSnippet({ text, query }: { text: string; query: string }) {
-  if (!query.trim()) return <>{text}</>;
-  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const parts = text.split(new RegExp(`(${escaped})`, "gi"));
+  const segments = splitByQuery(text, query);
   return (
     <>
-      {parts.map((part, i) =>
-        part.toLowerCase() === query.toLowerCase() ? (
+      {segments.map((seg, i) =>
+        seg.match ? (
           <mark key={i} className="rounded-sm bg-yellow-400/30 px-0.5 text-foreground dark:bg-yellow-500/25">
-            {part}
+            {seg.text}
           </mark>
         ) : (
-          part
+          seg.text
         ),
       )}
     </>
