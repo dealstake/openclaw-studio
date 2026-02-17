@@ -285,6 +285,7 @@ const AgentStudioPage = () => {
     loadTasks,
     createTask,
     toggleTask,
+    updateTaskSchedule,
     runTask,
     deleteTask,
   } = useAgentTasks(client, status, focusedAgentId, allCronJobs);
@@ -1693,6 +1694,7 @@ const AgentStudioPage = () => {
                           error={tasksError}
                           busyTaskId={busyTaskId}
                           onToggle={toggleTask}
+                          onUpdateSchedule={updateTaskSchedule}
                           onRun={runTask}
                           onDelete={deleteTask}
                           onRefresh={() => { void loadTasks(); }}

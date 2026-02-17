@@ -287,6 +287,54 @@ export const useWorkspaceFiles = ({
     queueMicrotask(() => void fetchDir(""));
   }, [fetchDir]);
 
+  // ─── Auto-refresh polling (every 3 min, pause when tab hidden) ─────────────
+  useEffect(() => {
+    const POLL_INTERVAL = 180_000; // 3 minutes
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+    let visible = !document.hidden;
+
+    const startPolling = () => {
+      if (intervalId) return;
+      intervalId = setInterval(() => {
+        if (viewingFile) {
+          void fetchFile(viewingFile.path);
+        } else {
+          void fetchDir(currentPath);
+        }
+      }, POLL_INTERVAL);
+    };
+
+    const stopPolling = () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+        intervalId = null;
+      }
+    };
+
+    const handleVisibility = () => {
+      visible = !document.hidden;
+      if (visible) {
+        // Refresh immediately when tab becomes visible again
+        if (viewingFile) {
+          void fetchFile(viewingFile.path);
+        } else {
+          void fetchDir(currentPath);
+        }
+        startPolling();
+      } else {
+        stopPolling();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    if (visible) startPolling();
+
+    return () => {
+      stopPolling();
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, [currentPath, fetchDir, fetchFile, viewingFile]);
+
   const navigateToDir = useCallback(
     (relativePath: string) => {
       setCurrentPath(relativePath);

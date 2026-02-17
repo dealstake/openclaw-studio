@@ -190,6 +190,44 @@ export const ProjectsPanel = memo(function ProjectsPanel({
     void loadRef.current?.();
   }, [agentId]);
 
+  // ─── Auto-refresh polling (every 3 min, pause when tab hidden) ─────────────
+  useEffect(() => {
+    if (!agentId) return;
+    const POLL_INTERVAL = 180_000; // 3 minutes
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+
+    const startPolling = () => {
+      if (intervalId) return;
+      intervalId = setInterval(() => {
+        void loadRef.current?.();
+      }, POLL_INTERVAL);
+    };
+
+    const stopPolling = () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+        intervalId = null;
+      }
+    };
+
+    const handleVisibility = () => {
+      if (!document.hidden) {
+        void loadRef.current?.();
+        startPolling();
+      } else {
+        stopPolling();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    if (!document.hidden) startPolling();
+
+    return () => {
+      stopPolling();
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, [agentId]);
+
   const handleToggleStatus = useCallback(
     async (project: ProjectEntry) => {
       if (!agentId) return;

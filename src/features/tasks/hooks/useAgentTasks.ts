@@ -303,6 +303,34 @@ export const useAgentTasks = (
     [agentId, client, tasks, busyTaskId]
   );
 
+  const updateTaskSchedule = useCallback(
+    async (taskId: string, newSchedule: import("@/features/tasks/types").TaskSchedule) => {
+      if (!agentId || busyTaskId) return;
+      setBusyTaskId(taskId);
+      setError(null);
+      try {
+        const task = tasks.find((t) => t.id === taskId);
+        if (!task) throw new Error("Task not found.");
+
+        // 1. Update the gateway cron job schedule
+        const cronSchedule = taskScheduleToCronSchedule(newSchedule);
+        await updateCronJob(client, task.cronJobId, { schedule: cronSchedule });
+
+        // 2. Update Studio metadata
+        const updated = await patchTaskMetadata(agentId, taskId, { schedule: newSchedule });
+
+        // 3. Optimistically update local state
+        setTasks((prev) => prev.map((t) => (t.id === taskId ? updated : t)));
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Failed to update schedule.";
+        setError(message);
+      } finally {
+        setBusyTaskId(null);
+      }
+    },
+    [agentId, client, tasks, busyTaskId]
+  );
+
   const deleteTask = useCallback(
     async (taskId: string) => {
       if (!agentId || busyTaskId) return;
@@ -333,6 +361,7 @@ export const useAgentTasks = (
     loadTasks,
     createTask,
     toggleTask,
+    updateTaskSchedule,
     runTask,
     deleteTask,
   };

@@ -16,7 +16,11 @@ import {
 } from "lucide-react";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import { isGatewayDisconnectLikeError } from "@/lib/gateway/GatewayClient";
-import type { StudioTask, TaskType } from "@/features/tasks/types";
+import type { StudioTask, TaskType, TaskSchedule } from "@/features/tasks/types";
+import {
+  PERIODIC_INTERVAL_OPTIONS,
+  CONSTANT_INTERVAL_OPTIONS,
+} from "@/features/tasks/types";
 import { humanReadableSchedule } from "@/features/tasks/lib/schedule";
 import { formatRelativeTime } from "@/lib/text/time";
 import { Skeleton } from "@/components/Skeleton";
@@ -79,6 +83,7 @@ interface TaskDetailDrawerProps {
   busy: boolean;
   onClose: () => void;
   onToggle: (taskId: string, enabled: boolean) => void;
+  onUpdateSchedule: (taskId: string, schedule: TaskSchedule) => void;
   onRun: (taskId: string) => void;
   onDelete: (taskId: string) => void;
 }
@@ -91,6 +96,7 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
   busy,
   onClose,
   onToggle,
+  onUpdateSchedule,
   onRun,
   onDelete,
 }: TaskDetailDrawerProps) {
@@ -212,10 +218,41 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
             </span>
           </div>
 
-          {/* Schedule */}
-          <div className="mt-2 text-[11px] text-muted-foreground">
-            {humanReadableSchedule(task.schedule)}
-          </div>
+          {/* Schedule — editable for periodic/constant, read-only for scheduled */}
+          {(task.schedule.type === "periodic" || task.schedule.type === "constant") ? (
+            <div className="mt-2 flex items-center gap-2">
+              <Clock className="h-3 w-3 shrink-0 text-muted-foreground" />
+              <select
+                className="h-7 rounded-md border border-border/80 bg-card/70 px-2 font-mono text-[11px] text-foreground outline-none transition hover:border-border focus:border-primary/60 disabled:cursor-not-allowed disabled:opacity-60"
+                value={task.schedule.intervalMs}
+                disabled={busy}
+                onChange={(e) => {
+                  const ms = Number(e.target.value);
+                  const currentMs = task.schedule.type === "constant" || task.schedule.type === "periodic"
+                    ? task.schedule.intervalMs : 0;
+                  if (!ms || ms === currentMs) return;
+                  const newSchedule: TaskSchedule =
+                    task.schedule.type === "constant"
+                      ? { type: "constant", intervalMs: ms, ...(task.schedule.activeHours ? { activeHours: task.schedule.activeHours } : {}) }
+                      : { type: "periodic", intervalMs: ms };
+                  onUpdateSchedule(task.id, newSchedule);
+                }}
+              >
+                {(task.schedule.type === "constant"
+                  ? CONSTANT_INTERVAL_OPTIONS
+                  : PERIODIC_INTERVAL_OPTIONS
+                ).map((opt) => (
+                  <option key={opt.ms} value={opt.ms}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <div className="mt-2 text-[11px] text-muted-foreground">
+              {humanReadableSchedule(task.schedule)}
+            </div>
+          )}
 
           {/* Description */}
           {task.description ? (
