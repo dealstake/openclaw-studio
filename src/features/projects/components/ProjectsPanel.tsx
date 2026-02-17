@@ -12,6 +12,7 @@ import {
   Waves,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { parseProjectFile, type ProjectDetails } from "../lib/parseProject";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -23,6 +24,7 @@ export interface ProjectEntry {
   priority: string;
   priorityEmoji: string;
   oneLiner: string;
+  details?: ProjectDetails;
 }
 
 const STATUS_ORDER: Record<string, number> = {
@@ -114,6 +116,7 @@ export const ProjectsPanel = memo(function ProjectsPanel({
     setLoading(true);
     setError(null);
     try {
+      // 1. Fetch INDEX.md
       const res = await fetch(
         `/api/workspace/file?agentId=${encodeURIComponent(agentId)}&path=projects/INDEX.md`
       );
@@ -125,11 +128,35 @@ export const ProjectsPanel = memo(function ProjectsPanel({
         throw new Error(`Failed to fetch projects: ${res.status}`);
       }
       const data = (await res.json()) as { content?: string };
-      if (data.content) {
-        setProjects(parseProjectIndex(data.content));
-      } else {
+      if (!data.content) {
         setProjects([]);
+        return;
       }
+
+      const parsedProjects = parseProjectIndex(data.content);
+
+      // 2. Fetch details for each project in parallel
+      const enrichedProjects = await Promise.all(
+        parsedProjects.map(async (project) => {
+          try {
+            const fileRes = await fetch(
+              `/api/workspace/file?agentId=${encodeURIComponent(agentId)}&path=projects/${encodeURIComponent(project.doc)}`
+            );
+            if (fileRes.ok) {
+              const fileData = (await fileRes.json()) as { content?: string };
+              if (fileData.content) {
+                const details = parseProjectFile(fileData.content);
+                return { ...project, details };
+              }
+            }
+          } catch (err) {
+            console.warn(`Failed to fetch details for ${project.doc}`, err);
+          }
+          return project;
+        })
+      );
+
+      setProjects(enrichedProjects);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
     } finally {
@@ -144,10 +171,20 @@ export const ProjectsPanel = memo(function ProjectsPanel({
   }, [agentId]);
 
   const handleContinue = useCallback(
-    (doc: string) => {
-      onContinue(
-        `Read projects/${doc} for full context. Check current status and continue where we left off.`
-      );
+    (project: ProjectEntry) => {
+      let prompt = `Read projects/${project.doc} for full context. Check current status and continue where we left off.`;
+      
+      if (project.details?.continuation?.nextStep) {
+        prompt = `Read projects/${project.doc} for full context.
+Current status:
+- Last worked on: ${project.details.continuation.lastWorkedOn || "Unknown"}
+- Next step: ${project.details.continuation.nextStep}
+${project.details.continuation.blockedBy ? `- Blocked by: ${project.details.continuation.blockedBy}` : ""}
+
+Begin implementation of the next step.`;
+      }
+
+      onContinue(prompt);
     },
     [onContinue]
   );
@@ -206,7 +243,7 @@ export const ProjectsPanel = memo(function ProjectsPanel({
         <ProjectCard
           key={project.doc}
           project={project}
-          onContinue={handleContinue}
+          onContinue={() => handleContinue(project)}
         />
       ))}
     </div>
@@ -220,7 +257,7 @@ const ProjectCard = memo(function ProjectCard({
   onContinue,
 }: {
   project: ProjectEntry;
-  onContinue: (doc: string) => void;
+  onContinue: () => void;
 }) {
   const config = STATUS_CONFIG[project.statusEmoji];
   const StatusIcon = config?.icon ?? ClipboardList;
@@ -228,10 +265,16 @@ const ProjectCard = memo(function ProjectCard({
   const statusColors = config?.colors ?? "border-border bg-card/50 text-muted-foreground";
   const priorityDot = PRIORITY_DOT[project.priorityEmoji];
 
+  const details = project.details;
+  const isBlocked = details?.continuation?.blockedBy && 
+    details.continuation.blockedBy.toLowerCase() !== "nothing" &&
+    details.continuation.blockedBy.toLowerCase() !== "none";
+
   return (
     <div className="group/task rounded-md border border-border/80 bg-card/70 px-3 py-2.5 transition hover:border-border">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
+          {/* Header Row: Status + Priority + Name */}
           <div className="flex items-center gap-2">
             <span
               className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] ${statusColors}`}
@@ -245,19 +288,59 @@ const ProjectCard = memo(function ProjectCard({
                 title={project.priority}
               />
             )}
+            <h3 className="truncate text-sm font-semibold text-foreground">
+              {project.name}
+            </h3>
           </div>
-          <h3 className="mt-1.5 text-sm font-semibold text-foreground">
-            {project.name}
-          </h3>
-          <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground/80">
+          
+          {/* Description */}
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground/80 line-clamp-2">
             {project.oneLiner}
           </p>
+
+          {/* Details (Progress + Next Step) */}
+          {details && (
+            <div className="mt-2 space-y-1.5 border-t border-border/40 pt-2">
+              {/* Progress Bar */}
+              {details.progress.total > 0 && (
+                <div className="flex items-center gap-2">
+                  <div className="h-1.5 flex-1 rounded-full bg-muted/40 overflow-hidden">
+                    <div 
+                      className="h-full bg-primary/60 transition-all duration-500"
+                      style={{ width: `${details.progress.percent}%` }}
+                    />
+                  </div>
+                  <span className="font-mono text-[9px] text-muted-foreground">
+                    {details.progress.completed}/{details.progress.total}
+                  </span>
+                </div>
+              )}
+
+              {/* Next Step */}
+              {details.continuation.nextStep && (
+                <div className="flex items-start gap-1.5 text-[10px] text-muted-foreground">
+                  <span className="shrink-0 font-semibold text-primary/80">Next:</span>
+                  <span className="line-clamp-1">{details.continuation.nextStep}</span>
+                </div>
+              )}
+
+              {/* Blocked Warning */}
+              {isBlocked && (
+                <div className="flex items-start gap-1.5 text-[10px] text-red-400">
+                  <span className="shrink-0 font-semibold">Blocked:</span>
+                  <span className="line-clamp-1">{details.continuation.blockedBy}</span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
+
+        {/* Action Button */}
         <button
           type="button"
           className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border/80 bg-card/70 text-muted-foreground transition hover:border-border hover:bg-muted/65"
-          title="Continue project"
-          onClick={() => onContinue(project.doc)}
+          title={details?.continuation?.nextStep ? `Continue: ${details.continuation.nextStep}` : "Continue project"}
+          onClick={onContinue}
         >
           <Play className="h-3 w-3" />
         </button>
