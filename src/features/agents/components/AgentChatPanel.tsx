@@ -17,8 +17,7 @@ function formatTokenCount(n: number): string {
   return String(n);
 }
 import type { AgentState as AgentRecord } from "@/features/agents/state/store";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import { MarkdownViewer } from "@/components/MarkdownViewer";
 import { AlertTriangle, ArrowLeft, ArrowUp, ChevronDown, ChevronRight, ChevronUp, RefreshCw, Settings, Shuffle, SquarePen, X, Zap } from "lucide-react";
 import type { GatewayModelChoice } from "@/lib/gateway/models";
 import { isToolMarkdown, isTraceMarkdown } from "@/lib/text/message-extract";
@@ -90,9 +89,7 @@ const AgentChatFinalItems = memo(function AgentChatFinalItems({
                 <ChevronRight className="h-3 w-3 shrink-0 transition-transform duration-200 [[open]>&]:rotate-90" />
                 <span>Thinking</span>
               </summary>
-              <div className="agent-markdown leading-relaxed px-2 pb-2 text-foreground">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{item.text}</ReactMarkdown>
-              </div>
+              <MarkdownViewer content={item.text} className="leading-relaxed px-2 pb-2" />
             </details>
           );
         }
@@ -102,7 +99,7 @@ const AgentChatFinalItems = memo(function AgentChatFinalItems({
               key={`chat-${agentId}-user-${index}`}
               className="rounded-md border border-border/70 bg-muted/70 px-3 py-2 text-foreground"
             >
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{`> ${item.text}`}</ReactMarkdown>
+              <MarkdownViewer content={`> ${item.text}`} />
             </div>
           );
         }
@@ -117,20 +114,17 @@ const AgentChatFinalItems = memo(function AgentChatFinalItems({
                 {summaryText}
               </summary>
               {body ? (
-                <div className="agent-markdown leading-relaxed mt-1 text-foreground">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{body}</ReactMarkdown>
-                </div>
+                <MarkdownViewer content={body} className="leading-relaxed mt-1" />
               ) : null}
             </details>
           );
         }
         return (
-          <div
+          <MarkdownViewer
             key={`chat-${agentId}-assistant-${index}`}
-            className="agent-markdown leading-relaxed min-w-0 overflow-hidden px-0.5"
-          >
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{item.text}</ReactMarkdown>
-          </div>
+            content={item.text}
+            className="leading-relaxed min-w-0 overflow-hidden px-0.5"
+          />
         );
       })}
     </>
@@ -327,9 +321,7 @@ const AgentChatTranscript = memo(function AgentChatTranscript({
                 </details>
               ) : null}
               {liveAssistantText ? (
-                <div className="agent-markdown leading-relaxed min-w-0 overflow-hidden px-0.5 opacity-85">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{liveAssistantText}</ReactMarkdown>
-                </div>
+                <MarkdownViewer content={liveAssistantText} className="leading-relaxed min-w-0 overflow-hidden px-0.5 opacity-85" />
               ) : null}
               {showTypingIndicator ? (
                 <div

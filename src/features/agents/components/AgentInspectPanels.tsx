@@ -2,8 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Play, Trash2 } from "lucide-react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import { MarkdownViewer } from "@/components/MarkdownViewer";
 
 import type { AgentState } from "@/features/agents/state/store";
 import { formatCronPayload, formatCronSchedule, type CronJobSummary } from "@/lib/cron/types";
@@ -722,15 +721,13 @@ export const AgentBrainPanel = ({
 
           <div className="mt-3 min-h-0 flex-1 rounded-md bg-muted/30 p-2">
             {previewMode ? (
-              <div className="agent-markdown h-full overflow-y-auto rounded-md border border-border/80 bg-background/80 px-3 py-2 text-xs text-foreground">
+              <div className="h-full overflow-y-auto rounded-md border border-border/80 bg-background/80 px-3 py-2">
                 {agentFiles[agentFileTab].content.trim().length === 0 ? (
-                  <p className="text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     {AGENT_FILE_PLACEHOLDERS[agentFileTab]}
                   </p>
                 ) : (
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {agentFiles[agentFileTab].content}
-                  </ReactMarkdown>
+                  <MarkdownViewer content={agentFiles[agentFileTab].content} />
                 )}
               </div>
             ) : (

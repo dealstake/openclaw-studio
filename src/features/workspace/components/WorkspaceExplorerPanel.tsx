@@ -6,12 +6,12 @@ import {
   FilePlus,
   Folder,
   RefreshCw,
-  RotateCcw,
   Search,
   X,
 } from "lucide-react";
 
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
+import { ErrorBanner } from "@/components/ErrorBanner";
 
 import { useWorkspaceFiles } from "../hooks/useWorkspaceFiles";
 import { useProjectStatuses } from "../hooks/useProjectStatuses";
@@ -224,18 +224,7 @@ export const WorkspaceExplorerPanel = memo(function WorkspaceExplorerPanel({
       {/* Content */}
       <div className="min-h-0 flex-1 overflow-y-auto py-1">
         {error ? (
-          <div className="mx-3 mt-2 flex items-center gap-2 rounded-md border border-destructive bg-destructive px-3 py-2 text-xs text-destructive-foreground">
-            <span className="flex-1">{error}</span>
-            <button
-              type="button"
-              className="flex flex-shrink-0 items-center gap-1 rounded px-2 py-1 text-[10px] font-medium transition hover:bg-destructive-foreground/10"
-              onClick={refresh}
-              aria-label="Retry"
-            >
-              <RotateCcw className="h-3 w-3" />
-              Retry
-            </button>
-          </div>
+          <ErrorBanner message={error} onRetry={refresh} className="mx-3 mt-2" />
         ) : null}
 
         {loading && entries.length === 0 ? (

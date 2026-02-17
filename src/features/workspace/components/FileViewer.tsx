@@ -2,9 +2,7 @@
 
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, Check, Pencil, Save, X } from "lucide-react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-
+import { MarkdownViewer } from "@/components/MarkdownViewer";
 import { formatSize } from "@/lib/text/format";
 import { formatRelativeTime } from "@/lib/text/time";
 
@@ -192,9 +190,7 @@ export const FileViewer = memo(function FileViewer({
             data-testid="ws-editor"
           />
         ) : file.path.endsWith(".md") ? (
-          <div className="agent-markdown p-3 text-xs text-foreground">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{file.content}</ReactMarkdown>
-          </div>
+          <MarkdownViewer content={file.content} className="p-3" />
         ) : (
           <pre className="whitespace-pre-wrap break-all p-3 font-mono text-[11px] text-foreground">
             {file.content}

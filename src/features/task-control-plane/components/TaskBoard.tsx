@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import { MarkdownViewer } from "@/components/MarkdownViewer";
 import { FileText, X } from "lucide-react";
 
 import { fetchJson } from "@/lib/http";
@@ -649,9 +648,7 @@ export function TaskBoard({ snapshot, onRequestRefresh }: TaskBoardProps) {
                   </div>
                   <div className="mt-2 rounded-md border border-border/70 bg-background/40 px-3 py-3">
                     {descriptionBody ? (
-                      <div className="agent-markdown text-sm text-foreground">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{descriptionBody}</ReactMarkdown>
-                      </div>
+                      <MarkdownViewer content={descriptionBody} className="text-sm" />
                     ) : (
                       <p className="text-sm text-muted-foreground">No description.</p>
                     )}
