@@ -105,6 +105,15 @@ interface ProjectsPanelProps {
   onContinue: (message: string) => void;
 }
 
+// Status toggle mappings: what clicking the toggle does
+const TOGGLE_MAP: Record<string, { emoji: string; label: string }> = {
+  "🔨": { emoji: "⏸️", label: "Parked" },   // Active → Parked
+  "📋": { emoji: "🔨", label: "Active" },    // Defined → Active
+  "⏸️": { emoji: "🔨", label: "Active" },    // Parked → Active
+  "🌊": { emoji: "📋", label: "Defined" },   // Stream → Defined
+};
+
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export const ProjectsPanel = memo(function ProjectsPanel({
@@ -175,6 +184,33 @@ export const ProjectsPanel = memo(function ProjectsPanel({
   useEffect(() => {
     void loadRef.current?.();
   }, [agentId]);
+
+  const handleToggleStatus = useCallback(
+    async (project: ProjectEntry) => {
+      if (!agentId) return;
+      const toggle = TOGGLE_MAP[project.statusEmoji];
+      if (!toggle) return; // Done projects can't toggle
+
+      const newStatus = `${toggle.emoji} ${toggle.label}`;
+      try {
+        const res = await fetch("/api/workspace/project", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ agentId, doc: project.doc, status: newStatus }),
+        });
+        if (!res.ok) {
+          const data = (await res.json()) as { error?: string };
+          console.error("Failed to toggle project status:", data.error);
+          return;
+        }
+        // Refresh projects
+        void loadRef.current?.();
+      } catch (err) {
+        console.error("Failed to toggle project status:", err);
+      }
+    },
+    [agentId]
+  );
 
   const handleContinue = useCallback(
     (project: ProjectEntry) => {
@@ -260,6 +296,7 @@ Begin implementation of the next step.`;
           key={project.doc}
           project={project}
           onContinue={() => handleContinue(project)}
+          onToggleStatus={() => void handleToggleStatus(project)}
         />
       ))}
 
@@ -283,9 +320,11 @@ Begin implementation of the next step.`;
 const ProjectCard = memo(function ProjectCard({
   project,
   onContinue,
+  onToggleStatus,
 }: {
   project: ProjectEntry;
   onContinue: () => void;
+  onToggleStatus: () => void;
 }) {
   const [tasksExpanded, setTasksExpanded] = useState(false);
   const config = STATUS_CONFIG[project.statusEmoji];
@@ -299,6 +338,8 @@ const ProjectCard = memo(function ProjectCard({
     details.continuation.blockedBy.toLowerCase() !== "nothing" &&
     details.continuation.blockedBy.toLowerCase() !== "none";
   const linkedTasks = details?.associatedTasks ?? [];
+  const isActive = project.statusEmoji === "🔨";
+  const canToggle = project.statusEmoji !== "✅"; // Done projects can't toggle
 
   return (
     <div className="group/task rounded-md border border-border/80 bg-card/70 px-3 py-2.5 transition hover:border-border">
@@ -402,15 +443,40 @@ const ProjectCard = memo(function ProjectCard({
           )}
         </div>
 
-        {/* Action Button */}
-        <button
-          type="button"
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border/80 bg-card/70 text-muted-foreground transition hover:border-border hover:bg-muted/65"
-          title={details?.continuation?.nextStep ? `Continue: ${details.continuation.nextStep}` : "Continue project"}
-          onClick={onContinue}
-        >
-          <Play className="h-3 w-3" />
-        </button>
+        {/* Actions (hover-reveal, matching TaskCard) */}
+        <div className="flex items-center gap-1 opacity-0 transition group-focus-within/task:opacity-100 group-hover/task:opacity-100">
+          {/* Status toggle */}
+          {canToggle && (
+            <button
+              type="button"
+              aria-label={isActive ? "Park project" : "Activate project"}
+              className={`relative h-5 w-9 rounded-full border transition ${
+                isActive
+                  ? "border-emerald-500/40 bg-emerald-500/20"
+                  : "border-border/80 bg-muted/40"
+              }`}
+              onClick={(e) => { e.stopPropagation(); onToggleStatus(); }}
+            >
+              <span
+                className={`absolute top-0.5 h-3.5 w-3.5 rounded-full transition-all ${
+                  isActive
+                    ? "left-[18px] bg-emerald-400"
+                    : "left-0.5 bg-muted-foreground"
+                }`}
+              />
+            </button>
+          )}
+
+          {/* Continue */}
+          <button
+            type="button"
+            className="flex h-7 w-7 items-center justify-center rounded-md border border-border/80 bg-card/70 text-muted-foreground transition hover:border-border hover:bg-muted/65"
+            title={details?.continuation?.nextStep ? `Continue: ${details.continuation.nextStep}` : "Continue project"}
+            onClick={(e) => { e.stopPropagation(); onContinue(); }}
+          >
+            <Play className="h-3 w-3" />
+          </button>
+        </div>
       </div>
     </div>
   );
