@@ -441,8 +441,15 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
           ) : null}
 
           {runsError ? (
-            <div className="mt-2 rounded-md border border-destructive bg-destructive/10 px-3 py-2 text-[10px] text-destructive">
-              {runsError}
+            <div className="mt-2 flex items-center gap-2 rounded-md border border-destructive bg-destructive/10 px-3 py-2 text-[10px] text-destructive">
+              <span className="flex-1">{runsError}</span>
+              <button
+                type="button"
+                className="shrink-0 rounded border border-destructive/40 px-2 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.08em] transition hover:bg-destructive/20"
+                onClick={() => void loadRuns(task.cronJobId)}
+              >
+                Retry
+              </button>
             </div>
           ) : null}
 

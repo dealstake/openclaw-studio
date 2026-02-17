@@ -328,6 +328,11 @@ const WizardTextPart: FC<{
   // Track whether we already validated to avoid double-calls
   const validatedRef = useRef(false);
 
+  // Reset validation when message content changes (new config from AI)
+  useEffect(() => {
+    validatedRef.current = false;
+  }, [fullText]);
+
   const handleValidateAndSet = useCallback(
     async (rawConfig: WizardTaskConfig) => {
       if (validatedRef.current) return;

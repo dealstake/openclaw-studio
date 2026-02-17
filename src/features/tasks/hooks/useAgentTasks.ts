@@ -178,6 +178,9 @@ export const useAgentTasks = (
   const [busyAction, setBusyAction] = useState<"toggle" | "run" | "delete" | "update" | null>(null);
 
   const loadingRef = useRef(false);
+  // Stabilize cronJobs reference to prevent dependency cascades
+  const cronJobsRef = useRef(cronJobs);
+  cronJobsRef.current = cronJobs;
 
   const loadTasks = useCallback(async () => {
     if (!agentId || status !== "connected" || loadingRef.current) return;
@@ -185,7 +188,7 @@ export const useAgentTasks = (
     setLoading(true);
     try {
       const raw = await fetchTasks(agentId);
-      const enriched = enrichTasksWithCronData(raw, cronJobs, agentId);
+      const enriched = enrichTasksWithCronData(raw, cronJobsRef.current, agentId);
       setTasks(enriched);
       setError(null);
     } catch (err) {
@@ -198,7 +201,7 @@ export const useAgentTasks = (
       loadingRef.current = false;
       setLoading(false);
     }
-  }, [agentId, status, cronJobs]);
+  }, [agentId, status]);
 
   const createTask = useCallback(
     async (payload: CreateTaskPayload) => {
