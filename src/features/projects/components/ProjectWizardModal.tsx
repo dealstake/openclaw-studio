@@ -1,6 +1,7 @@
 "use client";
 
 import { memo, useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   X,
   ArrowLeft,
@@ -281,7 +282,7 @@ export const ProjectWizardModal = memo(function ProjectWizardModal({
 
   if (!open) return null;
 
-  return (
+  return createPortal(
     <div
       data-state={visible ? "open" : "closed"}
       className="fixed inset-0 z-[100] flex items-end justify-center bg-background/70 backdrop-blur-sm transition-opacity duration-300 ease-out data-[state=closed]:opacity-0 sm:items-center"
@@ -348,7 +349,8 @@ export const ProjectWizardModal = memo(function ProjectWizardModal({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 });
 
