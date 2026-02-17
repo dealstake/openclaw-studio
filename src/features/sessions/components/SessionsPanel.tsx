@@ -1,7 +1,8 @@
 "use client";
 
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
-import { Archive, ChevronDown, ChevronRight, RefreshCw, Trash2 } from "lucide-react";
+import { Archive, ChevronDown, ChevronRight, Clock, RefreshCw, Trash2 } from "lucide-react";
+import type { TranscriptEntry } from "@/features/sessions/hooks/useTranscripts";
 import { EmptyStatePanel } from "@/features/agents/components/EmptyStatePanel";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import { isGatewayDisconnectLikeError, parseAgentIdFromSessionKey } from "@/lib/gateway/GatewayClient";
@@ -34,6 +35,11 @@ type SessionsPanelProps = {
   aggregateUsageLoading?: boolean;
   cumulativeUsage?: { inputTokens: number; outputTokens: number; totalCost: number | null; messageCount: number } | null;
   cumulativeUsageLoading?: boolean;
+  transcripts?: TranscriptEntry[];
+  transcriptsLoading?: boolean;
+  transcriptsError?: string | null;
+  onTranscriptsRefresh?: () => void;
+  onTranscriptClick?: (sessionId: string, agentId: string) => void;
 };
 
 const CHANNEL_TYPE_LABELS: Record<string, string> = {
@@ -185,6 +191,60 @@ function UsageSkeleton() {
     </div>
   );
 }
+
+/* ─── Archived transcript card ─── */
+const TranscriptCard = memo(function TranscriptCard({
+  transcript,
+  onClick,
+}: {
+  transcript: TranscriptEntry;
+  onClick?: () => void;
+}) {
+  const displayName = transcript.sessionKey
+    ? humanizeSessionKey(transcript.sessionKey)
+    : transcript.sessionId.slice(0, 12);
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      className="group/transcript cursor-pointer rounded-md border border-border/80 bg-card/70 p-3 transition-all duration-200 hover:border-border hover:bg-muted/55"
+      onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick?.();
+        }
+      }}
+    >
+      <div className="flex items-center gap-1.5">
+        <Clock className="h-3 w-3 flex-shrink-0 text-muted-foreground/60" />
+        <span className="truncate font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-foreground">
+          {displayName}
+        </span>
+        {transcript.archived && (
+          <span className="rounded border border-border/60 bg-muted/40 px-1 py-0.5 font-mono text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+            Archived
+          </span>
+        )}
+      </div>
+      <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+        {transcript.startedAt && (
+          <span>{formatRelativeTime(new Date(transcript.startedAt).getTime())}</span>
+        )}
+        {transcript.model && (
+          <span className="max-w-[120px] truncate">{transcript.model.split("/").pop()}</span>
+        )}
+        <span className="text-muted-foreground/60">{(transcript.size / 1024).toFixed(0)} KB</span>
+      </div>
+      {transcript.preview && (
+        <div className="mt-1.5 line-clamp-2 text-[11px] leading-relaxed text-muted-foreground/80">
+          {transcript.preview}
+        </div>
+      )}
+    </div>
+  );
+});
 
 /* ─── Single session card ─── */
 const SessionCard = memo(function SessionCard({
@@ -398,7 +458,13 @@ export const SessionsPanel = memo(function SessionsPanel({
   aggregateUsageLoading = false,
   cumulativeUsage = null,
   cumulativeUsageLoading = false,
+  transcripts = [],
+  transcriptsLoading = false,
+  transcriptsError = null,
+  onTranscriptsRefresh,
+  onTranscriptClick,
 }: SessionsPanelProps) {
+  const [tab, setTab] = useState<"active" | "history">("active");
   const [confirmDeleteKey, setConfirmDeleteKey] = useState<string | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -477,22 +543,48 @@ export const SessionsPanel = memo(function SessionsPanel({
   return (
     <div className="flex h-full w-full min-w-0 flex-col overflow-hidden">
       <div className="flex items-center justify-between border-b border-border/40 px-4 py-3">
-        <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-          Sessions
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            className={`rounded-md px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] transition ${
+              tab === "active"
+                ? "bg-muted text-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+            onClick={() => setTab("active")}
+          >
+            Active
+          </button>
+          <button
+            type="button"
+            className={`rounded-md px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] transition ${
+              tab === "history"
+                ? "bg-muted text-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+            onClick={() => {
+              setTab("history");
+              if (transcripts.length === 0 && !transcriptsLoading) {
+                onTranscriptsRefresh?.();
+              }
+            }}
+          >
+            History
+          </button>
         </div>
         <button
           className="flex h-7 w-7 items-center justify-center rounded-md border border-border/80 bg-card/70 text-muted-foreground transition hover:border-border hover:bg-muted/65 disabled:cursor-not-allowed disabled:opacity-60"
           type="button"
-          aria-label="Refresh sessions"
-          onClick={onRefresh}
-          disabled={loading}
+          aria-label={tab === "active" ? "Refresh sessions" : "Refresh history"}
+          onClick={tab === "active" ? onRefresh : () => onTranscriptsRefresh?.()}
+          disabled={tab === "active" ? loading : transcriptsLoading}
         >
-          <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+          <RefreshCw className={`h-3.5 w-3.5 ${(tab === "active" ? loading : transcriptsLoading) ? "animate-spin" : ""}`} />
         </button>
       </div>
 
-      {/* Usage summary */}
-      {(cumulativeUsage || aggregateUsage || cumulativeUsageLoading || aggregateUsageLoading) ? (
+      {/* Usage summary (active tab only) */}
+      {tab === "active" && (cumulativeUsage || aggregateUsage || cumulativeUsageLoading || aggregateUsageLoading) ? (
         <div className="flex flex-col gap-1.5 border-b border-border/40 px-4 py-2.5">
           {cumulativeUsage && (cumulativeUsage.inputTokens + cumulativeUsage.outputTokens) > 0 ? (
             <div className="flex flex-col gap-1">
@@ -533,7 +625,8 @@ export const SessionsPanel = memo(function SessionsPanel({
         </div>
       ) : null}
 
-      <div className="min-h-0 flex-1 overflow-y-auto p-4">
+      {/* ─── Active tab ─── */}
+      <div className={`min-h-0 flex-1 overflow-y-auto p-4 ${tab === "active" ? "" : "hidden"}`}>
         {error || actionError ? (
           <div className="mb-3 rounded-md border border-destructive bg-destructive px-3 py-2 text-xs text-destructive-foreground">
             {error ?? actionError}
@@ -571,6 +664,44 @@ export const SessionsPanel = memo(function SessionsPanel({
               />
             ))}
           </div>
+        ) : null}
+      </div>
+
+      {/* ─── History tab ─── */}
+      <div className={`min-h-0 flex-1 overflow-y-auto p-4 ${tab === "history" ? "" : "hidden"}`}>
+        {transcriptsError ? (
+          <div className="mb-3 rounded-md border border-destructive bg-destructive px-3 py-2 text-xs text-destructive-foreground">
+            {transcriptsError}
+          </div>
+        ) : null}
+
+        {transcriptsLoading && transcripts.length === 0 ? (
+          <div className="flex flex-col gap-2">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="h-[72px] animate-pulse rounded-md border border-border/50 bg-muted/20" />
+            ))}
+          </div>
+        ) : null}
+
+        {!transcriptsLoading && !transcriptsError && transcripts.length === 0 ? (
+          <EmptyStatePanel title="No session history found." compact className="p-3 text-xs" />
+        ) : null}
+
+        {transcripts.length > 0 ? (
+          <>
+            <div className="mb-2 font-mono text-[9px] text-muted-foreground">
+              {transcripts.length} transcript{transcripts.length !== 1 ? "s" : ""}
+            </div>
+            <div className="flex flex-col gap-2">
+              {transcripts.map((t) => (
+                <TranscriptCard
+                  key={t.sessionId}
+                  transcript={t}
+                  onClick={() => onTranscriptClick?.(t.sessionId, t.sessionKey?.split(":")?.[1] ?? "")}
+                />
+              ))}
+            </div>
+          </>
         ) : null}
       </div>
     </div>

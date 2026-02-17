@@ -67,6 +67,7 @@ import { useAllSessions } from "@/features/sessions/hooks/useAllSessions";
 import { useAllCronJobs } from "@/features/cron/hooks/useAllCronJobs";
 import { useExecApprovals } from "@/features/exec-approvals/hooks/useExecApprovals";
 import { useSessionUsage } from "@/features/sessions/hooks/useSessionUsage";
+import { useTranscripts, fetchTranscriptMessages } from "@/features/sessions/hooks/useTranscripts";
 import { useGatewayStatus } from "@/features/status/hooks/useGatewayStatus";
 import { ConfigMutationModals } from "@/features/agents/components/ConfigMutationModals";
 import type { MobilePane } from "@/features/agents/components/MobilePaneToggle";
@@ -259,6 +260,13 @@ const AgentStudioPage = () => {
     return selectedInFilter ?? filteredAgents[0] ?? null;
   }, [filteredAgents, selectedAgent]);
   const focusedAgentId = focusedAgent?.agentId ?? null;
+
+  const {
+    transcripts,
+    loading: transcriptsLoading,
+    error: transcriptsError,
+    refresh: transcriptsRefresh,
+  } = useTranscripts(focusedAgentId);
 
   const {
     tasks: agentTasks,
@@ -1722,6 +1730,47 @@ const AgentStudioPage = () => {
                         messageCount: aggregateUsageFromList.messageCount,
                       } : null}
                       cumulativeUsageLoading={allSessionsLoading}
+                      transcripts={transcripts}
+                      transcriptsLoading={transcriptsLoading}
+                      transcriptsError={transcriptsError}
+                      onTranscriptsRefresh={transcriptsRefresh}
+                      onTranscriptClick={(sessionId, agentId) => {
+                        const effectiveAgentId = agentId || focusedAgent?.agentId || "";
+                        if (!effectiveAgentId) return;
+                        setViewingSessionKey(sessionId);
+                        setViewingSessionLoading(true);
+                        setViewingSessionHistory([]);
+                        setMobilePane("chat");
+                        fetchTranscriptMessages(effectiveAgentId, sessionId, 0, 200)
+                          .then((result) => {
+                            const lines: string[] = [];
+                            for (const msg of result.messages) {
+                              const text = typeof msg.content === "string"
+                                ? msg.content
+                                : (msg.content?.find((p: { type: string; text?: string }) => p.type === "text") as { text?: string } | undefined)?.text ?? "";
+                              if (!text) continue;
+                              if (msg.role === "user") {
+                                lines.push(`> ${text}`);
+                              } else {
+                                lines.push(text);
+                              }
+                            }
+                            const items = buildFinalAgentChatItems({
+                              outputLines: lines,
+                              showThinkingTraces: true,
+                              toolCallingEnabled: true,
+                            });
+                            setViewingSessionHistory(items);
+                          })
+                          .catch((err) => {
+                            console.error("Failed to load transcript:", err);
+                            setViewingSessionHistory([{
+                              kind: "assistant",
+                              text: `Error loading transcript: ${err instanceof Error ? err.message : "Unknown error"}`,
+                            }]);
+                          })
+                          .finally(() => setViewingSessionLoading(false));
+                      }}
                       onSessionClick={(sessionKey, agentId) => {
                         if (agentId) {
                           flushPendingDraft(focusedAgent?.agentId ?? null);
