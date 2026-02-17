@@ -58,18 +58,23 @@ export const useAllSessions = (client: GatewayClient, status: GatewayStatus) => 
       setTotalSessionCount(entries.length);
       setAllSessionsError(null);
 
-      // Compute aggregate token counts from list data
+      // Compute aggregate token counts from list data.
+      // sessions.list returns totalTokens (combined) but not separate input/output or messageCount.
+      // Use totalTokens as fallback when input/output aren't provided.
       const totalInput = rawEntries.reduce((sum, e) => sum + (e.inputTokens ?? 0), 0);
       const totalOutput = rawEntries.reduce((sum, e) => sum + (e.outputTokens ?? 0), 0);
+      const totalFromCombined = rawEntries.reduce((sum, e) => sum + (e.totalTokens ?? 0), 0);
+      const effectiveInput = totalInput > 0 ? totalInput : totalFromCombined;
+      const effectiveOutput = totalInput > 0 ? totalOutput : 0;
       const totalMessages = rawEntries.reduce((sum, e) => sum + (e.messageCount ?? 0), 0);
       
       // Note: sessions.list doesn't typically return cost, so we default to null
       // unless we want to estimate it client-side. For now, leave as null.
       
-      if (totalInput > 0 || totalOutput > 0 || totalMessages > 0) {
+      if (effectiveInput > 0 || effectiveOutput > 0 || totalMessages > 0) {
         setAggregateUsageFromList({ 
-          inputTokens: totalInput, 
-          outputTokens: totalOutput,
+          inputTokens: effectiveInput, 
+          outputTokens: effectiveOutput,
           messageCount: totalMessages,
           totalCost: null
         });

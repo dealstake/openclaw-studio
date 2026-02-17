@@ -506,7 +506,9 @@ export const SessionsPanel = memo(function SessionsPanel({
                 {cumulativeUsage.totalCost !== null ? (
                   <span className="font-semibold text-foreground">{formatCost(cumulativeUsage.totalCost, "USD")}</span>
                 ) : null}
-                <span className="text-muted-foreground">{cumulativeUsage.messageCount.toLocaleString()} messages</span>
+                {cumulativeUsage.messageCount > 0 ? (
+                  <span className="text-muted-foreground">{cumulativeUsage.messageCount.toLocaleString()} messages</span>
+                ) : null}
               </div>
             </div>
           ) : cumulativeUsageLoading ? (
