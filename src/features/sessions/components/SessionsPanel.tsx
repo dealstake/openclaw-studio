@@ -505,11 +505,33 @@ const SessionCard = memo(function SessionCard({
 });
 
 /* ─── Search result card ─── */
+/** Highlight occurrences of `query` within `text` using <mark> tags */
+function HighlightedSnippet({ text, query }: { text: string; query: string }) {
+  if (!query.trim()) return <>{text}</>;
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const parts = text.split(new RegExp(`(${escaped})`, "gi"));
+  return (
+    <>
+      {parts.map((part, i) =>
+        part.toLowerCase() === query.toLowerCase() ? (
+          <mark key={i} className="rounded-sm bg-yellow-400/30 px-0.5 text-foreground dark:bg-yellow-500/25">
+            {part}
+          </mark>
+        ) : (
+          part
+        ),
+      )}
+    </>
+  );
+}
+
 const SearchResultCard = memo(function SearchResultCard({
   result,
+  query,
   onClick,
 }: {
   result: TranscriptSearchResult;
+  query?: string;
   onClick?: () => void;
 }) {
   const displayName = result.sessionKey
@@ -557,7 +579,7 @@ const SearchResultCard = memo(function SearchResultCard({
             <span className="font-mono text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/60">
               {match.role}:{" "}
             </span>
-            {match.snippet}
+            <HighlightedSnippet text={match.snippet} query={query ?? ""} />
           </div>
         ))}
       </div>
@@ -624,9 +646,11 @@ const SEARCH_CARD_HEIGHT = 100;
 
 const VirtualSearchResults = memo(function VirtualSearchResults({
   results,
+  query,
   onTranscriptClick,
 }: {
   results: TranscriptSearchResult[];
+  query?: string;
   onTranscriptClick?: (sessionId: string, agentId: string) => void;
 }) {
   "use no memo"; // TanStack Virtual is incompatible with React Compiler memoization
@@ -662,6 +686,7 @@ const VirtualSearchResults = memo(function VirtualSearchResults({
             >
               <SearchResultCard
                 result={r}
+                query={query}
                 onClick={() => onTranscriptClick?.(r.sessionId, r.sessionKey?.split(":")?.[1] ?? "")}
               />
             </div>
@@ -968,6 +993,7 @@ export const SessionsPanel = memo(function SessionsPanel({
                 </div>
                 <VirtualSearchResults
                   results={searchResults}
+                  query={searchQuery}
                   onTranscriptClick={onTranscriptClick}
                 />
               </>
