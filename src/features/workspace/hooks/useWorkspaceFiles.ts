@@ -288,20 +288,27 @@ export const useWorkspaceFiles = ({
   }, [fetchDir]);
 
   // ─── Auto-refresh polling (every 3 min, pause when tab hidden) ─────────────
+  // Use refs to avoid re-creating the interval when state changes
+  const currentPathRef = useRef(currentPath);
+  const viewingFileRef = useRef(viewingFile);
+  useEffect(() => { currentPathRef.current = currentPath; }, [currentPath]);
+  useEffect(() => { viewingFileRef.current = viewingFile; }, [viewingFile]);
+
   useEffect(() => {
     const POLL_INTERVAL = 180_000; // 3 minutes
     let intervalId: ReturnType<typeof setInterval> | null = null;
-    let visible = !document.hidden;
+
+    const poll = () => {
+      if (viewingFileRef.current) {
+        void fetchFile(viewingFileRef.current.path);
+      } else {
+        void fetchDir(currentPathRef.current);
+      }
+    };
 
     const startPolling = () => {
       if (intervalId) return;
-      intervalId = setInterval(() => {
-        if (viewingFile) {
-          void fetchFile(viewingFile.path);
-        } else {
-          void fetchDir(currentPath);
-        }
-      }, POLL_INTERVAL);
+      intervalId = setInterval(poll, POLL_INTERVAL);
     };
 
     const stopPolling = () => {
@@ -312,14 +319,8 @@ export const useWorkspaceFiles = ({
     };
 
     const handleVisibility = () => {
-      visible = !document.hidden;
-      if (visible) {
-        // Refresh immediately when tab becomes visible again
-        if (viewingFile) {
-          void fetchFile(viewingFile.path);
-        } else {
-          void fetchDir(currentPath);
-        }
+      if (!document.hidden) {
+        poll(); // Refresh immediately when tab becomes visible
         startPolling();
       } else {
         stopPolling();
@@ -327,13 +328,13 @@ export const useWorkspaceFiles = ({
     };
 
     document.addEventListener("visibilitychange", handleVisibility);
-    if (visible) startPolling();
+    if (!document.hidden) startPolling();
 
     return () => {
       stopPolling();
       document.removeEventListener("visibilitychange", handleVisibility);
     };
-  }, [currentPath, fetchDir, fetchFile, viewingFile]);
+  }, [fetchDir, fetchFile]);
 
   const navigateToDir = useCallback(
     (relativePath: string) => {
