@@ -9,6 +9,7 @@ import {
 import type { ProjectDetails } from "../lib/parseProject";
 import { ProjectCard } from "./ProjectCard";
 import { ProjectWizardModal } from "./ProjectWizardModal";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { useProjects, buildContinuePrompt } from "../hooks/useProjects";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 
@@ -41,6 +42,7 @@ export const ProjectsPanel = memo(function ProjectsPanel({
   onContinue,
 }: ProjectsPanelProps) {
   const [showWizard, setShowWizard] = useState(false);
+  const [archiveTarget, setArchiveTarget] = useState<ProjectEntry | null>(null);
   const { projects, loading, error, refresh, toggleStatus, archive } =
     useProjects(agentId, client);
 
@@ -128,7 +130,7 @@ export const ProjectsPanel = memo(function ProjectsPanel({
           project={project}
           onContinue={() => handleContinue(project)}
           onToggleStatus={() => void toggleStatus(project)}
-          onArchive={() => void archive(project)}
+          onArchive={() => setArchiveTarget(project)}
         />
       ))}
 
@@ -143,6 +145,19 @@ export const ProjectsPanel = memo(function ProjectsPanel({
           }}
         />
       )}
+
+      <ConfirmDialog
+        open={!!archiveTarget}
+        onOpenChange={(open) => { if (!open) setArchiveTarget(null); }}
+        title="Archive project"
+        description={`Are you sure you want to archive "${archiveTarget?.name}"? The project file will be moved to the archive folder.`}
+        confirmLabel="Archive"
+        destructive
+        onConfirm={() => {
+          if (archiveTarget) void archive(archiveTarget);
+          setArchiveTarget(null);
+        }}
+      />
     </div>
   );
 });

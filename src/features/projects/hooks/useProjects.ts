@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import type { ProjectEntry } from "../components/ProjectsPanel";
 import { parseProjectFile } from "../lib/parseProject";
 import { parseIndex } from "../lib/indexTable";
@@ -130,6 +131,17 @@ export function useProjects(
       if (!toggle) return;
 
       const newStatus = `${toggle.emoji} ${toggle.label}`;
+      const prevProjects = projects;
+
+      // Optimistic update
+      setProjects((prev) =>
+        prev.map((p) =>
+          p.doc === project.doc
+            ? { ...p, status: `${toggle.emoji} ${toggle.label}`, statusEmoji: toggle.emoji }
+            : p,
+        ),
+      );
+
       try {
         const res = await fetch("/api/workspace/project", {
           method: "PATCH",
@@ -138,7 +150,8 @@ export function useProjects(
         });
         if (!res.ok) {
           const data = (await res.json()) as { error?: string };
-          console.error("Failed to toggle project status:", data.error);
+          setProjects(prevProjects);
+          toast.error(`Failed to update "${project.name}": ${data.error ?? "Unknown error"}`);
           return;
         }
 
@@ -151,17 +164,29 @@ export function useProjects(
           );
         }
 
+        toast.success(
+          toggle.emoji === "⏸️"
+            ? `"${project.name}" paused`
+            : `"${project.name}" activated`,
+        );
         void loadRef.current?.();
       } catch (err) {
+        setProjects(prevProjects);
+        toast.error(`Failed to update "${project.name}"`);
         console.error("Failed to toggle project status:", err);
       }
     },
-    [agentId, client],
+    [agentId, client, projects],
   );
 
   const archive = useCallback(
     async (project: ProjectEntry) => {
       if (!agentId) return;
+      const prevProjects = projects;
+
+      // Optimistic removal
+      setProjects((prev) => prev.filter((p) => p.doc !== project.doc));
+
       try {
         const res = await fetch("/api/workspace/project", {
           method: "DELETE",
@@ -170,15 +195,19 @@ export function useProjects(
         });
         if (!res.ok) {
           const data = (await res.json()) as { error?: string };
-          console.error("Failed to archive project:", data.error);
+          setProjects(prevProjects);
+          toast.error(`Failed to archive "${project.name}": ${data.error ?? "Unknown error"}`);
           return;
         }
+        toast.success(`"${project.name}" archived`);
         void loadRef.current?.();
       } catch (err) {
+        setProjects(prevProjects);
+        toast.error(`Failed to archive "${project.name}"`);
         console.error("Failed to archive project:", err);
       }
     },
-    [agentId],
+    [agentId, projects],
   );
 
   const refresh = useCallback(() => {
