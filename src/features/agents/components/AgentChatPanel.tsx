@@ -540,6 +540,19 @@ export const AgentChatPanel = memo(function AgentChatPanel({
   const plainDraftRef = useRef(agent.draft);
   const [mobileHeaderExpanded, setMobileHeaderExpanded] = useState(false);
 
+  // Escape key exits transcript viewer
+  useEffect(() => {
+    if (!viewingSessionKey || !onExitSessionView) return;
+    const handler = (e: globalThis.KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onExitSessionView();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [viewingSessionKey, onExitSessionView]);
+
   const toggleMobileHeader = useCallback(() => {
     setMobileHeaderExpanded((prev) => !prev);
   }, []);
@@ -891,7 +904,7 @@ export const AgentChatPanel = memo(function AgentChatPanel({
         </div>
       )}
 
-      <div className="mt-3 flex min-h-0 flex-1 flex-col gap-3 px-3 pb-24 sm:px-4 sm:pb-24">
+      <div className={`mt-3 flex min-h-0 flex-1 flex-col gap-3 px-3 sm:px-4 ${viewingSessionKey ? "pb-3 sm:pb-4" : "pb-24 sm:pb-24"}`}>
         {viewingSessionKey ? (
           <div className="relative flex flex-1 flex-col overflow-hidden rounded-md border border-border/80 bg-card/75">
             <div className="flex items-center gap-2 border-b border-border/60 px-3 py-2">
@@ -950,17 +963,19 @@ export const AgentChatPanel = memo(function AgentChatPanel({
         />
         )}
 
-        <AgentChatComposer
-          inputRef={handleDraftRef}
-          initialDraft={agent.draft}
-          onDraftChange={handleComposerDraftChange}
-          onSend={handleComposerSend}
-          onStop={onStopRun}
-          onResize={resizeDraft}
-          canSend={canSend}
-          stopBusy={stopBusy}
-          running={running}
-        />
+        {!viewingSessionKey && (
+          <AgentChatComposer
+            inputRef={handleDraftRef}
+            initialDraft={agent.draft}
+            onDraftChange={handleComposerDraftChange}
+            onSend={handleComposerSend}
+            onStop={onStopRun}
+            onResize={resizeDraft}
+            canSend={canSend}
+            stopBusy={stopBusy}
+            running={running}
+          />
+        )}
       </div>
     </div>
   );

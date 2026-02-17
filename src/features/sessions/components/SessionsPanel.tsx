@@ -2,7 +2,7 @@
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { Archive, ChevronDown, ChevronRight, Clock, RefreshCw, Search, Trash2, X } from "lucide-react";
+import { Archive, ArrowDownAZ, ArrowUpAZ, ChevronDown, ChevronRight, Clock, RefreshCw, Search, Trash2, X } from "lucide-react";
 import type { TranscriptEntry, TranscriptSearchResult } from "@/features/sessions/hooks/useTranscripts";
 import { EmptyStatePanel } from "@/features/agents/components/EmptyStatePanel";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
@@ -148,6 +148,55 @@ function formatTokens(n: number): string {
   return n.toLocaleString();
 }
 
+/* ─── Transcript type inference ─── */
+type TranscriptType = "main" | "cron" | "subagent" | "channel" | "unknown";
+
+function inferTranscriptType(entry: TranscriptEntry): TranscriptType {
+  const key = entry.sessionKey;
+  if (!key) {
+    // Infer from preview content
+    const preview = entry.preview?.toLowerCase() ?? "";
+    if (preview.includes("cron") || preview.includes("heartbeat")) return "cron";
+    if (preview.includes("sub-agent") || preview.includes("subagent")) return "subagent";
+    return "unknown";
+  }
+  if (/:main$/i.test(key)) return "main";
+  if (/:cron:/i.test(key) || /^cron:/i.test(key)) return "cron";
+  if (/:subagent:/i.test(key)) return "subagent";
+  // Check for channel types
+  for (const ch of Object.keys(CHANNEL_TYPE_LABELS)) {
+    if (key.toLowerCase().startsWith(ch)) return "channel";
+  }
+  return "unknown";
+}
+
+const TRANSCRIPT_TYPE_LABELS: Record<TranscriptType, string> = {
+  main: "Main",
+  cron: "Cron",
+  subagent: "Sub-agent",
+  channel: "Channel",
+  unknown: "Other",
+};
+
+const TRANSCRIPT_TYPE_COLORS: Record<TranscriptType, string> = {
+  main: "border-emerald-500/40 bg-emerald-500/10 text-emerald-400",
+  cron: "border-amber-500/40 bg-amber-500/10 text-amber-400",
+  subagent: "border-blue-500/40 bg-blue-500/10 text-blue-400",
+  channel: "border-purple-500/40 bg-purple-500/10 text-purple-400",
+  unknown: "border-border/60 bg-muted/40 text-muted-foreground",
+};
+
+function formatTranscriptDisplayName(entry: TranscriptEntry): string {
+  if (entry.sessionKey) return humanizeSessionKey(entry.sessionKey);
+  // Fall back to date/time + type
+  if (entry.startedAt) {
+    const d = new Date(entry.startedAt);
+    return d.toLocaleDateString(undefined, { month: "short", day: "numeric" }) +
+      " " + d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+  }
+  return entry.sessionId.slice(0, 12);
+}
+
 /* ─── Usage detail grid (shown inside expanded card) ─── */
 function UsageDetails({ usage }: { usage: SessionUsageData }) {
   return (
@@ -207,9 +256,8 @@ const TranscriptCard = memo(function TranscriptCard({
   transcript: TranscriptEntry;
   onClick?: () => void;
 }) {
-  const displayName = transcript.sessionKey
-    ? humanizeSessionKey(transcript.sessionKey)
-    : transcript.sessionId.slice(0, 12);
+  const displayName = formatTranscriptDisplayName(transcript);
+  const transcriptType = inferTranscriptType(transcript);
 
   return (
     <div
@@ -228,6 +276,9 @@ const TranscriptCard = memo(function TranscriptCard({
         <Clock className="h-3 w-3 flex-shrink-0 text-muted-foreground/60" />
         <span className="truncate font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-foreground">
           {displayName}
+        </span>
+        <span className={`rounded border px-1 py-0.5 font-mono text-[8px] font-semibold uppercase tracking-[0.12em] ${TRANSCRIPT_TYPE_COLORS[transcriptType]}`}>
+          {TRANSCRIPT_TYPE_LABELS[transcriptType]}
         </span>
         {transcript.archived && (
           <span className="rounded border border-border/60 bg-muted/40 px-1 py-0.5 font-mono text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
@@ -646,6 +697,8 @@ export const SessionsPanel = memo(function SessionsPanel({
   onClearSearch,
 }: SessionsPanelProps) {
   const [tab, setTab] = useState<"active" | "history">("active");
+  const [transcriptFilter, setTranscriptFilter] = useState<TranscriptType | "all">("all");
+  const [transcriptSortNewest, setTranscriptSortNewest] = useState(true);
   const [confirmDeleteKey, setConfirmDeleteKey] = useState<string | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -669,6 +722,19 @@ export const SessionsPanel = memo(function SessionsPanel({
     () => [...sessions].sort((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0)),
     [sessions]
   );
+
+  const filteredTranscripts = useMemo(() => {
+    let list = transcripts;
+    if (transcriptFilter !== "all") {
+      list = list.filter((t) => inferTranscriptType(t) === transcriptFilter);
+    }
+    const sorted = [...list].sort((a, b) => {
+      const aTime = a.startedAt ? new Date(a.startedAt).getTime() : 0;
+      const bTime = b.startedAt ? new Date(b.startedAt).getTime() : 0;
+      return transcriptSortNewest ? bTime - aTime : aTime - bTime;
+    });
+    return sorted;
+  }, [transcripts, transcriptFilter, transcriptSortNewest]);
 
   const toggleExpanded = useCallback((key: string) => {
     setExpandedKeys((prev) => {
@@ -909,6 +975,33 @@ export const SessionsPanel = memo(function SessionsPanel({
           </div>
         ) : (
           <div className="min-h-0 flex-1 overflow-hidden px-4 pb-4">
+            {/* Filter chips + sort toggle */}
+            <div className="mb-2 flex flex-wrap items-center gap-1.5">
+              {(["all", "main", "cron", "subagent", "channel"] as const).map((type) => (
+                <button
+                  key={type}
+                  type="button"
+                  className={`rounded-full border px-2 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] transition ${
+                    transcriptFilter === type
+                      ? "border-primary/50 bg-primary/10 text-primary"
+                      : "border-border/60 bg-card/70 text-muted-foreground hover:border-border hover:text-foreground"
+                  }`}
+                  onClick={() => setTranscriptFilter(type)}
+                >
+                  {type === "all" ? "All" : TRANSCRIPT_TYPE_LABELS[type]}
+                </button>
+              ))}
+              <button
+                type="button"
+                className="ml-auto flex items-center gap-1 rounded-md border border-border/60 bg-card/70 px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground transition hover:border-border hover:text-foreground"
+                onClick={() => setTranscriptSortNewest((prev) => !prev)}
+                aria-label={transcriptSortNewest ? "Sort oldest first" : "Sort newest first"}
+              >
+                {transcriptSortNewest ? <ArrowDownAZ className="h-3 w-3" /> : <ArrowUpAZ className="h-3 w-3" />}
+                {transcriptSortNewest ? "Newest" : "Oldest"}
+              </button>
+            </div>
+
             {/* Default transcript list (no search active) */}
             {transcriptsError ? (
               <div className="mb-3 rounded-md border border-destructive bg-destructive px-3 py-2 text-xs text-destructive-foreground">
@@ -924,17 +1017,22 @@ export const SessionsPanel = memo(function SessionsPanel({
               </div>
             ) : null}
 
-            {!transcriptsLoading && !transcriptsError && transcripts.length === 0 ? (
-              <EmptyStatePanel title="No session history found." compact className="p-3 text-xs" />
+            {!transcriptsLoading && !transcriptsError && filteredTranscripts.length === 0 ? (
+              <EmptyStatePanel
+                title={transcriptFilter !== "all" ? `No ${TRANSCRIPT_TYPE_LABELS[transcriptFilter]} transcripts found.` : "No session history found."}
+                compact
+                className="p-3 text-xs"
+              />
             ) : null}
 
-            {transcripts.length > 0 ? (
+            {filteredTranscripts.length > 0 ? (
               <>
                 <div className="mb-2 font-mono text-[9px] text-muted-foreground">
-                  {transcripts.length} transcript{transcripts.length !== 1 ? "s" : ""}
+                  {filteredTranscripts.length} transcript{filteredTranscripts.length !== 1 ? "s" : ""}
+                  {transcriptFilter !== "all" ? ` (${TRANSCRIPT_TYPE_LABELS[transcriptFilter]})` : ""}
                 </div>
                 <VirtualTranscriptList
-                  transcripts={transcripts}
+                  transcripts={filteredTranscripts}
                   onTranscriptClick={onTranscriptClick}
                 />
               </>
