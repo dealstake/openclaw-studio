@@ -174,6 +174,19 @@ export const ProjectWizardModal = memo(function ProjectWizardModal({
     const markdown = generateMarkdown(form);
 
     try {
+      // 0. Check if project file already exists
+      const checkRes = await fetch(
+        `/api/workspace/file?agentId=${encodeURIComponent(agentId)}&path=projects/${encodeURIComponent(doc)}`
+      );
+      if (checkRes.ok) {
+        const checkData = (await checkRes.json()) as { content?: string };
+        if (checkData.content && !checkData.content.startsWith("<!-- Archived:")) {
+          setError(`A project file "${doc}" already exists. Choose a different name.`);
+          setCreating(false);
+          return;
+        }
+      }
+
       // 1. Write the project file
       const writeRes = await fetch("/api/workspace/file", {
         method: "PUT",

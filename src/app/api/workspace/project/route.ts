@@ -141,10 +141,17 @@ export async function DELETE(request: Request) {
       if (fileRes.ok) {
         const fileData = (await fileRes.json()) as { content?: string };
         if (fileData.content) {
+          // Copy to archive location
           await sidecarMutate("/file", "PUT", {
             agentId,
             path: `projects/archive/${doc}`,
             content: fileData.content,
+          });
+          // Overwrite original with archived tombstone (sidecar has no DELETE for files)
+          await sidecarMutate("/file", "PUT", {
+            agentId,
+            path: `projects/${doc}`,
+            content: `<!-- Archived: moved to projects/archive/${doc} -->\n`,
           });
         }
       }
