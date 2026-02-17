@@ -1,7 +1,17 @@
 "use client";
 
 import { memo, useCallback, useEffect, useRef, useState } from "react";
-import { FolderGit2, Play, RefreshCw } from "lucide-react";
+import {
+  CheckCircle2,
+  ClipboardList,
+  FolderGit2,
+  Hammer,
+  PauseCircle,
+  Play,
+  RefreshCw,
+  Waves,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -23,26 +33,24 @@ const STATUS_ORDER: Record<string, number> = {
   "✅": 4, // Done
 };
 
-const STATUS_LABELS: Record<string, string> = {
-  "🔨": "Active",
-  "📋": "Defined",
-  "🌊": "Stream",
-  "⏸️": "Parked",
-  "✅": "Done",
+interface StatusConfig {
+  label: string;
+  icon: LucideIcon;
+  colors: string;
+}
+
+const STATUS_CONFIG: Record<string, StatusConfig> = {
+  "🔨": { label: "Active", icon: Hammer, colors: "border-amber-500/30 bg-amber-500/10 text-amber-400" },
+  "📋": { label: "Defined", icon: ClipboardList, colors: "border-blue-500/30 bg-blue-500/10 text-blue-400" },
+  "🌊": { label: "Stream", icon: Waves, colors: "border-cyan-500/30 bg-cyan-500/10 text-cyan-400" },
+  "⏸️": { label: "Parked", icon: PauseCircle, colors: "border-zinc-500/30 bg-zinc-500/10 text-zinc-400" },
+  "✅": { label: "Done", icon: CheckCircle2, colors: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400" },
 };
 
-const STATUS_COLORS: Record<string, string> = {
-  "🔨": "border-amber-500/40 bg-amber-500/10 text-amber-400",
-  "📋": "border-blue-500/40 bg-blue-500/10 text-blue-400",
-  "🌊": "border-cyan-500/40 bg-cyan-500/10 text-cyan-400",
-  "⏸️": "border-zinc-500/40 bg-zinc-500/10 text-zinc-400",
-  "✅": "border-emerald-500/40 bg-emerald-500/10 text-emerald-400",
-};
-
-const PRIORITY_COLORS: Record<string, string> = {
-  "🔴": "text-red-400",
-  "🟡": "text-yellow-400",
-  "🟢": "text-green-400",
+const PRIORITY_DOT: Record<string, string> = {
+  "🔴": "bg-red-400",
+  "🟡": "bg-yellow-400",
+  "🟢": "bg-green-400",
 };
 
 // ─── Parse INDEX.md ──────────────────────────────────────────────────────────
@@ -52,14 +60,12 @@ function parseProjectIndex(markdown: string): ProjectEntry[] {
   const projects: ProjectEntry[] = [];
 
   for (const line of lines) {
-    // Match table rows: | Project | Doc | Status | Priority | One-liner |
     const match = line.match(
       /^\|\s*(.+?)\s*\|\s*(.+?)\s*\|\s*(.+?)\s*\|\s*(.+?)\s*\|\s*(.+?)\s*\|$/
     );
     if (!match) continue;
 
     const [, name, doc, status, priority, oneLiner] = match;
-    // Skip header and separator rows
     if (!name || name.includes("---") || name.toLowerCase() === "project") continue;
 
     const statusEmoji = status.trim().match(/^(🔨|📋|🌊|⏸️|✅)/)?.[1] ?? "";
@@ -76,7 +82,6 @@ function parseProjectIndex(markdown: string): ProjectEntry[] {
     });
   }
 
-  // Sort: Active first, then Defined, then rest. Done last.
   projects.sort((a, b) => {
     const aOrder = STATUS_ORDER[a.statusEmoji] ?? 99;
     const bOrder = STATUS_ORDER[b.statusEmoji] ?? 99;
@@ -140,22 +145,17 @@ export const ProjectsPanel = memo(function ProjectsPanel({
 
   const handleContinue = useCallback(
     (doc: string) => {
-      onContinue(`Continue projects/${doc}`);
+      onContinue(
+        `Read projects/${doc} for full context. Check current status and continue where we left off.`
+      );
     },
     [onContinue]
-  );
-
-  const actionableProjects = projects.filter(
-    (p) => p.statusEmoji === "🔨" || p.statusEmoji === "📋"
-  );
-  const otherProjects = projects.filter(
-    (p) => p.statusEmoji !== "🔨" && p.statusEmoji !== "📋"
   );
 
   if (!agentId) return null;
 
   return (
-    <div className="flex flex-col gap-3 px-3 py-3">
+    <div className="flex flex-col gap-2 px-3 py-3">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -165,13 +165,13 @@ export const ProjectsPanel = memo(function ProjectsPanel({
           </span>
           {!loading && projects.length > 0 && (
             <span className="font-mono text-[10px] text-muted-foreground/60">
-              {actionableProjects.length} active
+              {projects.length}
             </span>
           )}
         </div>
         <button
           type="button"
-          className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted/50 hover:text-foreground"
+          className="flex h-7 w-7 items-center justify-center rounded-md border border-border/80 bg-card/70 text-muted-foreground transition hover:border-border hover:bg-muted/65"
           aria-label="Refresh projects"
           onClick={() => void loadProjects()}
         >
@@ -201,33 +201,14 @@ export const ProjectsPanel = memo(function ProjectsPanel({
         </div>
       )}
 
-      {/* Actionable Projects (Active + Defined) */}
-      {actionableProjects.map((project) => (
+      {/* All projects — flat list, sorted by status */}
+      {projects.map((project) => (
         <ProjectCard
           key={project.doc}
           project={project}
           onContinue={handleContinue}
         />
       ))}
-
-      {/* Other Projects (collapsed) */}
-      {otherProjects.length > 0 && (
-        <details className="group">
-          <summary className="cursor-pointer list-none font-mono text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/50 transition hover:text-muted-foreground">
-            {otherProjects.length} other{otherProjects.length === 1 ? "" : "s"} (stream / parked / done)
-          </summary>
-          <div className="mt-2 flex flex-col gap-2">
-            {otherProjects.map((project) => (
-              <ProjectCard
-                key={project.doc}
-                project={project}
-                onContinue={handleContinue}
-                compact
-              />
-            ))}
-          </div>
-        </details>
-      )}
     </div>
   );
 });
@@ -237,69 +218,50 @@ export const ProjectsPanel = memo(function ProjectsPanel({
 const ProjectCard = memo(function ProjectCard({
   project,
   onContinue,
-  compact = false,
 }: {
   project: ProjectEntry;
   onContinue: (doc: string) => void;
-  compact?: boolean;
 }) {
-  const statusColor = STATUS_COLORS[project.statusEmoji] ?? "border-border bg-card/50 text-muted-foreground";
-  const statusLabel = STATUS_LABELS[project.statusEmoji] ?? project.status;
-  const priorityColor = PRIORITY_COLORS[project.priorityEmoji] ?? "text-muted-foreground";
-  const isActionable = project.statusEmoji === "🔨" || project.statusEmoji === "📋";
-
-  if (compact) {
-    return (
-      <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-card/40 px-3 py-2">
-        <span className={`rounded border px-1.5 py-0.5 font-mono text-[8px] font-bold uppercase ${statusColor}`}>
-          {project.statusEmoji} {statusLabel}
-        </span>
-        <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
-          {project.name}
-        </span>
-        {project.priorityEmoji && (
-          <span className={`text-[10px] ${priorityColor}`}>{project.priorityEmoji}</span>
-        )}
-      </div>
-    );
-  }
+  const config = STATUS_CONFIG[project.statusEmoji];
+  const StatusIcon = config?.icon ?? ClipboardList;
+  const statusLabel = config?.label ?? project.status;
+  const statusColors = config?.colors ?? "border-border bg-card/50 text-muted-foreground";
+  const priorityDot = PRIORITY_DOT[project.priorityEmoji];
 
   return (
-    <div className="rounded-xl border border-border bg-card/75 shadow-sm">
-      <div className="px-3 pt-3 pb-2">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <span className={`shrink-0 rounded border px-1.5 py-0.5 font-mono text-[8px] font-bold uppercase ${statusColor}`}>
-                {project.statusEmoji} {statusLabel}
-              </span>
-              {project.priorityEmoji && (
-                <span className={`font-mono text-[9px] font-semibold ${priorityColor}`}>
-                  {project.priority}
-                </span>
-              )}
-            </div>
-            <h3 className="mt-1.5 text-sm font-semibold text-foreground">
-              {project.name}
-            </h3>
-            <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground/80">
-              {project.oneLiner}
-            </p>
+    <div className="group/task rounded-md border border-border/80 bg-card/70 px-3 py-2.5 transition hover:border-border">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span
+              className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] ${statusColors}`}
+            >
+              <StatusIcon className="h-3 w-3" />
+              {statusLabel}
+            </span>
+            {priorityDot && (
+              <span
+                className={`h-2 w-2 shrink-0 rounded-full ${priorityDot}`}
+                title={project.priority}
+              />
+            )}
           </div>
+          <h3 className="mt-1.5 text-sm font-semibold text-foreground">
+            {project.name}
+          </h3>
+          <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground/80">
+            {project.oneLiner}
+          </p>
         </div>
+        <button
+          type="button"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border/80 bg-card/70 text-muted-foreground transition hover:border-border hover:bg-muted/65"
+          title="Continue project"
+          onClick={() => onContinue(project.doc)}
+        >
+          <Play className="h-3 w-3" />
+        </button>
       </div>
-      {isActionable && (
-        <div className="border-t border-border/40 px-3 py-2">
-          <button
-            type="button"
-            className="flex items-center gap-1.5 rounded-md bg-emerald-600/20 px-2.5 py-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.08em] text-emerald-400 transition hover:bg-emerald-600/30"
-            onClick={() => onContinue(project.doc)}
-          >
-            <Play className="h-3 w-3" />
-            Continue
-          </button>
-        </div>
-      )}
     </div>
   );
 });

@@ -171,7 +171,7 @@ const AgentStudioPage = () => {
   const [mobilePane, setMobilePane] = useState<MobilePane>("chat");
   /** "agent" = show ContextPanel (Tasks/Brain/Settings), "files" = show Files */
   const [contextMode, setContextMode] = useState<"agent" | "files">("agent");
-  const [contextTab, setContextTab] = useState<ContextTab>("settings");
+  const [contextTab, setContextTab] = useState<ContextTab>("projects");
   const [viewingSessionKey, setViewingSessionKey] = useState<string | null>(null);
   const [viewingSessionHistory, setViewingSessionHistory] = useState<AgentChatItem[]>([]);
   const [viewingSessionLoading, setViewingSessionLoading] = useState(false);
@@ -1679,13 +1679,16 @@ const AgentStudioPage = () => {
                       setSettingsAgentId(focusedAgent.agentId);
                     }
                   }}
-                  tasksContent={
+                  projectsContent={
                     <div className="flex h-full w-full flex-col overflow-y-auto">
                       <ProjectsPanel
                         agentId={focusedAgent?.agentId ?? null}
                         onContinue={stableProjectContinue}
                       />
-                      <div className="border-t border-border/30">
+                    </div>
+                  }
+                  tasksContent={
+                    <div className="flex h-full w-full flex-col overflow-y-auto">
                         <TasksPanel
                           isSelected
                           client={client}
@@ -1699,7 +1702,6 @@ const AgentStudioPage = () => {
                           onRefresh={() => { void loadTasks(); }}
                           onNewTask={() => setShowTaskWizard(true)}
                         />
-                      </div>
                     </div>
                   }
                   brainContent={

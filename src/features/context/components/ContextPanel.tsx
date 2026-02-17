@@ -3,11 +3,12 @@
 import { memo, useCallback, useRef, useState, useEffect, type ReactNode } from "react";
 import { ChevronDown } from "lucide-react";
 
-export type ContextTab = "tasks" | "brain" | "settings" | "channels" | "sessions" | "cron" | "workspace";
+export type ContextTab = "projects" | "tasks" | "brain" | "settings" | "channels" | "sessions" | "cron" | "workspace";
 
 interface ContextPanelProps {
   activeTab: ContextTab;
   onTabChange: (tab: ContextTab) => void;
+  projectsContent?: ReactNode;
   tasksContent: ReactNode;
   brainContent: ReactNode;
   settingsContent: ReactNode;
@@ -18,13 +19,14 @@ interface ContextPanelProps {
 }
 
 const TAB_OPTIONS: Array<{ value: ContextTab; label: string }> = [
+  { value: "projects", label: "Projects" },
   { value: "tasks", label: "Tasks" },
   { value: "brain", label: "Brain" },
-  { value: "settings", label: "Settings" },
+  { value: "workspace", label: "Files" },
   { value: "sessions", label: "Sessions" },
   { value: "channels", label: "Channels" },
   { value: "cron", label: "Cron" },
-  { value: "workspace", label: "Files" },
+  { value: "settings", label: "Settings" },
 ];
 
 const PRIMARY_TABS = TAB_OPTIONS.slice(0, 4);
@@ -33,6 +35,7 @@ const OVERFLOW_TABS = TAB_OPTIONS.slice(4);
 export const ContextPanel = memo(function ContextPanel({
   activeTab,
   onTabChange,
+  projectsContent,
   tasksContent,
   brainContent,
   settingsContent,
@@ -45,14 +48,10 @@ export const ContextPanel = memo(function ContextPanel({
   const moreRef = useRef<HTMLDivElement>(null);
 
   // Lazy mount: track which tabs have been activated at least once.
-  // Once mounted, a tab stays mounted to preserve its internal state.
-  // Updated in handleTabClick and also via derivation when parent changes activeTab directly.
   const [mountedTabs, setMountedTabs] = useState<Set<ContextTab>>(
     () => new Set<ContextTab>([activeTab])
   );
 
-  // Ensure the active tab is always mounted — handles cases where parent sets
-  // activeTab directly (e.g., programmatic tab switches) without going through handleTabClick.
   const effectiveMountedTabs = mountedTabs.has(activeTab)
     ? mountedTabs
     : new Set([...mountedTabs, activeTab]);
@@ -171,8 +170,13 @@ export const ContextPanel = memo(function ContextPanel({
         ) : null}
       </div>
 
-      {/* Tab content — lazy mount: tabs mount on first activation, stay mounted to preserve state */}
+      {/* Tab content — lazy mount */}
       <div className="min-h-0 min-w-0 flex-1 overflow-hidden">
+        {effectiveMountedTabs.has("projects") && (
+          <div role="tabpanel" className={activeTab === "projects" ? "flex h-full w-full" : "hidden"}>
+            {projectsContent ?? null}
+          </div>
+        )}
         {effectiveMountedTabs.has("tasks") && (
           <div role="tabpanel" className={activeTab === "tasks" ? "flex h-full w-full" : "hidden"}>
             {tasksContent}
@@ -181,6 +185,11 @@ export const ContextPanel = memo(function ContextPanel({
         {effectiveMountedTabs.has("brain") && (
           <div role="tabpanel" className={activeTab === "brain" ? "flex h-full w-full" : "hidden"}>
             {brainContent}
+          </div>
+        )}
+        {effectiveMountedTabs.has("workspace") && (
+          <div role="tabpanel" className={activeTab === "workspace" ? "flex h-full w-full" : "hidden"}>
+            {workspaceContent ?? null}
           </div>
         )}
         {effectiveMountedTabs.has("settings") && (
@@ -201,11 +210,6 @@ export const ContextPanel = memo(function ContextPanel({
         {effectiveMountedTabs.has("cron") && (
           <div role="tabpanel" className={activeTab === "cron" ? "flex h-full w-full" : "hidden"}>
             {cronContent ?? null}
-          </div>
-        )}
-        {effectiveMountedTabs.has("workspace") && (
-          <div role="tabpanel" className={activeTab === "workspace" ? "flex h-full w-full" : "hidden"}>
-            {workspaceContent ?? null}
           </div>
         )}
       </div>
