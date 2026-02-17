@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, Check, Pencil, Save, X } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -34,6 +34,16 @@ export const FileViewer = memo(function FileViewer({
 
   const canEdit = file.isText && file.content !== null;
 
+  // Browser-level unsaved changes warning
+  useEffect(() => {
+    if (!editing || !dirty) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [editing, dirty]);
+
   const handleStartEdit = useCallback(() => {
     setEditing(true);
     setDraft(file.content ?? "");
@@ -49,6 +59,22 @@ export const FileViewer = memo(function FileViewer({
     setDraft(file.content ?? "");
     setDirty(false);
   }, [file.content]);
+
+  /** Prompt for unsaved changes, returns true if safe to proceed */
+  const confirmDiscardIfDirty = useCallback((): boolean => {
+    if (!editing || !dirty) return true;
+    return window.confirm("You have unsaved changes. Discard them?");
+  }, [editing, dirty]);
+
+  const handleBack = useCallback(() => {
+    if (!confirmDiscardIfDirty()) return;
+    if (editing) {
+      setEditing(false);
+      setDraft(file.content ?? "");
+      setDirty(false);
+    }
+    onBack();
+  }, [confirmDiscardIfDirty, editing, file.content, onBack]);
 
   const handleSave = useCallback(async () => {
     const ok = await onSave(draft);
@@ -68,10 +94,11 @@ export const FileViewer = memo(function FileViewer({
       }
       if (e.key === "Escape" && editing) {
         e.preventDefault();
+        if (!confirmDiscardIfDirty()) return;
         handleCancelEdit();
       }
     },
-    [editing, dirty, handleSave, handleCancelEdit]
+    [editing, dirty, handleSave, handleCancelEdit, confirmDiscardIfDirty]
   );
 
   return (
@@ -85,7 +112,7 @@ export const FileViewer = memo(function FileViewer({
         <button
           type="button"
           className="flex h-7 w-7 items-center justify-center rounded-md border border-border/80 bg-card/70 text-muted-foreground transition hover:border-border hover:bg-muted/65"
-          onClick={onBack}
+          onClick={handleBack}
           aria-label="Back to file list"
           data-testid="ws-back"
         >

@@ -6,6 +6,9 @@ import {
   FilePlus,
   Folder,
   RefreshCw,
+  RotateCcw,
+  Search,
+  X,
 } from "lucide-react";
 
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
@@ -48,7 +51,9 @@ export const WorkspaceExplorerPanel = memo(function WorkspaceExplorerPanel({
 
   const [showNewFile, setShowNewFile] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
+  const [filter, setFilter] = useState("");
   const listRef = useRef<HTMLDivElement>(null);
+  const filterRef = useRef<HTMLInputElement>(null);
 
   const isRoot = currentPath === "";
   const projectStatuses = useProjectStatuses(agentId, isRoot || currentPath === "projects");
@@ -70,10 +75,18 @@ export const WorkspaceExplorerPanel = memo(function WorkspaceExplorerPanel({
     return groups;
   }, [entries, isRoot]);
 
+  // Filter entries for non-root views
+  const filteredEntries = useMemo(() => {
+    if (!filter) return entries;
+    const lower = filter.toLowerCase();
+    return entries.filter((e) => e.name.toLowerCase().includes(lower));
+  }, [entries, filter]);
+
   const handleEntryClick = useCallback(
     (entry: WorkspaceEntry) => {
       if (entry.type === "directory") {
         setActiveIndex(-1);
+        setFilter("");
         navigateToDir(entry.path);
       } else {
         openFile(entry.path);
@@ -194,14 +207,31 @@ export const WorkspaceExplorerPanel = memo(function WorkspaceExplorerPanel({
       {/* Content */}
       <div className="min-h-0 flex-1 overflow-y-auto py-1">
         {error ? (
-          <div className="mx-3 mt-2 rounded-md border border-destructive bg-destructive px-3 py-2 text-xs text-destructive-foreground">
-            {error}
+          <div className="mx-3 mt-2 flex items-center gap-2 rounded-md border border-destructive bg-destructive px-3 py-2 text-xs text-destructive-foreground">
+            <span className="flex-1">{error}</span>
+            <button
+              type="button"
+              className="flex flex-shrink-0 items-center gap-1 rounded px-2 py-1 text-[10px] font-medium transition hover:bg-destructive-foreground/10"
+              onClick={refresh}
+              aria-label="Retry"
+            >
+              <RotateCcw className="h-3 w-3" />
+              Retry
+            </button>
           </div>
         ) : null}
 
         {loading && entries.length === 0 ? (
-          <div className="flex items-center justify-center py-8 text-xs text-muted-foreground">
-            Loading...
+          <div className="space-y-1 px-1 py-1">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-2.5 px-3 py-2">
+                <div className="h-4 w-4 animate-pulse rounded bg-muted" />
+                <div className="flex-1 space-y-1.5">
+                  <div className="h-3 w-24 animate-pulse rounded bg-muted" style={{ width: `${60 + (i % 3) * 20}px` }} />
+                  <div className="h-2 w-16 animate-pulse rounded bg-muted/60" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : null}
 
@@ -227,63 +257,103 @@ export const WorkspaceExplorerPanel = memo(function WorkspaceExplorerPanel({
           : null}
 
         {!error && !isRoot && entries.length > 0 ? (
-          <div
-            ref={listRef}
-            role="listbox"
-            aria-label="Files"
-            tabIndex={0}
-            className="outline-none"
-            onKeyDown={(e) => {
-              const count = entries.length;
-              if (count === 0) return;
-              let next = activeIndex;
-              switch (e.key) {
-                case "ArrowDown":
-                  e.preventDefault();
-                  next = activeIndex < count - 1 ? activeIndex + 1 : 0;
-                  break;
-                case "ArrowUp":
-                  e.preventDefault();
-                  next = activeIndex > 0 ? activeIndex - 1 : count - 1;
-                  break;
-                case "Home":
-                  e.preventDefault();
-                  next = 0;
-                  break;
-                case "End":
-                  e.preventDefault();
-                  next = count - 1;
-                  break;
-                case "Enter":
-                case " ":
-                  e.preventDefault();
-                  if (activeIndex >= 0 && activeIndex < count) {
-                    handleEntryClick(entries[activeIndex]);
-                  }
-                  return;
-                default:
-                  return;
-              }
-              setActiveIndex(next);
-              listRef.current
-                ?.querySelectorAll<HTMLElement>('[role="option"]')
-                [next]?.focus();
-            }}
-          >
-            {entries.map((entry, i) => (
-              <EntryRow
-                key={entry.path}
-                entry={entry}
-                onClick={() => handleEntryClick(entry)}
-                isActive={i === activeIndex}
-                statusBadge={
-                  currentPath === "projects"
-                    ? projectStatuses.get(entry.name.toLowerCase()) ?? null
-                    : null
+          <>
+            {/* Filter bar — shown when there are 6+ entries */}
+            {entries.length >= 6 && (
+              <div className="flex items-center gap-1.5 border-b border-border/30 px-3 py-1.5">
+                <Search className="h-3 w-3 flex-shrink-0 text-muted-foreground" />
+                <input
+                  ref={filterRef}
+                  type="text"
+                  placeholder="Filter files…"
+                  value={filter}
+                  onChange={(e) => {
+                    setFilter(e.target.value);
+                    setActiveIndex(-1);
+                  }}
+                  className="min-w-0 flex-1 bg-transparent text-xs text-foreground placeholder:text-muted-foreground/60 outline-none"
+                  aria-label="Filter files"
+                  data-testid="ws-filter"
+                />
+                {filter && (
+                  <button
+                    type="button"
+                    className="flex h-4 w-4 items-center justify-center rounded text-muted-foreground hover:text-foreground"
+                    onClick={() => {
+                      setFilter("");
+                      setActiveIndex(-1);
+                      filterRef.current?.focus();
+                    }}
+                    aria-label="Clear filter"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+            )}
+            <div
+              ref={listRef}
+              role="listbox"
+              aria-label="Files"
+              tabIndex={0}
+              className="outline-none"
+              onKeyDown={(e) => {
+                const count = filteredEntries.length;
+                if (count === 0) return;
+                let next = activeIndex;
+                switch (e.key) {
+                  case "ArrowDown":
+                    e.preventDefault();
+                    next = activeIndex < count - 1 ? activeIndex + 1 : 0;
+                    break;
+                  case "ArrowUp":
+                    e.preventDefault();
+                    next = activeIndex > 0 ? activeIndex - 1 : count - 1;
+                    break;
+                  case "Home":
+                    e.preventDefault();
+                    next = 0;
+                    break;
+                  case "End":
+                    e.preventDefault();
+                    next = count - 1;
+                    break;
+                  case "Enter":
+                  case " ":
+                    e.preventDefault();
+                    if (activeIndex >= 0 && activeIndex < count) {
+                      handleEntryClick(filteredEntries[activeIndex]);
+                    }
+                    return;
+                  default:
+                    return;
                 }
-              />
-            ))}
-          </div>
+                setActiveIndex(next);
+                listRef.current
+                  ?.querySelectorAll<HTMLElement>('[role="option"]')
+                  [next]?.focus();
+              }}
+            >
+              {filteredEntries.map((entry, i) => (
+                <EntryRow
+                  key={entry.path}
+                  entry={entry}
+                  onClick={() => handleEntryClick(entry)}
+                  isActive={i === activeIndex}
+                  statusBadge={
+                    currentPath === "projects"
+                      ? projectStatuses.get(entry.name.toLowerCase()) ?? null
+                      : null
+                  }
+                />
+              ))}
+              {filter && filteredEntries.length === 0 && (
+                <div className="py-4 text-center text-xs text-muted-foreground">
+                  No files matching &ldquo;{filter}&rdquo;
+                </div>
+              )}
+            </div>
+          </>
         ) : null}
       </div>
     </div>
