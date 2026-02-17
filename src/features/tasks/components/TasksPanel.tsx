@@ -5,7 +5,7 @@ import { Plus, RefreshCw, Zap, Clock, Calendar } from "lucide-react";
 import { EmptyStatePanel } from "@/features/agents/components/EmptyStatePanel";
 import { Skeleton } from "@/components/Skeleton";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
-import type { StudioTask, TaskType, TaskSchedule } from "@/features/tasks/types";
+import type { StudioTask, TaskType, TaskSchedule, UpdateTaskPayload } from "@/features/tasks/types";
 import { TaskCard } from "./TaskCard";
 import { TaskDetailDrawer } from "./TaskDetailDrawer";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
@@ -31,6 +31,7 @@ interface TasksPanelProps {
   error: string | null;
   busyTaskId: string | null;
   onToggle: (taskId: string, enabled: boolean) => void;
+  onUpdateTask: (taskId: string, updates: UpdateTaskPayload) => void;
   onUpdateSchedule: (taskId: string, schedule: TaskSchedule) => void;
   onRun: (taskId: string) => void;
   onDelete: (taskId: string) => void;
@@ -48,6 +49,7 @@ export const TasksPanel = memo(function TasksPanel({
   error,
   busyTaskId,
   onToggle,
+  onUpdateTask,
   onUpdateSchedule,
   onRun,
   onDelete,
@@ -110,6 +112,7 @@ export const TasksPanel = memo(function TasksPanel({
         busy={busyTaskId === selectedTask.id}
         onClose={handleCloseDrawer}
         onToggle={onToggle}
+        onUpdateTask={onUpdateTask}
         onUpdateSchedule={onUpdateSchedule}
         onRun={onRun}
         onDelete={handleDeleteRequest}

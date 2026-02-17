@@ -285,6 +285,7 @@ const AgentStudioPage = () => {
     loadTasks,
     createTask,
     toggleTask,
+    updateTask,
     updateTaskSchedule,
     runTask,
     deleteTask,
@@ -1694,6 +1695,7 @@ const AgentStudioPage = () => {
                           error={tasksError}
                           busyTaskId={busyTaskId}
                           onToggle={toggleTask}
+                          onUpdateTask={updateTask}
                           onUpdateSchedule={updateTaskSchedule}
                           onRun={runTask}
                           onDelete={deleteTask}

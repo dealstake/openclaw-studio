@@ -11,10 +11,12 @@ import {
   AlertCircle,
   CheckCircle2,
   SkipForward,
+  Pencil,
+  Save,
 } from "lucide-react";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import { isGatewayDisconnectLikeError } from "@/lib/gateway/GatewayClient";
-import type { StudioTask, TaskSchedule } from "@/features/tasks/types";
+import type { StudioTask, TaskSchedule, UpdateTaskPayload } from "@/features/tasks/types";
 import {
   PERIODIC_INTERVAL_OPTIONS,
   CONSTANT_INTERVAL_OPTIONS,
@@ -59,6 +61,7 @@ interface TaskDetailDrawerProps {
   busy: boolean;
   onClose: () => void;
   onToggle: (taskId: string, enabled: boolean) => void;
+  onUpdateTask: (taskId: string, updates: UpdateTaskPayload) => void;
   onUpdateSchedule: (taskId: string, schedule: TaskSchedule) => void;
   onRun: (taskId: string) => void;
   onDelete: (taskId: string) => void;
@@ -72,6 +75,7 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
   busy,
   onClose,
   onToggle,
+  onUpdateTask,
   onUpdateSchedule,
   onRun,
   onDelete,
@@ -81,6 +85,43 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
   const [runsError, setRunsError] = useState<string | null>(null);
   const [promptExpanded, setPromptExpanded] = useState(false);
   const loadingRef = useRef(false);
+
+  // ─── Edit mode state ─────────────────────────────────────────────────────
+  const [editing, setEditing] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editPrompt, setEditPrompt] = useState("");
+  const [editModel, setEditModel] = useState("");
+
+  const startEditing = useCallback(() => {
+    if (!task) return;
+    setEditName(task.name);
+    setEditDescription(task.description);
+    setEditPrompt(task.prompt);
+    setEditModel(task.model);
+    setEditing(true);
+    setPromptExpanded(true);
+  }, [task]);
+
+  const cancelEditing = useCallback(() => {
+    setEditing(false);
+  }, []);
+
+  const saveEdits = useCallback(() => {
+    if (!task) return;
+    const updates: UpdateTaskPayload = {};
+    if (editName.trim() && editName.trim() !== task.name) updates.name = editName.trim();
+    if (editDescription !== task.description) updates.description = editDescription;
+    if (editPrompt.trim() && editPrompt.trim() !== task.prompt) updates.prompt = editPrompt.trim();
+    if (editModel.trim() && editModel.trim() !== task.model) updates.model = editModel.trim();
+
+    if (Object.keys(updates).length === 0) {
+      setEditing(false);
+      return;
+    }
+    onUpdateTask(task.id, updates);
+    setEditing(false);
+  }, [task, editName, editDescription, editPrompt, editModel, onUpdateTask]);
 
   const loadRuns = useCallback(
     async (cronJobId: string) => {
@@ -109,12 +150,13 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
     [client]
   );
 
-  // Load runs when task changes
+  // Load runs when task changes; reset edit mode
   useEffect(() => {
     if (!task) {
       setRuns([]);
       setRunsError(null);
       setPromptExpanded(false);
+      setEditing(false);
       return;
     }
     void loadRuns(task.cronJobId);
@@ -136,6 +178,12 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
     return `${(ms / 60_000).toFixed(1)}m`;
   };
 
+  const inputClass =
+    "h-7 w-full rounded-md border border-border/80 bg-card/70 px-2 font-mono text-[11px] text-foreground outline-none transition hover:border-border focus:border-primary/60 disabled:cursor-not-allowed disabled:opacity-60";
+
+  const textareaClass =
+    "w-full rounded-md border border-border/80 bg-card/70 p-2 font-mono text-[10px] leading-relaxed text-foreground outline-none transition hover:border-border focus:border-primary/60 disabled:cursor-not-allowed disabled:opacity-60 resize-y";
+
   return (
     <div className="flex h-full w-full flex-col overflow-hidden">
       {/* Header */}
@@ -144,18 +192,63 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
           <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
             Task Detail
           </div>
-          <div className="mt-0.5 truncate font-mono text-sm font-semibold text-foreground">
-            {task.name}
-          </div>
+          {editing ? (
+            <input
+              className={`${inputClass} mt-0.5 font-semibold`}
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              placeholder="Task name"
+              autoFocus
+            />
+          ) : (
+            <div className="mt-0.5 truncate font-mono text-sm font-semibold text-foreground">
+              {task.name}
+            </div>
+          )}
         </div>
-        <button
-          className="flex h-7 w-7 items-center justify-center rounded-md border border-border/80 bg-card/70 text-muted-foreground transition hover:border-border hover:bg-muted/65"
-          type="button"
-          aria-label="Close task detail"
-          onClick={onClose}
-        >
-          <X className="h-3.5 w-3.5" />
-        </button>
+        <div className="flex items-center gap-1.5">
+          {editing ? (
+            <>
+              <button
+                className="flex h-7 items-center gap-1 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-2 text-emerald-400 transition hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+                type="button"
+                aria-label="Save changes"
+                onClick={saveEdits}
+                disabled={busy || !editName.trim()}
+              >
+                <Save className="h-3 w-3" />
+                <span className="font-mono text-[9px] font-semibold uppercase tracking-[0.12em]">Save</span>
+              </button>
+              <button
+                className="flex h-7 items-center justify-center rounded-md border border-border/80 bg-card/70 px-2 text-muted-foreground transition hover:border-border hover:bg-muted/65"
+                type="button"
+                aria-label="Cancel editing"
+                onClick={cancelEditing}
+              >
+                <span className="font-mono text-[9px] font-semibold uppercase tracking-[0.12em]">Cancel</span>
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                className="flex h-7 w-7 items-center justify-center rounded-md border border-border/80 bg-card/70 text-muted-foreground transition hover:border-border hover:bg-muted/65"
+                type="button"
+                aria-label="Edit task"
+                onClick={startEditing}
+              >
+                <Pencil className="h-3 w-3" />
+              </button>
+              <button
+                className="flex h-7 w-7 items-center justify-center rounded-md border border-border/80 bg-card/70 text-muted-foreground transition hover:border-border hover:bg-muted/65"
+                type="button"
+                aria-label="Close task detail"
+                onClick={onClose}
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Scrollable content */}
@@ -214,7 +307,15 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
           )}
 
           {/* Description */}
-          {task.description ? (
+          {editing ? (
+            <textarea
+              className={`${textareaClass} mt-2 min-h-[3rem]`}
+              value={editDescription}
+              onChange={(e) => setEditDescription(e.target.value)}
+              placeholder="Task description (optional)"
+              rows={2}
+            />
+          ) : task.description ? (
             <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
               {task.description}
             </p>
@@ -222,7 +323,19 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
 
           {/* Meta */}
           <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-muted-foreground">
-            <span>Model: {task.model.split("/").pop()}</span>
+            {editing ? (
+              <div className="flex items-center gap-1.5">
+                <span>Model:</span>
+                <input
+                  className={`${inputClass} w-48`}
+                  value={editModel}
+                  onChange={(e) => setEditModel(e.target.value)}
+                  placeholder="e.g. anthropic/claude-sonnet-4-6"
+                />
+              </div>
+            ) : (
+              <span>Model: {task.model.split("/").pop()}</span>
+            )}
             <span>Agent: {task.agentId}</span>
             {task.lastRunAt ? (
               <span>
@@ -233,7 +346,7 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
           </div>
         </div>
 
-        {/* Prompt preview */}
+        {/* Prompt preview / edit */}
         <div className="border-b border-border/40 px-4 py-3">
           <button
             type="button"
@@ -250,9 +363,19 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
             </span>
           </button>
           {promptExpanded ? (
-            <pre className="mt-2 max-h-40 overflow-y-auto rounded-md border border-border/60 bg-card/50 p-2 text-[10px] leading-relaxed text-muted-foreground whitespace-pre-wrap break-words">
-              {task.prompt}
-            </pre>
+            editing ? (
+              <textarea
+                className={`${textareaClass} mt-2 min-h-[8rem]`}
+                value={editPrompt}
+                onChange={(e) => setEditPrompt(e.target.value)}
+                placeholder="Task prompt..."
+                rows={6}
+              />
+            ) : (
+              <pre className="mt-2 max-h-40 overflow-y-auto rounded-md border border-border/60 bg-card/50 p-2 text-[10px] leading-relaxed text-muted-foreground whitespace-pre-wrap break-words">
+                {task.prompt}
+              </pre>
+            )
           ) : null}
         </div>
 

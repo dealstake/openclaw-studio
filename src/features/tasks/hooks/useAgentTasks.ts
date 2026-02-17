@@ -340,6 +340,56 @@ export const useAgentTasks = (
     [agentId, client, tasks, busyTaskId]
   );
 
+  const updateTask = useCallback(
+    async (taskId: string, updates: import("@/features/tasks/types").UpdateTaskPayload) => {
+      if (!agentId || busyTaskId) return;
+      setBusyTaskId(taskId);
+      setError(null);
+      try {
+        const task = tasks.find((t) => t.id === taskId);
+        if (!task) throw new Error("Task not found.");
+
+        // If schedule changed, update the gateway cron job
+        if (updates.schedule) {
+          const cronSchedule = taskScheduleToCronSchedule(updates.schedule);
+          await updateCronJob(client, task.cronJobId, { schedule: cronSchedule });
+        }
+
+        // If prompt or model changed, update the cron job payload
+        if (updates.prompt !== undefined || updates.model !== undefined) {
+          const newPrompt = updates.prompt ?? task.prompt;
+          const newModel = updates.model ?? task.model;
+          await updateCronJob(client, task.cronJobId, {
+            payload: {
+              kind: "agentTurn",
+              message: buildCronPayloadMessage(task.id, newPrompt),
+              model: newModel,
+            },
+          });
+        }
+
+        // If name changed, update the cron job name
+        if (updates.name !== undefined) {
+          await updateCronJob(client, task.cronJobId, {
+            name: `[TASK] ${updates.name}`,
+          });
+        }
+
+        // Update Studio metadata
+        const updated = await patchTaskMetadata(agentId, taskId, updates);
+        setTasks((prev) => prev.map((t) => (t.id === taskId ? updated : t)));
+        toast.success(`Task "${updated.name}" updated`);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Failed to update task.";
+        setError(message);
+        toast.error(message);
+      } finally {
+        setBusyTaskId(null);
+      }
+    },
+    [agentId, client, tasks, busyTaskId]
+  );
+
   const deleteTask = useCallback(
     async (taskId: string) => {
       if (!agentId || busyTaskId) return;
@@ -373,6 +423,7 @@ export const useAgentTasks = (
     loadTasks,
     createTask,
     toggleTask,
+    updateTask,
     updateTaskSchedule,
     runTask,
     deleteTask,
