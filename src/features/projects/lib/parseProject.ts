@@ -1,3 +1,9 @@
+export interface AssociatedTask {
+  name: string;
+  cronJobId: string;
+  autoManage: boolean;
+}
+
 export interface ProjectDetails {
   continuation: {
     lastWorkedOn?: string;
@@ -10,12 +16,14 @@ export interface ProjectDetails {
     total: number;
     percent: number;
   };
+  associatedTasks: AssociatedTask[];
 }
 
 export function parseProjectFile(markdown: string): ProjectDetails {
   const details: ProjectDetails = {
     continuation: {},
     progress: { completed: 0, total: 0, percent: 0 },
+    associatedTasks: [],
   };
 
   // Parse Continuation Context
@@ -59,6 +67,35 @@ export function parseProjectFile(markdown: string): ProjectDetails {
     total,
     percent: total > 0 ? Math.round((completed / total) * 100) : 0,
   };
+
+  // Parse Associated Tasks section
+  const tasksMatch = markdown.match(
+    /## Associated Tasks([\s\S]*?)(?:\n##\s|$)/
+  );
+  if (tasksMatch) {
+    const tasksBody = tasksMatch[1];
+    const taskLines = tasksBody.split("\n");
+    for (const line of taskLines) {
+      // Match table rows: | Task Name | cronJobId | yes/no |
+      const rowMatch = line.match(
+        /^\|\s*(.+?)\s*\|\s*(.+?)\s*\|\s*(yes|no)\s*\|$/i
+      );
+      if (rowMatch) {
+        const [, name, cronJobId, autoManage] = rowMatch;
+        // Skip header/separator rows
+        if (
+          !name ||
+          name.includes("---") ||
+          name.toLowerCase() === "task"
+        ) continue;
+        details.associatedTasks.push({
+          name: name.trim(),
+          cronJobId: cronJobId.trim(),
+          autoManage: autoManage.trim().toLowerCase() === "yes",
+        });
+      }
+    }
+  }
 
   return details;
 }

@@ -3,9 +3,12 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import {
   CheckCircle2,
+  ChevronDown,
+  ChevronRight,
   ClipboardList,
   FolderGit2,
   Hammer,
+  LinkIcon,
   PauseCircle,
   Play,
   Plus,
@@ -13,7 +16,7 @@ import {
   Waves,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { parseProjectFile, type ProjectDetails } from "../lib/parseProject";
+import { parseProjectFile, type ProjectDetails, type AssociatedTask } from "../lib/parseProject";
 import { ProjectWizardModal } from "./ProjectWizardModal";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -284,6 +287,7 @@ const ProjectCard = memo(function ProjectCard({
   project: ProjectEntry;
   onContinue: () => void;
 }) {
+  const [tasksExpanded, setTasksExpanded] = useState(false);
   const config = STATUS_CONFIG[project.statusEmoji];
   const StatusIcon = config?.icon ?? ClipboardList;
   const statusLabel = config?.label ?? project.status;
@@ -294,12 +298,13 @@ const ProjectCard = memo(function ProjectCard({
   const isBlocked = details?.continuation?.blockedBy && 
     details.continuation.blockedBy.toLowerCase() !== "nothing" &&
     details.continuation.blockedBy.toLowerCase() !== "none";
+  const linkedTasks = details?.associatedTasks ?? [];
 
   return (
     <div className="group/task rounded-md border border-border/80 bg-card/70 px-3 py-2.5 transition hover:border-border">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
-          {/* Header Row: Status + Priority + Name */}
+          {/* Header Row: Status + Priority + Name + Task Badge */}
           <div className="flex items-center gap-2">
             <span
               className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] ${statusColors}`}
@@ -316,6 +321,15 @@ const ProjectCard = memo(function ProjectCard({
             <h3 className="truncate text-sm font-semibold text-foreground">
               {project.name}
             </h3>
+            {linkedTasks.length > 0 && (
+              <span
+                className="inline-flex items-center gap-0.5 rounded-full border border-border/60 bg-muted/40 px-1.5 py-0.5 font-mono text-[9px] text-muted-foreground"
+                title={`${linkedTasks.length} linked task${linkedTasks.length > 1 ? "s" : ""}`}
+              >
+                <LinkIcon className="h-2.5 w-2.5" />
+                {linkedTasks.length}
+              </span>
+            )}
           </div>
           
           {/* Description */}
@@ -356,6 +370,34 @@ const ProjectCard = memo(function ProjectCard({
                   <span className="line-clamp-1">{details.continuation.blockedBy}</span>
                 </div>
               )}
+
+              {/* Linked Tasks (expandable) */}
+              {linkedTasks.length > 0 && (
+                <div className="pt-0.5">
+                  <button
+                    type="button"
+                    className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition"
+                    onClick={() => setTasksExpanded((v) => !v)}
+                  >
+                    {tasksExpanded ? (
+                      <ChevronDown className="h-3 w-3" />
+                    ) : (
+                      <ChevronRight className="h-3 w-3" />
+                    )}
+                    <LinkIcon className="h-2.5 w-2.5" />
+                    <span className="font-semibold">
+                      {linkedTasks.length} Linked Task{linkedTasks.length > 1 ? "s" : ""}
+                    </span>
+                  </button>
+                  {tasksExpanded && (
+                    <div className="mt-1 ml-4 space-y-1">
+                      {linkedTasks.map((task) => (
+                        <LinkedTaskRow key={task.cronJobId} task={task} />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -370,6 +412,29 @@ const ProjectCard = memo(function ProjectCard({
           <Play className="h-3 w-3" />
         </button>
       </div>
+    </div>
+  );
+});
+
+// ─── Linked Task Row ─────────────────────────────────────────────────────────
+
+const LinkedTaskRow = memo(function LinkedTaskRow({
+  task,
+}: {
+  task: AssociatedTask;
+}) {
+  return (
+    <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+      <span
+        className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+          task.autoManage ? "bg-emerald-400" : "bg-zinc-500"
+        }`}
+        title={task.autoManage ? "Auto-managed" : "Manual"}
+      />
+      <span className="truncate">{task.name}</span>
+      <span className="ml-auto font-mono text-[8px] text-muted-foreground/50 truncate max-w-[80px]">
+        {task.cronJobId}
+      </span>
     </div>
   );
 });
