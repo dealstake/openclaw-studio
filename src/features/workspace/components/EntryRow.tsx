@@ -30,16 +30,26 @@ export const EntryRow = memo(function EntryRow({
   entry,
   onClick,
   statusBadge,
+  isActive,
 }: {
   entry: WorkspaceEntry;
   onClick: () => void;
   statusBadge?: { emoji: string; label: string; color: string } | null;
+  isActive?: boolean;
 }) {
   return (
-    <button
-      type="button"
-      className="group flex w-full items-center gap-2.5 rounded-md border border-transparent px-3 py-2 text-left transition hover:border-border/80 hover:bg-muted/50"
+    <div
+      role="option"
+      aria-selected={isActive ?? false}
+      tabIndex={isActive ? 0 : -1}
+      className={`group flex w-full cursor-pointer items-center gap-2.5 rounded-md border border-transparent px-3 py-2 text-left transition hover:border-border/80 hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 ${isActive ? "bg-muted/40" : ""}`}
       onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick();
+        }
+      }}
       data-testid={`ws-entry-${entry.name}`}
     >
       <EntryIconEl entry={entry} />
@@ -63,6 +73,6 @@ export const EntryRow = memo(function EntryRow({
       {entry.type === "directory" && (
         <ChevronRight className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground opacity-0 transition group-hover:opacity-100" />
       )}
-    </button>
+    </div>
   );
 });

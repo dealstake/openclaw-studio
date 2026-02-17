@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronRight,
   FilePlus,
@@ -47,6 +47,8 @@ export const WorkspaceExplorerPanel = memo(function WorkspaceExplorerPanel({
   } = useWorkspaceFiles({ agentId, client });
 
   const [showNewFile, setShowNewFile] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const listRef = useRef<HTMLDivElement>(null);
 
   const isRoot = currentPath === "";
   const projectStatuses = useProjectStatuses(agentId, isRoot || currentPath === "projects");
@@ -71,6 +73,7 @@ export const WorkspaceExplorerPanel = memo(function WorkspaceExplorerPanel({
   const handleEntryClick = useCallback(
     (entry: WorkspaceEntry) => {
       if (entry.type === "directory") {
+        setActiveIndex(-1);
         navigateToDir(entry.path);
       } else {
         openFile(entry.path);
@@ -223,20 +226,65 @@ export const WorkspaceExplorerPanel = memo(function WorkspaceExplorerPanel({
             ))
           : null}
 
-        {!error && !isRoot && entries.length > 0
-          ? entries.map((entry) => (
+        {!error && !isRoot && entries.length > 0 ? (
+          <div
+            ref={listRef}
+            role="listbox"
+            aria-label="Files"
+            tabIndex={0}
+            className="outline-none"
+            onKeyDown={(e) => {
+              const count = entries.length;
+              if (count === 0) return;
+              let next = activeIndex;
+              switch (e.key) {
+                case "ArrowDown":
+                  e.preventDefault();
+                  next = activeIndex < count - 1 ? activeIndex + 1 : 0;
+                  break;
+                case "ArrowUp":
+                  e.preventDefault();
+                  next = activeIndex > 0 ? activeIndex - 1 : count - 1;
+                  break;
+                case "Home":
+                  e.preventDefault();
+                  next = 0;
+                  break;
+                case "End":
+                  e.preventDefault();
+                  next = count - 1;
+                  break;
+                case "Enter":
+                case " ":
+                  e.preventDefault();
+                  if (activeIndex >= 0 && activeIndex < count) {
+                    handleEntryClick(entries[activeIndex]);
+                  }
+                  return;
+                default:
+                  return;
+              }
+              setActiveIndex(next);
+              listRef.current
+                ?.querySelectorAll<HTMLElement>('[role="option"]')
+                [next]?.focus();
+            }}
+          >
+            {entries.map((entry, i) => (
               <EntryRow
                 key={entry.path}
                 entry={entry}
                 onClick={() => handleEntryClick(entry)}
+                isActive={i === activeIndex}
                 statusBadge={
                   currentPath === "projects"
                     ? projectStatuses.get(entry.name.toLowerCase()) ?? null
                     : null
                 }
               />
-            ))
-          : null}
+            ))}
+          </div>
+        ) : null}
       </div>
     </div>
   );

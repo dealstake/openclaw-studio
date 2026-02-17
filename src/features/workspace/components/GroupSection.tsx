@@ -33,7 +33,7 @@ export const GroupSection = memo(function GroupSection({
   projectStatuses?: Map<string, { emoji: string; label: string; color: string }>;
 }) {
   return (
-    <section className="mb-3" data-testid={`ws-group-${group}`}>
+    <section className="mb-3" aria-label={`${GROUP_LABELS[group]} files`} data-testid={`ws-group-${group}`}>
       <div className="flex items-center gap-1.5 px-3 py-1.5">
         <GroupIconEl group={group} />
         <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
@@ -43,7 +43,7 @@ export const GroupSection = memo(function GroupSection({
           {entries.length}
         </span>
       </div>
-      <div className="flex flex-col">
+      <div className="flex flex-col" role="listbox" aria-label={GROUP_LABELS[group]}>
         {entries.map((entry) => (
           <EntryRow
             key={entry.path}
