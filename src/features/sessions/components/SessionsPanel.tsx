@@ -38,8 +38,11 @@ type SessionsPanelProps = {
   cumulativeUsageLoading?: boolean;
   transcripts?: TranscriptEntry[];
   transcriptsLoading?: boolean;
+  transcriptsLoadingMore?: boolean;
   transcriptsError?: string | null;
+  transcriptsHasMore?: boolean;
   onTranscriptsRefresh?: () => void;
+  onTranscriptsLoadMore?: () => void;
   onTranscriptClick?: (sessionId: string, agentId: string) => void;
   searchQuery?: string;
   onSearchQueryChange?: (query: string) => void;
@@ -594,9 +597,13 @@ const TRANSCRIPT_GAP = 8;
 const VirtualTranscriptList = memo(function VirtualTranscriptList({
   transcripts,
   onTranscriptClick,
+  onLoadMore,
+  loadingMore,
 }: {
   transcripts: TranscriptEntry[];
   onTranscriptClick?: (sessionId: string, agentId: string) => void;
+  onLoadMore?: () => void;
+  loadingMore?: boolean;
 }) {
   "use no memo"; // TanStack Virtual is incompatible with React Compiler memoization
   const parentRef = useRef<HTMLDivElement>(null);
@@ -608,12 +615,27 @@ const VirtualTranscriptList = memo(function VirtualTranscriptList({
     overscan: 10,
   });
 
+  // Infinite scroll: trigger loadMore when last virtual item is visible
+  const virtualItems = virtualizer.getVirtualItems();
+  const lastItem = virtualItems[virtualItems.length - 1];
+  const onLoadMoreRef = useRef(onLoadMore);
+  onLoadMoreRef.current = onLoadMore;
+
+  const lastItemIndex = lastItem?.index ?? -1;
+  useEffect(() => {
+    if (lastItemIndex < 0) return;
+    // Trigger when within 5 items of the end
+    if (lastItemIndex >= transcripts.length - 5) {
+      onLoadMoreRef.current?.();
+    }
+  }, [lastItemIndex, transcripts.length]);
+
   return (
     <div ref={parentRef} className="h-full overflow-y-auto">
       <div
         style={{ height: `${virtualizer.getTotalSize()}px`, width: "100%", position: "relative" }}
       >
-        {virtualizer.getVirtualItems().map((virtualItem) => {
+        {virtualItems.map((virtualItem) => {
           const t = transcripts[virtualItem.index];
           return (
             <div
@@ -637,6 +659,11 @@ const VirtualTranscriptList = memo(function VirtualTranscriptList({
           );
         })}
       </div>
+      {loadingMore && (
+        <div className="flex justify-center py-3">
+          <div className="h-5 w-5 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" />
+        </div>
+      )}
     </div>
   );
 });
@@ -711,8 +738,11 @@ export const SessionsPanel = memo(function SessionsPanel({
   cumulativeUsageLoading = false,
   transcripts = [],
   transcriptsLoading = false,
+  transcriptsLoadingMore = false,
   transcriptsError = null,
+  transcriptsHasMore = false,
   onTranscriptsRefresh,
+  onTranscriptsLoadMore,
   onTranscriptClick,
   searchQuery = "",
   onSearchQueryChange,
@@ -1060,6 +1090,8 @@ export const SessionsPanel = memo(function SessionsPanel({
                 <VirtualTranscriptList
                   transcripts={filteredTranscripts}
                   onTranscriptClick={onTranscriptClick}
+                  onLoadMore={transcriptsHasMore ? onTranscriptsLoadMore : undefined}
+                  loadingMore={transcriptsLoadingMore}
                 />
               </>
             ) : null}

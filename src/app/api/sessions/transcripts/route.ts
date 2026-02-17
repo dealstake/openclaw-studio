@@ -29,7 +29,12 @@ export async function GET(request: Request) {
       );
     }
 
-    const resp = await sidecarGet("/sessions/transcripts", { agentId });
+    const page = url.searchParams.get("page") ?? "";
+    const perPage = url.searchParams.get("perPage") ?? "";
+    const params: Record<string, string> = { agentId };
+    if (page) params.page = page;
+    if (perPage) params.perPage = perPage;
+    const resp = await sidecarGet("/sessions/transcripts", params);
     const data = await resp.json();
     return NextResponse.json(data, { status: resp.status });
   } catch (err) {

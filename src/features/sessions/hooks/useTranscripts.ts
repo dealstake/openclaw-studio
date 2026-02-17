@@ -45,41 +45,83 @@ type TranscriptResponse = {
 /**
  * Fetch the list of all session transcripts (active + archived) from the sidecar.
  */
+const TRANSCRIPTS_PER_PAGE = 50;
+
+/**
+ * Fetch the list of session transcripts with pagination support.
+ * Loads the first page on mount, exposes `loadMore()` for infinite scroll.
+ */
 export function useTranscripts(agentId: string | null) {
   const [transcripts, setTranscripts] = useState<TranscriptEntry[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [totalCount, setTotalCount] = useState(0);
+  const pageRef = useRef(1);
 
-  const loadRef = useRef<() => Promise<void>>(undefined);
-
-  const load = useCallback(async () => {
+  const fetchPage = useCallback(async (page: number, append: boolean) => {
     if (!agentId) return;
-    setLoading(true);
+    if (append) {
+      setLoadingMore(true);
+    } else {
+      setLoading(true);
+    }
     setError(null);
     try {
-      const resp = await fetch(`/api/sessions/transcripts?agentId=${encodeURIComponent(agentId)}`);
+      const params = new URLSearchParams({
+        agentId,
+        page: String(page),
+        perPage: String(TRANSCRIPTS_PER_PAGE),
+      });
+      const resp = await fetch(`/api/sessions/transcripts?${params}`);
       if (!resp.ok) {
         const body = await resp.json().catch(() => null);
         throw new Error(body?.error ?? `HTTP ${resp.status}`);
       }
       const data = await resp.json();
-      setTranscripts(data.transcripts ?? []);
+      const newItems: TranscriptEntry[] = data.transcripts ?? [];
+      if (append) {
+        setTranscripts(prev => [...prev, ...newItems]);
+      } else {
+        setTranscripts(newItems);
+      }
+      setHasMore(data.hasMore ?? false);
+      setTotalCount(data.count ?? newItems.length);
+      pageRef.current = page;
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to load transcripts";
       setError(message);
       console.error("[useTranscripts]", message);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   }, [agentId]);
 
-  loadRef.current = load;
+  const loadRef = useRef(fetchPage);
+  loadRef.current = fetchPage;
 
+  // Load first page on agentId change
   useEffect(() => {
-    void loadRef.current?.();
+    pageRef.current = 1;
+    setTranscripts([]);
+    setHasMore(false);
+    void loadRef.current(1, false);
   }, [agentId]);
 
-  return { transcripts, loading, error, refresh: load };
+  const loadMore = useCallback(() => {
+    if (!hasMore || loadingMore) return;
+    void fetchPage(pageRef.current + 1, true);
+  }, [hasMore, loadingMore, fetchPage]);
+
+  const refresh = useCallback(() => {
+    pageRef.current = 1;
+    setTranscripts([]);
+    void fetchPage(1, false);
+  }, [fetchPage]);
+
+  return { transcripts, loading, loadingMore, error, hasMore, totalCount, loadMore, refresh };
 }
 
 /**

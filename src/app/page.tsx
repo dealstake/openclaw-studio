@@ -265,7 +265,10 @@ const AgentStudioPage = () => {
   const {
     transcripts,
     loading: transcriptsLoading,
+    loadingMore: transcriptsLoadingMore,
     error: transcriptsError,
+    hasMore: transcriptsHasMore,
+    loadMore: transcriptsLoadMore,
     refresh: transcriptsRefresh,
   } = useTranscripts(focusedAgentId);
 
@@ -1749,8 +1752,11 @@ const AgentStudioPage = () => {
                       cumulativeUsageLoading={allSessionsLoading}
                       transcripts={transcripts}
                       transcriptsLoading={transcriptsLoading}
+                      transcriptsLoadingMore={transcriptsLoadingMore}
                       transcriptsError={transcriptsError}
+                      transcriptsHasMore={transcriptsHasMore}
                       onTranscriptsRefresh={transcriptsRefresh}
+                      onTranscriptsLoadMore={transcriptsLoadMore}
                       searchQuery={searchQuery}
                       onSearchQueryChange={setSearchQuery}
                       searchResults={searchResults}
