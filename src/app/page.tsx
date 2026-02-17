@@ -1678,6 +1678,7 @@ const AgentStudioPage = () => {
                     <div className="flex h-full w-full flex-col overflow-y-auto">
                       <ProjectsPanel
                         agentId={focusedAgent?.agentId ?? null}
+                        client={client}
                         onContinue={stableProjectContinue}
                       />
                     </div>

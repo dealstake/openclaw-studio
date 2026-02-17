@@ -19,6 +19,8 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { parseProjectFile, type ProjectDetails, type AssociatedTask } from "../lib/parseProject";
 import { ProjectWizardModal } from "./ProjectWizardModal";
+import type { GatewayClient } from "@/lib/gateway/GatewayClient";
+import { updateCronJob } from "@/lib/cron/types";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -103,6 +105,7 @@ function parseProjectIndex(markdown: string): ProjectEntry[] {
 
 interface ProjectsPanelProps {
   agentId: string | null;
+  client: GatewayClient | null;
   onContinue: (message: string) => void;
 }
 
@@ -119,6 +122,7 @@ const TOGGLE_MAP: Record<string, { emoji: string; label: string }> = {
 
 export const ProjectsPanel = memo(function ProjectsPanel({
   agentId,
+  client,
   onContinue,
 }: ProjectsPanelProps) {
   const [projects, setProjects] = useState<ProjectEntry[]>([]);
@@ -204,13 +208,27 @@ export const ProjectsPanel = memo(function ProjectsPanel({
           console.error("Failed to toggle project status:", data.error);
           return;
         }
+
+        // Manage associated cron jobs when parking/activating
+        if (client && project.details?.associatedTasks?.length) {
+          const isParkingProject = toggle.emoji === "⏸️";
+          const managedTasks = project.details.associatedTasks.filter((t) => t.autoManage);
+          for (const task of managedTasks) {
+            try {
+              await updateCronJob(client, task.cronJobId, { enabled: !isParkingProject });
+            } catch (cronErr) {
+              console.warn(`Failed to ${isParkingProject ? "pause" : "resume"} cron job ${task.cronJobId}:`, cronErr);
+            }
+          }
+        }
+
         // Refresh projects
         void loadRef.current?.();
       } catch (err) {
         console.error("Failed to toggle project status:", err);
       }
     },
-    [agentId]
+    [agentId, client]
   );
 
   const handleArchive = useCallback(
