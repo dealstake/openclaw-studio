@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from "react";
+import { toast } from "sonner";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { isGatewayDisconnectLikeError } from "@/lib/gateway/GatewayClient";
 import {
@@ -252,9 +253,11 @@ export const useAgentTasks = (
 
         await saveTaskMetadata(task);
         setTasks((prev) => [task, ...prev]);
+        toast.success(`Task "${payload.name}" created`);
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to create task.";
         setError(message);
+        toast.error(message);
         throw err;
       }
     },
@@ -273,9 +276,11 @@ export const useAgentTasks = (
         await updateCronJob(client, task.cronJobId, { enabled });
         const updated = await patchTaskMetadata(agentId, taskId, { enabled });
         setTasks((prev) => prev.map((t) => (t.id === taskId ? updated : t)));
+        toast.success(enabled ? `Task "${task.name}" resumed` : `Task "${task.name}" paused`);
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to toggle task.";
         setError(message);
+        toast.error(message);
       } finally {
         setBusyTaskId(null);
       }
@@ -293,9 +298,11 @@ export const useAgentTasks = (
         if (!task) throw new Error("Task not found.");
 
         await runCronJobNow(client, task.cronJobId);
+        toast.success(`Task "${task.name}" triggered`);
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to run task.";
         setError(message);
+        toast.error(message);
       } finally {
         setBusyTaskId(null);
       }
@@ -321,9 +328,11 @@ export const useAgentTasks = (
 
         // 3. Optimistically update local state
         setTasks((prev) => prev.map((t) => (t.id === taskId ? updated : t)));
+        toast.success(`Schedule updated for "${task.name}"`);
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to update schedule.";
         setError(message);
+        toast.error(message);
       } finally {
         setBusyTaskId(null);
       }
@@ -342,10 +351,13 @@ export const useAgentTasks = (
 
         await removeCronJob(client, task.cronJobId);
         await deleteTaskMetadata(agentId, taskId);
+        const taskName = task.name;
         setTasks((prev) => prev.filter((t) => t.id !== taskId));
+        toast.success(`Task "${taskName}" deleted`);
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to delete task.";
         setError(message);
+        toast.error(message);
       } finally {
         setBusyTaskId(null);
       }

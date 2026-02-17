@@ -133,10 +133,6 @@ export const TaskWizardModal = memo(function TaskWizardModal({
     }
   }, [wizard, onCreateTask, onClose]);
 
-  const handleAdjust = useCallback(() => {
-    // No-op: user can type in the composer to adjust
-  }, []);
-
   const handleClose = useCallback(() => {
     wizard.reset();
     setShowAgentCreation(false);
@@ -271,7 +267,6 @@ export const TaskWizardModal = memo(function TaskWizardModal({
                     taskType={wizard.taskType}
                     onTaskConfig={wizard.setTaskConfig}
                     onConfirm={handleConfirm}
-                    onAdjust={handleAdjust}
                     confirmBusy={confirmBusy || creating}
                   />
                 </WizardRuntimeProvider>

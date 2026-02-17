@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Bebas_Neue, IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
+import { Toaster } from "sonner";
 import "./globals.css";
 
 export const viewport: Viewport = {
@@ -46,6 +47,14 @@ export default function RootLayout({
       </head>
       <body className={`${display.variable} ${sans.variable} ${mono.variable} antialiased`}>
         {children}
+        <Toaster
+          theme="dark"
+          position="bottom-right"
+          toastOptions={{
+            className:
+              "!bg-card !border-border !text-foreground !shadow-lg",
+          }}
+        />
       </body>
     </html>
   );

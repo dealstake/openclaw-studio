@@ -8,6 +8,7 @@ import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import type { StudioTask, TaskType, TaskSchedule } from "@/features/tasks/types";
 import { TaskCard } from "./TaskCard";
 import { TaskDetailDrawer } from "./TaskDetailDrawer";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 // ─── Filter tabs ─────────────────────────────────────────────────────────────
 
@@ -55,6 +56,7 @@ export const TasksPanel = memo(function TasksPanel({
 }: TasksPanelProps) {
   const [filter, setFilter] = useState<FilterTab>("all");
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   const handleSelect = useCallback((taskId: string) => {
     setSelectedTaskId((prev) => (prev === taskId ? null : taskId));
@@ -64,15 +66,26 @@ export const TasksPanel = memo(function TasksPanel({
     setSelectedTaskId(null);
   }, []);
 
-  const handleDelete = useCallback(
-    (taskId: string) => {
-      if (selectedTaskId === taskId) setSelectedTaskId(null);
-      onDelete(taskId);
-    },
-    [onDelete, selectedTaskId]
-  );
+  const handleDeleteRequest = useCallback((taskId: string) => {
+    setPendingDeleteId(taskId);
+  }, []);
+
+  const handleDeleteConfirm = useCallback(() => {
+    if (!pendingDeleteId) return;
+    if (selectedTaskId === pendingDeleteId) setSelectedTaskId(null);
+    onDelete(pendingDeleteId);
+    setPendingDeleteId(null);
+  }, [onDelete, pendingDeleteId, selectedTaskId]);
+
+  const handleDeleteCancel = useCallback(() => {
+    setPendingDeleteId(null);
+  }, []);
 
   if (!isSelected) return null;
+
+  const pendingDeleteTask = pendingDeleteId
+    ? tasks.find((t) => t.id === pendingDeleteId) ?? null
+    : null;
 
   const selectedTask = selectedTaskId
     ? tasks.find((t) => t.id === selectedTaskId) ?? null
@@ -99,7 +112,7 @@ export const TasksPanel = memo(function TasksPanel({
         onToggle={onToggle}
         onUpdateSchedule={onUpdateSchedule}
         onRun={onRun}
-        onDelete={handleDelete}
+        onDelete={handleDeleteRequest}
       />
     );
   }
@@ -228,7 +241,7 @@ export const TasksPanel = memo(function TasksPanel({
                 onSelect={handleSelect}
                 onToggle={onToggle}
                 onRun={onRun}
-                onDelete={handleDelete}
+                onDelete={handleDeleteRequest}
               />
             ))}
           </div>
@@ -242,6 +255,16 @@ export const TasksPanel = memo(function TasksPanel({
           />
         ) : null}
       </div>
+
+      <ConfirmDialog
+        open={pendingDeleteId !== null}
+        onOpenChange={(open) => { if (!open) handleDeleteCancel(); }}
+        title="Delete task?"
+        description={`This will stop "${pendingDeleteTask?.name ?? "this task"}" and remove all run history. This cannot be undone.`}
+        confirmLabel="Delete"
+        destructive
+        onConfirm={handleDeleteConfirm}
+      />
     </div>
   );
 });

@@ -11,7 +11,6 @@ import { TYPE_CONFIG } from "@/features/tasks/lib/taskTypeConfig";
 interface TaskPreviewCardProps {
   config: WizardTaskConfig;
   onConfirm: () => void;
-  onAdjust: () => void;
   busy?: boolean;
 }
 
@@ -28,7 +27,6 @@ function getScheduleLabel(config: WizardTaskConfig): string {
 export const TaskPreviewCard = memo(function TaskPreviewCard({
   config,
   onConfirm,
-  onAdjust,
   busy,
 }: TaskPreviewCardProps) {
   const meta = TYPE_CONFIG[config.type] ?? TYPE_CONFIG.periodic;
@@ -84,14 +82,7 @@ export const TaskPreviewCard = memo(function TaskPreviewCard({
         >
           {busy ? "Creating…" : "Create Task"}
         </button>
-        <button
-          type="button"
-          className="flex h-8 items-center rounded-md border border-border/80 bg-card/70 px-3 text-xs text-muted-foreground transition hover:bg-muted/65 disabled:cursor-not-allowed disabled:opacity-60"
-          onClick={onAdjust}
-          disabled={busy}
-        >
-          Adjust
-        </button>
+        {/* Adjust button removed — no adjustment behavior implemented yet */}
       </div>
     </div>
   );

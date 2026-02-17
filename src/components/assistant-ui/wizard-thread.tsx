@@ -125,7 +125,6 @@ interface WizardThreadProps {
   taskType: TaskType;
   onTaskConfig: (config: WizardTaskConfig | null) => void;
   onConfirm: () => void;
-  onAdjust: () => void;
   confirmBusy: boolean;
 }
 
@@ -136,7 +135,6 @@ export const WizardThread: FC<WizardThreadProps> = memo(
     taskType,
     onTaskConfig,
     onConfirm,
-    onAdjust,
     confirmBusy,
   }) {
     const starters = useMemo(() => STARTERS[taskType], [taskType]);
@@ -156,7 +154,6 @@ export const WizardThread: FC<WizardThreadProps> = memo(
                   taskType={taskType}
                   onTaskConfig={onTaskConfig}
                   onConfirm={onConfirm}
-                  onAdjust={onAdjust}
                   confirmBusy={confirmBusy}
                 />
               ),
@@ -226,13 +223,11 @@ const WizardAssistantMessage: FC<{
   taskType: TaskType;
   onTaskConfig: (config: WizardTaskConfig | null) => void;
   onConfirm: () => void;
-  onAdjust: () => void;
   confirmBusy: boolean;
 }> = memo(function WizardAssistantMessage({
   taskType,
   onTaskConfig,
   onConfirm,
-  onAdjust,
   confirmBusy,
 }) {
   const message = useMessage();
@@ -279,7 +274,6 @@ const WizardAssistantMessage: FC<{
                   taskType={taskType}
                   onTaskConfig={onTaskConfig}
                   onConfirm={onConfirm}
-                  onAdjust={onAdjust}
                   confirmBusy={confirmBusy}
                 />
               ),
@@ -313,13 +307,11 @@ const WizardTextPart: FC<{
   taskType: TaskType;
   onTaskConfig: (config: WizardTaskConfig | null) => void;
   onConfirm: () => void;
-  onAdjust: () => void;
   confirmBusy: boolean;
 }> = memo(function WizardTextPart({
   taskType,
   onTaskConfig,
   onConfirm,
-  onAdjust,
   confirmBusy,
 }) {
   const message = useMessage();
@@ -376,7 +368,6 @@ const WizardTextPart: FC<{
           <TaskPreviewCard
             config={config}
             onConfirm={onConfirm}
-            onAdjust={onAdjust}
             busy={confirmBusy}
           />
         ) : null}
