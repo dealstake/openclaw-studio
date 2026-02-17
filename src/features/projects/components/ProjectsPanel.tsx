@@ -8,11 +8,13 @@ import {
   Hammer,
   PauseCircle,
   Play,
+  Plus,
   RefreshCw,
   Waves,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { parseProjectFile, type ProjectDetails } from "../lib/parseProject";
+import { ProjectWizardModal } from "./ProjectWizardModal";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -109,6 +111,7 @@ export const ProjectsPanel = memo(function ProjectsPanel({
   const [projects, setProjects] = useState<ProjectEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showWizard, setShowWizard] = useState(false);
   const loadRef = useRef<() => Promise<void>>(() => Promise.resolve());
 
   const loadProjects = useCallback(async () => {
@@ -206,14 +209,24 @@ Begin implementation of the next step.`;
             </span>
           )}
         </div>
-        <button
-          type="button"
-          className="flex h-7 w-7 items-center justify-center rounded-md border border-border/80 bg-card/70 text-muted-foreground transition hover:border-border hover:bg-muted/65"
-          aria-label="Refresh projects"
-          onClick={() => void loadProjects()}
-        >
-          <RefreshCw className={`h-3 w-3 ${loading ? "animate-spin" : ""}`} />
-        </button>
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            className="flex h-7 w-7 items-center justify-center rounded-md border border-border/80 bg-card/70 text-muted-foreground transition hover:border-border hover:bg-muted/65"
+            aria-label="New project"
+            onClick={() => setShowWizard(true)}
+          >
+            <Plus className="h-3 w-3" />
+          </button>
+          <button
+            type="button"
+            className="flex h-7 w-7 items-center justify-center rounded-md border border-border/80 bg-card/70 text-muted-foreground transition hover:border-border hover:bg-muted/65"
+            aria-label="Refresh projects"
+            onClick={() => void loadProjects()}
+          >
+            <RefreshCw className={`h-3 w-3 ${loading ? "animate-spin" : ""}`} />
+          </button>
+        </div>
       </div>
 
       {/* Loading */}
@@ -246,6 +259,18 @@ Begin implementation of the next step.`;
           onContinue={() => handleContinue(project)}
         />
       ))}
+
+      {agentId && (
+        <ProjectWizardModal
+          open={showWizard}
+          agentId={agentId}
+          onClose={() => setShowWizard(false)}
+          onCreated={() => {
+            setShowWizard(false);
+            void loadProjects();
+          }}
+        />
+      )}
     </div>
   );
 });
