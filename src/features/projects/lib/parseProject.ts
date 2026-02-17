@@ -42,12 +42,23 @@ export function parseProjectFile(markdown: string): ProjectDetails {
     const nextStepMatch = contextBody.match(
       /[-*]\s*\*\*Immediate next step\*\*:\s*(.+)/
     );
-    if (nextStepMatch) details.continuation.nextStep = nextStepMatch[1].trim();
+    if (nextStepMatch) {
+      const raw = nextStepMatch[1].trim();
+      // Suppress placeholder/template text (e.g. "[specific action]", "[nothing / ...]")
+      if (raw && !/^\[.*\]$/.test(raw) && !raw.startsWith("_")) {
+        details.continuation.nextStep = raw;
+      }
+    }
 
     const blockedMatch = contextBody.match(
       /[-*]\s*\*\*Blocked by\*\*:\s*(.+)/
     );
-    if (blockedMatch) details.continuation.blockedBy = blockedMatch[1].trim();
+    if (blockedMatch) {
+      const raw = blockedMatch[1].trim();
+      if (raw && !/^\[.*\]$/.test(raw) && !raw.startsWith("_")) {
+        details.continuation.blockedBy = raw;
+      }
+    }
     
     const contextNeededMatch = contextBody.match(
       /[-*]\s*\*\*Context needed\*\*:\s*(.+)/
