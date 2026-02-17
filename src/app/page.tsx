@@ -47,6 +47,7 @@ import {
 } from "@/lib/gateway/GatewayClient";
 import { ArtifactsPanel } from "@/features/artifacts/components/ArtifactsPanel";
 import { TasksPanel } from "@/features/tasks/components/TasksPanel";
+import { ProjectsPanel } from "@/features/projects/components/ProjectsPanel";
 import { TaskWizardModal } from "@/features/tasks/components/TaskWizardModal";
 import { useAgentTasks } from "@/features/tasks/hooks/useAgentTasks";
 import { ContextPanel, type ContextTab } from "@/features/context/components/ContextPanel";
@@ -1480,6 +1481,14 @@ const AgentStudioPage = () => {
     setViewingSessionKey(null);
   }, []);
 
+  const stableProjectContinue = useCallback((message: string) => {
+    const fa = focusedAgentRef.current;
+    if (fa) {
+      setViewingSessionKey(null);
+      handleSend(fa.agentId, fa.sessionKey, message);
+    }
+  }, [handleSend]);
+
   const stableChatOnDismissContinuation = useCallback(() => {
     const fa = focusedAgentRef.current;
     if (fa) {
@@ -1671,19 +1680,27 @@ const AgentStudioPage = () => {
                     }
                   }}
                   tasksContent={
-                    <TasksPanel
-                      isSelected
-                      client={client}
-                      tasks={agentTasks}
-                      loading={tasksLoading}
-                      error={tasksError}
-                      busyTaskId={busyTaskId}
-                      onToggle={toggleTask}
-                      onRun={runTask}
-                      onDelete={deleteTask}
-                      onRefresh={() => { void loadTasks(); }}
-                      onNewTask={() => setShowTaskWizard(true)}
-                    />
+                    <div className="flex h-full w-full flex-col overflow-y-auto">
+                      <ProjectsPanel
+                        agentId={focusedAgent?.agentId ?? null}
+                        onContinue={stableProjectContinue}
+                      />
+                      <div className="border-t border-border/30">
+                        <TasksPanel
+                          isSelected
+                          client={client}
+                          tasks={agentTasks}
+                          loading={tasksLoading}
+                          error={tasksError}
+                          busyTaskId={busyTaskId}
+                          onToggle={toggleTask}
+                          onRun={runTask}
+                          onDelete={deleteTask}
+                          onRefresh={() => { void loadTasks(); }}
+                          onNewTask={() => setShowTaskWizard(true)}
+                        />
+                      </div>
+                    </div>
                   }
                   brainContent={
                     <AgentBrainPanel
