@@ -175,6 +175,7 @@ export const useAgentTasks = (
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busyTaskId, setBusyTaskId] = useState<string | null>(null);
+  const [busyAction, setBusyAction] = useState<"toggle" | "run" | "delete" | "update" | null>(null);
 
   const loadingRef = useRef(false);
 
@@ -209,6 +210,9 @@ export const useAgentTasks = (
       const now = new Date().toISOString();
 
       try {
+        // Replace {taskId} placeholders in prompt (used by templates)
+        const resolvedPrompt = payload.prompt.replaceAll("{taskId}", taskId);
+
         // 1. Create cron job
         const cronSchedule = taskScheduleToCronSchedule(payload.schedule);
         const result = await addCronJob(client, {
@@ -217,7 +221,7 @@ export const useAgentTasks = (
           sessionTarget: "isolated",
           payload: {
             kind: "agentTurn",
-            message: buildCronPayloadMessage(taskId, payload.prompt),
+            message: buildCronPayloadMessage(taskId, resolvedPrompt),
             model: payload.model,
           },
           agentId: payload.agentId,
@@ -239,7 +243,7 @@ export const useAgentTasks = (
           description: payload.description,
           type: payload.type,
           schedule: payload.schedule,
-          prompt: payload.prompt,
+          prompt: resolvedPrompt,
           model: payload.model,
           deliveryChannel: payload.deliveryChannel ?? null,
           deliveryTarget: payload.deliveryTarget ?? null,
@@ -268,9 +272,17 @@ export const useAgentTasks = (
     async (taskId: string, enabled: boolean) => {
       if (!agentId || busyTaskId) return;
       setBusyTaskId(taskId);
+      setBusyAction("toggle");
       setError(null);
+
+      // Optimistic update — flip immediately, rollback on error
+      const previousTasks = tasks;
+      setTasks((prev) =>
+        prev.map((t) => (t.id === taskId ? { ...t, enabled } : t))
+      );
+
       try {
-        const task = tasks.find((t) => t.id === taskId);
+        const task = previousTasks.find((t) => t.id === taskId);
         if (!task) throw new Error("Task not found.");
 
         await updateCronJob(client, task.cronJobId, { enabled });
@@ -278,11 +290,14 @@ export const useAgentTasks = (
         setTasks((prev) => prev.map((t) => (t.id === taskId ? updated : t)));
         toast.success(enabled ? `Task "${task.name}" resumed` : `Task "${task.name}" paused`);
       } catch (err) {
+        // Rollback on failure
+        setTasks(previousTasks);
         const message = err instanceof Error ? err.message : "Failed to toggle task.";
         setError(message);
         toast.error(message);
       } finally {
         setBusyTaskId(null);
+        setBusyAction(null);
       }
     },
     [agentId, client, tasks, busyTaskId]
@@ -292,6 +307,7 @@ export const useAgentTasks = (
     async (taskId: string) => {
       if (!agentId || busyTaskId) return;
       setBusyTaskId(taskId);
+      setBusyAction("run");
       setError(null);
       try {
         const task = tasks.find((t) => t.id === taskId);
@@ -305,6 +321,7 @@ export const useAgentTasks = (
         toast.error(message);
       } finally {
         setBusyTaskId(null);
+        setBusyAction(null);
       }
     },
     [agentId, client, tasks, busyTaskId]
@@ -314,6 +331,7 @@ export const useAgentTasks = (
     async (taskId: string, newSchedule: import("@/features/tasks/types").TaskSchedule) => {
       if (!agentId || busyTaskId) return;
       setBusyTaskId(taskId);
+      setBusyAction("update");
       setError(null);
       try {
         const task = tasks.find((t) => t.id === taskId);
@@ -335,6 +353,7 @@ export const useAgentTasks = (
         toast.error(message);
       } finally {
         setBusyTaskId(null);
+        setBusyAction(null);
       }
     },
     [agentId, client, tasks, busyTaskId]
@@ -344,6 +363,7 @@ export const useAgentTasks = (
     async (taskId: string, updates: import("@/features/tasks/types").UpdateTaskPayload) => {
       if (!agentId || busyTaskId) return;
       setBusyTaskId(taskId);
+      setBusyAction("update");
       setError(null);
       try {
         const task = tasks.find((t) => t.id === taskId);
@@ -385,6 +405,7 @@ export const useAgentTasks = (
         toast.error(message);
       } finally {
         setBusyTaskId(null);
+        setBusyAction(null);
       }
     },
     [agentId, client, tasks, busyTaskId]
@@ -394,6 +415,7 @@ export const useAgentTasks = (
     async (taskId: string) => {
       if (!agentId || busyTaskId) return;
       setBusyTaskId(taskId);
+      setBusyAction("delete");
       setError(null);
       try {
         const task = tasks.find((t) => t.id === taskId);
@@ -410,6 +432,7 @@ export const useAgentTasks = (
         toast.error(message);
       } finally {
         setBusyTaskId(null);
+        setBusyAction(null);
       }
     },
     [agentId, client, tasks, busyTaskId]
@@ -420,6 +443,7 @@ export const useAgentTasks = (
     loading,
     error,
     busyTaskId,
+    busyAction,
     loadTasks,
     createTask,
     toggleTask,

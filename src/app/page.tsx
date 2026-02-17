@@ -282,6 +282,7 @@ const AgentStudioPage = () => {
     loading: tasksLoading,
     error: tasksError,
     busyTaskId,
+    busyAction,
     loadTasks,
     createTask,
     toggleTask,
@@ -1694,6 +1695,7 @@ const AgentStudioPage = () => {
                           loading={tasksLoading}
                           error={tasksError}
                           busyTaskId={busyTaskId}
+                          busyAction={busyAction}
                           onToggle={toggleTask}
                           onUpdateTask={updateTask}
                           onUpdateSchedule={updateTaskSchedule}

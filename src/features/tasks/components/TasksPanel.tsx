@@ -30,6 +30,7 @@ interface TasksPanelProps {
   loading: boolean;
   error: string | null;
   busyTaskId: string | null;
+  busyAction?: "toggle" | "run" | "delete" | "update" | null;
   onToggle: (taskId: string, enabled: boolean) => void;
   onUpdateTask: (taskId: string, updates: UpdateTaskPayload) => void;
   onUpdateSchedule: (taskId: string, schedule: TaskSchedule) => void;
@@ -48,6 +49,7 @@ export const TasksPanel = memo(function TasksPanel({
   loading,
   error,
   busyTaskId,
+  busyAction,
   onToggle,
   onUpdateTask,
   onUpdateSchedule,
@@ -240,6 +242,7 @@ export const TasksPanel = memo(function TasksPanel({
                 key={task.id}
                 task={task}
                 busy={busyTaskId === task.id}
+                busyAction={busyTaskId === task.id ? busyAction : null}
                 selected={selectedTaskId === task.id}
                 onSelect={handleSelect}
                 onToggle={onToggle}

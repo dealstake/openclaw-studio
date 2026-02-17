@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useCallback } from "react";
-import { Play, Trash2 } from "lucide-react";
+import { Loader2, Play, Trash2 } from "lucide-react";
 import type { StudioTask } from "@/features/tasks/types";
 import { humanReadableSchedule } from "@/features/tasks/lib/schedule";
 import { formatRelativeTime } from "@/lib/text/time";
@@ -17,6 +17,8 @@ interface TaskCardProps {
   onToggle: (taskId: string, enabled: boolean) => void;
   onRun: (taskId: string) => void;
   onDelete: (taskId: string) => void;
+  /** Which action is currently in progress for this task */
+  busyAction?: "toggle" | "run" | "delete" | "update" | null;
 }
 
 export const TaskCard = memo(function TaskCard({
@@ -27,6 +29,7 @@ export const TaskCard = memo(function TaskCard({
   onToggle,
   onRun,
   onDelete,
+  busyAction,
 }: TaskCardProps) {
   const typeConfig = TYPE_CONFIG[task.type];
   const TypeIcon = typeConfig.icon;
@@ -104,7 +107,8 @@ export const TaskCard = memo(function TaskCard({
         </div>
 
         {/* Right: actions */}
-        <div className="flex items-center gap-1 opacity-0 transition group-focus-within/task:opacity-100 group-hover/task:opacity-100">
+        {/* Always visible on touch devices, hover-reveal on desktop */}
+        <div className="flex items-center gap-1 transition md:opacity-0 md:group-focus-within/task:opacity-100 md:group-hover/task:opacity-100">
           {/* Toggle */}
           <button
             type="button"
@@ -134,7 +138,11 @@ export const TaskCard = memo(function TaskCard({
             onClick={handleRun}
             disabled={busy}
           >
-            <Play className="h-3.5 w-3.5" />
+            {busyAction === "run" ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Play className="h-3.5 w-3.5" />
+            )}
           </button>
 
           {/* Delete */}
@@ -145,7 +153,11 @@ export const TaskCard = memo(function TaskCard({
             onClick={handleDelete}
             disabled={busy}
           >
-            <Trash2 className="h-3.5 w-3.5" />
+            {busyAction === "delete" ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Trash2 className="h-3.5 w-3.5" />
+            )}
           </button>
         </div>
       </div>
