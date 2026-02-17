@@ -175,8 +175,6 @@ const AgentStudioPage = () => {
   const [viewingSessionKey, setViewingSessionKey] = useState<string | null>(null);
   const [viewingSessionHistory, setViewingSessionHistory] = useState<AgentChatItem[]>([]);
   const [viewingSessionLoading, setViewingSessionLoading] = useState(false);
-  const [isCompacting, setIsCompacting] = useState(false);
-  const [lastCompactedAt, setLastCompactedAt] = useState<number | null>(null);
   /** Tracks previous session key per agent to detect session resets */
   const prevSessionKeyByAgentRef = useRef<Map<string, string>>(new Map());
   /** Agent IDs that just had a session reset (key changed) — auto-clears after 60s */
@@ -1180,23 +1178,6 @@ const AgentStudioPage = () => {
     [client, dispatch, pendingDraftTimersRef, pendingDraftValuesRef]
   );
 
-  const handleCompact = useCallback(async () => {
-    if (!focusedAgent || !client || isCompacting) return;
-    setIsCompacting(true);
-    try {
-      await client.call("chat.send", {
-        sessionKey: focusedAgent.sessionKey,
-        message: "/compact",
-        deliver: false,
-      });
-      setLastCompactedAt(Date.now());
-    } catch (err) {
-      console.error("Compact failed:", err);
-    } finally {
-      setIsCompacting(false);
-    }
-  }, [focusedAgent, client, isCompacting]);
-
   const handleStopRun = useCallback(
     async (agentId: string, sessionKey: string) => {
       if (status !== "connected") {
@@ -1639,9 +1620,6 @@ const AgentStudioPage = () => {
                   onStopRun={stableChatOnStopRun}
                   onAvatarShuffle={stableChatOnAvatarShuffle}
                   onNewSession={stableChatOnNewSession}
-                  onCompact={handleCompact}
-                  isCompacting={isCompacting}
-                  lastCompactedAt={lastCompactedAt}
                   tokenUsed={stableChatTokenUsed}
                   tokenLimit={stableChatTokenLimit}
                   viewingSessionKey={viewingSessionKey}

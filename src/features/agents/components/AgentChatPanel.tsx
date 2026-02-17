@@ -10,25 +10,16 @@ import {
   type MutableRefObject,
 } from "react";
 
-function useRecentlyCompacted(lastCompactedAt: number | null | undefined): boolean {
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    if (!lastCompactedAt) return;
-    const elapsed = Date.now() - lastCompactedAt;
-    if (elapsed >= 60000) return;
-    // Use a microtask to avoid synchronous setState in effect
-    void Promise.resolve().then(() => setVisible(true));
-    const timer = window.setTimeout(() => setVisible(false), 60000 - elapsed);
-    return () => window.clearTimeout(timer);
-  }, [lastCompactedAt]);
-
-  return visible;
+/** Format token count as human-readable string (e.g. 125K, 1.2M) */
+function formatTokenCount(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
+  if (n >= 1_000) return `${Math.round(n / 1_000)}K`;
+  return String(n);
 }
 import type { AgentState as AgentRecord } from "@/features/agents/state/store";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { AlertTriangle, Archive, ArrowLeft, ArrowUp, ChevronDown, ChevronRight, ChevronUp, RefreshCw, Settings, Shuffle, SquarePen, X, Zap } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ArrowUp, ChevronDown, ChevronRight, ChevronUp, RefreshCw, Settings, Shuffle, SquarePen, X, Zap } from "lucide-react";
 import type { GatewayModelChoice } from "@/lib/gateway/models";
 import { isToolMarkdown, isTraceMarkdown } from "@/lib/text/message-extract";
 import { isNearBottom } from "@/lib/dom";
@@ -58,9 +49,6 @@ type AgentChatPanelProps = {
   tokenUsed?: number;
   tokenLimit?: number;
   onNewSession?: () => void;
-  onCompact?: () => void;
-  isCompacting?: boolean;
-  lastCompactedAt?: number | null;
   viewingSessionKey?: string | null;
   viewingSessionHistory?: AgentChatItem[];
   viewingSessionLoading?: boolean;
@@ -540,9 +528,6 @@ export const AgentChatPanel = memo(function AgentChatPanel({
   tokenUsed,
   tokenLimit,
   onNewSession,
-  onCompact,
-  isCompacting = false,
-  lastCompactedAt = null,
   viewingSessionKey,
   viewingSessionHistory = [],
   viewingSessionLoading = false,
@@ -550,7 +535,6 @@ export const AgentChatPanel = memo(function AgentChatPanel({
   sessionContinued = false,
   onDismissContinuationBanner,
 }: AgentChatPanelProps) {
-  const recentlyCompacted = useRecentlyCompacted(lastCompactedAt);
   const draftRef = useRef<HTMLTextAreaElement | null>(null);
   const scrollToBottomNextOutputRef = useRef(false);
   const plainDraftRef = useRef(agent.draft);
@@ -863,23 +847,9 @@ export const AgentChatPanel = memo(function AgentChatPanel({
                     <div className="min-w-0 flex-1">
                       <TokenProgressBar used={tokenUsed} limit={tokenLimit} />
                     </div>
-                    {onCompact ? (
-                      <button
-                        type="button"
-                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border/80 bg-card/70 text-muted-foreground transition hover:border-border hover:bg-muted/65 disabled:cursor-not-allowed disabled:opacity-60"
-                        aria-label="Compact context & save to memory"
-                        title="Compact context & save to memory"
-                        onClick={onCompact}
-                        disabled={isCompacting}
-                      >
-                        <Archive className={`h-3.5 w-3.5 ${isCompacting ? "animate-spin" : ""}`} />
-                      </button>
-                    ) : null}
-                    {recentlyCompacted ? (
-                      <span className="shrink-0 font-mono text-[9px] text-emerald-500 animate-pulse">
-                        ✓ Compacted
-                      </span>
-                    ) : null}
+                    <span className="shrink-0 font-mono text-[10px] text-muted-foreground/70">
+                      {formatTokenCount(tokenUsed)}/{formatTokenCount(tokenLimit)}
+                    </span>
                   </div>
                 ) : null}
               </div>
