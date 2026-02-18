@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { ReactNode, ButtonHTMLAttributes } from "react";
 
 /**
@@ -12,7 +13,7 @@ type HeaderIconButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   "data-testid"?: string;
 };
 
-export function HeaderIconButton({
+export const HeaderIconButton = memo(function HeaderIconButton({
   children,
   active = false,
   className = "",
@@ -31,4 +32,4 @@ export function HeaderIconButton({
       {children}
     </button>
   );
-}
+});

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { Moon, Sun } from "lucide-react";
 import { HeaderIconButton } from "@/components/HeaderIconButton";
 
@@ -20,7 +20,7 @@ const applyTheme = (mode: ThemeMode) => {
   document.documentElement.classList.toggle("dark", mode === "dark");
 };
 
-export const ThemeToggle = () => {
+export const ThemeToggle = memo(function ThemeToggle() {
   const [theme, setTheme] = useState<ThemeMode>("dark");
 
   useEffect(() => {
@@ -51,4 +51,4 @@ export const ThemeToggle = () => {
       {isDark ? <Sun className="h-[15px] w-[15px]" /> : <Moon className="h-[15px] w-[15px]" />}
     </HeaderIconButton>
   );
-};
+});

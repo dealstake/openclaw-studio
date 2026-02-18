@@ -1,13 +1,15 @@
-export function Skeleton({ className = "" }: { className?: string }) {
+import { memo } from "react";
+
+export const Skeleton = memo(function Skeleton({ className = "" }: { className?: string }) {
   return (
     <div
       className={`animate-pulse rounded-md bg-muted/60 ${className}`}
       aria-hidden="true"
     />
   );
-}
+});
 
-export function SkeletonAgentRow() {
+export const SkeletonAgentRow = memo(function SkeletonAgentRow() {
   return (
     <div className="flex items-center gap-3 rounded-md border border-border/70 bg-card/65 px-3 py-2">
       <Skeleton className="h-7 w-7 rounded-full" />
@@ -17,18 +19,18 @@ export function SkeletonAgentRow() {
       </div>
     </div>
   );
-}
+});
 
-export function SkeletonSessionRow() {
+export const SkeletonSessionRow = memo(function SkeletonSessionRow() {
   return (
     <div className="rounded-md border border-border/80 bg-card/70 p-3 space-y-2">
       <Skeleton className="h-3 w-32" />
       <Skeleton className="h-2.5 w-48" />
     </div>
   );
-}
+});
 
-export function SkeletonChatMessage() {
+export const SkeletonChatMessage = memo(function SkeletonChatMessage() {
   return (
     <div className="rounded-md border border-border/70 px-3 py-2 space-y-2">
       <Skeleton className="h-3 w-full" />
@@ -36,4 +38,4 @@ export function SkeletonChatMessage() {
       <Skeleton className="h-3 w-1/2" />
     </div>
   );
-}
+});
