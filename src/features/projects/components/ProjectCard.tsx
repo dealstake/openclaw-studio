@@ -11,6 +11,7 @@ import { STATUS_CONFIG, PRIORITY_DOT, TOGGLE_MAP } from "../lib/constants";
 import { LinkedTaskRow } from "./LinkedTaskRow";
 import type { ProjectEntry } from "./ProjectsPanel";
 import { PanelIconButton } from "@/components/PanelIconButton";
+import { MarkdownViewer } from "@/components/MarkdownViewer";
 
 interface ProjectCardProps {
   project: ProjectEntry;
@@ -101,9 +102,7 @@ export const ProjectCard = memo(function ProjectCard({
           </div>
           
           {/* Description */}
-          <p className="mt-1 text-xs leading-relaxed text-muted-foreground/80 line-clamp-2">
-            {project.oneLiner}
-          </p>
+          <MarkdownViewer content={project.oneLiner} className="mt-1 text-xs leading-relaxed text-muted-foreground/80 line-clamp-2 [&>*]:m-0 [&>*>*]:m-0" />
 
           {/* Details (Progress + Next Step) */}
           {details && (
@@ -127,7 +126,7 @@ export const ProjectCard = memo(function ProjectCard({
               {!isDone && details.continuation.nextStep && (
                 <div className="flex items-start gap-1.5 text-[10px] text-muted-foreground">
                   <span className="shrink-0 font-semibold text-primary/80">Next:</span>
-                  <span className="line-clamp-1">{details.continuation.nextStep}</span>
+                  <MarkdownViewer content={details.continuation.nextStep} className="line-clamp-1 [&>*]:m-0 [&>*]:inline" />
                 </div>
               )}
 
