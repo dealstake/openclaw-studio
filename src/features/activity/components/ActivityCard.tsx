@@ -34,6 +34,7 @@ export const ActivityCard = memo(function ActivityCard({
   onToggle: () => void;
 }) {
   const borderClass = STATUS_BORDER[event.status] ?? "border-l-2 border-l-muted-foreground/40";
+  const contentId = `activity-detail-${event.id}`;
 
   return (
     <Collapsible open={isExpanded} onOpenChange={onToggle}>
@@ -45,6 +46,7 @@ export const ActivityCard = memo(function ActivityCard({
             type="button"
             className="flex w-full items-center gap-2 px-3 py-2 text-left"
             aria-expanded={isExpanded}
+            aria-controls={contentId}
           >
             <span
               className={`h-1.5 w-1.5 shrink-0 rounded-full ${getStatusDotClass(event.status)}`}
@@ -70,7 +72,7 @@ export const ActivityCard = memo(function ActivityCard({
         </CollapsibleTrigger>
 
         <CollapsibleContent>
-          <div className="border-t border-border/40 px-3 py-2 space-y-2">
+          <div id={contentId} className="border-t border-border/40 px-3 py-2 space-y-2">
             <p className="text-xs text-foreground/90 leading-relaxed">
               {event.summary}
             </p>
