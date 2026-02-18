@@ -14,7 +14,7 @@ export const sectionLabelClass =
   "font-mono text-[10px] font-semibold uppercase tracking-[0.12em]";
 
 type SectionLabelProps = HTMLAttributes<HTMLDivElement> & {
-  children: ReactNode;
+  children?: ReactNode;
   /** HTML element to render. @default "div" */
   as?: "div" | "span" | "p" | "h3" | "h4";
 };
