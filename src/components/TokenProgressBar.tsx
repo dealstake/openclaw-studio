@@ -19,7 +19,7 @@ export const TokenProgressBar = memo(function TokenProgressBar({
     if (!limit || limit <= 0)
       return { pct: 0, fillGreen: "0%", fillYellow: "0%", fillRed: "0%", tooltip: "" };
     const p = Math.min(100, Math.round((used / limit) * 100));
-    const t = `${p}% · ${used.toLocaleString()} / ${limit.toLocaleString()} tokens`;
+    const t = `${p}% · ${used.toLocaleString()} / ${limit.toLocaleString()} tokens — Green: 0-60%, Yellow: 60-80%, Red: 80-100%`;
 
     let fG: string;
     let fY: string;

@@ -45,7 +45,7 @@ describe("TokenProgressBar", () => {
 
   it("displays tooltip with token counts", () => {
     renderBar({ used: 5000, limit: 10000 });
-    const els = screen.getAllByTitle("50% · 5,000 / 10,000 tokens");
+    const els = screen.getAllByTitle("50% · 5,000 / 10,000 tokens — Green: 0-60%, Yellow: 60-80%, Red: 80-100%");
     expect(els.length).toBeGreaterThan(0);
   });
 
@@ -73,7 +73,7 @@ describe("TokenProgressBar", () => {
   it("0% usage renders bar with tooltip", () => {
     renderBar({ used: 0, limit: 10000 });
     expect(screen.getByText("0%")).toBeDefined();
-    expect(screen.getAllByTitle("0% · 0 / 10,000 tokens").length).toBeGreaterThan(0);
+    expect(screen.getAllByTitle("0% · 0 / 10,000 tokens — Green: 0-60%, Yellow: 60-80%, Red: 80-100%").length).toBeGreaterThan(0);
   });
 
   it("100% usage renders correctly", () => {

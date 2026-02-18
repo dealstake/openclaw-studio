@@ -717,7 +717,7 @@ export const AgentChatPanel = memo(function AgentChatPanel({
                   seed={avatarSeed}
                   name={agent.name}
                   avatarUrl={agent.avatarUrl ?? null}
-                  size={96}
+                  size={56}
                   isSelected={isSelected}
                 />
               </div>
@@ -813,6 +813,7 @@ export const AgentChatPanel = memo(function AgentChatPanel({
                     <select
                       className="h-8 w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap rounded-md border border-border bg-card/75 px-2 text-[11px] font-semibold text-foreground"
                       aria-label="Model"
+                      title={modelValue}
                       value={modelValue}
                       onChange={(event) => {
                         const value = event.target.value.trim();
@@ -823,8 +824,8 @@ export const AgentChatPanel = memo(function AgentChatPanel({
                         <option value="">No models found</option>
                       ) : null}
                       {modelOptionsWithFallback.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
+                        <option key={option.value} value={option.value} title={option.value}>
+                          {option.label.split(" (")[0]}
                         </option>
                       ))}
                     </select>
