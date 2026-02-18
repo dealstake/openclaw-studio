@@ -217,6 +217,33 @@ export const updateCronJob = async (
   return client.call<CronUpdateResult>("cron.update", { jobId: id, patch });
 };
 
+// ─── Cron Run Types ──────────────────────────────────────────────────────────
+
+export type CronRunEntry = {
+  id: string;
+  jobId: string;
+  status: string;
+  startedAtMs?: number;
+  durationMs?: number;
+  error?: string;
+};
+
+export type CronRunsResult = {
+  runs: CronRunEntry[];
+};
+
+export const fetchCronRuns = async (
+  client: GatewayClient,
+  jobId: string,
+  limit = 20
+): Promise<CronRunEntry[]> => {
+  const result = await client.call<CronRunsResult>("cron.runs", {
+    jobId,
+    limit,
+  });
+  return result.runs ?? [];
+};
+
 // ─── Bulk remove ─────────────────────────────────────────────────────────────
 
 export const removeCronJobsForAgent = async (client: GatewayClient, agentId: string): Promise<number> => {

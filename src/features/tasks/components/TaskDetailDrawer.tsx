@@ -29,21 +29,7 @@ import { Skeleton } from "@/components/Skeleton";
 import { TYPE_CONFIG, STATUS_DOT_CLASS, STATUS_LABEL, getTaskStatusKey } from "@/features/tasks/lib/taskTypeConfig";
 import { PanelIconButton } from "@/components/PanelIconButton";
 import { SectionLabel, sectionLabelClass} from "@/components/SectionLabel";
-
-// ─── Run history types ───────────────────────────────────────────────────────
-
-type CronRunEntry = {
-  id: string;
-  jobId: string;
-  status: string;
-  startedAtMs?: number;
-  durationMs?: number;
-  error?: string;
-};
-
-type CronRunsResult = {
-  runs: CronRunEntry[];
-};
+import { type CronRunEntry, fetchCronRuns } from "@/lib/cron/types";
 
 const RUN_STATUS_ICON: Record<string, typeof CheckCircle2> = {
   ok: CheckCircle2,
@@ -108,11 +94,8 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
       setRunsLoading(true);
       setRunsError(null);
       try {
-        const result = await client.call<CronRunsResult>("cron.runs", {
-          jobId: cronJobId,
-          limit: 20,
-        });
-        setRuns(Array.isArray(result.runs) ? result.runs : []);
+        const entries = await fetchCronRuns(client, cronJobId, 20);
+        setRuns(entries);
       } catch (err) {
         if (!isGatewayDisconnectLikeError(err)) {
           const message =

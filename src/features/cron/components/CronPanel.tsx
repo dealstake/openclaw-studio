@@ -6,23 +6,12 @@ import { EmptyStatePanel } from "@/features/agents/components/EmptyStatePanel";
 import { Skeleton } from "@/components/Skeleton";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import { isGatewayDisconnectLikeError } from "@/lib/gateway/GatewayClient";
-import { formatCronPayload, formatCronSchedule, type CronJobSummary } from "@/lib/cron/types";
+import { formatCronPayload, formatCronSchedule, type CronJobSummary, type CronRunEntry, fetchCronRuns } from "@/lib/cron/types";
 import { formatRelativeTime } from "@/lib/text/time";
 import { PanelIconButton } from "@/components/PanelIconButton";
 import { SectionLabel, sectionLabelClass} from "@/components/SectionLabel";
 
-type CronRunEntry = {
-  id: string;
-  jobId: string;
-  status: string;
-  startedAtMs?: number;
-  durationMs?: number;
-  error?: string;
-};
-
-type CronRunsResult = {
-  runs: CronRunEntry[];
-};
+// CronRunEntry and CronRunsResult imported from @/lib/cron/types
 
 type CronPanelProps = {
   client: GatewayClient;
@@ -63,11 +52,8 @@ export const CronPanel = memo(function CronPanel({
       setRunsLoading(true);
       setRunsError(null);
       try {
-        const result = await client.call<CronRunsResult>("cron.runs", {
-          jobId,
-          limit: 10,
-        });
-        setRuns(Array.isArray(result.runs) ? result.runs : []);
+        const entries = await fetchCronRuns(client, jobId, 10);
+        setRuns(entries);
       } catch (err) {
         if (!isGatewayDisconnectLikeError(err)) {
           const message = err instanceof Error ? err.message : "Failed to load run history.";
