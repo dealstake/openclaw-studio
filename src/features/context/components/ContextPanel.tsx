@@ -1,8 +1,9 @@
 "use client";
 
 import { memo, useCallback, useRef, useState, useEffect, type ReactNode } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Maximize2 } from "lucide-react";
 
+import { PanelIconButton } from "@/components/PanelIconButton";
 import { sectionLabelClass } from "@/components/SectionLabel";
 
 export type ContextTab = "projects" | "activity" | "tasks" | "brain" | "settings" | "channels" | "sessions" | "usage" | "cron" | "workspace";
@@ -10,6 +11,8 @@ export type ContextTab = "projects" | "activity" | "tasks" | "brain" | "settings
 interface ContextPanelProps {
   activeTab: ContextTab;
   onTabChange: (tab: ContextTab) => void;
+  onExpandToggle?: () => void;
+  expandedTab?: ContextTab | null;
   projectsContent?: ReactNode;
   activityContent?: ReactNode;
   tasksContent: ReactNode;
@@ -22,7 +25,7 @@ interface ContextPanelProps {
   workspaceContent?: ReactNode;
 }
 
-const TAB_OPTIONS: Array<{ value: ContextTab; label: string }> = [
+export const TAB_OPTIONS: Array<{ value: ContextTab; label: string }> = [
   { value: "projects", label: "Projects" },
   { value: "activity", label: "Activity" },
   { value: "tasks", label: "Tasks" },
@@ -41,6 +44,8 @@ const OVERFLOW_TABS = TAB_OPTIONS.slice(4);
 export const ContextPanel = memo(function ContextPanel({
   activeTab,
   onTabChange,
+  onExpandToggle,
+  expandedTab,
   projectsContent,
   activityContent,
   tasksContent,
@@ -117,6 +122,11 @@ export const ContextPanel = memo(function ContextPanel({
             </button>
           );
         })}
+        {onExpandToggle && (
+          <PanelIconButton onClick={onExpandToggle} aria-label="Expand panel" data-testid="expand-panel-btn" className="ml-auto flex-shrink-0">
+            <Maximize2 className="h-3.5 w-3.5" />
+          </PanelIconButton>
+        )}
       </div>
       {/* Desktop */}
       <div className="hidden items-center gap-1 border-b border-border/40 px-3 pt-3 pb-2 lg:flex" role="tablist">
@@ -176,59 +186,76 @@ export const ContextPanel = memo(function ContextPanel({
             ) : null}
           </div>
         ) : null}
+        {onExpandToggle && (
+          <PanelIconButton onClick={onExpandToggle} aria-label="Expand panel" data-testid="expand-panel-btn-desktop" className="ml-auto">
+            <Maximize2 className="h-3.5 w-3.5" />
+          </PanelIconButton>
+        )}
       </div>
 
       {/* Tab content — lazy mount */}
       <div className="min-h-0 min-w-0 flex-1 overflow-hidden">
-        {effectiveMountedTabs.has("projects") && (
-          <div role="tabpanel" className={activeTab === "projects" ? "flex h-full w-full" : "hidden"}>
-            {projectsContent ?? null}
+        {expandedTab === activeTab && onExpandToggle ? (
+          <div role="tabpanel" className="flex h-full w-full flex-col items-center justify-center gap-2 text-muted-foreground">
+            <Maximize2 className="h-5 w-5" />
+            <span className="text-xs">Viewing in expanded mode</span>
+            <button type="button" onClick={onExpandToggle} className="text-xs text-primary hover:underline">
+              Collapse
+            </button>
           </div>
-        )}
-        {effectiveMountedTabs.has("activity") && (
-          <div role="tabpanel" className={activeTab === "activity" ? "flex h-full w-full" : "hidden"}>
-            {activityContent ?? null}
-          </div>
-        )}
-        {effectiveMountedTabs.has("tasks") && (
-          <div role="tabpanel" className={activeTab === "tasks" ? "flex h-full w-full" : "hidden"}>
-            {tasksContent}
-          </div>
-        )}
-        {effectiveMountedTabs.has("brain") && (
-          <div role="tabpanel" className={activeTab === "brain" ? "flex h-full w-full" : "hidden"}>
-            {brainContent}
-          </div>
-        )}
-        {effectiveMountedTabs.has("workspace") && (
-          <div role="tabpanel" className={activeTab === "workspace" ? "flex h-full w-full" : "hidden"}>
-            {workspaceContent ?? null}
-          </div>
-        )}
-        {effectiveMountedTabs.has("settings") && (
-          <div role="tabpanel" className={activeTab === "settings" ? "flex h-full w-full" : "hidden"}>
-            {settingsContent}
-          </div>
-        )}
-        {effectiveMountedTabs.has("channels") && (
-          <div role="tabpanel" className={activeTab === "channels" ? "flex h-full w-full" : "hidden"}>
-            {channelsContent ?? null}
-          </div>
-        )}
-        {effectiveMountedTabs.has("sessions") && (
-          <div role="tabpanel" className={activeTab === "sessions" ? "flex h-full w-full" : "hidden"}>
-            {sessionsContent ?? null}
-          </div>
-        )}
-        {effectiveMountedTabs.has("usage") && (
-          <div role="tabpanel" className={activeTab === "usage" ? "flex h-full w-full" : "hidden"}>
-            {usageContent ?? null}
-          </div>
-        )}
-        {effectiveMountedTabs.has("cron") && (
-          <div role="tabpanel" className={activeTab === "cron" ? "flex h-full w-full" : "hidden"}>
-            {cronContent ?? null}
-          </div>
+        ) : (
+          <>
+            {effectiveMountedTabs.has("projects") && (
+              <div role="tabpanel" className={activeTab === "projects" ? "flex h-full w-full" : "hidden"}>
+                {projectsContent ?? null}
+              </div>
+            )}
+            {effectiveMountedTabs.has("activity") && (
+              <div role="tabpanel" className={activeTab === "activity" ? "flex h-full w-full" : "hidden"}>
+                {activityContent ?? null}
+              </div>
+            )}
+            {effectiveMountedTabs.has("tasks") && (
+              <div role="tabpanel" className={activeTab === "tasks" ? "flex h-full w-full" : "hidden"}>
+                {tasksContent}
+              </div>
+            )}
+            {effectiveMountedTabs.has("brain") && (
+              <div role="tabpanel" className={activeTab === "brain" ? "flex h-full w-full" : "hidden"}>
+                {brainContent}
+              </div>
+            )}
+            {effectiveMountedTabs.has("workspace") && (
+              <div role="tabpanel" className={activeTab === "workspace" ? "flex h-full w-full" : "hidden"}>
+                {workspaceContent ?? null}
+              </div>
+            )}
+            {effectiveMountedTabs.has("settings") && (
+              <div role="tabpanel" className={activeTab === "settings" ? "flex h-full w-full" : "hidden"}>
+                {settingsContent}
+              </div>
+            )}
+            {effectiveMountedTabs.has("channels") && (
+              <div role="tabpanel" className={activeTab === "channels" ? "flex h-full w-full" : "hidden"}>
+                {channelsContent ?? null}
+              </div>
+            )}
+            {effectiveMountedTabs.has("sessions") && (
+              <div role="tabpanel" className={activeTab === "sessions" ? "flex h-full w-full" : "hidden"}>
+                {sessionsContent ?? null}
+              </div>
+            )}
+            {effectiveMountedTabs.has("usage") && (
+              <div role="tabpanel" className={activeTab === "usage" ? "flex h-full w-full" : "hidden"}>
+                {usageContent ?? null}
+              </div>
+            )}
+            {effectiveMountedTabs.has("cron") && (
+              <div role="tabpanel" className={activeTab === "cron" ? "flex h-full w-full" : "hidden"}>
+                {cronContent ?? null}
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

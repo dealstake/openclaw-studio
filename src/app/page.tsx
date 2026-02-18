@@ -53,7 +53,9 @@ import { ProjectsPanel } from "@/features/projects/components/ProjectsPanel";
 import { ActivityPanel } from "@/features/activity/components/ActivityPanel";
 import { TaskWizardModal } from "@/features/tasks/components/TaskWizardModal";
 import { useAgentTasks } from "@/features/tasks/hooks/useAgentTasks";
-import { ContextPanel, type ContextTab } from "@/features/context/components/ContextPanel";
+import { ContextPanel, TAB_OPTIONS, type ContextTab } from "@/features/context/components/ContextPanel";
+import { PanelExpandModal } from "@/components/PanelExpandModal";
+import { ExpandedContext } from "@/features/context/lib/expandedContext";
 import { ExecApprovalOverlay } from "@/features/exec-approvals/components/ExecApprovalOverlay";
 import {
   parseExecApprovalRequested,
@@ -177,6 +179,23 @@ const AgentStudioPage = () => {
   /** "agent" = show ContextPanel (Tasks/Brain/Settings), "files" = show Files */
   const [contextMode, setContextMode] = useState<"agent" | "files">("agent");
   const [contextTab, setContextTab] = useState<ContextTab>("projects");
+  const [expandedTab, setExpandedTab] = useState<ContextTab | null>(null);
+
+  const handleExpandToggle = useCallback(() => {
+    setExpandedTab((prev) => (prev ? null : contextTab));
+  }, [contextTab]);
+
+  // Cmd+Shift+E keyboard shortcut for expand/collapse
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === "E") {
+        e.preventDefault();
+        setExpandedTab((prev) => (prev ? null : contextTab));
+      }
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [contextTab]);
   const [viewingSessionKey, setViewingSessionKey] = useState<string | null>(null);
   const [viewingSessionHistory, setViewingSessionHistory] = useState<AgentChatItem[]>([]);
   const [viewingSessionLoading, setViewingSessionLoading] = useState(false);
@@ -1669,6 +1688,161 @@ const AgentStudioPage = () => {
                 />
               )}
             </div>
+            {/* Expanded panel modal */}
+            {expandedTab && (
+              <PanelExpandModal
+                open
+                onOpenChange={() => setExpandedTab(null)}
+                title={TAB_OPTIONS.find((t) => t.value === expandedTab)?.label ?? ""}
+              >
+                <ExpandedContext.Provider value={true}>
+                  <div className="flex h-full w-full flex-col overflow-y-auto">
+                    {expandedTab === "projects" && (
+                      <ProjectsPanel agentId={focusedAgent?.agentId ?? null} client={client} />
+                    )}
+                    {expandedTab === "activity" && (
+                      <ActivityPanel client={client} status={status} agentId={focusedAgent?.agentId ?? null} />
+                    )}
+                    {expandedTab === "tasks" && (
+                      <TasksPanel
+                        isSelected
+                        client={client}
+                        tasks={agentTasks}
+                        loading={tasksLoading}
+                        error={tasksError}
+                        busyTaskId={busyTaskId}
+                        busyAction={busyAction}
+                        onToggle={toggleTask}
+                        onUpdateTask={updateTask}
+                        onUpdateSchedule={updateTaskSchedule}
+                        onRun={runTask}
+                        onDelete={deleteTask}
+                        onRefresh={() => { void loadTasks(); }}
+                        onNewTask={() => setShowTaskWizard(true)}
+                      />
+                    )}
+                    {expandedTab === "brain" && (
+                      <AgentBrainPanel
+                        client={client}
+                        agents={agents}
+                        selectedAgentId={selectedBrainAgentId}
+                        onClose={() => { setExpandedTab(null); }}
+                      />
+                    )}
+                    {expandedTab === "workspace" && (
+                      <WorkspaceExplorerPanel
+                        client={client}
+                        agentId={focusedAgent?.agentId ?? null}
+                      />
+                    )}
+                    {expandedTab === "sessions" && (
+                      <SessionsPanel
+                        client={client}
+                        sessions={allSessions}
+                        loading={allSessionsLoading}
+                        error={allSessionsError}
+                        onRefresh={() => { void loadAllSessions(); }}
+                        activeSessionKey={focusedAgent?.sessionKey ?? null}
+                        aggregateUsage={aggregateUsage}
+                        aggregateUsageLoading={aggregateUsageLoading}
+                        cumulativeUsage={aggregateUsageFromList ? {
+                          inputTokens: aggregateUsageFromList.inputTokens,
+                          outputTokens: aggregateUsageFromList.outputTokens,
+                          totalCost: null,
+                          messageCount: aggregateUsageFromList.messageCount,
+                        } : null}
+                        cumulativeUsageLoading={allSessionsLoading}
+                        transcripts={transcripts}
+                        transcriptsLoading={transcriptsLoading}
+                        transcriptsLoadingMore={transcriptsLoadingMore}
+                        transcriptsError={transcriptsError}
+                        transcriptsHasMore={transcriptsHasMore}
+                        onTranscriptsRefresh={transcriptsRefresh}
+                        onTranscriptsLoadMore={transcriptsLoadMore}
+                        searchQuery={searchQuery}
+                        onSearchQueryChange={setSearchQuery}
+                        searchResults={searchResults}
+                        searchLoading={searchLoading}
+                        searchError={searchError}
+                        onClearSearch={clearSearch}
+                        onTranscriptClick={(sessionId, agentId) => {
+                          setExpandedTab(null);
+                          const effectiveAgentId = agentId || focusedAgent?.agentId || "";
+                          if (!effectiveAgentId) return;
+                          setViewingSessionKey(sessionId);
+                          setViewingSessionLoading(true);
+                          setViewingSessionHistory([]);
+                          setMobilePane("chat");
+                          fetchTranscriptMessages(effectiveAgentId, sessionId, 0, 200)
+                            .then((result) => {
+                              setViewingSessionHistory(transformMessagesToChatItems(result.messages));
+                            })
+                            .catch((err) => {
+                              console.error("Failed to load transcript:", err);
+                              setViewingSessionHistory([{
+                                kind: "assistant",
+                                text: `Failed to load transcript: ${err instanceof Error ? err.message : "Unknown error"}`,
+                              }]);
+                            })
+                            .finally(() => setViewingSessionLoading(false));
+                        }}
+                      />
+                    )}
+                    {expandedTab === "usage" && (
+                      <UsagePanel client={client} status={status} />
+                    )}
+                    {expandedTab === "channels" && (
+                      <ChannelsPanel
+                        snapshot={channelsSnapshot}
+                        loading={channelsLoading}
+                        error={channelsError}
+                        onRefresh={() => { void loadChannelsStatus(); }}
+                      />
+                    )}
+                    {expandedTab === "cron" && (
+                      <CronPanel
+                        client={client}
+                        cronJobs={allCronJobs}
+                        loading={allCronLoading}
+                        error={allCronError}
+                        runBusyJobId={allCronRunBusyJobId}
+                        deleteBusyJobId={allCronDeleteBusyJobId}
+                        onRunJob={(jobId) => { void handleAllCronRunJob(jobId); }}
+                        onDeleteJob={(jobId) => { void handleAllCronDeleteJob(jobId); }}
+                        onRefresh={() => { void loadAllCronJobs(); }}
+                      />
+                    )}
+                    {expandedTab === "settings" && settingsAgent && (
+                      <AgentSettingsPanel
+                        key={settingsAgent.agentId}
+                        agent={settingsAgent}
+                        onClose={() => { setExpandedTab(null); }}
+                        onRename={(name) => handleRenameAgent(settingsAgent.agentId, name)}
+                        onNewSession={() => handleNewSession(settingsAgent.agentId)}
+                        onDelete={() => handleDeleteAgent(settingsAgent.agentId)}
+                        canDelete={settingsAgent.agentId !== RESERVED_MAIN_AGENT_ID}
+                        onToolCallingToggle={(enabled) => handleToolCallingToggle(settingsAgent.agentId, enabled)}
+                        onThinkingTracesToggle={(enabled) => handleThinkingTracesToggle(settingsAgent.agentId, enabled)}
+                        cronJobs={settingsCronJobs}
+                        cronLoading={settingsCronLoading}
+                        cronError={settingsCronError}
+                        cronRunBusyJobId={cronRunBusyJobId}
+                        cronDeleteBusyJobId={cronDeleteBusyJobId}
+                        onRunCronJob={(jobId) => handleRunCronJob(settingsAgent.agentId, jobId)}
+                        onDeleteCronJob={(jobId) => handleDeleteCronJob(settingsAgent.agentId, jobId)}
+                        heartbeats={settingsHeartbeats}
+                        heartbeatLoading={settingsHeartbeatLoading}
+                        heartbeatError={settingsHeartbeatError}
+                        heartbeatRunBusyId={heartbeatRunBusyId}
+                        heartbeatDeleteBusyId={heartbeatDeleteBusyId}
+                        onRunHeartbeat={(heartbeatId) => handleRunHeartbeat(settingsAgent.agentId, heartbeatId)}
+                        onDeleteHeartbeat={(heartbeatId) => handleDeleteHeartbeat(settingsAgent.agentId, heartbeatId)}
+                      />
+                    )}
+                  </div>
+                </ExpandedContext.Provider>
+              </PanelExpandModal>
+            )}
             {/* Context Panel: agent-scoped (Tasks/Brain/Settings) or global (Files) */}
             <div
               className={`fixed inset-y-0 right-0 z-50 w-[360px] transform transition-transform duration-300 xl:static xl:flex xl:shrink-0 xl:flex-none xl:w-[360px] xl:translate-x-0 ${mobilePane === "context" ? "translate-x-0" : "translate-x-full"} glass-panel min-h-0 overflow-hidden p-0`}
@@ -1678,6 +1852,8 @@ const AgentStudioPage = () => {
               ) : (
                 <ContextPanel
                   activeTab={contextTab}
+                  expandedTab={expandedTab}
+                  onExpandToggle={handleExpandToggle}
                   onTabChange={(tab) => {
                     setContextTab(tab);
                     if (tab === "settings" && focusedAgent && !settingsAgentId) {
