@@ -3,6 +3,8 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
 
+import { validateAgentId, handleApiError } from "@/lib/api/helpers";
+
 export const runtime = "nodejs";
 
 // ─── Brain file templates ────────────────────────────────────────────────────
@@ -103,12 +105,8 @@ export async function POST(request: NextRequest) {
 
     const { agentId, name, purpose } = body;
 
-    if (!agentId || typeof agentId !== "string" || !agentId.trim()) {
-      return NextResponse.json(
-        { error: "agentId is required." },
-        { status: 400 },
-      );
-    }
+    const agentValidation = validateAgentId(agentId);
+    if (!agentValidation.ok) return agentValidation.error;
 
     if (!name || typeof name !== "string" || !name.trim()) {
       return NextResponse.json(
@@ -159,9 +157,6 @@ export async function POST(request: NextRequest) {
       filesCreated: files.map(([f]) => f),
     });
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "Failed to create agent.";
-    console.error("[agents/create] error:", message);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return handleApiError(err, "agents/create", "Failed to create agent.");
   }
 }

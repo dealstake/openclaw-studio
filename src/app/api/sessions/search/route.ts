@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { handleApiError, validateAgentId } from "@/lib/api/helpers";
 import { isSidecarConfigured, sidecarGet } from "@/lib/workspace/sidecar";
 
 export const runtime = "nodejs";
@@ -13,16 +14,11 @@ export const runtime = "nodejs";
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
-    const agentId = url.searchParams.get("agentId")?.trim() ?? "";
     const query = url.searchParams.get("query")?.trim() ?? "";
     const limit = url.searchParams.get("limit") ?? "50";
 
-    if (!agentId) {
-      return NextResponse.json(
-        { error: "Missing required query parameter: agentId" },
-        { status: 400 }
-      );
-    }
+    const validation = validateAgentId(url.searchParams.get("agentId"));
+    if (!validation.ok) return validation.error;
 
     if (!query) {
       return NextResponse.json(
@@ -38,13 +34,10 @@ export async function GET(request: Request) {
       );
     }
 
-    const resp = await sidecarGet("/sessions/search", { agentId, query, limit });
+    const resp = await sidecarGet("/sessions/search", { agentId: validation.agentId, query, limit });
     const data = await resp.json();
     return NextResponse.json(data, { status: resp.status });
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "Failed to search transcripts.";
-    console.error("[sessions/search]", message);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return handleApiError(err, "sessions/search", "Failed to search transcripts.");
   }
 }

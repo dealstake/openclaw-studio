@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 
-import { isSafeAgentId, listWorkspaceDir } from "@/lib/workspace/resolve";
-import { isSidecarConfigured, sidecarGet, SidecarUnavailableError } from "@/lib/workspace/sidecar";
+import { handleApiError, validateAgentId } from "@/lib/api/helpers";
+import { listWorkspaceDir } from "@/lib/workspace/resolve";
+import { isSidecarConfigured, sidecarGet } from "@/lib/workspace/sidecar";
 
 export const runtime = "nodejs";
 
@@ -14,22 +15,11 @@ export const runtime = "nodejs";
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
-    const agentId = url.searchParams.get("agentId")?.trim() ?? "";
     const relativePath = url.searchParams.get("path")?.trim() ?? "";
 
-    if (!agentId) {
-      return NextResponse.json(
-        { error: "Missing required query parameter: agentId" },
-        { status: 400 }
-      );
-    }
-
-    if (!isSafeAgentId(agentId)) {
-      return NextResponse.json(
-        { error: `Invalid agentId: ${agentId}` },
-        { status: 400 }
-      );
-    }
+    const validation = validateAgentId(url.searchParams.get("agentId"));
+    if (!validation.ok) return validation.error;
+    const { agentId } = validation;
 
     // ─── Sidecar proxy ────────────────────────────────────────────────
     if (isSidecarConfigured()) {
@@ -49,25 +39,6 @@ export async function GET(request: Request) {
       count: entries.length,
     });
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "Failed to list workspace files.";
-
-    if (
-      message.includes("traversal") ||
-      message.includes("escapes") ||
-      message.includes("Invalid agentId")
-    ) {
-      return NextResponse.json({ error: message }, { status: 400 });
-    }
-
-    if (err instanceof SidecarUnavailableError) {
-      return NextResponse.json(
-        { error: err.message, code: "SIDECAR_UNAVAILABLE" },
-        { status: 503 }
-      );
-    }
-
-    console.error("[workspace/files]", message);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return handleApiError(err, "workspace/files", "Failed to list workspace files.");
   }
 }

@@ -93,7 +93,7 @@ describe("GET /api/workspace/files", () => {
     const response = await filesGET(
       makeRequest("/api/workspace/files?agentId=alex&path=../other")
     );
-    expect(response.status).toBe(400);
+    expect(response.status).toBe(403);
     const body = await response.json();
     expect(body.error).toMatch(/traversal/);
   });
@@ -179,7 +179,7 @@ describe("GET /api/workspace/file", () => {
     const response = await fileGET(
       makeRequest("/api/workspace/file?agentId=alex&path=../secret")
     );
-    expect(response.status).toBe(400);
+    expect(response.status).toBe(403);
   });
 });
 
@@ -298,7 +298,7 @@ describe("PUT /api/workspace/file", () => {
         }),
       })
     );
-    expect(response.status).toBe(400);
+    expect(response.status).toBe(403);
   });
 
   it("rejects invalid agentId", async () => {

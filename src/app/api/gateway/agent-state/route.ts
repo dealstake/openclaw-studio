@@ -1,20 +1,15 @@
 import { NextResponse } from "next/server";
 
+import { handleApiError, validateAgentId } from "@/lib/api/helpers";
 import { resolveGatewaySshTargetFromGatewayUrl, runSshJson } from "@/lib/ssh/gateway-host";
 import { loadStudioSettings } from "@/lib/studio/settings-store";
 
 export const runtime = "nodejs";
 
-type TrashAgentStateRequest = {
-  agentId: string;
-};
-
 type RestoreAgentStateRequest = {
   agentId: string;
   trashDir: string;
 };
-
-const isSafeAgentId = (value: string) => /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,127}$/.test(value);
 
 const TRASH_SCRIPT = `
 set -euo pipefail
@@ -125,28 +120,20 @@ export async function POST(request: Request) {
     if (!body || typeof body !== "object") {
       return NextResponse.json({ error: "Invalid request payload." }, { status: 400 });
     }
-    const { agentId } = body as Partial<TrashAgentStateRequest>;
-    const trimmed = typeof agentId === "string" ? agentId.trim() : "";
-    if (!trimmed) {
-      return NextResponse.json({ error: "agentId is required." }, { status: 400 });
-    }
-    if (!isSafeAgentId(trimmed)) {
-      return NextResponse.json({ error: `Invalid agentId: ${trimmed}` }, { status: 400 });
-    }
+    const { agentId } = body as Partial<{ agentId: string }>;
+    const validation = validateAgentId(agentId);
+    if (!validation.ok) return validation.error;
 
     const sshTarget = resolveAgentStateSshTarget();
     const result = runSshJson({
       sshTarget,
-      argv: ["bash", "-s", "--", trimmed],
+      argv: ["bash", "-s", "--", validation.agentId],
       input: TRASH_SCRIPT,
-      label: `trash agent state (${trimmed})`,
+      label: `trash agent state (${validation.agentId})`,
     });
     return NextResponse.json({ result });
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "Failed to trash agent workspace/state.";
-    console.error(message);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return handleApiError(err, "agent-state POST", "Failed to trash agent workspace/state.");
   }
 }
 
@@ -157,29 +144,23 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "Invalid request payload." }, { status: 400 });
     }
     const { agentId, trashDir } = body as Partial<RestoreAgentStateRequest>;
-    const trimmedAgent = typeof agentId === "string" ? agentId.trim() : "";
+    const validation = validateAgentId(agentId);
+    if (!validation.ok) return validation.error;
+
     const trimmedTrash = typeof trashDir === "string" ? trashDir.trim() : "";
-    if (!trimmedAgent) {
-      return NextResponse.json({ error: "agentId is required." }, { status: 400 });
-    }
     if (!trimmedTrash) {
       return NextResponse.json({ error: "trashDir is required." }, { status: 400 });
-    }
-    if (!isSafeAgentId(trimmedAgent)) {
-      return NextResponse.json({ error: `Invalid agentId: ${trimmedAgent}` }, { status: 400 });
     }
 
     const sshTarget = resolveAgentStateSshTarget();
     const result = runSshJson({
       sshTarget,
-      argv: ["bash", "-s", "--", trimmedAgent, trimmedTrash],
+      argv: ["bash", "-s", "--", validation.agentId, trimmedTrash],
       input: RESTORE_SCRIPT,
-      label: `restore agent state (${trimmedAgent})`,
+      label: `restore agent state (${validation.agentId})`,
     });
     return NextResponse.json({ result });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Failed to restore agent state.";
-    console.error(message);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return handleApiError(err, "agent-state PUT", "Failed to restore agent state.");
   }
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { handleApiError, validateAgentId } from "@/lib/api/helpers";
 import { isSidecarConfigured, sidecarGet } from "@/lib/workspace/sidecar";
 
 export const runtime = "nodejs";
@@ -13,17 +14,12 @@ export const runtime = "nodejs";
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
-    const agentId = url.searchParams.get("agentId")?.trim() ?? "";
     const sessionId = url.searchParams.get("sessionId")?.trim() ?? "";
     const offset = url.searchParams.get("offset") ?? "0";
     const limit = url.searchParams.get("limit") ?? "100";
 
-    if (!agentId) {
-      return NextResponse.json(
-        { error: "Missing required query parameter: agentId" },
-        { status: 400 }
-      );
-    }
+    const validation = validateAgentId(url.searchParams.get("agentId"));
+    if (!validation.ok) return validation.error;
 
     if (!sessionId) {
       return NextResponse.json(
@@ -40,7 +36,7 @@ export async function GET(request: Request) {
     }
 
     const resp = await sidecarGet("/sessions/transcript", {
-      agentId,
+      agentId: validation.agentId,
       sessionId,
       offset,
       limit,
@@ -48,9 +44,6 @@ export async function GET(request: Request) {
     const data = await resp.json();
     return NextResponse.json(data, { status: resp.status });
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "Failed to fetch transcript.";
-    console.error("[sessions/transcript]", message);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return handleApiError(err, "sessions/transcript", "Failed to fetch transcript.");
   }
 }

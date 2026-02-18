@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { handleApiError, validateAgentId } from "@/lib/api/helpers";
 import { isSidecarConfigured, sidecarGet } from "@/lib/workspace/sidecar";
 
 export const runtime = "nodejs";
@@ -13,14 +14,9 @@ export const runtime = "nodejs";
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
-    const agentId = url.searchParams.get("agentId")?.trim() ?? "";
 
-    if (!agentId) {
-      return NextResponse.json(
-        { error: "Missing required query parameter: agentId" },
-        { status: 400 }
-      );
-    }
+    const validation = validateAgentId(url.searchParams.get("agentId"));
+    if (!validation.ok) return validation.error;
 
     if (!isSidecarConfigured()) {
       return NextResponse.json(
@@ -31,16 +27,13 @@ export async function GET(request: Request) {
 
     const page = url.searchParams.get("page") ?? "";
     const perPage = url.searchParams.get("perPage") ?? "";
-    const params: Record<string, string> = { agentId };
+    const params: Record<string, string> = { agentId: validation.agentId };
     if (page) params.page = page;
     if (perPage) params.perPage = perPage;
     const resp = await sidecarGet("/sessions/transcripts", params);
     const data = await resp.json();
     return NextResponse.json(data, { status: resp.status });
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "Failed to list transcripts.";
-    console.error("[sessions/transcripts]", message);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return handleApiError(err, "sessions/transcripts", "Failed to list transcripts.");
   }
 }

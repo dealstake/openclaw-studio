@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 
+import { handleApiError, validateAgentId } from "@/lib/api/helpers";
 import {
-  isSafeAgentId,
   isTextFile,
   readWorkspaceFile,
   writeWorkspaceFile,
 } from "@/lib/workspace/resolve";
-import { isSidecarConfigured, sidecarGet, sidecarMutate, SidecarUnavailableError } from "@/lib/workspace/sidecar";
+import { isSidecarConfigured, sidecarGet, sidecarMutate } from "@/lib/workspace/sidecar";
 
 export const runtime = "nodejs";
 
@@ -19,22 +19,11 @@ export const runtime = "nodejs";
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
-    const agentId = url.searchParams.get("agentId")?.trim() ?? "";
     const filePath = url.searchParams.get("path")?.trim() ?? "";
 
-    if (!agentId) {
-      return NextResponse.json(
-        { error: "Missing required query parameter: agentId" },
-        { status: 400 }
-      );
-    }
-
-    if (!isSafeAgentId(agentId)) {
-      return NextResponse.json(
-        { error: `Invalid agentId: ${agentId}` },
-        { status: 400 }
-      );
-    }
+    const validation = validateAgentId(url.searchParams.get("agentId"));
+    if (!validation.ok) return validation.error;
+    const { agentId } = validation;
 
     if (!filePath) {
       return NextResponse.json(
@@ -62,31 +51,7 @@ export async function GET(request: Request) {
       isText: result.isText,
     });
   } catch (err) {
-    if (err instanceof SidecarUnavailableError) {
-      return NextResponse.json(
-        { error: err.message, code: "SIDECAR_UNAVAILABLE" },
-        { status: 503 }
-      );
-    }
-
-    const message =
-      err instanceof Error ? err.message : "Failed to read workspace file.";
-
-    if (message.includes("not found")) {
-      return NextResponse.json({ error: message }, { status: 404 });
-    }
-
-    if (
-      message.includes("traversal") ||
-      message.includes("escapes") ||
-      message.includes("Invalid agentId") ||
-      message.includes("not a file")
-    ) {
-      return NextResponse.json({ error: message }, { status: 400 });
-    }
-
-    console.error("[workspace/file]", message);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return handleApiError(err, "workspace/file GET", "Failed to read workspace file.");
   }
 }
 
@@ -112,22 +77,10 @@ export async function PUT(request: Request) {
       content?: string;
     };
 
-    const trimmedAgentId = typeof agentId === "string" ? agentId.trim() : "";
+    const validation = validateAgentId(agentId);
+    if (!validation.ok) return validation.error;
+
     const trimmedPath = typeof filePath === "string" ? filePath.trim() : "";
-
-    if (!trimmedAgentId) {
-      return NextResponse.json(
-        { error: "Missing required field: agentId" },
-        { status: 400 }
-      );
-    }
-
-    if (!isSafeAgentId(trimmedAgentId)) {
-      return NextResponse.json(
-        { error: `Invalid agentId: ${trimmedAgentId}` },
-        { status: 400 }
-      );
-    }
 
     if (!trimmedPath) {
       return NextResponse.json(
@@ -153,7 +106,7 @@ export async function PUT(request: Request) {
     // ─── Sidecar proxy ────────────────────────────────────────────────
     if (isSidecarConfigured()) {
       const resp = await sidecarMutate("/file", "PUT", {
-        agentId: trimmedAgentId,
+        agentId: validation.agentId,
         path: trimmedPath,
         content,
       });
@@ -162,34 +115,15 @@ export async function PUT(request: Request) {
     }
 
     // ─── Local filesystem ─────────────────────────────────────────────
-    const result = writeWorkspaceFile(trimmedAgentId, trimmedPath, content);
+    const result = writeWorkspaceFile(validation.agentId, trimmedPath, content);
 
     return NextResponse.json({
-      agentId: trimmedAgentId,
+      agentId: validation.agentId,
       path: result.path,
       size: result.size,
       ok: true,
     });
   } catch (err) {
-    if (err instanceof SidecarUnavailableError) {
-      return NextResponse.json(
-        { error: err.message, code: "SIDECAR_UNAVAILABLE" },
-        { status: 503 }
-      );
-    }
-
-    const message =
-      err instanceof Error ? err.message : "Failed to write workspace file.";
-
-    if (
-      message.includes("traversal") ||
-      message.includes("escapes") ||
-      message.includes("Invalid agentId")
-    ) {
-      return NextResponse.json({ error: message }, { status: 400 });
-    }
-
-    console.error("[workspace/file]", message);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return handleApiError(err, "workspace/file PUT", "Failed to write workspace file.");
   }
 }
