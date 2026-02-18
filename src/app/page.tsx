@@ -62,6 +62,7 @@ import {
 import { ChannelsPanel } from "@/features/channels/components/ChannelsPanel";
 import { SessionsPanel } from "@/features/sessions/components/SessionsPanel";
 import { CronPanel } from "@/features/cron/components/CronPanel";
+import { UsagePanel } from "@/features/usage/components/UsagePanel";
 import { WorkspaceExplorerPanel } from "@/features/workspace/components/WorkspaceExplorerPanel";
 import { StatusBar } from "@/features/status/components/StatusBar";
 import { useChannelsStatus } from "@/features/channels/hooks/useChannelsStatus";
@@ -1813,6 +1814,9 @@ const AgentStudioPage = () => {
                           .finally(() => setViewingSessionLoading(false));
                       }}
                     />
+                  }
+                  usageContent={
+                    <UsagePanel client={client} status={status} />
                   }
                   cronContent={
                     <CronPanel
