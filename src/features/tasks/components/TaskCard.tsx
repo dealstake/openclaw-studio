@@ -96,15 +96,20 @@ export const TaskCard = memo(function TaskCard({
             </p>
           ) : null}
 
-          {/* Last run */}
-          {task.lastRunAt ? (
-            <div className="mt-1 flex items-center gap-2 text-[10px] text-muted-foreground">
-              <span>Last run: {formatRelativeTime(new Date(task.lastRunAt).getTime())}</span>
-              {task.lastRunStatus === "error" ? (
-                <span className="font-semibold text-destructive">Failed</span>
-              ) : null}
-            </div>
-          ) : null}
+          {/* Runtime info */}
+          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground">
+            {task.runningAtMs ? (
+              <span className="font-semibold text-purple-400">Running…</span>
+            ) : task.nextRunAtMs ? (
+              <span>Next: {formatRelativeTime(task.nextRunAtMs)}</span>
+            ) : null}
+            {task.lastRunAt ? (
+              <span>Last: {formatRelativeTime(new Date(task.lastRunAt).getTime())}</span>
+            ) : null}
+            {task.lastRunStatus === "error" ? (
+              <span className="font-semibold text-destructive">Failed</span>
+            ) : null}
+          </div>
         </div>
 
         {/* Right: actions */}

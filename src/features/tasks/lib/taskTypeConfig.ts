@@ -27,21 +27,24 @@ export const TYPE_CONFIG: Record<
 
 // ─── Status helpers ──────────────────────────────────────────────────────────
 
-export type TaskStatusKey = "active" | "paused" | "error";
+export type TaskStatusKey = "running" | "active" | "paused" | "error";
 
 export const STATUS_DOT_CLASS: Record<TaskStatusKey, string> = {
+  running: "bg-purple-400 animate-pulse",
   active: "bg-emerald-400",
   paused: "bg-muted-foreground",
   error: "bg-destructive",
 };
 
 export const STATUS_LABEL: Record<TaskStatusKey, string> = {
+  running: "Running",
   active: "Active",
   paused: "Paused",
   error: "Error",
 };
 
 export function getTaskStatusKey(task: StudioTask): TaskStatusKey {
+  if (task.runningAtMs) return "running";
   if (task.lastRunStatus === "error") return "error";
   return task.enabled ? "active" : "paused";
 }

@@ -61,6 +61,12 @@ export interface StudioTask {
   lastRunAt: string | null;
   lastRunStatus: "success" | "error" | null;
   runCount: number;
+
+  // Runtime state (enriched from cron, not persisted)
+  nextRunAtMs?: number;
+  runningAtMs?: number;
+  lastDurationMs?: number;
+  consecutiveErrors?: number;
 }
 
 // ─── API payloads ────────────────────────────────────────────────────────────

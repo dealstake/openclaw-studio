@@ -86,8 +86,8 @@ describe("TaskCard", () => {
 
   it("shows last run info when available", () => {
     renderCard(makeTask({ lastRunAt: "2026-02-17T12:00:00Z" }));
-    // Should contain "Last run:" text
-    const el = screen.getByText(/Last run:/);
+    // Should contain "Last:" text
+    const el = screen.getByText(/Last:/);
     expect(el).toBeDefined();
   });
 

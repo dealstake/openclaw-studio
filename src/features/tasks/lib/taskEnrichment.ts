@@ -1,5 +1,6 @@
 import type { CronJobSummary } from "@/lib/cron/types";
 import type { CreateTaskPayload, StudioTask } from "@/features/tasks/types";
+import { cronScheduleToTaskSchedule } from "@/features/tasks/lib/schedule";
 
 export function generateTaskId(): string {
   return `task-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
@@ -33,7 +34,9 @@ export function enrichTasksWithCronData(
     if (!cron) return task;
     return {
       ...task,
+      // Cron is authoritative for all runtime state
       enabled: cron.enabled,
+      schedule: cronScheduleToTaskSchedule(cron.schedule, task.type),
       lastRunAt: cron.state.lastRunAtMs
         ? new Date(cron.state.lastRunAtMs).toISOString()
         : task.lastRunAt,
@@ -43,6 +46,13 @@ export function enrichTasksWithCronData(
           : cron.state.lastStatus === "error"
             ? "error"
             : task.lastRunStatus,
+      runCount: cron.state.runCount ?? task.runCount,
+      nextRunAtMs: cron.state.nextRunAtMs,
+      runningAtMs: cron.state.runningAtMs,
+      lastDurationMs: cron.state.lastDurationMs,
+      consecutiveErrors: cron.state.lastStatus === "error"
+        ? (task.consecutiveErrors ?? 0) + 1
+        : 0,
     };
   });
 
@@ -85,6 +95,10 @@ export function enrichTasksWithCronData(
           ? "error"
           : null,
     runCount: job.state.runCount ?? 0,
+    nextRunAtMs: job.state.nextRunAtMs,
+    runningAtMs: job.state.runningAtMs,
+    lastDurationMs: job.state.lastDurationMs,
+    consecutiveErrors: 0,
   }));
 
   return [...enrichedTasks, ...synthesizedTasks];

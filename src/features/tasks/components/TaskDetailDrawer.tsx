@@ -304,12 +304,23 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
               <span>Model: {task.model.split("/").pop()}</span>
             )}
             <span>Agent: {task.agentId}</span>
+            {task.runningAtMs ? (
+              <span className="font-semibold text-purple-400">● Running now</span>
+            ) : task.nextRunAtMs ? (
+              <span>Next run: {formatRelativeTime(task.nextRunAtMs)}</span>
+            ) : null}
             {task.lastRunAt ? (
               <span>
                 Last run: {formatRelativeTime(new Date(task.lastRunAt).getTime())}
+                {task.lastDurationMs ? ` (${formatDuration(task.lastDurationMs)})` : ""}
               </span>
             ) : null}
             <span>Runs: {task.runCount}</span>
+            {task.consecutiveErrors ? (
+              <span className="font-semibold text-destructive">
+                {task.consecutiveErrors} consecutive error{task.consecutiveErrors > 1 ? "s" : ""}
+              </span>
+            ) : null}
           </div>
         </div>
 
