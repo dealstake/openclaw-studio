@@ -24,100 +24,15 @@ import { TooltipIconButton } from "@/components/assistant-ui/tooltip-icon-button
 import { TaskPreviewCard } from "@/features/tasks/components/TaskPreviewCard";
 import { validateTaskConfig } from "@/features/tasks/components/WizardRuntimeProvider";
 import type { TaskType, WizardTaskConfig } from "@/features/tasks/types";
+import {
+  extractTaskConfig,
+  stripConfigBlock,
+} from "@/features/tasks/lib/wizardConfigUtils";
+import { WIZARD_STARTERS } from "@/features/tasks/lib/wizardStarters";
 
-// ─── Config extraction helpers ───────────────────────────────────────────────
-
-function extractTaskConfig(
-  text: string,
-): { config: WizardTaskConfig; fullMatch: string; startIndex: number } | null {
-  // Try json:task-config first (preferred), then fall back to plain json blocks
-  const match =
-    text.match(/```json:task-config\s*\n([\s\S]*?)```/) ??
-    text.match(/```json\s*\n([\s\S]*?)```/);
-  if (!match || match.index === undefined) return null;
-
-  try {
-    const parsed = JSON.parse(match[1]);
-    // Validate it looks like a task config (has at least name + schedule or prompt)
-    if (
-      parsed &&
-      typeof parsed === "object" &&
-      ("schedule" in parsed || "prompt" in parsed)
-    ) {
-      return {
-        config: parsed as WizardTaskConfig,
-        fullMatch: match[0],
-        startIndex: match.index,
-      };
-    }
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-function stripConfigBlock(text: string): string {
-  let stripped = text
-    .replace(/```json:task-config\s*\n[\s\S]*?```/g, "")
-    .replace(/```json\s*\n[\s\S]*?```/g, "")
-    .replace(/```\s*\n\{[\s\S]*?\}\s*\n```/g, "");
-  stripped = stripped
-    .split("\n")
-    .filter((line) => {
-      const t = line.trim();
-      if (!t) return true;
-      if (/^["{}\[\],:\s]*$/.test(t)) return false;
-      if (/^"?\s*\}/.test(t) && t.length < 10) return false;
-      return true;
-    })
-    .join("\n")
-    .trim();
-  return stripped;
-}
-
-// ─── Starters ────────────────────────────────────────────────────────────────
-
-const STARTERS: Record<TaskType, Array<{ prompt: string; text: string }>> = {
-  constant: [
-    {
-      prompt: "Monitor my inbox for urgent emails",
-      text: "Monitor my inbox",
-    },
-    {
-      prompt: "Watch for new MCA applications",
-      text: "Watch for new applications",
-    },
-    { prompt: "Track deal status changes", text: "Track deal changes" },
-  ],
-  periodic: [
-    {
-      prompt: "Summarize new emails every hour",
-      text: "Summarize new emails",
-    },
-    {
-      prompt: "Check for pending approvals",
-      text: "Check pending approvals",
-    },
-    {
-      prompt: "Update deal pipeline spreadsheet",
-      text: "Update pipeline",
-    },
-  ],
-  scheduled: [
-    {
-      prompt: "Send me a daily pipeline summary at 9am",
-      text: "Daily pipeline summary",
-    },
-    {
-      prompt: "Generate a weekly recap every Sunday",
-      text: "Weekly recap",
-    },
-    {
-      prompt: "Prepare a funding report on Mondays",
-      text: "Monday funding report",
-    },
-  ],
-};
+/** Shared prose classes for wizard markdown content */
+const WIZARD_PROSE_CLASSES =
+  "prose prose-sm prose-invert max-w-none [&_p]:my-1 [&_ul]:my-1 [&_li]:my-0";
 
 // ─── Props ───────────────────────────────────────────────────────────────────
 
@@ -137,7 +52,7 @@ export const WizardThread: FC<WizardThreadProps> = memo(
     onConfirm,
     confirmBusy,
   }) {
-    const starters = useMemo(() => STARTERS[taskType], [taskType]);
+    const starters = useMemo(() => WIZARD_STARTERS[taskType], [taskType]);
 
     return (
       <ThreadPrimitive.Root className="aui-root aui-thread-root flex h-full flex-col">
@@ -363,7 +278,7 @@ const WizardTextPart: FC<{
     return (
       <>
         {stripped ? (
-          <div className="prose prose-sm prose-invert max-w-none [&_p]:my-1 [&_ul]:my-1 [&_li]:my-0">
+          <div className={WIZARD_PROSE_CLASSES}>
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
               {stripped}
             </ReactMarkdown>
@@ -383,7 +298,7 @@ const WizardTextPart: FC<{
   return (
     <div
       className={cn(
-        "prose prose-sm prose-invert max-w-none [&_p]:my-1 [&_ul]:my-1 [&_li]:my-0",
+        WIZARD_PROSE_CLASSES,
         !isComplete && "after:content-['|'] after:animate-pulse",
       )}
     >
