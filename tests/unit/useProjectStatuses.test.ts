@@ -20,7 +20,7 @@ const INDEX_CONTENT = `# Projects Index
 | Bar | bar.md | ✅ Done | 🟡 P1 |
 | Baz | baz.md | 📋 Defined | 🟢 P2 |
 | Qux | qux.md | ⏸️ Parked | 🟡 P1 |
-| Stream | stream.md | 🌊 Stream | 🟡 P1 |
+| Backlog | backlog.md | 🌊 Backlog | 🟡 P1 |
 `;
 
 function mockResponse(content: string) {
@@ -68,9 +68,9 @@ describe("useProjectStatuses", () => {
       label: "Parked",
       color: "text-muted-foreground",
     });
-    expect(result.current.get("stream.md")).toEqual({
+    expect(result.current.get("backlog.md")).toEqual({
       emoji: "🌊",
-      label: "Stream",
+      label: "Backlog",
       color: "text-blue-400",
     });
   });

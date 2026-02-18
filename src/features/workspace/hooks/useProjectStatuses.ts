@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 
 /** Parse project status emoji from INDEX.md table rows */
 const STATUS_EMOJI: Record<string, { label: string; color: string }> = {
-  "🌊": { label: "Stream", color: "text-blue-400" },
+  "🚧": { label: "Building", color: "text-purple-400" },
+  "🌊": { label: "Backlog", color: "text-blue-400" },
   "📋": { label: "Defined", color: "text-amber-400" },
   "🔨": { label: "Active", color: "text-green-400" },
   "⏸️": { label: "Parked", color: "text-muted-foreground" },

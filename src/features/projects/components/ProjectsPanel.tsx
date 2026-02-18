@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import {
   FolderGit2,
   Plus,
@@ -14,6 +14,7 @@ import { useProjects, buildContinuePrompt } from "../hooks/useProjects";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import { PanelIconButton } from "@/components/PanelIconButton";
 import { SectionLabel } from "@/components/SectionLabel";
+import { STATUS_CONFIG, STATUS_KEYS } from "../lib/constants";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -45,6 +46,7 @@ export const ProjectsPanel = memo(function ProjectsPanel({
 }: ProjectsPanelProps) {
   const [showWizard, setShowWizard] = useState(false);
   const [archiveTarget, setArchiveTarget] = useState<ProjectEntry | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const { projects, loading, error, refresh, toggleStatus, archive } =
     useProjects(agentId, client);
 
@@ -53,6 +55,26 @@ export const ProjectsPanel = memo(function ProjectsPanel({
       onContinue(buildContinuePrompt(project));
     },
     [onContinue],
+  );
+
+  // Count projects per status for filter badges
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const p of projects) {
+      counts[p.statusEmoji] = (counts[p.statusEmoji] ?? 0) + 1;
+    }
+    return counts;
+  }, [projects]);
+
+  // Only show filter buttons for statuses that have projects
+  const activeStatuses = useMemo(
+    () => STATUS_KEYS.filter((k) => (statusCounts[k] ?? 0) > 0),
+    [statusCounts],
+  );
+
+  const filteredProjects = useMemo(
+    () => statusFilter ? projects.filter((p) => p.statusEmoji === statusFilter) : projects,
+    [projects, statusFilter],
   );
 
   if (!agentId) return null;
@@ -68,7 +90,7 @@ export const ProjectsPanel = memo(function ProjectsPanel({
           </SectionLabel>
           {!loading && projects.length > 0 && (
             <span className="font-mono text-[10px] text-muted-foreground/60">
-              {projects.length}
+              {statusFilter ? `${filteredProjects.length}/${projects.length}` : projects.length}
             </span>
           )}
         </div>
@@ -87,6 +109,43 @@ export const ProjectsPanel = memo(function ProjectsPanel({
           </PanelIconButton>
         </div>
       </div>
+
+      {/* Status Filters */}
+      {activeStatuses.length > 1 && (
+        <div className="flex flex-wrap items-center gap-1">
+          <button
+            type="button"
+            className={`rounded-md border px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.1em] transition ${
+              statusFilter === null
+                ? "border-border bg-muted text-foreground"
+                : "border-border/60 bg-card/50 text-muted-foreground hover:border-border hover:text-foreground"
+            }`}
+            onClick={() => setStatusFilter(null)}
+          >
+            All{projects.length > 0 ? ` ${projects.length}` : ""}
+          </button>
+          {activeStatuses.map((emoji) => {
+            const config = STATUS_CONFIG[emoji];
+            if (!config) return null;
+            const isActive = statusFilter === emoji;
+            const count = statusCounts[emoji] ?? 0;
+            return (
+              <button
+                key={emoji}
+                type="button"
+                className={`rounded-md border px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.1em] transition ${
+                  isActive
+                    ? `${config.colors}`
+                    : "border-border/60 bg-card/50 text-muted-foreground hover:border-border hover:text-foreground"
+                }`}
+                onClick={() => setStatusFilter(isActive ? null : emoji)}
+              >
+                {config.label}{count > 0 ? ` ${count}` : ""}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Loading Skeletons */}
       {loading && projects.length === 0 && (
@@ -121,8 +180,15 @@ export const ProjectsPanel = memo(function ProjectsPanel({
         </div>
       )}
 
+      {/* Filtered empty */}
+      {!loading && !error && projects.length > 0 && filteredProjects.length === 0 && (
+        <div className="py-6 text-center font-mono text-[10px] text-muted-foreground/60">
+          No {STATUS_CONFIG[statusFilter!]?.label ?? ""} projects
+        </div>
+      )}
+
       {/* All projects — flat list, sorted by status */}
-      {projects.map((project) => (
+      {filteredProjects.map((project) => (
         <ProjectCard
           key={project.doc}
           project={project}
