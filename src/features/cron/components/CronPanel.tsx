@@ -9,6 +9,7 @@ import { isGatewayDisconnectLikeError } from "@/lib/gateway/GatewayClient";
 import { formatCronPayload, formatCronSchedule, type CronJobSummary } from "@/lib/cron/types";
 import { formatRelativeTime } from "@/lib/text/time";
 import { PanelIconButton } from "@/components/PanelIconButton";
+import { SectionLabel } from "@/components/SectionLabel";
 
 type CronRunEntry = {
   id: string;
@@ -97,9 +98,9 @@ export const CronPanel = memo(function CronPanel({
   return (
     <div className="flex h-full w-full flex-col overflow-hidden">
       <div className="flex items-center justify-between border-b border-border/40 px-4 py-3">
-        <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+        <SectionLabel>
           Cron jobs
-        </div>
+        </SectionLabel>
         <PanelIconButton
           aria-label="Refresh cron jobs"
           onClick={onRefresh}
@@ -218,9 +219,9 @@ export const CronPanel = memo(function CronPanel({
 
                   {isExpanded ? (
                     <div className="border-t border-border/60 px-3 py-2">
-                      <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                      <SectionLabel>
                         Run history
-                      </div>
+                      </SectionLabel>
                       {runsLoading ? (
                         <div className="mt-2 text-[11px] text-muted-foreground">
                           Loading runs…

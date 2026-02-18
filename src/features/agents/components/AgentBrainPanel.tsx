@@ -13,6 +13,7 @@ import {
 } from "@/lib/agents/agentFiles";
 import { useAgentFilesEditor } from "@/features/agents/hooks/useAgentFilesEditor";
 import { AgentInspectHeader } from "./AgentInspectHeader";
+import { SectionLabel } from "@/components/SectionLabel";
 
 type AgentBrainPanelProps = {
   client: GatewayClient;
@@ -83,9 +84,9 @@ export const AgentBrainPanel = ({
       <div className="flex min-h-0 flex-1 flex-col p-4">
         <section className="flex min-h-0 flex-1 flex-col" data-testid="agent-brain-files">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+            <SectionLabel>
               {AGENT_FILE_META[agentFileTab].hint}
-            </div>
+            </SectionLabel>
           </div>
           {agentFilesError ? (
             <div className="mt-3 rounded-md border border-destructive bg-destructive px-3 py-2 text-xs text-destructive-foreground">

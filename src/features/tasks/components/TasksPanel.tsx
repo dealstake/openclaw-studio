@@ -10,6 +10,7 @@ import { TaskCard } from "./TaskCard";
 import { TaskDetailDrawer } from "./TaskDetailDrawer";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { PanelIconButton } from "@/components/PanelIconButton";
+import { SectionLabel } from "@/components/SectionLabel";
 
 // ─── Filter tabs ─────────────────────────────────────────────────────────────
 
@@ -128,9 +129,9 @@ export const TasksPanel = memo(function TasksPanel({
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border/40 px-4 py-3">
         <div className="flex items-center gap-3">
-          <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+          <SectionLabel>
             Tasks
-          </div>
+          </SectionLabel>
           {tasks.length > 0 ? (
             <span className="rounded-full bg-muted px-1.5 py-0.5 font-mono text-[9px] font-semibold text-muted-foreground">
               {tasks.length}
@@ -213,9 +214,9 @@ export const TasksPanel = memo(function TasksPanel({
               <Calendar className="h-5 w-5 opacity-40" />
             </div>
             <div className="text-center">
-              <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+              <SectionLabel as="p">
                 No tasks yet
-              </p>
+              </SectionLabel>
               <p className="mt-1.5 max-w-[220px] text-[11px] leading-relaxed text-muted-foreground">
                 Create automated tasks to have your agents monitor, report, and
                 act on your behalf.

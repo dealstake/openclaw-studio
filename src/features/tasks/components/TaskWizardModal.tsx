@@ -18,6 +18,7 @@ import { AgentCreationWizard } from "./AgentCreationWizard";
 import { TaskTemplatesSheet } from "./TaskTemplatesSheet";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
+import { SectionLabel } from "@/components/SectionLabel";
 
 // ─── Type selector cards ─────────────────────────────────────────────────────
 
@@ -208,7 +209,7 @@ export const TaskWizardModal = memo(function TaskWizardModal({
             ) : null}
             <div className="flex items-center gap-1.5">
               <Sparkles className="h-4 w-4 text-primary" />
-              <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+              <SectionLabel as="span">
                 {showTemplates
                   ? "Templates"
                   : showAgentCreation
@@ -218,7 +219,7 @@ export const TaskWizardModal = memo(function TaskWizardModal({
                       : wizard.step === "chat"
                         ? "Task Wizard"
                         : "Task Created"}
-              </span>
+              </SectionLabel>
             </div>
           </div>
           <button

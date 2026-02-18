@@ -8,6 +8,7 @@ import { formatCronPayload, formatCronSchedule, type CronJobSummary } from "@/li
 import type { AgentHeartbeatSummary } from "@/lib/gateway/agentConfig";
 import { AgentInspectHeader } from "./AgentInspectHeader";
 import { PanelIconButton } from "@/components/PanelIconButton";
+import { SectionLabel } from "@/components/SectionLabel";
 
 const formatHeartbeatSchedule = (heartbeat: AgentHeartbeatSummary) =>
   `Every ${heartbeat.heartbeat.every}`;
@@ -130,9 +131,9 @@ export const AgentSettingsPanel = ({
           className="rounded-md border border-border/80 bg-card/70 p-4"
           data-testid="agent-settings-identity"
         >
-          <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+          <SectionLabel>
             Identity
-          </div>
+          </SectionLabel>
           <label className="mt-3 flex flex-col gap-2 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
             <span>Agent name</span>
             <input
@@ -166,9 +167,9 @@ export const AgentSettingsPanel = ({
           className="rounded-md border border-border/80 bg-card/70 p-4"
           data-testid="agent-settings-display"
         >
-          <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+          <SectionLabel>
             Display
-          </div>
+          </SectionLabel>
           <div className="mt-3 grid gap-3 md:grid-cols-2">
             <label className="flex items-center justify-between gap-3 rounded-md border border-border/80 bg-card/75 px-3 py-2 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
               <span>Show tool calls</span>
@@ -197,9 +198,9 @@ export const AgentSettingsPanel = ({
           className="rounded-md border border-border/80 bg-card/70 p-4"
           data-testid="agent-settings-session"
         >
-          <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+          <SectionLabel>
             Session
-          </div>
+          </SectionLabel>
           <div className="mt-3 text-[11px] text-muted-foreground">
             Start this agent in a fresh session and clear the visible transcript in Studio.
           </div>
@@ -219,9 +220,9 @@ export const AgentSettingsPanel = ({
           className="rounded-md border border-border/80 bg-card/70 p-4"
           data-testid="agent-settings-cron"
         >
-          <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+          <SectionLabel>
             Cron jobs
-          </div>
+          </SectionLabel>
           {cronLoading ? (
             <div className="mt-3 text-[11px] text-muted-foreground">Loading cron jobs...</div>
           ) : null}
@@ -289,9 +290,9 @@ export const AgentSettingsPanel = ({
           className="rounded-md border border-border/80 bg-card/70 p-4"
           data-testid="agent-settings-heartbeat"
         >
-          <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+          <SectionLabel>
             Heartbeats
-          </div>
+          </SectionLabel>
           {heartbeatLoading ? (
             <div className="mt-3 text-[11px] text-muted-foreground">Loading heartbeats...</div>
           ) : null}
@@ -361,9 +362,9 @@ export const AgentSettingsPanel = ({
 
         {canDelete ? (
           <section className="rounded-md border border-destructive/30 bg-destructive/4 p-4">
-            <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-destructive">
+            <SectionLabel className="text-destructive">
               Delete agent
-            </div>
+            </SectionLabel>
             <div className="mt-3 text-[11px] text-muted-foreground">
               Removes the agent from the gateway config and deletes its cron jobs.
             </div>
@@ -377,9 +378,9 @@ export const AgentSettingsPanel = ({
           </section>
         ) : (
           <section className="rounded-md border border-border/80 bg-card/70 p-4">
-            <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+            <SectionLabel>
               System agent
-            </div>
+            </SectionLabel>
             <div className="mt-3 text-[11px] text-muted-foreground">
               The main agent is reserved and cannot be deleted.
             </div>

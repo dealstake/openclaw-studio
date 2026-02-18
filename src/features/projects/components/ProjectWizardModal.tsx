@@ -12,6 +12,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { appendRow } from "../lib/indexTable";
+import { SectionLabel } from "@/components/SectionLabel";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -411,9 +412,9 @@ const DetailsStep = memo(function DetailsStep({
 
       {/* Priority */}
       <div className="flex flex-col gap-1.5">
-        <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+        <SectionLabel as="span">
           Priority
-        </span>
+        </SectionLabel>
         <div className="flex gap-2">
           {PRIORITY_OPTIONS.map((opt) => (
             <button

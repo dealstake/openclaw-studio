@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { SectionLabel } from "@/components/SectionLabel";
 
 type EmptyStatePanelProps = {
   title: string;
@@ -28,9 +29,9 @@ export const EmptyStatePanel = ({
       )}
     >
       {label ? (
-        <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+        <SectionLabel as="p">
           {label}
-        </p>
+        </SectionLabel>
       ) : null}
       <p
         className={cn(

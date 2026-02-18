@@ -13,6 +13,7 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { useProjects, buildContinuePrompt } from "../hooks/useProjects";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import { PanelIconButton } from "@/components/PanelIconButton";
+import { SectionLabel } from "@/components/SectionLabel";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -62,9 +63,9 @@ export const ProjectsPanel = memo(function ProjectsPanel({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <FolderGit2 className="h-4 w-4 text-muted-foreground" />
-          <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+          <SectionLabel as="span">
             Projects
-          </span>
+          </SectionLabel>
           {!loading && projects.length > 0 && (
             <span className="font-mono text-[10px] text-muted-foreground/60">
               {projects.length}

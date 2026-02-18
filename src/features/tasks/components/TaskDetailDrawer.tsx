@@ -28,6 +28,7 @@ import { formatDuration } from "@/features/tasks/lib/format";
 import { Skeleton } from "@/components/Skeleton";
 import { TYPE_CONFIG, STATUS_DOT_CLASS, STATUS_LABEL, getTaskStatusKey } from "@/features/tasks/lib/taskTypeConfig";
 import { PanelIconButton } from "@/components/PanelIconButton";
+import { SectionLabel } from "@/components/SectionLabel";
 
 // ─── Run history types ───────────────────────────────────────────────────────
 
@@ -159,9 +160,9 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border/80 px-4 py-3">
         <div className="min-w-0 flex-1">
-          <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+          <SectionLabel>
             Task Detail
-          </div>
+          </SectionLabel>
           {editing ? (
             <input
               className={`${inputClass} mt-0.5 font-semibold`}
@@ -324,9 +325,9 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
             ) : (
               <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" />
             )}
-            <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+            <SectionLabel as="span">
               Prompt
-            </span>
+            </SectionLabel>
           </button>
           {promptExpanded ? (
             editing ? (
@@ -387,9 +388,9 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
 
         {/* Run history */}
         <div className="px-4 py-3">
-          <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+          <SectionLabel>
             Run History
-          </div>
+          </SectionLabel>
 
           {runsLoading ? (
             <div className="mt-2 flex flex-col gap-1.5">

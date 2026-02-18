@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/Skeleton";
 import { PanelIconButton } from "@/components/PanelIconButton";
 import type { ChannelsStatusSnapshot } from "@/lib/gateway/channels";
 import { resolveChannelLabel, resolveChannelHealth, type ChannelHealth } from "@/lib/gateway/channels";
+import { SectionLabel } from "@/components/SectionLabel";
 
 type ChannelsPanelProps = {
   snapshot: ChannelsStatusSnapshot | null;
@@ -49,9 +50,9 @@ export const ChannelsPanel = memo(function ChannelsPanel({
   return (
     <div className="flex h-full w-full flex-col p-4">
       <div className="flex items-center justify-between">
-        <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+        <SectionLabel>
           Channels
-        </div>
+        </SectionLabel>
         <PanelIconButton
           aria-label="Refresh channels"
           onClick={onRefresh}

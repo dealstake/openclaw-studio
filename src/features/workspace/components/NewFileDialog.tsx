@@ -2,6 +2,7 @@
 
 import { memo, useEffect, useRef, useState } from "react";
 import { Check, X } from "lucide-react";
+import { SectionLabel } from "@/components/SectionLabel";
 
 export const NewFileDialog = memo(function NewFileDialog({
   currentPath,
@@ -36,9 +37,9 @@ export const NewFileDialog = memo(function NewFileDialog({
       className="mx-3 mb-3 rounded-md border border-border/80 bg-card/70 p-3"
       data-testid="ws-new-file-form"
     >
-      <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+      <SectionLabel>
         New file
-      </div>
+      </SectionLabel>
       <div className="mt-2 flex items-center gap-2">
         {prefix ? (
           <span className="text-[11px] text-muted-foreground">{prefix}</span>

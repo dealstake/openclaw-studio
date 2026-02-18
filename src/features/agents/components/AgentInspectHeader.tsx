@@ -1,4 +1,5 @@
 "use client";
+import { SectionLabel } from "@/components/SectionLabel";
 
 export const AgentInspectHeader = ({
   label,
@@ -16,9 +17,9 @@ export const AgentInspectHeader = ({
   return (
     <div className="flex items-center justify-between border-b border-border/80 px-4 py-3">
       <div>
-        <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+        <SectionLabel>
           {label}
-        </div>
+        </SectionLabel>
         <div className="console-title text-2xl leading-none text-foreground">{title}</div>
       </div>
       <button

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { ShieldAlert } from "lucide-react";
 import type { ExecApprovalRequest, ExecApprovalDecision } from "@/features/exec-approvals/types";
+import { SectionLabel } from "@/components/SectionLabel";
 
 type ExecApprovalOverlayProps = {
   queue: ExecApprovalRequest[];
@@ -26,9 +27,9 @@ const MetaRow = ({ label, value }: { label: string; value: string | null | undef
   if (!value) return null;
   return (
     <div className="flex items-baseline gap-2">
-      <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+      <SectionLabel as="span">
         {label}
-      </span>
+      </SectionLabel>
       <span className="truncate text-[11px] text-foreground">{value}</span>
     </div>
   );
@@ -64,9 +65,9 @@ export const ExecApprovalOverlay = ({
       <div className="w-full max-w-lg rounded-lg border border-border bg-card/95 p-6 shadow-2xl">
         <div className="flex items-center gap-3">
           <ShieldAlert className="h-5 w-5 shrink-0 text-primary" />
-          <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+          <SectionLabel>
             Exec approval requested
-          </div>
+          </SectionLabel>
           {queue.length > 1 ? (
             <span className="rounded px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] border border-border/70 bg-muted text-muted-foreground">
               +{queue.length - 1} queued

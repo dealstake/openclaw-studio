@@ -6,6 +6,7 @@ import { Brain, Calendar, ClipboardList, Folder } from "lucide-react";
 import type { WorkspaceEntry, WorkspaceGroup } from "../types";
 import { GROUP_LABELS } from "./workspace-helpers";
 import { EntryRow } from "./EntryRow";
+import { SectionLabel } from "@/components/SectionLabel";
 
 const GroupIconEl = ({ group }: { group: WorkspaceGroup }) => {
   const cls = "h-3 w-3 text-muted-foreground";
@@ -36,9 +37,9 @@ export const GroupSection = memo(function GroupSection({
     <section className="mb-3" aria-label={`${GROUP_LABELS[group]} files`} data-testid={`ws-group-${group}`}>
       <div className="flex items-center gap-1.5 px-3 py-1.5">
         <GroupIconEl group={group} />
-        <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+        <SectionLabel as="span">
           {GROUP_LABELS[group]}
-        </span>
+        </SectionLabel>
         <span className="font-mono text-[10px] text-muted-foreground/60">
           {entries.length}
         </span>

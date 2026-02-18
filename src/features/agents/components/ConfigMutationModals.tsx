@@ -1,5 +1,6 @@
 import { memo } from "react";
 import type { FC } from "react";
+import { SectionLabel } from "@/components/SectionLabel";
 
 /* ── Shared restart-blocking modal ─────────────────────────────── */
 
@@ -21,9 +22,9 @@ const RestartBlockingModal: FC<RestartBlockingModalProps> = memo(
       aria-label={ariaLabel}
     >
       <div className="w-full max-w-md rounded-lg border border-border bg-card/95 p-6 shadow-2xl">
-        <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+        <SectionLabel>
           {title}
-        </div>
+        </SectionLabel>
         <div className="mt-2 text-base font-semibold text-foreground">
           {entityName}
         </div>
@@ -111,9 +112,9 @@ export const ConfigMutationModals: FC<ConfigMutationModalsProps> = ({
           aria-label="Confirm delete agent"
         >
           <div className="w-full max-w-md rounded-lg border border-border bg-card/95 p-6 shadow-2xl">
-            <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-destructive">
+            <SectionLabel className="text-destructive">
               Confirm deletion
-            </div>
+            </SectionLabel>
             <div className="mt-2 text-base font-semibold text-foreground">
               {agents.find((a) => a.agentId === deleteConfirmAgentId)?.name ??
                 "Agent"}

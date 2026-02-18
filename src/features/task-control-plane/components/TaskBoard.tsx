@@ -6,6 +6,7 @@ import { FileText, X } from "lucide-react";
 import { PanelIconButton } from "@/components/PanelIconButton";
 
 import { fetchJson } from "@/lib/http";
+import { SectionLabel } from "@/components/SectionLabel";
 import type {
   TaskControlPlaneCard,
   TaskControlPlaneSnapshot,
@@ -433,9 +434,9 @@ export function TaskBoard({ snapshot, onRequestRefresh }: TaskBoardProps) {
           >
             <div className="flex items-start justify-between gap-3 border-b border-border/80 px-4 py-3">
               <div className="min-w-0">
-                <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                <SectionLabel>
                   {detailsCard.id}
-                </div>
+                </SectionLabel>
                 <div className="mt-1 text-base font-semibold text-foreground">
                   {detailsCard.title}
                 </div>
@@ -472,9 +473,9 @@ export function TaskBoard({ snapshot, onRequestRefresh }: TaskBoardProps) {
               {details && !detailsLoading && !detailsError ? (
                 <div className="mt-4 space-y-4">
                   <div>
-                    <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                    <SectionLabel>
                       Bead
-                    </div>
+                    </SectionLabel>
                     <dl className="mt-2 grid grid-cols-1 gap-2 text-sm text-foreground sm:grid-cols-2">
                       {readString(details, ["issue_type", "issueType"]) ? (
                         <div className="rounded-md border border-border/70 bg-background/40 px-3 py-2">
@@ -581,9 +582,9 @@ export function TaskBoard({ snapshot, onRequestRefresh }: TaskBoardProps) {
 
               <div className="mt-4 space-y-4">
                 <div>
-                  <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                  <SectionLabel>
                     Summary
-                  </div>
+                  </SectionLabel>
                   <dl className="mt-2 grid grid-cols-1 gap-2 text-sm text-foreground sm:grid-cols-2">
                     <div className="rounded-md border border-border/70 bg-background/40 px-3 py-2">
                       <dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
@@ -643,9 +644,9 @@ export function TaskBoard({ snapshot, onRequestRefresh }: TaskBoardProps) {
                 </div>
 
                 <div>
-                  <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                  <SectionLabel>
                     Description
-                  </div>
+                  </SectionLabel>
                   <div className="mt-2 rounded-md border border-border/70 bg-background/40 px-3 py-3">
                     {descriptionBody ? (
                       <MarkdownViewer content={descriptionBody} className="text-sm" />
