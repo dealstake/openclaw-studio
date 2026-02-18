@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import type { AgentState } from "../state/store";
 import type {
   ConfigMutationKind,
@@ -20,6 +20,7 @@ import {
 import { fetchJson } from "@/lib/http";
 import { bootstrapAgentBrainFilesFromTemplate } from "@/lib/gateway/agentFiles";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
+import { useRestartAwaitEffect } from "./useRestartAwaitEffect";
 
 const RESERVED_MAIN_AGENT_ID = "main";
 
@@ -310,137 +311,68 @@ export function useAgentLifecycle(params: {
     ]
   );
 
-  // Delete: awaiting-restart
-  useEffect(() => {
-    if (!deleteAgentBlock || deleteAgentBlock.phase !== "awaiting-restart") return;
-    if (status !== "connected") {
-      if (!deleteAgentBlock.sawDisconnect) {
-        setDeleteAgentBlock((current) => {
-          if (!current || current.phase !== "awaiting-restart" || current.sawDisconnect) return current;
-          return { ...current, sawDisconnect: true };
-        });
+  // Delete: awaiting-restart + timeout
+  const finalizeDelete = useCallback(async () => {
+    await loadAgents();
+    setMobilePane("chat");
+  }, [loadAgents, setMobilePane]);
+
+  useRestartAwaitEffect({
+    block: deleteAgentBlock,
+    setBlock: setDeleteAgentBlock,
+    status,
+    onFinalize: finalizeDelete,
+    timeoutMessage: "Gateway restart timed out after deleting the agent.",
+    setError,
+  });
+
+  // Create: awaiting-restart + timeout
+  const finalizeCreate = useCallback(async (block: CreateAgentBlockState) => {
+    await loadAgents();
+    const newAgentId = block.agentId?.trim() ?? "";
+    if (newAgentId) {
+      dispatch({ type: "selectAgent", agentId: newAgentId });
+      setCreateAgentBlock((current) => {
+        if (!current || current.agentId !== newAgentId) return current;
+        return { ...current, phase: "bootstrapping-files" };
+      });
+      try {
+        await bootstrapAgentBrainFilesFromTemplate({ client, agentId: newAgentId });
+      } catch (err) {
+        const message =
+          err instanceof Error
+            ? err.message
+            : "Failed to bootstrap brain files for the new agent.";
+        console.error(message, err);
+        setError(message);
       }
-      return;
     }
-    if (!deleteAgentBlock.sawDisconnect) return;
-    let cancelled = false;
-    const finalize = async () => {
-      await loadAgents();
-      if (cancelled) return;
-      setDeleteAgentBlock(null);
-      setMobilePane("chat");
-    };
-    void finalize();
-    return () => { cancelled = true; };
-  }, [deleteAgentBlock, loadAgents, setMobilePane, status]);
+    setMobilePane("chat");
+  }, [client, dispatch, loadAgents, setError, setMobilePane]);
 
-  // Delete: timeout
-  useEffect(() => {
-    if (!deleteAgentBlock) return;
-    if (deleteAgentBlock.phase === "queued") return;
-    const maxWaitMs = 90_000;
-    const elapsed = Date.now() - deleteAgentBlock.startedAt;
-    const remaining = Math.max(0, maxWaitMs - elapsed);
-    const timeoutId = window.setTimeout(() => {
-      setDeleteAgentBlock(null);
-      setError("Gateway restart timed out after deleting the agent.");
-    }, remaining);
-    return () => { window.clearTimeout(timeoutId); };
-  }, [deleteAgentBlock, setError]);
+  useRestartAwaitEffect({
+    block: createAgentBlock,
+    setBlock: setCreateAgentBlock,
+    status,
+    onFinalize: finalizeCreate,
+    timeoutMessage: "Gateway restart timed out after creating the agent.",
+    setError,
+  });
 
-  // Create: awaiting-restart
-  useEffect(() => {
-    if (!createAgentBlock || createAgentBlock.phase !== "awaiting-restart") return;
-    if (status !== "connected") {
-      if (!createAgentBlock.sawDisconnect) {
-        setCreateAgentBlock((current) => {
-          if (!current || current.phase !== "awaiting-restart" || current.sawDisconnect) return current;
-          return { ...current, sawDisconnect: true };
-        });
-      }
-      return;
-    }
-    if (!createAgentBlock.sawDisconnect) return;
-    let cancelled = false;
-    const finalize = async () => {
-      await loadAgents();
-      if (cancelled) return;
-      const newAgentId = createAgentBlock.agentId?.trim() ?? "";
-      if (newAgentId) {
-        dispatch({ type: "selectAgent", agentId: newAgentId });
-        setCreateAgentBlock((current) => {
-          if (!current || current.agentId !== newAgentId) return current;
-          return { ...current, phase: "bootstrapping-files" };
-        });
-        try {
-          await bootstrapAgentBrainFilesFromTemplate({ client, agentId: newAgentId });
-        } catch (err) {
-          const message =
-            err instanceof Error
-              ? err.message
-              : "Failed to bootstrap brain files for the new agent.";
-          console.error(message, err);
-          setError(message);
-        }
-      }
-      setCreateAgentBlock(null);
-      setMobilePane("chat");
-    };
-    void finalize();
-    return () => { cancelled = true; };
-  }, [client, createAgentBlock, dispatch, loadAgents, setError, setMobilePane, status]);
+  // Rename: awaiting-restart + timeout
+  const finalizeRename = useCallback(async () => {
+    await loadAgents();
+    setMobilePane("chat");
+  }, [loadAgents, setMobilePane]);
 
-  // Create: timeout
-  useEffect(() => {
-    if (!createAgentBlock) return;
-    if (createAgentBlock.phase === "queued") return;
-    const maxWaitMs = 90_000;
-    const elapsed = Date.now() - createAgentBlock.startedAt;
-    const remaining = Math.max(0, maxWaitMs - elapsed);
-    const timeoutId = window.setTimeout(() => {
-      setCreateAgentBlock(null);
-      setError("Gateway restart timed out after creating the agent.");
-    }, remaining);
-    return () => { window.clearTimeout(timeoutId); };
-  }, [createAgentBlock, setError]);
-
-  // Rename: awaiting-restart
-  useEffect(() => {
-    if (!renameAgentBlock || renameAgentBlock.phase !== "awaiting-restart") return;
-    if (status !== "connected") {
-      if (!renameAgentBlock.sawDisconnect) {
-        setRenameAgentBlock((current) => {
-          if (!current || current.phase !== "awaiting-restart" || current.sawDisconnect) return current;
-          return { ...current, sawDisconnect: true };
-        });
-      }
-      return;
-    }
-    if (!renameAgentBlock.sawDisconnect) return;
-    let cancelled = false;
-    const finalize = async () => {
-      await loadAgents();
-      if (cancelled) return;
-      setRenameAgentBlock(null);
-      setMobilePane("chat");
-    };
-    void finalize();
-    return () => { cancelled = true; };
-  }, [loadAgents, renameAgentBlock, setMobilePane, status]);
-
-  // Rename: timeout
-  useEffect(() => {
-    if (!renameAgentBlock) return;
-    if (renameAgentBlock.phase === "queued") return;
-    const maxWaitMs = 90_000;
-    const elapsed = Date.now() - renameAgentBlock.startedAt;
-    const remaining = Math.max(0, maxWaitMs - elapsed);
-    const timeoutId = window.setTimeout(() => {
-      setRenameAgentBlock(null);
-      setError("Gateway restart timed out after renaming the agent.");
-    }, remaining);
-    return () => { window.clearTimeout(timeoutId); };
-  }, [renameAgentBlock, setError]);
+  useRestartAwaitEffect({
+    block: renameAgentBlock,
+    setBlock: setRenameAgentBlock,
+    status,
+    onFinalize: finalizeRename,
+    timeoutMessage: "Gateway restart timed out after renaming the agent.",
+    setError,
+  });
 
   return {
     deleteAgentBlock,
