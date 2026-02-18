@@ -1,59 +1,51 @@
 import { memo, useState, useCallback } from "react";
 import {
-  Archive,
   ChevronDown,
   ChevronRight,
   ClipboardList,
   LinkIcon,
-  Play,
+  Check,
 } from "lucide-react";
-import { STATUS_CONFIG, PRIORITY_DOT, TOGGLE_MAP } from "../lib/constants";
+import * as Popover from "@radix-ui/react-popover";
+import { STATUS_CONFIG, CYCLE_STATUSES, QUEUED_CONFIG, PRIORITY_DOT } from "../lib/constants";
 import { LinkedTaskRow } from "./LinkedTaskRow";
 import type { ProjectEntry } from "./ProjectsPanel";
-import { PanelIconButton } from "@/components/PanelIconButton";
 import { MarkdownViewer } from "@/components/MarkdownViewer";
 
 interface ProjectCardProps {
   project: ProjectEntry;
-  onContinue: () => void;
   onOpenFile: () => void;
-  onToggleStatus: () => void;
-  onArchive: () => void;
+  onChangeStatus: (newEmoji: string, newLabel: string) => void;
+  /** Number of projects currently building (for queue logic) */
+  buildingCount: number;
+  /** Queue position of this project (0 = not queued, 1+ = queue position) */
+  queuePosition: number;
 }
 
 export const ProjectCard = memo(function ProjectCard({
   project,
-  onContinue,
   onOpenFile,
-  onToggleStatus,
-  onArchive,
+  onChangeStatus,
+  buildingCount,
+  queuePosition,
 }: ProjectCardProps) {
   const [tasksExpanded, setTasksExpanded] = useState(false);
-  const [toggling, setToggling] = useState(false);
-  const config = STATUS_CONFIG[project.statusEmoji];
+  const [statusOpen, setStatusOpen] = useState(false);
+
+  // If this project is building but queued behind another, show Queued badge
+  const isQueued = project.statusEmoji === "🚧" && queuePosition > 0;
+  const config = isQueued ? QUEUED_CONFIG : STATUS_CONFIG[project.statusEmoji];
   const StatusIcon = config?.icon ?? ClipboardList;
-  const statusLabel = config?.label ?? project.status;
+  const statusLabel = isQueued ? `Queued(${queuePosition})` : (config?.label ?? project.status);
   const statusColors = config?.colors ?? "border-border bg-card/50 text-muted-foreground";
   const priorityDot = PRIORITY_DOT[project.priorityEmoji];
 
   const details = project.details;
-  const isBlocked = details?.continuation?.blockedBy && 
+  const isBlocked = details?.continuation?.blockedBy &&
     details.continuation.blockedBy.toLowerCase() !== "nothing" &&
     details.continuation.blockedBy.toLowerCase() !== "none";
   const linkedTasks = details?.associatedTasks ?? [];
-  const isActive = project.statusEmoji === "🔨";
-  const canToggle = !!TOGGLE_MAP[project.statusEmoji];
   const isDone = project.statusEmoji === "✅";
-
-  const handleToggle = useCallback(async () => {
-    if (toggling) return;
-    setToggling(true);
-    try {
-      await Promise.resolve(onToggleStatus());
-    } finally {
-      setToggling(false);
-    }
-  }, [toggling, onToggleStatus]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === "Enter" || e.key === " ") {
@@ -71,14 +63,64 @@ export const ProjectCard = memo(function ProjectCard({
       onKeyDown={handleKeyDown}
       aria-label={`Open ${project.name} project file`}
     >
-      {/* Header Row: Status + Priority + Name + Task Badge */}
+      {/* Header Row: Clickable Status Badge + Priority + Name + Task Badge */}
       <div className="flex items-center gap-2">
-        <span
-          className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] ${statusColors}`}
-        >
-          <StatusIcon className="h-3 w-3" />
-          {statusLabel}
-        </span>
+        <Popover.Root open={statusOpen} onOpenChange={setStatusOpen}>
+          <Popover.Trigger asChild>
+            <button
+              type="button"
+              className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] transition hover:brightness-125 ${statusColors}`}
+              onClick={(e) => { e.stopPropagation(); }}
+              aria-label={`Change status (current: ${statusLabel})`}
+            >
+              <StatusIcon className="h-3 w-3" />
+              {statusLabel}
+            </button>
+          </Popover.Trigger>
+          <Popover.Portal>
+            <Popover.Content
+              side="bottom"
+              align="start"
+              sideOffset={4}
+              className="z-50 min-w-[140px] rounded-md border border-border bg-card p-1 shadow-lg animate-in fade-in-0 zoom-in-95"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {CYCLE_STATUSES.map(({ emoji, label }) => {
+                const cfg = STATUS_CONFIG[emoji];
+                if (!cfg) return null;
+                const Icon = cfg.icon;
+                const isCurrent = project.statusEmoji === emoji;
+                // Show warning if selecting Building and another project is already building
+                const wouldQueue = emoji === "🚧" && !isCurrent && buildingCount > 0;
+                return (
+                  <button
+                    key={emoji}
+                    type="button"
+                    className={`flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-[11px] transition ${
+                      isCurrent
+                        ? "bg-muted/50 text-foreground"
+                        : "text-muted-foreground hover:bg-muted/30 hover:text-foreground"
+                    }`}
+                    onClick={() => {
+                      if (!isCurrent) onChangeStatus(emoji, label);
+                      setStatusOpen(false);
+                    }}
+                  >
+                    <Icon className={`h-3 w-3 shrink-0 ${cfg.colors.split(" ").pop() ?? ""}`} />
+                    <span className="flex-1 font-mono text-[10px] font-semibold uppercase tracking-[0.1em]">
+                      {label}
+                    </span>
+                    {wouldQueue && (
+                      <span className="text-[8px] text-orange-400">queued</span>
+                    )}
+                    {isCurrent && <Check className="h-3 w-3 shrink-0 text-primary" />}
+                  </button>
+                );
+              })}
+            </Popover.Content>
+          </Popover.Portal>
+        </Popover.Root>
+
         {priorityDot && (
           <span
             className={`h-2 w-2 shrink-0 rounded-full ${priorityDot}`}
@@ -99,7 +141,7 @@ export const ProjectCard = memo(function ProjectCard({
         )}
       </div>
 
-      {/* Description — full width, no competition with actions */}
+      {/* Description */}
       <MarkdownViewer content={project.oneLiner} className="mt-1 text-xs leading-relaxed text-muted-foreground/80 line-clamp-2 [&>*]:m-0 [&>*>*]:m-0" />
 
       {/* Details (Progress + Next Step) */}
@@ -163,59 +205,6 @@ export const ProjectCard = memo(function ProjectCard({
               )}
             </div>
           )}
-        </div>
-      )}
-
-      {/* Actions — footer row, hover-reveal on desktop, always visible on mobile */}
-      {(canToggle || !isDone) && (
-        <div className="mt-2 flex items-center justify-end gap-2 border-t border-border/40 pt-2 opacity-100 sm:opacity-0 transition sm:group-focus-within/task:opacity-100 sm:group-hover/task:opacity-100">
-          {/* Status toggle */}
-          {canToggle && (
-            <div className="flex items-center gap-1.5 mr-auto">
-              <button
-                type="button"
-                aria-label={isActive ? "Park project" : "Activate project"}
-                disabled={toggling}
-                className={`relative h-5 w-9 rounded-full border transition ${
-                  toggling ? "opacity-50 cursor-not-allowed" : ""
-                } ${
-                  isActive
-                    ? "border-emerald-500/40 bg-emerald-500/20"
-                    : "border-border/80 bg-muted/40"
-                }`}
-                onClick={(e) => { e.stopPropagation(); void handleToggle(); }}
-              >
-                <span
-                  className={`absolute top-0.5 h-3.5 w-3.5 rounded-full transition-all ${
-                    isActive
-                      ? "left-[18px] bg-emerald-400"
-                      : "left-0.5 bg-muted-foreground"
-                  }`}
-                />
-              </button>
-              <span className="text-[9px] text-muted-foreground">{isActive ? "Active" : "Parked"}</span>
-            </div>
-          )}
-
-          {/* Archive (Done and Parked projects) */}
-          {(project.statusEmoji === "✅" || project.statusEmoji === "⏸️") && (
-            <PanelIconButton
-              variant="destructive"
-              title="Archive project"
-              aria-label="Archive project"
-              onClick={(e) => { e.stopPropagation(); onArchive(); }}
-            >
-              <Archive className="h-3 w-3" />
-            </PanelIconButton>
-          )}
-
-          {/* Continue */}
-          <PanelIconButton
-            title={details?.continuation?.nextStep ? `Continue: ${details.continuation.nextStep}` : "Continue project"}
-            onClick={(e) => { e.stopPropagation(); onContinue(); }}
-          >
-            <Play className="h-3 w-3" />
-          </PanelIconButton>
         </div>
       )}
     </div>

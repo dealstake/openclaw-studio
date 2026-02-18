@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { ProjectEntry } from "../components/ProjectsPanel";
 import { parseProjectFile } from "../lib/parseProject";
@@ -17,7 +17,12 @@ interface UseProjectsResult {
   error: string | null;
   refresh: () => void;
   toggleStatus: (project: ProjectEntry) => Promise<void>;
+  changeStatus: (project: ProjectEntry, newEmoji: string, newLabel: string) => Promise<void>;
   archive: (project: ProjectEntry) => Promise<void>;
+  /** Number of projects currently in Building status */
+  buildingCount: number;
+  /** Queue position for a project (0 = not queued) */
+  getQueuePosition: (doc: string) => number;
 }
 
 export function useProjects(
@@ -209,11 +214,84 @@ export function useProjects(
     [agentId, projects],
   );
 
+  // ─── Building queue logic ───────────────────────────────────────────────
+  const buildingProjects = useMemo(
+    () => projects.filter((p) => p.statusEmoji === "🚧"),
+    [projects],
+  );
+
+  const buildingCount = buildingProjects.length;
+
+  const getQueuePosition = useCallback(
+    (doc: string) => {
+      if (buildingCount <= 1) return 0;
+      const idx = buildingProjects.findIndex((p) => p.doc === doc);
+      // First building project is actively building (position 0 = not queued)
+      return idx <= 0 ? 0 : idx;
+    },
+    [buildingProjects, buildingCount],
+  );
+
+  // ─── Change status (click-to-cycle) ───────────────────────────────────
+  const changeStatus = useCallback(
+    async (project: ProjectEntry, newEmoji: string, newLabel: string) => {
+      if (!agentId) return;
+      if (project.statusEmoji === newEmoji) return; // no-op
+
+      const newStatus = `${newEmoji} ${newLabel}`;
+      const prevProjects = projects;
+
+      // Optimistic update
+      setProjects((prev) =>
+        prev.map((p) =>
+          p.doc === project.doc
+            ? { ...p, status: newStatus, statusEmoji: newEmoji }
+            : p,
+        ),
+      );
+
+      try {
+        const res = await fetch("/api/workspace/project", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ agentId, doc: project.doc, status: newStatus }),
+        });
+        if (!res.ok) {
+          const data = (await res.json()) as { error?: string };
+          setProjects(prevProjects);
+          toast.error(`Failed to update "${project.name}": ${data.error ?? "Unknown error"}`);
+          return;
+        }
+
+        // Manage linked cron jobs when parking/activating
+        if (client && project.details?.associatedTasks?.length) {
+          const isParkingProject = newEmoji === "⏸️";
+          const isActivating = newEmoji === "🔨" || newEmoji === "🚧";
+          if (isParkingProject || isActivating) {
+            await manageProjectCronJobs(
+              client,
+              project.details.associatedTasks,
+              !isParkingProject,
+            );
+          }
+        }
+
+        toast.success(`"${project.name}" → ${newLabel}`);
+        void loadRef.current?.();
+      } catch (err) {
+        setProjects(prevProjects);
+        toast.error(`Failed to update "${project.name}"`);
+        console.error("Failed to change project status:", err);
+      }
+    },
+    [agentId, client, projects],
+  );
+
   const refresh = useCallback(() => {
     void loadProjects();
   }, [loadProjects]);
 
-  return { projects, loading, error, refresh, toggleStatus, archive };
+  return { projects, loading, error, refresh, toggleStatus, changeStatus, archive, buildingCount, getQueuePosition };
 }
 
 export function buildContinuePrompt(project: ProjectEntry): string {

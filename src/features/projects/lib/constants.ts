@@ -5,6 +5,7 @@ import {
   Loader2,
   PauseCircle,
   Inbox,
+  ListOrdered,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -39,6 +40,27 @@ export const STATUS_KEYS = Object.keys(STATUS_ORDER).sort(
   (a, b) => (STATUS_ORDER[a] ?? 99) - (STATUS_ORDER[b] ?? 99)
 );
 
+/**
+ * Statuses available in the clickable status-cycle dropdown.
+ * Order = display order in the popover.
+ */
+export const CYCLE_STATUSES: Array<{ emoji: string; label: string }> = [
+  { emoji: "🚧", label: "Building" },
+  { emoji: "🔨", label: "Active" },
+  { emoji: "📋", label: "Defined" },
+  { emoji: "🌊", label: "Backlog" },
+  { emoji: "⏸️", label: "Parked" },
+  { emoji: "✅", label: "Done" },
+];
+
+// ─── Queued Status (virtual — rendered for cards queued behind Building) ────
+
+export const QUEUED_CONFIG: StatusConfig = {
+  label: "Queued",
+  icon: ListOrdered,
+  colors: "border-orange-500/30 bg-orange-500/10 text-orange-400",
+};
+
 // ─── Priority ────────────────────────────────────────────────────────────────
 
 export const PRIORITY_DOT: Record<string, string> = {
@@ -47,7 +69,7 @@ export const PRIORITY_DOT: Record<string, string> = {
   "🟢": "bg-green-400",
 };
 
-// ─── Status Toggle Mappings ──────────────────────────────────────────────────
+// ─── Status Toggle Mappings (legacy — kept for backward compat) ──────────────
 
 export const TOGGLE_MAP: Record<string, { emoji: string; label: string }> = {
   "🔨": { emoji: "⏸️", label: "Parked" },   // Active → Parked

@@ -41,8 +41,6 @@ function renderCard(task: StudioTask, props: Partial<Parameters<typeof TaskCard>
       selected: false,
       onSelect: noop,
       onToggle: noop,
-      onRun: noop,
-      onDelete: noop,
       ...props,
     })
   );
@@ -86,7 +84,6 @@ describe("TaskCard", () => {
 
   it("shows last run info when available", () => {
     renderCard(makeTask({ lastRunAt: "2026-02-17T12:00:00Z" }));
-    // Should contain "Last:" text
     const el = screen.getByText(/Last:/);
     expect(el).toBeDefined();
   });
@@ -103,22 +100,6 @@ describe("TaskCard", () => {
     expect(onSelect).toHaveBeenCalledWith("task-abc");
   });
 
-  it("calls onRun when Run button clicked", () => {
-    const onRun = vi.fn();
-    const onSelect = vi.fn();
-    renderCard(makeTask(), { onRun, onSelect });
-    fireEvent.click(screen.getByLabelText(/Run task/));
-    expect(onRun).toHaveBeenCalledWith("task-abc");
-  });
-
-  it("calls onDelete when Delete button clicked", () => {
-    const onDelete = vi.fn();
-    const onSelect = vi.fn();
-    renderCard(makeTask(), { onDelete, onSelect });
-    fireEvent.click(screen.getByLabelText(/Delete task/));
-    expect(onDelete).toHaveBeenCalledWith("task-abc");
-  });
-
   it("calls onToggle when toggle is clicked", () => {
     const onToggle = vi.fn();
     const onSelect = vi.fn();
@@ -127,10 +108,10 @@ describe("TaskCard", () => {
     expect(onToggle).toHaveBeenCalledWith("task-abc", false);
   });
 
-  it("disables actions when busy", () => {
+  it("disables toggle when busy", () => {
     renderCard(makeTask(), { busy: true });
-    const runBtn = screen.getByLabelText(/Run task/);
-    expect(runBtn.hasAttribute("disabled")).toBe(true);
+    const toggle = screen.getByLabelText(/Pause task/);
+    expect(toggle.hasAttribute("disabled")).toBe(true);
   });
 
   it("shows selected styling", () => {
@@ -150,5 +131,10 @@ describe("TaskCard", () => {
     const card = screen.getByText("Test Task").closest("[role=button]")!;
     fireEvent.keyDown(card, { key: "Enter" });
     expect(onSelect).toHaveBeenCalledWith("task-abc");
+  });
+
+  it("shows Resume label when task is disabled", () => {
+    renderCard(makeTask({ enabled: false }));
+    expect(screen.getByLabelText(/Resume task/)).toBeDefined();
   });
 });

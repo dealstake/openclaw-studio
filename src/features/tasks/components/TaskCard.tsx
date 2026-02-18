@@ -1,12 +1,10 @@
 "use client";
 
 import { memo, useCallback } from "react";
-import { Loader2, Play, Trash2 } from "lucide-react";
 import type { StudioTask } from "@/features/tasks/types";
 import { humanReadableSchedule } from "@/features/tasks/lib/schedule";
 import { formatRelativeTime } from "@/lib/text/time";
 import { TYPE_CONFIG, STATUS_DOT_CLASS, getTaskStatusKey } from "@/features/tasks/lib/taskTypeConfig";
-import { PanelIconButton } from "@/components/PanelIconButton";
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -16,8 +14,6 @@ interface TaskCardProps {
   selected: boolean;
   onSelect: (taskId: string) => void;
   onToggle: (taskId: string, enabled: boolean) => void;
-  onRun: (taskId: string) => void;
-  onDelete: (taskId: string) => void;
   /** Which action is currently in progress for this task */
   busyAction?: "toggle" | "run" | "delete" | "update" | null;
 }
@@ -28,8 +24,6 @@ export const TaskCard = memo(function TaskCard({
   selected,
   onSelect,
   onToggle,
-  onRun,
-  onDelete,
   busyAction,
 }: TaskCardProps) {
   const typeConfig = TYPE_CONFIG[task.type];
@@ -38,21 +32,14 @@ export const TaskCard = memo(function TaskCard({
   const statusKey = getTaskStatusKey(task);
   const dotClass = STATUS_DOT_CLASS[statusKey];
 
-  const handleToggle = useCallback(() => {
+  const handleToggle = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
     onToggle(task.id, !task.enabled);
   }, [onToggle, task.id, task.enabled]);
-
-  const handleRun = useCallback(() => {
-    onRun(task.id);
-  }, [onRun, task.id]);
 
   const handleSelect = useCallback(() => {
     onSelect(task.id);
   }, [onSelect, task.id]);
-
-  const handleDelete = useCallback(() => {
-    onDelete(task.id);
-  }, [onDelete, task.id]);
 
   return (
     <div
@@ -66,12 +53,34 @@ export const TaskCard = memo(function TaskCard({
       tabIndex={0}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") handleSelect(); }}
     >
-      {/* Status dot + name */}
+      {/* Title row: status dot + name + toggle */}
       <div className="flex items-center gap-2">
         <span className={`h-2 w-2 shrink-0 rounded-full ${dotClass}`} />
         <span className="min-w-0 flex-1 truncate font-mono text-[11px] font-semibold tracking-wide text-foreground">
           {task.name}
         </span>
+        {/* Persistent toggle — green when enabled, grey when disabled */}
+        <button
+          type="button"
+          aria-label={task.enabled ? "Pause task" : "Resume task"}
+          disabled={busy || busyAction === "toggle"}
+          className={`relative h-4 w-7 shrink-0 rounded-full border transition ${
+            busy ? "opacity-50 cursor-not-allowed" : ""
+          } ${
+            task.enabled
+              ? "border-emerald-500/40 bg-emerald-500/20"
+              : "border-border/80 bg-muted/40"
+          }`}
+          onClick={handleToggle}
+        >
+          <span
+            className={`absolute top-0.5 h-2.5 w-2.5 rounded-full transition-all ${
+              task.enabled
+                ? "left-[13px] bg-emerald-400"
+                : "left-0.5 bg-muted-foreground"
+            }`}
+          />
+        </button>
       </div>
 
       {/* Type badge + schedule */}
@@ -109,60 +118,6 @@ export const TaskCard = memo(function TaskCard({
         {task.lastRunStatus === "error" ? (
           <span className="font-semibold text-destructive">Failed</span>
         ) : null}
-      </div>
-
-      {/* Actions — footer row, hover-reveal on desktop, always visible on mobile */}
-      <div className="mt-2 flex items-center justify-end gap-2 border-t border-border/40 pt-2 transition md:opacity-0 md:group-focus-within/task:opacity-100 md:group-hover/task:opacity-100">
-        {/* Toggle — left-aligned */}
-        <div className="flex items-center gap-1.5 mr-auto">
-          <button
-            type="button"
-            aria-label={task.enabled ? "Pause task" : "Resume task"}
-            className={`relative h-5 w-9 rounded-full border transition ${
-              task.enabled
-                ? "border-emerald-500/40 bg-emerald-500/20"
-                : "border-border/80 bg-muted/40"
-            }`}
-            onClick={handleToggle}
-            disabled={busy}
-          >
-            <span
-              className={`absolute top-0.5 h-3.5 w-3.5 rounded-full transition-all ${
-                task.enabled
-                  ? "left-[18px] bg-emerald-400"
-                  : "left-0.5 bg-muted-foreground"
-              }`}
-            />
-          </button>
-          <span className="text-[9px] text-muted-foreground">{task.enabled ? "Enabled" : "Paused"}</span>
-        </div>
-
-        {/* Run now */}
-        <PanelIconButton
-          aria-label={`Run task ${task.name} now`}
-          onClick={handleRun}
-          disabled={busy}
-        >
-          {busyAction === "run" ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Play className="h-3.5 w-3.5" />
-          )}
-        </PanelIconButton>
-
-        {/* Delete */}
-        <PanelIconButton
-          variant="destructive"
-          aria-label={`Delete task ${task.name}`}
-          onClick={handleDelete}
-          disabled={busy}
-        >
-          {busyAction === "delete" ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Trash2 className="h-3.5 w-3.5" />
-          )}
-        </PanelIconButton>
       </div>
     </div>
   );

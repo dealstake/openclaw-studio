@@ -1488,14 +1488,6 @@ const AgentStudioPage = () => {
     setViewingSessionKey(null);
   }, []);
 
-  const stableProjectContinue = useCallback((message: string) => {
-    const fa = focusedAgentRef.current;
-    if (fa) {
-      setViewingSessionKey(null);
-      handleSend(fa.agentId, fa.sessionKey, message);
-    }
-  }, [handleSend]);
-
   const stableChatOnDismissContinuation = useCallback(() => {
     const fa = focusedAgentRef.current;
     if (fa) {
@@ -1696,7 +1688,6 @@ const AgentStudioPage = () => {
                       <ProjectsPanel
                         agentId={focusedAgent?.agentId ?? null}
                         client={client}
-                        onContinue={stableProjectContinue}
                       />
                     </div>
                   }

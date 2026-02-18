@@ -246,8 +246,6 @@ export const TasksPanel = memo(function TasksPanel({
                 selected={selectedTaskId === task.id}
                 onSelect={handleSelect}
                 onToggle={onToggle}
-                onRun={onRun}
-                onDelete={handleDeleteRequest}
               />
             ))}
           </div>

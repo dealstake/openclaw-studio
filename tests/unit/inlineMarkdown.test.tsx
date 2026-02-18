@@ -75,10 +75,10 @@ describe("ProjectCard inline markdown", () => {
     render(
       <ProjectCard
         project={baseProject}
-        onContinue={vi.fn()}
         onOpenFile={vi.fn()}
-        onToggleStatus={vi.fn()}
-        onArchive={vi.fn()}
+        onChangeStatus={vi.fn()}
+        buildingCount={0}
+        queuePosition={0}
       />,
     );
     const viewers = screen.getAllByTestId("markdown-viewer");
@@ -92,10 +92,10 @@ describe("ProjectCard inline markdown", () => {
     render(
       <ProjectCard
         project={baseProject}
-        onContinue={vi.fn()}
         onOpenFile={vi.fn()}
-        onToggleStatus={vi.fn()}
-        onArchive={vi.fn()}
+        onChangeStatus={vi.fn()}
+        buildingCount={0}
+        queuePosition={0}
       />,
     );
     const viewers = screen.getAllByTestId("markdown-viewer");

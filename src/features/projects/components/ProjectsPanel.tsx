@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useMemo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import {
   FileText,
   FolderGit2,
@@ -12,7 +12,7 @@ import { ProjectCard } from "./ProjectCard";
 import { ProjectWizardModal } from "./ProjectWizardModal";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { FileEditorModal } from "@/components/FileEditorModal";
-import { useProjects, buildContinuePrompt } from "../hooks/useProjects";
+import { useProjects } from "../hooks/useProjects";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import { PanelIconButton } from "@/components/PanelIconButton";
 import { SectionLabel } from "@/components/SectionLabel";
@@ -36,7 +36,6 @@ export interface ProjectEntry {
 interface ProjectsPanelProps {
   agentId: string | null;
   client: GatewayClient | null;
-  onContinue: (message: string) => void;
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -44,21 +43,13 @@ interface ProjectsPanelProps {
 export const ProjectsPanel = memo(function ProjectsPanel({
   agentId,
   client,
-  onContinue,
 }: ProjectsPanelProps) {
   const [showWizard, setShowWizard] = useState(false);
   const [archiveTarget, setArchiveTarget] = useState<ProjectEntry | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [editingProjectDoc, setEditingProjectDoc] = useState<string | null>(null);
-  const { projects, loading, error, refresh, toggleStatus, archive } =
+  const { projects, loading, error, refresh, changeStatus, archive, buildingCount, getQueuePosition } =
     useProjects(agentId, client);
-
-  const handleContinue = useCallback(
-    (project: ProjectEntry) => {
-      onContinue(buildContinuePrompt(project));
-    },
-    [onContinue],
-  );
 
   // Count projects per status for filter badges
   const statusCounts = useMemo(() => {
@@ -202,10 +193,10 @@ export const ProjectsPanel = memo(function ProjectsPanel({
         <ProjectCard
           key={project.doc}
           project={project}
-          onContinue={() => handleContinue(project)}
           onOpenFile={() => setEditingProjectDoc(project.doc)}
-          onToggleStatus={() => void toggleStatus(project)}
-          onArchive={() => setArchiveTarget(project)}
+          onChangeStatus={(emoji, label) => void changeStatus(project, emoji, label)}
+          buildingCount={buildingCount}
+          queuePosition={getQueuePosition(project.doc)}
         />
       ))}
 
