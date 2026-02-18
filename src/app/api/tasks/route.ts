@@ -1,19 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { readTasks, writeTasks, ensureTaskStateDir, removeTaskStateDir } from "@/features/tasks/lib/taskStore";
-import { isSidecarConfigured, sidecarGet, sidecarMutate, SidecarUnavailableError } from "@/lib/workspace/sidecar";
+import { isSidecarConfigured, sidecarGet, sidecarMutate } from "@/lib/workspace/sidecar";
+import { handleApiError } from "@/lib/api/helpers";
 import type { StudioTask, UpdateTaskPayload } from "@/features/tasks/types";
-
-function handleSidecarError(err: unknown): NextResponse {
-  if (err instanceof SidecarUnavailableError) {
-    return NextResponse.json(
-      { error: err.message, code: "SIDECAR_UNAVAILABLE" },
-      { status: 503 }
-    );
-  }
-  const message = err instanceof Error ? err.message : "An unexpected error occurred.";
-  console.error("[tasks] error:", message);
-  return NextResponse.json({ error: message }, { status: 500 });
-}
 
 export const runtime = "nodejs";
 
@@ -35,7 +24,7 @@ export async function GET(request: NextRequest) {
     const tasks = readTasks(agentId);
     return NextResponse.json({ tasks });
   } catch (err) {
-    return handleSidecarError(err);
+    return handleApiError(err, "tasks");
   }
 }
 
@@ -65,7 +54,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ task });
   } catch (err) {
-    return handleSidecarError(err);
+    return handleApiError(err, "tasks");
   }
 }
 
@@ -105,7 +94,7 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json({ task: updated });
   } catch (err) {
-    return handleSidecarError(err);
+    return handleApiError(err, "tasks");
   }
 }
 
@@ -135,6 +124,6 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    return handleSidecarError(err);
+    return handleApiError(err, "tasks");
   }
 }

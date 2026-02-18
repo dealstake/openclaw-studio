@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { type StudioSettingsPatch } from "@/lib/studio/settings";
 import { applyStudioSettingsPatch, loadStudioSettings } from "@/lib/studio/settings-store";
+import { handleApiError } from "@/lib/api/helpers";
 
 export const runtime = "nodejs";
 
@@ -13,9 +14,7 @@ export async function GET() {
     const settings = loadStudioSettings();
     return NextResponse.json({ settings });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Failed to load studio settings.";
-    console.error(message);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return handleApiError(err, "studio GET", "Failed to load studio settings.");
   }
 }
 
@@ -28,8 +27,6 @@ export async function PUT(request: Request) {
     const settings = applyStudioSettingsPatch(body);
     return NextResponse.json({ settings });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Failed to save studio settings.";
-    console.error(message);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return handleApiError(err, "studio PUT", "Failed to save studio settings.");
   }
 }

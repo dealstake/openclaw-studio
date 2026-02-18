@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 
 import {
-  isSafeAgentId,
   readWorkspaceFile,
   writeWorkspaceFile,
   resolveWorkspacePath,
 } from "@/lib/workspace/resolve";
-import { isSidecarConfigured, sidecarGet, sidecarMutate, SidecarUnavailableError } from "@/lib/workspace/sidecar";
+import { isSidecarConfigured, sidecarGet, sidecarMutate } from "@/lib/workspace/sidecar";
+import { validateAgentId, handleApiError } from "@/lib/api/helpers";
 import { updateRowStatus, removeRow } from "@/features/projects/lib/indexTable";
 import fs from "node:fs";
 import path from "node:path";
@@ -43,11 +43,10 @@ async function writeIndexContent(agentId: string, content: string): Promise<Next
 }
 
 function validateRequest(agentId: string, doc: string): NextResponse | null {
-  if (!agentId || !doc) {
-    return NextResponse.json({ error: "Missing required fields: agentId, doc" }, { status: 400 });
-  }
-  if (!isSafeAgentId(agentId)) {
-    return NextResponse.json({ error: `Invalid agentId: ${agentId}` }, { status: 400 });
+  const v = validateAgentId(agentId);
+  if (!v.ok) return v.error;
+  if (!doc) {
+    return NextResponse.json({ error: "Missing required field: doc" }, { status: 400 });
   }
   return null;
 }
@@ -90,11 +89,7 @@ export async function PATCH(request: Request) {
 
     return NextResponse.json({ ok: true, doc, status: newStatus });
   } catch (err) {
-    if (err instanceof SidecarUnavailableError) {
-      return NextResponse.json({ error: err.message, code: "SIDECAR_UNAVAILABLE" }, { status: 503 });
-    }
-    console.error("[project PATCH]", err);
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Unknown error" }, { status: 500 });
+    return handleApiError(err, "project PATCH");
   }
 }
 
@@ -173,10 +168,6 @@ export async function DELETE(request: Request) {
 
     return NextResponse.json({ ok: true, doc, archived: true });
   } catch (err) {
-    if (err instanceof SidecarUnavailableError) {
-      return NextResponse.json({ error: err.message, code: "SIDECAR_UNAVAILABLE" }, { status: 503 });
-    }
-    console.error("[project DELETE]", err);
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Unknown error" }, { status: 500 });
+    return handleApiError(err, "project DELETE");
   }
 }
