@@ -5,12 +5,13 @@ import { ChevronDown } from "lucide-react";
 
 import { sectionLabelClass } from "@/components/SectionLabel";
 
-export type ContextTab = "projects" | "tasks" | "brain" | "settings" | "channels" | "sessions" | "usage" | "cron" | "workspace";
+export type ContextTab = "projects" | "activity" | "tasks" | "brain" | "settings" | "channels" | "sessions" | "usage" | "cron" | "workspace";
 
 interface ContextPanelProps {
   activeTab: ContextTab;
   onTabChange: (tab: ContextTab) => void;
   projectsContent?: ReactNode;
+  activityContent?: ReactNode;
   tasksContent: ReactNode;
   brainContent: ReactNode;
   settingsContent: ReactNode;
@@ -23,6 +24,7 @@ interface ContextPanelProps {
 
 const TAB_OPTIONS: Array<{ value: ContextTab; label: string }> = [
   { value: "projects", label: "Projects" },
+  { value: "activity", label: "Activity" },
   { value: "tasks", label: "Tasks" },
   { value: "brain", label: "Brain" },
   { value: "workspace", label: "Files" },
@@ -40,6 +42,7 @@ export const ContextPanel = memo(function ContextPanel({
   activeTab,
   onTabChange,
   projectsContent,
+  activityContent,
   tasksContent,
   brainContent,
   settingsContent,
@@ -180,6 +183,11 @@ export const ContextPanel = memo(function ContextPanel({
         {effectiveMountedTabs.has("projects") && (
           <div role="tabpanel" className={activeTab === "projects" ? "flex h-full w-full" : "hidden"}>
             {projectsContent ?? null}
+          </div>
+        )}
+        {effectiveMountedTabs.has("activity") && (
+          <div role="tabpanel" className={activeTab === "activity" ? "flex h-full w-full" : "hidden"}>
+            {activityContent ?? null}
           </div>
         )}
         {effectiveMountedTabs.has("tasks") && (

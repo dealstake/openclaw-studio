@@ -50,6 +50,7 @@ import {
 import { ArtifactsPanel } from "@/features/artifacts/components/ArtifactsPanel";
 import { TasksPanel } from "@/features/tasks/components/TasksPanel";
 import { ProjectsPanel } from "@/features/projects/components/ProjectsPanel";
+import { ActivityPanel } from "@/features/activity/components/ActivityPanel";
 import { TaskWizardModal } from "@/features/tasks/components/TaskWizardModal";
 import { useAgentTasks } from "@/features/tasks/hooks/useAgentTasks";
 import { ContextPanel, type ContextTab } from "@/features/context/components/ContextPanel";
@@ -1690,6 +1691,13 @@ const AgentStudioPage = () => {
                         client={client}
                       />
                     </div>
+                  }
+                  activityContent={
+                    <ActivityPanel
+                      client={client}
+                      status={status}
+                      agentId={focusedAgent?.agentId ?? null}
+                    />
                   }
                   tasksContent={
                     <div className="flex h-full w-full flex-col overflow-y-auto">
