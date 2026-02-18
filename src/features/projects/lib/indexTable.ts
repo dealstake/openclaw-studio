@@ -27,7 +27,7 @@ export function parseIndex(markdown: string): ProjectIndexRow[] {
     const [, name, doc, status, priority, oneLiner] = match;
     if (!name || name.includes("---") || name.toLowerCase() === "project") continue;
 
-    const statusEmoji = status.trim().match(/^(🔨|📋|🌊|⏸️|✅)/)?.[1] ?? "";
+    const statusEmoji = status.trim().match(/^(🚧|🔨|📋|🌊|⏸️|✅)/)?.[1] ?? "";
     const priorityEmoji = priority.trim().match(/^(🔴|🟡|🟢)/)?.[1] ?? "";
 
     rows.push({
