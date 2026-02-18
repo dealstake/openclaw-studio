@@ -168,7 +168,7 @@ export const ProjectCard = memo(function ProjectCard({
           {/* Progress Bar — always visible; greyed out when no checkboxes */}
           {!isDone && (
             <div className="flex items-center gap-2">
-              <div className="h-1.5 flex-1 rounded-full bg-muted overflow-hidden">
+              <div className="h-1.5 flex-1 rounded-full bg-border overflow-hidden">
                 {details.progress.total > 0 && (
                   <div
                     className="h-full bg-primary/60 transition-all duration-500"
