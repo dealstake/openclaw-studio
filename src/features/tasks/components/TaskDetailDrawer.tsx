@@ -307,14 +307,7 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
             {task.runningAtMs ? (
               <span className="font-semibold text-purple-400">● Running now</span>
             ) : task.nextRunAtMs ? (
-              <span>
-                Next run:{" "}
-                {task.nextRunAtMs <= Date.now() ? (
-                  <span className="text-amber-400">due now</span>
-                ) : (
-                  formatRelativeTime(task.nextRunAtMs)
-                )}
-              </span>
+              <span>Next run: {formatRelativeTime(task.nextRunAtMs)}</span>
             ) : null}
             {task.lastRunAt ? (
               <span>

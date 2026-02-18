@@ -102,12 +102,7 @@ export const TaskCard = memo(function TaskCard({
               <span className="font-semibold text-purple-400">Running…</span>
             ) : task.nextRunAtMs ? (
               <span>
-                Next:{" "}
-                {task.nextRunAtMs <= Date.now() ? (
-                  <span className="text-amber-400">due now</span>
-                ) : (
-                  formatRelativeTime(task.nextRunAtMs)
-                )}
+                Next: {formatRelativeTime(task.nextRunAtMs)}
               </span>
             ) : null}
             {task.lastRunAt ? (
