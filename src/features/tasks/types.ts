@@ -116,6 +116,8 @@ export const CONSTANT_INTERVAL_OPTIONS = [
 ] as const;
 
 export const PERIODIC_INTERVAL_OPTIONS = [
+  { label: "Every 5 min", ms: 300_000 },
+  { label: "Every 10 min", ms: 600_000 },
   { label: "Every 15 min", ms: 900_000 },
   { label: "Every 30 min", ms: 1_800_000 },
   { label: "Every 1 hour", ms: 3_600_000 },
