@@ -1517,10 +1517,10 @@ const AgentStudioPage = () => {
 
   const handleViewTrace = useCallback((sessionKey: string, agentId: string | null) => {
     if (!agentId) return;
-    // Extract sessionId from sessionKey (format: "agentId:sessionId" or just the key)
-    const parts = sessionKey.split(":");
-    const sessionId = parts.length > 1 ? parts.slice(1).join(":") : sessionKey;
-    setViewingTrace({ agentId, sessionId: sessionId });
+    // SessionKey format: "agent:<agentId>:<sessionId>" — extract sessionId
+    const prefix = `agent:${agentId}:`;
+    const sessionId = sessionKey.startsWith(prefix) ? sessionKey.slice(prefix.length) : sessionKey;
+    setViewingTrace({ agentId, sessionId });
   }, []);
 
   const stableChatOnDismissContinuation = useCallback(() => {
