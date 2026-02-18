@@ -1,0 +1,202 @@
+"use client";
+
+import { memo, useCallback, useEffect, useState } from "react";
+import { Archive, ChevronDown, ChevronRight, Trash2 } from "lucide-react";
+import type { SessionEntry } from "./SessionsPanel";
+import { UsageDetails, UsageSkeleton, type SessionUsageData } from "./UsageDetails";
+import { humanizeSessionKey, humanizeOriginLabel } from "@/features/sessions/lib/sessionKeyUtils";
+import type { GatewayClient } from "@/lib/gateway/GatewayClient";
+import { isGatewayDisconnectLikeError, parseAgentIdFromSessionKey } from "@/lib/gateway/GatewayClient";
+import { formatRelativeTime } from "@/lib/text/time";
+
+export const SessionCard = memo(function SessionCard({
+  session,
+  isActive,
+  isExpanded,
+  onToggle,
+  onSessionClick,
+  client,
+  busyKey,
+  confirmDeleteKey,
+  onSetConfirmDelete,
+  onDelete,
+  onCompact,
+}: {
+  session: SessionEntry;
+  isActive: boolean;
+  isExpanded: boolean;
+  onToggle: () => void;
+  onSessionClick?: (sessionKey: string, agentId: string | null) => void;
+  client: GatewayClient;
+  busyKey: string | null;
+  confirmDeleteKey: string | null;
+  onSetConfirmDelete: (key: string | null) => void;
+  onDelete: (key: string) => void;
+  onCompact: (key: string) => void;
+}) {
+  const [usage, setUsage] = useState<SessionUsageData | null>(null);
+  const [usageLoading, setUsageLoading] = useState(false);
+  const [usageLoaded, setUsageLoaded] = useState(false);
+
+  const agentId = parseAgentIdFromSessionKey(session.key);
+  const isBusy = busyKey === session.key;
+  const isConfirming = confirmDeleteKey === session.key;
+
+  const loadUsage = useCallback(async () => {
+    if (usageLoaded) return;
+    setUsageLoading(true);
+    try {
+      const result = await client.call<{
+        totals?: { input?: number; output?: number; totalCost?: number };
+        sessions?: Array<{ usage?: { messageCounts?: { total?: number } } }>;
+      }>("sessions.usage", { key: session.key });
+      const totals = result.totals;
+      const firstSession = result.sessions?.[0];
+      setUsage({
+        inputTokens: totals?.input ?? 0,
+        outputTokens: totals?.output ?? 0,
+        totalCost: totals?.totalCost != null && totals.totalCost > 0 ? totals.totalCost : null,
+        currency: "USD",
+        messageCount: firstSession?.usage?.messageCounts?.total ?? 0,
+      });
+      setUsageLoaded(true);
+    } catch (err) {
+      if (!isGatewayDisconnectLikeError(err)) {
+        console.error("Failed to load session usage.", err);
+      }
+    } finally {
+      setUsageLoading(false);
+    }
+  }, [client, session.key, usageLoaded]);
+
+  useEffect(() => {
+    if (isExpanded && !usageLoaded) {
+      void loadUsage();
+    }
+  }, [isExpanded, usageLoaded, loadUsage]);
+
+  return (
+    <div
+      className={`group/session rounded-md border transition-all duration-200 ${
+        isActive
+          ? "border-primary/40 bg-card/90 shadow-sm"
+          : "border-border/80 bg-card/70 hover:border-border hover:bg-muted/55"
+      }`}
+    >
+      <div
+        role="button"
+        tabIndex={0}
+        className="flex cursor-pointer items-start gap-2 p-3"
+        onClick={(e) => {
+          if ((e.target as HTMLElement).closest("[data-action]")) return;
+          onToggle();
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onToggle();
+          }
+        }}
+      >
+        <div className="mt-0.5 flex-shrink-0 text-muted-foreground">
+          {isExpanded ? (
+            <ChevronDown className="h-3.5 w-3.5" />
+          ) : (
+            <ChevronRight className="h-3.5 w-3.5" />
+          )}
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5">
+            {isActive && (
+              <span className="inline-block h-1.5 w-1.5 flex-shrink-0 rounded-full bg-emerald-500" />
+            )}
+            <span className="truncate font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-foreground">
+              {humanizeSessionKey(session.displayName ?? session.key)}
+            </span>
+          </div>
+          <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+            {agentId ? <span>Agent: {agentId}</span> : null}
+            <span>{formatRelativeTime(session.updatedAt)}</span>
+            {session.origin?.label ? (
+              <span className="max-w-[140px] truncate rounded border border-border/70 bg-muted px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                {humanizeOriginLabel(session.origin.label)}
+              </span>
+            ) : null}
+          </div>
+        </div>
+
+        {!isConfirming && (
+          <div
+            data-action="true"
+            className="flex items-center gap-1 opacity-0 transition group-focus-within/session:opacity-100 group-hover/session:opacity-100"
+          >
+            {onSessionClick && (
+              <button
+                className="flex h-7 items-center rounded-md border border-border/80 bg-card/70 px-2 font-mono text-[9px] font-semibold uppercase tracking-[0.1em] text-muted-foreground transition hover:border-border hover:bg-muted/65"
+                type="button"
+                onClick={() => onSessionClick(session.key, agentId)}
+              >
+                View
+              </button>
+            )}
+            <button
+              className="flex h-7 w-7 items-center justify-center rounded-md border border-border/80 bg-card/70 text-muted-foreground transition hover:border-border hover:bg-muted/65 disabled:cursor-not-allowed disabled:opacity-60"
+              type="button"
+              aria-label={`Compact session ${session.key}`}
+              onClick={() => onCompact(session.key)}
+              disabled={isBusy}
+            >
+              <Archive className="h-3.5 w-3.5" />
+            </button>
+            <button
+              className="flex h-7 w-7 items-center justify-center rounded-md border border-destructive/40 bg-transparent text-destructive transition hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-60"
+              type="button"
+              aria-label={`Delete session ${session.key}`}
+              onClick={() => onSetConfirmDelete(session.key)}
+              disabled={isBusy}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
+      </div>
+
+      {isConfirming && (
+        <div className="flex items-center gap-2 px-3 pb-3" data-action="true">
+          <span className="text-[11px] text-muted-foreground">Are you sure?</span>
+          <button
+            className="rounded-md border border-destructive/50 bg-transparent px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-destructive transition hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-60"
+            type="button"
+            onClick={() => onDelete(session.key)}
+            disabled={isBusy}
+          >
+            {isBusy ? "Deleting…" : "Confirm"}
+          </button>
+          <button
+            className="rounded-md border border-border/80 bg-card/70 px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground transition hover:border-border hover:bg-muted/65"
+            type="button"
+            onClick={() => onSetConfirmDelete(null)}
+            disabled={isBusy}
+          >
+            Cancel
+          </button>
+        </div>
+      )}
+
+      <div
+        className={`overflow-hidden transition-all duration-200 ${
+          isExpanded ? "max-h-[200px] opacity-100" : "max-h-0 opacity-0"
+        }`}
+      >
+        <div className="border-t border-border/40 px-3 pb-3 pt-1">
+          {usageLoading && !usage ? <UsageSkeleton /> : null}
+          {usage ? <UsageDetails usage={usage} /> : null}
+          {!usageLoading && !usage && usageLoaded ? (
+            <div className="mt-2 text-[11px] text-muted-foreground">No usage data available.</div>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+});

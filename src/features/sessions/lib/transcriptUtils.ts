@@ -3,13 +3,11 @@
  * Extracted from SessionsPanel for testability and reuse.
  */
 import type { TranscriptEntry } from "../hooks/useTranscripts";
+import { CHANNEL_TYPE_LABELS } from "./sessionKeyUtils";
 
 export type TranscriptType = "main" | "cron" | "subagent" | "channel" | "unknown";
 
-const CHANNEL_TYPES = [
-  "webchat", "telegram", "discord", "whatsapp",
-  "signal", "googlechat", "slack", "imessage",
-];
+const CHANNEL_TYPES = Object.keys(CHANNEL_TYPE_LABELS);
 
 /**
  * Infer the type of a transcript from its sessionKey or preview content.

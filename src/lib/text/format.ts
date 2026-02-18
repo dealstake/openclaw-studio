@@ -1,4 +1,28 @@
 /**
+ * Format a monetary cost for display.
+ */
+export function formatCost(cost: number, currency: string): string {
+  if (cost < 0.01) {
+    return `<$0.01`;
+  }
+  return new Intl.NumberFormat(undefined, {
+    style: "currency",
+    currency: currency || "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(cost);
+}
+
+/**
+ * Format a token count with K/M suffixes.
+ */
+export function formatTokens(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return n.toLocaleString();
+}
+
+/**
  * Format a byte count as a human-readable size string.
  */
 export const formatSize = (bytes: number | undefined): string => {
