@@ -1,6 +1,6 @@
 import { memo } from "react";
 import type { FC } from "react";
-import { SectionLabel } from "@/components/SectionLabel";
+import { SectionLabel, sectionLabelClass} from "@/components/SectionLabel";
 
 /* ── Shared restart-blocking modal ─────────────────────────────── */
 
@@ -125,14 +125,14 @@ export const ConfigMutationModals: FC<ConfigMutationModalsProps> = ({
             </div>
             <div className="mt-4 flex justify-end gap-2">
               <button
-                className="rounded-md border border-border/80 bg-card/70 px-4 py-2 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground transition hover:bg-muted/65"
+                className={`rounded-md border border-border/80 bg-card/70 px-4 py-2 ${sectionLabelClass} text-muted-foreground transition hover:bg-muted/65`}
                 type="button"
                 onClick={onCancelDelete}
               >
                 Cancel
               </button>
               <button
-                className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-2 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-destructive transition hover:bg-destructive/20"
+                className={`rounded-md border border-destructive/50 bg-destructive/10 px-4 py-2 ${sectionLabelClass} text-destructive transition hover:bg-destructive/20`}
                 type="button"
                 onClick={() => onConfirmDelete(deleteConfirmAgentId)}
               >

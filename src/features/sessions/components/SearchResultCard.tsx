@@ -7,6 +7,8 @@ import { splitByQuery } from "@/features/sessions/lib/transcriptUtils";
 import { humanizeSessionKey } from "@/features/sessions/lib/sessionKeyUtils";
 import { formatRelativeTime } from "@/lib/text/time";
 
+import { sectionLabelClass } from "@/components/SectionLabel";
+
 function HighlightedSnippet({ text, query }: { text: string; query: string }) {
   const segments = splitByQuery(text, query);
   return (
@@ -52,7 +54,7 @@ export const SearchResultCard = memo(function SearchResultCard({
     >
       <div className="flex items-center gap-1.5">
         <Search className="h-3 w-3 flex-shrink-0 text-muted-foreground/60" />
-        <span className="truncate font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-foreground">
+        <span className={`truncate ${sectionLabelClass} text-foreground`}>
           {displayName}
         </span>
         {result.archived && (

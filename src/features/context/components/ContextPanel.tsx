@@ -3,6 +3,8 @@
 import { memo, useCallback, useRef, useState, useEffect, type ReactNode } from "react";
 import { ChevronDown } from "lucide-react";
 
+import { sectionLabelClass } from "@/components/SectionLabel";
+
 export type ContextTab = "projects" | "tasks" | "brain" | "settings" | "channels" | "sessions" | "cron" | "workspace";
 
 interface ContextPanelProps {
@@ -97,7 +99,7 @@ export const ContextPanel = memo(function ContextPanel({
               type="button"
               role="tab"
               aria-selected={isActive}
-              className={`flex-shrink-0 rounded-md border px-2 py-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.08em] transition ${
+              className={`flex-shrink-0 rounded-md border px-2 py-1.5 ${sectionLabelClass} transition ${
                 isActive
                   ? "border-border bg-muted text-foreground shadow-xs"
                   : "border-border/80 bg-card/65 text-muted-foreground hover:border-border hover:bg-muted/70"
@@ -120,7 +122,7 @@ export const ContextPanel = memo(function ContextPanel({
               type="button"
               role="tab"
               aria-selected={isActive}
-              className={`flex-shrink-0 rounded-md border px-2 py-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.08em] transition ${
+              className={`flex-shrink-0 rounded-md border px-2 py-1.5 ${sectionLabelClass} transition ${
                 isActive
                   ? "border-border bg-muted text-foreground shadow-xs"
                   : "border-border/80 bg-card/65 text-muted-foreground hover:border-border hover:bg-muted/70"
@@ -136,7 +138,7 @@ export const ContextPanel = memo(function ContextPanel({
           <div className="relative" ref={moreRef}>
             <button
               type="button"
-              className={`flex items-center gap-1 rounded-md border px-2 py-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.08em] transition ${
+              className={`flex items-center gap-1 rounded-md border px-2 py-1.5 ${sectionLabelClass} transition ${
                 activeOverflowTab
                   ? "border-border bg-muted text-foreground shadow-xs"
                   : "border-border/80 bg-card/65 text-muted-foreground hover:border-border hover:bg-muted/70"
@@ -153,7 +155,7 @@ export const ContextPanel = memo(function ContextPanel({
                   <button
                     key={tab.value}
                     type="button"
-                    className={`flex w-full items-center rounded-md px-2.5 py-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.08em] transition ${
+                    className={`flex w-full items-center rounded-md px-2.5 py-1.5 ${sectionLabelClass} transition ${
                       activeTab === tab.value
                         ? "bg-muted text-foreground"
                         : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"

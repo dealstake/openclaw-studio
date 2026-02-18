@@ -1,5 +1,7 @@
 import type { FC } from "react";
 
+import { sectionLabelClass } from "@/components/SectionLabel";
+
 export type MobilePane = "fleet" | "chat" | "context";
 
 export type MobilePaneToggleProps = {
@@ -20,7 +22,7 @@ export const MobilePaneToggle: FC<MobilePaneToggleProps> = ({
       <div className="grid grid-cols-3 gap-2">
         <button
           type="button"
-          className={`rounded-md border px-2 py-2 font-mono text-[10px] font-semibold uppercase tracking-[0.13em] transition ${
+          className={`rounded-md border px-2 py-2 ${sectionLabelClass} transition ${
             mobilePane === "fleet"
               ? "border-border bg-muted text-foreground shadow-xs"
               : "border-border/80 bg-card/65 text-muted-foreground hover:border-border hover:bg-muted/70"
@@ -31,7 +33,7 @@ export const MobilePaneToggle: FC<MobilePaneToggleProps> = ({
         </button>
         <button
           type="button"
-          className={`rounded-md border px-2 py-2 font-mono text-[10px] font-semibold uppercase tracking-[0.13em] transition ${
+          className={`rounded-md border px-2 py-2 ${sectionLabelClass} transition ${
             mobilePane === "chat"
               ? "border-border bg-muted text-foreground shadow-xs"
               : "border-border/80 bg-card/65 text-muted-foreground hover:border-border hover:bg-muted/70"
@@ -42,7 +44,7 @@ export const MobilePaneToggle: FC<MobilePaneToggleProps> = ({
         </button>
         <button
           type="button"
-          className={`rounded-md border px-2 py-2 font-mono text-[10px] font-semibold uppercase tracking-[0.13em] transition ${
+          className={`rounded-md border px-2 py-2 ${sectionLabelClass} transition ${
             mobilePane === "context"
               ? "border-border bg-muted text-foreground shadow-xs"
               : "border-border/80 bg-card/65 text-muted-foreground hover:border-border hover:bg-muted/70"

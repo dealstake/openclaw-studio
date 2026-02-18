@@ -12,7 +12,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { appendRow } from "../lib/indexTable";
-import { SectionLabel } from "@/components/SectionLabel";
+import { SectionLabel, sectionLabelClass} from "@/components/SectionLabel";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -265,7 +265,7 @@ export const ProjectWizardModal = memo(function ProjectWizardModal({
               )}
               <div className="flex items-center gap-1.5">
                 <Sparkles className="h-4 w-4 text-primary" />
-                <Dialog.Title className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                <Dialog.Title className={`${sectionLabelClass} text-muted-foreground`}>
                   New Project
                 </Dialog.Title>
               </div>
@@ -373,7 +373,7 @@ const DetailsStep = memo(function DetailsStep({
       <div className="flex flex-col gap-1.5">
         <label
           htmlFor="project-name"
-          className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground"
+          className={`${sectionLabelClass} text-muted-foreground`}
         >
           Project Name
         </label>
@@ -392,7 +392,7 @@ const DetailsStep = memo(function DetailsStep({
       <div className="flex flex-col gap-1.5">
         <label
           htmlFor="project-desc"
-          className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground"
+          className={`${sectionLabelClass} text-muted-foreground`}
         >
           Description
         </label>

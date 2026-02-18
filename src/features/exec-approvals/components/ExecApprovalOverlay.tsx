@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { ShieldAlert } from "lucide-react";
 import type { ExecApprovalRequest, ExecApprovalDecision } from "@/features/exec-approvals/types";
-import { SectionLabel } from "@/components/SectionLabel";
+import { SectionLabel, sectionLabelClass} from "@/components/SectionLabel";
 
 type ExecApprovalOverlayProps = {
   queue: ExecApprovalRequest[];
@@ -97,7 +97,7 @@ export const ExecApprovalOverlay = ({
 
         <div className="mt-3 flex items-center justify-between">
           <span
-            className={`font-mono text-[10px] font-semibold uppercase tracking-[0.12em] ${
+            className={`${sectionLabelClass} ${
               expired ? "text-destructive" : "text-muted-foreground"
             }`}
           >
@@ -113,7 +113,7 @@ export const ExecApprovalOverlay = ({
 
         <div className="mt-4 flex items-center gap-2">
           <button
-            className="flex-1 rounded-md border border-transparent bg-primary/90 px-4 py-2 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-primary-foreground transition hover:bg-primary disabled:cursor-not-allowed disabled:border-border disabled:bg-muted disabled:text-muted-foreground"
+            className={`flex-1 rounded-md border border-transparent bg-primary/90 px-4 py-2 ${sectionLabelClass} text-primary-foreground transition hover:bg-primary disabled:cursor-not-allowed disabled:border-border disabled:bg-muted disabled:text-muted-foreground`}
             type="button"
             disabled={busy || expired}
             onClick={() => onDecision(current.id, "allow-once")}
@@ -121,7 +121,7 @@ export const ExecApprovalOverlay = ({
             Allow once
           </button>
           <button
-            className="flex-1 rounded-md border border-border/80 bg-card/70 px-4 py-2 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground transition hover:border-border hover:bg-muted/65 disabled:cursor-not-allowed disabled:opacity-60"
+            className={`flex-1 rounded-md border border-border/80 bg-card/70 px-4 py-2 ${sectionLabelClass} text-muted-foreground transition hover:border-border hover:bg-muted/65 disabled:cursor-not-allowed disabled:opacity-60`}
             type="button"
             disabled={busy || expired}
             onClick={() => onDecision(current.id, "allow-always")}
@@ -129,7 +129,7 @@ export const ExecApprovalOverlay = ({
             Always allow
           </button>
           <button
-            className="flex-1 rounded-md border border-destructive/50 bg-transparent px-4 py-2 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-destructive transition hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-60"
+            className={`flex-1 rounded-md border border-destructive/50 bg-transparent px-4 py-2 ${sectionLabelClass} text-destructive transition hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-60`}
             type="button"
             disabled={busy}
             onClick={() => onDecision(current.id, "deny")}

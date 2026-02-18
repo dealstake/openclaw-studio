@@ -18,6 +18,8 @@ import { SearchResultCard } from "./SearchResultCard";
 import { VirtualCardList } from "./VirtualCardList";
 import { PanelIconButton } from "@/components/PanelIconButton";
 
+import { sectionLabelClass } from "@/components/SectionLabel";
+
 export type SessionEntry = {
   key: string;
   updatedAt?: number | null;
@@ -203,7 +205,7 @@ export const SessionsPanel = memo(function SessionsPanel({
         <div className="flex items-center gap-1">
           <button
             type="button"
-            className={`rounded-md px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] transition ${
+            className={`rounded-md px-2 py-1 ${sectionLabelClass} transition ${
               tab === "active"
                 ? "bg-muted text-foreground"
                 : "text-muted-foreground hover:text-foreground"
@@ -214,7 +216,7 @@ export const SessionsPanel = memo(function SessionsPanel({
           </button>
           <button
             type="button"
-            className={`rounded-md px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] transition ${
+            className={`rounded-md px-2 py-1 ${sectionLabelClass} transition ${
               tab === "history"
                 ? "bg-muted text-foreground"
                 : "text-muted-foreground hover:text-foreground"

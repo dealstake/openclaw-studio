@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/Skeleton";
 import { PanelIconButton } from "@/components/PanelIconButton";
 import type { ChannelsStatusSnapshot } from "@/lib/gateway/channels";
 import { resolveChannelLabel, resolveChannelHealth, type ChannelHealth } from "@/lib/gateway/channels";
-import { SectionLabel } from "@/components/SectionLabel";
+import { SectionLabel, sectionLabelClass} from "@/components/SectionLabel";
 
 type ChannelsPanelProps = {
   snapshot: ChannelsStatusSnapshot | null;
@@ -96,7 +96,7 @@ export const ChannelsPanel = memo(function ChannelsPanel({
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${HEALTH_COLORS[health]}`} />
-                    <span className="truncate font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-foreground">
+                    <span className={`truncate ${sectionLabelClass} text-foreground`}>
                       {label}
                     </span>
                   </div>

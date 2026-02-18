@@ -6,6 +6,8 @@ import { AgentAvatar } from "./AgentAvatar";
 import { EmptyStatePanel } from "./EmptyStatePanel";
 import { TokenProgressBar } from "@/components/TokenProgressBar";
 
+import { sectionLabelClass } from "@/components/SectionLabel";
+
 export type SubAgentEntry = {
   sessionKey: string;
   sessionIdShort: string;
@@ -159,7 +161,7 @@ export const FleetSidebar = memo(function FleetSidebar({
         <button
           type="button"
           data-testid="fleet-new-agent-button"
-          className="rounded-md border border-transparent bg-primary/90 px-3 py-2 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-primary-foreground transition hover:bg-primary disabled:cursor-not-allowed disabled:border-border disabled:bg-muted disabled:text-muted-foreground"
+          className={`rounded-md border border-transparent bg-primary/90 px-3 py-2 ${sectionLabelClass} text-primary-foreground transition hover:bg-primary disabled:cursor-not-allowed disabled:border-border disabled:bg-muted disabled:text-muted-foreground`}
           onClick={onCreateAgent}
           disabled={createDisabled || createBusy}
         >
@@ -176,7 +178,7 @@ export const FleetSidebar = memo(function FleetSidebar({
               type="button"
               data-testid={option.testId}
               aria-pressed={active}
-                className={`rounded-md border px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.13em] transition ${
+                className={`rounded-md border px-2 py-1 ${sectionLabelClass} transition ${
                 active
                   ? "border-border bg-muted text-foreground shadow-xs"
                   : "border-border/80 bg-card/65 text-muted-foreground hover:border-border hover:bg-muted/70"

@@ -9,7 +9,7 @@ import { isGatewayDisconnectLikeError } from "@/lib/gateway/GatewayClient";
 import { formatCronPayload, formatCronSchedule, type CronJobSummary } from "@/lib/cron/types";
 import { formatRelativeTime } from "@/lib/text/time";
 import { PanelIconButton } from "@/components/PanelIconButton";
-import { SectionLabel } from "@/components/SectionLabel";
+import { SectionLabel, sectionLabelClass} from "@/components/SectionLabel";
 
 type CronRunEntry = {
   id: string;
@@ -162,7 +162,7 @@ export const CronPanel = memo(function CronPanel({
                       )}
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          <span className="truncate font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-foreground">
+                          <span className={`truncate ${sectionLabelClass} text-foreground`}>
                             {job.name}
                           </span>
                           {!job.enabled ? (

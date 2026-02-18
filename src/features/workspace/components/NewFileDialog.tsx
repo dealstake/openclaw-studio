@@ -2,7 +2,7 @@
 
 import { memo, useEffect, useRef, useState } from "react";
 import { Check, X } from "lucide-react";
-import { SectionLabel } from "@/components/SectionLabel";
+import { SectionLabel, sectionLabelClass} from "@/components/SectionLabel";
 
 export const NewFileDialog = memo(function NewFileDialog({
   currentPath,
@@ -58,7 +58,7 @@ export const NewFileDialog = memo(function NewFileDialog({
       <div className="mt-2 flex items-center justify-end gap-1.5">
         <button
           type="button"
-          className="flex h-7 items-center gap-1 rounded-md border border-border/80 bg-card/70 px-2.5 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground transition hover:bg-muted/65 disabled:opacity-50"
+          className={`flex h-7 items-center gap-1 rounded-md border border-border/80 bg-card/70 px-2.5 ${sectionLabelClass} text-muted-foreground transition hover:bg-muted/65 disabled:opacity-50`}
           onClick={onCancel}
           disabled={saving}
         >
@@ -67,7 +67,7 @@ export const NewFileDialog = memo(function NewFileDialog({
         </button>
         <button
           type="submit"
-          className="flex h-7 items-center gap-1 rounded-md border border-transparent bg-primary/90 px-2.5 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-primary-foreground transition hover:bg-primary disabled:opacity-50"
+          className={`flex h-7 items-center gap-1 rounded-md border border-transparent bg-primary/90 px-2.5 ${sectionLabelClass} text-primary-foreground transition hover:bg-primary disabled:opacity-50`}
           disabled={saving || !name.trim()}
           data-testid="ws-new-file-submit"
         >

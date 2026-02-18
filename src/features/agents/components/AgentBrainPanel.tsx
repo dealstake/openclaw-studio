@@ -13,7 +13,7 @@ import {
 } from "@/lib/agents/agentFiles";
 import { useAgentFilesEditor } from "@/features/agents/hooks/useAgentFilesEditor";
 import { AgentInspectHeader } from "./AgentInspectHeader";
-import { SectionLabel } from "@/components/SectionLabel";
+import { SectionLabel, sectionLabelClass} from "@/components/SectionLabel";
 
 type AgentBrainPanelProps = {
   client: GatewayClient;
@@ -102,7 +102,7 @@ export const AgentBrainPanel = ({
                 <button
                   key={name}
                   type="button"
-                  className={`rounded-full border px-3 py-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] transition ${
+                  className={`rounded-full border px-3 py-1.5 ${sectionLabelClass} transition ${
                     active
                       ? "border-border bg-background text-foreground shadow-sm"
                       : "border-transparent bg-muted/60 text-muted-foreground hover:border-border/80 hover:bg-muted"
@@ -120,7 +120,7 @@ export const AgentBrainPanel = ({
           <div className="mt-3 flex items-center justify-end gap-1">
             <button
               type="button"
-              className={`rounded-md border px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] transition ${
+              className={`rounded-md border px-2.5 py-1 ${sectionLabelClass} transition ${
                 previewMode
                   ? "border-border bg-background text-foreground"
                   : "border-border/70 bg-card/60 text-muted-foreground hover:bg-muted/70"
@@ -131,7 +131,7 @@ export const AgentBrainPanel = ({
             </button>
             <button
               type="button"
-              className={`rounded-md border px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] transition ${
+              className={`rounded-md border px-2.5 py-1 ${sectionLabelClass} transition ${
                 previewMode
                   ? "border-border/70 bg-card/60 text-muted-foreground hover:bg-muted/70"
                   : "border-border bg-background text-foreground"

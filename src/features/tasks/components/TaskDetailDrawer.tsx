@@ -28,7 +28,7 @@ import { formatDuration } from "@/features/tasks/lib/format";
 import { Skeleton } from "@/components/Skeleton";
 import { TYPE_CONFIG, STATUS_DOT_CLASS, STATUS_LABEL, getTaskStatusKey } from "@/features/tasks/lib/taskTypeConfig";
 import { PanelIconButton } from "@/components/PanelIconButton";
-import { SectionLabel } from "@/components/SectionLabel";
+import { SectionLabel, sectionLabelClass} from "@/components/SectionLabel";
 
 // ─── Run history types ───────────────────────────────────────────────────────
 
@@ -225,7 +225,7 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1.5">
               <span className={`h-2 w-2 rounded-full ${statusDotClass}`} />
-              <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-foreground">
+              <span className={`${sectionLabelClass} text-foreground`}>
                 {statusLabel}
               </span>
             </div>

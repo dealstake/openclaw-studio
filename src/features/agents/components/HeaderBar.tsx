@@ -9,6 +9,8 @@ import { FolderOpen, Ellipsis, Menu, PanelRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getCfIdentity, type CfIdentity } from "@/lib/cloudflare-auth";
 
+import { sectionLabelClass } from "@/components/SectionLabel";
+
 type HeaderBarProps = {
   status: GatewayStatus;
   onConnectionSettings: () => void;
@@ -89,7 +91,7 @@ export const HeaderBar = ({
         <div className="flex shrink-0 items-center gap-2">
           {status === "connecting" ? (
             <span
-              className="inline-flex items-center rounded-md border border-border/70 bg-secondary px-3 py-2 font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-secondary-foreground"
+              className={`inline-flex items-center rounded-md border border-border/70 bg-secondary px-3 py-2 ${sectionLabelClass} text-secondary-foreground`}
               data-testid="gateway-connecting-indicator"
             >
               Connecting

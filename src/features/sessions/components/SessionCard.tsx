@@ -10,6 +10,8 @@ import { isGatewayDisconnectLikeError, parseAgentIdFromSessionKey } from "@/lib/
 import { formatRelativeTime } from "@/lib/text/time";
 import { PanelIconButton } from "@/components/PanelIconButton";
 
+import { sectionLabelClass } from "@/components/SectionLabel";
+
 export const SessionCard = memo(function SessionCard({
   session,
   isActive,
@@ -112,7 +114,7 @@ export const SessionCard = memo(function SessionCard({
             {isActive && (
               <span className="inline-block h-1.5 w-1.5 flex-shrink-0 rounded-full bg-emerald-500" />
             )}
-            <span className="truncate font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-foreground">
+            <span className={`truncate ${sectionLabelClass} text-foreground`}>
               {humanizeSessionKey(session.displayName ?? session.key)}
             </span>
           </div>
@@ -164,7 +166,7 @@ export const SessionCard = memo(function SessionCard({
         <div className="flex items-center gap-2 px-3 pb-3" data-action="true">
           <span className="text-[11px] text-muted-foreground">Are you sure?</span>
           <button
-            className="rounded-md border border-destructive/50 bg-transparent px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-destructive transition hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-60"
+            className={`rounded-md border border-destructive/50 bg-transparent px-2 py-1 ${sectionLabelClass} text-destructive transition hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-60`}
             type="button"
             onClick={() => onDelete(session.key)}
             disabled={isBusy}
@@ -172,7 +174,7 @@ export const SessionCard = memo(function SessionCard({
             {isBusy ? "Deleting…" : "Confirm"}
           </button>
           <button
-            className="rounded-md border border-border/80 bg-card/70 px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground transition hover:border-border hover:bg-muted/65"
+            className={`rounded-md border border-border/80 bg-card/70 px-2 py-1 ${sectionLabelClass} text-muted-foreground transition hover:border-border hover:bg-muted/65`}
             type="button"
             onClick={() => onSetConfirmDelete(null)}
             disabled={isBusy}

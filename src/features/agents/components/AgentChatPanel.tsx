@@ -32,6 +32,8 @@ import {
 import { EmptyStatePanel } from "./EmptyStatePanel";
 import { TokenProgressBar } from "@/components/TokenProgressBar";
 
+import { sectionLabelClass } from "@/components/SectionLabel";
+
 type AgentChatPanelProps = {
   agent: AgentRecord;
   isSelected: boolean;
@@ -84,7 +86,7 @@ const AgentChatFinalItems = memo(function AgentChatFinalItems({
               className="rounded-md border border-border/70 bg-muted/55 text-[11px] text-muted-foreground"
               open={autoExpandThinking && index === lastThinkingItemIndex}
             >
-              <summary className="flex cursor-pointer list-none items-center gap-2 px-2 py-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.11em] [&::-webkit-details-marker]:hidden">
+              <summary className={`flex cursor-pointer list-none items-center gap-2 px-2 py-1.5 ${sectionLabelClass} [&::-webkit-details-marker]:hidden`}>
                 <AgentAvatar seed={avatarSeed} name={name} avatarUrl={avatarUrl} size={22} />
                 <ChevronRight className="h-3 w-3 shrink-0 transition-transform duration-200 [[open]>&]:rotate-90" />
                 <span>Thinking</span>
@@ -110,7 +112,7 @@ const AgentChatFinalItems = memo(function AgentChatFinalItems({
               key={`chat-${agentId}-tool-${index}`}
               className="rounded-md border border-border/70 bg-muted/55 px-2 py-1 text-[11px] text-muted-foreground"
             >
-              <summary className="cursor-pointer select-none font-mono text-[10px] font-semibold uppercase tracking-[0.11em]">
+              <summary className={`cursor-pointer select-none ${sectionLabelClass}`}>
                 {summaryText}
               </summary>
               {body ? (
@@ -303,7 +305,7 @@ const AgentChatTranscript = memo(function AgentChatTranscript({
                   className={`rounded-md border border-border/70 bg-muted/55 text-[11px] text-muted-foreground${status === "running" ? " thinking-active" : ""}`}
                   open={status === "running" && autoExpandThinking}
                 >
-                  <summary className="flex cursor-pointer list-none items-center gap-2 px-2 py-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.11em] [&::-webkit-details-marker]:hidden">
+                  <summary className={`flex cursor-pointer list-none items-center gap-2 px-2 py-1.5 ${sectionLabelClass} [&::-webkit-details-marker]:hidden`}>
                     <AgentAvatar seed={avatarSeed} name={name} avatarUrl={avatarUrl} size={22} />
                     <ChevronRight className="h-3 w-3 shrink-0 transition-transform duration-200 [[open]>&]:rotate-90" />
                     <span>Thinking</span>
@@ -331,7 +333,7 @@ const AgentChatTranscript = memo(function AgentChatTranscript({
                   data-testid="agent-typing-indicator"
                 >
                   <AgentAvatar seed={avatarSeed} name={name} avatarUrl={avatarUrl} size={22} />
-                  <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.11em]">
+                  <span className={`${sectionLabelClass}`}>
                     Thinking
                   </span>
                   <span className="typing-dots" aria-hidden="true">
@@ -350,7 +352,7 @@ const AgentChatTranscript = memo(function AgentChatTranscript({
       {showJumpToLatest ? (
         <button
           type="button"
-          className="absolute bottom-3 left-1/2 z-10 max-w-[calc(100%-2rem)] -translate-x-1/2 rounded-md border border-border/80 bg-card/95 px-3 py-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-foreground shadow-sm transition hover:bg-muted/70"
+          className={`absolute bottom-3 left-1/2 z-10 max-w-[calc(100%-2rem)] -translate-x-1/2 rounded-md border border-border/80 bg-card/95 px-3 py-1.5 ${sectionLabelClass} text-foreground shadow-sm transition hover:bg-muted/70`}
           onClick={() => {
             setPinned(true);
             scrollChatToBottom();
@@ -902,7 +904,7 @@ export const AgentChatPanel = memo(function AgentChatPanel({
             <div className="flex items-center gap-2 border-b border-border/60 px-3 py-2">
               <button
                 type="button"
-                className="flex items-center gap-1.5 rounded-md px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground transition hover:bg-muted/50 hover:text-foreground"
+                className={`flex items-center gap-1.5 rounded-md px-2 py-1 ${sectionLabelClass} text-muted-foreground transition hover:bg-muted/50 hover:text-foreground`}
                 onClick={onExitSessionView}
               >
                 <ArrowLeft className="h-3 w-3" />
