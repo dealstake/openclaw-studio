@@ -165,17 +165,21 @@ export const ProjectCard = memo(function ProjectCard({
       {/* Details (Progress + Next Step) */}
       {details && (
         <div className="mt-1 space-y-0.5 border-t border-border/40 pt-1">
-          {/* Progress Bar */}
-          {details.progress.total > 0 && (
+          {/* Progress Bar — always visible; greyed out when no checkboxes */}
+          {!isDone && (
             <div className="flex items-center gap-2">
               <div className="h-1.5 flex-1 rounded-full bg-muted/40 overflow-hidden">
-                <div
-                  className="h-full bg-primary/60 transition-all duration-500"
-                  style={{ width: `${details.progress.percent}%` }}
-                />
+                {details.progress.total > 0 && (
+                  <div
+                    className="h-full bg-primary/60 transition-all duration-500"
+                    style={{ width: `${details.progress.percent}%` }}
+                  />
+                )}
               </div>
               <span className="font-mono text-[9px] text-muted-foreground">
-                {details.progress.completed}/{details.progress.total}
+                {details.progress.total > 0
+                  ? `${details.progress.completed}/${details.progress.total}`
+                  : "—"}
               </span>
             </div>
           )}
