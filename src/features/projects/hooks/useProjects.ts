@@ -32,10 +32,12 @@ export function useProjects(
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const loadRef = useRef<() => Promise<void>>(() => Promise.resolve());
+  const hasLoadedOnce = useRef(false);
 
   const loadProjects = useCallback(async () => {
     if (!agentId) return;
-    setLoading(true);
+    // Only show loading skeleton on initial load, not background refreshes
+    if (!hasLoadedOnce.current) setLoading(true);
     setError(null);
     try {
       // Single batch request replaces N+1 individual file fetches
@@ -64,6 +66,7 @@ export function useProjects(
       });
 
       setProjects(enrichedProjects);
+      hasLoadedOnce.current = true;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
     } finally {
