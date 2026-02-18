@@ -74,11 +74,15 @@ export async function GET(request: Request) {
       );
     }
 
+    // Resolve sessionId: it might be a key suffix (e.g. "cron:fb40...") or a UUID.
+    // If not a UUID, look up the actual UUID from sessions.json.
+    const resolvedSessionId = await resolveSessionId(agentId, sessionId);
+
     // Try to read JSONL directly (local mode)
     if (!isSidecarConfigured()) {
-      const messages = await readJsonlLocal(agentId, sessionId, offset, limit);
+      const messages = await readJsonlLocal(agentId, resolvedSessionId, offset, limit);
       return NextResponse.json({
-        sessionId,
+        sessionId: resolvedSessionId,
         messages: messages.items,
         total: messages.total,
         offset,
@@ -88,9 +92,9 @@ export async function GET(request: Request) {
     }
 
     // Cloud Run mode: read JSONL via sidecar /file endpoint
-    const messages = await readJsonlViaSidecar(agentId, sessionId, offset, limit);
+    const messages = await readJsonlViaSidecar(agentId, resolvedSessionId, offset, limit);
     return NextResponse.json({
-      sessionId,
+      sessionId: resolvedSessionId,
       messages: messages.items,
       total: messages.total,
       offset,
@@ -100,6 +104,37 @@ export async function GET(request: Request) {
   } catch (err) {
     return handleApiError(err, "sessions/trace", "Failed to fetch session trace.");
   }
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Resolve a sessionId that might be a key suffix (e.g., "main", "cron:fb40...")
+ * into the actual UUID used for the JSONL file.
+ */
+async function resolveSessionId(agentId: string, sessionId: string): Promise<string> {
+  // If it's already a UUID, use it directly
+  if (UUID_RE.test(sessionId)) return sessionId;
+
+  // Otherwise, look up from sessions.json
+  const workspace = resolveAgentWorkspace(agentId);
+  const sessionsPath = path.join(workspace, "sessions", "sessions.json");
+  if (!fs.existsSync(sessionsPath)) return sessionId;
+
+  try {
+    const raw = fs.readFileSync(sessionsPath, "utf-8");
+    const data = JSON.parse(raw) as Record<string, { sessionId?: string }>;
+    // Try exact key: "agent:<agentId>:<sessionId>"
+    const fullKey = `agent:${agentId}:${sessionId}`;
+    if (data[fullKey]?.sessionId) return data[fullKey].sessionId;
+    // Fallback: scan for matching key suffix
+    for (const [key, val] of Object.entries(data)) {
+      if (key.endsWith(`:${sessionId}`) && val?.sessionId) return val.sessionId;
+    }
+  } catch {
+    // Fall through
+  }
+  return sessionId;
 }
 
 function parseJsonlMessages(lines: string[]): TraceMessage[] {
