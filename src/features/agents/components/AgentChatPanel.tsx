@@ -350,17 +350,22 @@ const AgentChatTranscript = memo(function AgentChatTranscript({
       </div>
 
       {showJumpToLatest ? (
-        <button
-          type="button"
-          className={`absolute bottom-3 left-1/2 z-10 max-w-[calc(100%-2rem)] -translate-x-1/2 rounded-md border border-border/80 bg-card/95 px-3 py-1.5 ${sectionLabelClass} text-foreground shadow-sm transition hover:bg-muted/70`}
-          onClick={() => {
-            setPinned(true);
-            scrollChatToBottom();
-          }}
-          aria-label="Jump to latest"
-        >
-          Jump to latest
-        </button>
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex flex-col items-center">
+          <div className="h-12 w-full bg-gradient-to-t from-card via-card/80 to-transparent" />
+          <div className="w-full bg-card pb-3">
+            <button
+              type="button"
+              className={`pointer-events-auto mx-auto flex max-w-[calc(100%-2rem)] rounded-md border border-border/80 bg-card/95 px-3 py-1.5 ${sectionLabelClass} text-foreground shadow-sm transition hover:bg-muted/70`}
+              onClick={() => {
+                setPinned(true);
+                scrollChatToBottom();
+              }}
+              aria-label="Jump to latest"
+            >
+              Jump to latest
+            </button>
+          </div>
+        </div>
       ) : null}
     </div>
   );
@@ -482,14 +487,14 @@ const AgentChatComposer = memo(function AgentChatComposer({
         />
         {running ? (
           <button
-            className="flex h-8 min-w-[32px] items-center justify-center rounded-lg border border-border/80 bg-card/50 text-foreground shadow-sm transition hover:bg-muted/70 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none sm:h-9 sm:px-3"
+            className="flex h-9 min-w-[36px] items-center justify-center rounded-lg border border-destructive/40 bg-destructive/10 text-destructive shadow-sm transition hover:bg-destructive/20 disabled:cursor-not-allowed disabled:border-border disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none sm:h-10 sm:min-w-[40px] sm:px-3"
             type="button"
             aria-label="Stop agent"
             onClick={onStop}
             disabled={!canSend || stopBusy}
           >
             <span className="sr-only">Stop</span>
-            <div className="h-2.5 w-2.5 rounded-[1px] bg-foreground" />
+            <div className="h-3 w-3 rounded-[2px] bg-destructive" />
           </button>
         ) : null}
         <button
