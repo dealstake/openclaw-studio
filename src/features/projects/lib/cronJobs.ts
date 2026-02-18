@@ -12,13 +12,15 @@ export async function manageProjectCronJobs(
   enabled: boolean,
 ): Promise<void> {
   const managed = tasks.filter((t) => t.autoManage);
-  for (const task of managed) {
-    try {
-      await updateCronJob(client, task.cronJobId, { enabled });
-    } catch (err) {
-      console.warn(
-        `Failed to ${enabled ? "resume" : "pause"} cron job ${task.cronJobId}:`,
-        err,
+  const results = await Promise.allSettled(
+    managed.map((task) => updateCronJob(client, task.cronJobId, { enabled })),
+  );
+  for (let i = 0; i < results.length; i++) {
+    const result = results[i];
+    if (result.status === "rejected") {
+      console.error(
+        `Failed to ${enabled ? "resume" : "pause"} cron job ${managed[i].cronJobId}:`,
+        result.reason,
       );
     }
   }

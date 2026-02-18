@@ -152,10 +152,6 @@ export const ProjectWizardModal = memo(function ProjectWizardModal({
     }
   }, [open]);
 
-  const handleClose = useCallback(() => {
-    onClose();
-  }, [onClose]);
-
   const handleSelectType = useCallback((type: ProjectType) => {
     setForm((prev) => ({ ...prev, type }));
     setStep("details");
@@ -239,15 +235,15 @@ export const ProjectWizardModal = memo(function ProjectWizardModal({
       }
 
       onCreated();
-      handleClose();
+      onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create project.");
       setCreating(false);
     }
-  }, [form, agentId, onCreated, handleClose]);
+  }, [form, agentId, onCreated, onClose]);
 
   return (
-    <Dialog.Root open={open} onOpenChange={(isOpen) => { if (!isOpen) handleClose(); }}>
+    <Dialog.Root open={open} onOpenChange={(isOpen) => { if (!isOpen) onClose(); }}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-[100] bg-background/70 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
         <Dialog.Content

@@ -18,7 +18,6 @@ interface UseProjectsResult {
   refresh: () => void;
   toggleStatus: (project: ProjectEntry) => Promise<void>;
   archive: (project: ProjectEntry) => Promise<void>;
-  buildContinuePrompt: (project: ProjectEntry) => string;
 }
 
 export function useProjects(
@@ -67,7 +66,7 @@ export function useProjects(
               }
             }
           } catch (err) {
-            console.warn(`Failed to fetch details for ${project.doc}`, err);
+            console.error(`Failed to fetch details for ${project.doc}`, err);
           }
           return project;
         }),
@@ -214,7 +213,7 @@ export function useProjects(
     void loadProjects();
   }, [loadProjects]);
 
-  return { projects, loading, error, refresh, toggleStatus, archive, buildContinuePrompt };
+  return { projects, loading, error, refresh, toggleStatus, archive };
 }
 
 export function buildContinuePrompt(project: ProjectEntry): string {
