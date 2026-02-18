@@ -15,153 +15,8 @@ import type {
   UpdateTaskPayload,
 } from "@/features/tasks/types";
 import { taskScheduleToCronSchedule } from "@/features/tasks/lib/schedule";
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function generateTaskId(): string {
-  return `task-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-}
-
-function buildCronPayloadMessage(taskId: string, prompt: string): string {
-  return `[TASK:${taskId}] ${prompt}`;
-}
-
-function buildDelivery(payload: CreateTaskPayload) {
-  if (payload.deliveryChannel) {
-    return {
-      mode: "announce" as const,
-      channel: payload.deliveryChannel,
-      ...(payload.deliveryTarget ? { to: payload.deliveryTarget } : {}),
-    };
-  }
-  return { mode: "announce" as const };
-}
-
-// ─── Metadata API helpers ────────────────────────────────────────────────────
-
-async function fetchTasks(agentId: string): Promise<StudioTask[]> {
-  const res = await fetch(`/api/tasks?agentId=${encodeURIComponent(agentId)}`);
-  if (!res.ok) {
-    const data = (await res.json().catch(() => ({}))) as { error?: string };
-    throw new Error(data.error ?? "Failed to fetch tasks.");
-  }
-  const data = (await res.json()) as { tasks: StudioTask[] };
-  return data.tasks ?? [];
-}
-
-async function saveTaskMetadata(task: StudioTask): Promise<void> {
-  const res = await fetch("/api/tasks", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ task }),
-  });
-  if (!res.ok) {
-    const data = (await res.json().catch(() => ({}))) as { error?: string };
-    throw new Error(data.error ?? "Failed to save task.");
-  }
-}
-
-async function patchTaskMetadata(
-  agentId: string,
-  taskId: string,
-  patch: UpdateTaskPayload
-): Promise<StudioTask> {
-  const res = await fetch("/api/tasks", {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ agentId, taskId, patch }),
-  });
-  if (!res.ok) {
-    const data = (await res.json().catch(() => ({}))) as { error?: string };
-    throw new Error(data.error ?? "Failed to update task.");
-  }
-  const data = (await res.json()) as { task: StudioTask };
-  return data.task;
-}
-
-async function deleteTaskMetadata(agentId: string, taskId: string): Promise<void> {
-  const res = await fetch("/api/tasks", {
-    method: "DELETE",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ agentId, taskId }),
-  });
-  if (!res.ok) {
-    const data = (await res.json().catch(() => ({}))) as { error?: string };
-    throw new Error(data.error ?? "Failed to delete task.");
-  }
-}
-
-// ─── Enrich tasks with live cron state ───────────────────────────────────────
-
-function enrichTasksWithCronData(
-  tasks: StudioTask[],
-  cronJobs: CronJobSummary[],
-  agentId: string
-): StudioTask[] {
-  const cronMap = new Map(cronJobs.map((j) => [j.id, j]));
-  const knownCronJobIds = new Set(tasks.map((t) => t.cronJobId));
-
-  const enrichedTasks = tasks.map((task) => {
-    const cron = cronMap.get(task.cronJobId);
-    if (!cron) return task;
-    return {
-      ...task,
-      enabled: cron.enabled,
-      lastRunAt: cron.state.lastRunAtMs
-        ? new Date(cron.state.lastRunAtMs).toISOString()
-        : task.lastRunAt,
-      lastRunStatus:
-        cron.state.lastStatus === "ok"
-          ? "success"
-          : cron.state.lastStatus === "error"
-            ? "error"
-            : task.lastRunStatus,
-    };
-  });
-
-  // Identify orphan cron jobs (jobs for this agent but not in tasks list)
-  const orphanJobs = cronJobs.filter(
-    (job) =>
-      job.agentId === agentId &&
-      !knownCronJobIds.has(job.id) &&
-      !job.id.startsWith("sys:") // Ignore system jobs if any
-  );
-
-  const synthesizedTasks: StudioTask[] = orphanJobs.map((job) => ({
-    id: job.id, // Use cron job ID as task ID
-    cronJobId: job.id,
-    agentId: job.agentId ?? agentId,
-    name: job.name || "[UNMANAGED] Unknown Task",
-    description: "This task exists in the gateway but has no Studio metadata.",
-    type: "periodic", // Default fallback
-    schedule: { type: "periodic", intervalMs: 3600000 }, // Dummy schedule
-    prompt:
-      job.payload.kind === "agentTurn"
-        ? job.payload.message
-        : job.payload.kind === "systemEvent"
-          ? job.payload.text
-          : JSON.stringify(job.payload),
-    model:
-      job.payload.kind === "agentTurn" ? job.payload.model ?? "default" : "default",
-    deliveryChannel: null,
-    deliveryTarget: null,
-    enabled: job.enabled,
-    createdAt: new Date(job.createdAtMs ?? Date.now()).toISOString(),
-    updatedAt: new Date(job.createdAtMs ?? Date.now()).toISOString(),
-    lastRunAt: job.state.lastRunAtMs
-      ? new Date(job.state.lastRunAtMs).toISOString()
-      : null,
-    lastRunStatus:
-      job.state.lastStatus === "ok"
-        ? "success"
-        : job.state.lastStatus === "error"
-          ? "error"
-          : null,
-    runCount: job.state.runCount ?? 0,
-  }));
-
-  return [...enrichedTasks, ...synthesizedTasks];
-}
+import { fetchTasks, saveTaskMetadata, patchTaskMetadata, deleteTaskMetadata } from "@/features/tasks/lib/taskApi";
+import { generateTaskId, buildCronPayloadMessage, buildDelivery, enrichTasksWithCronData } from "@/features/tasks/lib/taskEnrichment";
 
 // ─── Hook ────────────────────────────────────────────────────────────────────
 
@@ -363,7 +218,7 @@ export const useAgentTasks = (
   );
 
   const updateTask = useCallback(
-    async (taskId: string, updates: import("@/features/tasks/types").UpdateTaskPayload) => {
+    async (taskId: string, updates: UpdateTaskPayload) => {
       if (!agentId || busyTaskId) return;
       setBusyTaskId(taskId);
       setBusyAction("update");

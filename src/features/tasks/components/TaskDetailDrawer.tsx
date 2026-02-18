@@ -23,6 +23,7 @@ import {
 } from "@/features/tasks/types";
 import { humanReadableSchedule } from "@/features/tasks/lib/schedule";
 import { formatRelativeTime } from "@/lib/text/time";
+import { formatDuration } from "@/features/tasks/lib/format";
 import { Skeleton } from "@/components/Skeleton";
 import { TYPE_CONFIG, STATUS_DOT_CLASS, STATUS_LABEL, getTaskStatusKey } from "@/features/tasks/lib/taskTypeConfig";
 
@@ -170,13 +171,6 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
   const statusKey = getTaskStatusKey(task);
   const statusLabel = STATUS_LABEL[statusKey];
   const statusDotClass = STATUS_DOT_CLASS[statusKey];
-
-  const formatDuration = (ms: number | undefined) => {
-    if (ms === undefined) return "—";
-    if (ms < 1000) return `${ms}ms`;
-    if (ms < 60_000) return `${(ms / 1000).toFixed(1)}s`;
-    return `${(ms / 60_000).toFixed(1)}m`;
-  };
 
   const inputClass =
     "h-7 w-full rounded-md border border-border/80 bg-card/70 px-2 font-mono text-[11px] text-foreground outline-none transition hover:border-border focus:border-primary/60 disabled:cursor-not-allowed disabled:opacity-60";
