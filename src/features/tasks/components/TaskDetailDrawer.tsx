@@ -27,6 +27,7 @@ import { formatRelativeTime } from "@/lib/text/time";
 import { formatDuration } from "@/features/tasks/lib/format";
 import { Skeleton } from "@/components/Skeleton";
 import { TYPE_CONFIG, STATUS_DOT_CLASS, STATUS_LABEL, getTaskStatusKey } from "@/features/tasks/lib/taskTypeConfig";
+import { PanelIconButton } from "@/components/PanelIconButton";
 
 // ─── Run history types ───────────────────────────────────────────────────────
 
@@ -199,22 +200,18 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
             </>
           ) : (
             <>
-              <button
-                className="flex h-7 w-7 items-center justify-center rounded-md border border-border/80 bg-card/70 text-muted-foreground transition hover:border-border hover:bg-muted/65"
-                type="button"
+              <PanelIconButton
                 aria-label="Edit task"
                 onClick={startEditing}
               >
                 <Pencil className="h-3 w-3" />
-              </button>
-              <button
-                className="flex h-7 w-7 items-center justify-center rounded-md border border-border/80 bg-card/70 text-muted-foreground transition hover:border-border hover:bg-muted/65"
-                type="button"
+              </PanelIconButton>
+              <PanelIconButton
                 aria-label="Close task detail"
                 onClick={onClose}
               >
                 <X className="h-3.5 w-3.5" />
-              </button>
+              </PanelIconButton>
             </>
           )}
         </div>

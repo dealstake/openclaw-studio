@@ -12,6 +12,7 @@ import { ProjectWizardModal } from "./ProjectWizardModal";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { useProjects, buildContinuePrompt } from "../hooks/useProjects";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
+import { PanelIconButton } from "@/components/PanelIconButton";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -71,22 +72,18 @@ export const ProjectsPanel = memo(function ProjectsPanel({
           )}
         </div>
         <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            className="flex h-7 w-7 items-center justify-center rounded-md border border-border/80 bg-card/70 text-muted-foreground transition hover:border-border hover:bg-muted/65"
+          <PanelIconButton
             aria-label="New project"
             onClick={() => setShowWizard(true)}
           >
             <Plus className="h-3 w-3" />
-          </button>
-          <button
-            type="button"
-            className="flex h-7 w-7 items-center justify-center rounded-md border border-border/80 bg-card/70 text-muted-foreground transition hover:border-border hover:bg-muted/65"
+          </PanelIconButton>
+          <PanelIconButton
             aria-label="Refresh projects"
             onClick={refresh}
           >
             <RefreshCw className={`h-3 w-3 ${loading ? "animate-spin" : ""}`} />
-          </button>
+          </PanelIconButton>
         </div>
       </div>
 

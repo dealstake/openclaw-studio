@@ -10,6 +10,7 @@ import {
 import { STATUS_CONFIG, PRIORITY_DOT, TOGGLE_MAP } from "../lib/constants";
 import { LinkedTaskRow } from "./LinkedTaskRow";
 import type { ProjectEntry } from "./ProjectsPanel";
+import { PanelIconButton } from "@/components/PanelIconButton";
 
 interface ProjectCardProps {
   project: ProjectEntry;
@@ -195,26 +196,23 @@ export const ProjectCard = memo(function ProjectCard({
 
           {/* Archive (Done and Parked projects) */}
           {(project.statusEmoji === "✅" || project.statusEmoji === "⏸️") && (
-            <button
-              type="button"
-              className="flex h-7 w-7 items-center justify-center rounded-md border border-border/80 bg-card/70 text-muted-foreground transition hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-400"
+            <PanelIconButton
+              variant="destructive"
               title="Archive project"
               aria-label="Archive project"
               onClick={(e) => { e.stopPropagation(); onArchive(); }}
             >
               <Archive className="h-3 w-3" />
-            </button>
+            </PanelIconButton>
           )}
 
           {/* Continue */}
-          <button
-            type="button"
-            className="flex h-7 w-7 items-center justify-center rounded-md border border-border/80 bg-card/70 text-muted-foreground transition hover:border-border hover:bg-muted/65"
+          <PanelIconButton
             title={details?.continuation?.nextStep ? `Continue: ${details.continuation.nextStep}` : "Continue project"}
             onClick={(e) => { e.stopPropagation(); onContinue(); }}
           >
             <Play className="h-3 w-3" />
-          </button>
+          </PanelIconButton>
         </div>
       </div>
     </div>

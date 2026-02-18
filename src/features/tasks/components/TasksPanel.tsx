@@ -9,6 +9,7 @@ import type { StudioTask, TaskType, TaskSchedule, UpdateTaskPayload } from "@/fe
 import { TaskCard } from "./TaskCard";
 import { TaskDetailDrawer } from "./TaskDetailDrawer";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { PanelIconButton } from "@/components/PanelIconButton";
 
 // ─── Filter tabs ─────────────────────────────────────────────────────────────
 
@@ -148,15 +149,13 @@ export const TasksPanel = memo(function TasksPanel({
               New
             </span>
           </button>
-          <button
-            className="flex h-7 w-7 items-center justify-center rounded-md border border-border/80 bg-card/70 text-muted-foreground transition hover:border-border hover:bg-muted/65 disabled:cursor-not-allowed disabled:opacity-60"
-            type="button"
+          <PanelIconButton
             aria-label="Refresh tasks"
             onClick={onRefresh}
             disabled={loading}
           >
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-          </button>
+          </PanelIconButton>
         </div>
       </div>
 

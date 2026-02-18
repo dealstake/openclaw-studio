@@ -3,6 +3,7 @@
 import { memo, useMemo } from "react";
 import { RefreshCw } from "lucide-react";
 import { Skeleton } from "@/components/Skeleton";
+import { PanelIconButton } from "@/components/PanelIconButton";
 import type { ChannelsStatusSnapshot } from "@/lib/gateway/channels";
 import { resolveChannelLabel, resolveChannelHealth, type ChannelHealth } from "@/lib/gateway/channels";
 
@@ -51,15 +52,13 @@ export const ChannelsPanel = memo(function ChannelsPanel({
         <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
           Channels
         </div>
-        <button
-          type="button"
-          className="flex h-7 w-7 items-center justify-center rounded-md border border-border/80 bg-card/70 text-muted-foreground transition hover:border-border hover:bg-muted/65 disabled:cursor-not-allowed disabled:opacity-60"
+        <PanelIconButton
           aria-label="Refresh channels"
           onClick={onRefresh}
           disabled={loading}
         >
           <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-        </button>
+        </PanelIconButton>
       </div>
 
       {error ? (

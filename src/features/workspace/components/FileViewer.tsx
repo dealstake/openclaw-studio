@@ -5,6 +5,7 @@ import { ArrowLeft, Check, Pencil, Save, X } from "lucide-react";
 import { MarkdownViewer } from "@/components/MarkdownViewer";
 import { formatSize } from "@/lib/text/format";
 import { formatRelativeTime } from "@/lib/text/time";
+import { PanelIconButton } from "@/components/PanelIconButton";
 
 export const FileViewer = memo(function FileViewer({
   file,
@@ -107,15 +108,13 @@ export const FileViewer = memo(function FileViewer({
     >
       {/* File header */}
       <div className="flex items-center gap-2 border-b border-border/40 px-3 py-2">
-        <button
-          type="button"
-          className="flex h-7 w-7 items-center justify-center rounded-md border border-border/80 bg-card/70 text-muted-foreground transition hover:border-border hover:bg-muted/65"
+        <PanelIconButton
           onClick={handleBack}
           aria-label="Back to file list"
           data-testid="ws-back"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
-        </button>
+        </PanelIconButton>
         <div className="min-w-0 flex-1">
           <div className="truncate text-xs font-medium text-foreground">
             {file.path}
@@ -131,30 +130,25 @@ export const FileViewer = memo(function FileViewer({
           </div>
         </div>
         {canEdit && !editing && (
-          <button
-            type="button"
-            className="flex h-7 w-7 items-center justify-center rounded-md border border-border/80 bg-card/70 text-muted-foreground transition hover:border-border hover:bg-muted/65"
+          <PanelIconButton
             onClick={handleStartEdit}
             aria-label="Edit file"
             data-testid="ws-edit-btn"
           >
             <Pencil className="h-3.5 w-3.5" />
-          </button>
+          </PanelIconButton>
         )}
         {editing && (
           <>
-            <button
-              type="button"
-              className="flex h-7 w-7 items-center justify-center rounded-md border border-border/80 bg-card/70 text-muted-foreground transition hover:border-border hover:bg-muted/65"
+            <PanelIconButton
               onClick={handleCancelEdit}
               aria-label="Cancel editing"
               disabled={saving}
             >
               <X className="h-3.5 w-3.5" />
-            </button>
-            <button
-              type="button"
-              className="flex h-7 w-7 items-center justify-center rounded-md border border-transparent bg-primary/90 text-primary-foreground transition hover:bg-primary disabled:opacity-50"
+            </PanelIconButton>
+            <PanelIconButton
+              variant="primary"
               onClick={() => {
                 void handleSave();
               }}
@@ -163,7 +157,7 @@ export const FileViewer = memo(function FileViewer({
               data-testid="ws-save-btn"
             >
               <Save className="h-3.5 w-3.5" />
-            </button>
+            </PanelIconButton>
           </>
         )}
       </div>

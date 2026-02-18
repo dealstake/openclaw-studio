@@ -7,6 +7,7 @@ import type { AgentState } from "@/features/agents/state/store";
 import { formatCronPayload, formatCronSchedule, type CronJobSummary } from "@/lib/cron/types";
 import type { AgentHeartbeatSummary } from "@/lib/gateway/agentConfig";
 import { AgentInspectHeader } from "./AgentInspectHeader";
+import { PanelIconButton } from "@/components/PanelIconButton";
 
 const formatHeartbeatSchedule = (heartbeat: AgentHeartbeatSummary) =>
   `Every ${heartbeat.heartbeat.every}`;
@@ -257,9 +258,7 @@ export const AgentSettingsPanel = ({
                       </div>
                     </div>
                     <div className="flex items-center gap-1 opacity-0 transition group-focus-within/cron:opacity-100 group-hover/cron:opacity-100">
-                      <button
-                        className="flex h-7 w-7 items-center justify-center rounded-md border border-border/80 bg-card/70 text-muted-foreground transition hover:border-border hover:bg-muted/65 disabled:cursor-not-allowed disabled:opacity-60"
-                        type="button"
+                      <PanelIconButton
                         aria-label={`Run cron job ${job.name} now`}
                         onClick={() => {
                           void onRunCronJob(job.id);
@@ -267,10 +266,9 @@ export const AgentSettingsPanel = ({
                         disabled={busy}
                       >
                         <Play className="h-3.5 w-3.5" />
-                      </button>
-                      <button
-                        className="flex h-7 w-7 items-center justify-center rounded-md border border-destructive/40 bg-transparent text-destructive transition hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-60"
-                        type="button"
+                      </PanelIconButton>
+                      <PanelIconButton
+                        variant="destructive"
                         aria-label={`Delete cron job ${job.name}`}
                         onClick={() => {
                           void onDeleteCronJob(job.id);
@@ -278,7 +276,7 @@ export const AgentSettingsPanel = ({
                         disabled={busy}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
-                      </button>
+                      </PanelIconButton>
                     </div>
                   </div>
                 );
@@ -334,9 +332,7 @@ export const AgentSettingsPanel = ({
                       </div>
                     </div>
                     <div className="flex items-center gap-1 opacity-0 transition group-focus-within/heartbeat:opacity-100 group-hover/heartbeat:opacity-100">
-                      <button
-                        className="flex h-7 w-7 items-center justify-center rounded-md border border-border/80 bg-card/70 text-muted-foreground transition hover:border-border hover:bg-muted/65 disabled:cursor-not-allowed disabled:opacity-60"
-                        type="button"
+                      <PanelIconButton
                         aria-label={`Run heartbeat for ${heartbeat.agentId} now`}
                         onClick={() => {
                           void onRunHeartbeat(heartbeat.id);
@@ -344,10 +340,9 @@ export const AgentSettingsPanel = ({
                         disabled={busy}
                       >
                         <Play className="h-3.5 w-3.5" />
-                      </button>
-                      <button
-                        className="flex h-7 w-7 items-center justify-center rounded-md border border-destructive/40 bg-transparent text-destructive transition hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-60"
-                        type="button"
+                      </PanelIconButton>
+                      <PanelIconButton
+                        variant="destructive"
                         aria-label={`Delete heartbeat for ${heartbeat.agentId}`}
                         onClick={() => {
                           void onDeleteHeartbeat(heartbeat.id);
@@ -355,7 +350,7 @@ export const AgentSettingsPanel = ({
                         disabled={busy || !deleteAllowed}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
-                      </button>
+                      </PanelIconButton>
                     </div>
                   </div>
                 );

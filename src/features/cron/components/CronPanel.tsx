@@ -8,6 +8,7 @@ import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import { isGatewayDisconnectLikeError } from "@/lib/gateway/GatewayClient";
 import { formatCronPayload, formatCronSchedule, type CronJobSummary } from "@/lib/cron/types";
 import { formatRelativeTime } from "@/lib/text/time";
+import { PanelIconButton } from "@/components/PanelIconButton";
 
 type CronRunEntry = {
   id: string;
@@ -99,15 +100,13 @@ export const CronPanel = memo(function CronPanel({
         <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
           Cron jobs
         </div>
-        <button
-          className="flex h-7 w-7 items-center justify-center rounded-md border border-border/80 bg-card/70 text-muted-foreground transition hover:border-border hover:bg-muted/65 disabled:cursor-not-allowed disabled:opacity-60"
-          type="button"
+        <PanelIconButton
           aria-label="Refresh cron jobs"
           onClick={onRefresh}
           disabled={loading}
         >
           <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-        </button>
+        </PanelIconButton>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto p-4">
@@ -199,24 +198,21 @@ export const CronPanel = memo(function CronPanel({
                       </div>
                     </button>
                     <div className="flex items-center gap-1 opacity-0 transition group-focus-within/cron:opacity-100 group-hover/cron:opacity-100">
-                      <button
-                        className="flex h-7 w-7 items-center justify-center rounded-md border border-border/80 bg-card/70 text-muted-foreground transition hover:border-border hover:bg-muted/65 disabled:cursor-not-allowed disabled:opacity-60"
-                        type="button"
+                      <PanelIconButton
                         aria-label={`Run cron job ${job.name} now`}
                         onClick={() => onRunJob(job.id)}
                         disabled={busy}
                       >
                         <Play className="h-3.5 w-3.5" />
-                      </button>
-                      <button
-                        className="flex h-7 w-7 items-center justify-center rounded-md border border-destructive/40 bg-transparent text-destructive transition hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-60"
-                        type="button"
+                      </PanelIconButton>
+                      <PanelIconButton
+                        variant="destructive"
                         aria-label={`Delete cron job ${job.name}`}
                         onClick={() => onDeleteJob(job.id)}
                         disabled={busy}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
-                      </button>
+                      </PanelIconButton>
                     </div>
                   </div>
 

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { MarkdownViewer } from "@/components/MarkdownViewer";
 import { FileText, X } from "lucide-react";
+import { PanelIconButton } from "@/components/PanelIconButton";
 
 import { fetchJson } from "@/lib/http";
 import type {
@@ -124,15 +125,14 @@ function Column({
                 {card.id}
               </p>
               <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  className={`inline-flex h-7 w-7 items-center justify-center rounded-md border border-border/70 bg-background/60 text-muted-foreground transition hover:bg-background hover:text-foreground ${card.description ? "" : "opacity-60"}`}
+                <PanelIconButton
+                  className={`border-border/70 bg-background/60 hover:bg-background hover:text-foreground ${card.description ? "" : "opacity-60"}`}
                   aria-label={`View details for ${card.id}`}
                   data-testid={`task-control-card-description-${card.id}`}
                   onClick={() => onOpenDetails(card)}
                 >
                   <FileText className="h-4 w-4" aria-hidden="true" />
-                </button>
+                </PanelIconButton>
                 <div className="relative" data-priority-menu-root={card.id}>
                   <button
                     type="button"

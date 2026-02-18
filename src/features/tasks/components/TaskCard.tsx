@@ -6,6 +6,7 @@ import type { StudioTask } from "@/features/tasks/types";
 import { humanReadableSchedule } from "@/features/tasks/lib/schedule";
 import { formatRelativeTime } from "@/lib/text/time";
 import { TYPE_CONFIG, STATUS_DOT_CLASS, getTaskStatusKey } from "@/features/tasks/lib/taskTypeConfig";
+import { PanelIconButton } from "@/components/PanelIconButton";
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -131,9 +132,7 @@ export const TaskCard = memo(function TaskCard({
           </button>
 
           {/* Run now */}
-          <button
-            className="flex h-7 w-7 items-center justify-center rounded-md border border-border/80 bg-card/70 text-muted-foreground transition hover:border-border hover:bg-muted/65 disabled:cursor-not-allowed disabled:opacity-60"
-            type="button"
+          <PanelIconButton
             aria-label={`Run task ${task.name} now`}
             onClick={handleRun}
             disabled={busy}
@@ -143,12 +142,11 @@ export const TaskCard = memo(function TaskCard({
             ) : (
               <Play className="h-3.5 w-3.5" />
             )}
-          </button>
+          </PanelIconButton>
 
           {/* Delete */}
-          <button
-            className="flex h-7 w-7 items-center justify-center rounded-md border border-destructive/40 bg-transparent text-destructive transition hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-60"
-            type="button"
+          <PanelIconButton
+            variant="destructive"
             aria-label={`Delete task ${task.name}`}
             onClick={handleDelete}
             disabled={busy}
@@ -158,7 +156,7 @@ export const TaskCard = memo(function TaskCard({
             ) : (
               <Trash2 className="h-3.5 w-3.5" />
             )}
-          </button>
+          </PanelIconButton>
         </div>
       </div>
     </div>

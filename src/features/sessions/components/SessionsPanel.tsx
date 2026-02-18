@@ -16,6 +16,7 @@ import { SessionCard } from "./SessionCard";
 import { TranscriptCard } from "./TranscriptCard";
 import { SearchResultCard } from "./SearchResultCard";
 import { VirtualCardList } from "./VirtualCardList";
+import { PanelIconButton } from "@/components/PanelIconButton";
 
 export type SessionEntry = {
   key: string;
@@ -228,15 +229,13 @@ export const SessionsPanel = memo(function SessionsPanel({
             History
           </button>
         </div>
-        <button
-          className="flex h-7 w-7 items-center justify-center rounded-md border border-border/80 bg-card/70 text-muted-foreground transition hover:border-border hover:bg-muted/65 disabled:cursor-not-allowed disabled:opacity-60"
-          type="button"
+        <PanelIconButton
           aria-label={tab === "active" ? "Refresh sessions" : "Refresh history"}
           onClick={tab === "active" ? onRefresh : () => onTranscriptsRefresh?.()}
           disabled={tab === "active" ? loading : transcriptsLoading}
         >
           <RefreshCw className={`h-3.5 w-3.5 ${(tab === "active" ? loading : transcriptsLoading) ? "animate-spin" : ""}`} />
-        </button>
+        </PanelIconButton>
       </div>
 
       {/* Usage summary (active tab only) */}

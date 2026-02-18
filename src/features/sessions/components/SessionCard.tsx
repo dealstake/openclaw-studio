@@ -8,6 +8,7 @@ import { humanizeSessionKey, humanizeOriginLabel } from "@/features/sessions/lib
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import { isGatewayDisconnectLikeError, parseAgentIdFromSessionKey } from "@/lib/gateway/GatewayClient";
 import { formatRelativeTime } from "@/lib/text/time";
+import { PanelIconButton } from "@/components/PanelIconButton";
 
 export const SessionCard = memo(function SessionCard({
   session,
@@ -140,24 +141,21 @@ export const SessionCard = memo(function SessionCard({
                 View
               </button>
             )}
-            <button
-              className="flex h-7 w-7 items-center justify-center rounded-md border border-border/80 bg-card/70 text-muted-foreground transition hover:border-border hover:bg-muted/65 disabled:cursor-not-allowed disabled:opacity-60"
-              type="button"
+            <PanelIconButton
               aria-label={`Compact session ${session.key}`}
               onClick={() => onCompact(session.key)}
               disabled={isBusy}
             >
               <Archive className="h-3.5 w-3.5" />
-            </button>
-            <button
-              className="flex h-7 w-7 items-center justify-center rounded-md border border-destructive/40 bg-transparent text-destructive transition hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-60"
-              type="button"
+            </PanelIconButton>
+            <PanelIconButton
+              variant="destructive"
               aria-label={`Delete session ${session.key}`}
               onClick={() => onSetConfirmDelete(session.key)}
               disabled={isBusy}
             >
               <Trash2 className="h-3.5 w-3.5" />
-            </button>
+            </PanelIconButton>
           </div>
         )}
       </div>

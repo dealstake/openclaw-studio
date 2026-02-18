@@ -23,6 +23,7 @@ import { EntryRow } from "./EntryRow";
 import { GroupSection } from "./GroupSection";
 import { NewFileDialog } from "./NewFileDialog";
 import { FileViewer } from "./FileViewer";
+import { PanelIconButton } from "@/components/PanelIconButton";
 
 // ── Main Panel ──
 
@@ -232,25 +233,21 @@ export const WorkspaceExplorerPanel = memo(function WorkspaceExplorerPanel({
           })}
         </div>
         <div className="flex flex-shrink-0 items-center gap-1 pl-2">
-          <button
-            type="button"
-            className="flex h-7 w-7 items-center justify-center rounded-md border border-border/80 bg-card/70 text-muted-foreground transition hover:border-border hover:bg-muted/65 disabled:opacity-50"
+          <PanelIconButton
             onClick={() => setShowNewFile((p) => !p)}
             aria-label="New file"
             data-testid="ws-new-file"
           >
             <FilePlus className="h-3.5 w-3.5" />
-          </button>
-          <button
-            type="button"
-            className="flex h-7 w-7 items-center justify-center rounded-md border border-border/80 bg-card/70 text-muted-foreground transition hover:border-border hover:bg-muted/65 disabled:opacity-50"
+          </PanelIconButton>
+          <PanelIconButton
             onClick={refresh}
             disabled={loading}
             aria-label="Refresh workspace"
             data-testid="ws-refresh"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-          </button>
+          </PanelIconButton>
         </div>
       </div>
 
