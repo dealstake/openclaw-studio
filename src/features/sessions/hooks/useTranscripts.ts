@@ -31,6 +31,16 @@ type TranscriptMessage = {
   role: string;
   content: string | Array<{ type: string; text?: string }>;
   timestamp: string;
+  usage?: {
+    input: number;
+    output: number;
+    cacheRead: number;
+    cacheWrite: number;
+    totalTokens: number;
+    cost: { input: number; output: number; cacheRead: number; cacheWrite: number; total: number };
+  };
+  model?: string;
+  stopReason?: string;
 };
 
 type TranscriptResponse = {
