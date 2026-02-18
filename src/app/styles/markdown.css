@@ -18,13 +18,34 @@
   margin-top: 0.35rem;
 }
 
-.agent-markdown h1,
-.agent-markdown h2,
-.agent-markdown h3,
+.agent-markdown h1 {
+  margin: 0.5rem 0 0.25rem 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.agent-markdown h2 {
+  margin: 0.4rem 0 0.2rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.agent-markdown h3 {
+  margin: 0.35rem 0 0.15rem 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
 .agent-markdown h4,
 .agent-markdown h5,
 .agent-markdown h6 {
-  margin: 0 0 0.25rem 0;
+  margin: 0.25rem 0 0.15rem 0;
+  font-size: 0.85rem;
+  font-weight: 500;
+  line-height: 1.4;
 }
 
 .agent-markdown h1 + p,
@@ -48,9 +69,14 @@
   margin-top: 0.15rem;
 }
 
-.agent-markdown ul,
+.agent-markdown ul {
+  padding-left: 1.1rem;
+  list-style-type: disc;
+}
+
 .agent-markdown ol {
   padding-left: 1.1rem;
+  list-style-type: decimal;
 }
 
 .agent-markdown li {

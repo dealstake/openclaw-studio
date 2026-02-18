@@ -125,7 +125,7 @@ const AgentChatFinalItems = memo(function AgentChatFinalItems({
             <div key={`chat-${agentId}-user-${index}`} className="group/message relative">
               {separator}
               <div className="rounded-md border border-border/70 bg-muted/70 px-3 py-2 text-foreground">
-                <MarkdownViewer content={`> ${item.text}`} />
+                <MarkdownViewer content={item.text} />
               </div>
               <MessageActions text={item.text} />
             </div>
