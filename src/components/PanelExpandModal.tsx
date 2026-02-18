@@ -42,6 +42,7 @@ export const PanelExpandModal = React.memo(function PanelExpandModal({
                 onClick={() => onOpenChange(false)}
                 aria-label="Collapse panel"
                 data-testid="panel-expand-collapse-btn"
+                className="min-h-[44px] min-w-[44px] xl:min-h-0 xl:min-w-0"
               >
                 <Minimize2 className="h-3.5 w-3.5" />
               </PanelIconButton>
@@ -49,6 +50,7 @@ export const PanelExpandModal = React.memo(function PanelExpandModal({
                 onClick={() => onOpenChange(false)}
                 aria-label="Close expanded panel"
                 data-testid="panel-expand-close-btn"
+                className="min-h-[44px] min-w-[44px] xl:min-h-0 xl:min-w-0"
               >
                 <X className="h-3.5 w-3.5" />
               </PanelIconButton>

@@ -182,7 +182,12 @@ const AgentStudioPage = () => {
   const [expandedTab, setExpandedTab] = useState<ContextTab | null>(null);
 
   const handleExpandToggle = useCallback(() => {
-    setExpandedTab((prev) => (prev ? null : contextTab));
+    setExpandedTab((prev) => {
+      if (prev) return null;
+      // Close mobile drawer before opening modal to prevent stacking overlays
+      setMobilePane("chat");
+      return contextTab;
+    });
   }, [contextTab]);
 
   // Cmd+Shift+E keyboard shortcut for expand/collapse
