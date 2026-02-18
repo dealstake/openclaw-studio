@@ -66,58 +66,55 @@ export const TaskCard = memo(function TaskCard({
       tabIndex={0}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") handleSelect(); }}
     >
-      <div className="flex items-start justify-between gap-2">
-        {/* Left: status dot + info */}
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <span className={`h-2 w-2 shrink-0 rounded-full ${dotClass}`} />
-            <span className="truncate font-mono text-[11px] font-semibold tracking-wide text-foreground">
-              {task.name}
-            </span>
-          </div>
+      {/* Status dot + name */}
+      <div className="flex items-center gap-2">
+        <span className={`h-2 w-2 shrink-0 rounded-full ${dotClass}`} />
+        <span className="min-w-0 flex-1 truncate font-mono text-[11px] font-semibold tracking-wide text-foreground">
+          {task.name}
+        </span>
+      </div>
 
-          {/* Type badge + schedule */}
-          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-            <span
-              className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] ${typeConfig.className}`}
-            >
-              <TypeIcon className="h-2.5 w-2.5" />
-              {typeConfig.label}
-            </span>
-            <span className="text-[10px] text-muted-foreground">
-              {humanReadableSchedule(task.schedule)}
-            </span>
-          </div>
+      {/* Type badge + schedule */}
+      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+        <span
+          className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] ${typeConfig.className}`}
+        >
+          <TypeIcon className="h-2.5 w-2.5" />
+          {typeConfig.label}
+        </span>
+        <span className="text-[10px] text-muted-foreground">
+          {humanReadableSchedule(task.schedule)}
+        </span>
+      </div>
 
-          {/* Description */}
-          {task.description ? (
-            <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-muted-foreground">
-              {task.description}
-            </p>
-          ) : null}
+      {/* Description */}
+      {task.description ? (
+        <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-muted-foreground">
+          {task.description}
+        </p>
+      ) : null}
 
-          {/* Runtime info */}
-          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground">
-            {task.runningAtMs ? (
-              <span className="font-semibold text-purple-400">Running…</span>
-            ) : task.nextRunAtMs ? (
-              <span>
-                Next: {formatRelativeTime(task.nextRunAtMs)}
-              </span>
-            ) : null}
-            {task.lastRunAt ? (
-              <span>Last: {formatRelativeTime(new Date(task.lastRunAt).getTime())}</span>
-            ) : null}
-            {task.lastRunStatus === "error" ? (
-              <span className="font-semibold text-destructive">Failed</span>
-            ) : null}
-          </div>
-        </div>
+      {/* Runtime info */}
+      <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground">
+        {task.runningAtMs ? (
+          <span className="font-semibold text-purple-400">Running…</span>
+        ) : task.nextRunAtMs ? (
+          <span>
+            Next: {formatRelativeTime(task.nextRunAtMs)}
+          </span>
+        ) : null}
+        {task.lastRunAt ? (
+          <span>Last: {formatRelativeTime(new Date(task.lastRunAt).getTime())}</span>
+        ) : null}
+        {task.lastRunStatus === "error" ? (
+          <span className="font-semibold text-destructive">Failed</span>
+        ) : null}
+      </div>
 
-        {/* Right: actions */}
-        {/* Always visible on touch devices, hover-reveal on desktop */}
-        <div className="flex items-center gap-1 transition md:opacity-0 md:group-focus-within/task:opacity-100 md:group-hover/task:opacity-100">
-          {/* Toggle */}
+      {/* Actions — footer row, hover-reveal on desktop, always visible on mobile */}
+      <div className="mt-2 flex items-center justify-end gap-2 border-t border-border/40 pt-2 transition md:opacity-0 md:group-focus-within/task:opacity-100 md:group-hover/task:opacity-100">
+        {/* Toggle — left-aligned */}
+        <div className="flex items-center gap-1.5 mr-auto">
           <button
             type="button"
             aria-label={task.enabled ? "Pause task" : "Resume task"}
@@ -137,34 +134,35 @@ export const TaskCard = memo(function TaskCard({
               }`}
             />
           </button>
-
-          {/* Run now */}
-          <PanelIconButton
-            aria-label={`Run task ${task.name} now`}
-            onClick={handleRun}
-            disabled={busy}
-          >
-            {busyAction === "run" ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Play className="h-3.5 w-3.5" />
-            )}
-          </PanelIconButton>
-
-          {/* Delete */}
-          <PanelIconButton
-            variant="destructive"
-            aria-label={`Delete task ${task.name}`}
-            onClick={handleDelete}
-            disabled={busy}
-          >
-            {busyAction === "delete" ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Trash2 className="h-3.5 w-3.5" />
-            )}
-          </PanelIconButton>
+          <span className="text-[9px] text-muted-foreground">{task.enabled ? "Enabled" : "Paused"}</span>
         </div>
+
+        {/* Run now */}
+        <PanelIconButton
+          aria-label={`Run task ${task.name} now`}
+          onClick={handleRun}
+          disabled={busy}
+        >
+          {busyAction === "run" ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Play className="h-3.5 w-3.5" />
+          )}
+        </PanelIconButton>
+
+        {/* Delete */}
+        <PanelIconButton
+          variant="destructive"
+          aria-label={`Delete task ${task.name}`}
+          onClick={handleDelete}
+          disabled={busy}
+        >
+          {busyAction === "delete" ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Trash2 className="h-3.5 w-3.5" />
+          )}
+        </PanelIconButton>
       </div>
     </div>
   );

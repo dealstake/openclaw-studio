@@ -70,10 +70,10 @@ const AgentRow = memo(function AgentRow({ agent, selected, hasPresence, onSelect
     <button
       type="button"
       data-testid={`fleet-agent-row-${agent.agentId}`}
-      className={`group flex w-full items-center gap-3 rounded-md border border-l-[3px] px-3 py-2 text-left transition ${
+      className={`group flex w-full items-center gap-3 rounded-md border-l-[3px] border px-3 py-2 text-left transition ${
         selected
           ? "border-l-primary border-ring/40 bg-muted/70 shadow-sm"
-          : "border-l-transparent border-border/70 bg-card/65 hover:border-border hover:bg-muted/55"
+          : "border-l-border/70 border-border/70 bg-card/65 hover:border-border hover:bg-muted/55"
       }`}
       onClick={() => onSelect(agent.agentId)}
     >
