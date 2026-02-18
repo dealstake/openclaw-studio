@@ -15,6 +15,7 @@ import { PanelIconButton } from "@/components/PanelIconButton";
 interface ProjectCardProps {
   project: ProjectEntry;
   onContinue: () => void;
+  onOpenFile: () => void;
   onToggleStatus: () => void;
   onArchive: () => void;
 }
@@ -22,6 +23,7 @@ interface ProjectCardProps {
 export const ProjectCard = memo(function ProjectCard({
   project,
   onContinue,
+  onOpenFile,
   onToggleStatus,
   onArchive,
 }: ProjectCardProps) {
@@ -55,17 +57,18 @@ export const ProjectCard = memo(function ProjectCard({
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
-      onContinue();
+      onOpenFile();
     }
-  }, [onContinue]);
+  }, [onOpenFile]);
 
   return (
     <div
       className="group/task rounded-md border border-border/80 bg-card/70 px-3 py-2.5 transition hover:border-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-1 focus-visible:ring-offset-card cursor-pointer"
       role="button"
       tabIndex={0}
+      onClick={onOpenFile}
       onKeyDown={handleKeyDown}
-      aria-label={`${project.name} — ${statusLabel}${details?.continuation?.nextStep ? `. Next: ${details.continuation.nextStep}` : ""}`}
+      aria-label={`Open ${project.name} project file`}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">

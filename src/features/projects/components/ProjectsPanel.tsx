@@ -2,6 +2,7 @@
 
 import { memo, useCallback, useMemo, useState } from "react";
 import {
+  FileText,
   FolderGit2,
   Plus,
   RefreshCw,
@@ -10,6 +11,7 @@ import type { ProjectDetails } from "../lib/parseProject";
 import { ProjectCard } from "./ProjectCard";
 import { ProjectWizardModal } from "./ProjectWizardModal";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { FileEditorModal } from "@/components/FileEditorModal";
 import { useProjects, buildContinuePrompt } from "../hooks/useProjects";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import { PanelIconButton } from "@/components/PanelIconButton";
@@ -47,6 +49,7 @@ export const ProjectsPanel = memo(function ProjectsPanel({
   const [showWizard, setShowWizard] = useState(false);
   const [archiveTarget, setArchiveTarget] = useState<ProjectEntry | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [editingProjectDoc, setEditingProjectDoc] = useState<string | null>(null);
   const { projects, loading, error, refresh, toggleStatus, archive } =
     useProjects(agentId, client);
 
@@ -95,6 +98,13 @@ export const ProjectsPanel = memo(function ProjectsPanel({
           )}
         </div>
         <div className="flex items-center gap-1.5">
+          <PanelIconButton
+            aria-label="Edit projects index"
+            title="Edit INDEX.md"
+            onClick={() => setEditingProjectDoc("INDEX.md")}
+          >
+            <FileText className="h-3 w-3" />
+          </PanelIconButton>
           <PanelIconButton
             aria-label="New project"
             onClick={() => setShowWizard(true)}
@@ -193,6 +203,7 @@ export const ProjectsPanel = memo(function ProjectsPanel({
           key={project.doc}
           project={project}
           onContinue={() => handleContinue(project)}
+          onOpenFile={() => setEditingProjectDoc(project.doc)}
           onToggleStatus={() => void toggleStatus(project)}
           onArchive={() => setArchiveTarget(project)}
         />
@@ -222,6 +233,16 @@ export const ProjectsPanel = memo(function ProjectsPanel({
           setArchiveTarget(null);
         }}
       />
+
+      {agentId && (
+        <FileEditorModal
+          open={!!editingProjectDoc}
+          onOpenChange={(open) => { if (!open) setEditingProjectDoc(null); }}
+          agentId={agentId}
+          filePath={editingProjectDoc ? `projects/${editingProjectDoc}` : ""}
+          onSaved={refresh}
+        />
+      )}
     </div>
   );
 });
