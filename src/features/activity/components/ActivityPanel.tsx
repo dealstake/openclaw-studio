@@ -7,9 +7,13 @@ import { SectionLabel } from "@/components/SectionLabel";
 import { PanelIconButton } from "@/components/PanelIconButton";
 import { sectionLabelClass } from "@/components/SectionLabel";
 import { useActivityFeed } from "../hooks/useActivityFeed";
+import { useCronAnalytics } from "../hooks/useCronAnalytics";
+import { useAllCronJobs } from "@/features/cron/hooks/useAllCronJobs";
 import { formatActivityEvent } from "../lib/activityFormatter";
 import { ActivityFilterBar } from "./ActivityFilterBar";
 import { ActivityFeed } from "./ActivityFeed";
+import { CronAnalyticsSummary } from "./CronAnalyticsSummary";
+import { CronJobRankingTable } from "./CronJobRankingTable";
 
 type ViewMode = "feed" | "analytics";
 
@@ -24,6 +28,11 @@ export const ActivityPanel = memo(function ActivityPanel({
 }) {
   const [viewMode, setViewMode] = useState<ViewMode>("feed");
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
+
+  // Cron jobs + analytics
+  const { allCronJobs, loadAllCronJobs } = useAllCronJobs(client, status);
+  const { jobStats, loading: analyticsLoading, refresh: refreshAnalytics } =
+    useCronAnalytics(client, status, allCronJobs);
 
   // For task-name filtering, we filter client-side after fetching all events
   const { events: rawEvents, loading, error, refresh, loadMore, hasMore } =
@@ -59,8 +68,9 @@ export const ActivityPanel = memo(function ActivityPanel({
     if (agentId && !initialLoadDone.current) {
       initialLoadDone.current = true;
       refresh();
+      loadAllCronJobs();
     }
-  }, [agentId, refresh]);
+  }, [agentId, refresh, loadAllCronJobs]);
 
   // Live refresh on cron events (debounced 2s)
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -69,18 +79,22 @@ export const ActivityPanel = memo(function ActivityPanel({
     const unsub = client.onEvent((event: { event?: string }) => {
       if (event.event === "cron") {
         if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
-        refreshTimerRef.current = setTimeout(() => refresh(), 2000);
+        refreshTimerRef.current = setTimeout(() => {
+          refresh();
+          refreshAnalytics();
+        }, 2000);
       }
     });
     return () => {
       unsub();
       if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
     };
-  }, [client, status, refresh]);
+  }, [client, status, refresh, refreshAnalytics]);
 
   const handleRefresh = useCallback(() => {
     refresh();
-  }, [refresh]);
+    if (viewMode === "analytics") refreshAnalytics();
+  }, [refresh, refreshAnalytics, viewMode]);
 
   return (
     <div className="flex h-full w-full flex-col">
@@ -97,7 +111,10 @@ export const ActivityPanel = memo(function ActivityPanel({
                   ? "bg-muted text-foreground"
                   : "text-muted-foreground hover:text-foreground"
               }`}
-              onClick={() => setViewMode(mode)}
+              onClick={() => {
+                setViewMode(mode);
+                if (mode === "analytics") refreshAnalytics();
+              }}
             >
               {mode === "feed" ? "Feed" : "Analytics"}
             </button>
@@ -126,10 +143,9 @@ export const ActivityPanel = memo(function ActivityPanel({
           />
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto p-3">
-          <p className="text-xs text-muted-foreground text-center py-6">
-            Analytics view coming in Phase 4.
-          </p>
+        <div className="flex-1 overflow-y-auto">
+          <CronAnalyticsSummary jobStats={jobStats} loading={analyticsLoading} />
+          <CronJobRankingTable jobStats={jobStats} loading={analyticsLoading} client={client} />
         </div>
       )}
     </div>
