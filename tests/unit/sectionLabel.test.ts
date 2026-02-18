@@ -24,22 +24,23 @@ describe("SectionLabel", () => {
   });
 
   it("renders as span when specified", () => {
-    render(createElement(SectionLabel, { as: "span", children: "SpanTag" }));
+    render(createElement(SectionLabel, { as: "span" }, "SpanTag"));
     expect(screen.getByText("SpanTag").tagName).toBe("SPAN");
   });
 
   it("renders as p when specified", () => {
-    render(createElement(SectionLabel, { as: "p", children: "PTag" }));
+    render(createElement(SectionLabel, { as: "p" }, "PTag"));
     expect(screen.getByText("PTag").tagName).toBe("P");
   });
 
   it("merges custom className", () => {
-    render(createElement(SectionLabel, { className: "mt-4", children: "Custom" }));
+    render(createElement(SectionLabel, { className: "mt-4" }, "Custom"));
     expect(screen.getByText("Custom").className).toContain("mt-4");
   });
 
   it("passes through HTML attributes", () => {
-    render(createElement(SectionLabel, { "data-testid": "my-label", children: "Attr" } as any));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    render(createElement(SectionLabel, { "data-testid": "my-label" } as any, "Attr"));
     expect(screen.getByTestId("my-label")).toBeTruthy();
   });
 
