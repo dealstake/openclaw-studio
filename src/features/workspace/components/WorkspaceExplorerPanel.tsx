@@ -13,6 +13,7 @@ import {
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { ErrorBanner } from "@/components/ErrorBanner";
+import { FileEditorModal } from "@/components/FileEditorModal";
 
 import { useListNavigation } from "../hooks/useListNavigation";
 import { useWorkspaceFiles } from "../hooks/useWorkspaceFiles";
@@ -53,6 +54,7 @@ export const WorkspaceExplorerPanel = memo(function WorkspaceExplorerPanel({
     fileExists,
   } = useWorkspaceFiles({ agentId, client });
 
+  const [modalFile, setModalFile] = useState<string | null>(null);
   const [showNewFile, setShowNewFile] = useState(false);
   const [overwriteConfirm, setOverwriteConfirm] = useState<{
     open: boolean;
@@ -117,6 +119,8 @@ export const WorkspaceExplorerPanel = memo(function WorkspaceExplorerPanel({
         setActiveIndex(-1);
         setFilter("");
         navigateToDir(entry.path);
+      } else if (entry.path.endsWith(".md")) {
+        setModalFile(entry.path);
       } else {
         openFile(entry.path);
       }
@@ -380,6 +384,15 @@ export const WorkspaceExplorerPanel = memo(function WorkspaceExplorerPanel({
         destructive
         onConfirm={handleOverwriteConfirm}
       />
+      {agentId && (
+        <FileEditorModal
+          open={!!modalFile}
+          onOpenChange={(nextOpen) => { if (!nextOpen) setModalFile(null); }}
+          agentId={agentId}
+          filePath={modalFile ?? ""}
+          onSaved={refresh}
+        />
+      )}
     </div>
   );
 });
