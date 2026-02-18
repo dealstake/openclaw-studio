@@ -13,6 +13,7 @@ import {
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import { ErrorBanner } from "@/components/ErrorBanner";
 
+import { useListNavigation } from "../hooks/useListNavigation";
 import { useWorkspaceFiles } from "../hooks/useWorkspaceFiles";
 import { useProjectStatuses } from "../hooks/useProjectStatuses";
 import { classifyEntry, type WorkspaceEntry, type WorkspaceGroup } from "../types";
@@ -50,9 +51,7 @@ export const WorkspaceExplorerPanel = memo(function WorkspaceExplorerPanel({
   } = useWorkspaceFiles({ agentId, client });
 
   const [showNewFile, setShowNewFile] = useState(false);
-  const [activeIndex, setActiveIndex] = useState(-1);
   const [filter, setFilter] = useState("");
-  const listRef = useRef<HTMLDivElement>(null);
   const filterRef = useRef<HTMLInputElement>(null);
 
   const isRoot = currentPath === "";
@@ -82,6 +81,28 @@ export const WorkspaceExplorerPanel = memo(function WorkspaceExplorerPanel({
     return entries.filter((e) => e.name.toLowerCase().includes(lower));
   }, [entries, filter]);
 
+  // Keyboard navigation for the file list
+  const handleActivateByIndex = useCallback(
+    (index: number) => {
+      const entry = filteredEntries[index];
+      if (!entry) return;
+      if (entry.type === "directory") {
+        navigateToDir(entry.path);
+        setFilter("");
+      } else {
+        openFile(entry.path);
+      }
+    },
+    [filteredEntries, navigateToDir, openFile]
+  );
+
+  const {
+    activeIndex,
+    setActiveIndex,
+    containerRef: listRef,
+    handleKeyDown: listKeyDown,
+  } = useListNavigation(filteredEntries.length, handleActivateByIndex);
+
   const handleEntryClick = useCallback(
     (entry: WorkspaceEntry) => {
       if (entry.type === "directory") {
@@ -92,7 +113,7 @@ export const WorkspaceExplorerPanel = memo(function WorkspaceExplorerPanel({
         openFile(entry.path);
       }
     },
-    [navigateToDir, openFile]
+    [navigateToDir, openFile, setActiveIndex]
   );
 
   const handleSaveFile = useCallback(
@@ -303,42 +324,7 @@ export const WorkspaceExplorerPanel = memo(function WorkspaceExplorerPanel({
               aria-label="Files"
               tabIndex={0}
               className="outline-none"
-              onKeyDown={(e) => {
-                const count = filteredEntries.length;
-                if (count === 0) return;
-                let next = activeIndex;
-                switch (e.key) {
-                  case "ArrowDown":
-                    e.preventDefault();
-                    next = activeIndex < count - 1 ? activeIndex + 1 : 0;
-                    break;
-                  case "ArrowUp":
-                    e.preventDefault();
-                    next = activeIndex > 0 ? activeIndex - 1 : count - 1;
-                    break;
-                  case "Home":
-                    e.preventDefault();
-                    next = 0;
-                    break;
-                  case "End":
-                    e.preventDefault();
-                    next = count - 1;
-                    break;
-                  case "Enter":
-                  case " ":
-                    e.preventDefault();
-                    if (activeIndex >= 0 && activeIndex < count) {
-                      handleEntryClick(filteredEntries[activeIndex]);
-                    }
-                    return;
-                  default:
-                    return;
-                }
-                setActiveIndex(next);
-                listRef.current
-                  ?.querySelectorAll<HTMLElement>('[role="option"]')
-                  [next]?.focus();
-              }}
+              onKeyDown={listKeyDown}
             >
               {filteredEntries.map((entry, i) => (
                 <EntryRow

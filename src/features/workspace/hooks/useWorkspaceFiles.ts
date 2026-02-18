@@ -7,6 +7,39 @@ import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import { readGatewayAgentFile, writeGatewayAgentFile } from "@/lib/gateway/agentFiles";
 import { AGENT_FILE_NAMES, type AgentFileName, isAgentFileName } from "@/lib/agents/agentFiles";
 
+/**
+ * Try an API call first; if it fails (throws or returns !ok), try a gateway
+ * fallback.  Returns the result of whichever succeeds, or null if both fail.
+ */
+async function fetchWithFallback<T>(
+  apiFn: () => Promise<Response>,
+  parseApi: (res: Response) => Promise<T>,
+  gatewayFn: (() => Promise<T>) | null
+): Promise<{ data: T; source: "api" | "gateway" } | null> {
+  // Try API
+  try {
+    const res = await apiFn();
+    if (res.ok) {
+      const data = await parseApi(res);
+      return { data, source: "api" };
+    }
+  } catch {
+    // fall through to gateway
+  }
+
+  // Try gateway fallback
+  if (gatewayFn) {
+    try {
+      const data = await gatewayFn();
+      return { data, source: "gateway" };
+    } catch {
+      // both failed
+    }
+  }
+
+  return null;
+}
+
 type UseWorkspaceFilesParams = {
   agentId: string | null | undefined;
   client?: GatewayClient | null;
@@ -164,52 +197,41 @@ export const useWorkspaceFiles = ({
         if (!id) return;
         setLoading(true);
         setError(null);
-        
-        // Try API first
-        try {
+
+        const gwFallback = clientRef.current && isAgentFileName(filePath)
+          ? async (): Promise<WorkspaceFileContent> => {
+              const file = await readGatewayAgentFile({
+                client: clientRef.current!,
+                agentId: id,
+                name: filePath as AgentFileName,
+              });
+              return {
+                content: file.content,
+                path: filePath,
+                size: file.content.length,
+                updatedAt: Date.now(),
+                isText: true,
+              };
+            }
+          : null;
+
+        const result = await fetchWithFallback<WorkspaceFileContent>(
+          () => {
             const params = new URLSearchParams({ agentId: id, path: filePath });
-            const res = await fetch(`/api/workspace/file?${params.toString()}`);
-            if (res.ok) {
-                const data = (await res.json()) as WorkspaceFileContent;
-                if (agentIdRef.current?.trim() === id) {
-                    setViewingFile(data);
-                    setLoading(false);
-                    return;
-                }
-            }
-        } catch {
-            // Ignore API error, try fallback
-        }
+            return fetch(`/api/workspace/file?${params.toString()}`);
+          },
+          (res) => res.json() as Promise<WorkspaceFileContent>,
+          gwFallback
+        );
 
-        // Fallback: Gateway Client
-        if (clientRef.current && isAgentFileName(filePath)) {
-            try {
-                const file = await readGatewayAgentFile({
-                    client: clientRef.current,
-                    agentId: id,
-                    name: filePath as AgentFileName
-                });
-                
-                if (agentIdRef.current?.trim() === id) {
-                    setViewingFile({
-                        content: file.content,
-                        path: filePath,
-                        size: file.content.length,
-                        updatedAt: Date.now(),
-                        isText: true
-                    });
-                    setLoading(false);
-                    return;
-                }
-            } catch {
-                 // Fallback failed
-            }
-        }
+        if (agentIdRef.current?.trim() !== id) return;
 
-        if (agentIdRef.current?.trim() === id) {
-            setError("Failed to read file.");
-            setLoading(false);
+        if (result) {
+          setViewingFile(result.data);
+        } else {
+          setError("Failed to read file.");
         }
+        setLoading(false);
     },
     []
   );
@@ -221,47 +243,38 @@ export const useWorkspaceFiles = ({
        setSaving(true);
        setError(null);
 
-       // Try API first
-       try {
-         const res = await fetch("/api/workspace/file", {
+       const gwFallback = clientRef.current && isAgentFileName(relativePath)
+         ? async (): Promise<true> => {
+             await writeGatewayAgentFile({
+               client: clientRef.current!,
+               agentId: id,
+               name: relativePath as AgentFileName,
+               content,
+             });
+             return true;
+           }
+         : null;
+
+       const result = await fetchWithFallback<true>(
+         () => fetch("/api/workspace/file", {
            method: "PUT",
            headers: { "Content-Type": "application/json" },
            body: JSON.stringify({ agentId: id, path: relativePath, content }),
-         });
-         if (res.ok) {
-             if (agentIdRef.current?.trim() === id) {
-                await fetchFile(relativePath);
-                setSaving(false);
-             }
-             return true;
-         }
-       } catch {
-          // Ignore
+         }),
+         () => Promise.resolve(true as const),
+         gwFallback
+       );
+
+       if (agentIdRef.current?.trim() !== id) return false;
+
+       if (result) {
+         await fetchFile(relativePath);
+         setSaving(false);
+         return true;
        }
 
-       // Fallback: Gateway
-       if (clientRef.current && isAgentFileName(relativePath)) {
-           try {
-               await writeGatewayAgentFile({
-                   client: clientRef.current,
-                   agentId: id,
-                   name: relativePath as AgentFileName,
-                   content
-               });
-               if (agentIdRef.current?.trim() === id) {
-                   await fetchFile(relativePath);
-                   setSaving(false);
-               }
-               return true;
-           } catch {
-               // Ignore
-           }
-       }
-
-       if (agentIdRef.current?.trim() === id) {
-           setError("Failed to save file.");
-           setSaving(false);
-       }
+       setError("Failed to save file.");
+       setSaving(false);
        return false;
     },
     [fetchFile]
