@@ -68,6 +68,7 @@ import { CronPanel } from "@/features/cron/components/CronPanel";
 import { UsagePanel } from "@/features/usage/components/UsagePanel";
 import { WorkspaceExplorerPanel } from "@/features/workspace/components/WorkspaceExplorerPanel";
 import { StatusBar } from "@/features/status/components/StatusBar";
+import { TraceViewer } from "@/features/sessions/components/TraceViewer";
 import { useChannelsStatus } from "@/features/channels/hooks/useChannelsStatus";
 import { useAllSessions } from "@/features/sessions/hooks/useAllSessions";
 import { useAllCronJobs } from "@/features/cron/hooks/useAllCronJobs";
@@ -203,6 +204,7 @@ const AgentStudioPage = () => {
   }, [contextTab]);
   const [viewingSessionKey, setViewingSessionKey] = useState<string | null>(null);
   const [viewingSessionHistory, setViewingSessionHistory] = useState<AgentChatItem[]>([]);
+  const [viewingTrace, setViewingTrace] = useState<{ agentId: string; sessionId: string } | null>(null);
   const [viewingSessionLoading, setViewingSessionLoading] = useState(false);
   /** Tracks previous session key per agent to detect session resets */
   const prevSessionKeyByAgentRef = useRef<Map<string, string>>(new Map());
@@ -1513,6 +1515,14 @@ const AgentStudioPage = () => {
     setViewingSessionKey(null);
   }, []);
 
+  const handleViewTrace = useCallback((sessionKey: string, agentId: string | null) => {
+    if (!agentId) return;
+    // Extract sessionId from sessionKey (format: "agentId:sessionId" or just the key)
+    const parts = sessionKey.split(":");
+    const sessionId = parts.length > 1 ? parts.slice(1).join(":") : sessionKey;
+    setViewingTrace({ agentId, sessionId: sessionId });
+  }, []);
+
   const stableChatOnDismissContinuation = useCallback(() => {
     const fa = focusedAgentRef.current;
     if (fa) {
@@ -1770,6 +1780,7 @@ const AgentStudioPage = () => {
                         searchLoading={searchLoading}
                         searchError={searchError}
                         onClearSearch={clearSearch}
+                        onViewTrace={handleViewTrace}
                         onTranscriptClick={(sessionId, agentId) => {
                           setExpandedTab(null);
                           const effectiveAgentId = agentId || focusedAgent?.agentId || "";
@@ -1847,6 +1858,18 @@ const AgentStudioPage = () => {
                   </div>
                 </ExpandedContext.Provider>
               </PanelExpandModal>
+            )}
+            {/* Trace Viewer overlay */}
+            {viewingTrace && (
+              <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+                <div className="h-[90vh] w-full max-w-6xl">
+                  <TraceViewer
+                    agentId={viewingTrace.agentId}
+                    sessionId={viewingTrace.sessionId}
+                    onClose={() => setViewingTrace(null)}
+                  />
+                </div>
+              </div>
             )}
             {/* Context Panel: agent-scoped (Tasks/Brain/Settings) or global (Files) */}
             <div
@@ -1953,6 +1976,7 @@ const AgentStudioPage = () => {
                       searchLoading={searchLoading}
                       searchError={searchError}
                       onClearSearch={clearSearch}
+                      onViewTrace={handleViewTrace}
                       onTranscriptClick={(sessionId, agentId) => {
                         const effectiveAgentId = agentId || focusedAgent?.agentId || "";
                         if (!effectiveAgentId) return;

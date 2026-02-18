@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useCallback, useEffect, useState } from "react";
-import { Archive, ChevronDown, ChevronRight, Trash2 } from "lucide-react";
+import { Archive, ChevronDown, ChevronRight, ListTree, Trash2 } from "lucide-react";
 import type { SessionEntry } from "./SessionsPanel";
 import { UsageDetails, UsageSkeleton, type SessionUsageData } from "./UsageDetails";
 import { humanizeSessionKey, humanizeOriginLabel } from "@/features/sessions/lib/sessionKeyUtils";
@@ -24,6 +24,7 @@ export const SessionCard = memo(function SessionCard({
   onSetConfirmDelete,
   onDelete,
   onCompact,
+  onViewTrace,
 }: {
   session: SessionEntry;
   isActive: boolean;
@@ -36,6 +37,7 @@ export const SessionCard = memo(function SessionCard({
   onSetConfirmDelete: (key: string | null) => void;
   onDelete: (key: string) => void;
   onCompact: (key: string) => void;
+  onViewTrace?: (sessionKey: string, agentId: string | null) => void;
 }) {
   const [usage, setUsage] = useState<SessionUsageData | null>(null);
   const [usageLoading, setUsageLoading] = useState(false);
@@ -142,6 +144,14 @@ export const SessionCard = memo(function SessionCard({
               >
                 View
               </button>
+            )}
+            {onViewTrace && (
+              <PanelIconButton
+                aria-label={`View trace for session ${session.key}`}
+                onClick={() => onViewTrace(session.key, agentId)}
+              >
+                <ListTree className="h-3.5 w-3.5" />
+              </PanelIconButton>
             )}
             <PanelIconButton
               aria-label={`Compact session ${session.key}`}

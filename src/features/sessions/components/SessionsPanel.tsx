@@ -34,6 +34,7 @@ type SessionsPanelProps = {
   error: string | null;
   onRefresh: () => void;
   onSessionClick?: (sessionKey: string, agentId: string | null) => void;
+  onViewTrace?: (sessionKey: string, agentId: string | null) => void;
   activeSessionKey?: string | null;
   aggregateUsage?: { inputTokens: number; outputTokens: number; totalCost: number | null; messageCount: number } | null;
   aggregateUsageLoading?: boolean;
@@ -65,6 +66,7 @@ export const SessionsPanel = memo(function SessionsPanel({
   error,
   onRefresh,
   onSessionClick,
+  onViewTrace,
   activeSessionKey = null,
   aggregateUsage = null,
   aggregateUsageLoading = false,
@@ -318,6 +320,7 @@ export const SessionsPanel = memo(function SessionsPanel({
                 onSetConfirmDelete={setConfirmDeleteKey}
                 onDelete={(key) => { void handleDelete(key); }}
                 onCompact={(key) => { void handleCompact(key); }}
+                onViewTrace={onViewTrace}
               />
             ))}
           </div>
