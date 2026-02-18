@@ -56,7 +56,6 @@ export function useProjects(
       };
 
       const enrichedProjects = (data.projects ?? []).map((project) => {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { fileContent, ...entry } = project;
         if (fileContent) {
           const details = parseProjectFile(fileContent);

@@ -164,7 +164,7 @@ export const ProjectCard = memo(function ProjectCard({
 
       {/* Details (Progress + Next Step) */}
       {details && (
-        <div className="mt-1.5 space-y-1 border-t border-border/40 pt-1.5">
+        <div className="mt-1 space-y-0.5 border-t border-border/40 pt-1">
           {/* Progress Bar */}
           {details.progress.total > 0 && (
             <div className="flex items-center gap-2">

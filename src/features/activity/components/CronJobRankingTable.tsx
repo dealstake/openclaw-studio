@@ -75,12 +75,12 @@ const JobRow = memo(function JobRow({
       <CollapsibleTrigger asChild>
         <button
           type="button"
-          className="flex w-full items-center gap-2 rounded-lg border border-border/60 bg-card/50 px-3 py-2 text-left transition hover:bg-muted/30"
+          className="flex w-full flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-border/60 bg-card/50 px-3 py-2 text-left transition hover:bg-muted/30"
         >
           <ChevronRight
             className={`h-3 w-3 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-90" : ""}`}
           />
-          <span className="flex-1 truncate text-xs font-medium text-foreground">
+          <span className="flex-1 truncate text-xs font-medium text-foreground min-w-[100px]">
             {job.jobName}
           </span>
           <span className="text-[10px] text-muted-foreground">{job.totalRuns} runs</span>

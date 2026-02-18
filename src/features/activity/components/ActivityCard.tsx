@@ -44,7 +44,7 @@ export const ActivityCard = memo(function ActivityCard({
         <CollapsibleTrigger asChild>
           <button
             type="button"
-            className="flex w-full items-center gap-2 px-3 py-2 text-left"
+            className="flex w-full flex-wrap items-center gap-x-2 gap-y-1 px-3 py-2 text-left sm:flex-nowrap"
             aria-expanded={isExpanded}
             aria-controls={contentId}
           >
@@ -62,7 +62,7 @@ export const ActivityCard = memo(function ActivityCard({
                 {event.projectName}
               </span>
             )}
-            <span className="min-w-0 flex-1 truncate text-xs text-foreground">
+            <span className="min-w-0 basis-full truncate text-xs text-foreground sm:basis-auto sm:flex-1">
               {truncateSummary(event.summary)}
             </span>
             <ChevronRight

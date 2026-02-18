@@ -29,26 +29,29 @@ export async function GET(request: Request) {
     const projectSlugFilter = url.searchParams.get("projectSlug")?.trim() || null;
     const statusFilter = url.searchParams.get("status")?.trim() || null;
 
-    // ─── Sidecar proxy ────────────────────────────────────────────────
+    // ─── Read activity.jsonl (sidecar or local) ─────────────────────
+    let raw: string;
+
     if (isSidecarConfigured()) {
-      const params: Record<string, string> = { agentId, limit: String(limit), offset: String(offset) };
-      if (typeFilter) params.type = typeFilter;
-      if (taskIdFilter) params.taskId = taskIdFilter;
-      if (projectSlugFilter) params.projectSlug = projectSlugFilter;
-      if (statusFilter) params.status = statusFilter;
-      const resp = await sidecarGet("/activity", params);
-      const data = await resp.json();
-      return NextResponse.json(data, { status: resp.status });
+      // Use the sidecar's file endpoint (not a custom /activity route)
+      const resp = await sidecarGet("/file", { agentId, path: "reports/activity.jsonl" });
+      if (!resp.ok) {
+        // File doesn't exist yet — not an error
+        return NextResponse.json({ events: [], total: 0 });
+      }
+      const data = (await resp.json()) as { content?: string };
+      raw = data.content ?? "";
+    } else {
+      const { absolute } = resolveWorkspacePath(agentId, "reports/activity.jsonl");
+      try {
+        raw = await fs.readFile(absolute, "utf-8");
+      } catch {
+        // File doesn't exist yet — not an error
+        return NextResponse.json({ events: [], total: 0 });
+      }
     }
 
-    // ─── Local filesystem ─────────────────────────────────────────────
-    const { absolute } = resolveWorkspacePath(agentId, "reports/activity.jsonl");
-
-    let raw: string;
-    try {
-      raw = await fs.readFile(absolute, "utf-8");
-    } catch {
-      // File doesn't exist yet — not an error
+    if (!raw.trim()) {
       return NextResponse.json({ events: [], total: 0 });
     }
 
