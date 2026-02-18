@@ -54,8 +54,8 @@ export function useSessionTrace(agentId: string | null, sessionId: string | null
       const result = parseTrace(data.messages, sessionId);
       setTurns(result.turns);
       setSummary(result.summary);
-      if (result.turns.length > 0 && selectedTurnIndex === null) {
-        setSelectedTurnIndex(0);
+      if (result.turns.length > 0) {
+        setSelectedTurnIndex((prev) => prev ?? 0);
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to load trace";
@@ -65,7 +65,7 @@ export function useSessionTrace(agentId: string | null, sessionId: string | null
       loadingRef.current = false;
       setLoading(false);
     }
-  }, [agentId, sessionId, selectedTurnIndex]);
+  }, [agentId, sessionId]);
 
   return {
     turns,
