@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useEffect } from "react";
+import { memo, useEffect, useMemo } from "react";
 import { RefreshCw } from "lucide-react";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { useUsageData, type TimeRange } from "@/features/usage/hooks/useUsageData";
@@ -8,6 +8,8 @@ import { SectionLabel } from "@/components/SectionLabel";
 import { ErrorBanner } from "@/components/ErrorBanner";
 import { Skeleton } from "@/components/Skeleton";
 import { PanelIconButton } from "@/components/PanelIconButton";
+import { DailyTrendChart } from "@/features/usage/components/DailyTrendChart";
+import { CronCostTable } from "@/features/usage/components/CronCostTable";
 
 const TIME_RANGES: Array<{ value: TimeRange; label: string }> = [
   { value: "today", label: "Today" },
@@ -36,8 +38,10 @@ export const UsagePanel = memo(function UsagePanel({
   status,
 }: UsagePanelProps) {
   const {
+    entries,
     totalCost,
     costByModel,
+    dailyTrends,
     totalInputTokens,
     totalOutputTokens,
     totalSessions,
@@ -47,6 +51,9 @@ export const UsagePanel = memo(function UsagePanel({
     setTimeRange,
     refresh,
   } = useUsageData(client, status);
+
+  // Collect unique model names for the trend chart legend
+  const models = useMemo(() => Array.from(costByModel.keys()), [costByModel]);
 
   useEffect(() => {
     void refresh();
@@ -148,6 +155,22 @@ export const UsagePanel = memo(function UsagePanel({
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {/* Daily trend chart */}
+      {dailyTrends.length > 0 && (
+        <div>
+          <SectionLabel className="mb-2">Daily Trend</SectionLabel>
+          <DailyTrendChart trends={dailyTrends} models={models} />
+        </div>
+      )}
+
+      {/* Cron cost attribution */}
+      {entries.some((e) => e.isCron) && (
+        <div>
+          <SectionLabel className="mb-2">Cron Cost Attribution</SectionLabel>
+          <CronCostTable entries={entries} />
         </div>
       )}
     </div>
