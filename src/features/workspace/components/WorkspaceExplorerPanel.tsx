@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { ErrorBanner } from "@/components/ErrorBanner";
 
 import { useListNavigation } from "../hooks/useListNavigation";
@@ -48,9 +49,15 @@ export const WorkspaceExplorerPanel = memo(function WorkspaceExplorerPanel({
     refresh,
     saveFile,
     createFile,
+    fileExists,
   } = useWorkspaceFiles({ agentId, client });
 
   const [showNewFile, setShowNewFile] = useState(false);
+  const [overwriteConfirm, setOverwriteConfirm] = useState<{
+    open: boolean;
+    path: string;
+    name: string;
+  }>({ open: false, path: "", name: "" });
   const [filter, setFilter] = useState("");
   const filterRef = useRef<HTMLInputElement>(null);
 
@@ -124,17 +131,34 @@ export const WorkspaceExplorerPanel = memo(function WorkspaceExplorerPanel({
     [viewingFile, saveFile]
   );
 
-  const handleNewFile = useCallback(
-    async (name: string) => {
-      const relativePath = currentPath ? `${currentPath}/${name}` : name;
+  const doCreateFile = useCallback(
+    async (relativePath: string) => {
       const ok = await createFile(relativePath, "");
       if (ok) {
         setShowNewFile(false);
         openFile(relativePath);
       }
     },
-    [currentPath, createFile, openFile]
+    [createFile, openFile]
   );
+
+  const handleNewFile = useCallback(
+    async (name: string) => {
+      const relativePath = currentPath ? `${currentPath}/${name}` : name;
+      const exists = await fileExists(relativePath);
+      if (exists) {
+        setOverwriteConfirm({ open: true, path: relativePath, name: name });
+        return;
+      }
+      await doCreateFile(relativePath);
+    },
+    [currentPath, fileExists, doCreateFile]
+  );
+
+  const handleOverwriteConfirm = useCallback(() => {
+    setOverwriteConfirm((prev) => ({ ...prev, open: false }));
+    void doCreateFile(overwriteConfirm.path);
+  }, [overwriteConfirm.path, doCreateFile]);
 
   // Keyboard shortcut: Escape goes back
   useEffect(() => {
@@ -348,6 +372,17 @@ export const WorkspaceExplorerPanel = memo(function WorkspaceExplorerPanel({
           </>
         ) : null}
       </div>
+      <ConfirmDialog
+        open={overwriteConfirm.open}
+        onOpenChange={(open) =>
+          setOverwriteConfirm((prev) => ({ ...prev, open }))
+        }
+        title="File already exists"
+        description={`"${overwriteConfirm.name}" already exists. Do you want to overwrite it?`}
+        confirmLabel="Overwrite"
+        destructive
+        onConfirm={handleOverwriteConfirm}
+      />
     </div>
   );
 });

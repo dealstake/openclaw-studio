@@ -72,6 +72,8 @@ type UseWorkspaceFilesResult = {
   saveFile: (relativePath: string, content: string) => Promise<boolean>;
   /** Create a new file */
   createFile: (relativePath: string, content: string) => Promise<boolean>;
+  /** Check if a file exists at the given path */
+  fileExists: (relativePath: string) => Promise<boolean>;
 };
 
 /**
@@ -297,15 +299,6 @@ export const useWorkspaceFiles = ({
 
   const createFile = useCallback(
     async (relativePath: string, content: string): Promise<boolean> => {
-      // Check if file already exists
-      const exists = await fileExists(relativePath);
-      if (exists) {
-        const overwrite = window.confirm(
-          `"${relativePath.split("/").pop()}" already exists. Overwrite it?`
-        );
-        if (!overwrite) return false;
-      }
-
       const ok = await saveFile(relativePath, content);
       if (ok) {
         // Refresh directory listing to show the new file
@@ -316,7 +309,7 @@ export const useWorkspaceFiles = ({
       }
       return ok;
     },
-    [fileExists, saveFile, fetchDir, currentPath]
+    [saveFile, fetchDir, currentPath]
   );
 
   // Load root on mount or agent change
@@ -430,5 +423,6 @@ export const useWorkspaceFiles = ({
     refresh,
     saveFile,
     createFile,
+    fileExists,
   };
 };
