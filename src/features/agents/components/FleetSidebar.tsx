@@ -36,7 +36,7 @@ const FILTER_OPTIONS: Array<{ value: FocusFilter; label: string; testId: string 
   { value: "all", label: "All", testId: "fleet-filter-all" },
   {
     value: "needs-attention",
-    label: "Needs Attention",
+    label: "Attention",
     testId: "fleet-filter-needs-attention",
   },
   { value: "running", label: "Running", testId: "fleet-filter-running" },
@@ -70,10 +70,10 @@ const AgentRow = memo(function AgentRow({ agent, selected, hasPresence, onSelect
     <button
       type="button"
       data-testid={`fleet-agent-row-${agent.agentId}`}
-      className={`group flex w-full items-center gap-3 rounded-md border px-3 py-2 text-left transition ${
+      className={`group flex w-full items-center gap-3 rounded-md border border-l-[3px] px-3 py-2 text-left transition ${
         selected
-          ? "border-ring/40 bg-muted/60 shadow-xs"
-          : "border-border/70 bg-card/65 hover:border-border hover:bg-muted/55"
+          ? "border-l-primary border-ring/40 bg-muted/70 shadow-sm"
+          : "border-l-transparent border-border/70 bg-card/65 hover:border-border hover:bg-muted/55"
       }`}
       onClick={() => onSelect(agent.agentId)}
     >
@@ -118,10 +118,10 @@ const AgentRow = memo(function AgentRow({ agent, selected, hasPresence, onSelect
 
 const SubAgentRow = memo(function SubAgentRow({ entry }: { entry: SubAgentEntry }) {
   return (
-    <div className="ml-5 flex items-center gap-2 border-l-2 border-border/50 pl-3 py-1.5">
+    <div className="ml-8 flex items-center gap-2 border-l-2 border-border/50 pl-3 py-1.5 opacity-70">
       <GitBranch className="h-3 w-3 shrink-0 text-muted-foreground/60" />
       <div className="min-w-0 flex-1">
-        <span className="font-mono text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+        <span className="font-mono text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
           Sub-agent {entry.sessionIdShort}
         </span>
       </div>
@@ -157,7 +157,7 @@ export const FleetSidebar = memo(function FleetSidebar({
       data-testid="fleet-sidebar"
     >
       <div className="flex items-center justify-between gap-2 px-1">
-        <p className="console-title text-2xl leading-none text-foreground">Agents ({agents.length})</p>
+        <p className="console-title text-2xl leading-none text-foreground">Agents <span className="text-muted-foreground/70">({agents.length})</span></p>
         <button
           type="button"
           data-testid="fleet-new-agent-button"
@@ -169,7 +169,7 @@ export const FleetSidebar = memo(function FleetSidebar({
         </button>
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-nowrap gap-2 overflow-x-auto scrollbar-none">
         {FILTER_OPTIONS.map((option) => {
           const active = filter === option.value;
           return (
@@ -178,9 +178,9 @@ export const FleetSidebar = memo(function FleetSidebar({
               type="button"
               data-testid={option.testId}
               aria-pressed={active}
-                className={`rounded-md border px-2 py-1 ${sectionLabelClass} transition ${
+              className={`shrink-0 rounded-md border px-2.5 py-2 ${sectionLabelClass} transition ${
                 active
-                  ? "border-border bg-muted text-foreground shadow-xs"
+                  ? "border-primary/60 bg-primary/15 text-foreground shadow-xs"
                   : "border-border/80 bg-card/65 text-muted-foreground hover:border-border hover:bg-muted/70"
               }`}
               onClick={() => onFilterChange(option.value)}

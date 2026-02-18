@@ -13,6 +13,7 @@ import { HeaderBar } from "@/features/agents/components/HeaderBar";
 import { ConnectionPanel } from "@/features/agents/components/ConnectionPanel";
 import { EmptyStatePanel } from "@/features/agents/components/EmptyStatePanel";
 import { BrandMark } from "@/components/brand/BrandMark";
+import { X } from "lucide-react";
 import {
   buildAgentInstruction,
 } from "@/lib/text/message-extract";
@@ -1605,6 +1606,14 @@ const AgentStudioPage = () => {
             <div
               className={`fixed inset-y-0 left-0 z-50 w-[280px] transform transition-transform duration-300 xl:static xl:flex xl:flex-[0_0_auto] xl:min-h-0 xl:w-[280px] xl:translate-x-0 ${mobilePane === "fleet" ? "translate-x-0" : "-translate-x-full"}`}
             >
+              <button
+                type="button"
+                aria-label="Close fleet sidebar"
+                className="absolute right-3 top-3 z-10 flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition xl:hidden"
+                onClick={() => setMobilePane("chat")}
+              >
+                <X className="h-4 w-4" />
+              </button>
               <FleetSidebar
                 agents={filteredAgents}
                 selectedAgentId={focusedAgent?.agentId ?? state.selectedAgentId}
