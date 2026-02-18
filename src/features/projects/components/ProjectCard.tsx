@@ -1,5 +1,6 @@
 import { memo, useState, useCallback } from "react";
 import {
+  Archive,
   ChevronDown,
   ChevronRight,
   ClipboardList,
@@ -16,6 +17,7 @@ interface ProjectCardProps {
   project: ProjectEntry;
   onOpenFile: () => void;
   onChangeStatus: (newEmoji: string, newLabel: string) => void;
+  onArchive: () => void;
   /** Number of projects currently building (for queue logic) */
   buildingCount: number;
   /** Queue position of this project (0 = not queued, 1+ = queue position) */
@@ -26,6 +28,7 @@ export const ProjectCard = memo(function ProjectCard({
   project,
   onOpenFile,
   onChangeStatus,
+  onArchive,
   buildingCount,
   queuePosition,
 }: ProjectCardProps) {
@@ -117,6 +120,21 @@ export const ProjectCard = memo(function ProjectCard({
                   </button>
                 );
               })}
+              {/* Archive — separated at bottom */}
+              <div className="my-1 border-t border-border/40" />
+              <button
+                type="button"
+                className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-[11px] text-red-400 transition hover:bg-red-500/10"
+                onClick={() => {
+                  setStatusOpen(false);
+                  onArchive();
+                }}
+              >
+                <Archive className="h-3 w-3 shrink-0" />
+                <span className="flex-1 font-mono text-[10px] font-semibold uppercase tracking-[0.1em]">
+                  Archive
+                </span>
+              </button>
             </Popover.Content>
           </Popover.Portal>
         </Popover.Root>
@@ -146,7 +164,7 @@ export const ProjectCard = memo(function ProjectCard({
 
       {/* Details (Progress + Next Step) */}
       {details && (
-        <div className="mt-2 space-y-1.5 border-t border-border/40 pt-2">
+        <div className="mt-1.5 space-y-1 border-t border-border/40 pt-1.5">
           {/* Progress Bar */}
           {details.progress.total > 0 && (
             <div className="flex items-center gap-2">

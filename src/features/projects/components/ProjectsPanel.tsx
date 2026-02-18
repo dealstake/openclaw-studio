@@ -195,6 +195,7 @@ export const ProjectsPanel = memo(function ProjectsPanel({
           project={project}
           onOpenFile={() => setEditingProjectDoc(project.doc)}
           onChangeStatus={(emoji, label) => void changeStatus(project, emoji, label)}
+          onArchive={() => setArchiveTarget(project)}
           buildingCount={buildingCount}
           queuePosition={getQueuePosition(project.doc)}
         />

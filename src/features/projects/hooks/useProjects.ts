@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { ProjectEntry } from "../components/ProjectsPanel";
 import { parseProjectFile } from "../lib/parseProject";
-import { parseIndex } from "../lib/indexTable";
 import { TOGGLE_MAP } from "../lib/constants";
 import { manageProjectCronJobs } from "../lib/cronJobs";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
@@ -39,8 +38,9 @@ export function useProjects(
     setLoading(true);
     setError(null);
     try {
+      // Single batch request replaces N+1 individual file fetches
       const res = await fetch(
-        `/api/workspace/file?agentId=${encodeURIComponent(agentId)}&path=projects/INDEX.md`,
+        `/api/workspace/projects?agentId=${encodeURIComponent(agentId)}`,
       );
       if (!res.ok) {
         if (res.status === 404) {
@@ -49,33 +49,19 @@ export function useProjects(
         }
         throw new Error(`Failed to fetch projects: ${res.status}`);
       }
-      const data = (await res.json()) as { content?: string };
-      if (!data.content) {
-        setProjects([]);
-        return;
-      }
+      const data = (await res.json()) as {
+        projects: Array<ProjectEntry & { fileContent?: string | null }>;
+      };
 
-      const parsedProjects = parseIndex(data.content);
-
-      const enrichedProjects = await Promise.all(
-        parsedProjects.map(async (project) => {
-          try {
-            const fileRes = await fetch(
-              `/api/workspace/file?agentId=${encodeURIComponent(agentId)}&path=projects/${encodeURIComponent(project.doc)}`,
-            );
-            if (fileRes.ok) {
-              const fileData = (await fileRes.json()) as { content?: string };
-              if (fileData.content) {
-                const details = parseProjectFile(fileData.content);
-                return { ...project, details };
-              }
-            }
-          } catch (err) {
-            console.error(`Failed to fetch details for ${project.doc}`, err);
-          }
-          return project;
-        }),
-      );
+      const enrichedProjects = (data.projects ?? []).map((project) => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { fileContent, ...entry } = project;
+        if (fileContent) {
+          const details = parseProjectFile(fileContent);
+          return { ...entry, details };
+        }
+        return entry;
+      });
 
       setProjects(enrichedProjects);
     } catch (err) {

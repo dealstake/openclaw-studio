@@ -77,6 +77,7 @@ describe("ProjectCard inline markdown", () => {
         project={baseProject}
         onOpenFile={vi.fn()}
         onChangeStatus={vi.fn()}
+        onArchive={vi.fn()}
         buildingCount={0}
         queuePosition={0}
       />,
@@ -94,6 +95,7 @@ describe("ProjectCard inline markdown", () => {
         project={baseProject}
         onOpenFile={vi.fn()}
         onChangeStatus={vi.fn()}
+        onArchive={vi.fn()}
         buildingCount={0}
         queuePosition={0}
       />,
