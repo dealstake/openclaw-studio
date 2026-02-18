@@ -30,6 +30,7 @@ import {
   type AgentChatItem,
 } from "./chatItems";
 import { EmptyStatePanel } from "./EmptyStatePanel";
+import { MessageActions } from "./MessageActions";
 import { TokenProgressBar } from "@/components/TokenProgressBar";
 
 import { sectionLabelClass } from "@/components/SectionLabel";
@@ -76,32 +77,57 @@ const AgentChatFinalItems = memo(function AgentChatFinalItems({
   autoExpandThinking: boolean;
   lastThinkingItemIndex: number;
 }) {
+  /** Determine if a turn separator should appear before this item. */
+  const needsSeparator = (index: number): boolean => {
+    if (index === 0) return false;
+    const prev = chatItems[index - 1];
+    const curr = chatItems[index];
+    if (!prev || !curr) return false;
+    // Show separator when switching between user and assistant turns
+    // (tool/thinking are part of the assistant turn, so no separator before them)
+    if (curr.kind === "user" && prev.kind !== "user") return true;
+    if (curr.kind === "assistant" && prev.kind === "user") return true;
+    return false;
+  };
+
   return (
     <>
       {chatItems.map((item, index) => {
+        const separator = needsSeparator(index) ? (
+          <div
+            key={`sep-${agentId}-${index}`}
+            className="my-1 border-t border-border/30"
+            role="separator"
+          />
+        ) : null;
+
         if (item.kind === "thinking") {
           return (
-            <details
-              key={`chat-${agentId}-thinking-${index}`}
-              className="rounded-md border border-border/70 bg-muted/55 text-[11px] text-muted-foreground"
-              open={autoExpandThinking && index === lastThinkingItemIndex}
-            >
-              <summary className={`flex cursor-pointer list-none items-center gap-2 px-2 py-1.5 ${sectionLabelClass} [&::-webkit-details-marker]:hidden`}>
-                <AgentAvatar seed={avatarSeed} name={name} avatarUrl={avatarUrl} size={22} />
-                <ChevronRight className="h-3 w-3 shrink-0 transition-transform duration-200 [[open]>&]:rotate-90" />
-                <span>Thinking</span>
-              </summary>
-              <MarkdownViewer content={item.text} className="leading-relaxed px-2 pb-2" />
-            </details>
+            <div key={`chat-${agentId}-thinking-${index}`} className="group/message relative">
+              {separator}
+              <details
+                className="rounded-md border border-border/70 bg-muted/55 text-[11px] text-muted-foreground"
+                open={autoExpandThinking && index === lastThinkingItemIndex}
+              >
+                <summary className={`flex cursor-pointer list-none items-center gap-2 px-2 py-1.5 ${sectionLabelClass} [&::-webkit-details-marker]:hidden`}>
+                  <AgentAvatar seed={avatarSeed} name={name} avatarUrl={avatarUrl} size={22} />
+                  <ChevronRight className="h-3 w-3 shrink-0 transition-transform duration-200 [[open]>&]:rotate-90" />
+                  <span>Thinking</span>
+                </summary>
+                <MarkdownViewer content={item.text} className="leading-relaxed px-2 pb-2" />
+              </details>
+              <MessageActions text={item.text} />
+            </div>
           );
         }
         if (item.kind === "user") {
           return (
-            <div
-              key={`chat-${agentId}-user-${index}`}
-              className="rounded-md border border-border/70 bg-muted/70 px-3 py-2 text-foreground"
-            >
-              <MarkdownViewer content={`> ${item.text}`} />
+            <div key={`chat-${agentId}-user-${index}`} className="group/message relative">
+              {separator}
+              <div className="rounded-md border border-border/70 bg-muted/70 px-3 py-2 text-foreground">
+                <MarkdownViewer content={`> ${item.text}`} />
+              </div>
+              <MessageActions text={item.text} />
             </div>
           );
         }
@@ -122,11 +148,14 @@ const AgentChatFinalItems = memo(function AgentChatFinalItems({
           );
         }
         return (
-          <MarkdownViewer
-            key={`chat-${agentId}-assistant-${index}`}
-            content={item.text}
-            className="leading-relaxed min-w-0 overflow-hidden px-0.5"
-          />
+          <div key={`chat-${agentId}-assistant-${index}`} className="group/message relative">
+            {separator}
+            <MarkdownViewer
+              content={item.text}
+              className="leading-relaxed min-w-0 overflow-hidden px-0.5"
+            />
+            <MessageActions text={item.text} />
+          </div>
         );
       })}
     </>
