@@ -1,6 +1,7 @@
 "use client";
 
 import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { useTaskEditForm } from "@/features/tasks/hooks/useTaskEditForm";
 import {
   X,
   Play,
@@ -87,42 +88,16 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
   const [promptExpanded, setPromptExpanded] = useState(false);
   const loadingRef = useRef(false);
 
-  // ─── Edit mode state ─────────────────────────────────────────────────────
-  const [editing, setEditing] = useState(false);
-  const [editName, setEditName] = useState("");
-  const [editDescription, setEditDescription] = useState("");
-  const [editPrompt, setEditPrompt] = useState("");
-  const [editModel, setEditModel] = useState("");
+  // ─── Edit mode state (consolidated via useReducer) ────────────────────────
+  const {
+    editing, editName, editDescription, editPrompt, editModel,
+    startEditing: startEditingForm, cancelEditing, saveEdits, setField,
+  } = useTaskEditForm({ task, onUpdateTask });
 
   const startEditing = useCallback(() => {
-    if (!task) return;
-    setEditName(task.name);
-    setEditDescription(task.description);
-    setEditPrompt(task.prompt);
-    setEditModel(task.model);
-    setEditing(true);
+    startEditingForm();
     setPromptExpanded(true);
-  }, [task]);
-
-  const cancelEditing = useCallback(() => {
-    setEditing(false);
-  }, []);
-
-  const saveEdits = useCallback(() => {
-    if (!task) return;
-    const updates: UpdateTaskPayload = {};
-    if (editName.trim() && editName.trim() !== task.name) updates.name = editName.trim();
-    if (editDescription !== task.description) updates.description = editDescription;
-    if (editPrompt.trim() && editPrompt.trim() !== task.prompt) updates.prompt = editPrompt.trim();
-    if (editModel.trim() && editModel.trim() !== task.model) updates.model = editModel.trim();
-
-    if (Object.keys(updates).length === 0) {
-      setEditing(false);
-      return;
-    }
-    onUpdateTask(task.id, updates);
-    setEditing(false);
-  }, [task, editName, editDescription, editPrompt, editModel, onUpdateTask]);
+  }, [startEditingForm]);
 
   const loadRuns = useCallback(
     async (cronJobId: string) => {
@@ -157,11 +132,11 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
       setRuns([]);
       setRunsError(null);
       setPromptExpanded(false);
-      setEditing(false);
+      cancelEditing();
       return;
     }
     void loadRuns(task.cronJobId);
-  }, [task, loadRuns]);
+  }, [task, loadRuns, cancelEditing]);
 
   if (!task) return null;
 
@@ -190,7 +165,7 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
             <input
               className={`${inputClass} mt-0.5 font-semibold`}
               value={editName}
-              onChange={(e) => setEditName(e.target.value)}
+              onChange={(e) => setField("name", e.target.value)}
               placeholder="Task name"
               autoFocus
             />
@@ -305,7 +280,7 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
             <textarea
               className={`${textareaClass} mt-2 min-h-[3rem]`}
               value={editDescription}
-              onChange={(e) => setEditDescription(e.target.value)}
+              onChange={(e) => setField("description", e.target.value)}
               placeholder="Task description (optional)"
               rows={2}
             />
@@ -323,7 +298,7 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
                 <input
                   className={`${inputClass} w-48`}
                   value={editModel}
-                  onChange={(e) => setEditModel(e.target.value)}
+                  onChange={(e) => setField("model", e.target.value)}
                   placeholder="e.g. anthropic/claude-sonnet-4-6"
                 />
               </div>
@@ -361,7 +336,7 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
               <textarea
                 className={`${textareaClass} mt-2 min-h-[8rem]`}
                 value={editPrompt}
-                onChange={(e) => setEditPrompt(e.target.value)}
+                onChange={(e) => setField("prompt", e.target.value)}
                 placeholder="Task prompt..."
                 rows={6}
               />
