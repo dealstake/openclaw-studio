@@ -61,7 +61,9 @@ export async function GET(request: Request) {
       }),
     );
 
-    return NextResponse.json({ projects: enriched });
+    return NextResponse.json({ projects: enriched }, {
+      headers: { "Cache-Control": "private, max-age=30, stale-while-revalidate=60" },
+    });
   } catch (err) {
     return handleApiError(err, "workspace/projects");
   }

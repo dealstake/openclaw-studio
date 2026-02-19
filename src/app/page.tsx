@@ -1716,7 +1716,7 @@ const AgentStudioPage = () => {
                 <ExpandedContext.Provider value={true}>
                   <div className="flex h-full w-full flex-col overflow-y-auto">
                     {expandedTab === "projects" && (
-                      <ProjectsPanel agentId={focusedAgent?.agentId ?? null} client={client} />
+                      <ProjectsPanel agentId={focusedAgent?.agentId ?? null} client={client} isTabActive />
                     )}
                     {expandedTab === "activity" && (
                       <ActivityPanel client={client} status={status} agentId={focusedAgent?.agentId ?? null} />
@@ -1751,6 +1751,7 @@ const AgentStudioPage = () => {
                       <WorkspaceExplorerPanel
                         client={client}
                         agentId={focusedAgent?.agentId ?? null}
+                        isTabActive
                       />
                     )}
                     {expandedTab === "sessions" && (
@@ -1896,6 +1897,7 @@ const AgentStudioPage = () => {
                       <ProjectsPanel
                         agentId={focusedAgent?.agentId ?? null}
                         client={client}
+                        isTabActive={contextTab === "projects"}
                       />
                     </div>
                   }
@@ -2049,6 +2051,7 @@ const AgentStudioPage = () => {
                       key={focusedAgent?.agentId ?? "none"}
                       agentId={focusedAgent?.agentId ?? null}
                       client={client}
+                      isTabActive={contextTab === "workspace"}
                     />
                   }
                   settingsContent={

@@ -31,11 +31,13 @@ import { PanelIconButton } from "@/components/PanelIconButton";
 type WorkspaceExplorerPanelProps = {
   agentId: string | null | undefined;
   client?: GatewayClient | null;
+  isTabActive?: boolean;
 };
 
 export const WorkspaceExplorerPanel = memo(function WorkspaceExplorerPanel({
   agentId,
   client,
+  isTabActive,
 }: WorkspaceExplorerPanelProps) {
   const {
     entries,
@@ -52,7 +54,7 @@ export const WorkspaceExplorerPanel = memo(function WorkspaceExplorerPanel({
     saveFile,
     createFile,
     fileExists,
-  } = useWorkspaceFiles({ agentId, client });
+  } = useWorkspaceFiles({ agentId, client, isTabActive });
 
   const [modalFile, setModalFile] = useState<string | null>(null);
   const [showNewFile, setShowNewFile] = useState(false);

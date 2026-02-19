@@ -36,6 +36,7 @@ export interface ProjectEntry {
 interface ProjectsPanelProps {
   agentId: string | null;
   client: GatewayClient | null;
+  isTabActive?: boolean;
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -43,13 +44,14 @@ interface ProjectsPanelProps {
 export const ProjectsPanel = memo(function ProjectsPanel({
   agentId,
   client,
+  isTabActive,
 }: ProjectsPanelProps) {
   const [showWizard, setShowWizard] = useState(false);
   const [archiveTarget, setArchiveTarget] = useState<ProjectEntry | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [editingProjectDoc, setEditingProjectDoc] = useState<string | null>(null);
   const { projects, loading, error, refresh, changeStatus, archive, buildingCount, getQueuePosition } =
-    useProjects(agentId, client);
+    useProjects(agentId, client, { isTabActive });
 
   // Count projects per status for filter badges
   const statusCounts = useMemo(() => {

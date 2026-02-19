@@ -28,6 +28,7 @@ interface UseProjectsResult {
 export function useProjects(
   agentId: string | null,
   client: GatewayClient | null,
+  options?: { isTabActive?: boolean },
 ): UseProjectsResult {
   const [projects, setProjects] = useState<ProjectEntry[]>([]);
   const [loading, setLoading] = useState(false);
@@ -87,7 +88,7 @@ export function useProjects(
 
   useVisibilityRefresh(pollCallback, {
     pollMs: POLL_INTERVAL,
-    enabled: !!agentId,
+    enabled: !!agentId && (options?.isTabActive !== false),
   });
 
   const toggleStatus = useCallback(

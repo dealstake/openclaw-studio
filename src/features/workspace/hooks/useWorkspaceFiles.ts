@@ -44,6 +44,7 @@ async function fetchWithFallback<T>(
 type UseWorkspaceFilesParams = {
   agentId: string | null | undefined;
   client?: GatewayClient | null;
+  isTabActive?: boolean;
 };
 
 type UseWorkspaceFilesResult = {
@@ -84,6 +85,7 @@ type UseWorkspaceFilesResult = {
 export const useWorkspaceFiles = ({
   agentId,
   client,
+  isTabActive,
 }: UseWorkspaceFilesParams): UseWorkspaceFilesResult => {
   const [entries, setEntries] = useState<WorkspaceEntry[]>([]);
   const [viewingFile, setViewingFile] = useState<WorkspaceFileContent | null>(null);
@@ -335,6 +337,7 @@ export const useWorkspaceFiles = ({
 
   useVisibilityRefresh(workspacePollCallback, {
     pollMs: 180_000,
+    enabled: isTabActive !== false,
     initialDelayMs: 60_000, // Offset from projects poller
   });
 
