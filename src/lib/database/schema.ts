@@ -46,9 +46,29 @@ export const tasks = sqliteTable("tasks", {
   runCount: integer("run_count").notNull().default(0),
 });
 
+// ─── Activity Events ─────────────────────────────────────────────────────────
+
+export const activityEvents = sqliteTable("activity_events", {
+  id: text("id").primaryKey(),
+  timestamp: text("timestamp").notNull(),
+  type: text("type").notNull(),
+  taskName: text("task_name").notNull(),
+  taskId: text("task_id").notNull(),
+  projectSlug: text("project_slug"),
+  projectName: text("project_name"),
+  status: text("status").notNull(),
+  summary: text("summary").notNull(),
+  metaJson: text("meta_json"),
+  createdAt: text("created_at")
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+});
+
 // ─── Type exports ────────────────────────────────────────────────────────────
 
 export type ProjectIndexRow = typeof projectsIndex.$inferSelect;
 export type NewProjectIndexRow = typeof projectsIndex.$inferInsert;
 export type TaskRow = typeof tasks.$inferSelect;
 export type NewTaskRow = typeof tasks.$inferInsert;
+export type ActivityEventRow = typeof activityEvents.$inferSelect;
+export type NewActivityEventRow = typeof activityEvents.$inferInsert;

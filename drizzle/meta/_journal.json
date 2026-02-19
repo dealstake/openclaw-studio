@@ -15,6 +15,13 @@
       "when": 1771519379038,
       "tag": "0001_clear_shockwave",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1771523398182,
+      "tag": "0002_abnormal_puma",
+      "breakpoints": true
     }
   ]
 }
