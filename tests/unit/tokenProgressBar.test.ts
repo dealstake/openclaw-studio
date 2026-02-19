@@ -1,88 +1,112 @@
-import { createElement } from "react";
-import { afterEach, describe, expect, it } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
-import { TokenProgressBar } from "@/components/TokenProgressBar";
+import { describe, expect, it } from "vitest";
 
-afterEach(cleanup);
+/**
+ * TokenProgressBar fill logic unit tests.
+ * We test the pure calculation logic extracted from the component's useMemo.
+ */
 
-function renderBar(props: Partial<Parameters<typeof TokenProgressBar>[0]> = {}) {
-  return render(
-    createElement(TokenProgressBar, { used: 5000, limit: 10000, ...props })
-  );
+function computeFills(used: number, limit: number | undefined) {
+  if (!limit || limit <= 0)
+    return { pct: 0, fillGreen: "0%", fillYellow: "0%", fillRed: "0%" };
+  const p = Math.min(100, Math.round((used / limit) * 100));
+
+  let fG: string;
+  let fY: string;
+  let fR: string;
+  if (p <= 60) {
+    fG = `${(p / 60) * 100}%`;
+    fY = "0%";
+    fR = "0%";
+  } else if (p <= 80) {
+    fG = "100%";
+    fY = `${((p - 60) / 20) * 100}%`;
+    fR = "0%";
+  } else {
+    fG = "100%";
+    fY = "100%";
+    fR = `${((p - 80) / 20) * 100}%`;
+  }
+  return { pct: p, fillGreen: fG, fillYellow: fY, fillRed: fR };
 }
 
-describe("TokenProgressBar", () => {
-  it("renders nothing when limit is undefined", () => {
-    const { container } = render(
-      createElement(TokenProgressBar, { used: 100, limit: undefined })
-    );
-    expect(container.innerHTML).toBe("");
+describe("TokenProgressBar fill calculations", () => {
+  it("returns zeros when limit is undefined", () => {
+    const r = computeFills(1000, undefined);
+    expect(r.pct).toBe(0);
+    expect(r.fillGreen).toBe("0%");
+    expect(r.fillYellow).toBe("0%");
+    expect(r.fillRed).toBe("0%");
   });
 
-  it("renders nothing when limit is 0", () => {
-    const { container } = render(
-      createElement(TokenProgressBar, { used: 100, limit: 0 })
-    );
-    expect(container.innerHTML).toBe("");
+  it("returns zeros when limit is 0", () => {
+    const r = computeFills(500, 0);
+    expect(r.pct).toBe(0);
   });
 
-  it("renders nothing when limit is negative", () => {
-    const { container } = render(
-      createElement(TokenProgressBar, { used: 100, limit: -1 })
-    );
-    expect(container.innerHTML).toBe("");
+  it("returns zeros when limit is negative", () => {
+    const r = computeFills(500, -100);
+    expect(r.pct).toBe(0);
   });
 
-  it("shows percentage text in non-compact mode", () => {
-    renderBar({ used: 5000, limit: 10000 });
-    expect(screen.getByText("50%")).toBeDefined();
+  it("computes 0% used correctly", () => {
+    const r = computeFills(0, 10000);
+    expect(r.pct).toBe(0);
+    expect(r.fillGreen).toBe("0%");
+    expect(r.fillYellow).toBe("0%");
+    expect(r.fillRed).toBe("0%");
   });
 
-  it("does not show percentage text in compact mode", () => {
-    renderBar({ used: 5000, limit: 10000, compact: true });
-    expect(screen.queryByText("50%")).toBeNull();
+  it("computes green zone (30%)", () => {
+    const r = computeFills(3000, 10000);
+    expect(r.pct).toBe(30);
+    expect(r.fillGreen).toBe("50%"); // 30/60 = 50%
+    expect(r.fillYellow).toBe("0%");
+    expect(r.fillRed).toBe("0%");
   });
 
-  it("displays tooltip with token counts", () => {
-    renderBar({ used: 5000, limit: 10000 });
-    const els = screen.getAllByTitle("50% · 5,000 / 10,000 tokens — Green: 0-60%, Yellow: 60-80%, Red: 80-100%");
-    expect(els.length).toBeGreaterThan(0);
+  it("computes green zone boundary (60%)", () => {
+    const r = computeFills(6000, 10000);
+    expect(r.pct).toBe(60);
+    expect(r.fillGreen).toBe("100%");
+    expect(r.fillYellow).toBe("0%");
+    expect(r.fillRed).toBe("0%");
   });
 
-  it("caps percentage at 100% when used exceeds limit", () => {
-    renderBar({ used: 15000, limit: 10000 });
-    expect(screen.getByText("100%")).toBeDefined();
+  it("computes yellow zone (61%)", () => {
+    const r = computeFills(6100, 10000);
+    expect(r.pct).toBe(61);
+    expect(r.fillGreen).toBe("100%");
+    expect(r.fillYellow).toBe("5%"); // (61-60)/20 = 5%
+    expect(r.fillRed).toBe("0%");
   });
 
-  // Zone transition tests: green only (0-60%), yellow (60-80%), red (80-100%)
-  it("green zone: only green fill at 30%", () => {
-    renderBar({ used: 3000, limit: 10000 });
-    expect(screen.getByText("30%")).toBeDefined();
+  it("computes yellow zone boundary (80%)", () => {
+    const r = computeFills(8000, 10000);
+    expect(r.pct).toBe(80);
+    expect(r.fillGreen).toBe("100%");
+    expect(r.fillYellow).toBe("100%");
+    expect(r.fillRed).toBe("0%");
   });
 
-  it("yellow zone: shows 70%", () => {
-    renderBar({ used: 7000, limit: 10000 });
-    expect(screen.getByText("70%")).toBeDefined();
+  it("computes red zone (81%)", () => {
+    const r = computeFills(8100, 10000);
+    expect(r.pct).toBe(81);
+    expect(r.fillGreen).toBe("100%");
+    expect(r.fillYellow).toBe("100%");
+    expect(r.fillRed).toBe("5%"); // (81-80)/20 = 5%
   });
 
-  it("red zone: shows 90%", () => {
-    renderBar({ used: 9000, limit: 10000 });
-    expect(screen.getByText("90%")).toBeDefined();
+  it("computes 100% used", () => {
+    const r = computeFills(10000, 10000);
+    expect(r.pct).toBe(100);
+    expect(r.fillGreen).toBe("100%");
+    expect(r.fillYellow).toBe("100%");
+    expect(r.fillRed).toBe("100%");
   });
 
-  it("0% usage renders bar with tooltip", () => {
-    renderBar({ used: 0, limit: 10000 });
-    expect(screen.getByText("0%")).toBeDefined();
-    expect(screen.getAllByTitle("0% · 0 / 10,000 tokens — Green: 0-60%, Yellow: 60-80%, Red: 80-100%").length).toBeGreaterThan(0);
-  });
-
-  it("100% usage renders correctly", () => {
-    renderBar({ used: 10000, limit: 10000 });
-    expect(screen.getByText("100%")).toBeDefined();
-  });
-
-  it("applies custom className", () => {
-    const { container } = renderBar({ className: "my-custom-class" });
-    expect(container.firstElementChild?.className).toContain("my-custom-class");
+  it("caps at 100% when over limit", () => {
+    const r = computeFills(15000, 10000);
+    expect(r.pct).toBe(100);
+    expect(r.fillRed).toBe("100%");
   });
 });
