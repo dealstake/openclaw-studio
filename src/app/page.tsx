@@ -17,7 +17,7 @@ import { X } from "lucide-react";
 import {
   buildAgentInstruction,
 } from "@/lib/text/message-extract";
-import { useGatewayConnection } from "@/lib/gateway/GatewayClient";
+import { useGatewayConnection } from "@/lib/gateway/useGatewayConnection";
 import {
   type GatewayModelPolicySnapshot,
 } from "@/lib/gateway/models";

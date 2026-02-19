@@ -54,7 +54,7 @@ const setupAndImportHook = async (gatewayUrl: string | null) => {
     return { GatewayBrowserClient };
   });
 
-  const mod = await import("@/lib/gateway/GatewayClient");
+  const mod = await import("@/lib/gateway/useGatewayConnection");
   return mod.useGatewayConnection as (settingsCoordinator: {
     loadSettings: () => Promise<unknown>;
     schedulePatch: (patch: unknown) => void;
