@@ -37,8 +37,8 @@ export async function GET(request: Request) {
     }
 
     // ─── Database path (local) ────────────────────────────────────────
-    const db = getDb(agentId);
-    const result = activityRepo.query(db, {
+    const db = getDb();
+    let result = activityRepo.query(db, {
       type: typeFilter,
       taskId: taskIdFilter,
       projectSlug: projectSlugFilter,
@@ -46,6 +46,27 @@ export async function GET(request: Request) {
       limit,
       offset,
     });
+
+    // Auto-import from activity.jsonl if DB is empty (first access after migration)
+    if (result.total === 0 && !typeFilter && !taskIdFilter && !projectSlugFilter && !statusFilter) {
+      try {
+        const { absolute } = resolveWorkspacePath(agentId, "reports/activity.jsonl");
+        const content = await fs.readFile(absolute, "utf-8");
+        if (content.trim()) {
+          activityRepo.importFromJsonl(db, content);
+          result = activityRepo.query(db, {
+            type: typeFilter,
+            taskId: taskIdFilter,
+            projectSlug: projectSlugFilter,
+            status: statusFilter,
+            limit,
+            offset,
+          });
+        }
+      } catch {
+        // JSONL file missing or unreadable — not fatal
+      }
+    }
 
     return NextResponse.json(result);
   } catch (err) {
@@ -91,7 +112,7 @@ export async function POST(request: Request) {
     };
 
     if (!isSidecarConfigured()) {
-      const db = getDb(agentId);
+      const db = getDb();
       activityRepo.insert(db, event);
     }
 

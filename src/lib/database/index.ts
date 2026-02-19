@@ -13,34 +13,40 @@ export type StudioDb = BetterSQLite3Database<typeof schema>;
 
 let _db: StudioDb | null = null;
 let _sqlite: Database.Database | null = null;
+let _migrationCount: number = 0;
 
 /**
- * Get the singleton database connection. Creates and migrates on first call.
+ * Get the singleton database connection. Creates on first call, and
+ * re-runs migrations whenever new migration files are detected.
  *
  * @param dbPath — Override path for testing. Defaults to
  *   `~/.openclaw/agents/<agentId>/data/studio.db` resolved from env.
  */
 export function getDb(dbPath?: string): StudioDb {
-  if (_db) return _db;
+  if (!_db) {
+    const resolvedPath = dbPath ?? resolveDefaultDbPath();
 
-  const resolvedPath = dbPath ?? resolveDefaultDbPath();
+    // Ensure parent directory exists
+    const dir = path.dirname(resolvedPath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
 
-  // Ensure parent directory exists
-  const dir = path.dirname(resolvedPath);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
+    _sqlite = new Database(resolvedPath);
+    _sqlite.pragma("journal_mode = WAL");
+    _sqlite.pragma("foreign_keys = ON");
+
+    _db = drizzle(_sqlite, { schema });
   }
 
-  _sqlite = new Database(resolvedPath);
-  _sqlite.pragma("journal_mode = WAL");
-  _sqlite.pragma("foreign_keys = ON");
-
-  _db = drizzle(_sqlite, { schema });
-
-  // Run migrations
+  // Always check for pending migrations (idempotent — checks __drizzle_migrations)
   const migrationsFolder = path.join(process.cwd(), "drizzle");
   if (fs.existsSync(migrationsFolder)) {
-    migrate(_db, { migrationsFolder });
+    const migrationFiles = fs.readdirSync(migrationsFolder).filter((f) => f.endsWith(".sql"));
+    if (migrationFiles.length > _migrationCount) {
+      migrate(_db, { migrationsFolder });
+      _migrationCount = migrationFiles.length;
+    }
   }
 
   return _db;
@@ -56,6 +62,7 @@ export function closeDb(): void {
     _sqlite = null;
   }
   _db = null;
+  _migrationCount = 0;
 }
 
 /**

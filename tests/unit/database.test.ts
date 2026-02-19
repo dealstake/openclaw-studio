@@ -1,7 +1,7 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { createTestDb } from "@/lib/database";
-import { projectsIndex } from "@/lib/database/schema";
-import { eq } from "drizzle-orm";
+import { projectsIndex, tasks, activityEvents, projectDetails } from "@/lib/database/schema";
+import { eq, sql } from "drizzle-orm";
 
 describe("database", () => {
   // createTestDb returns a fresh in-memory DB each call — no cleanup needed
@@ -16,6 +16,55 @@ describe("database", () => {
     const db = createTestDb();
     const rows = db.select().from(projectsIndex).all();
     expect(rows).toEqual([]);
+  });
+
+  it("creates all 4 data tables via migrations", () => {
+    const db = createTestDb();
+    const result = db.all<{ name: string }>(
+      sql`SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE '%drizzle%' AND name != 'sqlite_sequence' ORDER BY name`
+    );
+    const tableNames = result.map((r) => r.name).sort();
+    expect(tableNames).toEqual(["activity_events", "project_details", "projects_index", "tasks"]);
+  });
+
+  it("activity_events table accepts inserts", () => {
+    const db = createTestDb();
+    db.insert(activityEvents).values({
+      id: "test-1",
+      timestamp: new Date().toISOString(),
+      type: "cron-completion",
+      taskName: "Test",
+      taskId: "task-1",
+      status: "success",
+      summary: "Test event",
+      metaJson: "{}",
+    }).run();
+    const rows = db.select().from(activityEvents).all();
+    expect(rows).toHaveLength(1);
+    expect(rows[0].id).toBe("test-1");
+  });
+
+  it("project_details table accepts inserts with FK to projects_index", () => {
+    const db = createTestDb();
+    const now = new Date().toISOString();
+    // Insert parent first
+    db.insert(projectsIndex).values({
+      name: "Parent", doc: "parent.md", status: "Active", statusEmoji: "🔨",
+      priority: "P1", priorityEmoji: "🟡", createdAt: now, updatedAt: now,
+    }).run();
+    // Insert detail referencing parent doc
+    db.insert(projectDetails).values({
+      doc: "parent.md",
+      lastWorkedOn: now,
+      nextStep: "Do something",
+      blockedBy: "Nothing",
+      contextNeeded: "None",
+      progressTotal: 10,
+      progressCompleted: 3,
+    }).run();
+    const details = db.select().from(projectDetails).all();
+    expect(details).toHaveLength(1);
+    expect(details[0].progressCompleted).toBe(3);
   });
 
   it("inserts and retrieves a project row", () => {
