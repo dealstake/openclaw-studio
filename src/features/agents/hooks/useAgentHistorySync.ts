@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
+import { useVisibilityRefresh } from "@/hooks/useVisibilityRefresh";
 import type { AgentState } from "../state/store";
 import { buildHistorySyncPatch } from "../state/runtimeEventBridge";
 import { type GatewayClient, isGatewayDisconnectLikeError } from "@/lib/gateway/GatewayClient";
@@ -84,32 +85,33 @@ export function useAgentHistorySync(params: {
   const pollCountRef = useRef(0);
   const prevFocusedRunRef = useRef<string | null>(null);
 
+  // Reset poll count when a new agent run starts
+  const isRunningPoll = status === "connected" && !!focusedAgentId && focusedAgentRunning;
   useEffect(() => {
-    if (status !== "connected") return;
-    if (!focusedAgentId) return;
-    if (!focusedAgentRunning) return;
-
-    // Reset poll count when a new agent run starts
+    if (!isRunningPoll || !focusedAgentId) return;
     const runKey = `${focusedAgentId}:running`;
     if (prevFocusedRunRef.current !== runKey) {
       prevFocusedRunRef.current = runKey;
       pollCountRef.current = 0;
     }
-
     void loadAgentHistoryRef.current(focusedAgentId);
     pollCountRef.current++;
+  }, [isRunningPoll, focusedAgentId]);
 
-    const timer = window.setInterval(() => {
-      const latest = stateRef.current.agents.find((entry) => entry.agentId === focusedAgentId);
-      if (!latest || latest.status !== "running") return;
-      if (pollCountRef.current >= 60) return; // Cap: ~5 min at 5s intervals
-      pollCountRef.current++;
-      void loadAgentHistoryRef.current(focusedAgentId);
-    }, 5000);
-    return () => {
-      window.clearInterval(timer);
-    };
-  }, [focusedAgentId, focusedAgentRunning, stateRef, status]);
+  const pollRunningHistory = useCallback(() => {
+    if (!focusedAgentId) return;
+    const latest = stateRef.current.agents.find((entry) => entry.agentId === focusedAgentId);
+    if (!latest || latest.status !== "running") return;
+    if (pollCountRef.current >= 60) return; // Cap: ~5 min at 5s intervals
+    pollCountRef.current++;
+    void loadAgentHistoryRef.current(focusedAgentId);
+  }, [focusedAgentId, stateRef]);
+
+  useVisibilityRefresh(pollRunningHistory, {
+    pollMs: 5_000,
+    enabled: isRunningPoll,
+    debounceMs: 1_000,
+  });
 
   return {
     historyInFlightRef,

@@ -1,5 +1,6 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import type { GatewayClient, GatewayStatus, EventFrame } from "@/lib/gateway/GatewayClient";
+import { useVisibilityRefresh } from "@/hooks/useVisibilityRefresh";
 import { classifyGatewayEventKind } from "@/features/agents/state/runtimeEventBridge";
 import { useAlertRules } from "./useAlertRules";
 import { addNotification } from "./useNotifications";
@@ -86,32 +87,41 @@ export function useNotificationEvaluator(
   }, [client, status]);
 
   // ---- Polling for budget / rate-limit checks ----------------------------
-  useEffect(() => {
+  const checkBudget = useCallback(async () => {
     if (status !== "connected") return;
+    try {
+      const result = await client.call<{
+        sessions?: { totalTokens?: number; inputTokens?: number; outputTokens?: number }[];
+      }>("sessions.list", { includeGlobal: true, limit: 200 });
 
-    let cancelled = false;
+      const sessions = result.sessions ?? [];
+      const dailyTokens = sessions.reduce(
+        (sum, s) => sum + (s.totalTokens ?? (s.inputTokens ?? 0) + (s.outputTokens ?? 0)),
+        0,
+      );
 
-    const checkBudget = async () => {
-      try {
-        const result = await client.call<{
-          sessions?: { totalTokens?: number; inputTokens?: number; outputTokens?: number }[];
-        }>("sessions.list", { includeGlobal: true, limit: 200 });
+      const now = Date.now();
+      const currentRules = rulesRef.current;
 
-        if (cancelled) return;
+      // Budget rules
+      for (const rule of currentRules.filter((r) => r.type === "budget")) {
+        if (shouldCooldown(rule, lastFiredRef.current, now)) continue;
+        const n = evaluateBudgetRule(rule, dailyTokens);
+        if (n) {
+          lastFiredRef.current.set(rule.id, now);
+          addNotification(n);
+          toast.warning(n.title, { description: n.body });
+          sendBrowserNotification(n.title, n.body);
+        }
+      }
 
-        const sessions = result.sessions ?? [];
-        const dailyTokens = sessions.reduce(
-          (sum, s) => sum + (s.totalTokens ?? (s.inputTokens ?? 0) + (s.outputTokens ?? 0)),
-          0,
-        );
-
-        const now = Date.now();
-        const currentRules = rulesRef.current;
-
-        // Budget rules
-        for (const rule of currentRules.filter((r) => r.type === "budget")) {
+      // Rate limit rules (usage as % of budget threshold)
+      const budgetRule = currentRules.find((r) => r.type === "budget" && r.enabled);
+      if (budgetRule && budgetRule.threshold > 0) {
+        const usagePercent = (dailyTokens / budgetRule.threshold) * 100;
+        for (const rule of currentRules.filter((r) => r.type === "rateLimit")) {
           if (shouldCooldown(rule, lastFiredRef.current, now)) continue;
-          const n = evaluateBudgetRule(rule, dailyTokens);
+          const n = evaluateRateLimitRule(rule, usagePercent);
           if (n) {
             lastFiredRef.current.set(rule.id, now);
             addNotification(n);
@@ -119,37 +129,17 @@ export function useNotificationEvaluator(
             sendBrowserNotification(n.title, n.body);
           }
         }
-
-        // Rate limit rules (usage as % of budget threshold)
-        const budgetRule = currentRules.find((r) => r.type === "budget" && r.enabled);
-        if (budgetRule && budgetRule.threshold > 0) {
-          const usagePercent = (dailyTokens / budgetRule.threshold) * 100;
-          for (const rule of currentRules.filter((r) => r.type === "rateLimit")) {
-            if (shouldCooldown(rule, lastFiredRef.current, now)) continue;
-            const n = evaluateRateLimitRule(rule, usagePercent);
-            if (n) {
-              lastFiredRef.current.set(rule.id, now);
-              addNotification(n);
-              toast.warning(n.title, { description: n.body });
-              sendBrowserNotification(n.title, n.body);
-            }
-          }
-        }
-      } catch (err) {
-        if (!isGatewayDisconnectLikeError(err)) {
-          console.warn("[notifications] Budget poll failed:", err);
-        }
       }
-    };
-
-    // Initial check after a short delay
-    const initialTimeout = setTimeout(checkBudget, 5_000);
-    const interval = setInterval(checkBudget, POLL_INTERVAL_MS);
-
-    return () => {
-      cancelled = true;
-      clearTimeout(initialTimeout);
-      clearInterval(interval);
-    };
+    } catch (err) {
+      if (!isGatewayDisconnectLikeError(err)) {
+        console.warn("[notifications] Budget poll failed:", err);
+      }
+    }
   }, [client, status]);
+
+  useVisibilityRefresh(checkBudget, {
+    pollMs: POLL_INTERVAL_MS,
+    enabled: status === "connected",
+    initialDelayMs: 5_000,
+  });
 }

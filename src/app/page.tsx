@@ -81,6 +81,7 @@ import { ConfigMutationModals } from "@/features/agents/components/ConfigMutatio
 import type { MobilePane } from "@/features/agents/components/MobilePaneToggle";
 import { useConfigMutationQueue } from "@/features/agents/hooks/useConfigMutationQueue";
 import { useDraftBatching } from "@/features/agents/hooks/useDraftBatching";
+import { useVisibilityRefresh } from "@/hooks/useVisibilityRefresh";
 import { useLivePatchBatching } from "@/features/agents/hooks/useLivePatchBatching";
 import { useSpecialUpdates } from "@/features/agents/hooks/useSpecialUpdates";
 import { useAgentHistorySync } from "@/features/agents/hooks/useAgentHistorySync";
@@ -1051,19 +1052,16 @@ const AgentStudioPage = () => {
     void loadSummarySnapshotRef.current();
   }, [status]);
 
-  // Poll summary every 10s when any agent is running.
-  // Use refs for `hasRunningAgents` and `loadSummarySnapshot` so the interval
-  // is only created/destroyed when `status` changes (not on every running toggle).
-  const hasRunningAgentsRef = useRef(hasRunningAgents);
-  hasRunningAgentsRef.current = hasRunningAgents;
-  useEffect(() => {
-    if (status !== "connected") return;
-    const interval = setInterval(() => {
-      if (!hasRunningAgentsRef.current) return;
-      void loadSummarySnapshotRef.current();
-    }, 30_000); // P2: increased from 10s to 30s to reduce baseline RPC load
-    return () => clearInterval(interval);
-  }, [status]);
+  // Poll summary every 30s when any agent is running.
+  // Pauses when tab is hidden via useVisibilityRefresh.
+  useVisibilityRefresh(
+    () => void loadSummarySnapshotRef.current(),
+    {
+      pollMs: 30_000,
+      enabled: status === "connected" && hasRunningAgents,
+      debounceMs: 2_000,
+    },
+  );
 
   useEffect(() => {
     if (!state.selectedAgentId) return;
