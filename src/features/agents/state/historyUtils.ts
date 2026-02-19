@@ -12,6 +12,7 @@ import {
   isHeartbeatPrompt,
   stripUiMetadata,
 } from "@/lib/text/message-extract";
+import { parseMessageParts } from "@/lib/chat/useMessageParts";
 const toTimestampMs = (value: unknown): number | null => {
   if (typeof value === "number" && Number.isFinite(value) && value > 0) {
     return value;
@@ -142,8 +143,14 @@ export const buildHistorySyncPatch = ({
     }
     return patch;
   }
+  const messageParts = parseMessageParts({
+    outputLines: mergedLines,
+    streamText: null,
+    liveThinkingTrace: "",
+  });
   const patch: Partial<AgentState> = {
     outputLines: mergedLines,
+    messageParts,
     lastResult: lastAssistant ?? null,
     ...(lastAssistant ? { latestPreview: lastAssistant } : {}),
     ...(typeof lastAssistantAt === "number" ? { lastAssistantMessageAt: lastAssistantAt } : {}),

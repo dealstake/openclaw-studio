@@ -1141,6 +1141,11 @@ const AgentStudioPage = () => {
           agentId,
           line: `New session failed: ${message}`,
         });
+        dispatch({
+          type: "appendPart",
+          agentId,
+          part: { type: "text", text: `New session failed: ${message}` },
+        });
       }
     },
     [agents, client, dispatch, historyInFlightRef, setError, setSettingsAgentId, specialUpdateInFlightRef, specialUpdateRef]
@@ -1165,6 +1170,11 @@ const AgentStudioPage = () => {
           type: "appendOutput",
           agentId,
           line: "Error: Agent not found.",
+        });
+        dispatch({
+          type: "appendPart",
+          agentId,
+          part: { type: "text", text: "Error: Agent not found." },
         });
         return;
       }
@@ -1192,6 +1202,11 @@ const AgentStudioPage = () => {
         type: "appendOutput",
         agentId,
         line: `> ${trimmed}`,
+      });
+      dispatch({
+        type: "appendPart",
+        agentId,
+        part: { type: "text", text: `> ${trimmed}` },
       });
       try {
         if (!sessionKey) {
@@ -1237,6 +1252,11 @@ const AgentStudioPage = () => {
           agentId,
           line: `Error: ${msg}`,
         });
+        dispatch({
+          type: "appendPart",
+          agentId,
+          part: { type: "text", text: `Error: ${msg}` },
+        });
       }
     },
     [client, dispatch, pendingDraftTimersRef, pendingDraftValuesRef]
@@ -1269,6 +1289,11 @@ const AgentStudioPage = () => {
           type: "appendOutput",
           agentId,
           line: `Stop failed: ${message}`,
+        });
+        dispatch({
+          type: "appendPart",
+          agentId,
+          part: { type: "text", text: `Stop failed: ${message}` },
         });
       } finally {
         setStopBusyAgentId((current) => (current === agentId ? null : current));

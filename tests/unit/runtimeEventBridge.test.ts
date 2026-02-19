@@ -362,6 +362,11 @@ describe("runtime event bridge helpers", () => {
     });
     expect(merged).toEqual({
       outputLines: ["> hello", "pending line", "assistant final"],
+      messageParts: [
+        { type: "text", text: "hello" },
+        { type: "text", text: "pending line" },
+        { type: "text", text: "assistant final" },
+      ],
       lastResult: "assistant final",
       latestPreview: "assistant final",
       lastAssistantMessageAt: Date.parse("2024-01-01T00:00:02.000Z"),

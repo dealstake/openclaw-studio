@@ -1,8 +1,5 @@
 import type { MessagePart } from "@/lib/chat/types";
 
-// Keep old import for backwards compat during migration
-import { type AgentChatItem, buildFinalAgentChatItems } from "@/features/agents/components/chatItems";
-
 type MessageLike = {
   role?: string;
   content?: string | Array<{ type: string; text?: string }>;
@@ -45,32 +42,4 @@ export function transformMessagesToMessageParts(messages: MessageLike[]): Messag
   }
 
   return parts;
-}
-
-/**
- * @deprecated Use transformMessagesToMessageParts instead.
- * Kept for backwards compatibility during Phase 3 migration.
- */
-export function transformMessagesToChatItems(messages: MessageLike[]): AgentChatItem[] {
-  const lines: string[] = [];
-  for (const msg of messages) {
-    const text =
-      typeof msg.content === "string"
-        ? msg.content
-        : Array.isArray(msg.content)
-          ? (msg.content.find((p) => p.type === "text") as { text?: string } | undefined)?.text ?? ""
-          : msg.text ?? "";
-    if (!text) continue;
-    if (msg.role === "user") {
-      const cleaned = stripInboundMetadata(text);
-      lines.push(`> ${cleaned}`);
-    } else {
-      lines.push(text);
-    }
-  }
-  return buildFinalAgentChatItems({
-    outputLines: lines,
-    showThinkingTraces: true,
-    toolCallingEnabled: true,
-  });
 }

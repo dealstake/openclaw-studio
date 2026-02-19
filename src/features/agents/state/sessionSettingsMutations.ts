@@ -3,6 +3,7 @@ import {
   type GatewayClient,
   type GatewaySessionsPatchResult,
 } from "@/lib/gateway/GatewayClient";
+import type { MessagePart } from "@/lib/chat/types";
 
 type SessionSettingField = "model" | "thinkingLevel";
 
@@ -25,6 +26,11 @@ type SessionSettingsDispatchAction =
       type: "appendOutput";
       agentId: string;
       line: string;
+    }
+  | {
+      type: "appendPart";
+      agentId: string;
+      part: MessagePart;
     };
 
 type SessionSettingsDispatch = (action: SessionSettingsDispatchAction) => void;
@@ -96,6 +102,11 @@ export const applySessionSettingMutation = async ({
       type: "appendOutput",
       agentId,
       line: `${buildErrorPrefix(field)}: ${msg}`,
+    });
+    dispatch({
+      type: "appendPart",
+      agentId,
+      part: { type: "text", text: `${buildErrorPrefix(field)}: ${msg}` },
     });
   }
 };
