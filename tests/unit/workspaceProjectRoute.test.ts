@@ -1,4 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { StudioDb } from "@/lib/database";
+
+let _testDb: StudioDb | null = null;
+
+// Must be hoisted before route imports
+vi.mock("@/lib/database", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/database")>("@/lib/database");
+  return {
+    ...actual,
+    getDb: vi.fn(() => {
+      if (!_testDb) _testDb = actual.createTestDb();
+      return _testDb;
+    }),
+  };
+});
 
 vi.mock("@/lib/workspace/sidecar", () => ({
   isSidecarConfigured: vi.fn(() => false),
@@ -24,6 +39,8 @@ vi.mock("node:fs", async () => {
 
 import { PATCH, DELETE } from "@/app/api/workspace/project/route";
 import { readWorkspaceFile, writeWorkspaceFile } from "@/lib/workspace/resolve";
+import * as projectsRepo from "@/lib/database/repositories/projectsRepo";
+import { getDb } from "@/lib/database";
 
 const mockedRead = vi.mocked(readWorkspaceFile);
 const mockedWrite = vi.mocked(writeWorkspaceFile);
@@ -47,8 +64,12 @@ const writeResult = { path: "projects/INDEX.md", size: 0 } as const;
 describe("PATCH /api/workspace/project", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    _testDb = null; // Reset DB
     mockedRead.mockReturnValue({ ...indexResult });
     mockedWrite.mockReturnValue({ ...writeResult });
+    // Seed DB with test data
+    const db = getDb();
+    projectsRepo.importFromMarkdown(db, INDEX_CONTENT);
   });
 
   it("rejects missing agentId", async () => {
@@ -84,8 +105,12 @@ describe("PATCH /api/workspace/project", () => {
 describe("DELETE /api/workspace/project", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    _testDb = null; // Reset DB
     mockedRead.mockReturnValue({ ...indexResult });
     mockedWrite.mockReturnValue({ ...writeResult });
+    // Seed DB with test data
+    const db = getDb();
+    projectsRepo.importFromMarkdown(db, INDEX_CONTENT);
   });
 
   it("rejects missing doc", async () => {

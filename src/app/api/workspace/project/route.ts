@@ -8,12 +8,15 @@ import {
 import { isSidecarConfigured, sidecarGet, sidecarMutate } from "@/lib/workspace/sidecar";
 import { validateAgentId, handleApiError } from "@/lib/api/helpers";
 import { updateRowStatus, removeRow } from "@/features/projects/lib/indexTable";
+import { getDb } from "@/lib/database";
+import * as projectsRepo from "@/lib/database/repositories/projectsRepo";
+import { generateIndexMarkdown } from "@/lib/database/sync/indexSync";
 import fs from "node:fs";
 import path from "node:path";
 
 export const runtime = "nodejs";
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// ─── Helpers (sidecar fallback) ──────────────────────────────────────────────
 
 async function readIndexContent(agentId: string): Promise<{ content: string | null; error?: NextResponse }> {
   const indexPath = "projects/INDEX.md";
@@ -57,7 +60,8 @@ function validateRequest(agentId: string, doc: string): NextResponse | null {
  * PATCH /api/workspace/project
  * Body: { agentId, doc, status }
  *
- * Updates a project's status in projects/INDEX.md.
+ * Updates a project's status. Uses DB when available, falls back to file parsing.
+ * Always regenerates INDEX.md for agent readability.
  */
 export async function PATCH(request: Request) {
   try {
@@ -73,6 +77,22 @@ export async function PATCH(request: Request) {
     const validationError = validateRequest(agentId, doc);
     if (validationError) return validationError;
 
+    // DB path (local mode)
+    if (!isSidecarConfigured()) {
+      const db = getDb();
+      const found = projectsRepo.updateStatus(db, doc, newStatus);
+      if (!found) {
+        return NextResponse.json({ error: `Project with doc "${doc}" not found` }, { status: 404 });
+      }
+
+      // Regenerate INDEX.md for agent readability
+      const markdown = generateIndexMarkdown(db);
+      writeWorkspaceFile(agentId, "projects/INDEX.md", markdown);
+
+      return NextResponse.json({ ok: true, doc, status: newStatus });
+    }
+
+    // Sidecar fallback (Cloud Run)
     const { content, error: readError } = await readIndexContent(agentId);
     if (readError) return readError;
     if (!content) {
@@ -99,7 +119,7 @@ export async function PATCH(request: Request) {
  * DELETE /api/workspace/project
  * Body: { agentId, doc }
  *
- * Archives a project: removes its row from INDEX.md and moves the project file
+ * Archives a project: removes from DB/INDEX.md and moves the project file
  * to projects/archive/<doc>.
  */
 export async function DELETE(request: Request) {
@@ -116,6 +136,37 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "Invalid doc filename" }, { status: 400 });
     }
 
+    // DB path (local mode)
+    if (!isSidecarConfigured()) {
+      const db = getDb();
+      const found = projectsRepo.remove(db, doc);
+      if (!found) {
+        return NextResponse.json({ error: `Project with doc "${doc}" not found` }, { status: 404 });
+      }
+
+      // Regenerate INDEX.md
+      const markdown = generateIndexMarkdown(db);
+      writeWorkspaceFile(agentId, "projects/INDEX.md", markdown);
+
+      // Move file to archive
+      try {
+        const { absolute: srcPath } = resolveWorkspacePath(agentId, `projects/${doc}`);
+        const { absolute: destPath } = resolveWorkspacePath(agentId, `projects/archive/${doc}`);
+        if (fs.existsSync(srcPath)) {
+          const destDir = path.dirname(destPath);
+          if (!fs.existsSync(destDir)) {
+            fs.mkdirSync(destDir, { recursive: true });
+          }
+          fs.renameSync(srcPath, destPath);
+        }
+      } catch (moveErr) {
+        console.warn("[project DELETE] Failed to move file to archive:", moveErr);
+      }
+
+      return NextResponse.json({ ok: true, doc, archived: true });
+    }
+
+    // Sidecar fallback
     const { content, error: readError } = await readIndexContent(agentId);
     if (readError) return readError;
     if (!content) {
@@ -130,39 +181,23 @@ export async function DELETE(request: Request) {
     const writeError = await writeIndexContent(agentId, updated);
     if (writeError) return writeError;
 
-    // Move file to archive
+    // Move file to archive via sidecar
     if (isSidecarConfigured()) {
       const fileRes = await sidecarGet("/file", { agentId, path: `projects/${doc}` });
       if (fileRes.ok) {
         const fileData = (await fileRes.json()) as { content?: string };
         if (fileData.content) {
-          // Copy to archive location
           await sidecarMutate("/file", "PUT", {
             agentId,
             path: `projects/archive/${doc}`,
             content: fileData.content,
           });
-          // Overwrite original with archived tombstone (sidecar has no DELETE for files)
           await sidecarMutate("/file", "PUT", {
             agentId,
             path: `projects/${doc}`,
             content: `<!-- Archived: moved to projects/archive/${doc} -->\n`,
           });
         }
-      }
-    } else {
-      try {
-        const { absolute: srcPath } = resolveWorkspacePath(agentId, `projects/${doc}`);
-        const { absolute: destPath } = resolveWorkspacePath(agentId, `projects/archive/${doc}`);
-        if (fs.existsSync(srcPath)) {
-          const destDir = path.dirname(destPath);
-          if (!fs.existsSync(destDir)) {
-            fs.mkdirSync(destDir, { recursive: true });
-          }
-          fs.renameSync(srcPath, destPath);
-        }
-      } catch (moveErr) {
-        console.warn("[project DELETE] Failed to move file to archive:", moveErr);
       }
     }
 
