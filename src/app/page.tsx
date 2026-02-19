@@ -50,7 +50,7 @@ import {
 import { ArtifactsPanel } from "@/features/artifacts/components/ArtifactsPanel";
 import { TasksPanel } from "@/features/tasks/components/TasksPanel";
 import { ProjectsPanel } from "@/features/projects/components/ProjectsPanel";
-const ActivityPanel = lazy(() => import("@/features/activity/components/ActivityPanel").then(m => ({ default: m.ActivityPanel })));
+import { ActivityPanel } from "@/features/activity/components/ActivityPanel";
 const TaskWizardModal = lazy(() => import("@/features/tasks/components/TaskWizardModal").then(m => ({ default: m.TaskWizardModal })));
 import { useAgentTasks } from "@/features/tasks/hooks/useAgentTasks";
 import { ContextPanel, TAB_OPTIONS, type ContextTab } from "@/features/context/components/ContextPanel";
