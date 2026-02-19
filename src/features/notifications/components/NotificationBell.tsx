@@ -22,7 +22,7 @@ export const NotificationBell = React.memo(function NotificationBell() {
           </div>
         </HeaderIconButton>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-0 sm:w-80" align="end">
+      <PopoverContent className="w-[calc(100vw-2rem)] p-0 sm:w-80" align="end">
         <NotificationPanel />
       </PopoverContent>
     </Popover>
