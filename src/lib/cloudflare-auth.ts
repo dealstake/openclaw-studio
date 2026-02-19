@@ -10,15 +10,16 @@ export type CfIdentity = {
   name?: string;
 };
 
-let cachedIdentity: CfIdentity | null = null;
+let cachedResult: CfIdentity | null = null;
 let hasFetched = false;
 
 /**
  * Fetch user identity from Cloudflare Access.
  * Falls back to null if not behind Cloudflare Access.
+ * Caches both success and failure results to avoid redundant fetches.
  */
 export async function getCfIdentity(): Promise<CfIdentity | null> {
-  if (hasFetched && cachedIdentity) return cachedIdentity;
+  if (hasFetched) return cachedResult;
   try {
     const res = await fetch(BRANDING.identityUrl, { credentials: "same-origin" });
     if (!res.ok) {
@@ -27,15 +28,20 @@ export async function getCfIdentity(): Promise<CfIdentity | null> {
     }
     const data = await res.json();
     if (data?.email) {
-      cachedIdentity = { email: data.email, name: data.name };
-      hasFetched = true;
-      return cachedIdentity;
+      cachedResult = { email: data.email, name: data.name };
     }
-    // Don't cache failures — allow retry
-    return null;
+    hasFetched = true;
+    return cachedResult;
   } catch {
+    // Network errors are not cached — allow retry on transient failures
     return null;
   }
+}
+
+/** Reset cached identity (for testing). */
+export function _resetCfIdentityCache(): void {
+  cachedResult = null;
+  hasFetched = false;
 }
 
 export function logout() {
