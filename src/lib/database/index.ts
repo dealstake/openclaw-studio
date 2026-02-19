@@ -32,9 +32,32 @@ export function getDb(dbPath?: string): StudioDb {
       fs.mkdirSync(dir, { recursive: true });
     }
 
-    _sqlite = new Database(resolvedPath);
-    _sqlite.pragma("journal_mode = WAL");
-    _sqlite.pragma("foreign_keys = ON");
+    try {
+      _sqlite = new Database(resolvedPath);
+      _sqlite.pragma("journal_mode = WAL");
+      _sqlite.pragma("foreign_keys = ON");
+    } catch (err) {
+      // Corrupt DB file — delete and retry once
+      if (resolvedPath !== ":memory:" && fs.existsSync(resolvedPath)) {
+        if (process.env.NODE_ENV !== "test") {
+          console.error(`[studio-db] Corrupt database file, recreating: ${resolvedPath}`, err);
+        }
+        // Close the handle if it was opened
+        try { _sqlite?.close(); } catch { /* ignore */ }
+        _sqlite = null;
+        fs.unlinkSync(resolvedPath);
+        // Also remove WAL/SHM files if present
+        for (const suffix of ["-wal", "-shm"]) {
+          const f = resolvedPath + suffix;
+          if (fs.existsSync(f)) fs.unlinkSync(f);
+        }
+        _sqlite = new Database(resolvedPath);
+        _sqlite.pragma("journal_mode = WAL");
+        _sqlite.pragma("foreign_keys = ON");
+      } else {
+        throw err;
+      }
+    }
 
     _db = drizzle(_sqlite, { schema });
   }
