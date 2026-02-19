@@ -37,6 +37,8 @@ interface ProjectsPanelProps {
   agentId: string | null;
   client: GatewayClient | null;
   isTabActive?: boolean;
+  /** Increments on cron/session events to trigger immediate refresh */
+  eventTick?: number;
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -45,13 +47,14 @@ export const ProjectsPanel = memo(function ProjectsPanel({
   agentId,
   client,
   isTabActive,
+  eventTick,
 }: ProjectsPanelProps) {
   const [showWizard, setShowWizard] = useState(false);
   const [archiveTarget, setArchiveTarget] = useState<ProjectEntry | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [editingProjectDoc, setEditingProjectDoc] = useState<string | null>(null);
   const { projects, loading, error, refresh, changeStatus, archive, buildingCount, getQueuePosition } =
-    useProjects(agentId, client, { isTabActive });
+    useProjects(agentId, client, { isTabActive, eventTick });
 
   // Count projects per status for filter badges
   const statusCounts = useMemo(() => {

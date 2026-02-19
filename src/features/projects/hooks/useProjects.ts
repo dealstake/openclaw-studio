@@ -28,7 +28,7 @@ interface UseProjectsResult {
 export function useProjects(
   agentId: string | null,
   client: GatewayClient | null,
-  options?: { isTabActive?: boolean },
+  options?: { isTabActive?: boolean; eventTick?: number },
 ): UseProjectsResult {
   const [projects, setProjects] = useState<ProjectEntry[]>([]);
   const [loading, setLoading] = useState(false);
@@ -90,6 +90,14 @@ export function useProjects(
     pollMs: POLL_INTERVAL,
     enabled: !!agentId && (options?.isTabActive !== false),
   });
+
+  // Event-driven refresh: reload when cron/session events fire
+  const eventTick = options?.eventTick ?? 0;
+  useEffect(() => {
+    if (eventTick > 0) {
+      void loadRef.current?.();
+    }
+  }, [eventTick]);
 
   const toggleStatus = useCallback(
     async (project: ProjectEntry) => {

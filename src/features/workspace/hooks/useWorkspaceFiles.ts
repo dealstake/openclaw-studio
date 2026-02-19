@@ -45,6 +45,8 @@ type UseWorkspaceFilesParams = {
   agentId: string | null | undefined;
   client?: GatewayClient | null;
   isTabActive?: boolean;
+  /** Increments on cron/session events to trigger immediate refresh */
+  eventTick?: number;
 };
 
 type UseWorkspaceFilesResult = {
@@ -86,6 +88,7 @@ export const useWorkspaceFiles = ({
   agentId,
   client,
   isTabActive,
+  eventTick,
 }: UseWorkspaceFilesParams): UseWorkspaceFilesResult => {
   const [entries, setEntries] = useState<WorkspaceEntry[]>([]);
   const [viewingFile, setViewingFile] = useState<WorkspaceFileContent | null>(null);
@@ -340,6 +343,14 @@ export const useWorkspaceFiles = ({
     enabled: isTabActive !== false,
     initialDelayMs: 60_000, // Offset from projects poller
   });
+
+  // Event-driven refresh: reload when cron/session events fire
+  const eventTickVal = eventTick ?? 0;
+  useEffect(() => {
+    if (eventTickVal > 0) {
+      workspacePollCallback();
+    }
+  }, [eventTickVal, workspacePollCallback]);
 
   const navigateToDir = useCallback(
     (relativePath: string) => {

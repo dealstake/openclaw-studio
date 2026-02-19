@@ -183,6 +183,8 @@ const AgentStudioPage = () => {
   const [contextMode, setContextMode] = useState<"agent" | "files">("agent");
   const [contextTab, setContextTab] = useState<ContextTab>("projects");
   const [expandedTab, setExpandedTab] = useState<ContextTab | null>(null);
+  /** Increments on cron/session events to trigger event-driven refresh in panels */
+  const [cronEventTick, setCronEventTick] = useState(0);
 
   const handleExpandToggle = useCallback(() => {
     setExpandedTab((prev) => {
@@ -1368,6 +1370,7 @@ const AgentStudioPage = () => {
       },
       onCronUpdate: () => {
         void loadAllCronJobsRef.current();
+        setCronEventTick((prev) => prev + 1);
       },
       onSubAgentLifecycle: (sessionKey: string, phase: string) => {
         if (phase === "start") {
@@ -1721,7 +1724,7 @@ const AgentStudioPage = () => {
                 <ExpandedContext.Provider value={true}>
                   <div className="flex h-full w-full flex-col overflow-y-auto">
                     {expandedTab === "projects" && (
-                      <ProjectsPanel agentId={focusedAgent?.agentId ?? null} client={client} isTabActive />
+                      <ProjectsPanel agentId={focusedAgent?.agentId ?? null} client={client} isTabActive eventTick={cronEventTick} />
                     )}
                     {expandedTab === "activity" && (
                       <ActivityPanel client={client} status={status} agentId={focusedAgent?.agentId ?? null} />
@@ -1757,6 +1760,7 @@ const AgentStudioPage = () => {
                         client={client}
                         agentId={focusedAgent?.agentId ?? null}
                         isTabActive
+                        eventTick={cronEventTick}
                       />
                     )}
                     {expandedTab === "sessions" && (
@@ -1903,6 +1907,7 @@ const AgentStudioPage = () => {
                         agentId={focusedAgent?.agentId ?? null}
                         client={client}
                         isTabActive={contextTab === "projects"}
+                        eventTick={cronEventTick}
                       />
                     </div>
                   }
@@ -2057,6 +2062,7 @@ const AgentStudioPage = () => {
                       agentId={focusedAgent?.agentId ?? null}
                       client={client}
                       isTabActive={contextTab === "workspace"}
+                      eventTick={cronEventTick}
                     />
                   }
                   settingsContent={

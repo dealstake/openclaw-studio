@@ -32,12 +32,15 @@ type WorkspaceExplorerPanelProps = {
   agentId: string | null | undefined;
   client?: GatewayClient | null;
   isTabActive?: boolean;
+  /** Increments on cron/session events to trigger immediate refresh */
+  eventTick?: number;
 };
 
 export const WorkspaceExplorerPanel = memo(function WorkspaceExplorerPanel({
   agentId,
   client,
   isTabActive,
+  eventTick,
 }: WorkspaceExplorerPanelProps) {
   const {
     entries,
@@ -54,7 +57,7 @@ export const WorkspaceExplorerPanel = memo(function WorkspaceExplorerPanel({
     saveFile,
     createFile,
     fileExists,
-  } = useWorkspaceFiles({ agentId, client, isTabActive });
+  } = useWorkspaceFiles({ agentId, client, isTabActive, eventTick });
 
   const [modalFile, setModalFile] = useState<string | null>(null);
   const [showNewFile, setShowNewFile] = useState(false);
