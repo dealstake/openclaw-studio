@@ -1172,7 +1172,7 @@ const AgentStudioPage = () => {
         dispatch({
           type: "updateAgent",
           agentId,
-          patch: { outputLines: [], streamText: null, thinkingTrace: null, lastResult: null },
+          patch: { outputLines: [], messageParts: [], streamText: null, thinkingTrace: null, lastResult: null },
         });
       }
       dispatch({

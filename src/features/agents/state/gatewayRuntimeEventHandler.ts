@@ -25,9 +25,13 @@ import {
   stripUiMetadata,
 } from "@/lib/text/message-extract";
 
+import type { MessagePart } from "@/lib/chat/types";
+
 type RuntimeDispatchAction =
   | { type: "updateAgent"; agentId: string; patch: Partial<AgentState> }
   | { type: "appendOutput"; agentId: string; line: string }
+  | { type: "appendPart"; agentId: string; part: MessagePart }
+  | { type: "updatePart"; agentId: string; index: number; patch: Partial<MessagePart> }
   | { type: "markActivity"; agentId: string; at?: number };
 
 export type GatewayRuntimeEventHandlerDeps = {
@@ -155,6 +159,26 @@ export function createGatewayRuntimeEventHandler(
   const thinkingDebugBySession = new Set<string>();
   const lastActivityMarkByAgent = new Map<string, number>();
 
+  // MessagePart tracking: map run+type to the index in agent.messageParts[]
+  // so we can update streaming parts in-place via updatePart dispatch.
+  // Key format: "{agentId}:{runId}:{partType}" or "{agentId}:{runId}:tool:{toolCallId}"
+  const partIndexByKey = new Map<string, number>();
+
+  const getPartKey = (agentId: string, runId: string, suffix: string) =>
+    `${agentId}:${runId}:${suffix}`;
+
+  const appendOrUpdatePart = (agentId: string, key: string, part: MessagePart): void => {
+    const existingIndex = partIndexByKey.get(key);
+    if (existingIndex !== undefined) {
+      deps.dispatch({ type: "updatePart", agentId, index: existingIndex, patch: part });
+    } else {
+      const agent = deps.getAgents().find((a) => a.agentId === agentId);
+      const nextIndex = agent ? agent.messageParts.length : 0;
+      partIndexByKey.set(key, nextIndex);
+      deps.dispatch({ type: "appendPart", agentId, part });
+    }
+  };
+
   let summaryRefreshTimer: number | null = null;
   let sessionsRefreshTimer: number | null = null;
   let cronRefreshTimer: number | null = null;
@@ -181,6 +205,12 @@ export function createGatewayRuntimeEventHandler(
     assistantStreamByRun.delete(runId);
     thinkingStreamByRun.delete(runId);
     toolLinesSeenByRun.delete(runId);
+    // Clean up part index entries for this run
+    for (const key of partIndexByKey.keys()) {
+      if (key.includes(`:${runId}:`)) {
+        partIndexByKey.delete(key);
+      }
+    }
   };
 
   const markActivityThrottled = (agentId: string, at: number = now()) => {
@@ -215,6 +245,7 @@ export function createGatewayRuntimeEventHandler(
     toolLinesSeenByRun.clear();
     thinkingDebugBySession.clear();
     lastActivityMarkByAgent.clear();
+    partIndexByKey.clear();
   };
 
   const handleRuntimeChatEvent = (payload: ChatEventPayload) => {
@@ -304,11 +335,24 @@ export function createGatewayRuntimeEventHandler(
       ) {
         void deps.loadAgentHistory(agentId);
       }
+      // Populate messageParts from chat final event
+      if (thinkingText) {
+        deps.dispatch({
+          type: "appendPart",
+          agentId,
+          part: { type: "reasoning", text: thinkingText, streaming: false, completedAt: now() },
+        });
+      }
       if (!isToolRole && typeof nextText === "string") {
         deps.dispatch({
           type: "appendOutput",
           agentId,
           line: nextText,
+        });
+        deps.dispatch({
+          type: "appendPart",
+          agentId,
+          part: { type: "text", text: nextText, streaming: false },
         });
         deps.dispatch({
           type: "updateAgent",
@@ -424,6 +468,14 @@ export function createGatewayRuntimeEventHandler(
           lastActivityAt: now(),
           thinkingTrace: liveThinking,
         });
+        // Populate messageParts with streaming reasoning
+        const reasoningKey = getPartKey(match, payload.runId, "reasoning");
+        appendOrUpdatePart(match, reasoningKey, {
+          type: "reasoning",
+          text: liveThinking,
+          streaming: true,
+          startedAt: partIndexByKey.has(reasoningKey) ? undefined : now(),
+        });
       }
       return;
     }
@@ -467,6 +519,25 @@ export function createGatewayRuntimeEventHandler(
         }
       }
       deps.queueLivePatch(match, patch);
+      // Populate messageParts with streaming text
+      if (patch.streamText) {
+        const textKey = getPartKey(match, payload.runId, "text");
+        appendOrUpdatePart(match, textKey, {
+          type: "text",
+          text: patch.streamText,
+          streaming: true,
+        });
+      }
+      // Populate messageParts with streaming reasoning from assistant stream
+      if (liveThinking) {
+        const reasoningKey = getPartKey(match, payload.runId, "reasoning");
+        appendOrUpdatePart(match, reasoningKey, {
+          type: "reasoning",
+          text: liveThinking,
+          streaming: true,
+          startedAt: partIndexByKey.has(reasoningKey) ? undefined : now(),
+        });
+      }
       return;
     }
 
@@ -489,6 +560,17 @@ export function createGatewayRuntimeEventHandler(
         if (line) {
           appendUniqueToolLines(match, payload.runId, [line]);
         }
+        // Populate messageParts with tool invocation
+        const toolKey = getPartKey(match, payload.runId, `tool:${toolCallId || name}`);
+        const toolPhase = phase === "start" ? "pending" : "running";
+        appendOrUpdatePart(match, toolKey, {
+          type: "tool-invocation",
+          toolCallId: toolCallId || `${payload.runId}-${name}`,
+          name,
+          phase: toolPhase,
+          args: args ? (typeof args === "string" ? args : JSON.stringify(args)) : undefined,
+          startedAt: partIndexByKey.has(toolKey) ? undefined : now(),
+        });
         return;
       }
       if (phase !== "result") return;
@@ -514,6 +596,17 @@ export function createGatewayRuntimeEventHandler(
         content,
       };
       appendUniqueToolLines(match, payload.runId, extractToolLines(message));
+      // Update messageParts tool invocation to complete
+      const toolResultKey = getPartKey(match, payload.runId, `tool:${toolCallId || name}`);
+      const resultStr = typeof content === "string" ? content : JSON.stringify(content);
+      appendOrUpdatePart(match, toolResultKey, {
+        type: "tool-invocation",
+        toolCallId: toolCallId || `${payload.runId}-${name}`,
+        name,
+        phase: isError ? "error" : "complete",
+        result: resultStr,
+        completedAt: now(),
+      });
       return;
     }
 
@@ -544,6 +637,37 @@ export function createGatewayRuntimeEventHandler(
           patch: {
             lastResult: finalText,
             lastAssistantMessageAt: assistantCompletionAt,
+          },
+        });
+      }
+    }
+    // Finalize streaming messageParts on lifecycle end
+    if (phase === "end" || phase === "error") {
+      const currentAgent = deps.getAgents().find((a) => a.agentId === match);
+      if (currentAgent) {
+        // Mark all streaming text/reasoning parts as complete
+        currentAgent.messageParts.forEach((part, idx) => {
+          if ((part.type === "text" || part.type === "reasoning") && part.streaming) {
+            deps.dispatch({
+              type: "updatePart",
+              agentId: match,
+              index: idx,
+              patch: {
+                streaming: false,
+                ...(part.type === "reasoning" ? { completedAt: now() } : {}),
+              },
+            });
+          }
+        });
+        // Append a status part
+        const model = typeof data?.model === "string" ? data.model : undefined;
+        deps.dispatch({
+          type: "appendPart",
+          agentId: match,
+          part: {
+            type: "status",
+            state: phase === "end" ? "complete" : "error",
+            model,
           },
         });
       }

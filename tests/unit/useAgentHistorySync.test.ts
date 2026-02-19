@@ -31,6 +31,7 @@ function makeAgent(overrides: Partial<AgentState> = {}): AgentState {
     sessionCreated: true,
     historyLoadedAt: null,
     outputLines: [],
+  messageParts: [],
     status: "idle",
     runId: null,
     ...overrides,

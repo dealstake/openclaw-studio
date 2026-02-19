@@ -8,6 +8,7 @@ import {
   useReducer,
   type ReactNode,
 } from "react";
+import type { MessagePart } from "@/lib/chat/types";
 
 export type AgentStatus = "idle" | "running" | "error";
 export type FocusFilter = "all" | "needs-attention" | "running" | "idle";
@@ -31,6 +32,7 @@ export type AgentState = AgentStoreSeed & {
   awaitingUserInput: boolean;
   hasUnseenActivity: boolean;
   outputLines: string[];
+  messageParts: MessagePart[];
   lastResult: string | null;
   lastDiff: string | null;
   runId: string | null;
@@ -57,6 +59,7 @@ export const buildNewSessionAgentPatch = (agent: AgentState): Partial<AgentState
     streamText: null,
     thinkingTrace: null,
     outputLines: [],
+    messageParts: [],
     lastResult: null,
     lastDiff: null,
     latestOverride: null,
@@ -87,6 +90,8 @@ type Action =
   | { type: "setLoading"; loading: boolean }
   | { type: "updateAgent"; agentId: string; patch: Partial<AgentState> }
   | { type: "appendOutput"; agentId: string; line: string }
+  | { type: "appendPart"; agentId: string; part: MessagePart }
+  | { type: "updatePart"; agentId: string; index: number; patch: Partial<MessagePart> }
   | { type: "markActivity"; agentId: string; at?: number }
   | { type: "selectAgent"; agentId: string | null };
 
@@ -113,6 +118,7 @@ const createRuntimeAgentState = (
     awaitingUserInput: sameSessionKey ? (existing?.awaitingUserInput ?? false) : false,
     hasUnseenActivity: sameSessionKey ? (existing?.hasUnseenActivity ?? false) : false,
     outputLines: sameSessionKey ? (existing?.outputLines ?? []) : [],
+    messageParts: sameSessionKey ? (existing?.messageParts ?? []) : [],
     lastResult: sameSessionKey ? (existing?.lastResult ?? null) : null,
     lastDiff: sameSessionKey ? (existing?.lastDiff ?? null) : null,
     runId: sameSessionKey ? (existing?.runId ?? null) : null,
@@ -172,6 +178,27 @@ const reducer = (state: AgentStoreState, action: Action): AgentStoreState => {
             ? { ...agent, outputLines: [...agent.outputLines, action.line] }
             : agent
         ),
+      };
+    case "appendPart":
+      return {
+        ...state,
+        agents: state.agents.map((agent) =>
+          agent.agentId === action.agentId
+            ? { ...agent, messageParts: [...agent.messageParts, action.part] }
+            : agent
+        ),
+      };
+    case "updatePart":
+      return {
+        ...state,
+        agents: state.agents.map((agent) => {
+          if (agent.agentId !== action.agentId) return agent;
+          const parts = [...agent.messageParts];
+          if (action.index >= 0 && action.index < parts.length) {
+            parts[action.index] = { ...parts[action.index], ...action.patch } as MessagePart;
+          }
+          return { ...agent, messageParts: parts };
+        }),
       };
     case "markActivity": {
       const at = action.at ?? Date.now();

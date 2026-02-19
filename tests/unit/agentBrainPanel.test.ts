@@ -14,6 +14,7 @@ const createAgent = (agentId: string, name: string, sessionKey: string): AgentSt
   awaitingUserInput: false,
   hasUnseenActivity: false,
   outputLines: [],
+  messageParts: [],
   lastResult: null,
   lastDiff: null,
   runId: null,

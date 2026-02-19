@@ -13,6 +13,7 @@ const createAgent = (overrides?: Partial<AgentState>): AgentState => ({
   awaitingUserInput: false,
   hasUnseenActivity: false,
   outputLines: [],
+  messageParts: [],
   lastResult: null,
   lastDiff: null,
   runId: null,
