@@ -7,6 +7,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
 import type { StudioTask } from "../types";
+import { atomicWriteFileSync } from "@/lib/database/sync/atomicWrite";
 
 const OPENCLAW_DIR = path.join(os.homedir(), ".openclaw");
 
@@ -34,7 +35,7 @@ export function writeTasks(agentId: string, tasks: StudioTask[]): void {
   const filePath = tasksFilePath(agentId);
   const dir = path.dirname(filePath);
   fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(filePath, JSON.stringify(tasks, null, 2), "utf-8");
+  atomicWriteFileSync(filePath, JSON.stringify(tasks, null, 2));
 }
 
 export function ensureTaskStateDir(agentId: string, taskId: string): void {

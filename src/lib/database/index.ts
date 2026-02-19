@@ -44,8 +44,32 @@ export function getDb(dbPath?: string): StudioDb {
   if (fs.existsSync(migrationsFolder)) {
     const migrationFiles = fs.readdirSync(migrationsFolder).filter((f) => f.endsWith(".sql"));
     if (migrationFiles.length > _migrationCount) {
+      const prevCount = _migrationCount;
       migrate(_db, { migrationsFolder });
       _migrationCount = migrationFiles.length;
+
+      // Log migration activity (skip in test env)
+      if (process.env.NODE_ENV !== "test") {
+        if (prevCount === 0) {
+          console.warn(`[studio-db] Applied ${_migrationCount} migration(s)`);
+        } else {
+          console.warn(`[studio-db] Applied ${_migrationCount - prevCount} new migration(s) (${prevCount} → ${_migrationCount})`);
+        }
+
+        // Diagnostic: warn if any data table is empty
+        const emptyTables: string[] = [];
+        for (const table of ["projects_index", "tasks", "activity_events", "project_details"]) {
+          try {
+            const rows = _sqlite!.prepare(`SELECT COUNT(*) as c FROM ${table}`).get() as { c: number } | undefined;
+            if (rows && rows.c === 0) emptyTables.push(table);
+          } catch {
+            emptyTables.push(`${table} (missing)`);
+          }
+        }
+        if (emptyTables.length > 0) {
+          console.warn(`[studio-db] Empty tables after migration: ${emptyTables.join(", ")} — auto-import will populate on first API request`);
+        }
+      }
     }
   }
 
