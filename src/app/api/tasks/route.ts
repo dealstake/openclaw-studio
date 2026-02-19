@@ -2,6 +2,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { readTasks, writeTasks, ensureTaskStateDir, removeTaskStateDir } from "@/features/tasks/lib/taskStore";
 import { isSidecarConfigured, sidecarGet, sidecarMutate } from "@/lib/workspace/sidecar";
 import { handleApiError } from "@/lib/api/helpers";
+import { getDb } from "@/lib/database";
+import * as tasksRepo from "@/lib/database/repositories/tasksRepo";
 import type { StudioTask, UpdateTaskPayload } from "@/features/tasks/types";
 
 export const runtime = "nodejs";
@@ -21,7 +23,19 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(data, { status: resp.status });
     }
 
-    const tasks = readTasks(agentId);
+    // DB path
+    const db = getDb();
+    let tasks = tasksRepo.listByAgent(db, agentId);
+
+    // Auto-import from tasks.json if DB is empty
+    if (tasks.length === 0) {
+      const fileTasks = readTasks(agentId);
+      if (fileTasks.length > 0) {
+        tasksRepo.importFromArray(db, fileTasks);
+        tasks = tasksRepo.listByAgent(db, agentId);
+      }
+    }
+
     return NextResponse.json({ tasks });
   } catch (err) {
     return handleApiError(err, "tasks");
@@ -47,10 +61,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(data, { status: resp.status });
     }
 
-    const tasks = readTasks(task.agentId);
-    tasks.push(task);
-    writeTasks(task.agentId, tasks);
+    // DB path
+    const db = getDb();
+    tasksRepo.upsert(db, task);
     ensureTaskStateDir(task.agentId, task.id);
+
+    // Sync to tasks.json for backward compat with cron agent reads
+    const allTasks = tasksRepo.listByAgent(db, task.agentId);
+    writeTasks(task.agentId, allTasks);
 
     return NextResponse.json({ task });
   } catch (err) {
@@ -81,16 +99,18 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json(data, { status: resp.status });
     }
 
-    const tasks = readTasks(agentId);
-    const idx = tasks.findIndex((t) => t.id === taskId);
-    if (idx === -1) {
+    // DB path
+    const db = getDb();
+    const found = tasksRepo.update(db, taskId, patch);
+    if (!found) {
       return NextResponse.json({ error: "Task not found." }, { status: 404 });
     }
 
-    const now = new Date().toISOString();
-    const updated: StudioTask = { ...tasks[idx], ...patch, updatedAt: now };
-    tasks[idx] = updated;
-    writeTasks(agentId, tasks);
+    const updated = tasksRepo.getById(db, taskId);
+
+    // Sync to tasks.json
+    const allTasks = tasksRepo.listByAgent(db, agentId);
+    writeTasks(agentId, allTasks);
 
     return NextResponse.json({ task: updated });
   } catch (err) {
@@ -117,10 +137,14 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json(data, { status: resp.status });
     }
 
-    const tasks = readTasks(agentId);
-    const filtered = tasks.filter((t) => t.id !== taskId);
-    writeTasks(agentId, filtered);
+    // DB path
+    const db = getDb();
+    tasksRepo.remove(db, taskId);
     removeTaskStateDir(agentId, taskId);
+
+    // Sync to tasks.json
+    const allTasks = tasksRepo.listByAgent(db, agentId);
+    writeTasks(agentId, allTasks);
 
     return NextResponse.json({ ok: true });
   } catch (err) {

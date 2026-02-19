@@ -12,6 +12,23 @@ export type AgentChatItem =
   | { kind: "tool"; text: string }
   | { kind: "thinking"; text: string; live?: boolean };
 
+/**
+ * Strip OpenClaw inbound metadata envelope from user messages.
+ * The gateway prepends context like:
+ *   Conversation info (untrusted metadata):\n```json\n{...}\n```\n\n[timestamp] actual message
+ * We strip everything before the actual user text.
+ */
+function stripInboundMetadata(text: string): string {
+  // Pattern: "Conversation info (untrusted metadata):" followed by a JSON code block, then the real message
+  const metaPattern = /^Conversation info \(untrusted metadata\):\s*```json\s*\{[\s\S]*?\}\s*```\s*/i;
+  let cleaned = text.replace(metaPattern, "").trim();
+
+  // Also strip the "[Thu 2026-02-19 11:41 EST]" timestamp prefix if present
+  cleaned = cleaned.replace(/^\[(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+\d{4}-\d{2}-\d{2}\s+\d{1,2}:\d{2}\s+[A-Z]{2,4}\]\s*/i, "").trim();
+
+  return cleaned || text; // fallback to original if stripping removed everything
+}
+
 export type BuildAgentChatItemsInput = {
   outputLines: string[];
   streamText: string | null;
@@ -90,7 +107,7 @@ export const buildFinalAgentChatItems = ({
     }
     const trimmed = line.trim();
     if (trimmed.startsWith(">")) {
-      const text = trimmed.replace(/^>\s?/, "").trim();
+      const text = stripInboundMetadata(trimmed.replace(/^>\s?/, "").trim());
       if (text) items.push({ kind: "user", text });
       continue;
     }
@@ -151,7 +168,7 @@ export const buildAgentChatItems = ({
     }
     const trimmed = line.trim();
     if (trimmed.startsWith(">")) {
-      const text = trimmed.replace(/^>\s?/, "").trim();
+      const text = stripInboundMetadata(trimmed.replace(/^>\s?/, "").trim());
       if (text) items.push({ kind: "user", text });
       continue;
     }

@@ -24,7 +24,11 @@ export function transformMessagesToChatItems(messages: MessageLike[]): AgentChat
           : msg.text ?? "";
     if (!text) continue;
     if (msg.role === "user") {
-      lines.push(`> ${text}`);
+      // Strip OpenClaw inbound metadata envelope before display
+      const metaPattern = /^Conversation info \(untrusted metadata\):\s*```json\s*\{[\s\S]*?\}\s*```\s*/i;
+      let cleaned = text.replace(metaPattern, "").trim();
+      cleaned = cleaned.replace(/^\[(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+\d{4}-\d{2}-\d{2}\s+\d{1,2}:\d{2}\s+[A-Z]{2,4}\]\s*/i, "").trim();
+      lines.push(`> ${cleaned || text}`);
     } else {
       lines.push(text);
     }
