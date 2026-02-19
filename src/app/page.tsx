@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AgentChatPanel } from "@/features/agents/components/AgentChatPanel";
 import type { AgentChatItem } from "@/features/agents/components/chatItems";
 import { transformMessagesToChatItems } from "@/features/sessions/lib/transformMessages";
@@ -50,8 +50,8 @@ import {
 import { ArtifactsPanel } from "@/features/artifacts/components/ArtifactsPanel";
 import { TasksPanel } from "@/features/tasks/components/TasksPanel";
 import { ProjectsPanel } from "@/features/projects/components/ProjectsPanel";
-import { ActivityPanel } from "@/features/activity/components/ActivityPanel";
-import { TaskWizardModal } from "@/features/tasks/components/TaskWizardModal";
+const ActivityPanel = lazy(() => import("@/features/activity/components/ActivityPanel").then(m => ({ default: m.ActivityPanel })));
+const TaskWizardModal = lazy(() => import("@/features/tasks/components/TaskWizardModal").then(m => ({ default: m.TaskWizardModal })));
 import { useAgentTasks } from "@/features/tasks/hooks/useAgentTasks";
 import { ContextPanel, TAB_OPTIONS, type ContextTab } from "@/features/context/components/ContextPanel";
 import { PanelExpandModal } from "@/components/PanelExpandModal";
@@ -63,9 +63,9 @@ import {
   pruneExpired,
 } from "@/features/exec-approvals/types";
 import { ChannelsPanel } from "@/features/channels/components/ChannelsPanel";
-import { SessionsPanel } from "@/features/sessions/components/SessionsPanel";
-import { CronPanel } from "@/features/cron/components/CronPanel";
-import { UsagePanel } from "@/features/usage/components/UsagePanel";
+const SessionsPanel = lazy(() => import("@/features/sessions/components/SessionsPanel").then(m => ({ default: m.SessionsPanel })));
+const CronPanel = lazy(() => import("@/features/cron/components/CronPanel").then(m => ({ default: m.CronPanel })));
+const UsagePanel = lazy(() => import("@/features/usage/components/UsagePanel").then(m => ({ default: m.UsagePanel })));
 import { WorkspaceExplorerPanel } from "@/features/workspace/components/WorkspaceExplorerPanel";
 import { StatusBar } from "@/features/status/components/StatusBar";
 import { TraceViewer } from "@/features/sessions/components/TraceViewer";
@@ -77,7 +77,7 @@ import { useExecApprovals } from "@/features/exec-approvals/hooks/useExecApprova
 import { useSessionUsage } from "@/features/sessions/hooks/useSessionUsage";
 import { useTranscripts, useTranscriptSearch, fetchTranscriptMessages } from "@/features/sessions/hooks/useTranscripts";
 import { useGatewayStatus } from "@/features/status/hooks/useGatewayStatus";
-import { ConfigMutationModals } from "@/features/agents/components/ConfigMutationModals";
+const ConfigMutationModals = lazy(() => import("@/features/agents/components/ConfigMutationModals").then(m => ({ default: m.ConfigMutationModals })));
 import type { MobilePane } from "@/features/agents/components/MobilePaneToggle";
 import { useConfigMutationQueue } from "@/features/agents/hooks/useConfigMutationQueue";
 import { useDraftBatching } from "@/features/agents/hooks/useDraftBatching";
@@ -1578,6 +1578,7 @@ const AgentStudioPage = () => {
   }
 
   return (
+    <Suspense fallback={null}>
     <div className="relative w-screen overflow-hidden bg-background" style={{ minHeight: '100dvh' }}>
       {state.loading ? (
         <div className="pointer-events-none fixed bottom-4 left-0 right-0 z-50 flex justify-center px-3">
@@ -2171,6 +2172,7 @@ const AgentStudioPage = () => {
         onConfirmDelete={(agentId) => { setDeleteConfirmAgentId(null); void handleConfirmDeleteAgent(agentId); }}
       />
     </div>
+    </Suspense>
   );
 };
 
