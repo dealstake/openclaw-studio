@@ -6,12 +6,13 @@ import { MarkdownViewer } from "@/components/MarkdownViewer";
 import { formatSize } from "@/lib/text/format";
 import { formatRelativeTime } from "@/lib/text/time";
 import { PanelIconButton } from "@/components/PanelIconButton";
+import { useFileEditor } from "@/hooks/useFileEditor";
 
 export const FileViewer = memo(function FileViewer({
   file,
   onBack,
   onSave,
-  saving,
+  saving: externalSaving,
 }: {
   file: {
     content: string | null;
@@ -26,79 +27,64 @@ export const FileViewer = memo(function FileViewer({
 }) {
   // NOTE: Parent must render <FileViewer key={file.path} ... /> to reset state on file change
   const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(file.content ?? "");
-  const [dirty, setDirty] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const canEdit = file.isText && file.content !== null;
 
+  const editor = useFileEditor({
+    initialContent: file.content ?? "",
+    onSave: async (draft) => {
+      const ok = await onSave(draft);
+      if (ok) setEditing(false);
+      return ok;
+    },
+  });
+
+  const saving = editor.saving || externalSaving;
+
   // Browser-level unsaved changes warning
   useEffect(() => {
-    if (!editing || !dirty) return;
+    if (!editing || !editor.dirty) return;
     const handler = (e: BeforeUnloadEvent) => {
       e.preventDefault();
     };
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
-  }, [editing, dirty]);
+  }, [editing, editor.dirty]);
 
   const handleStartEdit = useCallback(() => {
     setEditing(true);
-    setDraft(file.content ?? "");
-    setDirty(false);
-    setSaveSuccess(false);
-    requestAnimationFrame(() => {
-      textareaRef.current?.focus();
-    });
-  }, [file.content]);
+    editor.reset(file.content ?? "");
+  }, [file.content, editor]);
 
   const handleCancelEdit = useCallback(() => {
     setEditing(false);
-    setDraft(file.content ?? "");
-    setDirty(false);
-  }, [file.content]);
-
-  /** Prompt for unsaved changes, returns true if safe to proceed */
-  const confirmDiscardIfDirty = useCallback((): boolean => {
-    if (!editing || !dirty) return true;
-    return window.confirm("You have unsaved changes. Discard them?");
-  }, [editing, dirty]);
+    editor.reset(file.content ?? "");
+  }, [file.content, editor]);
 
   const handleBack = useCallback(() => {
-    if (!confirmDiscardIfDirty()) return;
+    if (editing && !editor.confirmDiscardIfDirty()) return;
     if (editing) {
       setEditing(false);
-      setDraft(file.content ?? "");
-      setDirty(false);
+      editor.reset(file.content ?? "");
     }
     onBack();
-  }, [confirmDiscardIfDirty, editing, file.content, onBack]);
-
-  const handleSave = useCallback(async () => {
-    const ok = await onSave(draft);
-    if (ok) {
-      setEditing(false);
-      setDirty(false);
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 2000);
-    }
-  }, [draft, onSave]);
+  }, [editing, editor, file.content, onBack]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "s" && editing && dirty) {
-        e.preventDefault();
-        void handleSave();
+      if (editing) {
+        editor.handleKeyDown(e);
       }
       if (e.key === "Escape" && editing) {
         e.preventDefault();
-        if (!confirmDiscardIfDirty()) return;
+        if (!editor.confirmDiscardIfDirty()) return;
         handleCancelEdit();
       }
     },
-    [editing, dirty, handleSave, handleCancelEdit, confirmDiscardIfDirty]
+    [editing, editor, handleCancelEdit]
   );
+
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   return (
     <div
@@ -122,7 +108,7 @@ export const FileViewer = memo(function FileViewer({
           <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
             <span>{formatSize(file.size)}</span>
             <span>{formatRelativeTime(file.updatedAt)}</span>
-            {saveSuccess && (
+            {editor.saveSuccess && (
               <span className="flex items-center gap-0.5 text-emerald-500">
                 <Check className="h-3 w-3" /> Saved
               </span>
@@ -131,7 +117,10 @@ export const FileViewer = memo(function FileViewer({
         </div>
         {canEdit && !editing && (
           <PanelIconButton
-            onClick={handleStartEdit}
+            onClick={() => {
+              handleStartEdit();
+              requestAnimationFrame(() => textareaRef.current?.focus());
+            }}
             aria-label="Edit file"
             data-testid="ws-edit-btn"
           >
@@ -150,9 +139,9 @@ export const FileViewer = memo(function FileViewer({
             <PanelIconButton
               variant="primary"
               onClick={() => {
-                void handleSave();
+                void editor.handleSave();
               }}
-              disabled={saving || !dirty}
+              disabled={saving || !editor.dirty}
               aria-label="Save file"
               data-testid="ws-save-btn"
             >
@@ -174,11 +163,8 @@ export const FileViewer = memo(function FileViewer({
           <textarea
             ref={textareaRef}
             className="h-full w-full resize-none bg-transparent p-3 font-mono text-[11px] text-foreground outline-none"
-            value={draft}
-            onChange={(e) => {
-              setDraft(e.target.value);
-              setDirty(true);
-            }}
+            value={editor.draft}
+            onChange={(e) => editor.setDraft(e.target.value)}
             disabled={saving}
             spellCheck={false}
             data-testid="ws-editor"
@@ -195,7 +181,7 @@ export const FileViewer = memo(function FileViewer({
       {editing && (
         <div className="flex items-center justify-between border-t border-border/40 px-3 py-1.5">
           <span className="text-[10px] text-muted-foreground">
-            {dirty ? "Unsaved changes" : "No changes"}
+            {editor.dirty ? "Unsaved changes" : "No changes"}
           </span>
           <span className="text-[10px] text-muted-foreground">
             ⌘S save · Esc cancel
