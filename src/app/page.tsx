@@ -1870,6 +1870,7 @@ const AgentStudioPage = () => {
                         onDeleteHeartbeat={(heartbeatId) => handleDeleteHeartbeat(settingsAgent.agentId, heartbeatId)}
                         onRetryCron={reloadCronJobs}
                         onRetryHeartbeats={reloadHeartbeats}
+                        onNavigateToTasks={() => setContextTab("tasks")}
                       />
                     )}
                   </div>
@@ -2108,6 +2109,7 @@ const AgentStudioPage = () => {
                         }
                         onRetryCron={reloadCronJobs}
                         onRetryHeartbeats={reloadHeartbeats}
+                        onNavigateToTasks={() => setContextTab("tasks")}
                       />
                     ) : (
                       <div className="flex h-full items-center justify-center p-6 text-center text-[11px] text-muted-foreground">

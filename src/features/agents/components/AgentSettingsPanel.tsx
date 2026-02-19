@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useEffect, useState } from "react";
-import { Copy, Play, Trash2 } from "lucide-react";
+import { AlertTriangle, Copy, Play, Trash2 } from "lucide-react";
 
 import type { AgentState } from "@/features/agents/state/store";
 import { formatCronPayload, formatCronSchedule, type CronJobSummary } from "@/lib/cron/types";
@@ -51,6 +51,7 @@ type AgentSettingsPanelProps = {
   onRunHeartbeat?: (heartbeatId: string) => Promise<void> | void;
   onDeleteHeartbeat?: (heartbeatId: string) => Promise<void> | void;
   onRetryHeartbeats?: () => void;
+  onNavigateToTasks?: () => void;
 };
 
 export const AgentSettingsPanel = memo(function AgentSettingsPanel({
@@ -78,6 +79,7 @@ export const AgentSettingsPanel = memo(function AgentSettingsPanel({
   onRunHeartbeat = () => {},
   onDeleteHeartbeat = () => {},
   onRetryHeartbeats,
+  onNavigateToTasks,
 }: AgentSettingsPanelProps) {
   const [nameDraft, setNameDraft] = useState(agent.name);
   const [renameSaving, setRenameSaving] = useState(false);
@@ -275,9 +277,16 @@ export const AgentSettingsPanel = memo(function AgentSettingsPanel({
           className="rounded-md border border-border/80 bg-card/70 p-4"
           data-testid="agent-settings-cron"
         >
-          <SectionLabel>
-            Cron jobs
-          </SectionLabel>
+          <div className="flex items-center justify-between">
+            <SectionLabel>
+              Cron status
+            </SectionLabel>
+            {!cronLoading && !cronError && cronJobs.length > 0 && (
+              <span className="text-[11px] text-muted-foreground">
+                {cronJobs.length} job{cronJobs.length !== 1 ? "s" : ""}
+              </span>
+            )}
+          </div>
           {cronLoading ? (
             <div className="mt-3 text-[11px] text-muted-foreground">Loading cron jobs...</div>
           ) : null}
@@ -335,6 +344,15 @@ export const AgentSettingsPanel = memo(function AgentSettingsPanel({
                   </div>
                 );
               })}
+              {onNavigateToTasks && (
+                <button
+                  type="button"
+                  className="mt-1 text-[11px] text-muted-foreground transition hover:text-foreground"
+                  onClick={onNavigateToTasks}
+                >
+                  View in Tasks →
+                </button>
+              )}
             </div>
           ) : null}
         </section>
@@ -437,15 +455,18 @@ export const AgentSettingsPanel = memo(function AgentSettingsPanel({
         </section>
 
         {canDelete ? (
-          <section className="rounded-md border border-destructive/30 bg-destructive/4 p-4">
-            <SectionLabel className="text-destructive">
-              Delete agent
-            </SectionLabel>
+          <section className="rounded-md border border-destructive/50 bg-destructive/5 p-4">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-destructive" />
+              <SectionLabel className="text-destructive">
+                Danger zone
+              </SectionLabel>
+            </div>
             <div className="mt-3 text-[11px] text-muted-foreground">
-              Removes the agent from the gateway config and deletes its cron jobs.
+              Permanently removes this agent from the gateway config and deletes all its cron jobs. This action cannot be undone.
             </div>
             <button
-              className={`mt-3 w-full rounded-md border border-destructive/50 bg-transparent px-3 py-2 ${sectionLabelClass} text-destructive shadow-sm transition hover:bg-destructive/10`}
+              className={`mt-3 w-full rounded-md border border-destructive/50 bg-transparent px-3 py-2 ${sectionLabelClass} text-destructive shadow-sm transition hover:border-destructive hover:bg-destructive/10`}
               type="button"
               onClick={onDelete}
             >
