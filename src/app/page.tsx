@@ -72,6 +72,7 @@ import { TraceViewer } from "@/features/sessions/components/TraceViewer";
 import { useChannelsStatus } from "@/features/channels/hooks/useChannelsStatus";
 import { useAllSessions } from "@/features/sessions/hooks/useAllSessions";
 import { useAllCronJobs } from "@/features/cron/hooks/useAllCronJobs";
+import { useNotificationEvaluator } from "@/features/notifications/hooks/useNotificationEvaluator";
 import { useExecApprovals } from "@/features/exec-approvals/hooks/useExecApprovals";
 import { useSessionUsage } from "@/features/sessions/hooks/useSessionUsage";
 import { useTranscripts, useTranscriptSearch, fetchTranscriptMessages } from "@/features/sessions/hooks/useTranscripts";
@@ -255,6 +256,8 @@ const AgentStudioPage = () => {
     allCronRunBusyJobId, allCronDeleteBusyJobId,
     loadAllCronJobs, handleAllCronRunJob, handleAllCronDeleteJob,
   } = useAllCronJobs(client, status);
+
+  useNotificationEvaluator(client, status);
 
   // Keep load-function refs current (avoids stale closures)
   loadAllCronJobsRef.current = loadAllCronJobs;

@@ -5,6 +5,7 @@ import { BrandMark } from "@/components/brand/BrandMark";
 import { LogoutButton } from "@/components/brand/LogoutButton";
 import { ChannelStatusPills } from "@/features/channels/components/ChannelStatusPills";
 import type { ChannelsStatusSnapshot } from "@/lib/gateway/channels";
+import { NotificationBell } from "@/features/notifications/components/NotificationBell";
 import { FolderOpen, Ellipsis, Menu, PanelRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getCfIdentity, type CfIdentity } from "@/lib/cloudflare-auth";
@@ -99,6 +100,8 @@ export const HeaderBar = ({
           ) : null}
 
           <AvatarButton identity={identity} />
+
+          <NotificationBell />
 
           <div className="hidden sm:flex">
             <ThemeToggle />
