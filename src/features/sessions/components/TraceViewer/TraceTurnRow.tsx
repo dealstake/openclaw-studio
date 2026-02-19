@@ -3,6 +3,7 @@
 import React from "react";
 import { Bot, User, Cpu, Wrench } from "lucide-react";
 
+import { formatCost as sharedFormatCost, formatTokens as sharedFormatTokens } from "@/lib/text/format";
 import type { TraceTurn } from "../../lib/traceParser";
 
 const roleIcon: Record<string, React.ReactNode> = {
@@ -11,16 +12,15 @@ const roleIcon: Record<string, React.ReactNode> = {
   system: <Cpu className="h-3.5 w-3.5 text-amber-400" />,
 };
 
+/** Return empty string for zero values to keep the row clean. */
 function formatCost(cost: number): string {
   if (cost === 0) return "";
-  if (cost < 0.01) return `$${cost.toFixed(4)}`;
-  return `$${cost.toFixed(2)}`;
+  return sharedFormatCost(cost, "USD");
 }
 
 function formatTokens(n: number): string {
   if (n === 0) return "";
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return String(n);
+  return sharedFormatTokens(n);
 }
 
 type TraceTurnRowProps = {

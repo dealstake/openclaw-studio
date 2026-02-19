@@ -5,27 +5,9 @@ import { Bot, Clock, Coins, Hash } from "lucide-react";
 
 import { SectionLabel } from "@/components/SectionLabel";
 import { PanelIconButton } from "@/components/PanelIconButton";
+import { formatCost, formatTokens } from "@/lib/text/format";
+import { formatDuration } from "@/lib/text/time";
 import type { TraceSummary } from "../../lib/traceParser";
-
-function formatDuration(ms: number): string {
-  if (ms < 1000) return `${ms}ms`;
-  if (ms < 60_000) return `${(ms / 1000).toFixed(1)}s`;
-  const min = Math.floor(ms / 60_000);
-  const sec = Math.round((ms % 60_000) / 1000);
-  return `${min}m ${sec}s`;
-}
-
-function formatCost(cost: number): string {
-  if (cost === 0) return "$0.00";
-  if (cost < 0.01) return `$${cost.toFixed(4)}`;
-  return `$${cost.toFixed(2)}`;
-}
-
-function formatTokens(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return String(n);
-}
 
 type TraceHeaderProps = {
   summary: TraceSummary;
@@ -61,7 +43,7 @@ export const TraceHeader = React.memo(function TraceHeader({
         </span>
         <span className="flex items-center gap-1" title="Total cost">
           <Coins className="h-3 w-3" />
-          {formatCost(summary.totalCost)}
+          {formatCost(summary.totalCost, "USD")}
         </span>
         {summary.totalDurationMs > 0 && (
           <span className="flex items-center gap-1" title="Total duration">

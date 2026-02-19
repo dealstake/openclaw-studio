@@ -1,4 +1,16 @@
 /**
+ * Format a duration in milliseconds as a human-readable string.
+ * Examples: "450ms", "3.2s", "2m 15s"
+ */
+export function formatDuration(ms: number): string {
+  if (ms < 1000) return `${ms}ms`;
+  if (ms < 60_000) return `${(ms / 1000).toFixed(1)}s`;
+  const min = Math.floor(ms / 60_000);
+  const sec = Math.round((ms % 60_000) / 1000);
+  return `${min}m ${sec}s`;
+}
+
+/**
  * Format a timestamp as a human-readable relative time string.
  * Handles both past ("5m ago") and future ("in 5m") timestamps.
  */

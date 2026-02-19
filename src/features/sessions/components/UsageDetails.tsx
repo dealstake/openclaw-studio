@@ -2,14 +2,10 @@
 
 import { memo } from "react";
 import { formatCost, formatTokens } from "@/lib/text/format";
+import type { SessionUsage } from "../hooks/useSessionUsage";
 
-export type SessionUsageData = {
-  inputTokens: number;
-  outputTokens: number;
-  totalCost: number | null;
-  currency: string;
-  messageCount: number;
-};
+/** @deprecated Use `SessionUsage` from `useSessionUsage` instead. */
+export type SessionUsageData = SessionUsage;
 
 const STAT_LABEL_CLASS = "font-mono text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground";
 const STAT_VALUE_CLASS = "text-[11px] font-semibold text-foreground";
