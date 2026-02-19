@@ -75,6 +75,10 @@ export function humanReadableSchedule(schedule: TaskSchedule): string {
     case "periodic":
       return `Every ${formatEveryMs(schedule.intervalMs)}`;
     case "scheduled": {
+      // Guard against empty days/times (e.g., from incomplete cron parsing)
+      if (schedule.days.length === 0 || schedule.times.length === 0) {
+        return "Scheduled (not configured)";
+      }
       const cron = scheduledToCronExpr(schedule);
       if (cron.kind === "cron") {
         try {
@@ -103,10 +107,54 @@ export function cronScheduleToTaskSchedule(
     return { type: "periodic", intervalMs: cron.everyMs } satisfies PeriodicSchedule;
   }
   if (cron.kind === "cron") {
+    // Detect interval-style cron expressions (e.g., "*/5 * * * *") and map
+    // to periodic instead of scheduled — these don't have meaningful day/time
+    // selections and would crash the scheduled→cron round-trip.
+    const intervalMs = cronExprToIntervalMs(cron.expr);
+    if (intervalMs !== null) {
+      return { type: "periodic", intervalMs } satisfies PeriodicSchedule;
+    }
     return parseCronExprToScheduled(cron.expr, cron.tz);
   }
   // "at" type — treat as one-shot scheduled
   return { type: "scheduled", days: [], times: [], timezone: "UTC" };
+}
+
+/**
+ * Attempt to convert simple interval-style cron expressions to milliseconds.
+ * Handles: "* /N * * * *" (every N minutes), "M * /N * * *" (every N hours at minute M),
+ * and wildcard patterns like "15 * * * *" (hourly at :15).
+ * Returns null if the expression doesn't represent a simple interval.
+ */
+function cronExprToIntervalMs(expr: string): number | null {
+  const parts = expr.split(/\s+/);
+  if (parts.length < 5) return null;
+  const [minField, hrField, dayOfMonth, month, dayOfWeek] = parts;
+
+  // Only handle "run always" patterns (no month/day-of-month restrictions)
+  if (dayOfMonth !== "*" || month !== "*") return null;
+  // Allow dayOfWeek to be "*" (every day) — otherwise it's a specific-day schedule
+  if (dayOfWeek !== "*") return null;
+
+  // "*/N * * * *" — every N minutes
+  if (minField.startsWith("*/") && hrField === "*") {
+    const n = Number(minField.slice(2));
+    if (!Number.isNaN(n) && n > 0) return n * 60_000;
+  }
+
+  // "M */N * * *" — every N hours (at minute M)
+  if (hrField.startsWith("*/")) {
+    const n = Number(hrField.slice(2));
+    if (!Number.isNaN(n) && n > 0) return n * 3_600_000;
+  }
+
+  // "M * * * *" — every hour at minute M
+  if (!minField.includes("/") && !minField.includes(",") && hrField === "*") {
+    const m = Number(minField);
+    if (!Number.isNaN(m)) return 3_600_000; // hourly
+  }
+
+  return null;
 }
 
 function parseCronExprToScheduled(expr: string, tz?: string): ScheduledSchedule {
@@ -131,6 +179,9 @@ function parseCronExprToScheduled(expr: string, tz?: string): ScheduledSchedule 
 }
 
 function parseDayField(field: string): number[] {
+  // Handle wildcards: "*" means all days (0=Sun through 6=Sat)
+  if (field === "*") return [0, 1, 2, 3, 4, 5, 6];
+
   const days = new Set<number>();
   for (const part of field.split(",")) {
     if (part.includes("-")) {

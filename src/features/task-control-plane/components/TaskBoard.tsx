@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { MarkdownViewer } from "@/components/MarkdownViewer";
 import { FileText, X } from "lucide-react";
 import { PanelIconButton } from "@/components/PanelIconButton";
@@ -213,7 +213,7 @@ function Column({
   );
 }
 
-export function TaskBoard({ snapshot, onRequestRefresh }: TaskBoardProps) {
+export const TaskBoard = memo(function TaskBoard({ snapshot, onRequestRefresh }: TaskBoardProps) {
   const [showDescriptions, setShowDescriptions] = useState(false);
   const [detailsCard, setDetailsCard] = useState<TaskControlPlaneCard | null>(null);
   const [details, setDetails] = useState<Record<string, unknown> | null>(null);
@@ -673,4 +673,4 @@ export function TaskBoard({ snapshot, onRequestRefresh }: TaskBoardProps) {
       ) : null}
     </div>
   );
-}
+});
