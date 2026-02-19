@@ -123,21 +123,10 @@ export type CronRunResult =
 
 export type CronRemoveResult = { ok: true; removed: boolean } | { ok: false; removed: false };
 
-const resolveJobId = (jobId: string): string => {
-  const trimmed = jobId.trim();
-  if (!trimmed) {
-    throw new Error("Cron job id is required.");
-  }
-  return trimmed;
-};
+import { resolveRequiredId } from "@/lib/validation";
 
-const resolveAgentId = (agentId: string): string => {
-  const trimmed = agentId.trim();
-  if (!trimmed) {
-    throw new Error("Agent id is required.");
-  }
-  return trimmed;
-};
+const resolveJobId = (jobId: string) => resolveRequiredId(jobId, "Cron job id");
+const resolveAgentId = (agentId: string) => resolveRequiredId(agentId, "Agent id");
 
 export const listCronJobs = async (
   client: GatewayClient,

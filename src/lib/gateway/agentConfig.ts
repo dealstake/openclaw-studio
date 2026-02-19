@@ -201,13 +201,10 @@ type GatewayStatusSnapshot = {
   };
 };
 
-const resolveHeartbeatAgentId = (agentId: string) => {
-  const trimmed = agentId.trim();
-  if (!trimmed) {
-    throw new Error("Agent id is required.");
-  }
-  return trimmed;
-};
+import { resolveRequiredId } from "@/lib/validation";
+
+const resolveHeartbeatAgentId = (agentId: string) =>
+  resolveRequiredId(agentId, "Agent id");
 
 const resolveStatusHeartbeatAgent = (
   status: GatewayStatusSnapshot,

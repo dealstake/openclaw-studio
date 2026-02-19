@@ -10,13 +10,10 @@ type AgentsListResult = {
   agents: Array<{ id: string }>;
 };
 
-const resolveAgentId = (value: string) => {
-  const trimmed = value.trim();
-  if (!trimmed) {
-    throw new Error("agentId is required.");
-  }
-  return trimmed;
-};
+import { resolveRequiredId } from "@/lib/validation";
+
+const resolveAgentId = (value: string) =>
+  resolveRequiredId(value, "agentId");
 
 export const readGatewayAgentFile = async (params: {
   client: GatewayClient;
