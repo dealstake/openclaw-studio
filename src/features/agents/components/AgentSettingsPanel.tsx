@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { Play, Trash2 } from "lucide-react";
 
 import type { AgentState } from "@/features/agents/state/store";
@@ -44,7 +44,7 @@ type AgentSettingsPanelProps = {
   onDeleteHeartbeat?: (heartbeatId: string) => Promise<void> | void;
 };
 
-export const AgentSettingsPanel = ({
+export const AgentSettingsPanel = memo(function AgentSettingsPanel({
   agent,
   onClose,
   onRename,
@@ -67,7 +67,7 @@ export const AgentSettingsPanel = ({
   heartbeatDeleteBusyId = null,
   onRunHeartbeat = () => {},
   onDeleteHeartbeat = () => {},
-}: AgentSettingsPanelProps) => {
+}: AgentSettingsPanelProps) {
   const [nameDraft, setNameDraft] = useState(agent.name);
   const [renameSaving, setRenameSaving] = useState(false);
   const [renameError, setRenameError] = useState<string | null>(null);
@@ -389,4 +389,4 @@ export const AgentSettingsPanel = ({
       </div>
     </div>
   );
-};
+});

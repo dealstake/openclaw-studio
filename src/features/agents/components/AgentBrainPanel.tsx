@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import { MarkdownViewer } from "@/components/MarkdownViewer";
 
 import type { AgentState } from "@/features/agents/state/store";
@@ -22,12 +22,12 @@ type AgentBrainPanelProps = {
   onClose: () => void;
 };
 
-export const AgentBrainPanel = ({
+export const AgentBrainPanel = memo(function AgentBrainPanel({
   client,
   agents,
   selectedAgentId,
   onClose,
-}: AgentBrainPanelProps) => {
+}: AgentBrainPanelProps) {
   const selectedAgent = useMemo(
     () =>
       selectedAgentId
@@ -178,4 +178,4 @@ export const AgentBrainPanel = ({
       </div>
     </div>
   );
-};
+});

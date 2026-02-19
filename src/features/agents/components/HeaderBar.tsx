@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { HeaderIconButton } from "@/components/HeaderIconButton";
 import type { GatewayStatus } from "@/lib/gateway/GatewayClient";
@@ -43,7 +44,7 @@ function AvatarButton({ identity }: { identity: CfIdentity | null }) {
   );
 }
 
-export const HeaderBar = ({
+export const HeaderBar = memo(function HeaderBar({
   status,
   onConnectionSettings,
   onFilesToggle,
@@ -53,7 +54,7 @@ export const HeaderBar = ({
   channelsLoading = false,
   onOpenFleet,
   onOpenContext,
-}: HeaderBarProps) => {
+}: HeaderBarProps) {
   const [identity, setIdentity] = useState<CfIdentity | null>(null);
 
   useEffect(() => {
@@ -159,4 +160,4 @@ export const HeaderBar = ({
       </div>
     </div>
   );
-};
+});

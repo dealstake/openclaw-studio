@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { GatewayStatus } from "@/lib/gateway/GatewayClient";
 
 import { sectionLabelClass } from "@/components/SectionLabel";
@@ -29,7 +30,7 @@ const statusStyles: Record<GatewayStatus, { label: string; className: string }> 
     },
   };
 
-export const ConnectionPanel = ({
+export const ConnectionPanel = memo(function ConnectionPanel({
   gatewayUrl,
   token,
   status,
@@ -38,7 +39,7 @@ export const ConnectionPanel = ({
   onTokenChange,
   onConnect,
   onDisconnect,
-}: ConnectionPanelProps) => {
+}: ConnectionPanelProps) {
   const statusConfig = statusStyles[status];
   const isConnected = status === "connected";
   const isConnecting = status === "connecting";
@@ -91,4 +92,4 @@ export const ConnectionPanel = ({
       ) : null}
     </div>
   );
-};
+});

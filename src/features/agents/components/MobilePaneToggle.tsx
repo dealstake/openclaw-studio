@@ -1,4 +1,4 @@
-import type { FC } from "react";
+import { memo } from "react";
 
 import { sectionLabelClass } from "@/components/SectionLabel";
 
@@ -11,12 +11,12 @@ export type MobilePaneToggleProps = {
   onEnsureContextMode: () => void;
 };
 
-export const MobilePaneToggle: FC<MobilePaneToggleProps> = ({
+export const MobilePaneToggle = memo(function MobilePaneToggle({
   mobilePane,
   contextMode,
   onPaneChange,
   onEnsureContextMode,
-}) => {
+}: MobilePaneToggleProps) {
   return (
     <div className="glass-panel p-2 xl:hidden" data-testid="mobile-pane-toggle">
       <div className="grid grid-cols-3 gap-2">
@@ -59,4 +59,4 @@ export const MobilePaneToggle: FC<MobilePaneToggleProps> = ({
       </div>
     </div>
   );
-};
+});

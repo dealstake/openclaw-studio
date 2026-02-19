@@ -1,7 +1,8 @@
 "use client";
+import { memo } from "react";
 import { SectionLabel, sectionLabelClass} from "@/components/SectionLabel";
 
-export const AgentInspectHeader = ({
+export const AgentInspectHeader = memo(function AgentInspectHeader({
   label,
   title,
   onClose,
@@ -13,7 +14,7 @@ export const AgentInspectHeader = ({
   onClose: () => void;
   closeTestId: string;
   closeDisabled?: boolean;
-}) => {
+}) {
   return (
     <div className="flex items-center justify-between border-b border-border/80 px-4 py-3">
       <div>
@@ -33,4 +34,4 @@ export const AgentInspectHeader = ({
       </button>
     </div>
   );
-};
+});
