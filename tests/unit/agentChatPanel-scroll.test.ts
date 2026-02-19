@@ -4,6 +4,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import type { AgentState } from "@/features/agents/state/store";
 import { AgentChatPanel } from "@/features/agents/components/AgentChatPanel";
 import type { GatewayModelChoice } from "@/lib/gateway/models";
+import type { MessagePart } from "@/lib/chat/types";
 
 const createAgent = (): AgentState => ({
   agentId: "agent-1",
@@ -49,9 +50,19 @@ describe("AgentChatPanel scrolling", () => {
     (Element.prototype as unknown as { scrollIntoView: unknown }).scrollIntoView = vi.fn();
 
     const agent = createAgent();
+    const parts1: MessagePart[] = [
+      { type: "text", text: "> hello" },
+      { type: "text", text: "first answer" },
+    ];
+    const parts2: MessagePart[] = [
+      { type: "text", text: "> hello" },
+      { type: "text", text: "first answer" },
+      { type: "text", text: "second answer" },
+    ];
+
     const { rerender } = render(
       createElement(AgentChatPanel, {
-        agent: { ...agent, outputLines: ["> hello", "first answer"] },
+        agent: { ...agent, messageParts: parts1 },
         isSelected: true,
         canSend: true,
         models,
@@ -75,7 +86,7 @@ describe("AgentChatPanel scrolling", () => {
 
     rerender(
       createElement(AgentChatPanel, {
-        agent: { ...agent, outputLines: ["> hello", "first answer", "second answer"] },
+        agent: { ...agent, messageParts: parts2 },
         isSelected: true,
         canSend: true,
         models,
@@ -102,4 +113,3 @@ describe("AgentChatPanel scrolling", () => {
     ).toHaveBeenCalled();
   });
 });
-

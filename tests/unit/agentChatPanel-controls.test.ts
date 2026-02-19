@@ -1,10 +1,10 @@
 import { createElement } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import type { AgentState } from "@/features/agents/state/store";
 import { AgentChatPanel } from "@/features/agents/components/AgentChatPanel";
 import type { GatewayModelChoice } from "@/lib/gateway/models";
-import { formatThinkingMarkdown } from "@/lib/text/message-extract";
+import type { MessagePart } from "@/lib/chat/types";
 
 const createAgent = (): AgentState => ({
   agentId: "agent-1",
@@ -172,10 +172,14 @@ describe("AgentChatPanel controls", () => {
     expect(onStopRun).toHaveBeenCalledTimes(1);
   });
 
-  it("shows_typing_indicator_while_running_before_stream_text", () => {
+  it("renders_streaming_reasoning_part_as_thinking_block", () => {
+    const parts: MessagePart[] = [
+      { type: "text", text: "> test" },
+      { type: "reasoning", text: "thinking now", streaming: true, startedAt: Date.now() },
+    ];
     render(
       createElement(AgentChatPanel, {
-        agent: { ...createAgent(), status: "running", outputLines: ["> test"] },
+        agent: { ...createAgent(), status: "running", messageParts: parts },
         isSelected: true,
         canSend: true,
         models,
@@ -190,19 +194,19 @@ describe("AgentChatPanel controls", () => {
       })
     );
 
-    expect(screen.getByTestId("agent-typing-indicator")).toBeInTheDocument();
-    expect(within(screen.getByTestId("agent-typing-indicator")).getByText("Thinking")).toBeInTheDocument();
+    // ThinkingBlock renders reasoning text
+    expect(screen.getByText("thinking now")).toBeInTheDocument();
   });
 
-  it("hides_typing_indicator_after_stream_starts", () => {
+  it("renders_completed_reasoning_part_as_thinking_block", () => {
+    const parts: MessagePart[] = [
+      { type: "text", text: "> test" },
+      { type: "reasoning", text: "thinking now", streaming: false, startedAt: Date.now() - 5000, completedAt: Date.now() },
+      { type: "text", text: "final response" },
+    ];
     render(
       createElement(AgentChatPanel, {
-        agent: {
-          ...createAgent(),
-          status: "running",
-          outputLines: ["> test"],
-          streamText: "working on it",
-        },
+        agent: { ...createAgent(), status: "running", messageParts: parts },
         isSelected: true,
         canSend: true,
         models,
@@ -217,17 +221,20 @@ describe("AgentChatPanel controls", () => {
       })
     );
 
-    expect(screen.queryByTestId("agent-typing-indicator")).not.toBeInTheDocument();
+    // Final response renders
+    expect(screen.getByText("final response")).toBeInTheDocument();
+    // ThinkingBlock renders with "Thought" label (collapsed by default)
+    expect(screen.getByText("Thought")).toBeInTheDocument();
   });
 
-  it("hides_typing_indicator_when_thinking_trace_has_started", () => {
+  it("renders_tool_invocation_parts", () => {
+    const parts: MessagePart[] = [
+      { type: "text", text: "> test" },
+      { type: "tool-invocation", toolCallId: "tc1", name: "web_search", phase: "complete", args: JSON.stringify({ query: "test" }), result: "found it", startedAt: Date.now() - 1000, completedAt: Date.now() },
+    ];
     render(
       createElement(AgentChatPanel, {
-        agent: {
-          ...createAgent(),
-          status: "running",
-          outputLines: ["> test", formatThinkingMarkdown("thinking now")],
-        },
+        agent: { ...createAgent(), status: "running", messageParts: parts },
         isSelected: true,
         canSend: true,
         models,
@@ -242,17 +249,18 @@ describe("AgentChatPanel controls", () => {
       })
     );
 
-    expect(screen.queryByTestId("agent-typing-indicator")).not.toBeInTheDocument();
+    // ToolCallBlock renders tool name in trigger
+    expect(screen.getByText("web_search")).toBeInTheDocument();
   });
 
-  it("auto_expands_thinking_panel_while_run_is_active", () => {
+  it("renders_status_part_as_chat_status_bar", () => {
+    const parts: MessagePart[] = [
+      { type: "text", text: "> test" },
+      { type: "status", state: "complete", model: "claude-opus-4" },
+    ];
     render(
       createElement(AgentChatPanel, {
-        agent: {
-          ...createAgent(),
-          status: "running",
-          outputLines: ["> test", formatThinkingMarkdown("thinking now")],
-        },
+        agent: { ...createAgent(), messageParts: parts },
         isSelected: true,
         canSend: true,
         models,
@@ -267,17 +275,14 @@ describe("AgentChatPanel controls", () => {
       })
     );
 
-    expect(screen.getByText("thinking now").closest("details")).toHaveAttribute("open");
+    // ChatStatusBar shows the model name
+    expect(screen.getByText("claude-opus-4")).toBeInTheDocument();
   });
 
-  it("closes_thinking_panel_when_final_message_is_present", () => {
+  it("renders_empty_state_when_no_message_parts", () => {
     render(
       createElement(AgentChatPanel, {
-        agent: {
-          ...createAgent(),
-          status: "running",
-          outputLines: ["> test", formatThinkingMarkdown("thinking now"), "final response"],
-        },
+        agent: createAgent(),
         isSelected: true,
         canSend: true,
         models,
@@ -292,6 +297,6 @@ describe("AgentChatPanel controls", () => {
       })
     );
 
-    expect(screen.getByText("thinking now").closest("details")).not.toHaveAttribute("open");
+    expect(screen.getByText("No messages yet.")).toBeInTheDocument();
   });
 });

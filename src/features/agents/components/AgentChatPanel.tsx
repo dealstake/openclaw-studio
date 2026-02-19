@@ -17,20 +17,13 @@ function formatTokenCount(n: number): string {
   return String(n);
 }
 import type { AgentState as AgentRecord } from "@/features/agents/state/store";
-import { MarkdownViewer } from "@/components/MarkdownViewer";
-import { AlertTriangle, ArrowLeft, ArrowUp, ChevronDown, ChevronRight, ChevronUp, RefreshCw, Settings, Shuffle, SquarePen, X, Zap } from "lucide-react";
+import type { MessagePart } from "@/lib/chat/types";
+import { AlertTriangle, ArrowLeft, ArrowUp, ChevronDown, ChevronUp, RefreshCw, Settings, Shuffle, SquarePen, X, Zap } from "lucide-react";
 import type { GatewayModelChoice } from "@/lib/gateway/models";
-import { isToolMarkdown, isTraceMarkdown } from "@/lib/text/message-extract";
 import { isNearBottom } from "@/lib/dom";
 import { AgentAvatar } from "./AgentAvatar";
-import {
-  buildFinalAgentChatItems,
-  normalizeAssistantDisplayText,
-  summarizeToolLabel,
-  type AgentChatItem,
-} from "./chatItems";
+import { AgentChatView } from "./AgentChatView";
 import { EmptyStatePanel } from "./EmptyStatePanel";
-import { MessageActions } from "./MessageActions";
 import { TokenProgressBar } from "@/components/TokenProgressBar";
 
 import { sectionLabelClass } from "@/components/SectionLabel";
@@ -52,7 +45,7 @@ type AgentChatPanelProps = {
   tokenLimit?: number;
   onNewSession?: () => void;
   viewingSessionKey?: string | null;
-  viewingSessionHistory?: AgentChatItem[];
+  viewingSessionHistory?: MessagePart[];
   viewingSessionLoading?: boolean;
   onExitSessionView?: () => void;
   /** True when the agent's session key changed (session reset detected) */
@@ -60,139 +53,13 @@ type AgentChatPanelProps = {
   onDismissContinuationBanner?: () => void;
 };
 
-const AgentChatFinalItems = memo(function AgentChatFinalItems({
-  agentId,
-  name,
-  avatarSeed,
-  avatarUrl,
-  chatItems,
-  autoExpandThinking,
-  lastThinkingItemIndex,
-}: {
-  agentId: string;
-  name: string;
-  avatarSeed: string;
-  avatarUrl: string | null;
-  chatItems: AgentChatItem[];
-  autoExpandThinking: boolean;
-  lastThinkingItemIndex: number;
-}) {
-  /** Determine if a turn separator should appear before this item. */
-  const needsSeparator = (index: number): boolean => {
-    if (index === 0) return false;
-    const prev = chatItems[index - 1];
-    const curr = chatItems[index];
-    if (!prev || !curr) return false;
-    // Show separator when switching between user and assistant turns
-    // (tool/thinking are part of the assistant turn, so no separator before them)
-    if (curr.kind === "user" && prev.kind !== "user") return true;
-    if (curr.kind === "assistant" && prev.kind === "user") return true;
-    return false;
-  };
-
-  return (
-    <>
-      {chatItems.map((item, index) => {
-        const separator = needsSeparator(index) ? (
-          <div
-            key={`sep-${agentId}-${index}`}
-            className="my-1 border-t border-border/30"
-            role="separator"
-          />
-        ) : null;
-
-        if (item.kind === "thinking") {
-          return (
-            <div key={`chat-${agentId}-thinking-${index}`} className="group/message relative">
-              {separator}
-              <details
-                className="rounded-md border border-border/70 bg-muted/55 text-[11px] text-muted-foreground"
-                open={autoExpandThinking && index === lastThinkingItemIndex}
-              >
-                <summary className={`flex cursor-pointer list-none items-center gap-2 px-2 py-1.5 ${sectionLabelClass} [&::-webkit-details-marker]:hidden`}>
-                  <AgentAvatar seed={avatarSeed} name={name} avatarUrl={avatarUrl} size={22} />
-                  <ChevronRight className="h-3 w-3 shrink-0 transition-transform duration-200 [[open]>&]:rotate-90" />
-                  <span>Thinking</span>
-                </summary>
-                <MarkdownViewer content={item.text} className="leading-relaxed px-2 pb-2" />
-              </details>
-              <MessageActions text={item.text} />
-            </div>
-          );
-        }
-        if (item.kind === "user") {
-          return (
-            <div key={`chat-${agentId}-user-${index}`} className="group/message relative">
-              {separator}
-              <div className="rounded-md border border-border/70 bg-muted/70 px-3 py-2 text-foreground">
-                <MarkdownViewer content={item.text} />
-              </div>
-              <MessageActions text={item.text} />
-            </div>
-          );
-        }
-        if (item.kind === "tool") {
-          const { summaryText, body } = summarizeToolLabel(item.text);
-          return (
-            <details
-              key={`chat-${agentId}-tool-${index}`}
-              className="rounded-md border border-border/70 bg-muted/55 px-2 py-1 text-[11px] text-muted-foreground"
-            >
-              <summary className={`cursor-pointer select-none ${sectionLabelClass}`}>
-                {summaryText}
-              </summary>
-              {body ? (
-                <MarkdownViewer content={body} className="leading-relaxed mt-1" />
-              ) : null}
-            </details>
-          );
-        }
-        return (
-          <div key={`chat-${agentId}-assistant-${index}`} className="group/message relative">
-            {separator}
-            <MarkdownViewer
-              content={item.text}
-              className="leading-relaxed min-w-0 overflow-hidden px-0.5"
-            />
-            <MessageActions text={item.text} />
-          </div>
-        );
-      })}
-    </>
-  );
-});
-
 const AgentChatTranscript = memo(function AgentChatTranscript({
-  agentId,
-  name,
-  avatarSeed,
-  avatarUrl,
-  status,
-  chatItems,
-  autoExpandThinking,
-  lastThinkingItemIndex,
-  liveThinkingText,
-  liveAssistantText,
-  showTypingIndicator,
-  outputLineCount,
-  liveAssistantCharCount,
-  liveThinkingCharCount,
+  messageParts,
+  streaming,
   scrollToBottomNextOutputRef,
 }: {
-  agentId: string;
-  name: string;
-  avatarSeed: string;
-  avatarUrl: string | null;
-  status: AgentRecord["status"];
-  chatItems: AgentChatItem[];
-  autoExpandThinking: boolean;
-  lastThinkingItemIndex: number;
-  liveThinkingText: string;
-  liveAssistantText: string;
-  showTypingIndicator: boolean;
-  outputLineCount: number;
-  liveAssistantCharCount: number;
-  liveThinkingCharCount: number;
+  messageParts: MessagePart[];
+  streaming: boolean;
   scrollToBottomNextOutputRef: MutableRefObject<boolean>;
 }) {
   const chatRef = useRef<HTMLDivElement | null>(null);
@@ -245,29 +112,27 @@ const AgentChatTranscript = memo(function AgentChatTranscript({
   }, [updatePinnedFromScroll]);
 
   // Force scroll to bottom on initial content load and when switching agents
+  const partCount = messageParts.length;
   useEffect(() => {
-    if (outputLineCount > 0 && !initialScrollDone.current) {
+    if (partCount > 0 && !initialScrollDone.current) {
       initialScrollDone.current = true;
-      // Use double rAF to ensure DOM has fully rendered content
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           scrollChatToBottom();
         });
       });
     }
-    if (outputLineCount === 0) {
+    if (partCount === 0) {
       initialScrollDone.current = false;
     }
-  }, [outputLineCount, scrollChatToBottom]);
+  }, [partCount, scrollChatToBottom]);
 
-  const showJumpToLatest =
-    !isPinned && (outputLineCount > 0 || liveAssistantCharCount > 0 || liveThinkingCharCount > 0);
+  const showJumpToLatest = !isPinned && partCount > 0;
 
   useEffect(() => {
     const shouldForceScroll = scrollToBottomNextOutputRef.current;
     if (shouldForceScroll) {
       scrollToBottomNextOutputRef.current = false;
-      // Double-rAF to ensure DOM has painted the new message
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           scrollChatToBottom();
@@ -281,9 +146,7 @@ const AgentChatTranscript = memo(function AgentChatTranscript({
       return;
     }
   }, [
-    liveAssistantCharCount,
-    liveThinkingCharCount,
-    outputLineCount,
+    partCount,
     scheduleScrollToBottom,
     scrollChatToBottom,
     scrollToBottomNextOutputRef,
@@ -316,65 +179,11 @@ const AgentChatTranscript = memo(function AgentChatTranscript({
         }}
       >
         <div className="flex w-full min-w-0 flex-col gap-3 px-4 text-xs text-foreground sm:px-8 lg:px-16">
-          {chatItems.length === 0 ? (
-            <EmptyStatePanel title="No messages yet." compact className="p-3 text-xs" />
-          ) : (
-            <>
-              <AgentChatFinalItems
-                agentId={agentId}
-                name={name}
-                avatarSeed={avatarSeed}
-                avatarUrl={avatarUrl}
-                chatItems={chatItems}
-                autoExpandThinking={autoExpandThinking}
-                lastThinkingItemIndex={lastThinkingItemIndex}
-              />
-              {liveThinkingText ? (
-                <details
-                  className={`rounded-md border border-border/70 bg-muted/55 text-[11px] text-muted-foreground${status === "running" ? " thinking-active" : ""}`}
-                  open={status === "running" && autoExpandThinking}
-                >
-                  <summary className={`flex cursor-pointer list-none items-center gap-2 px-2 py-1.5 ${sectionLabelClass} [&::-webkit-details-marker]:hidden`}>
-                    <AgentAvatar seed={avatarSeed} name={name} avatarUrl={avatarUrl} size={22} />
-                    <ChevronRight className="h-3 w-3 shrink-0 transition-transform duration-200 [[open]>&]:rotate-90" />
-                    <span>Thinking</span>
-                    {status === "running" ? (
-                      <span className="typing-dots" aria-hidden="true">
-                        <span />
-                        <span />
-                        <span />
-                      </span>
-                    ) : null}
-                  </summary>
-                  <div className="px-2 pb-2 text-foreground">
-                    <div className="whitespace-pre-wrap break-words">{liveThinkingText}</div>
-                  </div>
-                </details>
-              ) : null}
-              {liveAssistantText ? (
-                <MarkdownViewer content={liveAssistantText} className="leading-relaxed min-w-0 overflow-hidden px-0.5 opacity-85" />
-              ) : null}
-              {showTypingIndicator ? (
-                <div
-                  className="thinking-active flex items-center gap-2 rounded-md border border-border/70 bg-muted/55 px-2 py-1.5 text-[11px] text-muted-foreground"
-                  role="status"
-                  aria-live="polite"
-                  data-testid="agent-typing-indicator"
-                >
-                  <AgentAvatar seed={avatarSeed} name={name} avatarUrl={avatarUrl} size={22} />
-                  <span className={`${sectionLabelClass}`}>
-                    Thinking
-                  </span>
-                  <span className="typing-dots" aria-hidden="true">
-                    <span />
-                    <span />
-                    <span />
-                  </span>
-                </div>
-              ) : null}
-              <div ref={chatBottomRef} />
-            </>
-          )}
+          <AgentChatView
+            parts={messageParts}
+            streaming={streaming}
+          />
+          <div ref={chatBottomRef} />
         </div>
       </div>
 
@@ -623,79 +432,6 @@ export const AgentChatPanel = memo(function AgentChatPanel({
       : agent.status === "error"
         ? "Error"
         : "Idle";
-
-  const chatItems = useMemo(
-    () =>
-      buildFinalAgentChatItems({
-        outputLines: agent.outputLines,
-        showThinkingTraces: agent.showThinkingTraces,
-        toolCallingEnabled: agent.toolCallingEnabled,
-      }),
-    [agent.outputLines, agent.showThinkingTraces, agent.toolCallingEnabled]
-  );
-  const liveAssistantText = agent.streamText ? normalizeAssistantDisplayText(agent.streamText) : "";
-  const liveThinkingText =
-    agent.showThinkingTraces && agent.thinkingTrace ? agent.thinkingTrace.trim() : "";
-  const hasLiveAssistantText = Boolean(liveAssistantText.trim());
-  const hasVisibleLiveThinking = Boolean(liveThinkingText.trim());
-  const latestUserOutputIndex = useMemo(() => {
-    let latestUserIndex = -1;
-    for (let index = agent.outputLines.length - 1; index >= 0; index -= 1) {
-      const line = agent.outputLines[index]?.trim();
-      if (!line) continue;
-      if (line.startsWith(">")) {
-        latestUserIndex = index;
-        break;
-      }
-    }
-    return latestUserIndex;
-  }, [agent.outputLines]);
-  const hasSavedThinkingSinceLatestUser = useMemo(() => {
-    if (!agent.showThinkingTraces || latestUserOutputIndex < 0) return false;
-    for (
-      let index = latestUserOutputIndex + 1;
-      index < agent.outputLines.length;
-      index += 1
-    ) {
-      if (isTraceMarkdown(agent.outputLines[index] ?? "")) {
-        return true;
-      }
-    }
-    return false;
-  }, [agent.outputLines, agent.showThinkingTraces, latestUserOutputIndex]);
-  const hasSavedAssistantSinceLatestUser = useMemo(() => {
-    if (latestUserOutputIndex < 0) return false;
-    for (
-      let index = latestUserOutputIndex + 1;
-      index < agent.outputLines.length;
-      index += 1
-    ) {
-      const line = agent.outputLines[index]?.trim() ?? "";
-      if (!line) continue;
-      if (line.startsWith(">")) continue;
-      if (isTraceMarkdown(line)) continue;
-      if (isToolMarkdown(line)) continue;
-      return true;
-    }
-    return false;
-  }, [agent.outputLines, latestUserOutputIndex]);
-  const lastThinkingItemIndex = useMemo(() => {
-    for (let index = chatItems.length - 1; index >= 0; index -= 1) {
-      if (chatItems[index]?.kind === "thinking") {
-        return index;
-      }
-    }
-    return -1;
-  }, [chatItems]);
-  const autoExpandThinking =
-    agent.status === "running" &&
-    !hasSavedAssistantSinceLatestUser &&
-    (lastThinkingItemIndex >= 0 || hasVisibleLiveThinking);
-  const showTypingIndicator =
-    agent.status === "running" &&
-    !hasLiveAssistantText &&
-    !hasVisibleLiveThinking &&
-    !hasSavedThinkingSinceLatestUser;
 
   const modelOptions = useMemo(
     () =>
@@ -960,34 +696,19 @@ export const AgentChatPanel = memo(function AgentChatPanel({
               ) : viewingSessionHistory.length === 0 ? (
                 <EmptyStatePanel title="No messages in this session." compact className="p-3 text-xs" />
               ) : (
-                <AgentChatFinalItems
-                  agentId={agent.agentId}
-                  name={agent.name}
-                  avatarSeed={avatarSeed}
-                  avatarUrl={agent.avatarUrl ?? null}
-                  chatItems={viewingSessionHistory}
-                  autoExpandThinking={false}
-                  lastThinkingItemIndex={-1}
-                />
+                <div className="flex w-full min-w-0 flex-col gap-3 px-4 text-xs text-foreground sm:px-8 lg:px-16">
+                  <AgentChatView
+                    parts={viewingSessionHistory}
+                    streaming={false}
+                  />
+                </div>
               )}
             </div>
           </div>
         ) : (
         <AgentChatTranscript
-          agentId={agent.agentId}
-          name={agent.name}
-          avatarSeed={avatarSeed}
-          avatarUrl={agent.avatarUrl ?? null}
-          status={agent.status}
-          chatItems={chatItems}
-          autoExpandThinking={autoExpandThinking}
-          lastThinkingItemIndex={lastThinkingItemIndex}
-          liveThinkingText={liveThinkingText}
-          liveAssistantText={liveAssistantText}
-          showTypingIndicator={showTypingIndicator}
-          outputLineCount={agent.outputLines.length}
-          liveAssistantCharCount={agent.streamText?.length ?? 0}
-          liveThinkingCharCount={agent.thinkingTrace?.length ?? 0}
+          messageParts={agent.messageParts}
+          streaming={running}
           scrollToBottomNextOutputRef={scrollToBottomNextOutputRef}
         />
         )}

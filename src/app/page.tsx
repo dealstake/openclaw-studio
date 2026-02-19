@@ -2,8 +2,8 @@
 
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AgentChatPanel } from "@/features/agents/components/AgentChatPanel";
-import type { AgentChatItem } from "@/features/agents/components/chatItems";
-import { transformMessagesToChatItems } from "@/features/sessions/lib/transformMessages";
+import type { MessagePart } from "@/lib/chat/types";
+import { transformMessagesToMessageParts } from "@/features/sessions/lib/transformMessages";
 import {
   AgentBrainPanel,
   AgentSettingsPanel,
@@ -207,7 +207,7 @@ const AgentStudioPage = () => {
     return () => document.removeEventListener("keydown", handler);
   }, [contextTab]);
   const [viewingSessionKey, setViewingSessionKey] = useState<string | null>(null);
-  const [viewingSessionHistory, setViewingSessionHistory] = useState<AgentChatItem[]>([]);
+  const [viewingSessionHistory, setViewingSessionHistory] = useState<MessagePart[]>([]);
   const [viewingTrace, setViewingTrace] = useState<{ agentId: string; sessionId: string } | null>(null);
   const [viewingSessionLoading, setViewingSessionLoading] = useState(false);
 
@@ -1806,12 +1806,12 @@ const AgentStudioPage = () => {
                           setMobilePane("chat");
                           fetchTranscriptMessages(effectiveAgentId, sessionId, 0, 200)
                             .then((result) => {
-                              setViewingSessionHistory(transformMessagesToChatItems(result.messages));
+                              setViewingSessionHistory(transformMessagesToMessageParts(result.messages));
                             })
                             .catch((err) => {
                               console.error("Failed to load transcript:", err);
                               setViewingSessionHistory([{
-                                kind: "assistant",
+                                type: "text",
                                 text: `Failed to load transcript: ${err instanceof Error ? err.message : "Unknown error"}`,
                               }]);
                             })
@@ -2006,12 +2006,12 @@ const AgentStudioPage = () => {
                         setMobilePane("chat");
                         fetchTranscriptMessages(effectiveAgentId, sessionId, 0, 200)
                           .then((result) => {
-                            setViewingSessionHistory(transformMessagesToChatItems(result.messages));
+                            setViewingSessionHistory(transformMessagesToMessageParts(result.messages));
                           })
                           .catch((err) => {
                             console.error("Failed to load transcript:", err);
                             setViewingSessionHistory([{
-                              kind: "assistant",
+                              type: "text",
                               text: `Error loading transcript: ${err instanceof Error ? err.message : "Unknown error"}`,
                             }]);
                           })
@@ -2029,11 +2029,11 @@ const AgentStudioPage = () => {
                         setViewingSessionHistory([]);
                         client.call<{ messages?: Array<{ role?: string; content?: string; text?: string }> }>("sessions.history", { sessionKey, limit: 50 })
                           .then((result) => {
-                            setViewingSessionHistory(transformMessagesToChatItems(result.messages ?? []));
+                            setViewingSessionHistory(transformMessagesToMessageParts(result.messages ?? []));
                           })
                           .catch((err) => {
                             console.error("Failed to load session history:", err);
-                            setViewingSessionHistory([{ kind: "assistant", text: `Error loading session history: ${err instanceof Error ? err.message : "Unknown error"}` }]);
+                            setViewingSessionHistory([{ type: "text", text: `Error loading session history: ${err instanceof Error ? err.message : "Unknown error"}` }]);
                           })
                           .finally(() => setViewingSessionLoading(false));
                       }}
