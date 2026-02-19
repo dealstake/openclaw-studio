@@ -1,4 +1,4 @@
-import { memo, type FC } from "react";
+import { memo } from "react";
 
 import { sectionLabelClass } from "@/components/SectionLabel";
 
@@ -16,7 +16,7 @@ export const MobilePaneToggle = memo(function MobilePaneToggle({
   contextMode,
   onPaneChange,
   onEnsureContextMode,
-}) => {
+}: MobilePaneToggleProps) {
   return (
     <div className="glass-panel p-2 xl:hidden" data-testid="mobile-pane-toggle">
       <div className="grid grid-cols-3 gap-2">
