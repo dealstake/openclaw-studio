@@ -1,6 +1,7 @@
 "use client";
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useVisibilityRefresh } from "@/hooks/useVisibilityRefresh";
 import {
   File,
   FileCode,
@@ -216,7 +217,6 @@ export const ArtifactsPanel = memo(function ArtifactsPanel({ isSelected }: Artif
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const hydrated = useRef(false);
 
@@ -318,12 +318,17 @@ export const ArtifactsPanel = memo(function ArtifactsPanel({ isSelected }: Artif
   useEffect(() => {
     if (!isSelected) return;
     void fetchFiles();
-
-    intervalRef.current = setInterval(() => void fetchFiles(true), 60_000);
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
   }, [isSelected, fetchFiles]);
+
+  const artifactsPollCallback = useCallback(() => {
+    void fetchFiles(true);
+  }, [fetchFiles]);
+
+  useVisibilityRefresh(artifactsPollCallback, {
+    pollMs: 60_000,
+    enabled: isSelected,
+    initialDelayMs: 120_000, // Offset from projects (0s) and workspace (60s)
+  });
 
   if (!isSelected) return null;
 

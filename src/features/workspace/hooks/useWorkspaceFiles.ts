@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { WorkspaceEntry, WorkspaceFileContent } from "../types";
+import { useVisibilityRefresh } from "@/hooks/useVisibilityRefresh";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import { readGatewayAgentFile, writeGatewayAgentFile } from "@/lib/gateway/agentFiles";
 import { AGENT_FILE_NAMES, type AgentFileName, isAgentFileName } from "@/lib/agents/agentFiles";
@@ -324,47 +325,18 @@ export const useWorkspaceFiles = ({
   useEffect(() => { currentPathRef.current = currentPath; }, [currentPath]);
   useEffect(() => { viewingFileRef.current = viewingFile; }, [viewingFile]);
 
-  useEffect(() => {
-    const POLL_INTERVAL = 180_000; // 3 minutes
-    let intervalId: ReturnType<typeof setInterval> | null = null;
-
-    const poll = () => {
-      if (viewingFileRef.current) {
-        void fetchFile(viewingFileRef.current.path);
-      } else {
-        void fetchDir(currentPathRef.current);
-      }
-    };
-
-    const startPolling = () => {
-      if (intervalId) return;
-      intervalId = setInterval(poll, POLL_INTERVAL);
-    };
-
-    const stopPolling = () => {
-      if (intervalId) {
-        clearInterval(intervalId);
-        intervalId = null;
-      }
-    };
-
-    const handleVisibility = () => {
-      if (!document.hidden) {
-        poll(); // Refresh immediately when tab becomes visible
-        startPolling();
-      } else {
-        stopPolling();
-      }
-    };
-
-    document.addEventListener("visibilitychange", handleVisibility);
-    if (!document.hidden) startPolling();
-
-    return () => {
-      stopPolling();
-      document.removeEventListener("visibilitychange", handleVisibility);
-    };
+  const workspacePollCallback = useCallback(() => {
+    if (viewingFileRef.current) {
+      void fetchFile(viewingFileRef.current.path);
+    } else {
+      void fetchDir(currentPathRef.current);
+    }
   }, [fetchDir, fetchFile]);
+
+  useVisibilityRefresh(workspacePollCallback, {
+    pollMs: 180_000,
+    initialDelayMs: 60_000, // Offset from projects poller
+  });
 
   const navigateToDir = useCallback(
     (relativePath: string) => {

@@ -7,6 +7,7 @@ import { parseProjectFile } from "../lib/parseProject";
 import { TOGGLE_MAP } from "../lib/constants";
 import { manageProjectCronJobs } from "../lib/cronJobs";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
+import { useVisibilityRefresh } from "@/hooks/useVisibilityRefresh";
 
 const POLL_INTERVAL = 180_000; // 3 minutes
 
@@ -79,42 +80,15 @@ export function useProjects(
     void loadRef.current?.();
   }, [agentId]);
 
-  // Auto-refresh polling (every 3 min, pause when tab hidden)
-  useEffect(() => {
-    if (!agentId) return;
-    let intervalId: ReturnType<typeof setInterval> | null = null;
+  // Auto-refresh polling (every 3 min, pause when tab hidden, debounced visibility refresh)
+  const pollCallback = useCallback(() => {
+    void loadRef.current?.();
+  }, []);
 
-    const startPolling = () => {
-      if (intervalId) return;
-      intervalId = setInterval(() => {
-        void loadRef.current?.();
-      }, POLL_INTERVAL);
-    };
-
-    const stopPolling = () => {
-      if (intervalId) {
-        clearInterval(intervalId);
-        intervalId = null;
-      }
-    };
-
-    const handleVisibility = () => {
-      if (!document.hidden) {
-        void loadRef.current?.();
-        startPolling();
-      } else {
-        stopPolling();
-      }
-    };
-
-    document.addEventListener("visibilitychange", handleVisibility);
-    if (!document.hidden) startPolling();
-
-    return () => {
-      stopPolling();
-      document.removeEventListener("visibilitychange", handleVisibility);
-    };
-  }, [agentId]);
+  useVisibilityRefresh(pollCallback, {
+    pollMs: POLL_INTERVAL,
+    enabled: !!agentId,
+  });
 
   const toggleStatus = useCallback(
     async (project: ProjectEntry) => {
