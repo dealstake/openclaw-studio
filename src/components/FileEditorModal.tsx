@@ -3,6 +3,7 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { X, Check, Loader2 } from "lucide-react";
+import { ModalOverlay } from "@/components/ModalOverlay";
 import { MarkdownViewer } from "@/components/MarkdownViewer";
 import { PanelIconButton } from "@/components/PanelIconButton";
 import { sectionLabelClass } from "@/components/SectionLabel";
@@ -141,7 +142,7 @@ export const FileEditorModal = memo(function FileEditorModal({
   return (
     <Dialog.Root open={open} onOpenChange={handleOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-[100] bg-background/70 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+        <ModalOverlay />
         <Dialog.Content
           className="fixed left-1/2 top-1/2 z-[100] flex h-[85vh] w-[95vw] max-w-4xl -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-2xl data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
           onKeyDown={handleKeyDown}

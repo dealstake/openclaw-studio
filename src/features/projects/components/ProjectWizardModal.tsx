@@ -2,6 +2,7 @@
 
 import { memo, useCallback, useEffect, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
+import { ModalOverlay } from "@/components/ModalOverlay";
 import {
   X,
   ArrowLeft,
@@ -245,7 +246,7 @@ export const ProjectWizardModal = memo(function ProjectWizardModal({
   return (
     <Dialog.Root open={open} onOpenChange={(isOpen) => { if (!isOpen) onClose(); }}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-[100] bg-background/70 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+        <ModalOverlay />
         <Dialog.Content
           className="fixed inset-x-0 bottom-0 z-[100] flex w-full flex-col overflow-hidden bg-card shadow-2xl data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-xl sm:border sm:border-border data-[state=closed]:sm:fade-out-0 data-[state=open]:sm:fade-in-0 data-[state=closed]:sm:zoom-out-95 data-[state=open]:sm:zoom-in-95 data-[state=closed]:sm:slide-out-to-left-1/2 data-[state=closed]:sm:slide-out-to-top-[48%] data-[state=open]:sm:slide-in-from-left-1/2 data-[state=open]:sm:slide-in-from-top-[48%]"
           aria-describedby={undefined}
