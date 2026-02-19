@@ -49,8 +49,7 @@ const DEFAULT_EVERY = "30m";
 const DEFAULT_TARGET = "last";
 const DEFAULT_ACK_MAX_CHARS = 300;
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  Boolean(value && typeof value === "object" && !Array.isArray(value));
+import { isRecord, coerceString, coerceBoolean, coerceNumber } from "@/lib/type-guards";
 
 export type ConfigAgentEntry = Record<string, unknown> & { id: string };
 
@@ -106,11 +105,7 @@ const slugifyName = (name: string): string => {
   return slug;
 };
 
-const coerceString = (value: unknown) => (typeof value === "string" ? value : undefined);
-const coerceBoolean = (value: unknown) =>
-  typeof value === "boolean" ? value : undefined;
-const coerceNumber = (value: unknown) =>
-  typeof value === "number" && Number.isFinite(value) ? value : undefined;
+// coerceString, coerceBoolean, coerceNumber imported from @/lib/type-guards
 
 const coerceActiveHours = (value: unknown) => {
   if (!isRecord(value)) return undefined;

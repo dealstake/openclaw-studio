@@ -48,18 +48,7 @@ const toIssueArray = (
   return issues;
 };
 
-const parseString = (value: unknown): string | null =>
-  typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
-
-const parseNumber = (value: unknown): number | null =>
-  typeof value === "number" && Number.isFinite(value) ? value : null;
-
-const parseStringList = (value: unknown): string[] => {
-  if (!Array.isArray(value)) return [];
-  return value
-    .map((entry) => (typeof entry === "string" ? entry.trim() : null))
-    .filter((entry): entry is string => Boolean(entry));
-};
+import { parseString, parseNumber, parseStringList } from "@/lib/type-guards";
 
 const buildCard = (
   issue: IssueRecord,
