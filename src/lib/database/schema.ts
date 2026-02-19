@@ -64,6 +64,25 @@ export const activityEvents = sqliteTable("activity_events", {
     .$defaultFn(() => new Date().toISOString()),
 });
 
+// ─── Project Details (parsed cache) ──────────────────────────────────────────
+
+export const projectDetails = sqliteTable("project_details", {
+  doc: text("doc")
+    .primaryKey()
+    .references(() => projectsIndex.doc, { onDelete: "cascade" }),
+  lastWorkedOn: text("last_worked_on"),
+  nextStep: text("next_step"),
+  blockedBy: text("blocked_by"),
+  contextNeeded: text("context_needed"),
+  progressCompleted: integer("progress_completed").notNull().default(0),
+  progressTotal: integer("progress_total").notNull().default(0),
+  progressPercent: integer("progress_percent").notNull().default(0),
+  associatedTasksJson: text("associated_tasks_json"),
+  updatedAt: text("updated_at")
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+});
+
 // ─── Type exports ────────────────────────────────────────────────────────────
 
 export type ProjectIndexRow = typeof projectsIndex.$inferSelect;
@@ -72,3 +91,5 @@ export type TaskRow = typeof tasks.$inferSelect;
 export type NewTaskRow = typeof tasks.$inferInsert;
 export type ActivityEventRow = typeof activityEvents.$inferSelect;
 export type NewActivityEventRow = typeof activityEvents.$inferInsert;
+export type ProjectDetailsRow = typeof projectDetails.$inferSelect;
+export type NewProjectDetailsRow = typeof projectDetails.$inferInsert;

@@ -7,6 +7,7 @@ import { parseIndex } from "@/features/projects/lib/indexTable";
 import { getDb } from "@/lib/database";
 import * as projectsRepo from "@/lib/database/repositories/projectsRepo";
 import { importFromMarkdown } from "@/lib/database/repositories/projectsRepo";
+import * as projectDetailsRepo from "@/lib/database/repositories/projectDetailsRepo";
 
 export const runtime = "nodejs";
 
@@ -40,12 +41,21 @@ export async function GET(request: Request) {
       }
 
       if (rows.length > 0) {
-        // Enrich with file content in parallel
+        // Enrich with file content and cache parsed details
         const enriched = await Promise.all(
           rows.map(async (project) => {
             try {
               const result = readWorkspaceFile(agentId, `projects/${project.doc}`);
-              return { ...project, fileContent: result.content ?? null };
+              const content = result.content ?? null;
+              // Cache parsed project details in DB for fast subsequent reads
+              if (content) {
+                try {
+                  projectDetailsRepo.upsertFromMarkdown(db, project.doc, content);
+                } catch {
+                  // Non-fatal: cache miss is fine, parsing still works inline
+                }
+              }
+              return { ...project, fileContent: content };
             } catch {
               return { ...project, fileContent: null };
             }
