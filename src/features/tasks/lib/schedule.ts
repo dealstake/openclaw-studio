@@ -16,12 +16,48 @@ import type {
 export function taskScheduleToCronSchedule(schedule: TaskSchedule): CronSchedule {
   switch (schedule.type) {
     case "constant":
+      // Constant tasks use raw intervals (short-lived, sub-minute precision).
       return { kind: "every", everyMs: schedule.intervalMs };
     case "periodic":
-      return { kind: "every", everyMs: schedule.intervalMs };
+      // Periodic tasks use clock-aligned cron expressions so they fire at
+      // deterministic times (:00, :15, :30, etc.) instead of drifting from
+      // an arbitrary anchor timestamp.
+      return intervalMsToCronSchedule(schedule.intervalMs);
     case "scheduled":
       return scheduledToCronExpr(schedule);
   }
+}
+
+/**
+ * Convert a periodic interval (ms) to a clock-aligned cron expression.
+ * Falls back to `kind: "every"` for intervals that don't map cleanly to cron.
+ */
+function intervalMsToCronSchedule(ms: number): CronSchedule {
+  const mins = ms / 60_000;
+  const hrs = ms / 3_600_000;
+
+  // Daily: 0 0 * * * (must check before multi-hour to avoid "0 */24")
+  if (ms === 86_400_000) {
+    return { kind: "cron", expr: "0 0 * * *", tz: "America/New_York" };
+  }
+
+  // Sub-hourly: */N * * * *
+  if (ms < 3_600_000 && mins > 0 && Number.isInteger(mins) && 60 % mins === 0) {
+    return { kind: "cron", expr: `*/${mins} * * * *`, tz: "America/New_York" };
+  }
+
+  // Exactly 1 hour: 0 * * * *
+  if (ms === 3_600_000) {
+    return { kind: "cron", expr: "0 * * * *", tz: "America/New_York" };
+  }
+
+  // Multi-hour: 0 */N * * *
+  if (ms > 3_600_000 && hrs > 0 && Number.isInteger(hrs) && 24 % hrs === 0) {
+    return { kind: "cron", expr: `0 */${hrs} * * *`, tz: "America/New_York" };
+  }
+
+  // Can't express cleanly — fall back to every
+  return { kind: "every", everyMs: ms };
 }
 
 /**
@@ -152,6 +188,16 @@ function cronExprToIntervalMs(expr: string): number | null {
   if (!minField.includes("/") && !minField.includes(",") && hrField === "*") {
     const m = Number(minField);
     if (!Number.isNaN(m)) return 3_600_000; // hourly
+  }
+
+  // "M H * * *" — daily at specific time (e.g., "0 0 * * *" = daily at midnight)
+  if (
+    !minField.includes("/") && !minField.includes(",") &&
+    !hrField.includes("/") && !hrField.includes(",") && hrField !== "*"
+  ) {
+    const m = Number(minField);
+    const h = Number(hrField);
+    if (!Number.isNaN(m) && !Number.isNaN(h)) return 86_400_000; // daily
   }
 
   return null;

@@ -19,10 +19,34 @@ describe("taskScheduleToCronSchedule", () => {
     expect(cron).toEqual({ kind: "every", everyMs: 300_000 });
   });
 
-  it("converts periodic schedule to every-kind cron schedule", () => {
+  it("converts periodic schedule to clock-aligned cron expression", () => {
     const schedule: PeriodicSchedule = { type: "periodic", intervalMs: 3_600_000 };
     const cron = taskScheduleToCronSchedule(schedule);
-    expect(cron).toEqual({ kind: "every", everyMs: 3_600_000 });
+    expect(cron).toEqual({ kind: "cron", expr: "0 * * * *", tz: "America/New_York" });
+  });
+
+  it("converts 5-min periodic to */5 cron expression", () => {
+    const schedule: PeriodicSchedule = { type: "periodic", intervalMs: 300_000 };
+    const cron = taskScheduleToCronSchedule(schedule);
+    expect(cron).toEqual({ kind: "cron", expr: "*/5 * * * *", tz: "America/New_York" });
+  });
+
+  it("converts 4-hour periodic to 0 */4 cron expression", () => {
+    const schedule: PeriodicSchedule = { type: "periodic", intervalMs: 14_400_000 };
+    const cron = taskScheduleToCronSchedule(schedule);
+    expect(cron).toEqual({ kind: "cron", expr: "0 */4 * * *", tz: "America/New_York" });
+  });
+
+  it("converts 24-hour periodic to 0 0 daily cron expression", () => {
+    const schedule: PeriodicSchedule = { type: "periodic", intervalMs: 86_400_000 };
+    const cron = taskScheduleToCronSchedule(schedule);
+    expect(cron).toEqual({ kind: "cron", expr: "0 0 * * *", tz: "America/New_York" });
+  });
+
+  it("falls back to every-kind for non-standard intervals", () => {
+    const schedule: PeriodicSchedule = { type: "periodic", intervalMs: 7_000 };
+    const cron = taskScheduleToCronSchedule(schedule);
+    expect(cron).toEqual({ kind: "every", everyMs: 7_000 });
   });
 
   it("converts scheduled schedule to cron expression", () => {

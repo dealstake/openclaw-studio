@@ -208,6 +208,13 @@ const AgentStudioPage = () => {
   const [viewingSessionHistory, setViewingSessionHistory] = useState<AgentChatItem[]>([]);
   const [viewingTrace, setViewingTrace] = useState<{ agentId: string; sessionId: string } | null>(null);
   const [viewingSessionLoading, setViewingSessionLoading] = useState(false);
+
+  // Stable callbacks for memoized children (avoid inline closures)
+  const clearExpandedTab = useCallback(() => setExpandedTab(null), []);
+  const clearViewingTrace = useCallback(() => setViewingTrace(null), []);
+  const closeTaskWizard = useCallback(() => setShowTaskWizard(false), []);
+  const switchToChat = useCallback(() => setMobilePane("chat"), []);
+
   /** Tracks previous session key per agent to detect session resets */
   const prevSessionKeyByAgentRef = useRef<Map<string, string>>(new Map());
   /** Agent IDs that just had a session reset (key changed) — auto-clears after 60s */
@@ -1629,7 +1636,7 @@ const AgentStudioPage = () => {
             {mobilePane !== "chat" ? (
               <div
                 className="fixed inset-0 z-40 bg-black/50 xl:hidden"
-                onClick={() => setMobilePane("chat")}
+                onClick={switchToChat}
               />
             ) : null}
             <div
@@ -1639,7 +1646,7 @@ const AgentStudioPage = () => {
                 type="button"
                 aria-label="Close fleet sidebar"
                 className="absolute right-3 top-3 z-10 flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition xl:hidden"
-                onClick={() => setMobilePane("chat")}
+                onClick={switchToChat}
               >
                 <X className="h-4 w-4" />
               </button>
@@ -1708,7 +1715,7 @@ const AgentStudioPage = () => {
             {expandedTab && (
               <PanelExpandModal
                 open
-                onOpenChange={() => setExpandedTab(null)}
+                onOpenChange={clearExpandedTab}
                 title={TAB_OPTIONS.find((t) => t.value === expandedTab)?.label ?? ""}
               >
                 <ExpandedContext.Provider value={true}>
@@ -1742,7 +1749,7 @@ const AgentStudioPage = () => {
                         client={client}
                         agents={agents}
                         selectedAgentId={selectedBrainAgentId}
-                        onClose={() => { setExpandedTab(null); }}
+                        onClose={clearExpandedTab}
                       />
                     )}
                     {expandedTab === "workspace" && (
@@ -1834,7 +1841,7 @@ const AgentStudioPage = () => {
                       <AgentSettingsPanel
                         key={settingsAgent.agentId}
                         agent={settingsAgent}
-                        onClose={() => { setExpandedTab(null); }}
+                        onClose={clearExpandedTab}
                         onRename={(name) => handleRenameAgent(settingsAgent.agentId, name)}
                         onNewSession={() => handleNewSession(settingsAgent.agentId)}
                         onDelete={() => handleDeleteAgent(settingsAgent.agentId)}
@@ -1868,7 +1875,7 @@ const AgentStudioPage = () => {
                   <TraceViewer
                     agentId={viewingTrace.agentId}
                     sessionId={viewingTrace.sessionId}
-                    onClose={() => setViewingTrace(null)}
+                    onClose={clearViewingTrace}
                   />
                 </div>
               </div>
@@ -2141,7 +2148,7 @@ const AgentStudioPage = () => {
         agents={agents.map((a) => a.agentId)}
         creating={busyTaskId !== null}
         client={client}
-        onClose={() => setShowTaskWizard(false)}
+        onClose={closeTaskWizard}
         onCreateTask={createTask}
         onAgentCreated={() => void loadAgents()}
       />
