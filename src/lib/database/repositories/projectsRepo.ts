@@ -1,4 +1,4 @@
-import { eq, asc } from "drizzle-orm";
+import { eq, asc, and, sql } from "drizzle-orm";
 import { projectsIndex } from "../schema";
 import { STATUS_ORDER } from "@/features/projects/lib/constants";
 import { parseIndex, type ProjectIndexRow as ParsedRow } from "@/features/projects/lib/indexTable";
@@ -86,22 +86,42 @@ export function upsert(db: StudioDb, row: Omit<ProjectIndexRow, "sortOrder">): v
         priorityEmoji: row.priorityEmoji,
         oneLiner: row.oneLiner,
         sortOrder,
+        version: sql`${projectsIndex.version} + 1`,
         updatedAt: now,
       },
     })
     .run();
 }
 
-/** Update a project's status by doc filename. Returns true if found. */
-export function updateStatus(db: StudioDb, doc: string, newStatus: string): boolean {
+/**
+ * Update a project's status by doc filename.
+ * Supports optimistic locking: pass `expectedVersion` to detect concurrent writes.
+ * Returns true if found and updated.
+ */
+export function updateStatus(
+  db: StudioDb,
+  doc: string,
+  newStatus: string,
+  expectedVersion?: number,
+): boolean {
   const statusEmoji = newStatus.match(/^(🚧|🔨|📋|🌊|⏸️|✅)/)?.[1] ?? "";
   const sortOrder = STATUS_ORDER[statusEmoji] ?? 99;
   const now = new Date().toISOString();
 
+  const conditions = expectedVersion !== undefined
+    ? and(eq(projectsIndex.doc, doc), eq(projectsIndex.version, expectedVersion))
+    : eq(projectsIndex.doc, doc);
+
   const result = db
     .update(projectsIndex)
-    .set({ status: newStatus, statusEmoji, sortOrder, updatedAt: now })
-    .where(eq(projectsIndex.doc, doc))
+    .set({
+      status: newStatus,
+      statusEmoji,
+      sortOrder,
+      version: sql`${projectsIndex.version} + 1`,
+      updatedAt: now,
+    })
+    .where(conditions)
     .run();
 
   return result.changes > 0;

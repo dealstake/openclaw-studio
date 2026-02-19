@@ -15,6 +15,7 @@ export const projectsIndex = sqliteTable("projects_index", {
   createdAt: text("created_at")
     .notNull()
     .$defaultFn(() => new Date().toISOString()),
+  version: integer("version").notNull().default(1),
   updatedAt: text("updated_at")
     .notNull()
     .$defaultFn(() => new Date().toISOString()),
@@ -44,6 +45,7 @@ export const tasks = sqliteTable("tasks", {
   lastRunAt: text("last_run_at"),
   lastRunStatus: text("last_run_status"),
   runCount: integer("run_count").notNull().default(0),
+  version: integer("version").notNull().default(1),
 });
 
 // ─── Activity Events ─────────────────────────────────────────────────────────

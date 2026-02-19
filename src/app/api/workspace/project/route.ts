@@ -136,19 +136,26 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "Invalid doc filename" }, { status: 400 });
     }
 
-    // DB path (local mode)
+    // DB path (local mode) — transactional delete + archive
     if (!isSidecarConfigured()) {
       const db = getDb();
-      const found = projectsRepo.remove(db, doc);
-      if (!found) {
+
+      // Check existence before transaction
+      const existing = projectsRepo.getByDoc(db, doc);
+      if (!existing) {
         return NextResponse.json({ error: `Project with doc "${doc}" not found` }, { status: 404 });
       }
 
-      // Regenerate INDEX.md
-      const markdown = generateIndexMarkdown(db);
-      writeWorkspaceFile(agentId, "projects/INDEX.md", markdown);
+      // Transaction: remove from DB + regenerate INDEX.md atomically
+      db.transaction((tx) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- tx has same query API as db
+        const txDb = tx as any;
+        projectsRepo.remove(txDb, doc);
+        const markdown = generateIndexMarkdown(txDb);
+        writeWorkspaceFile(agentId, "projects/INDEX.md", markdown);
+      });
 
-      // Move file to archive
+      // Move file to archive (outside transaction — file ops can't be rolled back)
       try {
         const { absolute: srcPath } = resolveWorkspacePath(agentId, `projects/${doc}`);
         const { absolute: destPath } = resolveWorkspacePath(agentId, `projects/archive/${doc}`);

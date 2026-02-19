@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { tasks } from "../schema";
 import type { StudioDb } from "../index";
 import type { StudioTask, TaskSchedule } from "@/features/tasks/types";
@@ -92,6 +92,7 @@ export function upsert(db: StudioDb, task: StudioTask): void {
         lastRunAt: task.lastRunAt,
         lastRunStatus: task.lastRunStatus,
         runCount: task.runCount,
+        version: sql`${tasks.version} + 1`,
       },
     })
     .run();
