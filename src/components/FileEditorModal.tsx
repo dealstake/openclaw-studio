@@ -7,6 +7,7 @@ import { ModalOverlay } from "@/components/ModalOverlay";
 import { MarkdownViewer } from "@/components/MarkdownViewer";
 import { PanelIconButton } from "@/components/PanelIconButton";
 import { sectionLabelClass } from "@/components/SectionLabel";
+import { useFileEditor } from "@/hooks/useFileEditor";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -28,17 +29,35 @@ export const FileEditorModal = memo(function FileEditorModal({
   onSaved,
 }: FileEditorModalProps) {
   const [content, setContent] = useState("");
-  const [draft, setDraft] = useState("");
   const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [dirty, setDirty] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [previewMode, setPreviewMode] = useState(true);
-  const [saveSuccess, setSaveSuccess] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const saveSuccessTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const onSavedRef = useRef<(() => void) | undefined>(undefined);
   onSavedRef.current = onSaved;
+
+  const saveFile = useCallback(
+    async (draft: string): Promise<boolean> => {
+      const res = await fetch("/api/workspace/file", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agentId, path: filePath, content: draft }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(
+          (data as { error?: string }).error || `Save failed: ${res.status}`,
+        );
+      }
+      setContent(draft);
+      onSavedRef.current?.();
+      return true;
+    },
+    [agentId, filePath],
+  );
+
+  const editor = useFileEditor({
+    initialContent: content,
+    onSave: saveFile,
+  });
 
   // Fetch file content when modal opens
   useEffect(() => {
@@ -46,13 +65,11 @@ export const FileEditorModal = memo(function FileEditorModal({
     let cancelled = false;
 
     setLoading(true);
-    setError(null);
+    editor.setError(null);
     setPreviewMode(true);
-    setDirty(false);
-    setSaveSuccess(false);
 
     fetch(
-      `/api/workspace/file?agentId=${encodeURIComponent(agentId)}&path=${encodeURIComponent(filePath)}`
+      `/api/workspace/file?agentId=${encodeURIComponent(agentId)}&path=${encodeURIComponent(filePath)}`,
     )
       .then((res) => {
         if (!res.ok) throw new Error(`Failed to load file: ${res.status}`);
@@ -62,76 +79,35 @@ export const FileEditorModal = memo(function FileEditorModal({
         if (cancelled) return;
         const text = data.content ?? "";
         setContent(text);
-        setDraft(text);
         setLoading(false);
       })
       .catch((err: Error) => {
         if (cancelled) return;
-        setError(err.message);
+        editor.setError(err.message);
         setLoading(false);
       });
 
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, filePath, agentId]);
-
-  // Cleanup timers
-  useEffect(() => {
-    return () => {
-      if (saveSuccessTimer.current) clearTimeout(saveSuccessTimer.current);
-    };
-  }, []);
-
-  const handleSave = useCallback(async () => {
-    setSaving(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/workspace/file", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ agentId, path: filePath, content: draft }),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(
-          (data as { error?: string }).error || `Save failed: ${res.status}`
-        );
-      }
-      setContent(draft);
-      setDirty(false);
-      setSaveSuccess(true);
-      if (saveSuccessTimer.current) clearTimeout(saveSuccessTimer.current);
-      saveSuccessTimer.current = setTimeout(() => setSaveSuccess(false), 2000);
-      onSavedRef.current?.();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Save failed");
-    } finally {
-      setSaving(false);
-    }
-  }, [agentId, filePath, draft]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "s" && !previewMode && dirty) {
-        e.preventDefault();
-        void handleSave();
+      if (!previewMode) {
+        editor.handleKeyDown(e);
       }
     },
-    [previewMode, dirty, handleSave]
+    [previewMode, editor],
   );
-
-  const confirmDiscardIfDirty = useCallback((): boolean => {
-    if (!dirty) return true;
-    return window.confirm("You have unsaved changes. Discard them?");
-  }, [dirty]);
 
   const handleOpenChange = useCallback(
     (nextOpen: boolean) => {
-      if (!nextOpen && !confirmDiscardIfDirty()) return;
+      if (!nextOpen && !editor.confirmDiscardIfDirty()) return;
       onOpenChange(nextOpen);
     },
-    [confirmDiscardIfDirty, onOpenChange]
+    [editor, onOpenChange],
   );
 
   // Breadcrumb from file path
@@ -147,10 +123,13 @@ export const FileEditorModal = memo(function FileEditorModal({
           className="fixed left-1/2 top-1/2 z-[100] flex h-[85vh] w-[95vw] max-w-4xl -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-2xl data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
           onKeyDown={handleKeyDown}
           onInteractOutside={(e) => {
-            if (dirty) e.preventDefault();
+            if (editor.dirty) e.preventDefault();
           }}
           onEscapeKeyDown={(e) => {
-            if (dirty && !window.confirm("You have unsaved changes. Discard them?")) {
+            if (
+              editor.dirty &&
+              !window.confirm("You have unsaved changes. Discard them?")
+            ) {
               e.preventDefault();
             }
           }}
@@ -161,7 +140,9 @@ export const FileEditorModal = memo(function FileEditorModal({
           <div className="flex shrink-0 items-center justify-between border-b border-border/40 px-4 py-3">
             <div className="flex min-w-0 flex-1 items-center gap-2">
               <div className="min-w-0 flex-1">
-                <div className={`${sectionLabelClass} flex items-center gap-1 text-muted-foreground`}>
+                <div
+                  className={`${sectionLabelClass} flex items-center gap-1 text-muted-foreground`}
+                >
                   {parentPath && (
                     <>
                       <span className="truncate">{parentPath}</span>
@@ -174,7 +155,6 @@ export const FileEditorModal = memo(function FileEditorModal({
             </div>
 
             <div className="flex items-center gap-1.5">
-              {/* Preview / Edit toggle */}
               <button
                 type="button"
                 className={`rounded-md border px-2.5 py-1 ${sectionLabelClass} transition ${
@@ -195,7 +175,7 @@ export const FileEditorModal = memo(function FileEditorModal({
                 }`}
                 onClick={() => {
                   setPreviewMode(false);
-                  requestAnimationFrame(() => textareaRef.current?.focus());
+                  requestAnimationFrame(() => editor.textareaRef.current?.focus());
                 }}
               >
                 Edit
@@ -210,9 +190,9 @@ export const FileEditorModal = memo(function FileEditorModal({
           </div>
 
           {/* Error */}
-          {error && (
+          {editor.error && (
             <div className="shrink-0 bg-destructive/10 px-4 py-2 text-center text-xs text-destructive">
-              {error}
+              {editor.error}
             </div>
           )}
 
@@ -226,14 +206,11 @@ export const FileEditorModal = memo(function FileEditorModal({
               <MarkdownViewer content={content} className="p-6" />
             ) : (
               <textarea
-                ref={textareaRef}
+                ref={editor.textareaRef}
                 className="h-full w-full resize-none bg-transparent p-6 font-mono text-[11px] text-foreground outline-none"
-                value={draft}
-                onChange={(e) => {
-                  setDraft(e.target.value);
-                  setDirty(true);
-                }}
-                disabled={saving}
+                value={editor.draft}
+                onChange={(e) => editor.handleDraftChange(e.target.value)}
+                disabled={editor.saving}
                 spellCheck={false}
                 data-testid="file-editor-textarea"
               />
@@ -243,15 +220,15 @@ export const FileEditorModal = memo(function FileEditorModal({
           {/* Footer */}
           <div className="flex shrink-0 items-center justify-between border-t border-border/40 px-4 py-2">
             <span className="text-[10px] text-muted-foreground">
-              {saving ? (
+              {editor.saving ? (
                 <span className="flex items-center gap-1">
                   <Loader2 className="h-3 w-3 animate-spin" /> Saving…
                 </span>
-              ) : saveSuccess ? (
+              ) : editor.saveSuccess ? (
                 <span className="flex items-center gap-0.5 text-emerald-500">
                   <Check className="h-3 w-3" /> Saved
                 </span>
-              ) : dirty ? (
+              ) : editor.dirty ? (
                 "Unsaved changes"
               ) : (
                 "All changes saved"
