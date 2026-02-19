@@ -230,6 +230,18 @@ export function useSettingsPanel({ client, status, agents }: UseSettingsPanelPar
     [client, heartbeatDeleteBusyId, heartbeatRunBusyId, loadHeartbeatsForSettingsAgent]
   );
 
+  const reloadCronJobs = useCallback(() => {
+    if (settingsAgentId) {
+      void loadCronJobsForSettingsAgent(settingsAgentId);
+    }
+  }, [settingsAgentId, loadCronJobsForSettingsAgent]);
+
+  const reloadHeartbeats = useCallback(() => {
+    if (settingsAgentId) {
+      void loadHeartbeatsForSettingsAgent(settingsAgentId);
+    }
+  }, [settingsAgentId, loadHeartbeatsForSettingsAgent]);
+
   return {
     settingsAgentId,
     setSettingsAgentId,
@@ -248,5 +260,7 @@ export function useSettingsPanel({ client, status, agents }: UseSettingsPanelPar
     handleDeleteCronJob,
     handleRunHeartbeat,
     handleDeleteHeartbeat,
+    reloadCronJobs,
+    reloadHeartbeats,
   };
 }

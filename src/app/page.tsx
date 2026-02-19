@@ -289,6 +289,7 @@ const AgentStudioPage = () => {
     heartbeatRunBusyId, heartbeatDeleteBusyId,
     handleRunCronJob, handleDeleteCronJob,
     handleRunHeartbeat, handleDeleteHeartbeat,
+    reloadCronJobs, reloadHeartbeats,
   } = useSettingsPanel({ client, status, agents });
   const selectedAgent = useMemo(() => getSelectedAgent(state), [state]);
   const filteredAgents = useMemo(
@@ -1867,6 +1868,8 @@ const AgentStudioPage = () => {
                         heartbeatDeleteBusyId={heartbeatDeleteBusyId}
                         onRunHeartbeat={(heartbeatId) => handleRunHeartbeat(settingsAgent.agentId, heartbeatId)}
                         onDeleteHeartbeat={(heartbeatId) => handleDeleteHeartbeat(settingsAgent.agentId, heartbeatId)}
+                        onRetryCron={reloadCronJobs}
+                        onRetryHeartbeats={reloadHeartbeats}
                       />
                     )}
                   </div>
@@ -2103,6 +2106,8 @@ const AgentStudioPage = () => {
                         onDeleteHeartbeat={(heartbeatId) =>
                           handleDeleteHeartbeat(settingsAgent.agentId, heartbeatId)
                         }
+                        onRetryCron={reloadCronJobs}
+                        onRetryHeartbeats={reloadHeartbeats}
                       />
                     ) : (
                       <div className="flex h-full items-center justify-center p-6 text-center text-[11px] text-muted-foreground">

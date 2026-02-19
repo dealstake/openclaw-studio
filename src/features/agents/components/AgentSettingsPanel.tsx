@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useEffect, useState } from "react";
-import { Play, Trash2 } from "lucide-react";
+import { Copy, Play, Trash2 } from "lucide-react";
 
 import type { AgentState } from "@/features/agents/state/store";
 import { formatCronPayload, formatCronSchedule, type CronJobSummary } from "@/lib/cron/types";
@@ -9,6 +9,13 @@ import type { AgentHeartbeatSummary } from "@/lib/gateway/agentConfig";
 import { AgentInspectHeader } from "./AgentInspectHeader";
 import { PanelIconButton } from "@/components/PanelIconButton";
 import { SectionLabel, sectionLabelClass} from "@/components/SectionLabel";
+import { ErrorBanner } from "@/components/ErrorBanner";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const formatHeartbeatSchedule = (heartbeat: AgentHeartbeatSummary) =>
   `Every ${heartbeat.heartbeat.every}`;
@@ -35,6 +42,7 @@ type AgentSettingsPanelProps = {
   cronDeleteBusyJobId: string | null;
   onRunCronJob: (jobId: string) => Promise<void> | void;
   onDeleteCronJob: (jobId: string) => Promise<void> | void;
+  onRetryCron?: () => void;
   heartbeats?: AgentHeartbeatSummary[];
   heartbeatLoading?: boolean;
   heartbeatError?: string | null;
@@ -42,6 +50,7 @@ type AgentSettingsPanelProps = {
   heartbeatDeleteBusyId?: string | null;
   onRunHeartbeat?: (heartbeatId: string) => Promise<void> | void;
   onDeleteHeartbeat?: (heartbeatId: string) => Promise<void> | void;
+  onRetryHeartbeats?: () => void;
 };
 
 export const AgentSettingsPanel = memo(function AgentSettingsPanel({
@@ -60,6 +69,7 @@ export const AgentSettingsPanel = memo(function AgentSettingsPanel({
   cronDeleteBusyJobId,
   onRunCronJob,
   onDeleteCronJob,
+  onRetryCron,
   heartbeats = [],
   heartbeatLoading = false,
   heartbeatError = null,
@@ -67,11 +77,13 @@ export const AgentSettingsPanel = memo(function AgentSettingsPanel({
   heartbeatDeleteBusyId = null,
   onRunHeartbeat = () => {},
   onDeleteHeartbeat = () => {},
+  onRetryHeartbeats,
 }: AgentSettingsPanelProps) {
   const [nameDraft, setNameDraft] = useState(agent.name);
   const [renameSaving, setRenameSaving] = useState(false);
   const [renameError, setRenameError] = useState<string | null>(null);
   const [sessionBusy, setSessionBusy] = useState(false);
+  const [idCopied, setIdCopied] = useState(false);
 
   useEffect(() => {
     setNameDraft(agent.name);
@@ -113,6 +125,13 @@ export const AgentSettingsPanel = memo(function AgentSettingsPanel({
     }
   };
 
+  const handleCopyId = () => {
+    void navigator.clipboard.writeText(agent.agentId).then(() => {
+      setIdCopied(true);
+      setTimeout(() => setIdCopied(false), 1500);
+    });
+  };
+
   return (
     <div
       className="agent-inspect-panel"
@@ -134,6 +153,31 @@ export const AgentSettingsPanel = memo(function AgentSettingsPanel({
           <SectionLabel>
             Identity
           </SectionLabel>
+
+          {/* Agent ID */}
+          <div className="mt-3 flex items-center gap-2">
+            <span className="text-[11px] text-muted-foreground">
+              ID: <span className="font-mono">{agent.agentId}</span>
+            </span>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    className="inline-flex h-5 w-5 items-center justify-center rounded text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                    onClick={handleCopyId}
+                    aria-label="Copy agent ID"
+                  >
+                    <Copy className="h-3 w-3" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  {idCopied ? "Copied!" : "Copy agent ID"}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+
           <label className={`mt-3 flex flex-col gap-2 ${sectionLabelClass} text-muted-foreground`}>
             <span>Agent name</span>
             <input
@@ -151,7 +195,7 @@ export const AgentSettingsPanel = memo(function AgentSettingsPanel({
           ) : null}
           <div className="mt-3 flex justify-end">
             <button
-              className={`rounded-md border border-transparent bg-primary/90 px-4 py-2 ${sectionLabelClass} text-primary-foreground disabled:cursor-not-allowed disabled:border-border disabled:bg-muted disabled:text-muted-foreground`}
+              className={`rounded-md border border-transparent bg-primary/90 px-4 py-2 ${sectionLabelClass} text-primary-foreground transition hover:bg-primary disabled:cursor-not-allowed disabled:border-border disabled:bg-muted disabled:text-muted-foreground`}
               type="button"
               onClick={() => {
                 void handleRename();
@@ -204,16 +248,27 @@ export const AgentSettingsPanel = memo(function AgentSettingsPanel({
           <div className="mt-3 text-[11px] text-muted-foreground">
             Start this agent in a fresh session and clear the visible transcript in Studio.
           </div>
-          <button
-            className={`mt-3 w-full rounded-md border border-border/80 bg-card/75 px-3 py-2 ${sectionLabelClass} text-foreground transition hover:border-border hover:bg-muted/70 disabled:cursor-not-allowed disabled:opacity-70`}
-            type="button"
-            onClick={() => {
-              void handleNewSession();
-            }}
-            disabled={sessionBusy}
-          >
-            {sessionBusy ? "Starting..." : "New session"}
-          </button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="mt-3 block">
+                  <button
+                    className={`w-full rounded-md border border-border/80 bg-card/75 px-3 py-2 ${sectionLabelClass} text-foreground transition hover:border-border hover:bg-muted/70 disabled:cursor-not-allowed disabled:opacity-70`}
+                    type="button"
+                    onClick={() => {
+                      void handleNewSession();
+                    }}
+                    disabled={sessionBusy}
+                  >
+                    {sessionBusy ? "Starting..." : "New session"}
+                  </button>
+                </span>
+              </TooltipTrigger>
+              {sessionBusy && (
+                <TooltipContent>Session is starting…</TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
         </section>
 
         <section
@@ -227,9 +282,7 @@ export const AgentSettingsPanel = memo(function AgentSettingsPanel({
             <div className="mt-3 text-[11px] text-muted-foreground">Loading cron jobs...</div>
           ) : null}
           {!cronLoading && cronError ? (
-            <div className="mt-3 rounded-md border border-destructive bg-destructive px-3 py-2 text-xs text-destructive-foreground">
-              {cronError}
-            </div>
+            <ErrorBanner message={cronError} onRetry={onRetryCron} className="mt-3" />
           ) : null}
           {!cronLoading && !cronError && cronJobs.length === 0 ? (
             <div className="mt-3 text-[11px] text-muted-foreground">
@@ -297,9 +350,7 @@ export const AgentSettingsPanel = memo(function AgentSettingsPanel({
             <div className="mt-3 text-[11px] text-muted-foreground">Loading heartbeats...</div>
           ) : null}
           {!heartbeatLoading && heartbeatError ? (
-            <div className="mt-3 rounded-md border border-destructive bg-destructive px-3 py-2 text-xs text-destructive-foreground">
-              {heartbeatError}
-            </div>
+            <ErrorBanner message={heartbeatError} onRetry={onRetryHeartbeats} className="mt-3" />
           ) : null}
           {!heartbeatLoading && !heartbeatError && heartbeats.length === 0 ? (
             <div className="mt-3 text-[11px] text-muted-foreground">
@@ -322,15 +373,40 @@ export const AgentSettingsPanel = memo(function AgentSettingsPanel({
                       <div className={`truncate ${sectionLabelClass} text-foreground`}>
                         {heartbeat.agentId}
                       </div>
-                      <div className="truncate text-[11px] text-muted-foreground">
-                        {formatHeartbeatSchedule(heartbeat)}
-                      </div>
-                      <div className="truncate text-[11px] text-muted-foreground">
-                        {formatHeartbeatTarget(heartbeat)}
-                      </div>
-                      <div className="truncate text-[11px] text-muted-foreground">
-                        {formatHeartbeatSource(heartbeat)}
-                      </div>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="truncate text-[11px] text-muted-foreground">
+                              {formatHeartbeatSchedule(heartbeat)}
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>How often the heartbeat fires</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="truncate text-[11px] text-muted-foreground">
+                              {formatHeartbeatTarget(heartbeat)}
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>Which session receives the heartbeat</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="truncate text-[11px] text-muted-foreground">
+                              {formatHeartbeatSource(heartbeat)}
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {heartbeat.source === "override"
+                              ? "Configured as an agent-level override"
+                              : "Inherited from global gateway config"}
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     </div>
                     <div className="flex items-center gap-1 opacity-0 transition group-focus-within/heartbeat:opacity-100 group-hover/heartbeat:opacity-100">
                       <PanelIconButton
