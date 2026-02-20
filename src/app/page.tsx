@@ -68,6 +68,8 @@ import { ChannelsPanel } from "@/features/channels/components/ChannelsPanel";
 const SessionsPanel = lazy(() => import("@/features/sessions/components/SessionsPanel").then(m => ({ default: m.SessionsPanel })));
 const CronPanel = lazy(() => import("@/features/cron/components/CronPanel").then(m => ({ default: m.CronPanel })));
 const UsagePanel = lazy(() => import("@/features/usage/components/UsagePanel").then(m => ({ default: m.UsagePanel })));
+import { CommandPalette } from "@/features/command-palette/components/CommandPalette";
+import { useCommandPalette } from "@/features/command-palette/hooks/useCommandPalette";
 import { WorkspaceExplorerPanel } from "@/features/workspace/components/WorkspaceExplorerPanel";
 import { ActivityDrawer } from "@/features/activity/components/ActivityDrawer";
 import { upsertLiveSession, addSystemEvent } from "@/features/activity/hooks/useLiveActivityStore";
@@ -365,6 +367,25 @@ const AgentStudioPage = () => {
     return selectedInFilter ?? filteredAgents[0] ?? null;
   }, [filteredAgents, selectedAgent]);
   const focusedAgentId = focusedAgent?.agentId ?? null;
+
+  // Command Palette (Cmd+K)
+  const handleCmdNavTab = useCallback((tab: ContextTab) => {
+    setContextTab(tab);
+    setContextPanelOpen(true);
+    if (mobilePane !== "context") setMobilePane("context");
+  }, [mobilePane]);
+  const handleCmdOpenCtx = useCallback(() => setContextPanelOpen(true), []);
+  const handleCmdSwitchAgent = useCallback((agentId: string) => {
+    flushPendingDraft(focusedAgent?.agentId ?? null);
+    dispatch({ type: "selectAgent", agentId });
+  }, [flushPendingDraft, focusedAgent?.agentId, dispatch]);
+  const commandPalette = useCommandPalette({
+    onNavigateTab: handleCmdNavTab,
+    onOpenContextPanel: handleCmdOpenCtx,
+    agentIds: agents.map((a) => a.agentId),
+    currentAgentId: focusedAgentId ?? undefined,
+    onSwitchAgent: handleCmdSwitchAgent,
+  });
 
   // Breadcrumb agents for header agent switcher
   const breadcrumbAgents: BreadcrumbAgent[] = useMemo(
@@ -2288,6 +2309,11 @@ const AgentStudioPage = () => {
         onClose={closeTaskWizard}
         onCreateTask={createTask}
         onAgentCreated={() => void loadAgents()}
+      />
+      <CommandPalette
+        open={commandPalette.open}
+        onOpenChange={commandPalette.setOpen}
+        actions={commandPalette.actions}
       />
       <ConfigMutationModals
         createAgentBlock={createAgentBlock}
