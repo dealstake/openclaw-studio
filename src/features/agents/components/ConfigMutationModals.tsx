@@ -1,6 +1,7 @@
 import { memo } from "react";
 import type { FC } from "react";
-import { SectionLabel, sectionLabelClass} from "@/components/SectionLabel";
+import { SectionLabel } from "@/components/SectionLabel";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 /* ── Shared restart-blocking modal ─────────────────────────────── */
 
@@ -104,44 +105,15 @@ export const ConfigMutationModals: FC<ConfigMutationModalsProps> = ({
           ariaLabel="Renaming agent and restarting gateway"
         />
       ) : null}
-      {deleteConfirmAgentId ? (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-background/70 backdrop-blur-sm"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Confirm delete agent"
-        >
-          <div className="w-full max-w-md rounded-lg border border-border bg-card/95 p-6 shadow-2xl">
-            <SectionLabel className="text-destructive">
-              Confirm deletion
-            </SectionLabel>
-            <div className="mt-2 text-base font-semibold text-foreground">
-              {agents.find((a) => a.agentId === deleteConfirmAgentId)?.name ??
-                "Agent"}
-            </div>
-            <div className="mt-3 text-sm text-muted-foreground">
-              This removes the agent from gateway config, deletes cron jobs, and
-              moves workspace to trash. This cannot be undone.
-            </div>
-            <div className="mt-4 flex justify-end gap-2">
-              <button
-                className={`rounded-md border border-border/80 bg-card/70 px-4 py-2 ${sectionLabelClass} text-muted-foreground transition hover:bg-muted/65`}
-                type="button"
-                onClick={onCancelDelete}
-              >
-                Cancel
-              </button>
-              <button
-                className={`rounded-md border border-destructive/50 bg-destructive/10 px-4 py-2 ${sectionLabelClass} text-destructive transition hover:bg-destructive/20`}
-                type="button"
-                onClick={() => onConfirmDelete(deleteConfirmAgentId)}
-              >
-                Delete Agent
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      <ConfirmDialog
+        open={!!deleteConfirmAgentId}
+        onOpenChange={(open) => { if (!open) onCancelDelete(); }}
+        title={`Delete "${agents.find((a) => a.agentId === deleteConfirmAgentId)?.name ?? "Agent"}"?`}
+        description="This removes the agent from gateway config, deletes cron jobs, and moves workspace to trash. This cannot be undone."
+        confirmLabel="Delete Agent"
+        destructive
+        onConfirm={() => { if (deleteConfirmAgentId) onConfirmDelete(deleteConfirmAgentId); }}
+      />
       {deleteAgentBlock && deleteAgentBlock.phase !== "queued" ? (
         <RestartBlockingModal
           title="Agent delete in progress"
