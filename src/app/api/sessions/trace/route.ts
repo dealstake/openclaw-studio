@@ -137,30 +137,6 @@ async function resolveSessionId(agentId: string, sessionId: string): Promise<str
   return sessionId;
 }
 
-function parseJsonlMessages(lines: string[]): TraceMessage[] {
-  const messages: TraceMessage[] = [];
-  for (const line of lines) {
-    if (!line.trim()) continue;
-    try {
-      const entry: JsonlEntry = JSON.parse(line);
-      if (entry.type !== "message" || !entry.message) continue;
-      const msg = entry.message;
-      messages.push({
-        id: entry.id ?? crypto.randomUUID(),
-        role: msg.role,
-        content: msg.content,
-        timestamp: msg.timestamp ?? entry.timestamp ?? "",
-        ...(msg.usage ? { usage: msg.usage } : {}),
-        ...(msg.model ? { model: msg.model } : {}),
-        ...(msg.stopReason ? { stopReason: msg.stopReason } : {}),
-      });
-    } catch {
-      // Skip malformed lines
-    }
-  }
-  return messages;
-}
-
 async function readJsonlLocal(
   agentId: string,
   sessionId: string,
@@ -182,19 +158,42 @@ async function readJsonlLocal(
     }
   }
 
-  // Read and parse all message-type entries
-  const allLines: string[] = [];
+  // Stream JSONL line-by-line: count messages for total, collect only the
+  // offset..offset+limit window to avoid loading entire file into memory.
+  const items: TraceMessage[] = [];
+  let messageIndex = 0;
+
   const rl = readline.createInterface({
     input: fs.createReadStream(filePath, { encoding: "utf-8" }),
     crlfDelay: Infinity,
   });
+
   for await (const line of rl) {
-    allLines.push(line);
+    if (!line.trim()) continue;
+    try {
+      const entry: JsonlEntry = JSON.parse(line);
+      if (entry.type !== "message" || !entry.message) continue;
+
+      // This is a valid message — check if it falls in our window
+      if (messageIndex >= offset && messageIndex < offset + limit) {
+        const msg = entry.message;
+        items.push({
+          id: entry.id ?? crypto.randomUUID(),
+          role: msg.role,
+          content: msg.content,
+          timestamp: msg.timestamp ?? entry.timestamp ?? "",
+          ...(msg.usage ? { usage: msg.usage } : {}),
+          ...(msg.model ? { model: msg.model } : {}),
+          ...(msg.stopReason ? { stopReason: msg.stopReason } : {}),
+        });
+      }
+      messageIndex++;
+    } catch {
+      // Skip malformed lines
+    }
   }
 
-  const allMessages = parseJsonlMessages(allLines);
-  const items = allMessages.slice(offset, offset + limit);
-  return { items, total: allMessages.length };
+  return { items, total: messageIndex };
 }
 
 async function readJsonlViaSidecar(
@@ -225,8 +224,36 @@ async function readJsonlViaSidecar(
     throw new Error(`Session transcript not found: ${sessionId}`);
   }
 
+  // Parse lazily: count total messages but only collect the window we need.
+  // Note: sidecar returns full file content as a string, so we can't avoid
+  // the network transfer, but we avoid parsing/allocating all TraceMessage objects.
   const lines = content.split("\n");
-  const allMessages = parseJsonlMessages(lines);
-  const items = allMessages.slice(offset, offset + limit);
-  return { items, total: allMessages.length };
+  const items: TraceMessage[] = [];
+  let messageIndex = 0;
+
+  for (const line of lines) {
+    if (!line.trim()) continue;
+    try {
+      const entry: JsonlEntry = JSON.parse(line);
+      if (entry.type !== "message" || !entry.message) continue;
+
+      if (messageIndex >= offset && messageIndex < offset + limit) {
+        const msg = entry.message;
+        items.push({
+          id: entry.id ?? crypto.randomUUID(),
+          role: msg.role,
+          content: msg.content,
+          timestamp: msg.timestamp ?? entry.timestamp ?? "",
+          ...(msg.usage ? { usage: msg.usage } : {}),
+          ...(msg.model ? { model: msg.model } : {}),
+          ...(msg.stopReason ? { stopReason: msg.stopReason } : {}),
+        });
+      }
+      messageIndex++;
+    } catch {
+      // Skip malformed lines
+    }
+  }
+
+  return { items, total: messageIndex };
 }

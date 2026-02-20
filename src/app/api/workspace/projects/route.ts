@@ -41,13 +41,23 @@ export async function GET(request: Request) {
       }
 
       if (rows.length > 0) {
-        // Enrich with file content and cache parsed details
+        // Enrich with file content, using DB cache when available to avoid N+1 file reads.
+        // If the cache has a recent entry (within 60s), skip re-reading the file.
+        const now = Date.now();
+        const CACHE_TTL_MS = 60_000;
+
         const enriched = await Promise.all(
           rows.map(async (project) => {
             try {
+              // Check if we have a fresh cached entry
+              const cached = projectDetailsRepo.getByDoc(db, project.doc);
+              if (cached && now - new Date(cached.updatedAt).getTime() < CACHE_TTL_MS) {
+                return { ...project, fileContent: null, details: projectDetailsRepo.toProjectDetails(cached) };
+              }
+
+              // Cache miss or stale — read file and update cache
               const result = readWorkspaceFile(agentId, `projects/${project.doc}`);
               const content = result.content ?? null;
-              // Cache parsed project details in DB for fast subsequent reads
               if (content) {
                 try {
                   projectDetailsRepo.upsertFromMarkdown(db, project.doc, content);
