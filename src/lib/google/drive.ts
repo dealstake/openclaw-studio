@@ -154,8 +154,6 @@ export async function getFile(fileId: string): Promise<DriveFile> {
 }
 
 /**
- * Download file content. Returns a readable stream.
-/**
  * Upload a file to Google Drive.
  */
 export async function uploadFile(
