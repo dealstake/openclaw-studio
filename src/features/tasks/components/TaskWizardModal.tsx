@@ -16,7 +16,7 @@ import { WizardChat } from "@/components/chat/WizardChat";
 import { createConfigExtractor } from "@/components/chat/wizardConfigExtractor";
 import { buildSystemPrompt } from "@/features/tasks/lib/wizard-prompts";
 import { WIZARD_STARTERS } from "@/features/tasks/lib/wizardStarters";
-import { AgentCreationWizard } from "./AgentCreationWizard";
+import { AgentWizardModal } from "@/features/agents/components/AgentWizardModal";
 import { TaskTemplatesSheet } from "./TaskTemplatesSheet";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import { SectionLabel } from "@/components/SectionLabel";
@@ -273,13 +273,12 @@ export const TaskWizardModal = memo(function TaskWizardModal({
             </div>
           )}
           {showAgentCreation && (
-            <div className="h-full overflow-y-auto">
-              <AgentCreationWizard
-                client={client}
-                onCreated={handleAgentCreated}
-                onCancel={handleCancelAgentCreation}
-              />
-            </div>
+            <AgentWizardModal
+              open={showAgentCreation}
+              client={client}
+              onCreated={handleAgentCreated}
+              onClose={handleCancelAgentCreation}
+            />
           )}
         </div>
         {/* Create agent button — shown during chat step */}
