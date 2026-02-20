@@ -10,6 +10,7 @@ import {
 import * as Popover from "@radix-ui/react-popover";
 import { STATUS_CONFIG, CYCLE_STATUSES, QUEUED_CONFIG, PRIORITY_DOT } from "../lib/constants";
 import { LinkedTaskRow } from "./LinkedTaskRow";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import type { ProjectEntry } from "./ProjectsPanel";
 import { MarkdownViewer } from "@/components/MarkdownViewer";
 
@@ -34,6 +35,7 @@ export const ProjectCard = memo(function ProjectCard({
 }: ProjectCardProps) {
   const [tasksExpanded, setTasksExpanded] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
+  const [pendingDone, setPendingDone] = useState(false);
 
   // If this project is building but queued behind another, show Queued badge
   const isQueued = project.statusEmoji === "🚧" && queuePosition > 0;
@@ -59,7 +61,7 @@ export const ProjectCard = memo(function ProjectCard({
 
   return (
     <div
-      className="group/task rounded-md border border-border/80 bg-card/70 px-3 py-2.5 transition hover:border-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-1 focus-visible:ring-offset-card cursor-pointer"
+      className="group/task rounded-md border border-border/80 bg-card/70 px-3 py-2.5 transition hover:border-border hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-1 focus-visible:ring-offset-card cursor-pointer"
       role="button"
       tabIndex={0}
       onClick={onOpenFile}
@@ -105,7 +107,14 @@ export const ProjectCard = memo(function ProjectCard({
                         : "text-muted-foreground hover:bg-muted/30 hover:text-foreground"
                     }`}
                     onClick={() => {
-                      if (!isCurrent) onChangeStatus(emoji, label);
+                      if (!isCurrent) {
+                        if (emoji === "✅") {
+                          setStatusOpen(false);
+                          setPendingDone(true);
+                          return;
+                        }
+                        onChangeStatus(emoji, label);
+                      }
                       setStatusOpen(false);
                     }}
                   >
@@ -139,13 +148,13 @@ export const ProjectCard = memo(function ProjectCard({
           </Popover.Portal>
         </Popover.Root>
 
-        {priorityDot && (
+        {priorityDot && !isDone && (
           <span
             className={`h-2 w-2 shrink-0 rounded-full ${priorityDot}`}
             title={project.priority}
           />
         )}
-        <h3 className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground">
+        <h3 className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground" title={project.name}>
           {project.name}
         </h3>
         {linkedTasks.length > 0 && (
@@ -163,6 +172,18 @@ export const ProjectCard = memo(function ProjectCard({
       <MarkdownViewer content={project.oneLiner} className="mt-1 text-xs leading-relaxed text-muted-foreground/80 line-clamp-2 [&>*]:m-0 [&>*>*]:m-0" />
 
       {/* Details (Progress + Next Step) */}
+      <ConfirmDialog
+        open={pendingDone}
+        onOpenChange={(open) => { if (!open) setPendingDone(false); }}
+        title="Mark as Done"
+        description={`Are you sure you want to mark "${project.name}" as Done? This indicates the project is complete.`}
+        confirmLabel="Mark Done"
+        onConfirm={() => {
+          onChangeStatus("✅", "Done");
+          setPendingDone(false);
+        }}
+      />
+
       {details && (
         <div className="mt-1 space-y-0.5 border-t border-border/40 pt-1">
           {/* Progress Bar — always visible; greyed out when no checkboxes */}
