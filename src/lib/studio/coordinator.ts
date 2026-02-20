@@ -139,11 +139,11 @@ export class StudioSettingsCoordinator {
   }
 }
 
-export const fetchStudioSettings = async (): Promise<StudioSettingsResponse> => {
+const fetchStudioSettings = async (): Promise<StudioSettingsResponse> => {
   return fetchJson<StudioSettingsResponse>("/api/studio", { cache: "no-store" });
 };
 
-export const updateStudioSettings = async (
+const updateStudioSettings = async (
   patch: StudioSettingsPatch
 ): Promise<StudioSettingsResponse> => {
   return fetchJson<StudioSettingsResponse>("/api/studio", {

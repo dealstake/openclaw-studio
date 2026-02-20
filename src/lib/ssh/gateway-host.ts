@@ -1,4 +1,3 @@
-import { loadStudioSettings } from "@/lib/studio/settings-store";
 import * as childProcess from "node:child_process";
 
 const SSH_TARGET_ENV = "OPENCLAW_TASK_CONTROL_PLANE_SSH_TARGET";
@@ -43,14 +42,6 @@ export const resolveGatewaySshTargetFromGatewayUrl = (
   const configuredUser = env[SSH_USER_ENV]?.trim() ?? "";
   const user = configuredUser || "ubuntu";
   return `${user}@${hostname}`;
-};
-
-export const resolveGatewaySshTarget = (env: NodeJS.ProcessEnv = process.env): string => {
-  const configured = resolveConfiguredSshTarget(env);
-  if (configured) return configured;
-
-  const settings = loadStudioSettings();
-  return resolveGatewaySshTargetFromGatewayUrl(settings.gateway?.url?.trim() ?? "", env);
 };
 
 export const extractJsonErrorMessage = (value: string): string | null => {

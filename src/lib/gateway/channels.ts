@@ -11,7 +11,7 @@ export type ChannelsStatusSnapshot = {
   channelMeta?: Array<{ id: string; label: string }>;
 };
 
-export const CHANNEL_LABELS: Record<string, string> = {
+const CHANNEL_LABELS: Record<string, string> = {
   whatsapp: "WhatsApp",
   telegram: "Telegram",
   discord: "Discord",

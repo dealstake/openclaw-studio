@@ -23,13 +23,6 @@ export interface ActivityMeta {
 
 export type ActivityStatus = "success" | "error" | "partial";
 
-export const ACTIVITY_EVENT_TYPES = [
-  "cron-completion",
-  "cron-error",
-  "subagent-completion",
-  "manual",
-] as const;
-
 /** Display-ready version of an ActivityEvent */
 export interface DisplayEvent extends ActivityEvent {
   relativeTime: string;

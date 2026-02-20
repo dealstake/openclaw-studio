@@ -14,12 +14,12 @@ export type GatewayConfigMutationResult<T> =
       result: T;
     };
 
-export const shouldRetryConfigPatch = (err: unknown) => {
+const shouldRetryConfigPatch = (err: unknown) => {
   if (!(err instanceof GatewayResponseError)) return false;
   return /re-run config\.get|config changed since last load/i.test(err.message);
 };
 
-export const applyGatewayConfigPatch = async (params: {
+const applyGatewayConfigPatch = async (params: {
   client: GatewayClient;
   patch: Record<string, unknown>;
   baseHash?: string | null;

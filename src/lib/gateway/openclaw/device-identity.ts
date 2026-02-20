@@ -21,13 +21,13 @@ type StoredIdentity = {
 
 const DEVICE_IDENTITY_STORAGE_KEY = "openclaw-device-identity-v1";
 
-export function base64UrlEncode(bytes: Uint8Array): string {
+function base64UrlEncode(bytes: Uint8Array): string {
   let binary = "";
   for (const byte of bytes) binary += String.fromCharCode(byte);
   return btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/g, "");
 }
 
-export function base64UrlDecode(input: string): Uint8Array {
+function base64UrlDecode(input: string): Uint8Array {
   const normalized = input.replaceAll("-", "+").replaceAll("_", "/");
   const padded = normalized + "=".repeat((4 - (normalized.length % 4)) % 4);
   const binary = atob(padded);
@@ -47,7 +47,7 @@ async function fingerprintPublicKey(publicKey: Uint8Array): Promise<string> {
   return bytesToHex(new Uint8Array(hash));
 }
 
-export async function generateIdentity(): Promise<DeviceIdentity> {
+async function generateIdentity(): Promise<DeviceIdentity> {
   const privateKey = utils.randomSecretKey();
   const publicKey = await getPublicKeyAsync(privateKey);
   const deviceId = await fingerprintPublicKey(publicKey);

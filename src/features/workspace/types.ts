@@ -17,7 +17,7 @@ export type WorkspaceFileContent = {
 export type WorkspaceGroup = "projects" | "memory" | "brain" | "other";
 
 /** Standard brain file names that live at the workspace root. */
-export const BRAIN_FILE_NAMES = new Set([
+const BRAIN_FILE_NAMES = new Set([
   "AGENTS.md",
   "SOUL.md",
   "TOOLS.md",

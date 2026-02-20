@@ -38,7 +38,7 @@ type SessionsListResult = {
 const SPECIAL_UPDATE_HEARTBEAT_RE = /\bheartbeat\b/i;
 const SPECIAL_UPDATE_CRON_RE = /\bcron\b/i;
 
-export const resolveSpecialUpdateKind = (message: string) => {
+const resolveSpecialUpdateKind = (message: string) => {
   const lowered = message.toLowerCase();
   const heartbeatIndex = lowered.search(SPECIAL_UPDATE_HEARTBEAT_RE);
   const cronIndex = lowered.search(SPECIAL_UPDATE_CRON_RE);

@@ -10,7 +10,6 @@
  * Reuses parsing logic from `message-extract.ts` (isTraceMarkdown, isToolMarkdown, etc.).
  */
 
-import { useMemo } from "react";
 import {
   isTraceMarkdown,
   isToolMarkdown,
@@ -164,25 +163,4 @@ export function parseMessageParts(input: ParseMessagePartsInput): MessagePart[] 
   return parts;
 }
 
-// ── React hook ─────────────────────────────────────────────────────────
-
-export type UseMessagePartsInput = {
-  outputLines: string[];
-  streamText: string | null;
-  liveThinkingTrace: string;
-};
-
-/**
- * React hook that memoizes `parseMessageParts` output.
- *
- * Uses primitive deps (line count, stream text, thinking trace) to avoid
- * recomputing when the outputLines array identity changes but content hasn't.
- */
-export function useMessageParts(input: UseMessagePartsInput): MessagePart[] {
-  const { outputLines, streamText, liveThinkingTrace } = input;
-
-  return useMemo(
-    () => parseMessageParts({ outputLines, streamText, liveThinkingTrace }),
-    [outputLines, streamText, liveThinkingTrace],
-  );
-}
+// useMessageParts hook removed — consumers use parseMessageParts directly

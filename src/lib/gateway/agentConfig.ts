@@ -16,15 +16,7 @@ export {
   upsertConfigAgentEntry,
 } from "@/lib/gateway/agentConfigTypes";
 
-export type {
-  GatewayConfigMutationResult,
-} from "@/lib/gateway/configMutation";
-
-export {
-  shouldRetryConfigPatch,
-  applyGatewayConfigPatch,
-  withGatewayConfigMutation,
-} from "@/lib/gateway/configMutation";
+// configMutation re-exports removed — consumers import directly from @/lib/gateway/configMutation
 
 export {
   renameGatewayAgent,

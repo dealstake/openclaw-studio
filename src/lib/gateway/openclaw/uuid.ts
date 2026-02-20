@@ -10,7 +10,7 @@ type CryptoLike = {
 
 let warnedWeakCrypto = false;
 
-export function uuidFromBytes(bytes: Uint8Array): string {
+function uuidFromBytes(bytes: Uint8Array): string {
   bytes[6] = (bytes[6] & 0x0f) | 0x40; // version 4
   bytes[8] = (bytes[8] & 0x3f) | 0x80; // variant 1
 
@@ -25,7 +25,7 @@ export function uuidFromBytes(bytes: Uint8Array): string {
   )}-${hex.slice(20)}`;
 }
 
-export function weakRandomBytes(): Uint8Array {
+function weakRandomBytes(): Uint8Array {
   const bytes = new Uint8Array(16);
   const now = Date.now();
   for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);

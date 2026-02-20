@@ -264,16 +264,3 @@ export function useProjects(
 
   return { projects, loading, error, refresh, toggleStatus, changeStatus, archive, buildingCount, getQueuePosition };
 }
-
-export function buildContinuePrompt(project: ProjectEntry): string {
-  if (project.details?.continuation?.nextStep) {
-    return `Read projects/${project.doc} for full context.
-Current status:
-- Last worked on: ${project.details.continuation.lastWorkedOn || "Unknown"}
-- Next step: ${project.details.continuation.nextStep}
-${project.details.continuation.blockedBy ? `- Blocked by: ${project.details.continuation.blockedBy}` : ""}
-
-Begin implementation of the next step.`;
-  }
-  return `Read projects/${project.doc} for full context. Check current status and continue where we left off.`;
-}

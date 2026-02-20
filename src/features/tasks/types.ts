@@ -133,11 +133,3 @@ export const PERIODIC_INTERVAL_OPTIONS = [
   { label: "Every 12 hours", ms: 43_200_000 },
   { label: "Every 24 hours", ms: 86_400_000 },
 ] as const;
-
-export const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
-
-export const DEFAULT_MODEL_FOR_TYPE: Record<TaskType, string> = {
-  constant: "anthropic/claude-haiku-3.5",
-  periodic: "anthropic/claude-sonnet-4-6",
-  scheduled: "anthropic/claude-opus-4-6",
-};
