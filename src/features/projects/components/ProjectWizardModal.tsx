@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useEffect, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { ModalOverlay } from "@/components/ModalOverlay";
 import {
@@ -13,23 +13,29 @@ import {
   Loader2,
 } from "lucide-react";
 import { appendRow } from "../lib/indexTable";
-import { SectionLabel, sectionLabelClass} from "@/components/SectionLabel";
+import { sectionLabelClass } from "@/components/SectionLabel";
+import { WizardChat } from "@/components/chat/WizardChat";
+import { createConfigExtractor } from "@/components/chat/wizardConfigExtractor";
+import {
+  buildProjectWizardPrompt,
+  getTypeGuide,
+  getProjectWizardStarters,
+} from "../lib/projectWizardPrompt";
+import {
+  ProjectPreviewCard,
+  type ProjectConfig,
+} from "./ProjectPreviewCard";
+import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 type ProjectType = "feature" | "infrastructure" | "research" | "other";
-type WizardStep = "type-select" | "details";
-
-interface ProjectForm {
-  type: ProjectType;
-  name: string;
-  description: string;
-  priority: "🔴 P0" | "🟡 P1" | "🟢 P2";
-}
+type WizardStep = "type-select" | "chat";
 
 interface ProjectWizardModalProps {
   open: boolean;
   agentId: string;
+  client: GatewayClient | null;
   onClose: () => void;
   onCreated: () => void;
 }
@@ -73,12 +79,6 @@ const TYPE_CARDS: Array<{
   },
 ];
 
-const PRIORITY_OPTIONS = [
-  { value: "🔴 P0", label: "P0 — Do now", dot: "bg-red-400" },
-  { value: "🟡 P1", label: "P1 — Do next", dot: "bg-yellow-400" },
-  { value: "🟢 P2", label: "P2 — When time allows", dot: "bg-green-400" },
-] as const;
-
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 export function slugify(name: string): string {
@@ -89,11 +89,22 @@ export function slugify(name: string): string {
     .slice(0, 60);
 }
 
-export function generateMarkdown(form: ProjectForm): string {
+export function generateMarkdown(config: ProjectConfig): string {
   const now = new Date().toISOString().slice(0, 10);
-  return `# ${form.name}
 
-> ${form.description}
+  const phaseSections = config.phases
+    .map(
+      (phase) =>
+        `### ${phase.name}\n${phase.tasks.map((t) => `- [ ] ${t}`).join("\n")}`,
+    )
+    .join("\n\n");
+
+  return `# ${config.name}
+
+> ${config.description}
+
+## Status: 📋 Defined
+## Priority: ${config.priority}
 
 ## Problem
 
@@ -105,9 +116,7 @@ _To be filled during research phase._
 
 ## Implementation Plan
 
-### Phase 1: TBD
-- [ ] Step 1
-- [ ] Step 2
+${phaseSections}
 
 ## Key Decisions
 
@@ -115,66 +124,95 @@ _Document technical choices and rationale here._
 
 ## Continuation Context
 _Updated by the agent at end of each work session_
-- **Last worked on**: ${now} — Project created
-- **Immediate next step**: Define implementation plan and begin Phase 1
+- **Last worked on**: ${now} — Project created via AI wizard
+- **Immediate next step**: Define implementation plan details and begin Phase 1
 - **Blocked by**: Nothing
 - **Context needed**: TBD
 
 ## History
-- ${now}: Project created via Studio wizard.
+- ${now}: Project created via Studio AI wizard.
 `;
 }
+
+// ─── Config extractor ────────────────────────────────────────────────────────
+
+const projectConfigExtractor = createConfigExtractor("project");
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export const ProjectWizardModal = memo(function ProjectWizardModal({
   open,
   agentId,
+  client,
   onClose,
   onCreated,
 }: ProjectWizardModalProps) {
   const [step, setStep] = useState<WizardStep>("type-select");
-  const [form, setForm] = useState<ProjectForm>({
-    type: "feature",
-    name: "",
-    description: "",
-    priority: "🟡 P1",
-  });
+  const [selectedType, setSelectedType] = useState<ProjectType>("feature");
+  const [previewConfig, setPreviewConfig] = useState<ProjectConfig | null>(null);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
+  const [existingProjects, setExistingProjects] = useState<string[]>([]);
   // Reset state when dialog opens
   useEffect(() => {
     if (open) {
       setStep("type-select");
-      setForm({ type: "feature", name: "", description: "", priority: "🟡 P1" });
+      setSelectedType("feature");
+      setPreviewConfig(null);
       setError(null);
       setCreating(false);
     }
   }, [open]);
 
+  // Fetch existing project names when modal opens
+  useEffect(() => {
+    if (!open || !agentId) return;
+    (async () => {
+      try {
+        const res = await fetch(
+          `/api/workspace/file?agentId=${encodeURIComponent(agentId)}&path=projects/INDEX.md`,
+        );
+        if (!res.ok) return;
+        const data = (await res.json()) as { content?: string };
+        if (!data.content) return;
+        // Parse project names from table rows
+        const names: string[] = [];
+        for (const line of data.content.split("\n")) {
+          const match = line.match(/^\|\s*([^|]+?)\s*\|/);
+          if (match && match[1] && !match[1].startsWith("Project") && !match[1].startsWith("-")) {
+            names.push(match[1].trim());
+          }
+        }
+        setExistingProjects(names);
+      } catch {
+        // Non-critical — wizard works without existing project list
+      }
+    })();
+  }, [open, agentId]);
+
   const handleSelectType = useCallback((type: ProjectType) => {
-    setForm((prev) => ({ ...prev, type }));
-    setStep("details");
+    setSelectedType(type);
+    setStep("chat");
   }, []);
 
-  const handleCreate = useCallback(async () => {
-    if (!form.name.trim() || !form.description.trim()) {
-      setError("Name and description are required.");
-      return;
-    }
+  const handleConfigExtracted = useCallback((config: unknown) => {
+    setPreviewConfig(config as ProjectConfig);
+  }, []);
+
+  const handleConfirm = useCallback(async () => {
+    if (!previewConfig) return;
 
     setCreating(true);
     setError(null);
 
-    const slug = slugify(form.name);
+    const slug = previewConfig.slug || slugify(previewConfig.name);
     const doc = `${slug}.md`;
-    const markdown = generateMarkdown(form);
+    const markdown = generateMarkdown(previewConfig);
 
     try {
-      // 0. Check if project file already exists
+      // Check if project file already exists
       const checkRes = await fetch(
-        `/api/workspace/file?agentId=${encodeURIComponent(agentId)}&path=projects/${encodeURIComponent(doc)}`
+        `/api/workspace/file?agentId=${encodeURIComponent(agentId)}&path=projects/${encodeURIComponent(doc)}`,
       );
       if (checkRes.ok) {
         const checkData = (await checkRes.json()) as { content?: string };
@@ -185,7 +223,7 @@ export const ProjectWizardModal = memo(function ProjectWizardModal({
         }
       }
 
-      // 1. Write the project file
+      // Write the project file
       const writeRes = await fetch("/api/workspace/file", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -197,29 +235,27 @@ export const ProjectWizardModal = memo(function ProjectWizardModal({
       });
       if (!writeRes.ok) {
         const data = await writeRes.json().catch(() => ({}));
-        throw new Error((data as { error?: string }).error || `Write failed: ${writeRes.status}`);
+        throw new Error(
+          (data as { error?: string }).error || `Write failed: ${writeRes.status}`,
+        );
       }
 
-      // 2. Read INDEX.md
+      // Read INDEX.md
       const indexRes = await fetch(
-        `/api/workspace/file?agentId=${encodeURIComponent(agentId)}&path=projects/INDEX.md`
+        `/api/workspace/file?agentId=${encodeURIComponent(agentId)}&path=projects/INDEX.md`,
       );
-      if (!indexRes.ok) {
-        throw new Error("Could not read projects/INDEX.md");
-      }
+      if (!indexRes.ok) throw new Error("Could not read projects/INDEX.md");
       const indexData = (await indexRes.json()) as { content?: string };
-      if (!indexData.content) {
-        throw new Error("projects/INDEX.md is empty");
-      }
+      if (!indexData.content) throw new Error("projects/INDEX.md is empty");
 
-      // 3. Append row and write back
+      // Append row and write back
       const updatedIndex = appendRow(
         indexData.content,
-        form.name.trim(),
+        previewConfig.name.trim(),
         doc,
         "📋 Defined",
-        form.priority,
-        form.description.trim()
+        previewConfig.priority,
+        previewConfig.description.trim(),
       );
 
       const updateRes = await fetch("/api/workspace/file", {
@@ -231,9 +267,7 @@ export const ProjectWizardModal = memo(function ProjectWizardModal({
           content: updatedIndex,
         }),
       });
-      if (!updateRes.ok) {
-        throw new Error("Failed to update INDEX.md");
-      }
+      if (!updateRes.ok) throw new Error("Failed to update INDEX.md");
 
       onCreated();
       onClose();
@@ -241,14 +275,32 @@ export const ProjectWizardModal = memo(function ProjectWizardModal({
       setError(err instanceof Error ? err.message : "Failed to create project.");
       setCreating(false);
     }
-  }, [form, agentId, onCreated, onClose]);
+  }, [previewConfig, agentId, onCreated, onClose]);
+
+  const handleRevise = useCallback(() => {
+    setPreviewConfig(null);
+  }, []);
+
+  // Build system prompt with type-specific guidance
+  const systemPrompt = useMemo(() => {
+    const base = buildProjectWizardPrompt(agentId, existingProjects);
+    const typeGuide = getTypeGuide(selectedType);
+    return `${base}\n\n## Selected Project Type\n${typeGuide}`;
+  }, [agentId, existingProjects, selectedType]);
+
+  const starters = useMemo(() => getProjectWizardStarters(), []);
 
   return (
-    <Dialog.Root open={open} onOpenChange={(isOpen) => { if (!isOpen) onClose(); }}>
+    <Dialog.Root
+      open={open}
+      onOpenChange={(isOpen) => {
+        if (!isOpen) onClose();
+      }}
+    >
       <Dialog.Portal>
         <ModalOverlay />
         <Dialog.Content
-          className="fixed inset-x-0 bottom-0 z-[100] flex w-full flex-col overflow-hidden bg-card shadow-2xl data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-xl sm:border sm:border-border data-[state=closed]:sm:fade-out-0 data-[state=open]:sm:fade-in-0 data-[state=closed]:sm:zoom-out-95 data-[state=open]:sm:zoom-in-95 data-[state=closed]:sm:slide-out-to-left-1/2 data-[state=closed]:sm:slide-out-to-top-[48%] data-[state=open]:sm:slide-in-from-left-1/2 data-[state=open]:sm:slide-in-from-top-[48%]"
+          className="fixed inset-x-0 bottom-0 z-[100] flex w-full flex-col overflow-hidden bg-card shadow-2xl data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:max-h-[85vh] sm:max-w-2xl sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-xl sm:border sm:border-border data-[state=closed]:sm:fade-out-0 data-[state=open]:sm:fade-in-0 data-[state=closed]:sm:zoom-out-95 data-[state=open]:sm:zoom-in-95 data-[state=closed]:sm:slide-out-to-left-1/2 data-[state=closed]:sm:slide-out-to-top-[48%] data-[state=open]:sm:slide-in-from-left-1/2 data-[state=open]:sm:slide-in-from-top-[48%]"
           aria-describedby={undefined}
         >
           {/* Header */}
@@ -258,7 +310,10 @@ export const ProjectWizardModal = memo(function ProjectWizardModal({
                 <button
                   type="button"
                   className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted/65"
-                  onClick={() => setStep("type-select")}
+                  onClick={() => {
+                    setStep("type-select");
+                    setPreviewConfig(null);
+                  }}
                   aria-label="Go back"
                 >
                   <ArrowLeft className="h-4 w-4" />
@@ -266,7 +321,9 @@ export const ProjectWizardModal = memo(function ProjectWizardModal({
               )}
               <div className="flex items-center gap-1.5">
                 <Sparkles className="h-4 w-4 text-primary" />
-                <Dialog.Title className={`${sectionLabelClass} text-muted-foreground`}>
+                <Dialog.Title
+                  className={`${sectionLabelClass} text-muted-foreground`}
+                >
                   New Project
                 </Dialog.Title>
               </div>
@@ -290,17 +347,49 @@ export const ProjectWizardModal = memo(function ProjectWizardModal({
           )}
 
           {/* Content */}
-          <div className="overflow-y-auto">
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             {step === "type-select" && (
-              <TypeSelectStep onSelect={handleSelectType} />
+              <div className="overflow-y-auto">
+                <TypeSelectStep onSelect={handleSelectType} />
+              </div>
             )}
-            {step === "details" && (
-              <DetailsStep
-                form={form}
-                creating={creating}
-                onChange={setForm}
-                onCreate={handleCreate}
-              />
+            {step === "chat" && client && (
+              <div className="relative flex min-h-0 flex-1 flex-col">
+                {/* Preview card overlay */}
+                {previewConfig && (
+                  <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
+                    <ProjectPreviewCard
+                      config={previewConfig}
+                      onConfirm={handleConfirm}
+                      onRevise={handleRevise}
+                      className="w-full max-w-md"
+                    />
+                    {creating && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-background/60">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Creating project…
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+                <WizardChat
+                  client={client}
+                  agentId={agentId}
+                  wizardType="project"
+                  systemPrompt={systemPrompt}
+                  starters={starters}
+                  onConfigExtracted={handleConfigExtracted}
+                  configExtractor={projectConfigExtractor}
+                  className="h-[60vh]"
+                />
+              </div>
+            )}
+            {step === "chat" && !client && (
+              <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
+                Connecting to gateway…
+              </div>
             )}
           </div>
         </Dialog.Content>
@@ -323,7 +412,7 @@ const TypeSelectStep = memo(function TypeSelectStep({
           What kind of project?
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Choose a category. Your agent will flesh out the details.
+          Choose a category — then describe your idea to the AI.
         </p>
       </div>
       <div className="flex flex-col gap-3">
@@ -351,111 +440,6 @@ const TypeSelectStep = memo(function TypeSelectStep({
           );
         })}
       </div>
-    </div>
-  );
-});
-
-// ─── Step: Details Form ──────────────────────────────────────────────────────
-
-const DetailsStep = memo(function DetailsStep({
-  form,
-  creating,
-  onChange,
-  onCreate,
-}: {
-  form: ProjectForm;
-  creating: boolean;
-  onChange: (form: ProjectForm) => void;
-  onCreate: () => void;
-}) {
-  return (
-    <div className="flex flex-col gap-5 p-6">
-      {/* Name */}
-      <div className="flex flex-col gap-1.5">
-        <label
-          htmlFor="project-name"
-          className={`${sectionLabelClass} text-muted-foreground`}
-        >
-          Project Name
-        </label>
-        <input
-          id="project-name"
-          type="text"
-          placeholder="e.g. Notifications Panel"
-          value={form.name}
-          onChange={(e) => onChange({ ...form, name: e.target.value })}
-          className="rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none"
-          autoFocus
-        />
-      </div>
-
-      {/* Description */}
-      <div className="flex flex-col gap-1.5">
-        <label
-          htmlFor="project-desc"
-          className={`${sectionLabelClass} text-muted-foreground`}
-        >
-          Description
-        </label>
-        <textarea
-          id="project-desc"
-          rows={3}
-          placeholder="What does this project accomplish? One or two sentences."
-          value={form.description}
-          onChange={(e) => onChange({ ...form, description: e.target.value })}
-          className="resize-none rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none"
-        />
-      </div>
-
-      {/* Priority */}
-      <div className="flex flex-col gap-1.5">
-        <SectionLabel as="span">
-          Priority
-        </SectionLabel>
-        <div className="flex gap-2">
-          {PRIORITY_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              className={`flex items-center gap-2 rounded-md border px-3 py-1.5 text-xs transition ${
-                form.priority === opt.value
-                  ? "border-primary bg-primary/10 text-foreground"
-                  : "border-border bg-card/70 text-muted-foreground hover:border-border hover:bg-muted/40"
-              }`}
-              onClick={() =>
-                onChange({ ...form, priority: opt.value as ProjectForm["priority"] })
-              }
-            >
-              <span className={`h-2 w-2 rounded-full ${opt.dot}`} />
-              {opt.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Create Button */}
-      <button
-        type="button"
-        disabled={creating || !form.name.trim() || !form.description.trim()}
-        className="mt-2 flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
-        onClick={onCreate}
-      >
-        {creating ? (
-          <>
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Creating…
-          </>
-        ) : (
-          <>
-            <FolderGit2 className="h-4 w-4" />
-            Create Project
-          </>
-        )}
-      </button>
-
-      <p className="text-center text-[10px] text-muted-foreground/60">
-        Creates a project file in your agent&apos;s workspace with a starter template.
-      </p>
     </div>
   );
 });

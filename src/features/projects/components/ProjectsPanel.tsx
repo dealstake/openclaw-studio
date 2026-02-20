@@ -210,6 +210,7 @@ export const ProjectsPanel = memo(function ProjectsPanel({
         <ProjectWizardModal
           open={showWizard}
           agentId={agentId}
+          client={client}
           onClose={() => setShowWizard(false)}
           onCreated={() => {
             setShowWizard(false);
