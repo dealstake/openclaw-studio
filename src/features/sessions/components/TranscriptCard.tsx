@@ -40,7 +40,10 @@ export const TranscriptCard = memo(function TranscriptCard({
     >
       <div className="flex items-center gap-1.5">
         <Clock className="h-3 w-3 flex-shrink-0 text-muted-foreground/60" />
-        <span className={`truncate ${sectionLabelClass} text-foreground`}>
+        <span
+          className={`truncate ${sectionLabelClass} text-foreground`}
+          title={displayName}
+        >
           {displayName}
         </span>
         <span className={`rounded border px-1 py-0.5 font-mono text-[8px] font-semibold uppercase tracking-[0.12em] ${TRANSCRIPT_TYPE_COLORS[transcriptType]}`}>

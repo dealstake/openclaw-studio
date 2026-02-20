@@ -116,7 +116,10 @@ export const SessionCard = memo(function SessionCard({
             {isActive && (
               <span className="inline-block h-1.5 w-1.5 flex-shrink-0 rounded-full bg-emerald-500" />
             )}
-            <span className={`truncate ${sectionLabelClass} text-foreground`}>
+            <span
+              className={`truncate ${sectionLabelClass} text-foreground`}
+              title={humanizeSessionKey(session.displayName ?? session.key)}
+            >
               {humanizeSessionKey(session.displayName ?? session.key)}
             </span>
           </div>

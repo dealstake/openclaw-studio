@@ -88,6 +88,7 @@ export const SessionsPanel = memo(function SessionsPanel({
   onClearSearch,
 }: SessionsPanelProps) {
   const [tab, setTab] = useState<"active" | "history">("active");
+  const [activeSearch, setActiveSearch] = useState("");
   const [transcriptFilter, setTranscriptFilter] = useState<TranscriptType | "all">("all");
   const [transcriptSortNewest, setTranscriptSortNewest] = useState(true);
   const [confirmDeleteKey, setConfirmDeleteKey] = useState<string | null>(null);
@@ -112,6 +113,15 @@ export const SessionsPanel = memo(function SessionsPanel({
     () => [...sessions].sort((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0)),
     [sessions]
   );
+
+  const filteredSorted = useMemo(() => {
+    if (!activeSearch.trim()) return sorted;
+    const q = activeSearch.toLowerCase();
+    return sorted.filter((s) => {
+      const name = (s.displayName ?? s.key).toLowerCase();
+      return name.includes(q);
+    });
+  }, [sorted, activeSearch]);
 
   const filteredTranscripts = useMemo(() => {
     let list = transcripts;
@@ -286,6 +296,28 @@ export const SessionsPanel = memo(function SessionsPanel({
 
       {/* ─── Active tab ─── */}
       <div className={`min-h-0 flex-1 overflow-y-auto p-4 ${tab === "active" ? "" : "hidden"}`}>
+        {/* Active search */}
+        <div className="relative mb-3 flex-shrink-0">
+          <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/60" />
+          <input
+            type="text"
+            className="w-full rounded-md border border-border/80 bg-card/70 py-1.5 pl-8 pr-8 font-mono text-[11px] text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:outline-none focus:ring-1 focus:ring-primary/20"
+            placeholder="Search active sessions…"
+            value={activeSearch}
+            onChange={(e) => setActiveSearch(e.target.value)}
+          />
+          {activeSearch && (
+            <button
+              type="button"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground/60 hover:text-foreground"
+              onClick={() => setActiveSearch("")}
+              aria-label="Clear search"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+
         {error || actionError ? (
           <div className="mb-3 rounded-md border border-destructive bg-destructive px-3 py-2 text-xs text-destructive-foreground">
             {error ?? actionError}
@@ -300,13 +332,13 @@ export const SessionsPanel = memo(function SessionsPanel({
           </div>
         ) : null}
 
-        {!loading && !error && sorted.length === 0 ? (
-          <EmptyStatePanel title="No sessions found." compact className="p-3 text-xs" />
+        {!loading && !error && filteredSorted.length === 0 ? (
+          <EmptyStatePanel title={activeSearch ? "No matching sessions." : "No sessions found."} compact className="p-3 text-xs" />
         ) : null}
 
-        {sorted.length > 0 ? (
+        {filteredSorted.length > 0 ? (
           <div className="flex flex-col gap-2">
-            {sorted.map((session) => (
+            {filteredSorted.map((session) => (
               <SessionCard
                 key={session.key}
                 session={session}

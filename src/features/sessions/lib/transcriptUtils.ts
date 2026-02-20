@@ -15,16 +15,36 @@ const CHANNEL_TYPES = Object.keys(CHANNEL_TYPE_LABELS);
 export function inferTranscriptType(entry: TranscriptEntry): TranscriptType {
   const key = entry.sessionKey;
   if (!key) {
+    // Fall back to sessionId-based inference (JSONL filenames often contain the key)
+    const id = entry.sessionId?.toLowerCase() ?? "";
+    if (id.includes("cron") || id.includes("heartbeat")) return "cron";
+    if (id.includes("subagent") || id.includes("sub-agent")) return "subagent";
+    if (id.includes("main")) return "main";
+    for (const ch of CHANNEL_TYPES) {
+      if (id.includes(ch)) return "channel";
+    }
+    // Fall back to preview content
     const preview = entry.preview?.toLowerCase() ?? "";
     if (preview.includes("cron") || preview.includes("heartbeat")) return "cron";
     if (preview.includes("sub-agent") || preview.includes("subagent")) return "subagent";
     return "unknown";
   }
-  if (/:main$/i.test(key)) return "main";
-  if (/:cron:/i.test(key) || /^cron:/i.test(key)) return "cron";
-  if (/:subagent:/i.test(key)) return "subagent";
+  const lower = key.toLowerCase();
+  if (/:main$/i.test(key) || lower.endsWith("-main")) return "main";
+  if (/:cron:/i.test(key) || /^cron:/i.test(key) || lower.includes(":cron:") || lower.includes("-cron-")) return "cron";
+  if (/:subagent:/i.test(key) || lower.includes("-subagent")) return "subagent";
   for (const ch of CHANNEL_TYPES) {
-    if (key.toLowerCase().startsWith(ch)) return "channel";
+    if (lower.startsWith(ch)) return "channel";
+  }
+  // Check for gateway agent key format: channel:G-AGENT-name-type
+  const agentMatch = lower.match(/^([a-z]+):g-agent-[a-z0-9]+-(.+)$/);
+  if (agentMatch) {
+    const suffix = agentMatch[2];
+    if (suffix === "main") return "main";
+    if (suffix.startsWith("subagent")) return "subagent";
+    if (suffix.startsWith("cron")) return "cron";
+    // If channel prefix is known, it's a channel session
+    if (CHANNEL_TYPE_LABELS[agentMatch[1]]) return "channel";
   }
   return "unknown";
 }
