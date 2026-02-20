@@ -9,9 +9,6 @@ import {
   Clock,
   ChevronDown,
   ChevronRight,
-  AlertCircle,
-  CheckCircle2,
-  SkipForward,
   Pencil,
   Save,
 } from "lucide-react";
@@ -25,23 +22,12 @@ import {
 import { humanReadableSchedule } from "@/features/tasks/lib/schedule";
 import { formatRelativeTime } from "@/lib/text/time";
 import { formatDurationCompact as formatDuration } from "@/lib/text/time";
-import { Skeleton } from "@/components/Skeleton";
 import { TYPE_CONFIG, STATUS_DOT_CLASS, STATUS_LABEL, getTaskStatusKey } from "@/features/tasks/lib/taskTypeConfig";
 import { PanelIconButton } from "@/components/PanelIconButton";
-import { SectionLabel, sectionLabelClass} from "@/components/SectionLabel";
+import { SectionLabel, sectionLabelClass } from "@/components/SectionLabel";
 import { type CronRunEntry, fetchCronRuns } from "@/lib/cron/types";
-
-const RUN_STATUS_ICON: Record<string, typeof CheckCircle2> = {
-  ok: CheckCircle2,
-  error: AlertCircle,
-  skipped: SkipForward,
-};
-
-const RUN_STATUS_CLASS: Record<string, string> = {
-  ok: "text-emerald-400",
-  error: "text-destructive",
-  skipped: "text-muted-foreground",
-};
+import { RunHistorySection } from "./RunHistorySection";
+import { inputClass, textareaClass } from "@/features/tasks/lib/styles";
 
 // ─── Props ───────────────────────────────────────────────────────────────────
 
@@ -111,6 +97,10 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
     [client]
   );
 
+  const handleRetryRuns = useCallback(() => {
+    if (task) void loadRuns(task.cronJobId);
+  }, [task, loadRuns]);
+
   // Load runs when task changes; reset edit mode
   useEffect(() => {
     if (!task) {
@@ -131,12 +121,6 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
   const statusKey = getTaskStatusKey(task);
   const statusLabel = STATUS_LABEL[statusKey];
   const statusDotClass = STATUS_DOT_CLASS[statusKey];
-
-  const inputClass =
-    "h-7 w-full rounded-md border border-border/80 bg-card/70 px-2 font-mono text-[11px] text-foreground outline-none transition hover:border-border focus:border-primary/60 disabled:cursor-not-allowed disabled:opacity-60";
-
-  const textareaClass =
-    "w-full rounded-md border border-border/80 bg-card/70 p-2 font-mono text-[10px] leading-relaxed text-foreground outline-none transition hover:border-border focus:border-primary/60 disabled:cursor-not-allowed disabled:opacity-60 resize-y";
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden">
@@ -381,78 +365,12 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
         </div>
 
         {/* Run history */}
-        <div className="px-4 py-3">
-          <SectionLabel>
-            Run History
-          </SectionLabel>
-
-          {runsLoading ? (
-            <div className="mt-2 flex flex-col gap-1.5">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="flex items-center gap-2 rounded-md border border-border/60 bg-card/50 px-2 py-1.5"
-                >
-                  <Skeleton className="h-3 w-3 rounded-full" />
-                  <Skeleton className="h-2.5 w-20" />
-                  <Skeleton className="h-2.5 w-12" />
-                </div>
-              ))}
-            </div>
-          ) : null}
-
-          {runsError ? (
-            <div className="mt-2 flex items-center gap-2 rounded-md border border-destructive bg-destructive/10 px-3 py-2 text-[10px] text-destructive">
-              <span className="flex-1">{runsError}</span>
-              <button
-                type="button"
-                className="shrink-0 rounded border border-destructive/40 px-2 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.08em] transition hover:bg-destructive/20"
-                onClick={() => void loadRuns(task.cronJobId)}
-              >
-                Retry
-              </button>
-            </div>
-          ) : null}
-
-          {!runsLoading && !runsError && runs.length === 0 ? (
-            <div className="mt-2 text-[11px] text-muted-foreground">
-              No run history available.
-            </div>
-          ) : null}
-
-          {!runsLoading && runs.length > 0 ? (
-            <div className="mt-2 flex flex-col gap-1">
-              {runs.map((run) => {
-                const StatusIcon =
-                  RUN_STATUS_ICON[run.status] ?? SkipForward;
-                const statusClass =
-                  RUN_STATUS_CLASS[run.status] ?? "text-muted-foreground";
-                return (
-                  <div
-                    key={run.id}
-                    className="flex items-center gap-2 rounded-md border border-border/60 bg-card/50 px-2 py-1.5"
-                  >
-                    <StatusIcon className={`h-3 w-3 shrink-0 ${statusClass}`} />
-                    <span className="font-mono text-[9px] font-semibold uppercase tracking-[0.08em] text-foreground">
-                      {run.status}
-                    </span>
-                    <span className="text-[10px] text-muted-foreground">
-                      {formatRelativeTime(run.startedAtMs)}
-                    </span>
-                    <span className="text-[10px] text-muted-foreground">
-                      {formatDuration(run.durationMs)}
-                    </span>
-                    {run.error ? (
-                      <span className="min-w-0 flex-1 truncate text-[10px] text-destructive">
-                        {run.error}
-                      </span>
-                    ) : null}
-                  </div>
-                );
-              })}
-            </div>
-          ) : null}
-        </div>
+        <RunHistorySection
+          runs={runs}
+          loading={runsLoading}
+          error={runsError}
+          onRetry={handleRetryRuns}
+        />
       </div>
     </div>
   );

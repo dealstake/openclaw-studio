@@ -1,0 +1,120 @@
+"use client";
+
+import { memo } from "react";
+import {
+  AlertCircle,
+  CheckCircle2,
+  SkipForward,
+} from "lucide-react";
+import { formatRelativeTime } from "@/lib/text/time";
+import { formatDurationCompact as formatDuration } from "@/lib/text/time";
+import { Skeleton } from "@/components/Skeleton";
+import { SectionLabel } from "@/components/SectionLabel";
+import type { CronRunEntry } from "@/lib/cron/types";
+
+// ─── Status config ───────────────────────────────────────────────────────────
+
+const RUN_STATUS_ICON: Record<string, typeof CheckCircle2> = {
+  ok: CheckCircle2,
+  error: AlertCircle,
+  skipped: SkipForward,
+};
+
+const RUN_STATUS_CLASS: Record<string, string> = {
+  ok: "text-emerald-400",
+  error: "text-destructive",
+  skipped: "text-muted-foreground",
+};
+
+// ─── Props ───────────────────────────────────────────────────────────────────
+
+interface RunHistorySectionProps {
+  runs: CronRunEntry[];
+  loading: boolean;
+  error: string | null;
+  onRetry: () => void;
+}
+
+// ─── Component ───────────────────────────────────────────────────────────────
+
+export const RunHistorySection = memo(function RunHistorySection({
+  runs,
+  loading,
+  error,
+  onRetry,
+}: RunHistorySectionProps) {
+  return (
+    <div className="px-4 py-3">
+      <SectionLabel>Run History</SectionLabel>
+
+      {loading ? (
+        <div className="mt-2 flex flex-col gap-1.5">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div
+              key={i}
+              className="flex items-center gap-2 rounded-md border border-border/60 bg-card/50 px-2 py-1.5"
+            >
+              <Skeleton className="h-3 w-3 rounded-full" />
+              <Skeleton className="h-2.5 w-20" />
+              <Skeleton className="h-2.5 w-12" />
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      {error ? (
+        <div className="mt-2 flex items-center gap-2 rounded-md border border-destructive bg-destructive/10 px-3 py-2 text-[10px] text-destructive">
+          <span className="flex-1">{error}</span>
+          <button
+            type="button"
+            className="shrink-0 rounded border border-destructive/40 px-2 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.08em] transition hover:bg-destructive/20"
+            onClick={onRetry}
+          >
+            Retry
+          </button>
+        </div>
+      ) : null}
+
+      {!loading && !error && runs.length === 0 ? (
+        <div className="mt-2 text-[11px] text-muted-foreground">
+          No run history available.
+        </div>
+      ) : null}
+
+      {!loading && runs.length > 0 ? (
+        <div className="mt-2 flex flex-col gap-1">
+          {runs.map((run) => {
+            const StatusIcon =
+              RUN_STATUS_ICON[run.status] ?? SkipForward;
+            const statusClass =
+              RUN_STATUS_CLASS[run.status] ?? "text-muted-foreground";
+            return (
+              <div
+                key={run.id}
+                className="flex items-center gap-2 rounded-md border border-border/60 bg-card/50 px-2 py-1.5"
+              >
+                <StatusIcon
+                  className={`h-3 w-3 shrink-0 ${statusClass}`}
+                />
+                <span className="font-mono text-[9px] font-semibold uppercase tracking-[0.08em] text-foreground">
+                  {run.status}
+                </span>
+                <span className="text-[10px] text-muted-foreground">
+                  {formatRelativeTime(run.startedAtMs)}
+                </span>
+                <span className="text-[10px] text-muted-foreground">
+                  {formatDuration(run.durationMs)}
+                </span>
+                {run.error ? (
+                  <span className="min-w-0 flex-1 truncate text-[10px] text-destructive">
+                    {run.error}
+                  </span>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
+  );
+});
