@@ -13,7 +13,7 @@ import { HeaderBar } from "@/features/agents/components/HeaderBar";
 import { ConnectionPanel } from "@/features/agents/components/ConnectionPanel";
 import { EmptyStatePanel } from "@/features/agents/components/EmptyStatePanel";
 import { BrandMark } from "@/components/brand/BrandMark";
-import { X } from "lucide-react";
+import { Users, X } from "lucide-react";
 import {
   buildAgentInstruction,
 } from "@/lib/text/message-extract";
@@ -1673,6 +1673,7 @@ const AgentStudioPage = () => {
                 presenceAgentIds={presenceAgentIds}
                 subAgentSessions={subAgentSessions}
                 agentTokenInfo={agentTokenInfo}
+                totalAgentCount={agents.length}
               />
             </div>
             <div
@@ -1704,16 +1705,19 @@ const AgentStudioPage = () => {
                   onDismissContinuationBanner={stableChatOnDismissContinuation}
                 />
               ) : (
-                <EmptyStatePanel
-                  title={hasAnyAgents ? "No agents match this filter." : "No agents available."}
-                  description={
-                    hasAnyAgents
-                      ? undefined
-                      : "Use New Agent in the sidebar to add your first agent."
-                  }
-                  fillHeight
-                  className="items-center p-6 text-center text-sm"
-                />
+                <div className="flex h-full w-full flex-col items-center justify-center gap-3 text-center text-muted-foreground">
+                  <Users className="h-10 w-10 opacity-30" />
+                  <p className="text-sm">
+                    {hasAnyAgents
+                      ? "No agents match this filter."
+                      : "No agents available."}
+                  </p>
+                  {!hasAnyAgents && (
+                    <p className="text-xs text-muted-foreground/70">
+                      Use New Agent in the sidebar to add your first agent.
+                    </p>
+                  )}
+                </div>
               )}
             </div>
             {/* Expanded panel modal */}

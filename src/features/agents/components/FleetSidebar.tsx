@@ -30,6 +30,8 @@ type FleetSidebarProps = {
   presenceAgentIds?: Set<string>;
   subAgentSessions?: Map<string, SubAgentEntry[]>;
   agentTokenInfo?: Map<string, AgentTokenInfo>;
+  /** Total agent count before filtering — used to distinguish "no agents" from "no matches". */
+  totalAgentCount?: number;
 };
 
 const FILTER_OPTIONS: Array<{ value: FocusFilter; label: string; testId: string }> = [
@@ -150,7 +152,10 @@ export const FleetSidebar = memo(function FleetSidebar({
   presenceAgentIds,
   subAgentSessions,
   agentTokenInfo,
+  totalAgentCount = 0,
 }: FleetSidebarProps) {
+  const isFilterActive = filter !== "all";
+  const isFilterEmpty = agents.length === 0 && isFilterActive && totalAgentCount > 0;
   return (
     <aside
       className="glass-panel fade-up-delay relative flex h-full w-full min-w-0 flex-col gap-3 p-3"
@@ -178,7 +183,7 @@ export const FleetSidebar = memo(function FleetSidebar({
               type="button"
               data-testid={option.testId}
               aria-pressed={active}
-              className={`shrink-0 rounded-md border px-2.5 py-2 ${sectionLabelClass} transition ${
+              className={`shrink-0 whitespace-nowrap rounded-md border px-2.5 py-2 ${sectionLabelClass} transition ${
                 active
                   ? "border-primary/60 bg-primary/15 text-foreground shadow-xs"
                   : "border-border/80 bg-card/65 text-muted-foreground hover:border-border hover:bg-muted/70"
@@ -193,7 +198,11 @@ export const FleetSidebar = memo(function FleetSidebar({
 
       <div className="min-h-0 flex-1 overflow-auto">
         {agents.length === 0 ? (
-          <EmptyStatePanel title="No agents available." compact className="p-3 text-xs" />
+          <EmptyStatePanel
+            title={isFilterEmpty ? "No agents match this filter." : "No agents available."}
+            compact
+            className="p-3 text-xs"
+          />
         ) : (
           <div className="flex flex-col gap-2">
             {agents.map((agent) => {
