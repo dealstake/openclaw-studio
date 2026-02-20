@@ -6,6 +6,7 @@ import {
   listCronJobs,
   removeCronJob,
   runCronJobNow,
+  updateCronJob,
 } from "@/lib/cron/types";
 
 const sortCronJobsByUpdatedAt = (jobs: CronJobSummary[]) =>
@@ -17,6 +18,7 @@ export const useAllCronJobs = (client: GatewayClient, status: GatewayStatus) => 
   const [allCronError, setAllCronError] = useState<string | null>(null);
   const [allCronRunBusyJobId, setAllCronRunBusyJobId] = useState<string | null>(null);
   const [allCronDeleteBusyJobId, setAllCronDeleteBusyJobId] = useState<string | null>(null);
+  const [allCronToggleBusyJobId, setAllCronToggleBusyJobId] = useState<string | null>(null);
 
   const loadingRef = useRef(false);
 
@@ -76,14 +78,39 @@ export const useAllCronJobs = (client: GatewayClient, status: GatewayStatus) => 
     [client, allCronRunBusyJobId, allCronDeleteBusyJobId, loadAllCronJobs]
   );
 
+  const handleAllCronToggleEnabled = useCallback(
+    async (jobId: string) => {
+      if (allCronToggleBusyJobId) return;
+      setAllCronToggleBusyJobId(jobId);
+      setAllCronError(null);
+      try {
+        const job = allCronJobs.find((j) => j.id === jobId);
+        if (!job) return;
+        await updateCronJob(client, jobId, { enabled: !job.enabled });
+        // Optimistically update local state
+        setAllCronJobs((jobs) =>
+          jobs.map((j) => (j.id === jobId ? { ...j, enabled: !j.enabled } : j))
+        );
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Failed to toggle cron job.";
+        setAllCronError(message);
+      } finally {
+        setAllCronToggleBusyJobId(null);
+      }
+    },
+    [client, allCronJobs, allCronToggleBusyJobId]
+  );
+
   return {
     allCronJobs,
     allCronLoading,
     allCronError,
     allCronRunBusyJobId,
     allCronDeleteBusyJobId,
+    allCronToggleBusyJobId,
     loadAllCronJobs,
     handleAllCronRunJob,
     handleAllCronDeleteJob,
+    handleAllCronToggleEnabled,
   };
 };

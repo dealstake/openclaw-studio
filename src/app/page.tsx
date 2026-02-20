@@ -266,7 +266,7 @@ const AgentStudioPage = () => {
   const {
     allCronJobs, allCronLoading, allCronError,
     allCronRunBusyJobId, allCronDeleteBusyJobId,
-    loadAllCronJobs, handleAllCronRunJob, handleAllCronDeleteJob,
+    loadAllCronJobs, handleAllCronRunJob, handleAllCronDeleteJob, allCronToggleBusyJobId, handleAllCronToggleEnabled,
   } = useAllCronJobs(client, status);
 
   useNotificationEvaluator(client, status);
@@ -1839,8 +1839,10 @@ const AgentStudioPage = () => {
                         error={allCronError}
                         runBusyJobId={allCronRunBusyJobId}
                         deleteBusyJobId={allCronDeleteBusyJobId}
+                        toggleBusyJobId={allCronToggleBusyJobId}
                         onRunJob={(jobId) => { void handleAllCronRunJob(jobId); }}
                         onDeleteJob={(jobId) => { void handleAllCronDeleteJob(jobId); }}
+                        onToggleEnabled={(jobId) => { void handleAllCronToggleEnabled(jobId); }}
                         onRefresh={() => { void loadAllCronJobs(); }}
                       />
                     )}
@@ -2051,11 +2053,15 @@ const AgentStudioPage = () => {
                       error={allCronError}
                       runBusyJobId={allCronRunBusyJobId}
                       deleteBusyJobId={allCronDeleteBusyJobId}
+                      toggleBusyJobId={allCronToggleBusyJobId}
                       onRunJob={(jobId) => {
                         void handleAllCronRunJob(jobId);
                       }}
                       onDeleteJob={(jobId) => {
                         void handleAllCronDeleteJob(jobId);
+                      }}
+                      onToggleEnabled={(jobId) => {
+                        void handleAllCronToggleEnabled(jobId);
                       }}
                       onRefresh={() => {
                         void loadAllCronJobs();
