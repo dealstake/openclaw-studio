@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useEffect, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import {
   X,
   ArrowLeft,
@@ -12,13 +12,15 @@ import {
 } from "lucide-react";
 import type { TaskType, CreateTaskPayload } from "@/features/tasks/types";
 import { useTaskWizard } from "@/features/tasks/hooks/useTaskWizard";
-import { WizardRuntimeProvider } from "./WizardRuntimeProvider";
-import { WizardThread } from "@/components/assistant-ui/wizard-thread";
+import { WizardChat } from "@/components/chat/WizardChat";
+import { createConfigExtractor } from "@/components/chat/wizardConfigExtractor";
+import { buildSystemPrompt } from "@/features/tasks/lib/wizard-prompts";
+import { WIZARD_STARTERS } from "@/features/tasks/lib/wizardStarters";
 import { AgentCreationWizard } from "./AgentCreationWizard";
 import { TaskTemplatesSheet } from "./TaskTemplatesSheet";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import { SectionLabel } from "@/components/SectionLabel";
+import type { WizardTaskConfig } from "@/features/tasks/types";
 
 // ─── Type selector cards ─────────────────────────────────────────────────────
 
@@ -72,19 +74,30 @@ interface TaskWizardModalProps {
 export const TaskWizardModal = memo(function TaskWizardModal({
   open,
   agents,
-  creating,
+  creating: _creating,
   client,
   onClose,
   onCreateTask,
   onAgentCreated,
 }: TaskWizardModalProps) {
   const wizard = useTaskWizard();
-  const [confirmBusy, setConfirmBusy] = useState(false);
+  const taskConfigExtractor = useMemo(
+    () => createConfigExtractor("task"),
+    [],
+  );
+  const handleConfigExtracted = useCallback(
+    (config: unknown) => {
+      wizard.setTaskConfig(config as WizardTaskConfig);
+    },
+    [wizard],
+  );
+  void _creating; // Kept for interface compat; WizardChat handles its own state
   const [showAgentCreation, setShowAgentCreation] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
   const [localAgents, setLocalAgents] = useState<string[]>(agents);
 
-  const [error, setError] = useState<string | null>(null);
+  const [error, _setError] = useState<string | null>(null);
+  void _setError; // Error state now handled by WizardChat internally
 
   // Mount animation: delay "visible" state by one frame so CSS transitions fire
   const [visible, setVisible] = useState(false);
@@ -118,21 +131,6 @@ export const TaskWizardModal = memo(function TaskWizardModal({
       document.body.style.overflow = prev;
     };
   }, [open]);
-
-  const handleConfirm = useCallback(async () => {
-    const payload = wizard.confirm();
-    if (!payload) return;
-    setConfirmBusy(true);
-    setError(null);
-    try {
-      await onCreateTask(payload);
-      wizard.reset();
-      onClose();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create task.");
-      setConfirmBusy(false);
-    }
-  }, [wizard, onCreateTask, onClose]);
 
   const handleClose = useCallback(() => {
     wizard.reset();
@@ -259,19 +257,15 @@ export const TaskWizardModal = memo(function TaskWizardModal({
           {wizard.step === "chat" &&
             wizard.taskType &&
             !showAgentCreation && (
-              <TooltipProvider>
-                <WizardRuntimeProvider
-                  taskType={wizard.taskType}
-                  agents={localAgents}
-                >
-                  <WizardThread
-                    taskType={wizard.taskType}
-                    onTaskConfig={wizard.setTaskConfig}
-                    onConfirm={handleConfirm}
-                    confirmBusy={confirmBusy || creating}
-                  />
-                </WizardRuntimeProvider>
-              </TooltipProvider>
+              <WizardChat
+                client={client}
+                agentId={localAgents[0] ?? "main"}
+                wizardType="task"
+                systemPrompt={buildSystemPrompt(wizard.taskType, localAgents)}
+                starters={WIZARD_STARTERS[wizard.taskType]}
+                configExtractor={taskConfigExtractor}
+                onConfigExtracted={handleConfigExtracted}
+              />
             )}
           {wizard.step === "confirm" && !showAgentCreation && (
             <div className="h-full overflow-y-auto">
