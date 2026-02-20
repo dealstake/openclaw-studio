@@ -68,6 +68,7 @@ const SessionsPanel = lazy(() => import("@/features/sessions/components/Sessions
 const CronPanel = lazy(() => import("@/features/cron/components/CronPanel").then(m => ({ default: m.CronPanel })));
 const UsagePanel = lazy(() => import("@/features/usage/components/UsagePanel").then(m => ({ default: m.UsagePanel })));
 import { WorkspaceExplorerPanel } from "@/features/workspace/components/WorkspaceExplorerPanel";
+import { ActivityDrawer } from "@/features/activity/components/ActivityDrawer";
 import { StatusBar } from "@/features/status/components/StatusBar";
 import { TraceViewer } from "@/features/sessions/components/TraceViewer";
 import { useChannelsStatus } from "@/features/channels/hooks/useChannelsStatus";
@@ -1437,6 +1438,16 @@ const AgentStudioPage = () => {
   const connectionPanelVisible = showConnectionPanel;
   const hasAnyAgents = agents.length > 0;
   const showFleetLayout = hasAnyAgents || status === "connected";
+
+  // Hide activity drawer on viewports < 1280px (xl breakpoint)
+  const [isXlViewport, setIsXlViewport] = useState(false);
+  useEffect(() => {
+    const mql = window.matchMedia("(min-width: 1280px)");
+    setIsXlViewport(mql.matches);
+    const handler = (e: MediaQueryListEvent) => setIsXlViewport(e.matches);
+    mql.addEventListener("change", handler);
+    return () => mql.removeEventListener("change", handler);
+  }, []);
   const configMutationStatusLine = activeConfigMutation
     ? `Applying config change: ${activeConfigMutation.label}`
     : queuedConfigMutationCount > 0
@@ -1680,45 +1691,47 @@ const AgentStudioPage = () => {
               className="glass-panel flex min-h-0 flex-1 overflow-hidden p-2 sm:p-3"
               data-testid="focused-agent-panel"
             >
-              {focusedAgent ? (
-                <AgentChatPanel
-                  agent={focusedAgent}
-                  isSelected={false}
-                  canSend={status === "connected"}
-                  models={gatewayModels}
-                  stopBusy={stopBusyAgentId === focusedAgent.agentId}
-                  onOpenSettings={stableChatOnOpenSettings}
-                  onModelChange={stableChatOnModelChange}
-                  onThinkingChange={stableChatOnThinkingChange}
-                  onDraftChange={stableChatOnDraftChange}
-                  onSend={stableChatOnSend}
-                  onStopRun={stableChatOnStopRun}
-                  onAvatarShuffle={stableChatOnAvatarShuffle}
-                  onNewSession={stableChatOnNewSession}
-                  tokenUsed={stableChatTokenUsed}
-                  tokenLimit={stableChatTokenLimit}
-                  viewingSessionKey={viewingSessionKey}
-                  viewingSessionHistory={viewingSessionHistory}
-                  viewingSessionLoading={viewingSessionLoading}
-                  onExitSessionView={stableChatOnExitSessionView}
-                  sessionContinued={sessionContinuedAgents.has(focusedAgent.agentId)}
-                  onDismissContinuationBanner={stableChatOnDismissContinuation}
-                />
-              ) : (
-                <div className="flex h-full w-full flex-col items-center justify-center gap-3 text-center text-muted-foreground">
-                  <Users className="h-10 w-10 opacity-30" />
-                  <p className="text-sm">
-                    {hasAnyAgents
-                      ? "No agents match this filter."
-                      : "No agents available."}
-                  </p>
-                  {!hasAnyAgents && (
-                    <p className="text-xs text-muted-foreground/70">
-                      Use New Agent in the sidebar to add your first agent.
+              <ActivityDrawer hidden={!isXlViewport}>
+                {focusedAgent ? (
+                  <AgentChatPanel
+                    agent={focusedAgent}
+                    isSelected={false}
+                    canSend={status === "connected"}
+                    models={gatewayModels}
+                    stopBusy={stopBusyAgentId === focusedAgent.agentId}
+                    onOpenSettings={stableChatOnOpenSettings}
+                    onModelChange={stableChatOnModelChange}
+                    onThinkingChange={stableChatOnThinkingChange}
+                    onDraftChange={stableChatOnDraftChange}
+                    onSend={stableChatOnSend}
+                    onStopRun={stableChatOnStopRun}
+                    onAvatarShuffle={stableChatOnAvatarShuffle}
+                    onNewSession={stableChatOnNewSession}
+                    tokenUsed={stableChatTokenUsed}
+                    tokenLimit={stableChatTokenLimit}
+                    viewingSessionKey={viewingSessionKey}
+                    viewingSessionHistory={viewingSessionHistory}
+                    viewingSessionLoading={viewingSessionLoading}
+                    onExitSessionView={stableChatOnExitSessionView}
+                    sessionContinued={sessionContinuedAgents.has(focusedAgent.agentId)}
+                    onDismissContinuationBanner={stableChatOnDismissContinuation}
+                  />
+                ) : (
+                  <div className="flex h-full w-full flex-col items-center justify-center gap-3 text-center text-muted-foreground">
+                    <Users className="h-10 w-10 opacity-30" />
+                    <p className="text-sm">
+                      {hasAnyAgents
+                        ? "No agents match this filter."
+                        : "No agents available."}
                     </p>
-                  )}
-                </div>
-              )}
+                    {!hasAnyAgents && (
+                      <p className="text-xs text-muted-foreground/70">
+                        Use New Agent in the sidebar to add your first agent.
+                      </p>
+                    )}
+                  </div>
+                )}
+              </ActivityDrawer>
             </div>
             {/* Expanded panel modal */}
             {expandedTab && (
