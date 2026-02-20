@@ -8,13 +8,14 @@ import {
   AgentBrainPanel,
   AgentSettingsPanel,
 } from "@/features/agents/components/AgentInspectPanels";
-import { FleetSidebar, type SubAgentEntry, type AgentTokenInfo } from "@/features/agents/components/FleetSidebar";
+import type { SubAgentEntry, AgentTokenInfo } from "@/features/agents/components/FleetSidebar";
+import { SessionHistorySidebar } from "@/features/sessions/components/SessionHistorySidebar";
 import type { BreadcrumbAgent } from "@/features/agents/components/AgentBreadcrumb";
 import { HeaderBar } from "@/features/agents/components/HeaderBar";
 import { ConnectionPanel } from "@/features/agents/components/ConnectionPanel";
 import { EmptyStatePanel } from "@/features/agents/components/EmptyStatePanel";
 import { BrandMark } from "@/components/brand/BrandMark";
-import { Users, X } from "lucide-react";
+import { Users } from "lucide-react";
 import {
   buildAgentInstruction,
 } from "@/lib/text/message-extract";
@@ -188,6 +189,7 @@ const AgentStudioPage = () => {
   } = useGatewayModels(client, status);
   const [stopBusyAgentId, setStopBusyAgentId] = useState<string | null>(null);
   const [mobilePane, setMobilePane] = useState<MobilePane>("chat");
+  const [sessionSidebarCollapsed, setSessionSidebarCollapsed] = useState(false);
   /** "agent" = show ContextPanel (Tasks/Brain/Settings), "files" = show Files */
   const [contextMode, setContextMode] = useState<"agent" | "files">("agent");
   const [contextTab, setContextTab] = useState<ContextTab>("projects");
@@ -255,7 +257,7 @@ const AgentStudioPage = () => {
   } = useChannelsStatus(client, status);
 
   const {
-    gatewayVersion, gatewayUptime, presenceAgentIds,
+    gatewayVersion, gatewayUptime,
     loadGatewayStatus, parsePresenceFromStatus, resetPresence,
   } = useGatewayStatus(client, status);
 
@@ -375,6 +377,7 @@ const AgentStudioPage = () => {
   const selectedBrainAgentId = useMemo(() => {
     return focusedAgent?.agentId ?? agents[0]?.agentId ?? null;
   }, [agents, focusedAgent]);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- kept for Phase 6 (FleetSidebar removal)
   const subAgentSessions = useMemo(() => {
     const map = new Map<string, SubAgentEntry[]>();
     for (const session of allSessions) {
@@ -420,6 +423,7 @@ const AgentStudioPage = () => {
     [gatewayModels]
   );
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- kept for Phase 6 (FleetSidebar removal)
   const agentTokenInfo = useMemo(() => {
     const map = new Map<string, AgentTokenInfo>();
     if (focusedAgent) {
@@ -461,6 +465,7 @@ const AgentStudioPage = () => {
 
   refreshHeartbeatLatestUpdateRef.current = refreshHeartbeatLatestUpdate;
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- kept for Phase 6 (FleetSidebar removal)
   const handleFocusFilterChange = useCallback(
     (next: FocusFilter) => {
       flushPendingDraft(focusedAgent?.agentId ?? null);
@@ -1657,7 +1662,6 @@ const AgentStudioPage = () => {
             filesDisabled={false}
             channelsSnapshot={channelsSnapshot}
             channelsLoading={channelsLoading}
-            onOpenFleet={() => setMobilePane("fleet")}
             onOpenContext={() => setMobilePane("context")}
             agents={breadcrumbAgents}
             selectedAgentId={focusedAgentId}
@@ -1704,40 +1708,24 @@ const AgentStudioPage = () => {
 
         {showFleetLayout ? (
           <div className="flex min-h-0 flex-1 flex-col gap-4 xl:flex-row">
-            {/* Backdrop for mobile drawers */}
+            {/* Backdrop for mobile context drawer */}
             {mobilePane !== "chat" ? (
               <div
                 className="fixed inset-0 z-40 bg-black/50 xl:hidden"
                 onClick={switchToChat}
               />
             ) : null}
-            <div
-              className={`fixed inset-y-0 left-0 z-50 w-[280px] transform transition-transform duration-300 xl:static xl:flex xl:flex-[0_0_auto] xl:min-h-0 xl:w-[280px] xl:translate-x-0 ${mobilePane === "fleet" ? "translate-x-0" : "-translate-x-full"}`}
-            >
-              <button
-                type="button"
-                aria-label="Close fleet sidebar"
-                className="absolute right-3 top-3 z-10 flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition xl:hidden"
-                onClick={switchToChat}
-              >
-                <X className="h-4 w-4" />
-              </button>
-              <FleetSidebar
-                agents={filteredAgents}
-                selectedAgentId={focusedAgent?.agentId ?? state.selectedAgentId}
-                filter={focusFilter}
-                onFilterChange={handleFocusFilterChange}
-                onCreateAgent={() => setShowAgentWizard(true)}
-                createDisabled={status !== "connected" || state.loading}
-                onSelectAgent={(agentId) => {
-                  flushPendingDraft(focusedAgent?.agentId ?? null);
-                  dispatch({ type: "selectAgent", agentId });
-                  setMobilePane("chat");
-                }}
-                presenceAgentIds={presenceAgentIds}
-                subAgentSessions={subAgentSessions}
-                agentTokenInfo={agentTokenInfo}
-                totalAgentCount={agents.length}
+            {/* Session history sidebar — desktop only, collapsible */}
+            <div className="hidden lg:flex lg:flex-[0_0_auto] lg:min-h-0">
+              <SessionHistorySidebar
+                client={client}
+                status={status}
+                agentId={focusedAgentId}
+                activeSessionKey={viewingSessionKey ?? (focusedAgent ? `${focusedAgent.agentId}:main` : null)}
+                onSelectSession={(key) => setViewingSessionKey(key === `${focusedAgentId}:main` ? null : key)}
+                onNewSession={stableChatOnNewSession}
+                collapsed={sessionSidebarCollapsed}
+                onToggleCollapse={() => setSessionSidebarCollapsed((p) => !p)}
               />
             </div>
             <div

@@ -61,7 +61,7 @@ export function useAgentLifecycle(params: {
   setFocusFilter: (filter: "all" | "needs-attention" | "running" | "idle") => void;
   focusFilterTouchedRef: React.RefObject<boolean>;
   setSettingsAgentId: (id: string | null) => void;
-  setMobilePane: (pane: "fleet" | "chat" | "context") => void;
+  setMobilePane: (pane: "chat" | "context") => void;
 }) {
   const {
     client,

@@ -22,8 +22,6 @@ type HeaderBarProps = {
   filesDisabled?: boolean;
   channelsSnapshot?: ChannelsStatusSnapshot | null;
   channelsLoading?: boolean;
-  /** @deprecated Use agents breadcrumb instead */
-  onOpenFleet?: () => void;
   onOpenContext?: () => void;
   /** Agent breadcrumb props */
   agents?: BreadcrumbAgent[];
@@ -117,7 +115,6 @@ export const HeaderBar = memo(function HeaderBar({
   filesDisabled = false,
   channelsSnapshot = null,
   channelsLoading = false,
-  onOpenFleet,
   onOpenContext,
   agents,
   selectedAgentId,
@@ -147,16 +144,7 @@ export const HeaderBar = memo(function HeaderBar({
       <div className="pointer-events-none absolute inset-0 header-gradient-overlay opacity-55" />
       <div className="relative flex items-center gap-4">
         <div className="flex min-w-0 flex-1 items-center gap-3">
-          {/* Mobile fleet menu — kept for backward compat, hidden when breadcrumb is available */}
-          {onOpenFleet && !agents?.length ? (
-            <HeaderIconButton
-              onClick={onOpenFleet}
-              aria-label="Open fleet menu"
-              className="md:hidden"
-            >
-              <svg className="h-[15px] w-[15px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-            </HeaderIconButton>
-          ) : null}
+          {/* Agent breadcrumb replaces the old fleet hamburger menu */}
           <BrandMark size="sm" />
           <ConnectionDot
             status={status}

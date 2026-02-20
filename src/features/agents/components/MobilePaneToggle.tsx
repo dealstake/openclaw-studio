@@ -1,1 +1,1 @@
-export type MobilePane = "fleet" | "chat" | "context";
+export type MobilePane = "chat" | "context";
