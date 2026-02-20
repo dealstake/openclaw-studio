@@ -6,7 +6,7 @@ import { ChevronDown, Maximize2 } from "lucide-react";
 import { PanelIconButton } from "@/components/PanelIconButton";
 import { sectionLabelClass } from "@/components/SectionLabel";
 
-export type ContextTab = "projects" | "activity" | "tasks" | "brain" | "settings" | "channels" | "sessions" | "usage" | "cron" | "workspace";
+export type ContextTab = "projects" | "tasks" | "brain" | "settings" | "channels" | "sessions" | "usage" | "cron" | "workspace";
 
 interface ContextPanelProps {
   activeTab: ContextTab;
@@ -14,7 +14,6 @@ interface ContextPanelProps {
   onExpandToggle?: () => void;
   expandedTab?: ContextTab | null;
   projectsContent?: ReactNode;
-  activityContent?: ReactNode;
   tasksContent: ReactNode;
   brainContent: ReactNode;
   settingsContent: ReactNode;
@@ -27,7 +26,6 @@ interface ContextPanelProps {
 
 export const TAB_OPTIONS: Array<{ value: ContextTab; label: string }> = [
   { value: "projects", label: "Projects" },
-  { value: "activity", label: "Activity" },
   { value: "tasks", label: "Tasks" },
   { value: "brain", label: "Brain" },
   { value: "workspace", label: "Files" },
@@ -47,7 +45,6 @@ export const ContextPanel = memo(function ContextPanel({
   onExpandToggle,
   expandedTab,
   projectsContent,
-  activityContent,
   tasksContent,
   brainContent,
   settingsContent,
@@ -219,11 +216,6 @@ export const ContextPanel = memo(function ContextPanel({
             {effectiveMountedTabs.has("projects") && (
               <div role="tabpanel" className={activeTab === "projects" ? "flex h-full w-full" : "hidden"}>
                 {projectsContent ?? null}
-              </div>
-            )}
-            {effectiveMountedTabs.has("activity") && (
-              <div role="tabpanel" className={activeTab === "activity" ? "flex h-full w-full" : "hidden"}>
-                {activityContent ?? null}
               </div>
             )}
             {effectiveMountedTabs.has("tasks") && (

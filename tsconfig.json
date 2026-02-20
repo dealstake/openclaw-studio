@@ -39,6 +39,7 @@
   "exclude": [
     "node_modules",
     ".next",
-    "src/**/lib/_archive"
+    "src/**/lib/_archive",
+    "src/**/_archived"
   ]
 }

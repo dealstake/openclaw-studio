@@ -50,7 +50,6 @@ import {
 import { ArtifactsPanel } from "@/features/artifacts/components/ArtifactsPanel";
 import { TasksPanel } from "@/features/tasks/components/TasksPanel";
 import { ProjectsPanel } from "@/features/projects/components/ProjectsPanel";
-import { ActivityPanel } from "@/features/activity/components/ActivityPanel";
 const TaskWizardModal = lazy(() => import("@/features/tasks/components/TaskWizardModal").then(m => ({ default: m.TaskWizardModal })));
 const AgentWizardModal = lazy(() => import("@/features/agents/components/AgentWizardModal").then(m => ({ default: m.AgentWizardModal })));
 import { useAgentTasks } from "@/features/tasks/hooks/useAgentTasks";
@@ -76,6 +75,7 @@ import { TraceViewer } from "@/features/sessions/components/TraceViewer";
 import { useChannelsStatus } from "@/features/channels/hooks/useChannelsStatus";
 import { useAllSessions } from "@/features/sessions/hooks/useAllSessions";
 import { useAllCronJobs } from "@/features/cron/hooks/useAllCronJobs";
+import type { CronJobSummary } from "@/lib/cron/types";
 import { useNotificationEvaluator } from "@/features/notifications/hooks/useNotificationEvaluator";
 import { useExecApprovals } from "@/features/exec-approvals/hooks/useExecApprovals";
 import { useSessionUsage } from "@/features/sessions/hooks/useSessionUsage";
@@ -162,6 +162,7 @@ const AgentStudioPage = () => {
   // Initialized with no-ops; updated after their hooks define them below.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const loadAllCronJobsRef = useRef<() => Promise<any>>(() => Promise.resolve());
+  const allCronJobsRef = useRef<CronJobSummary[]>([]);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const loadTasksRef = useRef<() => Promise<any>>(() => Promise.resolve());
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -279,6 +280,7 @@ const AgentStudioPage = () => {
 
   // Keep load-function refs current (avoids stale closures)
   loadAllCronJobsRef.current = loadAllCronJobs;
+  allCronJobsRef.current = allCronJobs;
   loadAllSessionsRef.current = loadAllSessions;
   loadChannelsStatusRef.current = loadChannelsStatus;
   // loadCumulativeUsageRef removed — sessions.usage aggregate eliminated (P0 perf fix)
@@ -1383,7 +1385,15 @@ const AgentStudioPage = () => {
         setCronEventTick((prev) => prev + 1);
       },
       onActivityEvent: (sessionKey, data) => {
-        upsertLiveSession(sessionKey, { sessionKey, ...data });
+        // Resolve task name from cron job ID in session key (format: agent:<id>:cron:<jobId>:<ts>)
+        let taskName: string | undefined;
+        const cronMatch = sessionKey.match(/:cron:([^:]+)/);
+        if (cronMatch) {
+          const jobId = cronMatch[1];
+          const job = allCronJobsRef.current.find((j) => j.id === jobId);
+          if (job) taskName = job.name;
+        }
+        upsertLiveSession(sessionKey, { sessionKey, ...data, ...(taskName ? { taskName } : {}) });
       },
       onSystemEvent: (event) => {
         addSystemEvent({
@@ -1761,9 +1771,6 @@ const AgentStudioPage = () => {
                     {expandedTab === "projects" && (
                       <ProjectsPanel agentId={focusedAgent?.agentId ?? null} client={client} isTabActive eventTick={cronEventTick} />
                     )}
-                    {expandedTab === "activity" && (
-                      <ActivityPanel client={client} status={status} agentId={focusedAgent?.agentId ?? null} />
-                    )}
                     {expandedTab === "tasks" && (
                       <TasksPanel
                         isSelected
@@ -1956,13 +1963,6 @@ const AgentStudioPage = () => {
                         eventTick={cronEventTick}
                       />
                     </div>
-                  }
-                  activityContent={
-                    <ActivityPanel
-                      client={client}
-                      status={status}
-                      agentId={focusedAgent?.agentId ?? null}
-                    />
                   }
                   tasksContent={
                     <div className="flex h-full w-full flex-col overflow-y-auto">
