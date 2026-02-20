@@ -350,7 +350,7 @@ const AgentStudioPage = () => {
     cronRunBusyJobId, cronDeleteBusyJobId,
     settingsHeartbeats, settingsHeartbeatLoading, settingsHeartbeatError,
     heartbeatRunBusyId, heartbeatDeleteBusyId,
-    handleRunCronJob, handleDeleteCronJob,
+    handleRunCronJob, handleDeleteCronJob, cronToggleBusyJobId, handleToggleCronJob,
     handleRunHeartbeat, handleDeleteHeartbeat,
     reloadCronJobs, reloadHeartbeats,
   } = useSettingsPanel({ client, status, agents });
@@ -2003,6 +2003,8 @@ const AgentStudioPage = () => {
                         cronDeleteBusyJobId={cronDeleteBusyJobId}
                         onRunCronJob={(jobId) => handleRunCronJob(settingsAgent.agentId, jobId)}
                         onDeleteCronJob={(jobId) => handleDeleteCronJob(settingsAgent.agentId, jobId)}
+                        cronToggleBusyJobId={cronToggleBusyJobId}
+                        onToggleCronJob={(jobId, enabled) => handleToggleCronJob(settingsAgent.agentId, jobId, enabled)}
                         heartbeats={settingsHeartbeats}
                         heartbeatLoading={settingsHeartbeatLoading}
                         heartbeatError={settingsHeartbeatError}
@@ -2253,6 +2255,8 @@ const AgentStudioPage = () => {
                         cronDeleteBusyJobId={cronDeleteBusyJobId}
                         onRunCronJob={(jobId) => handleRunCronJob(settingsAgent.agentId, jobId)}
                         onDeleteCronJob={(jobId) => handleDeleteCronJob(settingsAgent.agentId, jobId)}
+                        cronToggleBusyJobId={cronToggleBusyJobId}
+                        onToggleCronJob={(jobId, enabled) => handleToggleCronJob(settingsAgent.agentId, jobId, enabled)}
                         heartbeats={settingsHeartbeats}
                         heartbeatLoading={settingsHeartbeatLoading}
                         heartbeatError={settingsHeartbeatError}

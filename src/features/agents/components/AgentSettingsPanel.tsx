@@ -1,10 +1,11 @@
 "use client";
 
-import { memo, useEffect, useState } from "react";
+import { memo, useCallback, useEffect, useState } from "react";
 import { AlertTriangle, Copy } from "lucide-react";
 
 import type { AgentState } from "@/features/agents/state/store";
 import { formatCronPayload, formatCronSchedule, type CronJobSummary } from "@/lib/cron/types";
+import { formatRelativeTime } from "@/lib/text/time";
 import type { AgentHeartbeatSummary } from "@/lib/gateway/agentConfig";
 import { AgentInspectHeader } from "./AgentInspectHeader";
 import { SettingsListSection } from "./SettingsListSection";
@@ -42,6 +43,8 @@ type AgentSettingsPanelProps = {
   cronDeleteBusyJobId: string | null;
   onRunCronJob: (jobId: string) => Promise<void> | void;
   onDeleteCronJob: (jobId: string) => Promise<void> | void;
+  cronToggleBusyJobId: string | null;
+  onToggleCronJob: (jobId: string, enabled: boolean) => Promise<void> | void;
   onRetryCron?: () => void;
   heartbeats?: AgentHeartbeatSummary[];
   heartbeatLoading?: boolean;
@@ -70,6 +73,8 @@ export const AgentSettingsPanel = memo(function AgentSettingsPanel({
   cronDeleteBusyJobId,
   onRunCronJob,
   onDeleteCronJob,
+  cronToggleBusyJobId,
+  onToggleCronJob,
   onRetryCron,
   heartbeats = [],
   heartbeatLoading = false,
@@ -86,6 +91,8 @@ export const AgentSettingsPanel = memo(function AgentSettingsPanel({
   const [renameError, setRenameError] = useState<string | null>(null);
   const [sessionBusy, setSessionBusy] = useState(false);
   const [idCopied, setIdCopied] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
     setNameDraft(agent.name);
@@ -126,6 +133,15 @@ export const AgentSettingsPanel = memo(function AgentSettingsPanel({
       setSessionBusy(false);
     }
   };
+
+  const handleDeleteClick = useCallback(() => {
+    if (showDeleteConfirm && deleteConfirmText === agent.agentId) {
+      onDelete();
+    } else {
+      setShowDeleteConfirm(true);
+      setDeleteConfirmText("");
+    }
+  }, [showDeleteConfirm, deleteConfirmText, agent.agentId, onDelete]);
 
   const handleCopyId = () => {
     void navigator.clipboard.writeText(agent.agentId).then(() => {
@@ -297,15 +313,53 @@ export const AgentSettingsPanel = memo(function AgentSettingsPanel({
               key={job.id}
               id={job.id}
               title={job.name}
+              titleTooltip={job.name}
               groupName="cron"
+              enabled={job.enabled}
+              toggleEnabled
+              toggleBusy={cronToggleBusyJobId === job.id}
+              onToggle={(enabled) => { void onToggleCronJob(job.id, enabled); }}
+              statusLine={
+                <div className="mt-0.5 flex items-center gap-2 text-[10px] text-muted-foreground">
+                  {job.state.lastStatus ? (
+                    <span className="inline-flex items-center gap-1">
+                      <span className={job.state.lastStatus === "ok" ? "text-emerald-500" : job.state.lastStatus === "error" ? "text-destructive" : "text-muted-foreground"}>
+                        {job.state.lastStatus === "ok" ? "✓" : job.state.lastStatus === "error" ? "✗" : "⏭"}
+                      </span>
+                      {job.state.lastRunAtMs ? formatRelativeTime(job.state.lastRunAtMs) : "—"}
+                    </span>
+                  ) : (
+                    <span>Never run</span>
+                  )}
+                  {job.state.runningAtMs ? (
+                    <span className="text-amber-500">⏳ Running</span>
+                  ) : null}
+                </div>
+              }
               metadata={
                 <>
-                  <div className="truncate text-[11px] text-muted-foreground">
-                    {formatCronSchedule(job.schedule)}
-                  </div>
-                  <div className="truncate text-[11px] text-muted-foreground">
-                    {formatCronPayload(job.payload)}
-                  </div>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="truncate text-[11px] text-muted-foreground">
+                          {formatCronSchedule(job.schedule)}
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">{formatCronSchedule(job.schedule)}</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="truncate text-[11px] text-muted-foreground">
+                          {formatCronPayload(job.payload)}
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-sm">
+                        {formatCronPayload(job.payload)}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </>
               }
               runBusy={cronRunBusyJobId === job.id}
@@ -335,6 +389,7 @@ export const AgentSettingsPanel = memo(function AgentSettingsPanel({
               title={heartbeat.agentId}
               groupName="heartbeat"
               deleteAllowed={heartbeat.source === "override"}
+              deleteDisabledTooltip={heartbeat.source !== "override" ? "Inherited from gateway config — cannot be deleted here" : undefined}
               metadata={
                 <TooltipProvider>
                   <Tooltip>
@@ -388,13 +443,45 @@ export const AgentSettingsPanel = memo(function AgentSettingsPanel({
             <div className="mt-3 text-[11px] text-muted-foreground">
               Permanently removes this agent from the gateway config and deletes all its cron jobs. This action cannot be undone.
             </div>
-            <button
-              className={`mt-3 w-full rounded-md border border-destructive/50 bg-transparent px-3 py-2 ${sectionLabelClass} text-destructive shadow-sm transition hover:border-destructive hover:bg-destructive/10`}
-              type="button"
-              onClick={onDelete}
-            >
-              Delete agent
-            </button>
+            {showDeleteConfirm ? (
+              <div className="mt-3 space-y-2">
+                <label className="block text-[11px] text-muted-foreground">
+                  Type <span className="font-mono font-semibold text-foreground">{agent.agentId}</span> to confirm:
+                </label>
+                <input
+                  className="h-8 w-full rounded-md border border-destructive/50 bg-card/75 px-3 text-xs font-mono text-foreground outline-none focus:border-destructive"
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  placeholder={agent.agentId}
+                  autoFocus
+                />
+                <div className="flex gap-2">
+                  <button
+                    className={`flex-1 rounded-md border border-border bg-transparent px-3 py-2 ${sectionLabelClass} text-foreground transition hover:bg-muted`}
+                    type="button"
+                    onClick={() => { setShowDeleteConfirm(false); setDeleteConfirmText(""); }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className={`flex-1 rounded-md border border-destructive/50 bg-transparent px-3 py-2 ${sectionLabelClass} text-destructive shadow-sm transition hover:border-destructive hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50`}
+                    type="button"
+                    onClick={handleDeleteClick}
+                    disabled={deleteConfirmText !== agent.agentId}
+                  >
+                    Delete agent
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                className={`mt-3 w-full rounded-md border border-destructive/50 bg-transparent px-3 py-2 ${sectionLabelClass} text-destructive shadow-sm transition hover:border-destructive hover:bg-destructive/10`}
+                type="button"
+                onClick={handleDeleteClick}
+              >
+                Delete agent
+              </button>
+            )}
           </section>
         ) : (
           <section className="rounded-md border border-border/80 bg-card/70 p-4">

@@ -71,6 +71,8 @@ export function useSettingsPanel({ client, status, agents }: UseSettingsPanelPar
     cronDeleteBusyJobId: cron.cronDeleteBusyJobId,
     handleRunCronJob: cron.handleRunCronJob,
     handleDeleteCronJob: cron.handleDeleteCronJob,
+    cronToggleBusyJobId: cron.cronToggleBusyJobId,
+    handleToggleCronJob: cron.handleToggleCronJob,
     reloadCronJobs,
     // Heartbeats — preserve original property names for backward compatibility
     settingsHeartbeats: heartbeat.heartbeats,

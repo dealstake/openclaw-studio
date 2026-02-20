@@ -7,6 +7,7 @@ import {
   listCronJobs,
   removeCronJob,
   runCronJobNow,
+  updateCronJob,
 } from "@/lib/cron/types";
 
 const sortCronJobsByUpdatedAt = (jobs: CronJobSummary[]) =>
@@ -22,6 +23,7 @@ export function useCronJobsPanel({ client }: UseCronJobsPanelParams) {
   const [cronError, setCronError] = useState<string | null>(null);
   const [cronRunBusyJobId, setCronRunBusyJobId] = useState<string | null>(null);
   const [cronDeleteBusyJobId, setCronDeleteBusyJobId] = useState<string | null>(null);
+  const [cronToggleBusyJobId, setCronToggleBusyJobId] = useState<string | null>(null);
 
   const loadCronJobs = useCallback(
     async (agentId: string) => {
@@ -101,12 +103,35 @@ export function useCronJobsPanel({ client }: UseCronJobsPanelParams) {
     [client, cronDeleteBusyJobId, cronRunBusyJobId, loadCronJobs],
   );
 
+  const handleToggleCronJob = useCallback(
+    async (agentId: string, jobId: string, enabled: boolean) => {
+      const resolvedJobId = jobId.trim();
+      const resolvedAgentId = agentId.trim();
+      if (!resolvedJobId || !resolvedAgentId) return;
+      if (cronToggleBusyJobId) return;
+      setCronToggleBusyJobId(resolvedJobId);
+      setCronError(null);
+      try {
+        await updateCronJob(client, resolvedJobId, { enabled });
+        await loadCronJobs(resolvedAgentId);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Failed to toggle cron job.";
+        setCronError(message);
+        console.error(message);
+      } finally {
+        setCronToggleBusyJobId((current) => (current === resolvedJobId ? null : current));
+      }
+    },
+    [client, cronToggleBusyJobId, loadCronJobs],
+  );
+
   const resetCron = useCallback(() => {
     setCronJobs([]);
     setCronLoading(false);
     setCronError(null);
     setCronRunBusyJobId(null);
     setCronDeleteBusyJobId(null);
+    setCronToggleBusyJobId(null);
   }, []);
 
   return {
@@ -119,6 +144,8 @@ export function useCronJobsPanel({ client }: UseCronJobsPanelParams) {
     loadCronRef,
     handleRunCronJob,
     handleDeleteCronJob,
+    cronToggleBusyJobId,
+    handleToggleCronJob,
     resetCron,
   };
 }

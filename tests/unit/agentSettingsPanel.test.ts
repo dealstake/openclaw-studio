@@ -89,6 +89,8 @@ describe("AgentSettingsPanel", () => {
         cronDeleteBusyJobId: null,
         onRunCronJob: vi.fn(),
         onDeleteCronJob: vi.fn(),
+        cronToggleBusyJobId: null,
+        onToggleCronJob: vi.fn(),
       })
     );
 
@@ -119,6 +121,8 @@ describe("AgentSettingsPanel", () => {
         cronDeleteBusyJobId: null,
         onRunCronJob: vi.fn(),
         onDeleteCronJob: vi.fn(),
+        cronToggleBusyJobId: null,
+        onToggleCronJob: vi.fn(),
       })
     );
 
@@ -143,6 +147,8 @@ describe("AgentSettingsPanel", () => {
         cronDeleteBusyJobId: null,
         onRunCronJob: vi.fn(),
         onDeleteCronJob: vi.fn(),
+        cronToggleBusyJobId: null,
+        onToggleCronJob: vi.fn(),
       })
     );
 
@@ -168,6 +174,8 @@ describe("AgentSettingsPanel", () => {
         cronDeleteBusyJobId: null,
         onRunCronJob: vi.fn(),
         onDeleteCronJob: vi.fn(),
+        cronToggleBusyJobId: null,
+        onToggleCronJob: vi.fn(),
       })
     );
 
@@ -192,6 +200,8 @@ describe("AgentSettingsPanel", () => {
         cronDeleteBusyJobId: null,
         onRunCronJob: vi.fn(),
         onDeleteCronJob: vi.fn(),
+        cronToggleBusyJobId: null,
+        onToggleCronJob: vi.fn(),
       })
     );
 
@@ -221,6 +231,8 @@ describe("AgentSettingsPanel", () => {
         cronDeleteBusyJobId: null,
         onRunCronJob,
         onDeleteCronJob: vi.fn(),
+        cronToggleBusyJobId: null,
+        onToggleCronJob: vi.fn(),
       })
     );
 
@@ -243,6 +255,8 @@ describe("AgentSettingsPanel", () => {
         cronDeleteBusyJobId: null,
         onRunCronJob,
         onDeleteCronJob: vi.fn(),
+        cronToggleBusyJobId: null,
+        onToggleCronJob: vi.fn(),
       })
     );
 
@@ -268,6 +282,8 @@ describe("AgentSettingsPanel", () => {
         cronDeleteBusyJobId: null,
         onRunCronJob: vi.fn(),
         onDeleteCronJob,
+        cronToggleBusyJobId: null,
+        onToggleCronJob: vi.fn(),
       })
     );
 
@@ -290,6 +306,8 @@ describe("AgentSettingsPanel", () => {
         cronDeleteBusyJobId: "job-1",
         onRunCronJob: vi.fn(),
         onDeleteCronJob,
+        cronToggleBusyJobId: null,
+        onToggleCronJob: vi.fn(),
       })
     );
 
@@ -313,6 +331,8 @@ describe("AgentSettingsPanel", () => {
         cronDeleteBusyJobId: null,
         onRunCronJob: vi.fn(),
         onDeleteCronJob: vi.fn(),
+        cronToggleBusyJobId: null,
+        onToggleCronJob: vi.fn(),
       })
     );
 
@@ -336,6 +356,8 @@ describe("AgentSettingsPanel", () => {
         cronDeleteBusyJobId: null,
         onRunCronJob: vi.fn(),
         onDeleteCronJob: vi.fn(),
+        cronToggleBusyJobId: null,
+        onToggleCronJob: vi.fn(),
         heartbeats: [createHeartbeat()],
       })
     );
@@ -365,6 +387,8 @@ describe("AgentSettingsPanel", () => {
         cronDeleteBusyJobId: null,
         onRunCronJob: vi.fn(),
         onDeleteCronJob: vi.fn(),
+        cronToggleBusyJobId: null,
+        onToggleCronJob: vi.fn(),
         heartbeats: [createHeartbeat("default")],
         onRunHeartbeat,
       })
@@ -393,6 +417,8 @@ describe("AgentSettingsPanel", () => {
         cronDeleteBusyJobId: null,
         onRunCronJob: vi.fn(),
         onDeleteCronJob: vi.fn(),
+        cronToggleBusyJobId: null,
+        onToggleCronJob: vi.fn(),
         heartbeats: [createHeartbeat("override")],
         onDeleteHeartbeat,
       })
