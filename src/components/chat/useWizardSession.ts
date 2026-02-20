@@ -188,6 +188,7 @@ export function useWizardSession({
             sessionKey,
             message: `[system] ${systemPrompt}`,
             deliver: false,
+            idempotencyKey: crypto.randomUUID(),
           });
           // Wait for system message to process, then send user message
         }
@@ -200,6 +201,7 @@ export function useWizardSession({
           sessionKey,
           message: text,
           deliver: false,
+          idempotencyKey: crypto.randomUUID(),
         });
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to send message.");
