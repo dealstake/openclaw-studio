@@ -198,12 +198,24 @@ export const FleetSidebar = memo(function FleetSidebar({
 
       <div className="min-h-0 flex-1 overflow-auto">
         {agents.length === 0 ? (
-          <EmptyStatePanel
-            title={isFilterEmpty ? "No agents match this filter." : "No agents yet."}
-            description={isFilterEmpty ? "Try a different filter or select \"All\" to see all agents." : undefined}
-            compact
-            className="p-3 text-xs"
-          />
+          isFilterEmpty ? (
+            <p className="px-3 py-4 text-center text-xs text-muted-foreground/70">
+              No matches —{" "}
+              <button
+                type="button"
+                className="underline hover:text-foreground transition"
+                onClick={() => onFilterChange("all")}
+              >
+                clear filter
+              </button>
+            </p>
+          ) : (
+            <EmptyStatePanel
+              title="No agents yet."
+              compact
+              className="p-3 text-xs"
+            />
+          )
         ) : (
           <div className="flex flex-col gap-2">
             {agents.map((agent) => {

@@ -169,6 +169,13 @@
   --shadow-2xl: 0 44px 120px -45px color-mix(in oklch, var(--shadow-color) 78%, transparent);
 }
 
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
