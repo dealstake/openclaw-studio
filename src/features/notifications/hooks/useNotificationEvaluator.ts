@@ -92,7 +92,7 @@ export function useNotificationEvaluator(
     try {
       const result = await client.call<{
         sessions?: { totalTokens?: number; inputTokens?: number; outputTokens?: number }[];
-      }>("sessions.list", { includeGlobal: true, limit: 200 });
+      }>("sessions.list", { includeGlobal: true, limit: 200, activeMinutes: 1440 });
 
       const sessions = result.sessions ?? [];
       const dailyTokens = sessions.reduce(
