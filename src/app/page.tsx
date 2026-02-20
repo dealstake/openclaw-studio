@@ -97,7 +97,8 @@ import { useAgentHistorySync } from "@/features/agents/hooks/useAgentHistorySync
 import { useAgentLifecycle } from "@/features/agents/hooks/useAgentLifecycle";
 import { useGatewayModels } from "@/features/agents/hooks/useGatewayModels";
 import { useSettingsPanel } from "@/features/agents/hooks/useSettingsPanel";
-import { useBreakpoint, isDesktopOrAbove, isWide } from "@/hooks/useBreakpoint";
+import { useBreakpoint, isDesktopOrAbove, isWide, isTabletOrBelow } from "@/hooks/useBreakpoint";
+import { useSwipeDrawer } from "@/hooks/useSwipeDrawer";
 
 type AgentsListResult = {
   defaultId: string;
@@ -244,10 +245,32 @@ const AgentStudioPage = () => {
         setContextPanelOpen((prev) => !prev);
         return;
       }
+      // Cmd+Shift+P/T/B — open specific context panel tabs
+      if (mod && e.shiftKey && (e.key === "P" || e.key === "p")) {
+        e.preventDefault();
+        setContextTab("projects");
+        setContextPanelOpen(true);
+        if (mobilePane !== "context") setMobilePane("context");
+        return;
+      }
+      if (mod && e.shiftKey && (e.key === "T" || e.key === "t")) {
+        e.preventDefault();
+        setContextTab("tasks");
+        setContextPanelOpen(true);
+        if (mobilePane !== "context") setMobilePane("context");
+        return;
+      }
+      if (mod && e.shiftKey && (e.key === "B" || e.key === "b")) {
+        e.preventDefault();
+        setContextTab("brain");
+        setContextPanelOpen(true);
+        if (mobilePane !== "context") setMobilePane("context");
+        return;
+      }
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [contextTab]);
+  }, [contextTab, mobilePane]);
   const [viewingSessionKey, setViewingSessionKey] = useState<string | null>(null);
   const [viewingSessionHistory, setViewingSessionHistory] = useState<MessagePart[]>([]);
   const [viewingTrace, setViewingTrace] = useState<{ agentId: string; sessionId: string } | null>(null);
@@ -1522,6 +1545,36 @@ const AgentStudioPage = () => {
   const showSidebarInline = isDesktopOrAbove(breakpoint); // ≥1024px
   const showContextInline = isWide(breakpoint) && contextPanelOpen; // ≥1440px + user hasn't closed it
   const isXlViewport = isWide(breakpoint); // activity drawer visibility
+  const isMobileLayout = isTabletOrBelow(breakpoint); // <1024px
+
+  // Swipe gestures for mobile drawer open/close
+  const swipeHandlers = useSwipeDrawer({
+    onSwipeRight: isMobileLayout
+      ? () => {
+          // Swipe right: open session history (if context drawer isn't open)
+          if (mobilePane === "chat" && !mobileSessionDrawerOpen) {
+            setMobileSessionDrawerOpen(true);
+          }
+          // Swipe right on context drawer: close it
+          if (mobilePane === "context") {
+            setMobilePane("chat");
+          }
+        }
+      : undefined,
+    onSwipeLeft: isMobileLayout
+      ? () => {
+          // Swipe left: open context panel (if session drawer isn't open)
+          if (mobilePane === "chat" && !mobileSessionDrawerOpen) {
+            setMobilePane("context");
+          }
+          // Swipe left on session drawer: close it
+          if (mobileSessionDrawerOpen) {
+            setMobileSessionDrawerOpen(false);
+          }
+        }
+      : undefined,
+  });
+
   const configMutationStatusLine = activeConfigMutation
     ? `Applying config change: ${activeConfigMutation.label}`
     : queuedConfigMutationCount > 0
@@ -1792,6 +1845,7 @@ const AgentStudioPage = () => {
             <div
               className="glass-panel flex min-h-0 flex-1 overflow-hidden p-2 sm:p-3"
               data-testid="focused-agent-panel"
+              {...swipeHandlers}
             >
               <ActivityDrawer hidden={!isXlViewport} agentId={focusedAgentId} client={client} status={status} cronJobs={allCronJobs}>
               {focusedAgent ? (

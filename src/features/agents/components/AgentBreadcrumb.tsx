@@ -66,7 +66,7 @@ export const AgentBreadcrumb = memo(function AgentBreadcrumb({
       <button
         type="button"
         onClick={toggle}
-        className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition hover:bg-muted/60"
+        className="flex min-h-[44px] items-center gap-2 rounded-lg px-2 py-1.5 transition hover:bg-muted/60"
         data-testid="agent-breadcrumb-trigger"
         aria-expanded={open}
         aria-haspopup="listbox"
@@ -102,7 +102,7 @@ export const AgentBreadcrumb = memo(function AgentBreadcrumb({
               type="button"
               role="option"
               aria-selected={agent.agentId === selectedAgentId}
-              className={`flex w-full items-center gap-3 px-3 py-2 text-left transition hover:bg-muted/60 ${
+              className={`flex w-full min-h-[44px] items-center gap-3 px-3 py-2 text-left transition hover:bg-muted/60 ${
                 agent.agentId === selectedAgentId ? "bg-muted/40" : ""
               }`}
               onClick={() => {

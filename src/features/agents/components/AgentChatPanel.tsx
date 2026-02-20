@@ -305,7 +305,7 @@ const AgentChatComposer = memo(function AgentChatComposer({
   const sendDisabled = !canSend || running || isEmpty;
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-20 px-3 pb-3 backdrop-blur-md sm:absolute sm:inset-x-0 sm:bottom-0 sm:z-20 sm:px-4 sm:pb-6 sm:pt-4">
+    <div className="absolute inset-x-0 bottom-0 z-20 px-3 pb-3 pt-2 backdrop-blur-md sm:px-4 sm:pb-6 sm:pt-4">
       <div className="mx-1 flex items-end gap-2 rounded-xl border border-border/80 bg-card/90 p-2 shadow-lg sm:mx-4 sm:rounded-2xl sm:border-border sm:bg-card sm:p-3 sm:shadow-xl lg:mx-12">
         <textarea
           ref={handleRef}
