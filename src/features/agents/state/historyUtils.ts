@@ -119,37 +119,18 @@ export const mergeHistoryWithPending = (
 
 export const buildHistorySyncPatch = ({
   messages,
-  currentLines,
   loadedAt,
   status,
   runId,
 }: HistorySyncPatchInput): Partial<AgentState> => {
   const { lines, lastAssistant, lastAssistantAt, lastRole, lastUser } = buildHistoryLines(messages);
   if (lines.length === 0) return { historyLoadedAt: loadedAt };
-  const mergedLines = mergeHistoryWithPending(lines, currentLines);
-  const isSame =
-    mergedLines.length === currentLines.length &&
-    mergedLines.every((line, index) => line === currentLines[index]);
-  if (isSame) {
-    const patch: Partial<AgentState> = { historyLoadedAt: loadedAt };
-    if (typeof lastAssistantAt === "number") {
-      patch.lastAssistantMessageAt = lastAssistantAt;
-    }
-    if (!runId && status === "running" && lastRole === "assistant") {
-      patch.status = "idle";
-      patch.runId = null;
-      patch.streamText = null;
-      patch.thinkingTrace = null;
-    }
-    return patch;
-  }
   const messageParts = parseMessageParts({
-    outputLines: mergedLines,
+    outputLines: lines,
     streamText: null,
     liveThinkingTrace: "",
   });
   const patch: Partial<AgentState> = {
-    outputLines: mergedLines,
     messageParts,
     lastResult: lastAssistant ?? null,
     ...(lastAssistant ? { latestPreview: lastAssistant } : {}),

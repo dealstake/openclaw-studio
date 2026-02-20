@@ -12,7 +12,6 @@ const createAgent = (overrides?: Partial<AgentState>): AgentState => ({
   sessionCreated: true,
   awaitingUserInput: false,
   hasUnseenActivity: false,
-  outputLines: [],
   messageParts: [],
   lastResult: null,
   lastDiff: null,
@@ -186,7 +185,7 @@ describe("gateway runtime event handler (chat)", () => {
   });
 
   it("requests agent history load when final assistant has no thinking trace and no prior trace output", () => {
-    const agents = [createAgent({ outputLines: [] })];
+    const agents = [createAgent({})];
     const loadAgentHistory = vi.fn(async () => {});
     const handler = createGatewayRuntimeEventHandler({
       getStatus: () => "connected",

@@ -313,18 +313,17 @@ describe("runtime event bridge helpers", () => {
     expect(mergeHistoryWithPending(["a", "b"], [])).toEqual(["a", "b"]);
   });
 
-  it("builds history sync patches for empty, unchanged, and merged cases", () => {
+  it("builds history sync patches for empty and populated cases", () => {
     expect(
       buildHistorySyncPatch({
         messages: [],
-        currentLines: ["> hello"],
         loadedAt: 100,
         status: "idle",
         runId: null,
       })
     ).toEqual({ historyLoadedAt: 100 });
 
-    const unchanged = buildHistorySyncPatch({
+    const withAssistant = buildHistorySyncPatch({
       messages: [
         {
           role: "assistant",
@@ -332,21 +331,23 @@ describe("runtime event bridge helpers", () => {
           content: "done",
         },
       ],
-      currentLines: ["done"],
       loadedAt: 200,
       status: "running",
       runId: null,
     });
-    expect(unchanged).toEqual({
-      historyLoadedAt: 200,
+    expect(withAssistant).toEqual({
+      messageParts: [{ type: "text", text: "done" }],
+      lastResult: "done",
+      latestPreview: "done",
       lastAssistantMessageAt: Date.parse("2024-01-01T00:00:00.000Z"),
+      historyLoadedAt: 200,
       status: "idle",
       runId: null,
       streamText: null,
       thinkingTrace: null,
     });
 
-    const merged = buildHistorySyncPatch({
+    const withUserAndAssistant = buildHistorySyncPatch({
       messages: [
         { role: "user", content: "hello" },
         {
@@ -355,16 +356,13 @@ describe("runtime event bridge helpers", () => {
           content: "assistant final",
         },
       ],
-      currentLines: ["> hello", "pending line"],
       loadedAt: 300,
       status: "running",
       runId: null,
     });
-    expect(merged).toEqual({
-      outputLines: ["> hello", "pending line", "assistant final"],
+    expect(withUserAndAssistant).toEqual({
       messageParts: [
         { type: "text", text: "hello" },
-        { type: "text", text: "pending line" },
         { type: "text", text: "assistant final" },
       ],
       lastResult: "assistant final",

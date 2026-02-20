@@ -117,7 +117,6 @@ export type HistoryLinesResult = {
 
 export type HistorySyncPatchInput = {
   messages: ChatHistoryMessage[];
-  currentLines: string[];
   loadedAt: number;
   status: AgentState["status"];
   runId: string | null;

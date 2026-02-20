@@ -41,7 +41,6 @@ export function useAgentHistorySync(params: {
         });
         const patch = buildHistorySyncPatch({
           messages: result.messages ?? [],
-          currentLines: agent.outputLines,
           loadedAt,
           status: agent.status,
           runId: agent.runId,

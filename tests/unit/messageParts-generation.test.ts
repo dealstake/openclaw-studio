@@ -34,7 +34,6 @@ function createMockAgent(overrides?: Partial<AgentState>): AgentState {
     sessionKey: TEST_SESSION_KEY,
     runId: TEST_RUN_ID,
     status: "running",
-    outputLines: [],
     messageParts: [],
     streamText: null,
     thinkingTrace: null,

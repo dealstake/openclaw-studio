@@ -31,7 +31,6 @@ export type AgentState = AgentStoreSeed & {
   sessionCreated: boolean;
   awaitingUserInput: boolean;
   hasUnseenActivity: boolean;
-  outputLines: string[];
   messageParts: MessagePart[];
   lastResult: string | null;
   lastDiff: string | null;
@@ -58,7 +57,6 @@ export const buildNewSessionAgentPatch = (agent: AgentState): Partial<AgentState
     runId: null,
     streamText: null,
     thinkingTrace: null,
-    outputLines: [],
     messageParts: [],
     lastResult: null,
     lastDiff: null,
@@ -116,7 +114,6 @@ const createRuntimeAgentState = (
     sessionCreated: sameSessionKey ? (existing?.sessionCreated ?? false) : false,
     awaitingUserInput: sameSessionKey ? (existing?.awaitingUserInput ?? false) : false,
     hasUnseenActivity: sameSessionKey ? (existing?.hasUnseenActivity ?? false) : false,
-    outputLines: sameSessionKey ? (existing?.outputLines ?? []) : [],
     messageParts: sameSessionKey ? (existing?.messageParts ?? []) : [],
     lastResult: sameSessionKey ? (existing?.lastResult ?? null) : null,
     lastDiff: sameSessionKey ? (existing?.lastDiff ?? null) : null,

@@ -10,7 +10,7 @@ afterEach(cleanup);
 // ─── Mocks ───────────────────────────────────────────────────────────────────
 
 vi.mock("@/features/agents/state/runtimeEventBridge", () => ({
-  buildHistorySyncPatch: vi.fn().mockReturnValue({ historyLoadedAt: 1000, outputLines: [] }),
+  buildHistorySyncPatch: vi.fn().mockReturnValue({ historyLoadedAt: 1000, messageParts: [] }),
 }));
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -30,7 +30,6 @@ function makeAgent(overrides: Partial<AgentState> = {}): AgentState {
     sessionKey: "session-1",
     sessionCreated: true,
     historyLoadedAt: null,
-    outputLines: [],
   messageParts: [],
     status: "idle",
     runId: null,
