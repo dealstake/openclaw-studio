@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from "react";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { isGatewayDisconnectLikeError } from "@/lib/gateway/GatewayClient";
 import type { SessionEntry } from "@/features/sessions/components/SessionsPanel";
+import { inferSessionType } from "@/features/sessions/lib/sessionKeyUtils";
 
 type SessionsListEntry = {
   key: string;
@@ -28,12 +29,21 @@ export type AggregateUsageFromList = {
   totalCost: number | null;
 };
 
+export type UsageByType = {
+  main: number;
+  cron: number;
+  subagent: number;
+  channel: number;
+  unknown: number;
+};
+
 export const useAllSessions = (client: GatewayClient, status: GatewayStatus) => {
   const [allSessions, setAllSessions] = useState<SessionEntry[]>([]);
   const [allSessionsLoading, setAllSessionsLoading] = useState(false);
   const [allSessionsError, setAllSessionsError] = useState<string | null>(null);
   const [totalSessionCount, setTotalSessionCount] = useState(0);
   const [aggregateUsageFromList, setAggregateUsageFromList] = useState<AggregateUsageFromList | null>(null);
+  const [usageByType, setUsageByType] = useState<UsageByType | null>(null);
 
   const loadingRef = useRef(false);
 
@@ -81,6 +91,16 @@ export const useAllSessions = (client: GatewayClient, status: GatewayStatus) => 
       } else {
         setAggregateUsageFromList(null);
       }
+
+      // Compute token breakdown by session type
+      const byType: UsageByType = { main: 0, cron: 0, subagent: 0, channel: 0, unknown: 0 };
+      for (const e of rawEntries) {
+        const type = inferSessionType(e.key);
+        const tokens = (e.inputTokens ?? 0) + (e.outputTokens ?? 0) || (e.totalTokens ?? 0);
+        byType[type] += tokens;
+      }
+      const hasAny = byType.main + byType.cron + byType.subagent + byType.channel + byType.unknown > 0;
+      setUsageByType(hasAny ? byType : null);
     } catch (err) {
       if (!isGatewayDisconnectLikeError(err)) {
         const message = err instanceof Error ? err.message : "Failed to load sessions.";
@@ -98,6 +118,7 @@ export const useAllSessions = (client: GatewayClient, status: GatewayStatus) => 
     allSessionsError,
     totalSessionCount,
     aggregateUsageFromList,
+    usageByType,
     loadAllSessions,
   };
 };

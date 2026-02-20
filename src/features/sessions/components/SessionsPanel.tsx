@@ -11,6 +11,7 @@ import {
 import { EmptyStatePanel } from "@/features/agents/components/EmptyStatePanel";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import { isGatewayDisconnectLikeError } from "@/lib/gateway/GatewayClient";
+import type { UsageByType } from "@/features/sessions/hooks/useAllSessions";
 import { formatCost, formatTokens } from "@/lib/text/format";
 import { SessionCard } from "./SessionCard";
 import { TranscriptCard } from "./TranscriptCard";
@@ -40,6 +41,7 @@ type SessionsPanelProps = {
   aggregateUsageLoading?: boolean;
   cumulativeUsage?: { inputTokens: number; outputTokens: number; totalCost: number | null; messageCount: number } | null;
   cumulativeUsageLoading?: boolean;
+  usageByType?: UsageByType | null;
   transcripts?: TranscriptEntry[];
   transcriptsLoading?: boolean;
   transcriptsLoadingMore?: boolean;
@@ -72,6 +74,7 @@ export const SessionsPanel = memo(function SessionsPanel({
   aggregateUsageLoading = false,
   cumulativeUsage = null,
   cumulativeUsageLoading = false,
+  usageByType = null,
   transcripts = [],
   transcriptsLoading = false,
   transcriptsLoadingMore = false,
@@ -271,6 +274,15 @@ export const SessionsPanel = memo(function SessionsPanel({
                   <span className="text-muted-foreground">{cumulativeUsage.messageCount.toLocaleString()} messages</span>
                 ) : null}
               </div>
+              {usageByType ? (
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground/80">
+                  {usageByType.cron > 0 ? <span>{formatTokens(usageByType.cron)} cron</span> : null}
+                  {usageByType.main > 0 ? <span>{formatTokens(usageByType.main)} main</span> : null}
+                  {usageByType.subagent > 0 ? <span>{formatTokens(usageByType.subagent)} sub-agent</span> : null}
+                  {usageByType.channel > 0 ? <span>{formatTokens(usageByType.channel)} channel</span> : null}
+                  {usageByType.unknown > 0 ? <span>{formatTokens(usageByType.unknown)} other</span> : null}
+                </div>
+              ) : null}
             </div>
           ) : cumulativeUsageLoading ? (
             <div className="h-8 w-48 animate-pulse rounded bg-muted/30" />

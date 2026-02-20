@@ -263,7 +263,7 @@ const AgentStudioPage = () => {
 
   const {
     allSessions, allSessionsLoading, allSessionsError,
-    totalSessionCount, aggregateUsageFromList, loadAllSessions,
+    totalSessionCount, aggregateUsageFromList, usageByType, loadAllSessions,
   } = useAllSessions(client, status);
 
   const {
@@ -1790,6 +1790,7 @@ const AgentStudioPage = () => {
                           messageCount: aggregateUsageFromList.messageCount,
                         } : null}
                         cumulativeUsageLoading={allSessionsLoading}
+                        usageByType={usageByType}
                         transcripts={transcripts}
                         transcriptsLoading={transcriptsLoading}
                         transcriptsLoadingMore={transcriptsLoadingMore}
@@ -1997,6 +1998,7 @@ const AgentStudioPage = () => {
                         messageCount: aggregateUsageFromList.messageCount,
                       } : null}
                       cumulativeUsageLoading={allSessionsLoading}
+                      usageByType={usageByType}
                       transcripts={transcripts}
                       transcriptsLoading={transcriptsLoading}
                       transcriptsLoadingMore={transcriptsLoadingMore}
