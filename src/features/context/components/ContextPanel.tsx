@@ -108,7 +108,7 @@ export const ContextPanel = memo(function ContextPanel({
   }, [activeTab]);
 
   return (
-    <div className="flex h-full w-full flex-col overflow-visible">
+    <div className="flex h-full w-full flex-col overflow-hidden">
       {/* Tab bar — mobile: scrollable row; desktop: primary tabs + More dropdown */}
       {/* Mobile */}
       <div ref={mobileTabBarRef} className="flex items-center gap-1 overflow-x-auto border-b border-border/40 px-3 pt-3 pb-2 lg:hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="tablist">
@@ -223,47 +223,47 @@ export const ContextPanel = memo(function ContextPanel({
         ) : (
           <>
             {effectiveMountedTabs.has("projects") && (
-              <div role="tabpanel" className={activeTab === "projects" ? "flex h-full w-full" : "hidden"}>
+              <div role="tabpanel" className={activeTab === "projects" ? "flex h-full w-full flex-col overflow-hidden" : "hidden"}>
                 {projectsContent ?? null}
               </div>
             )}
             {effectiveMountedTabs.has("tasks") && (
-              <div role="tabpanel" className={activeTab === "tasks" ? "flex h-full w-full" : "hidden"}>
+              <div role="tabpanel" className={activeTab === "tasks" ? "flex h-full w-full flex-col overflow-hidden" : "hidden"}>
                 {tasksContent}
               </div>
             )}
             {effectiveMountedTabs.has("brain") && (
-              <div role="tabpanel" className={activeTab === "brain" ? "flex h-full w-full" : "hidden"}>
+              <div role="tabpanel" className={activeTab === "brain" ? "flex h-full w-full flex-col overflow-hidden" : "hidden"}>
                 {brainContent}
               </div>
             )}
             {effectiveMountedTabs.has("workspace") && (
-              <div role="tabpanel" className={activeTab === "workspace" ? "flex h-full w-full" : "hidden"}>
+              <div role="tabpanel" className={activeTab === "workspace" ? "flex h-full w-full flex-col overflow-hidden" : "hidden"}>
                 {workspaceContent ?? null}
               </div>
             )}
             {effectiveMountedTabs.has("settings") && (
-              <div role="tabpanel" className={activeTab === "settings" ? "flex h-full w-full" : "hidden"}>
+              <div role="tabpanel" className={activeTab === "settings" ? "flex h-full w-full flex-col overflow-hidden" : "hidden"}>
                 {settingsContent}
               </div>
             )}
             {effectiveMountedTabs.has("channels") && (
-              <div role="tabpanel" className={activeTab === "channels" ? "flex h-full w-full" : "hidden"}>
+              <div role="tabpanel" className={activeTab === "channels" ? "flex h-full w-full flex-col overflow-hidden" : "hidden"}>
                 {channelsContent ?? null}
               </div>
             )}
             {effectiveMountedTabs.has("sessions") && (
-              <div role="tabpanel" className={activeTab === "sessions" ? "flex h-full w-full" : "hidden"}>
+              <div role="tabpanel" className={activeTab === "sessions" ? "flex h-full w-full flex-col overflow-hidden" : "hidden"}>
                 {sessionsContent ?? null}
               </div>
             )}
             {effectiveMountedTabs.has("usage") && (
-              <div role="tabpanel" className={activeTab === "usage" ? "flex h-full w-full" : "hidden"}>
+              <div role="tabpanel" className={activeTab === "usage" ? "flex h-full w-full flex-col overflow-hidden" : "hidden"}>
                 {usageContent ?? null}
               </div>
             )}
             {effectiveMountedTabs.has("cron") && (
-              <div role="tabpanel" className={activeTab === "cron" ? "flex h-full w-full" : "hidden"}>
+              <div role="tabpanel" className={activeTab === "cron" ? "flex h-full w-full flex-col overflow-hidden" : "hidden"}>
                 {cronContent ?? null}
               </div>
             )}

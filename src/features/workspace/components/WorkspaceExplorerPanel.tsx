@@ -234,6 +234,7 @@ export const WorkspaceExplorerPanel = memo(function WorkspaceExplorerPanel({
                       : "text-muted-foreground"
                   }`}
                   onClick={() => navigateToDir(crumb.path)}
+                  title={crumb.label === "~" ? "Agent workspace root" : undefined}
                 >
                   {crumb.label}
                 </button>

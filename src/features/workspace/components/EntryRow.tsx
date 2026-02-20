@@ -1,10 +1,11 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useCallback } from "react";
 import {
   Calendar,
   ChevronRight,
   ClipboardList,
+  Copy,
   File,
   FileText,
   FolderOpen,
@@ -37,6 +38,14 @@ export const EntryRow = memo(function EntryRow({
   statusBadge?: { emoji: string; label: string; color: string } | null;
   isActive?: boolean;
 }) {
+  const handleCopyPath = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      void navigator.clipboard.writeText(entry.path || entry.name);
+    },
+    [entry.path, entry.name]
+  );
+
   return (
     <div
       role="option"
@@ -70,6 +79,16 @@ export const EntryRow = memo(function EntryRow({
           {entry.updatedAt ? <span>{formatRelativeTime(entry.updatedAt)}</span> : null}
         </div>
       </div>
+      {/* Copy path button — visible on hover */}
+      <button
+        type="button"
+        className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded text-muted-foreground opacity-0 transition hover:bg-muted hover:text-foreground group-hover:opacity-100"
+        onClick={handleCopyPath}
+        aria-label={`Copy path: ${entry.path || entry.name}`}
+        title="Copy path"
+      >
+        <Copy className="h-3 w-3" />
+      </button>
       {entry.type === "directory" && (
         <ChevronRight className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground opacity-0 transition group-hover:opacity-100" />
       )}
