@@ -55,6 +55,7 @@ export type ChatEventPayload = {
   state: "delta" | "final" | "aborted" | "error";
   message?: unknown;
   errorMessage?: string;
+  isHeartbeat?: boolean;
 };
 
 export type AgentEventPayload = {

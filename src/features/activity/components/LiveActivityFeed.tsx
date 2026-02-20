@@ -3,6 +3,7 @@
 import React, { useMemo } from "react";
 import { Activity } from "lucide-react";
 import { useLiveActivityStore } from "@/features/activity/hooks/useLiveActivityStore";
+import { useHeartbeatEntries } from "@/features/activity/hooks/useHeartbeatEntries";
 import { CompactActivityCard } from "./CompactActivityCard";
 import type { ActivityStatus } from "./CompactActivityCard";
 import type { LiveActivityEntry, SystemActivityEvent } from "@/features/activity/hooks/useLiveActivityStore";
@@ -39,6 +40,7 @@ export const LiveActivityFeed = React.memo(function LiveActivityFeed({
   className,
 }: LiveActivityFeedProps) {
   const { sessions, systemEvents } = useLiveActivityStore();
+  const heartbeatEntries = useHeartbeatEntries();
 
   const sorted = useMemo(() => {
     return [...sessions.values()].sort((a: LiveActivityEntry, b: LiveActivityEntry) => {
@@ -52,7 +54,9 @@ export const LiveActivityFeed = React.memo(function LiveActivityFeed({
     return systemEvents.slice(-10).reverse();
   }, [systemEvents]);
 
-  if (sorted.length === 0 && recentSystemEvents.length === 0) {
+  const recentHeartbeats = useMemo(() => heartbeatEntries.slice(0, 5), [heartbeatEntries]);
+
+  if (sorted.length === 0 && recentSystemEvents.length === 0 && recentHeartbeats.length === 0) {
     return (
       <div className={`flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground ${className ?? ""}`}>
         <Activity className="h-8 w-8 opacity-30" />
@@ -75,6 +79,16 @@ export const LiveActivityFeed = React.memo(function LiveActivityFeed({
           status={entry.status as ActivityStatus}
           elapsed={entry.status === "running" ? formatElapsed(entry.startedAt) : undefined}
           badge={entry.streaming ? "LIVE" : undefined}
+        />
+      ))}
+      {recentHeartbeats.map((hb) => (
+        <CompactActivityCard
+          key={`hb-${hb.runId}`}
+          icon="💓"
+          title="Heartbeat"
+          subtitle={hb.status === "ok" ? "All clear" : hb.text.slice(0, 80)}
+          status={hb.status === "ok" ? "completed" : "error"}
+          elapsed={formatElapsed(hb.timestamp)}
         />
       ))}
       {recentSystemEvents.map((evt: SystemActivityEvent) => (

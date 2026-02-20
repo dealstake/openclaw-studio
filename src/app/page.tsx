@@ -69,6 +69,7 @@ const UsagePanel = lazy(() => import("@/features/usage/components/UsagePanel").t
 import { WorkspaceExplorerPanel } from "@/features/workspace/components/WorkspaceExplorerPanel";
 import { ActivityDrawer } from "@/features/activity/components/ActivityDrawer";
 import { upsertLiveSession, addSystemEvent } from "@/features/activity/hooks/useLiveActivityStore";
+import { pushHeartbeatEntry } from "@/features/activity/hooks/useHeartbeatEntries";
 import { useTranscriptCapture } from "@/features/activity/hooks/useTranscriptCapture";
 import { StatusBar } from "@/features/status/components/StatusBar";
 import { TraceViewer } from "@/features/sessions/components/TraceViewer";
@@ -1394,6 +1395,9 @@ const AgentStudioPage = () => {
           if (job) taskName = job.name;
         }
         upsertLiveSession(sessionKey, { sessionKey, ...data, ...(taskName ? { taskName } : {}) });
+      },
+      onHeartbeatEvent: (entry) => {
+        pushHeartbeatEntry(entry);
       },
       onSystemEvent: (event) => {
         addSystemEvent({

@@ -71,6 +71,12 @@ export type GatewayRuntimeEventHandlerDeps = {
     title: string;
     subtitle: string;
   }) => void;
+  onHeartbeatEvent?: (entry: {
+    runId: string;
+    timestamp: number;
+    text: string;
+    status: "ok" | "alert";
+  }) => void;
 };
 
 export type GatewayRuntimeEventHandler = {
@@ -273,6 +279,42 @@ export function createGatewayRuntimeEventHandler(
 
     if (!agentId) return;
     const agent = agentsSnapshot.find((entry) => entry.agentId === agentId);
+
+    // Route heartbeat messages to activity drawer instead of main chat
+    if (payload.isHeartbeat && deps.onHeartbeatEvent) {
+      if (payload.state === "delta") {
+        // Suppress heartbeat streaming from main chat — just update activity indicator
+        markActivityThrottled(agentId);
+        return;
+      }
+      if (payload.state === "final") {
+        const text = extractText(payload.message) ?? "";
+        const isOk = /HEARTBEAT_OK/i.test(text);
+        deps.onHeartbeatEvent({
+          runId: payload.runId,
+          timestamp: now(),
+          text,
+          status: isOk ? "ok" : "alert",
+        });
+        // Still update agent status to idle
+        clearRunTracking(payload.runId ?? null);
+        deps.clearPendingLivePatch(agentId);
+        deps.dispatch({
+          type: "updateAgent",
+          agentId,
+          patch: { status: "idle", runId: null, streamText: null, thinkingTrace: null },
+        });
+        // If alert (not HEARTBEAT_OK), also show in main chat
+        if (!isOk && typeof text === "string" && text.trim()) {
+          deps.dispatch({
+            type: "appendPart",
+            agentId,
+            part: { type: "text", text, streaming: false },
+          });
+        }
+        return;
+      }
+    }
 
     const role = resolveRole(payload.message);
     const summaryPatch = getChatSummaryPatch(payload, now());
