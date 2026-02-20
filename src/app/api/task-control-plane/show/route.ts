@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
 
 import {
-  BEADS_WORKSPACE_NOT_INITIALIZED_ERROR_MESSAGE,
   coerceBrSingleRecord,
   createTaskControlPlaneBrRunner,
-  isBeadsWorkspaceError,
 } from "@/lib/task-control-plane/br-runner";
+import { handleBeadsError } from "@/lib/api/beads-error";
 import { resolveTaskControlPlaneSshTarget } from "@/lib/task-control-plane/ssh-target";
 
 export const runtime = "nodejs";
@@ -33,19 +32,10 @@ export async function GET(request: Request) {
     const bead = coerceBrSingleRecord(raw, { command: "show", id });
     return NextResponse.json({ bead });
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "Failed to load task details.";
+    const message = err instanceof Error ? err.message : "";
     if (message.includes('Missing required query parameter: "id"')) {
       return NextResponse.json({ error: message }, { status: 400 });
     }
-    if (isBeadsWorkspaceError(message)) {
-      return NextResponse.json(
-        {
-          error: BEADS_WORKSPACE_NOT_INITIALIZED_ERROR_MESSAGE,
-        },
-        { status: 400 }
-      );
-    }
-    return NextResponse.json({ error: message }, { status: 502 });
+    return handleBeadsError(err, "Failed to load task details.");
   }
 }

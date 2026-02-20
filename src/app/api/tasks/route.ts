@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { readTasks, writeTasks, ensureTaskStateDir, removeTaskStateDir } from "@/features/tasks/lib/taskStore";
 import { isSidecarConfigured, sidecarGet, sidecarMutate } from "@/lib/workspace/sidecar";
-import { handleApiError } from "@/lib/api/helpers";
+import { handleApiError, validateAgentId } from "@/lib/api/helpers";
 import { getDb } from "@/lib/database";
 import * as tasksRepo from "@/lib/database/repositories/tasksRepo";
 import type { StudioTask, UpdateTaskPayload } from "@/features/tasks/types";
@@ -12,10 +12,9 @@ export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   try {
-    const agentId = request.nextUrl.searchParams.get("agentId")?.trim();
-    if (!agentId) {
-      return NextResponse.json({ error: "agentId query parameter is required." }, { status: 400 });
-    }
+    const validation = validateAgentId(request.nextUrl.searchParams.get("agentId"));
+    if (!validation.ok) return validation.error;
+    const { agentId } = validation;
 
     if (isSidecarConfigured()) {
       const resp = await sidecarGet("/tasks", { agentId });

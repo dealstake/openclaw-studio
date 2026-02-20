@@ -1,10 +1,7 @@
 import { NextResponse } from "next/server";
 
-import {
-  BEADS_WORKSPACE_NOT_INITIALIZED_ERROR_MESSAGE,
-  createTaskControlPlaneBrRunner,
-  isBeadsWorkspaceError,
-} from "@/lib/task-control-plane/br-runner";
+import { createTaskControlPlaneBrRunner } from "@/lib/task-control-plane/br-runner";
+import { handleBeadsError } from "@/lib/api/beads-error";
 import { buildTaskControlPlaneSnapshot } from "@/lib/task-control-plane/read-model";
 import { resolveTaskControlPlaneSshTarget } from "@/lib/task-control-plane/ssh-target";
 
@@ -39,17 +36,6 @@ export async function GET() {
     const snapshot = buildTaskControlPlaneSnapshot(raw);
     return NextResponse.json({ snapshot });
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "Failed to load task control plane data.";
-    console.error(message);
-    if (isBeadsWorkspaceError(message)) {
-      return NextResponse.json(
-        {
-          error: BEADS_WORKSPACE_NOT_INITIALIZED_ERROR_MESSAGE,
-        },
-        { status: 400 }
-      );
-    }
-    return NextResponse.json({ error: message }, { status: 502 });
+    return handleBeadsError(err);
   }
 }
