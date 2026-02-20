@@ -15,6 +15,39 @@ vi.mock("sonner", () => ({
   },
 }));
 
+// ─── Mock cron RPC functions ─────────────────────────────────────────────────
+const mockUpdateCronJob = vi.fn().mockResolvedValue(undefined);
+const mockRunCronJobNow = vi.fn().mockResolvedValue({ ok: true });
+const mockRemoveCronJob = vi.fn().mockResolvedValue(undefined);
+const mockAddCronJob = vi.fn().mockResolvedValue({ ok: true, jobId: "cron-new" });
+
+vi.mock("@/lib/cron/types", async (importOriginal) => {
+  const orig = await importOriginal<typeof import("@/lib/cron/types")>();
+  return {
+    ...orig,
+    updateCronJob: (...args: unknown[]) => mockUpdateCronJob(...args),
+    runCronJobNow: (...args: unknown[]) => mockRunCronJobNow(...args),
+    removeCronJob: (...args: unknown[]) => mockRemoveCronJob(...args),
+    addCronJob: (...args: unknown[]) => mockAddCronJob(...args),
+  };
+});
+
+// ─── Mock taskApi ────────────────────────────────────────────────────────────
+const mockPatchTaskMetadata = vi.fn();
+const mockDeleteTaskMetadata = vi.fn().mockResolvedValue(undefined);
+const mockSaveTaskMetadata = vi.fn().mockResolvedValue(undefined);
+
+vi.mock("@/features/tasks/lib/taskApi", async (importOriginal) => {
+  const orig = await importOriginal<typeof import("@/features/tasks/lib/taskApi")>();
+  return {
+    ...orig,
+    fetchTasks: orig.fetchTasks,
+    patchTaskMetadata: (...args: unknown[]) => mockPatchTaskMetadata(...args),
+    deleteTaskMetadata: (...args: unknown[]) => mockDeleteTaskMetadata(...args),
+    saveTaskMetadata: (...args: unknown[]) => mockSaveTaskMetadata(...args),
+  };
+});
+
 // ─── Fixtures ────────────────────────────────────────────────────────────────
 
 function makeClient(overrides: Partial<GatewayClient> = {}): GatewayClient {
@@ -63,6 +96,30 @@ function makeCronJob(overrides: Partial<CronJobSummary> = {}): CronJobSummary {
   } as CronJobSummary;
 }
 
+// Helper: render hook with tasks pre-loaded via fetch mock
+// NOTE: caller must have fetchSpy set up via beforeEach
+async function renderWithTasks(
+  fetchSpyRef: ReturnType<typeof vi.spyOn>,
+  tasks: StudioTask[],
+  cronJobs: CronJobSummary[] = []
+) {
+  fetchSpyRef.mockResolvedValueOnce({
+    ok: true,
+    json: async () => ({ tasks }),
+  } as Response);
+
+  const client = makeClient();
+  const hook = renderHook(() =>
+    useAgentTasks(client, "connected", "agent-1", cronJobs)
+  );
+
+  await act(async () => {
+    await hook.result.current.loadTasks();
+  });
+
+  return { ...hook, client };
+}
+
 // ─── Tests ───────────────────────────────────────────────────────────────────
 
 describe("useAgentTasks", () => {
@@ -70,11 +127,20 @@ describe("useAgentTasks", () => {
 
   beforeEach(() => {
     fetchSpy = vi.spyOn(globalThis, "fetch");
+    mockUpdateCronJob.mockClear();
+    mockRunCronJobNow.mockClear();
+    mockRemoveCronJob.mockClear();
+    mockAddCronJob.mockClear();
+    mockPatchTaskMetadata.mockClear();
+    mockDeleteTaskMetadata.mockClear();
+    mockSaveTaskMetadata.mockClear();
   });
 
   afterEach(() => {
     fetchSpy.mockRestore();
   });
+
+  // ─── loadTasks ───────────────────────────────────────────────────────────
 
   it("initializes with empty state", () => {
     const client = makeClient();
@@ -89,7 +155,6 @@ describe("useAgentTasks", () => {
   it("loadTasks fetches and enriches tasks with cron data", async () => {
     const task = makeTask();
     const cronJob = makeCronJob({ state: { runCount: 10, lastRunAtMs: Date.now(), lastStatus: "ok" } });
-    const client = makeClient();
 
     fetchSpy.mockResolvedValueOnce({
       ok: true,
@@ -97,7 +162,7 @@ describe("useAgentTasks", () => {
     } as Response);
 
     const { result } = renderHook(() =>
-      useAgentTasks(client, "connected", "agent-1", [cronJob])
+      useAgentTasks(makeClient(), "connected", "agent-1", [cronJob])
     );
 
     await act(async () => {
@@ -169,5 +234,203 @@ describe("useAgentTasks", () => {
     });
 
     expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  // ─── toggleTask ──────────────────────────────────────────────────────────
+
+  it("toggleTask optimistically updates and confirms on success", async () => {
+    const task = makeTask({ enabled: true });
+    const updatedTask = { ...task, enabled: false, updatedAt: "2026-02-20T00:00:00Z" };
+    mockPatchTaskMetadata.mockResolvedValueOnce(updatedTask);
+
+    const { result, client } = await renderWithTasks(fetchSpy, [task]);
+
+    expect(result.current.tasks[0].enabled).toBe(true);
+
+    await act(async () => {
+      await result.current.toggleTask("task-1", false);
+    });
+
+    expect(mockUpdateCronJob).toHaveBeenCalledWith(client, "cron-1", { enabled: false });
+    expect(mockPatchTaskMetadata).toHaveBeenCalledWith("agent-1", "task-1", { enabled: false });
+    expect(result.current.tasks[0].enabled).toBe(false);
+    expect(result.current.busyTaskId).toBeNull();
+  });
+
+  it("toggleTask rolls back on cron update failure", async () => {
+    const task = makeTask({ enabled: true });
+    mockUpdateCronJob.mockRejectedValueOnce(new Error("Cron update failed"));
+
+    const { result } = await renderWithTasks(fetchSpy, [task]);
+
+    await act(async () => {
+      await result.current.toggleTask("task-1", false);
+    });
+
+    // Should rollback to original state
+    expect(result.current.tasks[0].enabled).toBe(true);
+    expect(result.current.error).toBe("Cron update failed");
+    expect(result.current.busyTaskId).toBeNull();
+  });
+
+  it("toggleTask ignores calls when task not found", async () => {
+    const task = makeTask();
+    const { result } = await renderWithTasks(fetchSpy, [task]);
+
+    await act(async () => {
+      await result.current.toggleTask("nonexistent", false);
+    });
+
+    // Should error because task not found
+    expect(result.current.error).toBe("Task not found.");
+  });
+
+  // ─── runTask ─────────────────────────────────────────────────────────────
+
+  it("runTask triggers the cron job", async () => {
+    const task = makeTask();
+
+    const { result, client } = await renderWithTasks(fetchSpy, [task]);
+
+    await act(async () => {
+      await result.current.runTask("task-1");
+    });
+
+    expect(mockRunCronJobNow).toHaveBeenCalledWith(client, "cron-1");
+    expect(result.current.busyTaskId).toBeNull();
+  });
+
+  it("runTask sets error on failure", async () => {
+    const task = makeTask();
+    mockRunCronJobNow.mockRejectedValueOnce(new Error("Run failed"));
+
+    const { result } = await renderWithTasks(fetchSpy, [task]);
+
+    await act(async () => {
+      await result.current.runTask("task-1");
+    });
+
+    expect(result.current.error).toBe("Run failed");
+    expect(result.current.busyTaskId).toBeNull();
+  });
+
+  it("runTask errors when task not found", async () => {
+    const { result } = await renderWithTasks(fetchSpy, []);
+
+    await act(async () => {
+      await result.current.runTask("nonexistent");
+    });
+
+    expect(result.current.error).toBe("Task not found.");
+  });
+
+  // ─── deleteTask ──────────────────────────────────────────────────────────
+
+  it("deleteTask removes the task from state", async () => {
+    const task = makeTask();
+
+    const { result, client } = await renderWithTasks(fetchSpy, [task]);
+
+    expect(result.current.tasks).toHaveLength(1);
+
+    await act(async () => {
+      await result.current.deleteTask("task-1");
+    });
+
+    expect(mockRemoveCronJob).toHaveBeenCalledWith(client, "cron-1");
+    expect(mockDeleteTaskMetadata).toHaveBeenCalledWith("agent-1", "task-1");
+    expect(result.current.tasks).toHaveLength(0);
+    expect(result.current.busyTaskId).toBeNull();
+  });
+
+  it("deleteTask sets error on failure", async () => {
+    const task = makeTask();
+    mockRemoveCronJob.mockRejectedValueOnce(new Error("Delete failed"));
+
+    const { result } = await renderWithTasks(fetchSpy, [task]);
+
+    await act(async () => {
+      await result.current.deleteTask("task-1");
+    });
+
+    expect(result.current.error).toBe("Delete failed");
+    // Task should still be in list (no removal on error)
+    expect(result.current.tasks).toHaveLength(1);
+  });
+
+  // ─── updateTask ──────────────────────────────────────────────────────────
+
+  it("updateTask patches name and cron job name", async () => {
+    const task = makeTask();
+    const updated = { ...task, name: "New Name", updatedAt: "2026-02-20T00:00:00Z" };
+    mockPatchTaskMetadata.mockResolvedValueOnce(updated);
+
+    const { result, client } = await renderWithTasks(fetchSpy, [task]);
+
+    await act(async () => {
+      await result.current.updateTask("task-1", { name: "New Name" });
+    });
+
+    expect(mockUpdateCronJob).toHaveBeenCalledWith(client, "cron-1", { name: "[TASK] New Name" });
+    expect(result.current.tasks[0].name).toBe("New Name");
+  });
+
+  it("updateTask patches prompt and model via cron payload", async () => {
+    const task = makeTask();
+    const updated = { ...task, prompt: "New prompt", model: "new-model", updatedAt: "2026-02-20T00:00:00Z" };
+    mockPatchTaskMetadata.mockResolvedValueOnce(updated);
+
+    const { result, client } = await renderWithTasks(fetchSpy, [task]);
+
+    await act(async () => {
+      await result.current.updateTask("task-1", { prompt: "New prompt", model: "new-model" });
+    });
+
+    // Should update cron payload
+    expect(mockUpdateCronJob).toHaveBeenCalledWith(client, "cron-1", expect.objectContaining({
+      payload: expect.objectContaining({
+        kind: "agentTurn",
+        model: "new-model",
+      }),
+    }));
+    expect(result.current.tasks[0].prompt).toBe("New prompt");
+  });
+
+  // ─── updateTaskSchedule ──────────────────────────────────────────────────
+
+  it("updateTaskSchedule changes schedule on both cron and metadata", async () => {
+    const task = makeTask();
+    const newSchedule = { type: "periodic" as const, intervalMs: 1_800_000 };
+    const updated = { ...task, schedule: newSchedule, updatedAt: "2026-02-20T00:00:00Z" };
+    mockPatchTaskMetadata.mockResolvedValueOnce(updated);
+
+    const { result, client } = await renderWithTasks(fetchSpy, [task]);
+
+    await act(async () => {
+      await result.current.updateTaskSchedule("task-1", newSchedule);
+    });
+
+    // taskScheduleToCronSchedule converts periodic → cron expression
+    expect(mockUpdateCronJob).toHaveBeenCalledWith(client, "cron-1", {
+      schedule: expect.objectContaining({ kind: "cron" }),
+    });
+    expect((result.current.tasks[0].schedule as { intervalMs: number }).intervalMs).toBe(1_800_000);
+  });
+
+  // ─── busyAction tracking ────────────────────────────────────────────────
+
+  it("busyAction is null after toggle completes", async () => {
+    const task = makeTask();
+    const updated = { ...task, enabled: false };
+    mockPatchTaskMetadata.mockResolvedValueOnce(updated);
+
+    const { result } = await renderWithTasks(fetchSpy, [task]);
+
+    await act(async () => {
+      await result.current.toggleTask("task-1", false);
+    });
+
+    expect(result.current.busyAction).toBeNull();
+    expect(result.current.busyTaskId).toBeNull();
   });
 });
