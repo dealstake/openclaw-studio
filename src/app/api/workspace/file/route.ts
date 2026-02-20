@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 
 import { handleApiError, validateAgentId } from "@/lib/api/helpers";
+import { withSidecarGetFallback, withSidecarMutateFallback } from "@/lib/api/sidecar-proxy";
 import {
   isTextFile,
   readWorkspaceFile,
   writeWorkspaceFile,
 } from "@/lib/workspace/resolve";
-import { isSidecarConfigured, sidecarGet, sidecarMutate } from "@/lib/workspace/sidecar";
 
 export const runtime = "nodejs";
 
@@ -32,23 +32,16 @@ export async function GET(request: Request) {
       );
     }
 
-    // ─── Sidecar proxy ────────────────────────────────────────────────
-    if (isSidecarConfigured()) {
-      const resp = await sidecarGet("/file", { agentId, path: filePath });
-      const data = await resp.json();
-      return NextResponse.json(data, { status: resp.status });
-    }
-
-    // ─── Local filesystem ─────────────────────────────────────────────
-    const result = readWorkspaceFile(agentId, filePath);
-
-    return NextResponse.json({
-      agentId,
-      path: result.path,
-      content: result.content,
-      size: result.size,
-      updatedAt: result.updatedAt,
-      isText: result.isText,
+    return await withSidecarGetFallback("/file", { agentId, path: filePath }, () => {
+      const result = readWorkspaceFile(agentId, filePath);
+      return {
+        agentId,
+        path: result.path,
+        content: result.content,
+        size: result.size,
+        updatedAt: result.updatedAt,
+        isText: result.isText,
+      };
     });
   } catch (err) {
     return handleApiError(err, "workspace/file GET", "Failed to read workspace file.");
@@ -103,26 +96,20 @@ export async function PUT(request: Request) {
       );
     }
 
-    // ─── Sidecar proxy ────────────────────────────────────────────────
-    if (isSidecarConfigured()) {
-      const resp = await sidecarMutate("/file", "PUT", {
-        agentId: validation.agentId,
-        path: trimmedPath,
-        content,
-      });
-      const data = await resp.json();
-      return NextResponse.json(data, { status: resp.status });
-    }
-
-    // ─── Local filesystem ─────────────────────────────────────────────
-    const result = writeWorkspaceFile(validation.agentId, trimmedPath, content);
-
-    return NextResponse.json({
-      agentId: validation.agentId,
-      path: result.path,
-      size: result.size,
-      ok: true,
-    });
+    return await withSidecarMutateFallback(
+      "/file",
+      "PUT",
+      { agentId: validation.agentId, path: trimmedPath, content },
+      () => {
+        const result = writeWorkspaceFile(validation.agentId, trimmedPath, content);
+        return {
+          agentId: validation.agentId,
+          path: result.path,
+          size: result.size,
+          ok: true,
+        };
+      },
+    );
   } catch (err) {
     return handleApiError(err, "workspace/file PUT", "Failed to write workspace file.");
   }
