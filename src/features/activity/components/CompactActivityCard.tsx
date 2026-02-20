@@ -56,7 +56,12 @@ export const CompactActivityCard = React.memo(function CompactActivityCard({
             {title}
           </span>
           {badge && (
-            <span className="shrink-0 rounded bg-primary/10 px-1 py-0.5 text-[10px] font-medium text-primary">
+            <span className={cn(
+              "shrink-0 rounded px-1 py-0.5 text-[10px] font-medium",
+              status === "running"
+                ? "animate-pulse bg-emerald-500/15 text-emerald-400"
+                : "bg-primary/10 text-primary"
+            )}>
               {badge}
             </span>
           )}

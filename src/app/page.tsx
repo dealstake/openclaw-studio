@@ -70,6 +70,7 @@ const UsagePanel = lazy(() => import("@/features/usage/components/UsagePanel").t
 import { WorkspaceExplorerPanel } from "@/features/workspace/components/WorkspaceExplorerPanel";
 import { ActivityDrawer } from "@/features/activity/components/ActivityDrawer";
 import { upsertLiveSession, addSystemEvent } from "@/features/activity/hooks/useLiveActivityStore";
+import { useTranscriptCapture } from "@/features/activity/hooks/useTranscriptCapture";
 import { StatusBar } from "@/features/status/components/StatusBar";
 import { TraceViewer } from "@/features/sessions/components/TraceViewer";
 import { useChannelsStatus } from "@/features/channels/hooks/useChannelsStatus";
@@ -346,6 +347,9 @@ const AgentStudioPage = () => {
     deleteTask,
   } = useAgentTasks(client, status, focusedAgentId, allCronJobs);
   loadTasksRef.current = loadTasks;
+
+  // Capture transcripts from completed cron/subagent sessions
+  useTranscriptCapture(focusedAgentId);
 
   const focusedAgentRef = useRef(focusedAgent);
   focusedAgentRef.current = focusedAgent;

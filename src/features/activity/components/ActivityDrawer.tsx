@@ -3,38 +3,37 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Group, Panel, Separator } from "react-resizable-panels";
 import type { PanelSize } from "react-resizable-panels";
-import { Activity, ChevronLeft, ChevronRight, History, Radio } from "lucide-react";
+import { Activity, ChevronLeft, ChevronRight, Maximize2, History, Radio } from "lucide-react";
 import { SectionLabel } from "@/components/SectionLabel";
+import { PanelExpandModal } from "@/components/PanelExpandModal";
+import { PanelIconButton } from "@/components/PanelIconButton";
 import { HistoryActivityFeed } from "./HistoryActivityFeed";
 import { LiveActivityFeed } from "./LiveActivityFeed";
+import { useActivityDrawer, type DrawerTab } from "@/features/activity/hooks/useActivityDrawer";
 import { cn } from "@/lib/utils";
 
 const DRAWER_STATE_KEY = "studio:activity-drawer-state";
 
-interface DrawerState {
+interface DrawerPersist {
   collapsed: boolean;
   size: number;
 }
 
-function loadDrawerState(): DrawerState {
+function loadDrawerState(): DrawerPersist {
   if (typeof window === "undefined") return { collapsed: true, size: 28 };
   try {
     const raw = localStorage.getItem(DRAWER_STATE_KEY);
-    if (raw) return JSON.parse(raw) as DrawerState;
+    if (raw) return JSON.parse(raw) as DrawerPersist;
   } catch { /* ignore */ }
   return { collapsed: true, size: 28 };
 }
 
-function saveDrawerState(s: DrawerState) {
+function saveDrawerState(s: DrawerPersist) {
   try { localStorage.setItem(DRAWER_STATE_KEY, JSON.stringify(s)); } catch { /* ignore */ }
 }
 
-type DrawerTab = "live" | "history";
-
 export interface ActivityDrawerProps {
   children: React.ReactNode;
-  eventCount?: number;
-  hasRunning?: boolean;
   hidden?: boolean;
   agentId?: string | null;
 }
@@ -69,6 +68,11 @@ const CollapsedIndicator = React.memo(function CollapsedIndicator({
   );
 });
 
+const TAB_LABELS: Record<DrawerTab, string> = {
+  live: "Live Activity",
+  history: "Activity History",
+};
+
 const DrawerContent = React.memo(function DrawerContent({
   agentId,
   onCollapse,
@@ -76,73 +80,102 @@ const DrawerContent = React.memo(function DrawerContent({
   agentId: string | null;
   onCollapse: () => void;
 }) {
-  const [tab, setTab] = useState<DrawerTab>("live");
+  const { tab, setTab, expandedTab, expandTab, closeExpand, hasRunning } = useActivityDrawer();
 
   return (
-    <div className="flex h-full flex-col overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b border-border px-3 py-2">
-        <SectionLabel>Activity</SectionLabel>
-        <button
-          type="button"
-          onClick={onCollapse}
-          aria-label="Close activity drawer"
-          className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-        >
-          <ChevronRight className="h-3.5 w-3.5" />
-        </button>
+    <>
+      <div className="flex h-full flex-col overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-border px-3 py-2">
+          <SectionLabel>Activity</SectionLabel>
+          <div className="flex items-center gap-0.5">
+            <PanelIconButton
+              onClick={() => expandTab(tab)}
+              aria-label="Expand activity panel"
+            >
+              <Maximize2 className="h-3 w-3" />
+            </PanelIconButton>
+            <button
+              type="button"
+              onClick={onCollapse}
+              aria-label="Close activity drawer"
+              className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+            >
+              <ChevronRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Tab bar */}
+        <div className="flex border-b border-border">
+          <button
+            type="button"
+            onClick={() => setTab("live")}
+            className={cn(
+              "flex flex-1 items-center justify-center gap-1.5 px-3 py-1.5 text-[11px] font-medium transition-colors",
+              tab === "live"
+                ? "border-b-2 border-primary text-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <Radio className="h-3 w-3" />
+            Live
+            {hasRunning && (
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab("history")}
+            className={cn(
+              "flex flex-1 items-center justify-center gap-1.5 px-3 py-1.5 text-[11px] font-medium transition-colors",
+              tab === "history"
+                ? "border-b-2 border-primary text-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <History className="h-3 w-3" />
+            History
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-hidden">
+          {tab === "live" ? (
+            <LiveActivityFeed className="h-full" />
+          ) : (
+            <HistoryActivityFeed agentId={agentId} className="h-full" />
+          )}
+        </div>
       </div>
 
-      {/* Tab bar */}
-      <div className="flex border-b border-border">
-        <button
-          type="button"
-          onClick={() => setTab("live")}
-          className={cn(
-            "flex flex-1 items-center justify-center gap-1.5 px-3 py-1.5 text-[11px] font-medium transition-colors",
-            tab === "live"
-              ? "border-b-2 border-primary text-foreground"
-              : "text-muted-foreground hover:text-foreground"
-          )}
+      {/* Expand modal */}
+      {expandedTab && (
+        <PanelExpandModal
+          open
+          onOpenChange={() => closeExpand()}
+          title={TAB_LABELS[expandedTab]}
         >
-          <Radio className="h-3 w-3" />
-          Live
-        </button>
-        <button
-          type="button"
-          onClick={() => setTab("history")}
-          className={cn(
-            "flex flex-1 items-center justify-center gap-1.5 px-3 py-1.5 text-[11px] font-medium transition-colors",
-            tab === "history"
-              ? "border-b-2 border-primary text-foreground"
-              : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          <History className="h-3 w-3" />
-          History
-        </button>
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 overflow-hidden">
-        {tab === "live" ? (
-          <LiveActivityFeed className="h-full" />
-        ) : (
-          <HistoryActivityFeed agentId={agentId} className="h-full" />
-        )}
-      </div>
-    </div>
+          <div className="h-full overflow-hidden">
+            {expandedTab === "live" ? (
+              <LiveActivityFeed className="h-full" />
+            ) : (
+              <HistoryActivityFeed agentId={agentId} className="h-full" />
+            )}
+          </div>
+        </PanelExpandModal>
+      )}
+    </>
   );
 });
 
 export const ActivityDrawer = React.memo(function ActivityDrawer({
   children,
-  eventCount = 0,
-  hasRunning = false,
   hidden = false,
   agentId = null,
 }: ActivityDrawerProps) {
-  const [drawerState, setDrawerState] = useState<DrawerState>(loadDrawerState);
+  const { eventCount, hasRunning } = useActivityDrawer();
+  const [drawerState, setDrawerState] = useState<DrawerPersist>(loadDrawerState);
 
   useEffect(() => {
     saveDrawerState(drawerState);
