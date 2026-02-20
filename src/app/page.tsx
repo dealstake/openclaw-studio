@@ -68,6 +68,7 @@ const SessionsPanel = lazy(() => import("@/features/sessions/components/Sessions
 const CronPanel = lazy(() => import("@/features/cron/components/CronPanel").then(m => ({ default: m.CronPanel })));
 const UsagePanel = lazy(() => import("@/features/usage/components/UsagePanel").then(m => ({ default: m.UsagePanel })));
 import { WorkspaceExplorerPanel } from "@/features/workspace/components/WorkspaceExplorerPanel";
+import { ActivityDrawer } from "@/features/activity/components/ActivityDrawer";
 import { StatusBar } from "@/features/status/components/StatusBar";
 import { TraceViewer } from "@/features/sessions/components/TraceViewer";
 import { useChannelsStatus } from "@/features/channels/hooks/useChannelsStatus";
@@ -1437,6 +1438,16 @@ const AgentStudioPage = () => {
   const connectionPanelVisible = showConnectionPanel;
   const hasAnyAgents = agents.length > 0;
   const showFleetLayout = hasAnyAgents || status === "connected";
+
+  // Hide activity drawer on viewports < 1280px (xl breakpoint)
+  const [isXlViewport, setIsXlViewport] = useState(false);
+  useEffect(() => {
+    const mql = window.matchMedia("(min-width: 1280px)");
+    setIsXlViewport(mql.matches);
+    const handler = (e: MediaQueryListEvent) => setIsXlViewport(e.matches);
+    mql.addEventListener("change", handler);
+    return () => mql.removeEventListener("change", handler);
+  }, []);
   const configMutationStatusLine = activeConfigMutation
     ? `Applying config change: ${activeConfigMutation.label}`
     : queuedConfigMutationCount > 0
@@ -1680,6 +1691,7 @@ const AgentStudioPage = () => {
               className="glass-panel flex min-h-0 flex-1 overflow-hidden p-2 sm:p-3"
               data-testid="focused-agent-panel"
             >
+              <ActivityDrawer hidden={!isXlViewport}>
               {focusedAgent ? (
                 <AgentChatPanel
                   agent={focusedAgent}
@@ -1719,6 +1731,7 @@ const AgentStudioPage = () => {
                   )}
                 </div>
               )}
+              </ActivityDrawer>
             </div>
             {/* Expanded panel modal */}
             {expandedTab && (
