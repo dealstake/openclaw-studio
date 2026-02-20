@@ -1,6 +1,7 @@
 "use client";
 
-import { memo, useMemo } from "react";
+import { memo } from "react";
+import { useShallowArrayMemo } from "@/lib/hooks/useShallowMemo";
 import type { MessagePart } from "@/lib/chat/types";
 import {
   isTextPart,
@@ -169,7 +170,7 @@ export const AgentChatView = memo(function AgentChatView({
 }: AgentChatViewProps) {
   // streaming will be used in Phase 3 for live streaming indicators
   void _streaming;
-  const groups = useMemo(() => groupParts(parts), [parts]);
+  const groups = useShallowArrayMemo(() => groupParts(parts), parts);
 
   if (parts.length === 0) {
     return (

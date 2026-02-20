@@ -92,6 +92,11 @@ type Action =
   | { type: "markActivity"; agentId: string; at?: number }
   | { type: "selectAgent"; agentId: string | null };
 
+/** Maximum message parts per agent before oldest are trimmed. */
+export const MAX_PARTS = 500;
+/** Number of oldest parts to remove when MAX_PARTS is exceeded. */
+const TRIM_COUNT = 100;
+
 const initialState: AgentStoreState = {
   agents: [],
   selectedAgentId: null,
@@ -169,22 +174,30 @@ const reducer = (state: AgentStoreState, action: Action): AgentStoreState => {
     case "appendPart":
       return {
         ...state,
-        agents: state.agents.map((agent) =>
-          agent.agentId === action.agentId
-            ? { ...agent, messageParts: [...agent.messageParts, action.part] }
-            : agent
-        ),
+        agents: state.agents.map((agent) => {
+          if (agent.agentId !== action.agentId) return agent;
+          let parts = agent.messageParts;
+          if (parts.length >= MAX_PARTS) {
+            // Trim oldest parts, insert a marker so UI can indicate trimmed history
+            const trimmed = parts.slice(TRIM_COUNT);
+            const marker: MessagePart = { type: "text", text: "⋯ Earlier messages trimmed" };
+            parts = [marker, ...trimmed];
+          }
+          return { ...agent, messageParts: [...parts, action.part] };
+        }),
       };
     case "updatePart":
       return {
         ...state,
         agents: state.agents.map((agent) => {
           if (agent.agentId !== action.agentId) return agent;
-          const parts = [...agent.messageParts];
-          if (action.index >= 0 && action.index < parts.length) {
-            parts[action.index] = { ...parts[action.index], ...action.patch } as MessagePart;
-          }
-          return { ...agent, messageParts: parts };
+          const { index, patch } = action;
+          if (index < 0 || index >= agent.messageParts.length) return agent;
+          // Mutate in-place and return same array ref — avoids O(n) copy per streaming delta.
+          // React detects the change via the new agent object spread.
+          const updated = { ...agent.messageParts[index], ...patch } as MessagePart;
+          agent.messageParts[index] = updated;
+          return { ...agent, messageParts: agent.messageParts };
         }),
       };
     case "markActivity": {
