@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useCallback, useState } from "react";
-import { ChevronDown, ChevronRight, Play, RefreshCw, ToggleLeft, ToggleRight, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Play, Plus, RefreshCw, ToggleLeft, ToggleRight, Trash2 } from "lucide-react";
 import { EmptyStatePanel } from "@/features/agents/components/EmptyStatePanel";
 import { Skeleton } from "@/components/Skeleton";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
@@ -117,13 +117,30 @@ export const CronPanel = memo(function CronPanel({
           <SectionLabel>
             Cron jobs
           </SectionLabel>
-          <PanelIconButton
-            aria-label="Refresh cron jobs"
-            onClick={onRefresh}
-            disabled={loading}
-          >
-            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-          </PanelIconButton>
+          <div className="flex items-center gap-1">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span>
+                  <PanelIconButton
+                    aria-label="New cron job (use CLI)"
+                    disabled
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                  </PanelIconButton>
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                <p className="text-xs">Create jobs via CLI</p>
+              </TooltipContent>
+            </Tooltip>
+            <PanelIconButton
+              aria-label="Refresh cron jobs"
+              onClick={onRefresh}
+              disabled={loading}
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+            </PanelIconButton>
+          </div>
         </div>
 
         {/* Summary bar */}
@@ -271,7 +288,7 @@ export const CronPanel = memo(function CronPanel({
                           </div>
                         </div>
                       </button>
-                      <div className="flex items-center gap-1 opacity-0 transition group-focus-within/cron:opacity-100 group-hover/cron:opacity-100">
+                      <div className="flex shrink-0 items-center gap-1">
                         {onToggleEnabled ? (
                           <Tooltip>
                             <TooltipTrigger asChild>

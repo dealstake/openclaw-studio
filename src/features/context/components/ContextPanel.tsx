@@ -96,12 +96,23 @@ export const ContextPanel = memo(function ContextPanel({
   );
 
   const activeOverflowTab = OVERFLOW_TABS.find((t) => t.value === activeTab);
+  const mobileTabBarRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll active tab into view on mobile
+  useEffect(() => {
+    const container = mobileTabBarRef.current;
+    if (!container) return;
+    const activeBtn = container.querySelector<HTMLElement>('[aria-selected="true"]');
+    if (activeBtn) {
+      activeBtn.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+    }
+  }, [activeTab]);
 
   return (
     <div className="flex h-full w-full flex-col overflow-visible">
       {/* Tab bar — mobile: scrollable row; desktop: primary tabs + More dropdown */}
       {/* Mobile */}
-      <div className="flex items-center gap-1 overflow-x-auto border-b border-border/40 px-3 pt-3 pb-2 lg:hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="tablist">
+      <div ref={mobileTabBarRef} className="flex items-center gap-1 overflow-x-auto border-b border-border/40 px-3 pt-3 pb-2 lg:hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="tablist">
         {TAB_OPTIONS.map((tab) => {
           const isActive = activeTab === tab.value;
           return (

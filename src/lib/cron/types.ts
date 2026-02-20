@@ -1,3 +1,4 @@
+import cronstrue from "cronstrue";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 
 export type CronSchedule =
@@ -88,12 +89,25 @@ const formatEveryMs = (everyMs: number) => {
   return `${everyMs}ms`;
 };
 
+/**
+ * Convert a cron expression to a human-readable string.
+ * Falls back to the raw expression if parsing fails.
+ */
+export const formatCronHuman = (expr: string): string => {
+  try {
+    return cronstrue.toString(expr, { use24HourTimeFormat: false });
+  } catch {
+    return expr;
+  }
+};
+
 export const formatCronSchedule = (schedule: CronSchedule) => {
   if (schedule.kind === "every") {
     return `Every ${formatEveryMs(schedule.everyMs)}`;
   }
   if (schedule.kind === "cron") {
-    return schedule.tz ? `Cron: ${schedule.expr} (${schedule.tz})` : `Cron: ${schedule.expr}`;
+    const human = formatCronHuman(schedule.expr);
+    return schedule.tz ? `${human} (${schedule.tz})` : human;
   }
   const atDate = new Date(schedule.at);
   if (Number.isNaN(atDate.getTime())) return `At: ${schedule.at}`;
