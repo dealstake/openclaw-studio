@@ -174,7 +174,7 @@ export const FleetSidebar = memo(function FleetSidebar({
         </button>
       </div>
 
-      <div className="flex flex-nowrap gap-2 overflow-x-auto scrollbar-none">
+      <div className="flex flex-nowrap gap-1.5 overflow-x-auto scrollbar-none pr-1">
         {FILTER_OPTIONS.map((option) => {
           const active = filter === option.value;
           return (
@@ -183,7 +183,7 @@ export const FleetSidebar = memo(function FleetSidebar({
               type="button"
               data-testid={option.testId}
               aria-pressed={active}
-              className={`shrink-0 whitespace-nowrap rounded-md border px-2.5 py-2 ${sectionLabelClass} transition ${
+              className={`shrink-0 whitespace-nowrap rounded-md border px-2 py-1.5 ${sectionLabelClass} transition ${
                 active
                   ? "border-primary/60 bg-primary/15 text-foreground shadow-xs"
                   : "border-border/80 bg-card/65 text-muted-foreground hover:border-border hover:bg-muted/70"
@@ -199,7 +199,8 @@ export const FleetSidebar = memo(function FleetSidebar({
       <div className="min-h-0 flex-1 overflow-auto">
         {agents.length === 0 ? (
           <EmptyStatePanel
-            title={isFilterEmpty ? "No agents match this filter." : "No agents available."}
+            title={isFilterEmpty ? "No agents match this filter." : "No agents yet."}
+            description={isFilterEmpty ? "Try a different filter or select \"All\" to see all agents." : undefined}
             compact
             className="p-3 text-xs"
           />
