@@ -137,6 +137,20 @@ export function useCommandPalette({
           setOpen(false);
         },
       });
+
+      items.push({
+        id: "action-continue-project",
+        label: "Continue Project…",
+        icon: Play,
+        group: "actions",
+        keywords: ["continue", "project", "resume", "progress"],
+        onSelect: () => {
+          onNavigateTab("projects");
+          onOpenContextPanel();
+          trackRecent("nav-projects", "Go to Projects");
+          setOpen(false);
+        },
+      });
     }
 
     // Agent switching commands

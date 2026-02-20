@@ -41,6 +41,8 @@ interface ProjectsPanelProps {
   isTabActive?: boolean;
   /** Increments on cron/session events to trigger immediate refresh */
   eventTick?: number;
+  /** Increment to programmatically open the project wizard (e.g., from command palette) */
+  requestCreateProject?: number;
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -50,6 +52,7 @@ export const ProjectsPanel = memo(function ProjectsPanel({
   client,
   isTabActive,
   eventTick,
+  requestCreateProject,
 }: ProjectsPanelProps) {
   const [showWizard, setShowWizard] = useState(false);
   const [archiveTarget, setArchiveTarget] = useState<ProjectEntry | null>(null);
@@ -58,6 +61,17 @@ export const ProjectsPanel = memo(function ProjectsPanel({
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Open wizard programmatically when requestCreateProject increments
+  const createProjectTickRef = useRef(requestCreateProject ?? 0);
+  useEffect(() => {
+    if (requestCreateProject != null && requestCreateProject > createProjectTickRef.current) {
+      createProjectTickRef.current = requestCreateProject;
+      // Deferred to avoid synchronous setState-in-effect lint rule
+      const id = requestAnimationFrame(() => setShowWizard(true));
+      return () => cancelAnimationFrame(id);
+    }
+  }, [requestCreateProject]);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { projects, loading, error, refresh, changeStatus, archive, buildingCount, getQueuePosition } =
     useProjects(agentId, client, { isTabActive, eventTick });

@@ -379,6 +379,13 @@ const AgentStudioPage = () => {
     flushPendingDraft(focusedAgent?.agentId ?? null);
     dispatch({ type: "selectAgent", agentId });
   }, [flushPendingDraft, focusedAgent?.agentId, dispatch]);
+  // Project creation trigger (incremented by command palette)
+  const [createProjectTick, setCreateProjectTick] = useState(0);
+  const handleCmdCreateProject = useCallback(() => {
+    handleCmdNavTab("projects");
+    handleCmdOpenCtx();
+    setCreateProjectTick((t) => t + 1);
+  }, [handleCmdNavTab, handleCmdOpenCtx]);
   const commandPalette = useCommandPalette({
     onNavigateTab: handleCmdNavTab,
     onOpenContextPanel: handleCmdOpenCtx,
@@ -386,6 +393,7 @@ const AgentStudioPage = () => {
     currentAgentId: focusedAgentId ?? undefined,
     onSwitchAgent: handleCmdSwitchAgent,
     client,
+    onCreateProject: handleCmdCreateProject,
   });
 
   // Breadcrumb agents for header agent switcher
@@ -1855,7 +1863,7 @@ const AgentStudioPage = () => {
                 <ExpandedContext.Provider value={true}>
                   <div className="flex h-full w-full flex-col overflow-y-auto">
                     {expandedTab === "projects" && (
-                      <ProjectsPanel agentId={focusedAgent?.agentId ?? null} client={client} isTabActive eventTick={cronEventTick} />
+                      <ProjectsPanel agentId={focusedAgent?.agentId ?? null} client={client} isTabActive eventTick={cronEventTick} requestCreateProject={createProjectTick} />
                     )}
                     {expandedTab === "tasks" && (
                       <TasksPanel
@@ -2058,6 +2066,7 @@ const AgentStudioPage = () => {
                         client={client}
                         isTabActive={contextTab === "projects"}
                         eventTick={cronEventTick}
+                        requestCreateProject={createProjectTick}
                       />
                     </div>
                   }
