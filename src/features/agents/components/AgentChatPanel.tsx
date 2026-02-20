@@ -13,7 +13,7 @@ import {
 import { formatTokens } from "@/lib/text/format";
 import type { AgentState as AgentRecord } from "@/features/agents/state/store";
 import type { MessagePart } from "@/lib/chat/types";
-import { AlertTriangle, ArrowLeft, ArrowUp, ChevronDown, ChevronUp, RefreshCw, Settings, Shuffle, SquarePen, X, Zap } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ArrowUp, ChevronDown, ChevronUp, RefreshCw, Settings, Shuffle, Sparkles, SquarePen, X, Zap } from "lucide-react";
 import type { GatewayModelChoice } from "@/lib/gateway/models";
 import { isNearBottom } from "@/lib/dom";
 import { AgentAvatar } from "./AgentAvatar";
@@ -46,14 +46,59 @@ type AgentChatPanelProps = {
   onDismissContinuationBanner?: () => void;
 };
 
+const CHAT_STARTERS = [
+  { text: "What's on my agenda?", prompt: "What's on my agenda today?" },
+  { text: "Check project status", prompt: "Check the status of active projects" },
+  { text: "Review recent activity", prompt: "Review recent cron and agent activity" },
+  { text: "Help me build something", prompt: "Help me plan and build a new feature" },
+];
+
+const ChatEmptyState = memo(function ChatEmptyState({
+  agentName,
+  onSend,
+}: {
+  agentName: string;
+  onSend: (message: string) => void;
+}) {
+  return (
+    <div className="flex h-full flex-col items-center justify-center gap-5 px-4">
+      <div className="flex flex-col items-center gap-2">
+        <Sparkles className="h-8 w-8 text-brand-gold/70" />
+        <h2 className="text-base font-semibold text-foreground">
+          What can {agentName} help with?
+        </h2>
+        <p className="text-center text-sm text-muted-foreground">
+          Start a conversation or pick a suggestion below.
+        </p>
+      </div>
+      <div className="flex flex-wrap justify-center gap-2">
+        {CHAT_STARTERS.map((s) => (
+          <button
+            key={s.text}
+            type="button"
+            onClick={() => onSend(s.prompt)}
+            className="rounded-full border border-border bg-card px-3.5 py-2 text-xs font-medium text-foreground shadow-sm transition-colors hover:bg-muted"
+          >
+            {s.text}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+});
+
 const AgentChatTranscript = memo(function AgentChatTranscript({
   messageParts,
   streaming,
   scrollToBottomNextOutputRef,
+  agentName,
+  onSendStarter,
 }: {
   messageParts: MessagePart[];
   streaming: boolean;
   scrollToBottomNextOutputRef: MutableRefObject<boolean>;
+  agentName: string;
+  onSendStarter: (message: string) => void;
 }) {
   const chatRef = useRef<HTMLDivElement | null>(null);
   const chatBottomRef = useRef<HTMLDivElement | null>(null);
@@ -154,31 +199,37 @@ const AgentChatTranscript = memo(function AgentChatTranscript({
     };
   }, []);
 
+  const hasMessages = partCount > 0;
+
   return (
     <div className="relative flex-1 overflow-hidden">
-      <div
-        ref={chatRef}
-        data-testid="agent-chat-scroll"
-        role="log"
-        aria-label="Chat messages"
-        aria-live="polite"
-        className="h-full overflow-y-auto overflow-x-hidden py-3 sm:py-4"
-        onScroll={() => updatePinnedFromScroll()}
-        onWheel={(event) => {
-          event.stopPropagation();
-        }}
-        onWheelCapture={(event) => {
-          event.stopPropagation();
-        }}
-      >
-        <div className="mx-auto flex w-full min-w-0 max-w-3xl flex-col gap-3 px-4 text-sm text-foreground sm:px-6">
-          <AgentChatView
-            parts={messageParts}
-            streaming={streaming}
-          />
-          <div ref={chatBottomRef} />
+      {hasMessages ? (
+        <div
+          ref={chatRef}
+          data-testid="agent-chat-scroll"
+          role="log"
+          aria-label="Chat messages"
+          aria-live="polite"
+          className="h-full overflow-y-auto overflow-x-hidden py-3 sm:py-4"
+          onScroll={() => updatePinnedFromScroll()}
+          onWheel={(event) => {
+            event.stopPropagation();
+          }}
+          onWheelCapture={(event) => {
+            event.stopPropagation();
+          }}
+        >
+          <div className="mx-auto flex w-full min-w-0 max-w-3xl flex-col gap-3 px-4 text-sm text-foreground sm:px-6">
+            <AgentChatView
+              parts={messageParts}
+              streaming={streaming}
+            />
+            <div ref={chatBottomRef} />
+          </div>
         </div>
-      </div>
+      ) : (
+        <ChatEmptyState agentName={agentName} onSend={onSendStarter} />
+      )}
 
       {showJumpToLatest ? (
         <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex flex-col items-center">
@@ -726,6 +777,8 @@ export const AgentChatPanel = memo(function AgentChatPanel({
             messageParts={agent.messageParts}
             streaming={running}
             scrollToBottomNextOutputRef={scrollToBottomNextOutputRef}
+            agentName={agent.name}
+            onSendStarter={handleComposerSend}
           />
         )}
 

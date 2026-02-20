@@ -296,6 +296,6 @@ describe("AgentChatPanel controls", () => {
       })
     );
 
-    expect(screen.getByText("No messages yet.")).toBeInTheDocument();
+    expect(screen.getByText(/What can Agent One help with/)).toBeInTheDocument();
   });
 });

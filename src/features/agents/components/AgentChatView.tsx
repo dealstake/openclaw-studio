@@ -16,7 +16,6 @@ import { ChatStatusBar } from "@/components/chat/ChatStatusBar";
 // TokenCostDisplay will be used in Phase 3 when wiring token data per turn
 // import { TokenCostDisplay } from "@/components/chat/TokenCostDisplay";
 import { MessageActions } from "./MessageActions";
-import { EmptyStatePanel } from "./EmptyStatePanel";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -175,13 +174,7 @@ export const AgentChatView = memo(function AgentChatView({
   const groups = useShallowArrayMemo(() => groupParts(parts), parts);
 
   if (parts.length === 0) {
-    return (
-      <EmptyStatePanel
-        title="No messages yet."
-        compact
-        className="p-3 text-xs"
-      />
-    );
+    return null;
   }
 
   return (

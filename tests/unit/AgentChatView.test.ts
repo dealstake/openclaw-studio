@@ -21,8 +21,8 @@ describe("AgentChatView groupParts logic", () => {
     );
     const { createElement } = await import("react");
 
-    render(createElement(AgentChatView, { parts: [], streaming: false }));
-    expect(screen.getByText("No messages yet.")).toBeTruthy();
+    const { container } = render(createElement(AgentChatView, { parts: [], streaming: false }));
+    expect(container.innerHTML).toBe("");
   });
 
   it("renders user message with stripped > prefix", async () => {
