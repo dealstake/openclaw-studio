@@ -7,12 +7,9 @@ import remarkGfm from "remark-gfm";
 import { cn } from "@/lib/utils";
 
 /**
- * Shared markdown renderer for displaying markdown content outside of the
- * assistant-ui chat context. Uses react-markdown + remarkGfm with the
- * `agent-markdown` CSS class for consistent styling across panels.
- *
- * For chat messages, use `@/components/assistant-ui/markdown-text` instead
- * (which integrates with assistant-ui primitives).
+ * Shared markdown renderer for displaying markdown content.
+ * Uses react-markdown + remarkGfm with the `agent-markdown` CSS class
+ * for consistent styling across panels and chat messages.
  */
 export const MarkdownViewer = memo(function MarkdownViewer({
   content,

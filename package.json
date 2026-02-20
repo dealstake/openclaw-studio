@@ -15,8 +15,6 @@
     "e2e": "playwright test"
   },
   "dependencies": {
-    "@assistant-ui/react": "^0.12.10",
-    "@assistant-ui/react-markdown": "^0.12.3",
     "@multiavatar/multiavatar": "github:multiavatar/Multiavatar",
     "@noble/ed25519": "^3.0.0",
     "@radix-ui/react-alert-dialog": "^1.1.15",
