@@ -5,9 +5,8 @@ import { Group, Panel, Separator } from "react-resizable-panels";
 import type { PanelSize } from "react-resizable-panels";
 import { Activity, ChevronLeft, ChevronRight, History, Radio } from "lucide-react";
 import { SectionLabel } from "@/components/SectionLabel";
-import { CompactActivityCard } from "./CompactActivityCard";
 import { HistoryActivityFeed } from "./HistoryActivityFeed";
-import type { ActivityStatus } from "./CompactActivityCard";
+import { LiveActivityFeed } from "./LiveActivityFeed";
 import { cn } from "@/lib/utils";
 
 const DRAWER_STATE_KEY = "studio:activity-drawer-state";
@@ -30,22 +29,10 @@ function saveDrawerState(s: DrawerState) {
   try { localStorage.setItem(DRAWER_STATE_KEY, JSON.stringify(s)); } catch { /* ignore */ }
 }
 
-export interface ActivityEntry {
-  id: string;
-  icon: string;
-  title: string;
-  subtitle: string;
-  status: ActivityStatus;
-  elapsed?: string;
-  badge?: string;
-  timestamp: number;
-}
-
 type DrawerTab = "live" | "history";
 
 export interface ActivityDrawerProps {
   children: React.ReactNode;
-  entries?: ActivityEntry[];
   eventCount?: number;
   hasRunning?: boolean;
   hidden?: boolean;
@@ -83,11 +70,9 @@ const CollapsedIndicator = React.memo(function CollapsedIndicator({
 });
 
 const DrawerContent = React.memo(function DrawerContent({
-  entries,
   agentId,
   onCollapse,
 }: {
-  entries: ActivityEntry[];
   agentId: string | null;
   onCollapse: () => void;
 }) {
@@ -141,29 +126,7 @@ const DrawerContent = React.memo(function DrawerContent({
       {/* Content */}
       <div className="flex-1 overflow-hidden">
         {tab === "live" ? (
-          <div className="h-full overflow-y-auto p-2 space-y-1.5">
-            {entries.length === 0 ? (
-              <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground">
-                <Activity className="h-8 w-8 opacity-30" />
-                <p className="text-xs">No live activity</p>
-                <p className="text-[10px] text-muted-foreground/60">
-                  Running cron jobs and sub-agents appear here
-                </p>
-              </div>
-            ) : (
-              entries.map((entry) => (
-                <CompactActivityCard
-                  key={entry.id}
-                  icon={entry.icon}
-                  title={entry.title}
-                  subtitle={entry.subtitle}
-                  status={entry.status}
-                  elapsed={entry.elapsed}
-                  badge={entry.badge}
-                />
-              ))
-            )}
-          </div>
+          <LiveActivityFeed className="h-full" />
         ) : (
           <HistoryActivityFeed agentId={agentId} className="h-full" />
         )}
@@ -174,7 +137,6 @@ const DrawerContent = React.memo(function DrawerContent({
 
 export const ActivityDrawer = React.memo(function ActivityDrawer({
   children,
-  entries = [],
   eventCount = 0,
   hasRunning = false,
   hidden = false,
@@ -257,7 +219,7 @@ export const ActivityDrawer = React.memo(function ActivityDrawer({
             onExpand={handleExpand}
           />
         ) : (
-          <DrawerContent entries={entries} agentId={agentId} onCollapse={handleCollapse} />
+          <DrawerContent agentId={agentId} onCollapse={handleCollapse} />
         )}
       </Panel>
     </Group>

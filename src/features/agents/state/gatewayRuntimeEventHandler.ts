@@ -57,12 +57,33 @@ export type GatewayRuntimeEventHandlerDeps = {
   onSessionsUpdate?: () => void;
   onCronUpdate?: () => void;
   onSubAgentLifecycle?: (sessionKey: string, phase: string) => void;
+  onActivityEvent?: (sessionKey: string, data: {
+    lastAction?: string;
+    lastToolName?: string;
+    lastTextSnippet?: string;
+    streaming?: boolean;
+    status?: "running" | "completed" | "error";
+    agentId?: string;
+    taskName?: string;
+  }) => void;
+  onSystemEvent?: (event: {
+    kind: "exec-approval" | "session-lifecycle" | "cron-schedule";
+    title: string;
+    subtitle: string;
+  }) => void;
 };
 
 export type GatewayRuntimeEventHandler = {
   handleEvent: (event: EventFrame) => void;
   clearRunTracking: (runId?: string | null) => void;
   dispose: () => void;
+};
+
+const extractExecCommandSummary = (payload: unknown): string => {
+  if (!payload || typeof payload !== "object") return "";
+  const p = payload as Record<string, unknown>;
+  const cmd = typeof p.command === "string" ? p.command : "";
+  return cmd.length > 80 ? cmd.slice(0, 77) + "…" : cmd;
 };
 
 const findAgentBySessionKey = (agents: AgentState[], sessionKey: string): string | null => {
@@ -234,6 +255,22 @@ export function createGatewayRuntimeEventHandler(
 
     const agentsSnapshot = deps.getAgents();
     const agentId = findAgentBySessionKey(agentsSnapshot, payload.sessionKey);
+
+    // Route cron/subagent chat events to activity feed
+    if (!agentId && deps.onActivityEvent) {
+      const isCron = payload.sessionKey.includes(":cron:");
+      const isSubAgent = payload.sessionKey.includes(":subagent:");
+      if (isCron || isSubAgent) {
+        const text = extractText(payload.message);
+        const snippet = text ? stripUiMetadata(text)?.slice(0, 120) ?? "" : "";
+        deps.onActivityEvent(payload.sessionKey, {
+          lastTextSnippet: snippet || undefined,
+          streaming: payload.state === "delta",
+          status: payload.state === "error" ? "error" : "running",
+        });
+      }
+    }
+
     if (!agentId) return;
     const agent = agentsSnapshot.find((entry) => entry.agentId === agentId);
 
@@ -395,6 +432,34 @@ export function createGatewayRuntimeEventHandler(
         const phase = typeof pData?.phase === "string" ? pData.phase : "";
         deps.onSubAgentLifecycle?.(payload.sessionKey, phase);
         deps.onSessionsUpdate?.();
+      }
+      // Route cron/subagent agent events to activity feed
+      if (deps.onActivityEvent && payload.sessionKey) {
+        const isCron = payload.sessionKey.includes(":cron:");
+        const isSubAgent = payload.sessionKey.includes(":subagent:");
+        if (isCron || isSubAgent) {
+          const pData = payload.data && typeof payload.data === "object" ? (payload.data as Record<string, unknown>) : null;
+          const stream = typeof payload.stream === "string" ? payload.stream : "";
+          if (stream === "tool") {
+            const toolName = typeof pData?.name === "string" ? pData.name : "";
+            const toolPhase = typeof pData?.phase === "string" ? pData.phase : "";
+            if (toolName) {
+              deps.onActivityEvent(payload.sessionKey, {
+                lastToolName: toolName,
+                lastAction: `${toolName}${toolPhase === "result" ? " ✓" : "…"}`,
+              });
+            }
+          } else if (stream === "lifecycle") {
+            const phase = typeof pData?.phase === "string" ? pData.phase : "";
+            if (phase === "start") {
+              deps.onActivityEvent(payload.sessionKey, { status: "running" });
+            } else if (phase === "end") {
+              deps.onActivityEvent(payload.sessionKey, { status: "completed", streaming: false });
+            } else if (phase === "error") {
+              deps.onActivityEvent(payload.sessionKey, { status: "error", streaming: false });
+            }
+          }
+        }
       }
       return;
     }
@@ -658,8 +723,18 @@ export function createGatewayRuntimeEventHandler(
     if (eventKind === "exec-approval") {
       if (event.event === "exec.approval.requested") {
         deps.onExecApprovalRequested?.(event.payload);
+        deps.onSystemEvent?.({
+          kind: "exec-approval",
+          title: "Exec approval requested",
+          subtitle: extractExecCommandSummary(event.payload),
+        });
       } else if (event.event === "exec.approval.resolved") {
         deps.onExecApprovalResolved?.(event.payload);
+        deps.onSystemEvent?.({
+          kind: "exec-approval",
+          title: "Exec approval resolved",
+          subtitle: "",
+        });
       }
       return;
     }
@@ -668,6 +743,11 @@ export function createGatewayRuntimeEventHandler(
       return;
     }
     if (eventKind === "sessions-update") {
+      deps.onSystemEvent?.({
+        kind: "session-lifecycle",
+        title: "Session updated",
+        subtitle: "",
+      });
       if (sessionsRefreshTimer !== null) deps.clearTimeout(sessionsRefreshTimer);
       sessionsRefreshTimer = deps.setTimeout(() => {
         sessionsRefreshTimer = null;
@@ -676,6 +756,11 @@ export function createGatewayRuntimeEventHandler(
       return;
     }
     if (eventKind === "cron-update") {
+      deps.onSystemEvent?.({
+        kind: "cron-schedule",
+        title: "Cron schedule updated",
+        subtitle: "",
+      });
       if (cronRefreshTimer !== null) deps.clearTimeout(cronRefreshTimer);
       cronRefreshTimer = deps.setTimeout(() => {
         cronRefreshTimer = null;

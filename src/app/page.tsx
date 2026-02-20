@@ -69,6 +69,7 @@ const CronPanel = lazy(() => import("@/features/cron/components/CronPanel").then
 const UsagePanel = lazy(() => import("@/features/usage/components/UsagePanel").then(m => ({ default: m.UsagePanel })));
 import { WorkspaceExplorerPanel } from "@/features/workspace/components/WorkspaceExplorerPanel";
 import { ActivityDrawer } from "@/features/activity/components/ActivityDrawer";
+import { upsertLiveSession, addSystemEvent } from "@/features/activity/hooks/useLiveActivityStore";
 import { StatusBar } from "@/features/status/components/StatusBar";
 import { TraceViewer } from "@/features/sessions/components/TraceViewer";
 import { useChannelsStatus } from "@/features/channels/hooks/useChannelsStatus";
@@ -1376,6 +1377,17 @@ const AgentStudioPage = () => {
       onCronUpdate: () => {
         void loadAllCronJobsRef.current();
         setCronEventTick((prev) => prev + 1);
+      },
+      onActivityEvent: (sessionKey, data) => {
+        upsertLiveSession(sessionKey, { sessionKey, ...data });
+      },
+      onSystemEvent: (event) => {
+        addSystemEvent({
+          id: `${event.kind}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          icon: event.kind === "exec-approval" ? "🔐" : event.kind === "cron-schedule" ? "⏰" : "📋",
+          timestamp: Date.now(),
+          ...event,
+        });
       },
       onSubAgentLifecycle: (sessionKey: string, phase: string) => {
         if (phase === "start") {
