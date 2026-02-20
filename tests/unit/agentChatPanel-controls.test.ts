@@ -65,8 +65,8 @@ describe("AgentChatPanel controls", () => {
       })
     );
 
-    expect(screen.getByText("Model")).toBeInTheDocument();
-    expect(screen.getByText("Thinking")).toBeInTheDocument();
+    expect(screen.getByLabelText("Model")).toBeInTheDocument();
+    expect(screen.getByLabelText("Thinking")).toBeInTheDocument();
     expect(screen.queryByDisplayValue("Agent One")).not.toBeInTheDocument();
     expect(screen.getByTestId("agent-settings-toggle")).toBeInTheDocument();
     expect(screen.getByLabelText("Open agent settings")).toBeInTheDocument();

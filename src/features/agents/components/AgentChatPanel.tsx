@@ -21,8 +21,6 @@ import { AgentChatView } from "./AgentChatView";
 import { EmptyStatePanel } from "./EmptyStatePanel";
 import { TokenProgressBar } from "@/components/TokenProgressBar";
 
-import { sectionLabelClass } from "@/components/SectionLabel";
-
 type AgentChatPanelProps = {
   agent: AgentRecord;
   isSelected: boolean;
@@ -157,14 +155,14 @@ const AgentChatTranscript = memo(function AgentChatTranscript({
   }, []);
 
   return (
-    <div className="relative flex-1 overflow-hidden rounded-md border border-border/80 bg-card/75">
+    <div className="relative flex-1 overflow-hidden">
       <div
         ref={chatRef}
         data-testid="agent-chat-scroll"
         role="log"
         aria-label="Chat messages"
         aria-live="polite"
-        className="h-full overflow-y-auto overflow-x-hidden p-3 pb-24 sm:p-4 sm:pb-24"
+        className="h-full overflow-y-auto overflow-x-hidden py-3 sm:py-4"
         onScroll={() => updatePinnedFromScroll()}
         onWheel={(event) => {
           event.stopPropagation();
@@ -173,7 +171,7 @@ const AgentChatTranscript = memo(function AgentChatTranscript({
           event.stopPropagation();
         }}
       >
-        <div className="mx-auto flex w-full min-w-0 max-w-3xl flex-col gap-3 px-4 text-xs text-foreground sm:px-8">
+        <div className="mx-auto flex w-full min-w-0 max-w-3xl flex-col gap-3 px-4 text-sm text-foreground sm:px-6">
           <AgentChatView
             parts={messageParts}
             streaming={streaming}
@@ -184,11 +182,11 @@ const AgentChatTranscript = memo(function AgentChatTranscript({
 
       {showJumpToLatest ? (
         <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex flex-col items-center">
-          <div className="h-12 w-full bg-gradient-to-t from-card via-card/80 to-transparent" />
-          <div className="w-full bg-card pb-3">
+          <div className="h-12 w-full bg-gradient-to-t from-background via-background/80 to-transparent" />
+          <div className="w-full bg-background pb-3">
             <button
               type="button"
-              className={`pointer-events-auto mx-auto flex max-w-[calc(100%-2rem)] rounded-md border border-border/80 bg-card/95 px-3 py-1.5 ${sectionLabelClass} text-foreground shadow-sm transition hover:bg-muted/70`}
+              className="pointer-events-auto mx-auto flex items-center gap-1.5 rounded-full border border-border/80 bg-card px-3 py-1.5 text-xs font-medium text-foreground shadow-sm transition hover:bg-muted/70"
               onClick={() => {
                 setPinned(true);
                 scrollChatToBottom();
@@ -305,8 +303,8 @@ const AgentChatComposer = memo(function AgentChatComposer({
   const sendDisabled = !canSend || running || isEmpty;
 
   return (
-    <div className="absolute inset-x-0 bottom-0 z-20 px-3 pb-3 pt-2 backdrop-blur-md sm:px-4 sm:pb-6 sm:pt-4">
-      <div className="mx-1 flex items-end gap-2 rounded-xl border border-border/80 bg-card/90 p-2 shadow-lg sm:mx-4 sm:rounded-2xl sm:border-border sm:bg-card sm:p-3 sm:shadow-xl lg:mx-12">
+    <div className="shrink-0 border-t border-border/50 px-4 py-3 sm:px-6 sm:py-4">
+      <div className="mx-auto flex max-w-3xl items-end gap-2 rounded-2xl border border-border bg-card p-2 shadow-sm sm:p-3">
         <textarea
           ref={handleRef}
           rows={1}
@@ -468,175 +466,197 @@ export const AgentChatPanel = memo(function AgentChatPanel({
 
   return (
     <div data-agent-panel className="group fade-up relative flex h-full w-full min-w-0 flex-col overflow-hidden">
-      <div className="px-3 pt-3 sm:px-4 sm:pt-4">
-        <div className="flex items-start gap-4">
-          <div className="flex min-w-0 flex-1 items-start gap-3">
-            <div className="group/avatar relative">
-              <div className="hidden sm:block">
-                <AgentAvatar
-                  seed={avatarSeed}
-                  name={agent.name}
-                  avatarUrl={agent.avatarUrl ?? null}
-                  size={56}
-                  isSelected={isSelected}
-                />
-              </div>
-              <div className="sm:hidden">
-                <AgentAvatar
-                  seed={avatarSeed}
-                  name={agent.name}
-                  avatarUrl={agent.avatarUrl ?? null}
-                  size={48}
-                  isSelected={isSelected}
-                />
-              </div>
-              <button
-                className="nodrag pointer-events-none absolute bottom-1 right-1 hidden h-7 w-7 items-center justify-center rounded-full border border-border/80 bg-card/90 text-muted-foreground opacity-0 shadow-sm transition group-focus-within/avatar:pointer-events-auto group-focus-within/avatar:opacity-100 group-hover/avatar:pointer-events-auto group-hover/avatar:opacity-100 hover:border-border hover:bg-muted/65 sm:flex"
-                type="button"
-                aria-label="Shuffle avatar"
-                data-testid="agent-avatar-shuffle"
-                onClick={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  onAvatarShuffle();
-                }}
-              >
-                <Shuffle className="h-3.5 w-3.5" />
-              </button>
-            </div>
-
-            <div className="min-w-0 flex-1">
-              <div className="flex min-w-0 items-center gap-2">
-                <div className="min-w-0 truncate text-xs font-semibold uppercase tracking-[0.16em] text-foreground sm:text-sm">
-                  {agent.name}
-                </div>
-                {onNewSession ? (
-                  <button
-                    className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-input/90 bg-background/75 text-foreground shadow-sm transition hover:border-ring hover:bg-card disabled:cursor-not-allowed disabled:opacity-60"
-                    type="button"
-                    data-testid="agent-new-session"
-                    aria-label="New session"
-                    title="New session"
-                    onClick={onNewSession}
-                    disabled={running}
-                  >
-                    <SquarePen className="h-3.5 w-3.5" />
-                  </button>
-                ) : null}
-                <button
-                  className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-input/90 bg-background/75 text-foreground shadow-sm transition hover:border-ring hover:bg-card"
-                  type="button"
-                  data-testid="agent-settings-toggle"
-                  aria-label="Open agent settings"
-                  title="Agent settings"
-                  onClick={onOpenSettings}
-                >
-                  <Settings className="h-3.5 w-3.5" />
-                </button>
-                <span aria-hidden className="shrink-0 text-[11px] text-muted-foreground/80">
-                  •
-                </span>
-                <span
-                  className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.14em] ${statusColor}`}
-                >
-                  {statusLabel}
-                </span>
-              </div>
-
-              {/* Mobile: toggle button for model/thinking/token */}
-              <button
-                type="button"
-                className="mt-1.5 flex items-center gap-1 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground transition hover:text-foreground sm:hidden"
-                onClick={toggleMobileHeader}
-                aria-expanded={mobileHeaderExpanded}
-                aria-controls="mobile-model-settings"
-                aria-label={mobileHeaderExpanded ? "Collapse model settings" : "Expand model settings"}
-              >
-                {mobileHeaderExpanded ? (
-                  <ChevronUp className="h-3 w-3" />
-                ) : (
-                  <ChevronDown className="h-3 w-3" />
-                )}
-                <span>{selectedModel ? selectedModel.label.split(" (")[0] : "Settings"}</span>
-                {typeof tokenUsed === "number" && tokenLimit ? (
-                  <span className="ml-1 text-muted-foreground/60">
-                    · {Math.round((tokenUsed / tokenLimit) * 100)}%
-                  </span>
-                ) : null}
-              </button>
-
-              {/* Desktop: always visible; Mobile: only when expanded */}
-              <div id="mobile-model-settings" className={`${mobileHeaderExpanded ? "block" : "hidden"} sm:block`}>
-                <div className="mt-2 grid max-w-md gap-2 sm:grid-cols-[minmax(0,1fr)_128px]">
-                  <label className="flex min-w-0 flex-col gap-1 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                    <span>Model</span>
-                    <select
-                      className="h-8 w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap rounded-md border border-border bg-card/75 px-2 text-[11px] font-semibold text-foreground"
-                      aria-label="Model"
-                      title={modelValue}
-                      value={modelValue}
-                      onChange={(event) => {
-                        const value = event.target.value.trim();
-                        onModelChange(value ? value : null);
-                      }}
-                    >
-                      {modelOptionsWithFallback.length === 0 ? (
-                        <option value="">No models found</option>
-                      ) : null}
-                      {modelOptionsWithFallback.map((option) => (
-                        <option key={option.value} value={option.value} title={option.value}>
-                          {option.label.split(" (")[0]}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  {allowThinking ? (
-                    <label className="flex flex-col gap-1 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                      <span>Thinking</span>
-                      <select
-                        className="h-8 rounded-md border border-border bg-card/75 px-2 text-[11px] font-semibold text-foreground"
-                        aria-label="Thinking"
-                        value={agent.thinkingLevel ?? ""}
-                        onChange={(event) => {
-                          const value = event.target.value.trim();
-                          onThinkingChange(value ? value : null);
-                        }}
-                      >
-                        <option value="">Default</option>
-                        <option value="off">Off</option>
-                        <option value="minimal">Minimal</option>
-                        <option value="low">Low</option>
-                        <option value="medium">Medium</option>
-                        <option value="high">High</option>
-                        <option value="xhigh">XHigh</option>
-                      </select>
-                    </label>
-                  ) : (
-                    <div />
-                  )}
-                </div>
-                {typeof tokenUsed === "number" && tokenLimit ? (
-                  <div className="mt-2 flex w-full max-w-lg items-center gap-2">
-                    <div className="min-w-0 flex-1">
-                      <TokenProgressBar used={tokenUsed} limit={tokenLimit} />
-                    </div>
-                    <span className="shrink-0 font-mono text-[10px] text-muted-foreground/70">
-                      {formatTokens(tokenUsed)}/{formatTokens(tokenLimit)}
-                    </span>
-                  </div>
-                ) : null}
-              </div>
-            </div>
-          </div>
+      {/* Slim toolbar — agent name + controls + model/thinking inline */}
+      <div className="flex shrink-0 items-center gap-2 border-b border-border/50 px-3 py-2 sm:px-4">
+        <div className="group/avatar relative shrink-0">
+          <AgentAvatar
+            seed={avatarSeed}
+            name={agent.name}
+            avatarUrl={agent.avatarUrl ?? null}
+            size={32}
+            isSelected={isSelected}
+          />
+          <button
+            className="nodrag pointer-events-none absolute -bottom-0.5 -right-0.5 hidden h-5 w-5 items-center justify-center rounded-full border border-border/80 bg-card/90 text-muted-foreground opacity-0 shadow-sm transition group-focus-within/avatar:pointer-events-auto group-focus-within/avatar:opacity-100 group-hover/avatar:pointer-events-auto group-hover/avatar:opacity-100 hover:border-border hover:bg-muted/65 sm:flex"
+            type="button"
+            aria-label="Shuffle avatar"
+            data-testid="agent-avatar-shuffle"
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              onAvatarShuffle();
+            }}
+          >
+            <Shuffle className="h-2.5 w-2.5" />
+          </button>
         </div>
+
+        <span className="min-w-0 truncate text-sm font-semibold text-foreground">
+          {agent.name}
+        </span>
+        <span
+          className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.14em] ${statusColor}`}
+        >
+          {statusLabel}
+        </span>
+
+        {/* Spacer */}
+        <div className="flex-1" />
+
+        {/* Model selector — inline compact */}
+        <select
+          className="hidden h-7 max-w-[180px] min-w-0 overflow-hidden text-ellipsis whitespace-nowrap rounded-md border border-border bg-card/75 px-2 text-[11px] font-medium text-muted-foreground transition hover:text-foreground sm:block"
+          aria-label="Model"
+          title={modelValue}
+          value={modelValue}
+          onChange={(event) => {
+            const value = event.target.value.trim();
+            onModelChange(value ? value : null);
+          }}
+        >
+          {modelOptionsWithFallback.length === 0 ? (
+            <option value="">No models</option>
+          ) : null}
+          {modelOptionsWithFallback.map((option) => (
+            <option key={option.value} value={option.value} title={option.value}>
+              {option.label.split(" (")[0]}
+            </option>
+          ))}
+        </select>
+
+        {/* Thinking selector — inline compact */}
+        {allowThinking ? (
+          <select
+            className="hidden h-7 w-[90px] rounded-md border border-border bg-card/75 px-2 text-[11px] font-medium text-muted-foreground transition hover:text-foreground sm:block"
+            aria-label="Thinking"
+            value={agent.thinkingLevel ?? ""}
+            onChange={(event) => {
+              const value = event.target.value.trim();
+              onThinkingChange(value ? value : null);
+            }}
+          >
+            <option value="">Thinking</option>
+            <option value="off">Off</option>
+            <option value="minimal">Minimal</option>
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+            <option value="xhigh">XHigh</option>
+          </select>
+        ) : null}
+
+        {/* Token usage — slim inline */}
+        {typeof tokenUsed === "number" && tokenLimit ? (
+          <div className="hidden items-center gap-1.5 sm:flex">
+            <div className="w-16">
+              <TokenProgressBar used={tokenUsed} limit={tokenLimit} />
+            </div>
+            <span className="shrink-0 font-mono text-[10px] text-muted-foreground/70">
+              {formatTokens(tokenUsed)}
+            </span>
+          </div>
+        ) : null}
+
+        {/* Action buttons */}
+        {onNewSession ? (
+          <button
+            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
+            type="button"
+            data-testid="agent-new-session"
+            aria-label="New session"
+            title="New session"
+            onClick={onNewSession}
+            disabled={running}
+          >
+            <SquarePen className="h-3.5 w-3.5" />
+          </button>
+        ) : null}
+        <button
+          className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground"
+          type="button"
+          data-testid="agent-settings-toggle"
+          aria-label="Open agent settings"
+          title="Agent settings"
+          onClick={onOpenSettings}
+        >
+          <Settings className="h-3.5 w-3.5" />
+        </button>
+
+        {/* Mobile: expand model settings */}
+        <button
+          type="button"
+          className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground sm:hidden"
+          onClick={toggleMobileHeader}
+          aria-expanded={mobileHeaderExpanded}
+          aria-controls="mobile-model-settings"
+          aria-label={mobileHeaderExpanded ? "Collapse model settings" : "Expand model settings"}
+        >
+          {mobileHeaderExpanded ? (
+            <ChevronUp className="h-3.5 w-3.5" />
+          ) : (
+            <ChevronDown className="h-3.5 w-3.5" />
+          )}
+        </button>
       </div>
 
-      {/* Context warning banner — yellow at 80%+ utilization */}
+      {/* Mobile model settings (expandable) */}
+      {mobileHeaderExpanded && (
+        <div id="mobile-model-settings" className="border-b border-border/50 px-3 py-2 sm:hidden">
+          <div className="flex gap-2">
+            <select
+              className="h-7 min-w-0 flex-1 rounded-md border border-border bg-card/75 px-2 text-[11px] font-medium text-foreground"
+              aria-label="Model"
+              value={modelValue}
+              onChange={(event) => {
+                const value = event.target.value.trim();
+                onModelChange(value ? value : null);
+              }}
+            >
+              {modelOptionsWithFallback.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label.split(" (")[0]}
+                </option>
+              ))}
+            </select>
+            {allowThinking ? (
+              <select
+                className="h-7 w-[90px] rounded-md border border-border bg-card/75 px-2 text-[11px] font-medium text-foreground"
+                aria-label="Thinking"
+                value={agent.thinkingLevel ?? ""}
+                onChange={(event) => {
+                  const value = event.target.value.trim();
+                  onThinkingChange(value ? value : null);
+                }}
+              >
+                <option value="">Thinking</option>
+                <option value="off">Off</option>
+                <option value="minimal">Minimal</option>
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+                <option value="xhigh">XHigh</option>
+              </select>
+            ) : null}
+          </div>
+          {typeof tokenUsed === "number" && tokenLimit ? (
+            <div className="mt-2 flex items-center gap-2">
+              <div className="min-w-0 flex-1">
+                <TokenProgressBar used={tokenUsed} limit={tokenLimit} />
+              </div>
+              <span className="shrink-0 font-mono text-[10px] text-muted-foreground/70">
+                {formatTokens(tokenUsed)}/{formatTokens(tokenLimit)}
+              </span>
+            </div>
+          ) : null}
+        </div>
+      )}
+
+      {/* Context warning banner — slim pill at 80%+ utilization */}
       {typeof tokenUsed === "number" && tokenLimit && tokenLimit > 0 && tokenUsed / tokenLimit >= 0.8 && (
-        <div className="mx-3 mt-2 flex items-center gap-2 rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-3 py-2 sm:mx-4">
-          <AlertTriangle className="h-4 w-4 shrink-0 text-yellow-500" />
-          <span className="text-xs text-yellow-200/90">
-            Session approaching context limit — work will continue in a new session
+        <div className="mx-auto mt-2 flex w-full max-w-3xl items-center gap-2 rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-3 py-1.5 text-xs sm:px-6">
+          <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-yellow-500" />
+          <span className="text-yellow-200/90">
+            Approaching context limit
           </span>
           <span className="ml-auto shrink-0 font-mono text-[10px] text-yellow-500/80">
             {Math.round((tokenUsed / tokenLimit) * 100)}%
@@ -644,11 +664,11 @@ export const AgentChatPanel = memo(function AgentChatPanel({
         </div>
       )}
 
-      {/* Session continuation banner — green after session reset */}
+      {/* Session continuation banner — slim pill */}
       {sessionContinued && (
-        <div className="mx-3 mt-2 flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 sm:mx-4">
-          <Zap className="h-4 w-4 shrink-0 text-emerald-500" />
-          <span className="text-xs text-emerald-200/90">
+        <div className="mx-auto mt-2 flex w-full max-w-3xl items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs sm:px-6">
+          <Zap className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
+          <span className="text-emerald-200/90">
             Continuing from previous session
           </span>
           {onDismissContinuationBanner && (
@@ -664,13 +684,14 @@ export const AgentChatPanel = memo(function AgentChatPanel({
         </div>
       )}
 
-      <div className={`mt-3 flex min-h-0 flex-1 flex-col gap-3 px-3 sm:px-4 ${viewingSessionKey ? "pb-3 sm:pb-4" : "pb-24 sm:pb-24"}`}>
+      {/* Chat area — fills remaining space */}
+      <div className="flex min-h-0 flex-1 flex-col">
         {viewingSessionKey ? (
-          <div className="relative flex flex-1 flex-col overflow-hidden rounded-md border border-border/80 bg-card/75">
-            <div className="flex items-center gap-2 border-b border-border/60 px-3 py-2">
+          <div className="relative flex flex-1 flex-col overflow-hidden">
+            <div className="flex items-center gap-2 border-b border-border/50 px-3 py-2">
               <button
                 type="button"
-                className={`flex items-center gap-1.5 rounded-md px-2 py-1 ${sectionLabelClass} text-muted-foreground transition hover:bg-muted/50 hover:text-foreground`}
+                className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-muted-foreground transition hover:bg-muted/50 hover:text-foreground"
                 onClick={onExitSessionView}
               >
                 <ArrowLeft className="h-3 w-3" />
@@ -680,7 +701,7 @@ export const AgentChatPanel = memo(function AgentChatPanel({
                 {viewingSessionKey}
               </span>
             </div>
-            <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4">
+            <div className="flex-1 overflow-y-auto overflow-x-hidden py-3 sm:py-4">
               {viewingSessionLoading ? (
                 <div className="flex items-center justify-center py-12">
                   <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground" />
@@ -691,7 +712,7 @@ export const AgentChatPanel = memo(function AgentChatPanel({
               ) : viewingSessionHistory.length === 0 ? (
                 <EmptyStatePanel title="No messages in this session." compact className="p-3 text-xs" />
               ) : (
-                <div className="mx-auto flex w-full min-w-0 max-w-3xl flex-col gap-3 px-4 text-xs text-foreground sm:px-8">
+                <div className="mx-auto flex w-full min-w-0 max-w-3xl flex-col gap-3 px-4 text-sm text-foreground sm:px-6">
                   <AgentChatView
                     parts={viewingSessionHistory}
                     streaming={false}
@@ -701,13 +722,14 @@ export const AgentChatPanel = memo(function AgentChatPanel({
             </div>
           </div>
         ) : (
-        <AgentChatTranscript
-          messageParts={agent.messageParts}
-          streaming={running}
-          scrollToBottomNextOutputRef={scrollToBottomNextOutputRef}
-        />
+          <AgentChatTranscript
+            messageParts={agent.messageParts}
+            streaming={running}
+            scrollToBottomNextOutputRef={scrollToBottomNextOutputRef}
+          />
         )}
 
+        {/* Composer — natural flow, not absolute positioned */}
         {!viewingSessionKey && (
           <AgentChatComposer
             inputRef={handleDraftRef}

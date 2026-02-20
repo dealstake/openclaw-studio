@@ -76,8 +76,8 @@ const UserMessage = memo(function UserMessage({ text }: { text: string }) {
   // Strip leading ">" prefix from user messages
   const cleaned = text.replace(/^>\s*/, "").trim();
   return (
-    <div className="group/message relative">
-      <div className="rounded-md border border-border/70 bg-muted/70 px-3 py-2 text-foreground">
+    <div className="group/message relative flex justify-end">
+      <div className="max-w-[85%] rounded-2xl rounded-br-md bg-brand-gold/10 px-3.5 py-2.5 text-foreground">
         <MarkdownViewer content={cleaned} />
       </div>
       <MessageActions text={cleaned} />
@@ -94,10 +94,12 @@ const AssistantText = memo(function AssistantText({
 }) {
   return (
     <div className="group/message relative">
-      <MarkdownViewer
-        content={text}
-        className={`leading-relaxed min-w-0 overflow-hidden px-0.5${streaming ? " opacity-85" : ""}`}
-      />
+      <div className="max-w-[95%]">
+        <MarkdownViewer
+          content={text}
+          className={`leading-relaxed min-w-0 overflow-hidden${streaming ? " opacity-85" : ""}`}
+        />
+      </div>
       {!streaming && <MessageActions text={text} />}
     </div>
   );
