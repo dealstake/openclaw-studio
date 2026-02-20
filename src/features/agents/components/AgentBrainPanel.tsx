@@ -1,6 +1,7 @@
 "use client";
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Search, X } from "lucide-react";
 import { MarkdownViewer } from "@/components/MarkdownViewer";
 
 import type { AgentState } from "@/features/agents/state/store";
@@ -164,6 +165,65 @@ export const AgentBrainPanel = memo(function AgentBrainPanel({
     onClose();
   }, [agentFilesDirty, agentFilesSaving, onClose, saveAgentFiles]);
 
+  /* ── Search state ──────────────────────────────────── */
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const searchMatchCount = useMemo(() => {
+    if (!searchQuery.trim()) return 0;
+    const content = agentFiles[agentFileTab].content;
+    const regex = new RegExp(searchQuery.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi");
+    return (content.match(regex) ?? []).length;
+  }, [agentFiles, agentFileTab, searchQuery]);
+
+  const closeSearch = useCallback(() => {
+    setSearchOpen(false);
+    setSearchQuery("");
+  }, []);
+
+  /* ── Keyboard shortcuts (Cmd+1..7 for tabs, Cmd+F for search) ── */
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey)) return;
+
+      // Cmd+F — toggle search
+      if (e.key === "f") {
+        e.preventDefault();
+        setSearchOpen((prev) => {
+          if (!prev) {
+            // Opening — focus will happen via effect below
+            return true;
+          }
+          // Closing
+          setSearchQuery("");
+          return false;
+        });
+        return;
+      }
+
+      // Cmd+1..7 — switch file tabs
+      const num = parseInt(e.key, 10);
+      if (num >= 1 && num <= AGENT_FILE_NAMES.length) {
+        e.preventDefault();
+        const targetTab = AGENT_FILE_NAMES[num - 1];
+        if (targetTab && targetTab !== agentFileTab) {
+          void handleTabChange(targetTab);
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [agentFileTab, handleTabChange]);
+
+  // Focus search input when opened
+  useEffect(() => {
+    if (searchOpen) {
+      requestAnimationFrame(() => searchInputRef.current?.focus());
+    }
+  }, [searchOpen]);
+
   return (
     <div
       className="agent-inspect-panel flex min-h-0 flex-col overflow-hidden"
@@ -194,13 +254,15 @@ export const AgentBrainPanel = memo(function AgentBrainPanel({
           ) : null}
 
           <div className="mt-4 flex flex-wrap items-end gap-2">
-            {AGENT_FILE_NAMES.map((name) => {
+            {AGENT_FILE_NAMES.map((name, idx) => {
               const active = name === agentFileTab;
               const label = AGENT_FILE_META[name].title.replace(".md", "");
+              const shortcut = `⌘${idx + 1}`;
               return (
                 <button
                   key={name}
                   type="button"
+                  title={`${AGENT_FILE_META[name].hint} (${shortcut})`}
                   className={`rounded-full border px-3 py-1.5 ${sectionLabelClass} transition ${
                     active
                       ? "border-border bg-background text-foreground shadow-sm"
@@ -220,6 +282,21 @@ export const AgentBrainPanel = memo(function AgentBrainPanel({
           </div>
 
           <div className="mt-3 flex items-center justify-end gap-1">
+            <button
+              type="button"
+              className={`rounded-md border px-2 py-1 text-muted-foreground transition hover:text-foreground ${
+                searchOpen ? "border-border bg-background text-foreground" : "border-transparent"
+              }`}
+              onClick={() => {
+                if (searchOpen) closeSearch();
+                else setSearchOpen(true);
+              }}
+              title="Search in file (⌘F)"
+              aria-label="Search in file"
+            >
+              <Search className="h-3.5 w-3.5" />
+            </button>
+            <div className="mx-1 h-4 w-px bg-border/60" />
             <button
               type="button"
               className={`rounded-md border px-2.5 py-1 ${sectionLabelClass} transition ${
@@ -243,6 +320,40 @@ export const AgentBrainPanel = memo(function AgentBrainPanel({
               Edit
             </button>
           </div>
+
+          {/* ── Search bar ── */}
+          {searchOpen && (
+            <div className="mt-3 flex items-center gap-2 rounded-md border border-border bg-background px-3 py-1.5">
+              <Search className="h-3.5 w-3.5 flex-none text-muted-foreground" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                className="min-w-0 flex-1 bg-transparent text-xs text-foreground outline-none placeholder:text-muted-foreground"
+                placeholder="Search in file…"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") {
+                    e.preventDefault();
+                    closeSearch();
+                  }
+                }}
+              />
+              {searchQuery && (
+                <span className="flex-none text-xs text-muted-foreground">
+                  {searchMatchCount} {searchMatchCount === 1 ? "match" : "matches"}
+                </span>
+              )}
+              <button
+                type="button"
+                className="flex-none rounded p-0.5 text-muted-foreground hover:text-foreground"
+                onClick={closeSearch}
+                aria-label="Close search"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
 
           <div className="mt-3 min-h-0 flex-1 rounded-md bg-muted/30 p-2">
             {previewMode ? (
