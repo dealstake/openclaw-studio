@@ -7,11 +7,12 @@ import { LogoutButton } from "@/components/brand/LogoutButton";
 import { ChannelStatusPills } from "@/features/channels/components/ChannelStatusPills";
 import type { ChannelsStatusSnapshot } from "@/lib/gateway/channels";
 import { NotificationBell } from "@/features/notifications/components/NotificationBell";
-import { FolderOpen, Ellipsis, Menu, PanelRight } from "lucide-react";
+import { FolderOpen, Ellipsis, PanelRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getCfIdentity, type CfIdentity } from "@/lib/cloudflare-auth";
 
 import { sectionLabelClass } from "@/components/SectionLabel";
+import { AgentBreadcrumb, type BreadcrumbAgent } from "./AgentBreadcrumb";
 
 type HeaderBarProps = {
   status: GatewayStatus;
@@ -21,9 +22,73 @@ type HeaderBarProps = {
   filesDisabled?: boolean;
   channelsSnapshot?: ChannelsStatusSnapshot | null;
   channelsLoading?: boolean;
+  /** @deprecated Use agents breadcrumb instead */
   onOpenFleet?: () => void;
   onOpenContext?: () => void;
+  /** Agent breadcrumb props */
+  agents?: BreadcrumbAgent[];
+  selectedAgentId?: string | null;
+  onSelectAgent?: (agentId: string) => void;
+  /** Gateway version for status dot tooltip */
+  gatewayVersion?: string;
+  /** Gateway uptime (startedAtMs) for status dot tooltip */
+  gatewayUptime?: number;
 };
+
+/* ── Connection status dot ───────────────────────────────────────────── */
+
+const connectionDotClass: Record<GatewayStatus, string> = {
+  connected: "bg-emerald-500",
+  connecting: "bg-amber-400 animate-pulse",
+  disconnected: "bg-muted-foreground/40",
+};
+
+const connectionLabel: Record<GatewayStatus, string> = {
+  connected: "Connected",
+  connecting: "Connecting…",
+  disconnected: "Disconnected",
+};
+
+function ConnectionDot({
+  status,
+  gatewayVersion,
+  gatewayUptime,
+}: {
+  status: GatewayStatus;
+  gatewayVersion?: string;
+  gatewayUptime?: number;
+}) {
+  const uptimeStr = gatewayUptime ? formatUptime(gatewayUptime) : undefined;
+  const title = [
+    connectionLabel[status],
+    gatewayVersion ? `v${gatewayVersion}` : null,
+    uptimeStr ? `up ${uptimeStr}` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  return (
+    <span
+      className={`inline-block h-2 w-2 shrink-0 rounded-full ${connectionDotClass[status]}`}
+      title={title}
+      data-testid="gateway-status-dot"
+    />
+  );
+}
+
+function formatUptime(startedAtMs: number): string {
+  const elapsed = Math.max(0, Date.now() - startedAtMs);
+  const seconds = Math.floor(elapsed / 1000);
+  if (seconds < 60) return `${seconds}s`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  const remainingMins = minutes % 60;
+  if (hours < 24) return `${hours}h ${remainingMins}m`;
+  const days = Math.floor(hours / 24);
+  const remainingHours = hours % 24;
+  return `${days}d ${remainingHours}h`;
+}
 
 /* ── Avatar button with hover label ──────────────────────────────────── */
 
@@ -54,6 +119,11 @@ export const HeaderBar = memo(function HeaderBar({
   channelsLoading = false,
   onOpenFleet,
   onOpenContext,
+  agents,
+  selectedAgentId,
+  onSelectAgent,
+  gatewayVersion,
+  gatewayUptime,
 }: HeaderBarProps) {
   const [identity, setIdentity] = useState<CfIdentity | null>(null);
 
@@ -77,16 +147,29 @@ export const HeaderBar = memo(function HeaderBar({
       <div className="pointer-events-none absolute inset-0 header-gradient-overlay opacity-55" />
       <div className="relative flex items-center gap-4">
         <div className="flex min-w-0 flex-1 items-center gap-3">
-          {onOpenFleet ? (
+          {/* Mobile fleet menu — kept for backward compat, hidden when breadcrumb is available */}
+          {onOpenFleet && !agents?.length ? (
             <HeaderIconButton
               onClick={onOpenFleet}
               aria-label="Open fleet menu"
               className="md:hidden"
             >
-              <Menu className="h-[15px] w-[15px]" />
+              <svg className="h-[15px] w-[15px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
             </HeaderIconButton>
           ) : null}
           <BrandMark size="sm" />
+          <ConnectionDot
+            status={status}
+            gatewayVersion={gatewayVersion}
+            gatewayUptime={gatewayUptime}
+          />
+          {agents?.length && onSelectAgent ? (
+            <AgentBreadcrumb
+              agents={agents}
+              selectedAgentId={selectedAgentId ?? null}
+              onSelectAgent={onSelectAgent}
+            />
+          ) : null}
           <ChannelStatusPills snapshot={channelsSnapshot} loading={channelsLoading} />
         </div>
 

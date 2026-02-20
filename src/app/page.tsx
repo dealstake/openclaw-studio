@@ -9,6 +9,7 @@ import {
   AgentSettingsPanel,
 } from "@/features/agents/components/AgentInspectPanels";
 import { FleetSidebar, type SubAgentEntry, type AgentTokenInfo } from "@/features/agents/components/FleetSidebar";
+import type { BreadcrumbAgent } from "@/features/agents/components/AgentBreadcrumb";
 import { HeaderBar } from "@/features/agents/components/HeaderBar";
 import { ConnectionPanel } from "@/features/agents/components/ConnectionPanel";
 import { EmptyStatePanel } from "@/features/agents/components/EmptyStatePanel";
@@ -72,7 +73,7 @@ import { upsertLiveSession, addSystemEvent } from "@/features/activity/hooks/use
 import { pushHeartbeatEntry } from "@/features/activity/hooks/useHeartbeatEntries";
 import { useTranscriptCapture } from "@/features/activity/hooks/useTranscriptCapture";
 import { filterHeartbeatTurns } from "@/features/activity/lib/heartbeatFilter";
-import { StatusBar } from "@/features/status/components/StatusBar";
+// StatusBar removed — connection info moved to HeaderBar status dot + agent breadcrumb
 import { TraceViewer } from "@/features/sessions/components/TraceViewer";
 import { useChannelsStatus } from "@/features/channels/hooks/useChannelsStatus";
 import { useAllSessions } from "@/features/sessions/hooks/useAllSessions";
@@ -250,7 +251,6 @@ const AgentStudioPage = () => {
 
   const {
     channelsSnapshot, channelsLoading, channelsError,
-    connectedChannelCount, totalChannelCount,
     loadChannelsStatus, resetChannelsStatus,
   } = useChannelsStatus(client, status);
 
@@ -269,7 +269,7 @@ const AgentStudioPage = () => {
 
   const {
     allSessions, allSessionsLoading, allSessionsError,
-    totalSessionCount, aggregateUsageFromList, usageByType, loadAllSessions,
+    aggregateUsageFromList, usageByType, loadAllSessions,
   } = useAllSessions(client, status);
 
   const {
@@ -316,6 +316,20 @@ const AgentStudioPage = () => {
     return selectedInFilter ?? filteredAgents[0] ?? null;
   }, [filteredAgents, selectedAgent]);
   const focusedAgentId = focusedAgent?.agentId ?? null;
+
+  // Breadcrumb agents for header agent switcher
+  const breadcrumbAgents: BreadcrumbAgent[] = useMemo(
+    () =>
+      agents.map((a) => ({
+        agentId: a.agentId,
+        name: a.name,
+        status: a.status,
+        model: a.model,
+        avatarSeed: a.avatarSeed,
+        avatarUrl: a.avatarUrl,
+      })),
+    [agents],
+  );
 
   const {
     transcripts,
@@ -1645,6 +1659,14 @@ const AgentStudioPage = () => {
             channelsLoading={channelsLoading}
             onOpenFleet={() => setMobilePane("fleet")}
             onOpenContext={() => setMobilePane("context")}
+            agents={breadcrumbAgents}
+            selectedAgentId={focusedAgentId}
+            onSelectAgent={(agentId) => {
+              flushPendingDraft(focusedAgent?.agentId ?? null);
+              dispatch({ type: "selectAgent", agentId });
+            }}
+            gatewayVersion={gatewayVersion}
+            gatewayUptime={gatewayUptime}
           />
         </div>
 
@@ -2189,19 +2211,7 @@ const AgentStudioPage = () => {
             />
           </div>
 	        )}
-        {showFleetLayout ? (
-          <div className="w-full">
-            <StatusBar
-              gatewayVersion={gatewayVersion}
-              gatewayUptime={gatewayUptime}
-              agentCount={agents.length}
-              sessionCount={totalSessionCount}
-              channelCount={connectedChannelCount}
-              totalChannelCount={totalChannelCount}
-              visible={status === "connected"}
-            />
-          </div>
-        ) : null}
+        {/* StatusBar removed — info moved to HeaderBar connection dot + agent breadcrumb */}
 	      </div>
       {execApprovalQueue.length > 0 ? (
         <ExecApprovalOverlay
