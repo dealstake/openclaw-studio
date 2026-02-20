@@ -76,6 +76,45 @@ export function humanizeFallbackKey(key: string): string {
     .replace(/^G-/i, "");
 }
 
+/**
+ * Infer the session type from a session key for icon/badge display.
+ * Returns: "main" | "cron" | "subagent" | "channel" | "unknown"
+ */
+export function inferSessionType(key: string): "main" | "cron" | "subagent" | "channel" | "unknown" {
+  const lower = key.toLowerCase();
+
+  // Standard format: agent:alex:type:...
+  const parts = key.split(":");
+  if (parts.length >= 3) {
+    const type = parts[2].toLowerCase();
+    if (type === "main") return "main";
+    if (type === "cron") return "cron";
+    if (type === "subagent") return "subagent";
+    // Known channel types
+    if (CHANNEL_TYPE_LABELS[type]) return "channel";
+  }
+
+  // Gateway agent format: Channel:G-AGENT-Name-type
+  if (/G-AGENT-/i.test(key)) {
+    if (/subagent/i.test(key)) return "subagent";
+    if (/main$/i.test(key)) return "main";
+    return "channel";
+  }
+
+  // Gateway channel format: Channel:G-SPACES/USERS/GROUPS/DMS-...
+  if (/G-(SPACES|USERS|GROUPS|DMS)-/i.test(key)) return "channel";
+
+  // Cron prefix
+  if (lower.startsWith("cron:")) return "cron";
+
+  // Channel prefix
+  for (const ch of Object.keys(CHANNEL_TYPE_LABELS)) {
+    if (lower.startsWith(ch + ":")) return "channel";
+  }
+
+  return "unknown";
+}
+
 export function humanizeOriginLabel(label: string): string {
   const lower = label.toLowerCase();
   for (const [key, name] of Object.entries(CHANNEL_TYPE_LABELS)) {

@@ -3,6 +3,7 @@ import {
   humanizeSessionKey,
   humanizeFallbackKey,
   humanizeOriginLabel,
+  inferSessionType,
   CHANNEL_TYPE_LABELS,
 } from "@/features/sessions/lib/sessionKeyUtils";
 
@@ -70,5 +71,35 @@ describe("CHANNEL_TYPE_LABELS", () => {
     expect(CHANNEL_TYPE_LABELS.webchat).toBe("Webchat");
     expect(CHANNEL_TYPE_LABELS.telegram).toBe("Telegram");
     expect(CHANNEL_TYPE_LABELS.googlechat).toBe("Google Chat");
+  });
+});
+
+describe("inferSessionType", () => {
+  it("detects main sessions", () => {
+    expect(inferSessionType("agent:alex:main")).toBe("main");
+  });
+
+  it("detects cron sessions", () => {
+    expect(inferSessionType("agent:alex:cron:abc123")).toBe("cron");
+    expect(inferSessionType("cron:some-task")).toBe("cron");
+  });
+
+  it("detects sub-agent sessions", () => {
+    expect(inferSessionType("agent:alex:subagent:xyz")).toBe("subagent");
+  });
+
+  it("detects channel sessions", () => {
+    expect(inferSessionType("agent:alex:webchat:dm")).toBe("channel");
+    expect(inferSessionType("agent:alex:telegram:group")).toBe("channel");
+    expect(inferSessionType("whatsapp:G-SPACES-abc")).toBe("channel");
+  });
+
+  it("detects gateway agent format", () => {
+    expect(inferSessionType("googlechat:G-AGENT-Alex-main")).toBe("main");
+    expect(inferSessionType("telegram:G-AGENT-Alex-subagent-123")).toBe("subagent");
+  });
+
+  it("returns unknown for unrecognized keys", () => {
+    expect(inferSessionType("random-key")).toBe("unknown");
   });
 });

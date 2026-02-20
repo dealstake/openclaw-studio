@@ -1,16 +1,24 @@
 "use client";
 
 import { memo, useCallback, useEffect, useState } from "react";
-import { Archive, ChevronDown, ChevronRight, ListTree, Trash2 } from "lucide-react";
+import { Archive, ChevronDown, ChevronRight, Clock, GitFork, ListTree, MessageCircle, Radio, Trash2 } from "lucide-react";
 import type { SessionEntry } from "./SessionsPanel";
 import { UsageDetails, UsageSkeleton, type SessionUsageData } from "./UsageDetails";
-import { humanizeSessionKey, humanizeOriginLabel } from "@/features/sessions/lib/sessionKeyUtils";
+import { humanizeSessionKey, humanizeOriginLabel, inferSessionType } from "@/features/sessions/lib/sessionKeyUtils";
+import { formatTokens, formatCost } from "@/lib/text/format";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import { isGatewayDisconnectLikeError, parseAgentIdFromSessionKey } from "@/lib/gateway/GatewayClient";
 import { formatRelativeTime } from "@/lib/text/time";
 import { PanelIconButton } from "@/components/PanelIconButton";
 
 import { sectionLabelClass } from "@/components/SectionLabel";
+
+const SESSION_TYPE_ICON: Record<string, { icon: typeof MessageCircle; label: string }> = {
+  main: { icon: MessageCircle, label: "Main session" },
+  cron: { icon: Clock, label: "Cron run" },
+  subagent: { icon: GitFork, label: "Sub-agent" },
+  channel: { icon: Radio, label: "Channel session" },
+};
 
 export const SessionCard = memo(function SessionCard({
   session,
@@ -44,6 +52,8 @@ export const SessionCard = memo(function SessionCard({
   const [usageLoaded, setUsageLoaded] = useState(false);
 
   const agentId = parseAgentIdFromSessionKey(session.key);
+  const sessionType = inferSessionType(session.key);
+  const typeInfo = SESSION_TYPE_ICON[sessionType];
   const isBusy = busyKey === session.key;
   const isConfirming = confirmDeleteKey === session.key;
 
@@ -103,11 +113,16 @@ export const SessionCard = memo(function SessionCard({
           }
         }}
       >
-        <div className="mt-0.5 flex-shrink-0 text-muted-foreground">
+        <div className="mt-0.5 flex flex-shrink-0 items-center gap-1 text-muted-foreground">
           {isExpanded ? (
             <ChevronDown className="h-3.5 w-3.5" />
           ) : (
             <ChevronRight className="h-3.5 w-3.5" />
+          )}
+          {typeInfo && (
+            <span title={typeInfo.label}>
+              <typeInfo.icon className="h-3.5 w-3.5" aria-label={typeInfo.label} />
+            </span>
           )}
         </div>
 
@@ -117,7 +132,7 @@ export const SessionCard = memo(function SessionCard({
               <span className="inline-block h-1.5 w-1.5 flex-shrink-0 rounded-full bg-emerald-500" />
             )}
             <span
-              className={`truncate ${sectionLabelClass} text-foreground`}
+              className={`truncate sm:truncate ${sectionLabelClass} text-foreground max-sm:line-clamp-2 max-sm:whitespace-normal`}
               title={humanizeSessionKey(session.displayName ?? session.key)}
             >
               {humanizeSessionKey(session.displayName ?? session.key)}
@@ -132,6 +147,12 @@ export const SessionCard = memo(function SessionCard({
               </span>
             ) : null}
           </div>
+          {!isExpanded && usage && (
+            <div className="mt-0.5 text-[10px] text-muted-foreground/70">
+              {formatTokens(usage.inputTokens)} in · {formatTokens(usage.outputTokens)} out
+              {usage.totalCost !== null ? ` · ${formatCost(usage.totalCost, usage.currency)}` : ""}
+            </div>
+          )}
         </div>
 
         {!isConfirming && (
