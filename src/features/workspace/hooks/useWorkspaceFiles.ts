@@ -119,82 +119,64 @@ export const useWorkspaceFiles = ({
       }
       setLoading(true);
       setError(null);
-      
-      let apiFailed = false;
 
-      try {
-        const params = new URLSearchParams({ agentId: id });
-        if (dirPath) params.set("path", dirPath);
-        const res = await fetch(`/api/workspace/files?${params.toString()}`);
-        
-        if (!res.ok) {
-           apiFailed = true;
-        } else {
-            const data = (await res.json()) as { entries: WorkspaceEntry[] };
-            if (agentIdRef.current?.trim() === id) {
-                // Treat empty root as potential failure to trigger fallback on remote
-                if (dirPath === "" && data.entries.length === 0) {
-                    apiFailed = true;
-                } else {
-                    setEntries(data.entries);
-                    setViewingFile(null);
-                    setLoading(false);
-                    return; // Success
+      // Gateway fallback: list standard brain files if at root
+      const gwFallback = dirPath === "" && clientRef.current
+        ? async (): Promise<{ entries: WorkspaceEntry[] }> => {
+            const results = await Promise.all(
+              AGENT_FILE_NAMES.map(async (name) => {
+                try {
+                  const file = await readGatewayAgentFile({
+                    client: clientRef.current!,
+                    agentId: id,
+                    name,
+                  });
+                  return { name, exists: file.exists, size: file.content.length };
+                } catch {
+                  return { name, exists: false, size: 0 };
                 }
-            }
-        }
-      } catch {
-        apiFailed = true;
-      }
+              })
+            );
+            const fallbackEntries: WorkspaceEntry[] = results
+              .filter((r) => r.exists)
+              .map((r) => ({
+                name: r.name,
+                path: r.name,
+                type: "file",
+                size: r.size,
+                updatedAt: Date.now(),
+              }));
+            return { entries: fallbackEntries };
+          }
+        : null;
 
-      // Fallback: Use GatewayClient to list standard brain files if at root
-      if (apiFailed && dirPath === "" && clientRef.current) {
-        try {
-           const results = await Promise.all(
-             AGENT_FILE_NAMES.map(async (name) => {
-               try {
-                 const file = await readGatewayAgentFile({ 
-                    client: clientRef.current!, 
-                    agentId: id, 
-                    name 
-                 });
-                 return { name, exists: file.exists, size: file.content.length };
-               } catch {
-                 return { name, exists: false, size: 0 };
-               }
-             })
-           );
+      const result = await fetchWithFallback<{ entries: WorkspaceEntry[] }>(
+        () => {
+          const params = new URLSearchParams({ agentId: id });
+          if (dirPath) params.set("path", dirPath);
+          return fetch(`/api/workspace/files?${params.toString()}`);
+        },
+        async (res) => {
+          const data = (await res.json()) as { entries: WorkspaceEntry[] };
+          // Treat empty root as failure to trigger gateway fallback
+          if (dirPath === "" && data.entries.length === 0) {
+            throw new Error("Empty root listing");
+          }
+          return data;
+        },
+        gwFallback
+      );
 
-           const fallbackEntries: WorkspaceEntry[] = results
-             .filter(r => r.exists)
-             .map(r => ({
-               name: r.name,
-               path: r.name,
-               type: "file",
-               size: r.size,
-               updatedAt: Date.now() // Fake timestamp
-             }));
-           
-           if (agentIdRef.current?.trim() === id) {
-             setEntries(fallbackEntries);
-             setViewingFile(null);
-             setError(null); 
-           }
-        } catch {
-           if (agentIdRef.current?.trim() === id) {
-             setError("Failed to list files (local & remote).");
-           }
-        }
-      } else if (apiFailed) {
-         if (agentIdRef.current?.trim() === id) {
-            // Keep the previous entries if just a refresh failed? No, show error.
-            setError("Failed to list files.");
-         }
+      if (agentIdRef.current?.trim() !== id) return;
+
+      if (result) {
+        setEntries(result.data.entries);
+        setViewingFile(null);
+        setError(null);
+      } else {
+        setError(dirPath === "" ? "Failed to list files (local & remote)." : "Failed to list files.");
       }
-      
-      if (agentIdRef.current?.trim() === id) {
-          setLoading(false);
-      }
+      setLoading(false);
     },
     []
   );
@@ -310,12 +292,12 @@ export const useWorkspaceFiles = ({
         // Refresh directory listing to show the new file
         const id = agentIdRef.current?.trim();
         if (id) {
-          await fetchDir(currentPath);
+          await fetchDir(currentPathRef.current);
         }
       }
       return ok;
     },
-    [saveFile, fetchDir, currentPath]
+    [saveFile, fetchDir]
   );
 
   // Load root on mount or agent change
@@ -327,6 +309,7 @@ export const useWorkspaceFiles = ({
   // Use refs to avoid re-creating the interval when state changes
   const currentPathRef = useRef(currentPath);
   const viewingFileRef = useRef(viewingFile);
+  // eslint-disable-next-line react-hooks/immutability -- sync ref for stable callbacks
   useEffect(() => { currentPathRef.current = currentPath; }, [currentPath]);
   useEffect(() => { viewingFileRef.current = viewingFile; }, [viewingFile]);
 
@@ -374,12 +357,12 @@ export const useWorkspaceFiles = ({
   }, []);
 
   const refresh = useCallback(() => {
-    if (viewingFile) {
-      void fetchFile(viewingFile.path);
+    if (viewingFileRef.current) {
+      void fetchFile(viewingFileRef.current.path);
     } else {
-      void fetchDir(currentPath);
+      void fetchDir(currentPathRef.current);
     }
-  }, [currentPath, fetchDir, fetchFile, viewingFile]);
+  }, [fetchDir, fetchFile]);
 
   // Build breadcrumbs
   const breadcrumbs = useMemo(() => {
