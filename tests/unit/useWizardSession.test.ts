@@ -61,16 +61,18 @@ describe("useWizardSession", () => {
     });
 
     expect(client.call).toHaveBeenCalledTimes(2);
-    expect(client.call).toHaveBeenNthCalledWith(1, "chat.send", {
+    expect(client.call).toHaveBeenNthCalledWith(1, "chat.send", expect.objectContaining({
       sessionKey: "agent:alex:wizard:task",
       message: "[system] You are a task wizard.",
       deliver: false,
-    });
-    expect(client.call).toHaveBeenNthCalledWith(2, "chat.send", {
+      idempotencyKey: expect.any(String),
+    }));
+    expect(client.call).toHaveBeenNthCalledWith(2, "chat.send", expect.objectContaining({
       sessionKey: "agent:alex:wizard:task",
       message: "Create a daily check task",
       deliver: false,
-    });
+      idempotencyKey: expect.any(String),
+    }));
   });
 
   it("skips system prompt on subsequent messages", async () => {
