@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MarkdownViewer } from "@/components/MarkdownViewer";
 
 import type { AgentState } from "@/features/agents/state/store";
@@ -15,11 +15,77 @@ import { useAgentFilesEditor } from "@/features/agents/hooks/useAgentFilesEditor
 import { AgentInspectHeader } from "./AgentInspectHeader";
 import { SectionLabel, sectionLabelClass} from "@/components/SectionLabel";
 
+/* ── Line-numbered editor ──────────────────────────────────── */
+
+type LineNumberedEditorProps = {
+  value: string;
+  placeholder?: string;
+  disabled?: boolean;
+  ariaLabel?: string;
+  onChange: (value: string) => void;
+};
+
+const LineNumberedEditor = memo(function LineNumberedEditor({
+  value,
+  placeholder,
+  disabled,
+  ariaLabel,
+  onChange,
+}: LineNumberedEditorProps) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const gutterRef = useRef<HTMLDivElement>(null);
+
+  const lines = useMemo(() => {
+    const count = value.split("\n").length;
+    return Array.from({ length: count }, (_, i) => i + 1);
+  }, [value]);
+
+  const handleScroll = useCallback(() => {
+    if (textareaRef.current && gutterRef.current) {
+      gutterRef.current.scrollTop = textareaRef.current.scrollTop;
+    }
+  }, []);
+
+  return (
+    <div className="flex h-full min-h-0 overflow-hidden rounded-md border border-border/80 bg-background/80">
+      <div
+        ref={gutterRef}
+        className="flex-none select-none overflow-hidden border-r border-border/60 bg-muted/40 py-2 pr-2 pl-2 text-right font-mono text-xs leading-[1.625] text-muted-foreground/60"
+        aria-hidden="true"
+      >
+        {lines.map((n) => (
+          <div key={n}>{n}</div>
+        ))}
+      </div>
+      <textarea
+        ref={textareaRef}
+        aria-label={ariaLabel}
+        className="h-full min-h-0 flex-1 resize-none overflow-y-auto bg-transparent px-3 py-2 font-mono text-xs leading-[1.625] text-foreground outline-none"
+        value={value}
+        placeholder={placeholder}
+        disabled={disabled}
+        onScroll={handleScroll}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    </div>
+  );
+});
+
+/* ── AgentBrainPanel ──────────────────────────────────────── */
+
 type AgentBrainPanelProps = {
   client: GatewayClient;
   agents: AgentState[];
   selectedAgentId: string | null;
   onClose: () => void;
+  /** Controlled file tab — when provided, panel syncs to this tab */
+  activeTab?: AgentFileName;
+  /** Callback when file tab changes (for lifting state) */
+  onTabChange?: (tab: AgentFileName) => void;
+  /** Controlled preview mode — when provided, panel syncs to this */
+  previewMode?: boolean;
+  /** Callback when preview/edit toggle changes */
+  onPreviewModeChange?: (preview: boolean) => void;
 };
 
 export const AgentBrainPanel = memo(function AgentBrainPanel({
@@ -27,6 +93,10 @@ export const AgentBrainPanel = memo(function AgentBrainPanel({
   agents,
   selectedAgentId,
   onClose,
+  activeTab: controlledTab,
+  onTabChange,
+  previewMode: controlledPreview,
+  onPreviewModeChange,
 }: AgentBrainPanelProps) {
   const selectedAgent = useMemo(
     () =>
@@ -47,13 +117,42 @@ export const AgentBrainPanel = memo(function AgentBrainPanel({
     handleAgentFileTabChange,
     saveAgentFiles,
   } = useAgentFilesEditor({ client, agentId: selectedAgent?.agentId ?? null });
-  const [previewMode, setPreviewMode] = useState(true);
+
+  // Local preview state (used when uncontrolled)
+  const [localPreview, setLocalPreview] = useState(true);
+  const previewMode = controlledPreview ?? localPreview;
+  const setPreviewMode = useCallback(
+    (v: boolean) => {
+      if (onPreviewModeChange) onPreviewModeChange(v);
+      else setLocalPreview(v);
+    },
+    [onPreviewModeChange]
+  );
+
+  // Sync controlled tab → hook tab
+  const syncingRef = useRef(false);
+  useEffect(() => {
+    if (controlledTab && controlledTab !== agentFileTab && !syncingRef.current) {
+      syncingRef.current = true;
+      void handleAgentFileTabChange(controlledTab).finally(() => {
+        syncingRef.current = false;
+      });
+    }
+  }, [controlledTab, agentFileTab, handleAgentFileTabChange]);
+
+  // Notify parent when hook tab changes
+  useEffect(() => {
+    if (onTabChange && agentFileTab) {
+      onTabChange(agentFileTab);
+    }
+  }, [agentFileTab, onTabChange]);
 
   const handleTabChange = useCallback(
     async (nextTab: AgentFileName) => {
       await handleAgentFileTabChange(nextTab);
+      if (onTabChange) onTabChange(nextTab);
     },
-    [handleAgentFileTabChange]
+    [handleAgentFileTabChange, onTabChange]
   );
 
   const handleClose = useCallback(async () => {
@@ -112,6 +211,9 @@ export const AgentBrainPanel = memo(function AgentBrainPanel({
                   }}
                 >
                   {label}
+                  {active && agentFilesDirty && (
+                    <span className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-amber-500" title="Unsaved changes" />
+                  )}
                 </button>
               );
             })}
@@ -154,9 +256,7 @@ export const AgentBrainPanel = memo(function AgentBrainPanel({
                 )}
               </div>
             ) : (
-              <textarea
-                aria-label={`Edit ${agentFileTab} file`}
-                className="h-full min-h-0 w-full resize-none overflow-y-auto rounded-md border border-border/80 bg-background/80 px-3 py-2 font-mono text-xs text-foreground outline-none"
+              <LineNumberedEditor
                 value={agentFiles[agentFileTab].content}
                 placeholder={
                   agentFiles[agentFileTab].content.trim().length === 0
@@ -164,15 +264,16 @@ export const AgentBrainPanel = memo(function AgentBrainPanel({
                     : undefined
                 }
                 disabled={agentFilesLoading || agentFilesSaving}
-                onChange={(event) => {
-                  setAgentFileContent(event.target.value);
-                }}
+                ariaLabel={`Edit ${agentFileTab} file`}
+                onChange={setAgentFileContent}
               />
             )}
           </div>
 
           <div className="mt-3 flex items-center justify-between gap-2 pt-2">
-            <div className="text-xs text-muted-foreground">All changes saved</div>
+            <div className={`text-xs ${agentFilesDirty ? "text-amber-500" : "text-muted-foreground"}`}>
+              {agentFilesDirty ? "Unsaved changes" : "All changes saved"}
+            </div>
           </div>
         </section>
       </div>

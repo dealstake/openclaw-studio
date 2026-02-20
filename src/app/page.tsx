@@ -185,6 +185,9 @@ const AgentStudioPage = () => {
   const [contextMode, setContextMode] = useState<"agent" | "files">("agent");
   const [contextTab, setContextTab] = useState<ContextTab>("projects");
   const [expandedTab, setExpandedTab] = useState<ContextTab | null>(null);
+  // Lifted brain panel state — shared between normal and expanded views
+  const [brainFileTab, setBrainFileTab] = useState<import("@/lib/agents/agentFiles").AgentFileName>("AGENTS.md");
+  const [brainPreviewMode, setBrainPreviewMode] = useState(true);
   /** Increments on cron/session events to trigger event-driven refresh in panels */
   const [cronEventTick, setCronEventTick] = useState(0);
 
@@ -1756,6 +1759,10 @@ const AgentStudioPage = () => {
                         agents={agents}
                         selectedAgentId={selectedBrainAgentId}
                         onClose={clearExpandedTab}
+                        activeTab={brainFileTab}
+                        onTabChange={setBrainFileTab}
+                        previewMode={brainPreviewMode}
+                        onPreviewModeChange={setBrainPreviewMode}
                       />
                     )}
                     {expandedTab === "workspace" && (
@@ -1951,6 +1958,10 @@ const AgentStudioPage = () => {
                       client={client}
                       agents={agents}
                       selectedAgentId={selectedBrainAgentId}
+                      activeTab={brainFileTab}
+                      onTabChange={setBrainFileTab}
+                      previewMode={brainPreviewMode}
+                      onPreviewModeChange={setBrainPreviewMode}
                       onClose={() => {
                         setContextMode("agent");
                         setMobilePane("chat");
