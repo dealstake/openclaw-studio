@@ -24,7 +24,7 @@ import {
 } from "@/features/tasks/types";
 import { humanReadableSchedule } from "@/features/tasks/lib/schedule";
 import { formatRelativeTime } from "@/lib/text/time";
-import { formatDuration } from "@/features/tasks/lib/format";
+import { formatDurationCompact as formatDuration } from "@/lib/text/time";
 import { Skeleton } from "@/components/Skeleton";
 import { TYPE_CONFIG, STATUS_DOT_CLASS, STATUS_LABEL, getTaskStatusKey } from "@/features/tasks/lib/taskTypeConfig";
 import { PanelIconButton } from "@/components/PanelIconButton";

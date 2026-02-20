@@ -6,21 +6,12 @@ import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import { type CronRunEntry, fetchCronRuns } from "@/lib/cron/types";
 import { SectionLabel } from "@/components/SectionLabel";
 import { Skeleton } from "@/components/Skeleton";
-import { formatRelativeTime } from "@/lib/text/time";
+import { formatDuration, formatRelativeTime } from "@/lib/text/time";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import type { JobStats } from "../lib/cronStatsCalculator";
 import { TrendSparkline } from "./TrendSparkline";
 
 const compactNumber = new Intl.NumberFormat("en", { notation: "compact" });
-
-function formatDuration(ms: number): string {
-  if (ms <= 0) return "—";
-  const totalSec = Math.round(ms / 1000);
-  const min = Math.floor(totalSec / 60);
-  const sec = totalSec % 60;
-  if (min === 0) return `${sec}s`;
-  return `${min}m ${sec}s`;
-}
 
 function successRateColor(rate: number): string {
   if (rate >= 0.9) return "text-green-400";

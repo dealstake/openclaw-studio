@@ -1,7 +1,7 @@
 import React from "react";
 import { CheckCircle2, AlertTriangle, DollarSign, Gauge } from "lucide-react";
 import type { Notification, AlertRuleType } from "../lib/types";
-import { formatRelativeTime } from "../lib/formatTime";
+import { formatRelativeTime } from "@/lib/text/time";
 
 const typeIconMap: Record<AlertRuleType, { icon: React.ElementType; color: string }> = {
   completion: { icon: CheckCircle2, color: "text-emerald-500" },

@@ -8,6 +8,7 @@ import { SectionLabel } from "@/components/SectionLabel";
 import { ErrorBanner } from "@/components/ErrorBanner";
 import { Skeleton } from "@/components/Skeleton";
 import { PanelIconButton } from "@/components/PanelIconButton";
+import { formatTokens, formatCost } from "@/lib/text/format";
 import { DailyTrendChart } from "@/features/usage/components/DailyTrendChart";
 import { CronCostTable } from "@/features/usage/components/CronCostTable";
 
@@ -17,16 +18,6 @@ const TIME_RANGES: Array<{ value: TimeRange; label: string }> = [
   { value: "30d", label: "30d" },
   { value: "all", label: "All" },
 ];
-
-function formatTokens(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return String(n);
-}
-
-function formatCost(n: number): string {
-  return `$${n.toFixed(2)}`;
-}
 
 interface UsagePanelProps {
   client: GatewayClient;

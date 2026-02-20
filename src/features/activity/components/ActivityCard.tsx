@@ -7,6 +7,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { formatDuration } from "@/lib/text/time";
 import { getStatusDotClass, truncateSummary } from "../lib/activityFormatter";
 import type { DisplayEvent } from "../lib/activityTypes";
 
@@ -15,14 +16,6 @@ const STATUS_BORDER: Record<string, string> = {
   error: "border-l-2 border-l-red-500/40",
   partial: "border-l-2 border-l-yellow-500/40",
 };
-
-function formatDuration(ms: number): string {
-  const s = Math.round(ms / 1000);
-  if (s < 60) return `${s}s`;
-  const m = Math.floor(s / 60);
-  const rem = s % 60;
-  return rem > 0 ? `${m}m ${rem}s` : `${m}m`;
-}
 
 export const ActivityCard = memo(function ActivityCard({
   event,

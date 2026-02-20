@@ -11,6 +11,17 @@ export function formatDuration(ms: number): string {
 }
 
 /**
+ * Format a duration compactly (e.g. "1.2m", "3.5s").
+ * Accepts undefined for convenience — returns "—".
+ */
+export function formatDurationCompact(ms: number | undefined): string {
+  if (ms === undefined) return "—";
+  if (ms < 1000) return `${ms}ms`;
+  if (ms < 60_000) return `${(ms / 1000).toFixed(1)}s`;
+  return `${(ms / 60_000).toFixed(1)}m`;
+}
+
+/**
  * Format a timestamp as a human-readable relative time string.
  * Handles both past ("5m ago") and future ("in 5m") timestamps.
  */

@@ -3,18 +3,10 @@
 import { memo, useMemo } from "react";
 import { SectionLabel } from "@/components/SectionLabel";
 import { Skeleton } from "@/components/Skeleton";
+import { formatDuration } from "@/lib/text/time";
 import type { JobStats } from "../lib/cronStatsCalculator";
 
 const compactNumber = new Intl.NumberFormat("en", { notation: "compact" });
-
-function formatDuration(ms: number): string {
-  if (ms <= 0) return "—";
-  const totalSec = Math.round(ms / 1000);
-  const min = Math.floor(totalSec / 60);
-  const sec = totalSec % 60;
-  if (min === 0) return `${sec}s`;
-  return `${min}m ${sec}s`;
-}
 
 export const CronAnalyticsSummary = memo(function CronAnalyticsSummary({
   jobStats,

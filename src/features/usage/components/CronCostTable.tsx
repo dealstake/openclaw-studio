@@ -1,17 +1,8 @@
 "use client";
 
 import { memo, useMemo } from "react";
+import { formatTokens, formatCost } from "@/lib/text/format";
 import type { SessionCostEntry } from "@/features/usage/lib/costCalculator";
-
-function formatTokens(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return String(n);
-}
-
-function formatCost(n: number): string {
-  return `$${n.toFixed(2)}`;
-}
 
 /** Extract cron job ID from session key: "cron-<jobId>-<timestamp>" → jobId */
 function extractCronJobId(key: string): string {

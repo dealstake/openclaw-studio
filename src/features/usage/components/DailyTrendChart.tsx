@@ -1,6 +1,7 @@
 "use client";
 
 import { memo } from "react";
+import { formatCost } from "@/lib/text/format";
 import type { TrendBucket } from "@/features/usage/lib/trendAggregator";
 
 /** Model color palette (oklch-aligned) */
@@ -24,10 +25,6 @@ function formatDateLabel(date: string): string {
   // YYYY-MM-DD → "Mon DD" or "Feb 18"
   const d = new Date(date + "T12:00:00");
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-}
-
-function formatCost(n: number): string {
-  return `$${n.toFixed(2)}`;
 }
 
 interface DailyTrendChartProps {

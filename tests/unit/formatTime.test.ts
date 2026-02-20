@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { formatRelativeTime } from "@/features/notifications/lib/formatTime";
+import { formatRelativeTime } from "@/lib/text/time";
 
 describe("formatRelativeTime", () => {
   afterEach(() => {
@@ -7,18 +7,18 @@ describe("formatRelativeTime", () => {
   });
 
   function at(offsetMs: number): number {
-    // Return a timestamp that is `offsetMs` in the past
     return Date.now() - offsetMs;
   }
 
-  it('returns "just now" for timestamps less than 60s ago', () => {
+  it('returns "just now" for timestamps less than 5s ago', () => {
     expect(formatRelativeTime(at(0))).toBe("just now");
-    expect(formatRelativeTime(at(30_000))).toBe("just now");
-    expect(formatRelativeTime(at(59_000))).toBe("just now");
+    expect(formatRelativeTime(at(4_000))).toBe("just now");
   });
 
-  it('returns "just now" for future timestamps', () => {
-    expect(formatRelativeTime(Date.now() + 60_000)).toBe("just now");
+  it("returns seconds for 5-59s ago", () => {
+    expect(formatRelativeTime(at(5_000))).toBe("5s ago");
+    expect(formatRelativeTime(at(30_000))).toBe("30s ago");
+    expect(formatRelativeTime(at(59_000))).toBe("59s ago");
   });
 
   it("returns minutes for 1-59 minutes", () => {
@@ -33,14 +33,17 @@ describe("formatRelativeTime", () => {
     expect(formatRelativeTime(at(23 * 60 * 60_000))).toBe("23h ago");
   });
 
-  it("returns days for 1-29 days", () => {
+  it("returns days for 24h+", () => {
     expect(formatRelativeTime(at(24 * 60 * 60_000))).toBe("1d ago");
     expect(formatRelativeTime(at(7 * 24 * 60 * 60_000))).toBe("7d ago");
-    expect(formatRelativeTime(at(29 * 24 * 60 * 60_000))).toBe("29d ago");
   });
 
-  it("returns months for 30+ days", () => {
-    expect(formatRelativeTime(at(30 * 24 * 60 * 60_000))).toBe("1mo ago");
-    expect(formatRelativeTime(at(90 * 24 * 60 * 60_000))).toBe("3mo ago");
+  it('returns "—" for null/undefined', () => {
+    expect(formatRelativeTime(null)).toBe("—");
+    expect(formatRelativeTime(undefined)).toBe("—");
+  });
+
+  it("handles future timestamps", () => {
+    expect(formatRelativeTime(Date.now() + 60_000)).toBe("in 1m");
   });
 });

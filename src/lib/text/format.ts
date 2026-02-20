@@ -1,7 +1,7 @@
 /**
  * Format a monetary cost for display.
  */
-export function formatCost(cost: number, currency: string): string {
+export function formatCost(cost: number, currency: string = "USD"): string {
   if (cost < 0.01) {
     return `<$0.01`;
   }
