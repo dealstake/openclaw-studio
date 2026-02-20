@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import { Plus, RefreshCw, Zap, Clock, Calendar } from "lucide-react";
 import { EmptyStatePanel } from "@/features/agents/components/EmptyStatePanel";
 import { Skeleton } from "@/components/Skeleton";
@@ -87,6 +87,13 @@ export const TasksPanel = memo(function TasksPanel({
     setPendingDeleteId(null);
   }, []);
 
+  const counts = useMemo<Record<FilterTab, number>>(() => ({
+    all: tasks.length,
+    constant: tasks.filter((t) => t.type === "constant").length,
+    periodic: tasks.filter((t) => t.type === "periodic").length,
+    scheduled: tasks.filter((t) => t.type === "scheduled").length,
+  }), [tasks]);
+
   if (!isSelected) return null;
 
   const pendingDeleteTask = pendingDeleteId
@@ -99,13 +106,6 @@ export const TasksPanel = memo(function TasksPanel({
 
   const filtered =
     filter === "all" ? tasks : tasks.filter((t) => t.type === filter);
-
-  const counts: Record<FilterTab, number> = {
-    all: tasks.length,
-    constant: tasks.filter((t) => t.type === "constant").length,
-    periodic: tasks.filter((t) => t.type === "periodic").length,
-    scheduled: tasks.filter((t) => t.type === "scheduled").length,
-  };
 
   // When a task is selected, show the detail drawer instead of the list
   if (selectedTask) {

@@ -33,9 +33,13 @@ export const useAgentTasks = (
   const [busyAction, setBusyAction] = useState<"toggle" | "run" | "delete" | "update" | null>(null);
 
   const loadingRef = useRef(false);
-  // Stabilize cronJobs reference to prevent dependency cascades
+  // Stabilize references to prevent dependency cascades
   const cronJobsRef = useRef(cronJobs);
   cronJobsRef.current = cronJobs;
+  const tasksRef = useRef(tasks);
+  tasksRef.current = tasks;
+  const busyTaskIdRef = useRef(busyTaskId);
+  busyTaskIdRef.current = busyTaskId;
 
   const loadTasks = useCallback(async () => {
     if (!agentId || status !== "connected" || loadingRef.current) return;
@@ -128,13 +132,13 @@ export const useAgentTasks = (
 
   const toggleTask = useCallback(
     async (taskId: string, enabled: boolean) => {
-      if (!agentId || busyTaskId) return;
+      if (!agentId || busyTaskIdRef.current) return;
       setBusyTaskId(taskId);
       setBusyAction("toggle");
       setError(null);
 
       // Optimistic update — flip immediately, rollback on error
-      const previousTasks = tasks;
+      const previousTasks = tasksRef.current;
       setTasks((prev) =>
         prev.map((t) => (t.id === taskId ? { ...t, enabled } : t))
       );
@@ -158,17 +162,17 @@ export const useAgentTasks = (
         setBusyAction(null);
       }
     },
-    [agentId, client, tasks, busyTaskId]
+    [agentId, client]
   );
 
   const runTask = useCallback(
     async (taskId: string) => {
-      if (!agentId || busyTaskId) return;
+      if (!agentId || busyTaskIdRef.current) return;
       setBusyTaskId(taskId);
       setBusyAction("run");
       setError(null);
       try {
-        const task = tasks.find((t) => t.id === taskId);
+        const task = tasksRef.current.find((t) => t.id === taskId);
         if (!task) throw new Error("Task not found.");
 
         await runCronJobNow(client, task.cronJobId);
@@ -182,17 +186,17 @@ export const useAgentTasks = (
         setBusyAction(null);
       }
     },
-    [agentId, client, tasks, busyTaskId]
+    [agentId, client]
   );
 
   const updateTaskSchedule = useCallback(
     async (taskId: string, newSchedule: import("@/features/tasks/types").TaskSchedule) => {
-      if (!agentId || busyTaskId) return;
+      if (!agentId || busyTaskIdRef.current) return;
       setBusyTaskId(taskId);
       setBusyAction("update");
       setError(null);
       try {
-        const task = tasks.find((t) => t.id === taskId);
+        const task = tasksRef.current.find((t) => t.id === taskId);
         if (!task) throw new Error("Task not found.");
 
         // 1. Update the gateway cron job schedule
@@ -214,17 +218,17 @@ export const useAgentTasks = (
         setBusyAction(null);
       }
     },
-    [agentId, client, tasks, busyTaskId]
+    [agentId, client]
   );
 
   const updateTask = useCallback(
     async (taskId: string, updates: UpdateTaskPayload) => {
-      if (!agentId || busyTaskId) return;
+      if (!agentId || busyTaskIdRef.current) return;
       setBusyTaskId(taskId);
       setBusyAction("update");
       setError(null);
       try {
-        const task = tasks.find((t) => t.id === taskId);
+        const task = tasksRef.current.find((t) => t.id === taskId);
         if (!task) throw new Error("Task not found.");
 
         // If schedule changed, update the gateway cron job
@@ -266,17 +270,17 @@ export const useAgentTasks = (
         setBusyAction(null);
       }
     },
-    [agentId, client, tasks, busyTaskId]
+    [agentId, client]
   );
 
   const deleteTask = useCallback(
     async (taskId: string) => {
-      if (!agentId || busyTaskId) return;
+      if (!agentId || busyTaskIdRef.current) return;
       setBusyTaskId(taskId);
       setBusyAction("delete");
       setError(null);
       try {
-        const task = tasks.find((t) => t.id === taskId);
+        const task = tasksRef.current.find((t) => t.id === taskId);
         if (!task) throw new Error("Task not found.");
 
         await removeCronJob(client, task.cronJobId);
@@ -293,7 +297,7 @@ export const useAgentTasks = (
         setBusyAction(null);
       }
     },
-    [agentId, client, tasks, busyTaskId]
+    [agentId, client]
   );
 
   return {
