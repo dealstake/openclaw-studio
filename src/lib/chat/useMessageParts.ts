@@ -183,8 +183,6 @@ export function useMessageParts(input: UseMessagePartsInput): MessagePart[] {
 
   return useMemo(
     () => parseMessageParts({ outputLines, streamText, liveThinkingTrace }),
-    // Primitive deps: line count as proxy for outputLines identity
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [outputLines.length, streamText, liveThinkingTrace],
+    [outputLines, streamText, liveThinkingTrace],
   );
 }

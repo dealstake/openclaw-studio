@@ -208,4 +208,22 @@ describe("parseMessageParts", () => {
     });
     expect(result).toEqual([]);
   });
+
+  it("detects content changes when line count stays the same", () => {
+    // Simulate in-place replacement: same array length, different content
+    const resultA = parseMessageParts({
+      outputLines: ["Hello world"],
+      streamText: null,
+      liveThinkingTrace: "",
+    });
+    const resultB = parseMessageParts({
+      outputLines: ["Goodbye world"],
+      streamText: null,
+      liveThinkingTrace: "",
+    });
+    // Both have 1 line but different content — should produce different parts
+    expect(resultA[0]).toEqual({ type: "text", text: "Hello world" });
+    expect(resultB[0]).toEqual({ type: "text", text: "Goodbye world" });
+    expect(resultA).not.toEqual(resultB);
+  });
 });

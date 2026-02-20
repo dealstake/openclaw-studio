@@ -275,7 +275,9 @@ export async function searchFiles(
 ): Promise<DriveFile[]> {
   const drive = getDriveClient();
 
-  const q = `trashed = false and (name contains '${searchQuery.replace(/'/g, "\\'")}' or fullText contains '${searchQuery.replace(/'/g, "\\'")}')`;
+  // Sanitize for Drive API query: escape backslashes first, then single quotes
+  const sanitized = searchQuery.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+  const q = `trashed = false and (name contains '${sanitized}' or fullText contains '${sanitized}')`;
 
   const res = await drive.files.list({
     q,
