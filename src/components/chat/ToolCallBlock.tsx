@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Wrench, ChevronDown, Clock, CheckCircle2, Loader2, AlertCircle } from "lucide-react";
+import { Wrench, ChevronRight, Clock, CheckCircle2, Loader2, AlertCircle } from "lucide-react";
 import {
   Collapsible,
   CollapsibleContent,
@@ -36,7 +36,7 @@ const phaseConfig: Record<
   pending: {
     label: "Pending",
     Icon: Clock,
-    iconClass: "text-muted-foreground",
+    iconClass: "text-muted-foreground/60",
   },
   running: {
     label: "Running…",
@@ -46,7 +46,7 @@ const phaseConfig: Record<
   complete: {
     label: "Complete",
     Icon: CheckCircle2,
-    iconClass: "text-emerald-500",
+    iconClass: "text-emerald-500/70",
   },
   error: {
     label: "Error",
@@ -56,12 +56,11 @@ const phaseConfig: Record<
 };
 
 /**
- * Tool call display block.
+ * Compact tool call display block.
  *
- * - Shows tool name + phase badge (pending/running/complete/error)
- * - Running state: spinner animation
- * - Complete/error state: duration display, collapsible args & result
- * - Result rendered via MarkdownViewer; errors via ErrorBanner
+ * Collapsed: inline one-liner "🔧 exec — Complete • 2.3s" — no border, minimal chrome.
+ * Expanded: args + result in a subtle container.
+ * Auto-opens while running.
  */
 export const ToolCallBlock = React.memo(function ToolCallBlock({
   name,
@@ -86,49 +85,49 @@ export const ToolCallBlock = React.memo(function ToolCallBlock({
 
   return (
     <Collapsible open={open} onOpenChange={setOpen} className={className}>
-      <CollapsibleTrigger className="flex w-full items-center gap-2 rounded-lg border border-border bg-card/60 px-3 py-2 text-left transition-colors hover:bg-card">
+      <CollapsibleTrigger className="group/tool flex items-center gap-1.5 rounded-md px-1 py-0.5 text-left transition-colors hover:bg-muted/50">
+        {/* Chevron — only if expandable */}
+        {hasContent ? (
+          <ChevronRight
+            size={12}
+            className={`shrink-0 text-muted-foreground/50 transition-transform ${
+              open ? "rotate-90" : ""
+            }`}
+          />
+        ) : (
+          <span className="w-3 shrink-0" />
+        )}
+
         {/* Tool icon */}
-        <Wrench size={14} className="shrink-0 text-muted-foreground" />
+        <Wrench size={13} className="shrink-0 text-muted-foreground/60" />
 
         {/* Tool name */}
-        <span className="text-xs font-medium text-foreground">{name}</span>
+        <span className="text-xs font-medium text-foreground/80">{name}</span>
 
-        {/* Phase badge */}
-        <span
-          className={`flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${phaseBadgeClass(phase)}`}
-        >
+        {/* Phase indicator */}
+        <span className="flex items-center gap-1 text-[10px]">
           <Icon size={10} className={config.iconClass} />
-          {config.label}
+          <span className="text-muted-foreground/60">{config.label}</span>
         </span>
 
         {/* Duration */}
         {durationLabel ? (
-          <span className="font-mono text-[10px] tabular-nums text-muted-foreground/70">
+          <span className="font-mono text-[10px] tabular-nums text-muted-foreground/50">
             {durationLabel}
           </span>
         ) : null}
-
-        {/* Chevron — only if there's expandable content */}
-        {hasContent && (
-          <ChevronDown
-            size={12}
-            className={`ml-auto shrink-0 text-muted-foreground/50 transition-transform ${
-              open ? "rotate-180" : ""
-            }`}
-          />
-        )}
       </CollapsibleTrigger>
 
       {hasContent && (
         <CollapsibleContent>
-          <div className="mt-1 space-y-2 rounded-lg border border-border/50 bg-muted/30 px-3 py-2">
+          <div className="ml-5 mt-1 space-y-2 rounded-lg border border-border/40 bg-muted/20 px-3 py-2">
             {/* Arguments */}
             {args && (
               <div>
-                <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">
+                <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/50">
                   Args
                 </span>
-                <pre className="mt-0.5 overflow-x-auto whitespace-pre-wrap break-all text-[11px] text-muted-foreground">
+                <pre className="mt-0.5 overflow-x-auto whitespace-pre-wrap break-all text-[11px] text-muted-foreground/80">
                   {formatArgs(args)}
                 </pre>
               </div>
@@ -139,12 +138,12 @@ export const ToolCallBlock = React.memo(function ToolCallBlock({
               <ErrorBanner message={result} />
             ) : result ? (
               <div>
-                <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">
+                <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/50">
                   Result
                 </span>
                 <MarkdownViewer
                   content={result}
-                  className="mt-0.5 text-muted-foreground opacity-80"
+                  className="mt-0.5 text-xs text-muted-foreground opacity-80"
                 />
               </div>
             ) : null}
@@ -156,19 +155,6 @@ export const ToolCallBlock = React.memo(function ToolCallBlock({
 });
 
 /* ── Helpers ── */
-
-function phaseBadgeClass(phase: ToolCallPhase): string {
-  switch (phase) {
-    case "pending":
-      return "bg-muted text-muted-foreground";
-    case "running":
-      return "bg-brand-gold/10 text-brand-gold";
-    case "complete":
-      return "bg-emerald-500/10 text-emerald-500";
-    case "error":
-      return "bg-destructive/10 text-destructive";
-  }
-}
 
 function formatArgs(args: string): string {
   try {

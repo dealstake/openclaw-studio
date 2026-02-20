@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Brain, ChevronDown } from "lucide-react";
+import { Brain, ChevronRight } from "lucide-react";
 import {
   Collapsible,
   CollapsibleContent,
@@ -23,12 +23,11 @@ export type ThinkingBlockProps = {
 };
 
 /**
- * Collapsible reasoning/thinking block.
+ * Compact collapsible reasoning/thinking block.
  *
- * - Shimmer animation while streaming
- * - "Thought for Xs" duration when complete
- * - Collapsed by default when not streaming; open while streaming
- * - Uses MarkdownViewer for content rendering
+ * Collapsed: inline one-liner "💭 Thinking… 3.2s" — no border, minimal chrome.
+ * Expanded: full reasoning text in a subtle container.
+ * Auto-opens while streaming.
  */
 export const ThinkingBlock = React.memo(function ThinkingBlock({
   text,
@@ -48,48 +47,48 @@ export const ThinkingBlock = React.memo(function ThinkingBlock({
 
   return (
     <Collapsible open={open} onOpenChange={setOpen} className={className}>
-      <CollapsibleTrigger className="flex w-full items-center gap-2 rounded-lg border border-border bg-card/60 px-3 py-2 text-left transition-colors hover:bg-card">
-        {/* Icon with shimmer while streaming */}
+      <CollapsibleTrigger className="group/thinking flex items-center gap-1.5 rounded-md px-1 py-0.5 text-left transition-colors hover:bg-muted/50">
+        {/* Chevron */}
+        <ChevronRight
+          size={12}
+          className={`shrink-0 text-muted-foreground/50 transition-transform ${
+            open ? "rotate-90" : ""
+          }`}
+        />
+
+        {/* Icon with pulse while streaming */}
         <Brain
-          size={14}
+          size={13}
           className={`shrink-0 ${
             streaming
               ? "text-brand-gold animate-pulse"
-              : "text-muted-foreground"
+              : "text-muted-foreground/60"
           }`}
         />
 
         {/* Label */}
-        <span className="text-xs font-medium text-muted-foreground">
+        <span className="text-xs text-muted-foreground/70">
           {streaming ? "Thinking…" : "Thought"}
         </span>
 
         {/* Duration */}
         {durationLabel ? (
-          <span className="font-mono text-[10px] tabular-nums text-muted-foreground/70">
+          <span className="font-mono text-[10px] tabular-nums text-muted-foreground/50">
             {durationLabel}
           </span>
         ) : null}
-
-        {/* Chevron */}
-        <ChevronDown
-          size={12}
-          className={`ml-auto shrink-0 text-muted-foreground/50 transition-transform ${
-            open ? "rotate-180" : ""
-          }`}
-        />
       </CollapsibleTrigger>
 
       <CollapsibleContent>
-        <div className="mt-1 rounded-lg border border-border/50 bg-muted/30 px-3 py-2">
+        <div className="ml-5 mt-1 rounded-lg border border-border/40 bg-muted/20 px-3 py-2">
           {text ? (
             <MarkdownViewer
               content={text}
-              className="text-muted-foreground opacity-80"
+              className="text-xs text-muted-foreground opacity-80"
             />
           ) : streaming ? (
             <div className="flex items-center gap-2">
-              <div className="h-2 w-2 animate-pulse rounded-full bg-brand-gold/60" />
+              <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-brand-gold/60" />
               <span className="text-[10px] text-muted-foreground/50">
                 Reasoning…
               </span>
@@ -100,5 +99,3 @@ export const ThinkingBlock = React.memo(function ThinkingBlock({
     </Collapsible>
   );
 });
-
-/* getDurationLabel replaced by shared formatElapsedLabel from @/lib/text/time */

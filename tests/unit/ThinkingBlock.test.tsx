@@ -105,7 +105,7 @@ describe("ThinkingBlock", () => {
     const { container } = render(
       <ThinkingBlock text="thought" streaming />,
     );
-    const chevron = container.querySelector(".rotate-180");
+    const chevron = container.querySelector(".rotate-90");
     expect(chevron).not.toBeNull();
   });
 

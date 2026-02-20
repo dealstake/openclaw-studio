@@ -93,11 +93,11 @@ const AssistantText = memo(function AssistantText({
   streaming: boolean;
 }) {
   return (
-    <div className="group/message relative">
+    <div className="group/message relative pl-1">
       <div className="max-w-[95%]">
         <MarkdownViewer
           content={text}
-          className={`leading-relaxed min-w-0 overflow-hidden${streaming ? " opacity-85" : ""}`}
+          className={`leading-relaxed min-w-0 overflow-hidden text-foreground/90${streaming ? " opacity-80" : ""}`}
         />
       </div>
       {!streaming && <MessageActions text={text} />}
