@@ -1,5 +1,6 @@
 import cronstrue from "cronstrue";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
+import { resolveRequiredId } from "@/lib/validation";
 
 export type CronSchedule =
   | { kind: "at"; at: string }
@@ -137,8 +138,6 @@ export type CronRunResult =
 
 export type CronRemoveResult = { ok: true; removed: boolean } | { ok: false; removed: false };
 
-import { resolveRequiredId } from "@/lib/validation";
-
 const resolveJobId = (jobId: string) => resolveRequiredId(jobId, "Cron job id");
 const resolveAgentId = (agentId: string) => resolveRequiredId(agentId, "Agent id");
 
@@ -253,15 +252,14 @@ export const removeCronJobsForAgent = async (client: GatewayClient, agentId: str
   const id = resolveAgentId(agentId);
   const result = await listCronJobs(client, { includeDisabled: true });
   const jobs = result.jobs.filter((job) => job.agentId?.trim() === id);
-  let removed = 0;
-  for (const job of jobs) {
-    const removeResult = await removeCronJob(client, job.id);
-    if (!removeResult.ok) {
-      throw new Error(`Failed to delete cron job "${job.name}" (${job.id}).`);
-    }
-    if (removeResult.removed) {
-      removed += 1;
-    }
-  }
-  return removed;
+  const results = await Promise.all(
+    jobs.map(async (job) => {
+      const removeResult = await removeCronJob(client, job.id);
+      if (!removeResult.ok) {
+        throw new Error(`Failed to delete cron job "${job.name}" (${job.id}).`);
+      }
+      return removeResult.removed ? 1 : 0;
+    })
+  );
+  return results.reduce<number>((sum, n) => sum + n, 0);
 };
