@@ -13,6 +13,8 @@ interface TaskCardProps {
   task: StudioTask;
   busy: boolean;
   selected: boolean;
+  /** Whether this card has keyboard focus via arrow keys */
+  focused?: boolean;
   onSelect: (taskId: string) => void;
   onToggle: (taskId: string, enabled: boolean) => void;
   /** Which action is currently in progress for this task */
@@ -23,6 +25,7 @@ export const TaskCard = memo(function TaskCard({
   task,
   busy,
   selected,
+  focused,
   onSelect,
   onToggle,
   busyAction,
@@ -44,14 +47,18 @@ export const TaskCard = memo(function TaskCard({
 
   return (
     <div
+      data-task-card
       className={`group/task rounded-md border bg-card/70 px-3 py-2.5 cursor-pointer transition-all ${
         selected
           ? "border-primary/50 bg-primary/5 ring-1 ring-primary/20"
-          : "border-border/80 hover:border-border hover:bg-card/90 hover:shadow-sm"
+          : focused
+            ? "border-primary/30 bg-card/90 ring-1 ring-primary/10"
+            : "border-border/80 hover:border-border hover:bg-card/90 hover:shadow-sm"
       }`}
       onClick={handleSelect}
-      role="button"
-      tabIndex={0}
+      role="option"
+      aria-selected={selected || focused}
+      tabIndex={-1}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") handleSelect(); }}
     >
       {/* Title row: status dot + name + toggle */}

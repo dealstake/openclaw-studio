@@ -96,7 +96,7 @@ describe("TaskCard", () => {
   it("calls onSelect when clicked", () => {
     const onSelect = vi.fn();
     renderCard(makeTask(), { onSelect });
-    fireEvent.click(screen.getByText("Test Task").closest("[role=button]")!);
+    fireEvent.click(screen.getByText("Test Task").closest("[role=option]")!);
     expect(onSelect).toHaveBeenCalledWith("task-abc");
   });
 
@@ -128,7 +128,7 @@ describe("TaskCard", () => {
   it("supports keyboard activation via Enter", () => {
     const onSelect = vi.fn();
     renderCard(makeTask(), { onSelect });
-    const card = screen.getByText("Test Task").closest("[role=button]")!;
+    const card = screen.getByText("Test Task").closest("[role=option]")!;
     fireEvent.keyDown(card, { key: "Enter" });
     expect(onSelect).toHaveBeenCalledWith("task-abc");
   });

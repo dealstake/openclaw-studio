@@ -1,7 +1,7 @@
 "use client";
 
-import { memo, useCallback, useMemo, useState } from "react";
-import { Plus, RefreshCw, Zap, Clock, Calendar } from "lucide-react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Plus, RefreshCw, Zap, Clock, Calendar, Search } from "lucide-react";
 import { EmptyStatePanel } from "@/features/agents/components/EmptyStatePanel";
 import { Skeleton } from "@/components/Skeleton";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
@@ -60,9 +60,22 @@ export const TasksPanel = memo(function TasksPanel({
   onRefresh,
   onNewTask,
 }: TasksPanelProps) {
-  const [filter, setFilter] = useState<FilterTab>("all");
+  const [filter, setFilterRaw] = useState<FilterTab>("all");
+  const [search, setSearchRaw] = useState("");
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [focusIndex, setFocusIndex] = useState(-1);
+  const listRef = useRef<HTMLDivElement>(null);
+
+  const setFilter = useCallback((f: FilterTab) => {
+    setFilterRaw(f);
+    setFocusIndex(-1);
+  }, []);
+
+  const setSearch = useCallback((s: string) => {
+    setSearchRaw(s);
+    setFocusIndex(-1);
+  }, []);
 
   const handleSelect = useCallback((taskId: string) => {
     setSelectedTaskId((prev) => (prev === taskId ? null : taskId));
@@ -94,6 +107,44 @@ export const TasksPanel = memo(function TasksPanel({
     scheduled: tasks.filter((t) => t.type === "scheduled").length,
   }), [tasks]);
 
+  const filtered = useMemo(() => {
+    let result = filter === "all" ? tasks : tasks.filter((t) => t.type === filter);
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      result = result.filter(
+        (t) =>
+          t.name.toLowerCase().includes(q) ||
+          (t.description ?? "").toLowerCase().includes(q),
+      );
+    }
+    return result;
+  }, [tasks, filter, search]);
+
+  // Keyboard navigation
+  const handleListKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (filtered.length === 0) return;
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setFocusIndex((prev) => Math.min(prev + 1, filtered.length - 1));
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setFocusIndex((prev) => Math.max(prev - 1, 0));
+      } else if (e.key === "Enter" && focusIndex >= 0 && focusIndex < filtered.length) {
+        e.preventDefault();
+        handleSelect(filtered[focusIndex].id);
+      }
+    },
+    [filtered, focusIndex, handleSelect],
+  );
+
+  // Scroll focused item into view
+  useEffect(() => {
+    if (focusIndex < 0 || !listRef.current) return;
+    const items = listRef.current.querySelectorAll("[data-task-card]");
+    items[focusIndex]?.scrollIntoView({ block: "nearest" });
+  }, [focusIndex]);
+
   if (!isSelected) return null;
 
   const pendingDeleteTask = pendingDeleteId
@@ -103,9 +154,6 @@ export const TasksPanel = memo(function TasksPanel({
   const selectedTask = selectedTaskId
     ? tasks.find((t) => t.id === selectedTaskId) ?? null
     : null;
-
-  const filtered =
-    filter === "all" ? tasks : tasks.filter((t) => t.type === filter);
 
   // When a task is selected, show the detail drawer instead of the list
   if (selectedTask) {
@@ -167,7 +215,7 @@ export const TasksPanel = memo(function TasksPanel({
             <button
               key={tab.value}
               type="button"
-              className={`rounded-md px-2 py-1 font-mono text-[9px] font-semibold uppercase tracking-[0.08em] transition ${
+              className={`flex items-center gap-1.5 rounded-md px-2 py-1 font-mono text-[9px] font-semibold uppercase tracking-[0.08em] transition ${
                 filter === tab.value
                   ? "bg-muted text-foreground"
                   : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
@@ -176,10 +224,32 @@ export const TasksPanel = memo(function TasksPanel({
             >
               {tab.label}
               {counts[tab.value] > 0 ? (
-                <span className="ml-1 opacity-60">{counts[tab.value]}</span>
+                <span className={`inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[8px] font-bold ${
+                  filter === tab.value
+                    ? "bg-primary/20 text-primary"
+                    : "bg-muted-foreground/15 text-muted-foreground"
+                }`}>
+                  {counts[tab.value]}
+                </span>
               ) : null}
             </button>
           ))}
+        </div>
+      ) : null}
+
+      {/* Search */}
+      {tasks.length > 0 ? (
+        <div className="border-b border-border/30 px-4 py-2">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search tasks…"
+              className="h-7 w-full rounded-md border border-border/50 bg-muted/30 pl-7 pr-2 font-mono text-[10px] text-foreground placeholder:text-muted-foreground/60 focus:border-primary/40 focus:outline-none focus:ring-1 focus:ring-primary/20"
+            />
+          </div>
         </div>
       ) : null}
 
@@ -236,14 +306,22 @@ export const TasksPanel = memo(function TasksPanel({
         ) : null}
 
         {filtered.length > 0 ? (
-          <div className="flex flex-col gap-2">
-            {filtered.map((task) => (
+          <div
+            ref={listRef}
+            className="flex flex-col gap-2 outline-none"
+            tabIndex={0}
+            role="listbox"
+            aria-label="Task list"
+            onKeyDown={handleListKeyDown}
+          >
+            {filtered.map((task, i) => (
               <TaskCard
                 key={task.id}
                 task={task}
                 busy={busyTaskId === task.id}
                 busyAction={busyTaskId === task.id ? busyAction : null}
                 selected={selectedTaskId === task.id}
+                focused={focusIndex === i}
                 onSelect={handleSelect}
                 onToggle={onToggle}
               />

@@ -4,6 +4,7 @@ import { memo } from "react";
 import {
   AlertCircle,
   CheckCircle2,
+  Clock,
   SkipForward,
 } from "lucide-react";
 import { formatRelativeTime } from "@/lib/text/time";
@@ -76,8 +77,14 @@ export const RunHistorySection = memo(function RunHistorySection({
       ) : null}
 
       {!loading && !error && runs.length === 0 ? (
-        <div className="mt-2 text-[11px] text-muted-foreground">
-          No run history available.
+        <div className="mt-3 flex flex-col items-center gap-2 rounded-md border border-dashed border-border/50 py-6 text-center">
+          <Clock className="h-5 w-5 text-muted-foreground/40" />
+          <p className="text-[11px] text-muted-foreground">
+            No runs yet
+          </p>
+          <p className="max-w-[180px] text-[10px] text-muted-foreground/60">
+            Run history will appear here after the task executes.
+          </p>
         </div>
       ) : null}
 
