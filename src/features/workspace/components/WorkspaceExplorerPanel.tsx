@@ -118,10 +118,39 @@ export const WorkspaceExplorerPanel = memo(function WorkspaceExplorerPanel({
     handleKeyDown: listKeyDown,
   } = useListNavigation(filteredEntries.length, handleActivateByIndex);
 
+  // Flattened list of all root entries (for keyboard navigation across groups)
+  const flatRootEntries = useMemo(() => {
+    if (!grouped) return [];
+    const flat: WorkspaceEntry[] = [];
+    for (const g of GROUP_ORDER) {
+      if (grouped[g].length > 0) flat.push(...grouped[g]);
+    }
+    return flat;
+  }, [grouped]);
+
+  // Use ref for handleEntryClick to break circular dep with useListNavigation
+  const handleEntryClickRef = useRef<(entry: WorkspaceEntry) => void>(() => {});
+
+  const handleRootActivate = useCallback(
+    (index: number) => {
+      const entry = flatRootEntries[index];
+      if (entry) handleEntryClickRef.current(entry);
+    },
+    [flatRootEntries]
+  );
+
+  const {
+    activeIndex: rootActiveIndex,
+    setActiveIndex: setRootActiveIndex,
+    containerRef: rootListRef,
+    handleKeyDown: rootListKeyDown,
+  } = useListNavigation(flatRootEntries.length, handleRootActivate);
+
   const handleEntryClick = useCallback(
     (entry: WorkspaceEntry) => {
       if (entry.type === "directory") {
         setActiveIndex(-1);
+        setRootActiveIndex(-1);
         setFilter("");
         navigateToDir(entry.path);
       } else if (entry.path.endsWith(".md")) {
@@ -130,8 +159,13 @@ export const WorkspaceExplorerPanel = memo(function WorkspaceExplorerPanel({
         openFile(entry.path);
       }
     },
-    [navigateToDir, openFile, setActiveIndex]
+    [navigateToDir, openFile, setActiveIndex, setRootActiveIndex]
   );
+
+  // Keep ref in sync
+  useEffect(() => {
+    handleEntryClickRef.current = handleEntryClick;
+  }, [handleEntryClick]);
 
   const handleSaveFile = useCallback(
     async (content: string): Promise<boolean> => {
@@ -303,15 +337,35 @@ export const WorkspaceExplorerPanel = memo(function WorkspaceExplorerPanel({
         ) : null}
 
         {!error && isRoot && grouped
-          ? GROUP_ORDER.filter((g) => grouped[g].length > 0).map((group) => (
-              <GroupSection
-                key={group}
-                group={group}
-                entries={grouped[group]}
-                onEntryClick={handleEntryClick}
-                projectStatuses={group === "projects" ? projectStatuses : undefined}
-              />
-            ))
+          ? (() => {
+              const visibleGroups = GROUP_ORDER.filter((g) => grouped[g].length > 0);
+              let offset = 0;
+              return (
+                <div
+                  ref={rootListRef}
+                  tabIndex={0}
+                  className="outline-none"
+                  onKeyDown={rootListKeyDown}
+                  onFocus={() => { if (rootActiveIndex < 0 && flatRootEntries.length > 0) setRootActiveIndex(0); }}
+                >
+                  {visibleGroups.map((group) => {
+                    const groupOffset = offset;
+                    offset += grouped[group].length;
+                    return (
+                      <GroupSection
+                        key={group}
+                        group={group}
+                        entries={grouped[group]}
+                        onEntryClick={handleEntryClick}
+                        projectStatuses={group === "projects" ? projectStatuses : undefined}
+                        activeIndex={rootActiveIndex}
+                        indexOffset={groupOffset}
+                      />
+                    );
+                  })}
+                </div>
+              );
+            })()
           : null}
 
         {!error && !isRoot && entries.length > 0 ? (
