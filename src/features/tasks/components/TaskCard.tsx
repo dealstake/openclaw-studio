@@ -4,6 +4,7 @@ import { memo, useCallback } from "react";
 import type { StudioTask } from "@/features/tasks/types";
 import { humanReadableSchedule } from "@/features/tasks/lib/schedule";
 import { formatRelativeTime } from "@/lib/text/time";
+import { formatDurationCompact as formatDuration } from "@/lib/text/time";
 import { TYPE_CONFIG, STATUS_DOT_CLASS, getTaskStatusKey } from "@/features/tasks/lib/taskTypeConfig";
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -43,10 +44,10 @@ export const TaskCard = memo(function TaskCard({
 
   return (
     <div
-      className={`group/task rounded-md border bg-card/70 px-3 py-2.5 cursor-pointer transition ${
+      className={`group/task rounded-md border bg-card/70 px-3 py-2.5 cursor-pointer transition-all ${
         selected
-          ? "border-primary/50 bg-primary/5"
-          : "border-border/80 hover:border-border"
+          ? "border-primary/50 bg-primary/5 ring-1 ring-primary/20"
+          : "border-border/80 hover:border-border hover:bg-card/90 hover:shadow-sm"
       }`}
       onClick={handleSelect}
       role="button"
@@ -64,20 +65,20 @@ export const TaskCard = memo(function TaskCard({
           type="button"
           aria-label={task.enabled ? "Pause task" : "Resume task"}
           disabled={busy || busyAction === "toggle"}
-          className={`relative h-4 w-7 shrink-0 rounded-full border transition ${
+          className={`relative h-5 w-9 shrink-0 rounded-full border transition ${
             busy ? "opacity-50 cursor-not-allowed" : ""
           } ${
             task.enabled
-              ? "border-emerald-500/40 bg-emerald-500/20"
-              : "border-border/80 bg-muted/40"
+              ? "border-emerald-500/50 bg-emerald-500/30"
+              : "border-border bg-muted/50"
           }`}
           onClick={handleToggle}
         >
           <span
-            className={`absolute top-0.5 h-2.5 w-2.5 rounded-full transition-all ${
+            className={`absolute top-0.5 h-3.5 w-3.5 rounded-full transition-all shadow-sm ${
               task.enabled
-                ? "left-[13px] bg-emerald-400"
-                : "left-0.5 bg-muted-foreground"
+                ? "left-[17px] bg-emerald-400"
+                : "left-0.5 bg-muted-foreground/70"
             }`}
           />
         </button>
@@ -113,10 +114,18 @@ export const TaskCard = memo(function TaskCard({
           </span>
         ) : null}
         {task.lastRunAt ? (
-          <span>Last: {formatRelativeTime(new Date(task.lastRunAt).getTime())}</span>
+          <span>
+            Last: {formatRelativeTime(new Date(task.lastRunAt).getTime())}
+            {task.lastDurationMs ? ` · ${formatDuration(task.lastDurationMs)}` : ""}
+          </span>
         ) : null}
         {task.lastRunStatus === "error" ? (
           <span className="font-semibold text-destructive">Failed</span>
+        ) : task.lastRunStatus === "success" ? (
+          <span className="font-semibold text-emerald-400">OK</span>
+        ) : null}
+        {task.runCount > 0 ? (
+          <span>Runs: {task.runCount}</span>
         ) : null}
       </div>
     </div>

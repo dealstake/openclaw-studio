@@ -4,6 +4,7 @@ import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { useTaskEditForm } from "@/features/tasks/hooks/useTaskEditForm";
 import {
   X,
+  ArrowLeft,
   Play,
   Trash2,
   Clock,
@@ -127,9 +128,19 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border/80 px-4 py-3">
         <div className="min-w-0 flex-1">
-          <SectionLabel>
-            Task Detail
-          </SectionLabel>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              aria-label="Back to task list"
+              className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted/50 hover:text-foreground md:hidden"
+              onClick={onClose}
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+            </button>
+            <SectionLabel>
+              Task Detail
+            </SectionLabel>
+          </div>
           {editing ? (
             <input
               className={`${inputClass} mt-0.5 font-semibold`}
@@ -307,8 +318,8 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
               Prompt
             </SectionLabel>
           </button>
-          {promptExpanded ? (
-            editing ? (
+          {editing ? (
+            promptExpanded ? (
               <textarea
                 className={`${textareaClass} mt-2 min-h-[8rem]`}
                 value={editPrompt}
@@ -316,12 +327,14 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
                 placeholder="Task prompt..."
                 rows={6}
               />
-            ) : (
-              <pre className="mt-2 max-h-40 overflow-y-auto rounded-md border border-border/60 bg-card/50 p-2 text-[10px] leading-relaxed text-muted-foreground whitespace-pre-wrap break-words">
-                {task.prompt}
-              </pre>
-            )
-          ) : null}
+            ) : null
+          ) : (
+            <pre className={`mt-2 overflow-y-auto rounded-md border border-border/60 bg-card/50 p-2 text-[10px] leading-relaxed text-muted-foreground whitespace-pre-wrap break-words ${
+              promptExpanded ? "max-h-40" : "max-h-[2.5rem] line-clamp-2"
+            }`}>
+              {task.prompt}
+            </pre>
+          )}
         </div>
 
         {/* Actions */}
