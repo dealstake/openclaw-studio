@@ -1837,6 +1837,7 @@ const AgentStudioPage = () => {
                         loading={channelsLoading}
                         error={channelsError}
                         onRefresh={() => { void loadChannelsStatus(); }}
+                        hideHeader
                       />
                     )}
                     {expandedTab === "cron" && (

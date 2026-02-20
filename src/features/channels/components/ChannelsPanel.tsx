@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useMemo } from "react";
-import { RefreshCw } from "lucide-react";
+import { Radio, RefreshCw } from "lucide-react";
 import { Skeleton } from "@/components/Skeleton";
 import { PanelIconButton } from "@/components/PanelIconButton";
 import type { ChannelsStatusSnapshot } from "@/lib/gateway/channels";
@@ -13,6 +13,8 @@ type ChannelsPanelProps = {
   loading: boolean;
   error: string | null;
   onRefresh: () => void;
+  /** Hide the header when rendered inside PanelExpandModal (which provides its own title) */
+  hideHeader?: boolean;
 };
 
 const HEALTH_COLORS: Record<ChannelHealth, string> = {
@@ -36,6 +38,7 @@ export const ChannelsPanel = memo(function ChannelsPanel({
   loading,
   error,
   onRefresh,
+  hideHeader = false,
 }: ChannelsPanelProps) {
   const channels = useMemo(() => snapshot?.channels ?? {}, [snapshot]);
   const keys = useMemo(
@@ -49,18 +52,34 @@ export const ChannelsPanel = memo(function ChannelsPanel({
 
   return (
     <div className="flex h-full w-full flex-col p-4">
-      <div className="flex items-center justify-between">
-        <SectionLabel>
-          Channels
-        </SectionLabel>
-        <PanelIconButton
-          aria-label="Refresh channels"
-          onClick={onRefresh}
-          disabled={loading}
-        >
-          <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-        </PanelIconButton>
-      </div>
+      {!hideHeader && (
+        <div className="flex items-center justify-between">
+          <SectionLabel>
+            Channels
+          </SectionLabel>
+          <PanelIconButton
+            aria-label="Refresh channels"
+            title="Refresh channels"
+            onClick={onRefresh}
+            disabled={loading}
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+          </PanelIconButton>
+        </div>
+      )}
+
+      {hideHeader && (
+        <div className="flex items-center justify-end">
+          <PanelIconButton
+            aria-label="Refresh channels"
+            title="Refresh channels"
+            onClick={onRefresh}
+            disabled={loading}
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+          </PanelIconButton>
+        </div>
+      )}
 
       {error ? (
         <div className="mt-3 rounded-md border border-destructive bg-destructive px-3 py-2 text-xs text-destructive-foreground">
@@ -82,7 +101,17 @@ export const ChannelsPanel = memo(function ChannelsPanel({
             ))}
           </div>
         ) : keys.length === 0 ? (
-          <div className="text-[11px] text-muted-foreground">No channels configured.</div>
+          <div className="flex flex-1 flex-col items-center justify-center gap-3 py-8">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-border/60 bg-muted/40">
+              <Radio className="h-5 w-5 text-muted-foreground/60" />
+            </div>
+            <div className="text-center">
+              <p className={`${sectionLabelClass} text-muted-foreground`}>No channels configured</p>
+              <p className="mt-1 max-w-[240px] text-[11px] leading-relaxed text-muted-foreground/60">
+                Connect messaging channels like WhatsApp, Telegram, Discord, or Slack to this agent.
+              </p>
+            </div>
+          </div>
         ) : (
           keys.map((key) => {
             const entry = channels[key];

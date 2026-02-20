@@ -80,7 +80,7 @@ export const StatusBar = memo(function StatusBar({
           <span className="text-foreground">{sessionCount}</span>
         </span>
         <Separator />
-        <span className="shrink-0 text-muted-foreground">
+        <span className="shrink-0 text-muted-foreground" title={totalChannelCount != null ? `${channelCount} connected / ${totalChannelCount} configured` : `${channelCount} channels`}>
           Channels{" "}
           <span className="text-foreground">{totalChannelCount != null ? `${channelCount}/${totalChannelCount}` : channelCount}</span>
         </span>
