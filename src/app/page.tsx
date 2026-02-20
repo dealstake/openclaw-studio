@@ -52,6 +52,7 @@ import { TasksPanel } from "@/features/tasks/components/TasksPanel";
 import { ProjectsPanel } from "@/features/projects/components/ProjectsPanel";
 import { ActivityPanel } from "@/features/activity/components/ActivityPanel";
 const TaskWizardModal = lazy(() => import("@/features/tasks/components/TaskWizardModal").then(m => ({ default: m.TaskWizardModal })));
+const AgentWizardModal = lazy(() => import("@/features/agents/components/AgentWizardModal").then(m => ({ default: m.AgentWizardModal })));
 import { useAgentTasks } from "@/features/tasks/hooks/useAgentTasks";
 import { ContextPanel, TAB_OPTIONS, type ContextTab } from "@/features/context/components/ContextPanel";
 import { PanelExpandModal } from "@/components/PanelExpandModal";
@@ -143,6 +144,7 @@ const AgentStudioPage = () => {
   const { state, dispatch, hydrateAgents, setError, setLoading } = useAgentStore();
   const [showConnectionPanel, setShowConnectionPanel] = useState(false);
   const [showTaskWizard, setShowTaskWizard] = useState(false);
+  const [showAgentWizard, setShowAgentWizard] = useState(false);
   const [focusFilter, setFocusFilter] = useState<FocusFilter>("all");
   const [focusedPreferencesLoaded, setFocusedPreferencesLoaded] = useState(false);
   const [agentsLoadedOnce, setAgentsLoadedOnce] = useState(false);
@@ -833,8 +835,6 @@ const AgentStudioPage = () => {
     renameAgentBlock,
     deleteConfirmAgentId,
     setDeleteConfirmAgentId,
-    createAgentBusy,
-    handleCreateAgent,
     handleConfirmDeleteAgent,
     handleDeleteAgent,
     handleRenameAgent,
@@ -1660,11 +1660,8 @@ const AgentStudioPage = () => {
                 selectedAgentId={focusedAgent?.agentId ?? state.selectedAgentId}
                 filter={focusFilter}
                 onFilterChange={handleFocusFilterChange}
-                onCreateAgent={() => {
-                  void handleCreateAgent();
-                }}
-                createDisabled={status !== "connected" || createAgentBusy || state.loading}
-                createBusy={createAgentBusy}
+                onCreateAgent={() => setShowAgentWizard(true)}
+                createDisabled={status !== "connected" || state.loading}
                 onSelectAgent={(agentId) => {
                   flushPendingDraft(focusedAgent?.agentId ?? null);
                   dispatch({ type: "selectAgent", agentId });
@@ -2161,6 +2158,16 @@ const AgentStudioPage = () => {
           }}
         />
       ) : null}
+      <AgentWizardModal
+        open={showAgentWizard}
+        client={client}
+        onCreated={(agentId) => {
+          setShowAgentWizard(false);
+          void loadAgents();
+          dispatch({ type: "selectAgent", agentId });
+        }}
+        onClose={() => setShowAgentWizard(false)}
+      />
       <TaskWizardModal
         open={showTaskWizard}
         agents={agents.map((a) => a.agentId)}
