@@ -14,19 +14,7 @@ import {
   isUiMetadataPrefix,
   stripUiMetadata,
 } from "@/lib/text/message-extract";
-
-const toTimestampMs = (value: unknown): number | null => {
-  if (typeof value === "number" && Number.isFinite(value) && value > 0) {
-    return value;
-  }
-  if (typeof value === "string") {
-    const parsed = Date.parse(value);
-    if (Number.isFinite(parsed) && parsed > 0) {
-      return parsed;
-    }
-  }
-  return null;
-};
+import { toTimestampMs } from "./timestampUtils";
 
 export const buildSummarySnapshotPatches = ({
   agents,

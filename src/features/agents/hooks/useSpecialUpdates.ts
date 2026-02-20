@@ -183,25 +183,40 @@ export function useSpecialUpdates(params: {
     }
   }, [stateRef, updateSpecialLatestUpdate]);
 
-  // Track agent special updates — debounced to avoid firing on every agents identity change.
-  // Uses a serialized key of agent IDs + last messages to detect actual content changes.
-  const agentsFingerprint = agents
-    .map((a) => `${a.agentId}:${a.lastUserMessage?.trim() ?? ""}`)
-    .join("|");
+  // Track agent special updates using ref-based comparison to avoid
+  // O(n) string allocation per render from fingerprint concatenation.
+  const prevAgentSnapshotRef = useRef<Map<string, string>>(new Map());
 
   useEffect(() => {
+    let changed = false;
+    const nextSnapshot = new Map<string, string>();
     for (const agent of agents) {
       const lastMessage = agent.lastUserMessage?.trim() ?? "";
       const kind = resolveSpecialUpdateKind(lastMessage);
+      const marker = kind === "heartbeat" ? `${lastMessage}:${heartbeatTick}` : lastMessage;
+      nextSnapshot.set(agent.agentId, marker);
+      if (prevAgentSnapshotRef.current.get(agent.agentId) !== marker) {
+        changed = true;
+      }
+    }
+    // Also detect removed agents
+    if (nextSnapshot.size !== prevAgentSnapshotRef.current.size) {
+      changed = true;
+    }
+    if (!changed) return;
+    prevAgentSnapshotRef.current = nextSnapshot;
+
+    for (const agent of agents) {
+      const lastMessage = agent.lastUserMessage?.trim() ?? "";
       const key = agent.agentId;
+      const kind = resolveSpecialUpdateKind(lastMessage);
       const marker = kind === "heartbeat" ? `${lastMessage}:${heartbeatTick}` : lastMessage;
       const previous = specialUpdateRef.current.get(key);
       if (previous === marker) continue;
       specialUpdateRef.current.set(key, marker);
       void updateSpecialLatestUpdate(agent.agentId, agent, lastMessage);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- agentsFingerprint replaces agents identity dep
-  }, [agentsFingerprint, heartbeatTick, updateSpecialLatestUpdate]);
+  }, [agents, heartbeatTick, specialUpdateRef, updateSpecialLatestUpdate]);
 
   return {
     heartbeatTick,

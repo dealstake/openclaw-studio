@@ -106,29 +106,10 @@ export const dedupeRunLines = (seen: Set<string>, lines: string[]): DedupeRunLin
 };
 
 // ---------------------------------------------------------------------------
-// Timestamp helpers
+// Timestamp helpers (shared via timestampUtils.ts)
 // ---------------------------------------------------------------------------
 
-const toTimestampMs = (value: unknown): number | null => {
-  if (typeof value === "number" && Number.isFinite(value) && value > 0) {
-    return value;
-  }
-  if (typeof value === "string") {
-    const parsed = Date.parse(value);
-    if (Number.isFinite(parsed) && parsed > 0) {
-      return parsed;
-    }
-  }
-  return null;
-};
-
-const extractMessageTimestamp = (message: unknown): number | null => {
-  if (!message || typeof message !== "object") return null;
-  const record = message as Record<string, unknown>;
-  return (
-    toTimestampMs(record.timestamp) ?? toTimestampMs(record.createdAt) ?? toTimestampMs(record.at)
-  );
-};
+import { extractMessageTimestamp } from "./timestampUtils";
 
 export const resolveAssistantCompletionTimestamp = ({
   role,
