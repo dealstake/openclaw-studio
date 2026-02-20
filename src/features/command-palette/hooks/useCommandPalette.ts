@@ -12,9 +12,14 @@ import {
   Clock,
   Settings,
   Bot,
+  RotateCcw,
+  Play,
+  Plus,
+  Zap,
 } from "lucide-react";
 import type { ContextTab } from "@/features/context/components/ContextPanel";
 import type { CommandAction, CommandPaletteProps } from "../lib/types";
+import { useRecentItems } from "./useRecentItems";
 
 const TAB_COMMANDS: Array<{
   tab: ContextTab;
@@ -40,14 +45,38 @@ export function useCommandPalette({
   agentIds,
   currentAgentId,
   onSwitchAgent,
+  client,
+  onCreateProject,
 }: CommandPaletteProps) {
   const [open, setOpen] = useState(false);
+  const { recentItems, trackRecent } = useRecentItems();
 
   const toggle = useCallback(() => setOpen((prev) => !prev), []);
   const close = useCallback(() => setOpen(false), []);
 
   const actions = useMemo<CommandAction[]>(() => {
     const items: CommandAction[] = [];
+
+    // Recent items (top of list for quick re-access)
+    for (const recent of recentItems) {
+      // Find matching tab command for icon
+      const tabCmd = TAB_COMMANDS.find((c) => `nav-${c.tab}` === recent.id);
+      items.push({
+        id: `recent-${recent.id}`,
+        label: recent.label,
+        icon: tabCmd?.icon ?? Zap,
+        group: "recent",
+        onSelect: () => {
+          if (tabCmd) {
+            onNavigateTab(tabCmd.tab);
+            onOpenContextPanel();
+          } else if (recent.id.startsWith("agent-") && onSwitchAgent) {
+            onSwitchAgent(recent.id.replace("agent-", ""));
+          }
+          setOpen(false);
+        },
+      });
+    }
 
     // Navigation commands
     for (const cmd of TAB_COMMANDS) {
@@ -61,6 +90,50 @@ export function useCommandPalette({
         onSelect: () => {
           onNavigateTab(cmd.tab);
           onOpenContextPanel();
+          trackRecent(`nav-${cmd.tab}`, cmd.label);
+          setOpen(false);
+        },
+      });
+    }
+
+    // Action commands
+    if (client) {
+      items.push({
+        id: "action-restart-gateway",
+        label: "Restart Gateway",
+        icon: RotateCcw,
+        group: "actions",
+        keywords: ["restart", "gateway", "reconnect", "refresh"],
+        onSelect: () => {
+          void client.call("gateway.restart", {});
+          setOpen(false);
+        },
+      });
+
+      items.push({
+        id: "action-run-cron",
+        label: "Run Cron Job…",
+        icon: Play,
+        group: "actions",
+        keywords: ["run", "cron", "trigger", "execute", "job"],
+        onSelect: () => {
+          onNavigateTab("cron");
+          onOpenContextPanel();
+          trackRecent("nav-cron", "Go to Cron Jobs");
+          setOpen(false);
+        },
+      });
+    }
+
+    if (onCreateProject) {
+      items.push({
+        id: "action-create-project",
+        label: "Create Project",
+        icon: Plus,
+        group: "actions",
+        keywords: ["new", "project", "create", "add"],
+        onSelect: () => {
+          onCreateProject();
           setOpen(false);
         },
       });
@@ -78,6 +151,7 @@ export function useCommandPalette({
           keywords: ["agent", "switch", id],
           onSelect: () => {
             onSwitchAgent(id);
+            trackRecent(`agent-${id}`, `Switch to ${id}`);
             setOpen(false);
           },
         });
@@ -85,7 +159,7 @@ export function useCommandPalette({
     }
 
     return items;
-  }, [onNavigateTab, onOpenContextPanel, agentIds, currentAgentId, onSwitchAgent]);
+  }, [onNavigateTab, onOpenContextPanel, agentIds, currentAgentId, onSwitchAgent, client, onCreateProject, recentItems, trackRecent]);
 
   return { open, setOpen, toggle, close, actions };
 }

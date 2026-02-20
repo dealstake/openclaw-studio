@@ -11,12 +11,13 @@ interface Props {
 }
 
 const GROUP_LABELS: Record<string, string> = {
+  recent: "Recent",
   navigation: "Navigation",
   actions: "Actions",
   agents: "Switch Agent",
 };
 
-const GROUP_ORDER = ["navigation", "actions", "agents"] as const;
+const GROUP_ORDER = ["recent", "navigation", "actions", "agents"] as const;
 
 export const CommandPalette = memo(function CommandPalette({
   open,

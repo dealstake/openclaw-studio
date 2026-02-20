@@ -385,6 +385,7 @@ const AgentStudioPage = () => {
     agentIds: agents.map((a) => a.agentId),
     currentAgentId: focusedAgentId ?? undefined,
     onSwitchAgent: handleCmdSwitchAgent,
+    client,
   });
 
   // Breadcrumb agents for header agent switcher

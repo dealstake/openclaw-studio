@@ -9,13 +9,22 @@ export interface CommandAction {
   /** Optional icon component */
   icon?: LucideIcon;
   /** Group this action belongs to */
-  group: "navigation" | "actions" | "agents";
+  group: "navigation" | "actions" | "agents" | "recent";
   /** Keywords for fuzzy search (beyond the label) */
   keywords?: string[];
   /** Keyboard shortcut hint (display only) */
   shortcut?: string;
   /** Handler when selected */
   onSelect: () => void;
+}
+
+export interface RecentItem {
+  /** Unique key (e.g., "nav-projects", "agent-alex") */
+  id: string;
+  /** Display label */
+  label: string;
+  /** Timestamp of last access */
+  accessedAt: number;
 }
 
 export interface CommandPaletteProps {
@@ -29,4 +38,8 @@ export interface CommandPaletteProps {
   currentAgentId?: string;
   /** Switch to a different agent */
   onSwitchAgent?: (agentId: string) => void;
+  /** Gateway client for action commands */
+  client?: { call: (method: string, params?: Record<string, unknown>) => Promise<unknown> } | null;
+  /** Callback when project creation is requested */
+  onCreateProject?: () => void;
 }
