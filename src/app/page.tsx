@@ -96,6 +96,7 @@ import { useAgentHistorySync } from "@/features/agents/hooks/useAgentHistorySync
 import { useAgentLifecycle } from "@/features/agents/hooks/useAgentLifecycle";
 import { useGatewayModels } from "@/features/agents/hooks/useGatewayModels";
 import { useSettingsPanel } from "@/features/agents/hooks/useSettingsPanel";
+import { useBreakpoint, isDesktopOrAbove, isWide } from "@/hooks/useBreakpoint";
 
 type AgentsListResult = {
   defaultId: string;
@@ -1498,15 +1499,11 @@ const AgentStudioPage = () => {
   const hasAnyAgents = agents.length > 0;
   const showFleetLayout = hasAnyAgents || status === "connected";
 
-  // Hide activity drawer on viewports < 1280px (xl breakpoint)
-  const [isXlViewport, setIsXlViewport] = useState(false);
-  useEffect(() => {
-    const mql = window.matchMedia("(min-width: 1280px)");
-    setIsXlViewport(mql.matches);
-    const handler = (e: MediaQueryListEvent) => setIsXlViewport(e.matches);
-    mql.addEventListener("change", handler);
-    return () => mql.removeEventListener("change", handler);
-  }, []);
+  // Responsive breakpoint for progressive layout
+  const breakpoint = useBreakpoint();
+  const showSidebarInline = isDesktopOrAbove(breakpoint); // ≥1024px
+  const showContextInline = isWide(breakpoint); // ≥1440px
+  const isXlViewport = isWide(breakpoint); // activity drawer visibility
   const configMutationStatusLine = activeConfigMutation
     ? `Applying config change: ${activeConfigMutation.label}`
     : queuedConfigMutationCount > 0
@@ -1661,7 +1658,7 @@ const AgentStudioPage = () => {
           </div>
         </div>
       ) : null}
-      <div className="relative z-10 flex flex-col gap-4 px-3 py-3 sm:px-4 sm:py-4 md:px-6 md:py-6" style={{ height: '100dvh' }}>
+      <div className="relative z-10 mx-auto flex w-full max-w-[1920px] flex-col gap-4 px-3 py-3 sm:px-4 sm:py-4 md:px-6 md:py-6" style={{ height: '100dvh' }}>
         <div className="w-full">
           <HeaderBar
             status={status}
@@ -1717,18 +1714,18 @@ const AgentStudioPage = () => {
         ) : null}
 
         {showFleetLayout ? (
-          <div className="flex min-h-0 flex-1 flex-col gap-4 xl:flex-row">
+          <div className="flex min-h-0 flex-1 flex-col gap-4 lg:flex-row">
             {/* Backdrop for mobile context drawer */}
-            {mobilePane !== "chat" ? (
+            {mobilePane !== "chat" && !showContextInline ? (
               <div
-                className="fixed inset-0 z-40 bg-black/50 xl:hidden"
+                className="fixed inset-0 z-40 bg-black/50"
                 onClick={switchToChat}
               />
             ) : null}
             {/* Mobile session history overlay drawer */}
-            {mobileSessionDrawerOpen ? (
+            {mobileSessionDrawerOpen && !showSidebarInline ? (
               <div
-                className="fixed inset-0 z-50 lg:hidden"
+                className="fixed inset-0 z-50"
                 onClick={() => setMobileSessionDrawerOpen(false)}
               >
                 <div className="absolute inset-0 bg-black/50" />
@@ -1756,7 +1753,7 @@ const AgentStudioPage = () => {
               </div>
             ) : null}
             {/* Session history sidebar — desktop only, collapsible */}
-            <div className="hidden lg:flex lg:flex-[0_0_auto] lg:min-h-0">
+            <div className={`${showSidebarInline ? "flex flex-[0_0_auto] min-h-0" : "hidden"}`}>
               <SessionHistorySidebar
                 client={client}
                 status={status}
@@ -1994,7 +1991,7 @@ const AgentStudioPage = () => {
             )}
             {/* Context Panel: agent-scoped (Tasks/Brain/Settings) or global (Files) */}
             <div
-              className={`fixed inset-y-0 right-0 z-50 w-[360px] transform transition-transform duration-300 xl:static xl:flex xl:shrink-0 xl:flex-none xl:w-[360px] xl:translate-x-0 ${mobilePane === "context" ? "translate-x-0" : "translate-x-full"} glass-panel min-h-0 overflow-hidden p-0`}
+              className={`${showContextInline ? "static flex shrink-0 flex-none w-[360px] translate-x-0" : `fixed inset-y-0 right-0 z-50 w-[360px] transform transition-transform duration-300 ${mobilePane === "context" ? "translate-x-0" : "translate-x-full"}`} glass-panel min-h-0 overflow-hidden p-0`}
             >
               {contextMode === "files" ? (
                 <ArtifactsPanel isSelected />

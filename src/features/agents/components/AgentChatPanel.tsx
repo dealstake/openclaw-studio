@@ -173,7 +173,7 @@ const AgentChatTranscript = memo(function AgentChatTranscript({
           event.stopPropagation();
         }}
       >
-        <div className="flex w-full min-w-0 flex-col gap-3 px-4 text-xs text-foreground sm:px-8 lg:px-16">
+        <div className="mx-auto flex w-full min-w-0 max-w-3xl flex-col gap-3 px-4 text-xs text-foreground sm:px-8">
           <AgentChatView
             parts={messageParts}
             streaming={streaming}
@@ -691,7 +691,7 @@ export const AgentChatPanel = memo(function AgentChatPanel({
               ) : viewingSessionHistory.length === 0 ? (
                 <EmptyStatePanel title="No messages in this session." compact className="p-3 text-xs" />
               ) : (
-                <div className="flex w-full min-w-0 flex-col gap-3 px-4 text-xs text-foreground sm:px-8 lg:px-16">
+                <div className="mx-auto flex w-full min-w-0 max-w-3xl flex-col gap-3 px-4 text-xs text-foreground sm:px-8">
                   <AgentChatView
                     parts={viewingSessionHistory}
                     streaming={false}
