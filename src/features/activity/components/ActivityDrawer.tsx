@@ -3,10 +3,12 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Group, Panel, Separator } from "react-resizable-panels";
 import type { PanelSize } from "react-resizable-panels";
-import { Activity, ChevronLeft, ChevronRight } from "lucide-react";
+import { Activity, ChevronLeft, ChevronRight, History, Radio } from "lucide-react";
 import { SectionLabel } from "@/components/SectionLabel";
 import { CompactActivityCard } from "./CompactActivityCard";
+import { HistoryActivityFeed } from "./HistoryActivityFeed";
 import type { ActivityStatus } from "./CompactActivityCard";
+import { cn } from "@/lib/utils";
 
 const DRAWER_STATE_KEY = "studio:activity-drawer-state";
 
@@ -39,12 +41,15 @@ export interface ActivityEntry {
   timestamp: number;
 }
 
+type DrawerTab = "live" | "history";
+
 export interface ActivityDrawerProps {
   children: React.ReactNode;
   entries?: ActivityEntry[];
   eventCount?: number;
   hasRunning?: boolean;
   hidden?: boolean;
+  agentId?: string | null;
 }
 
 const CollapsedIndicator = React.memo(function CollapsedIndicator({
@@ -79,13 +84,18 @@ const CollapsedIndicator = React.memo(function CollapsedIndicator({
 
 const DrawerContent = React.memo(function DrawerContent({
   entries,
+  agentId,
   onCollapse,
 }: {
   entries: ActivityEntry[];
+  agentId: string | null;
   onCollapse: () => void;
 }) {
+  const [tab, setTab] = useState<DrawerTab>("live");
+
   return (
     <div className="flex h-full flex-col overflow-hidden">
+      {/* Header */}
       <div className="flex items-center justify-between border-b border-border px-3 py-2">
         <SectionLabel>Activity</SectionLabel>
         <button
@@ -97,24 +107,65 @@ const DrawerContent = React.memo(function DrawerContent({
           <ChevronRight className="h-3.5 w-3.5" />
         </button>
       </div>
-      <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
-        {entries.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground">
-            <Activity className="h-8 w-8 opacity-30" />
-            <p className="text-xs">No recent activity</p>
+
+      {/* Tab bar */}
+      <div className="flex border-b border-border">
+        <button
+          type="button"
+          onClick={() => setTab("live")}
+          className={cn(
+            "flex flex-1 items-center justify-center gap-1.5 px-3 py-1.5 text-[11px] font-medium transition-colors",
+            tab === "live"
+              ? "border-b-2 border-primary text-foreground"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <Radio className="h-3 w-3" />
+          Live
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab("history")}
+          className={cn(
+            "flex flex-1 items-center justify-center gap-1.5 px-3 py-1.5 text-[11px] font-medium transition-colors",
+            tab === "history"
+              ? "border-b-2 border-primary text-foreground"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <History className="h-3 w-3" />
+          History
+        </button>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-hidden">
+        {tab === "live" ? (
+          <div className="h-full overflow-y-auto p-2 space-y-1.5">
+            {entries.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground">
+                <Activity className="h-8 w-8 opacity-30" />
+                <p className="text-xs">No live activity</p>
+                <p className="text-[10px] text-muted-foreground/60">
+                  Running cron jobs and sub-agents appear here
+                </p>
+              </div>
+            ) : (
+              entries.map((entry) => (
+                <CompactActivityCard
+                  key={entry.id}
+                  icon={entry.icon}
+                  title={entry.title}
+                  subtitle={entry.subtitle}
+                  status={entry.status}
+                  elapsed={entry.elapsed}
+                  badge={entry.badge}
+                />
+              ))
+            )}
           </div>
         ) : (
-          entries.map((entry) => (
-            <CompactActivityCard
-              key={entry.id}
-              icon={entry.icon}
-              title={entry.title}
-              subtitle={entry.subtitle}
-              status={entry.status}
-              elapsed={entry.elapsed}
-              badge={entry.badge}
-            />
-          ))
+          <HistoryActivityFeed agentId={agentId} className="h-full" />
         )}
       </div>
     </div>
@@ -127,6 +178,7 @@ export const ActivityDrawer = React.memo(function ActivityDrawer({
   eventCount = 0,
   hasRunning = false,
   hidden = false,
+  agentId = null,
 }: ActivityDrawerProps) {
   const [drawerState, setDrawerState] = useState<DrawerState>(loadDrawerState);
 
@@ -152,6 +204,18 @@ export const ActivityDrawer = React.memo(function ActivityDrawer({
     } else {
       setDrawerState((prev) => ({ ...prev, collapsed: true }));
     }
+  }, []);
+
+  // Keyboard shortcut: Ctrl+Shift+A to toggle drawer
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.ctrlKey && e.shiftKey && e.key === "A") {
+        e.preventDefault();
+        setDrawerState((prev) => ({ ...prev, collapsed: !prev.collapsed }));
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
   if (hidden) {
@@ -193,7 +257,7 @@ export const ActivityDrawer = React.memo(function ActivityDrawer({
             onExpand={handleExpand}
           />
         ) : (
-          <DrawerContent entries={entries} onCollapse={handleCollapse} />
+          <DrawerContent entries={entries} agentId={agentId} onCollapse={handleCollapse} />
         )}
       </Panel>
     </Group>
