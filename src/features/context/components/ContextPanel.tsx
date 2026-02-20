@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useCallback, useRef, useState, useEffect, type ReactNode } from "react";
-import { ChevronDown, Maximize2 } from "lucide-react";
+import { ChevronDown, Maximize2, X } from "lucide-react";
 
 import { PanelIconButton } from "@/components/PanelIconButton";
 import { sectionLabelClass } from "@/components/SectionLabel";
@@ -12,6 +12,7 @@ interface ContextPanelProps {
   activeTab: ContextTab;
   onTabChange: (tab: ContextTab) => void;
   onExpandToggle?: () => void;
+  onClose?: () => void;
   expandedTab?: ContextTab | null;
   projectsContent?: ReactNode;
   tasksContent: ReactNode;
@@ -43,6 +44,7 @@ export const ContextPanel = memo(function ContextPanel({
   activeTab,
   onTabChange,
   onExpandToggle,
+  onClose,
   expandedTab,
   projectsContent,
   tasksContent,
@@ -194,11 +196,18 @@ export const ContextPanel = memo(function ContextPanel({
             ) : null}
           </div>
         ) : null}
-        {onExpandToggle && (
-          <PanelIconButton onClick={onExpandToggle} aria-label="Expand panel" data-testid="expand-panel-btn-desktop" className="ml-auto">
-            <Maximize2 className="h-3.5 w-3.5" />
-          </PanelIconButton>
-        )}
+        <div className="ml-auto flex items-center gap-0.5">
+          {onExpandToggle && (
+            <PanelIconButton onClick={onExpandToggle} aria-label="Expand panel" data-testid="expand-panel-btn-desktop">
+              <Maximize2 className="h-3.5 w-3.5" />
+            </PanelIconButton>
+          )}
+          {onClose && (
+            <PanelIconButton onClick={onClose} aria-label="Close panel" data-testid="close-panel-btn">
+              <X className="h-3.5 w-3.5" />
+            </PanelIconButton>
+          )}
+        </div>
       </div>
 
       {/* Tab content — lazy mount */}

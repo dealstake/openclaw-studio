@@ -56,6 +56,7 @@ const TaskWizardModal = lazy(() => import("@/features/tasks/components/TaskWizar
 const AgentWizardModal = lazy(() => import("@/features/agents/components/AgentWizardModal").then(m => ({ default: m.AgentWizardModal })));
 import { useAgentTasks } from "@/features/tasks/hooks/useAgentTasks";
 import { ContextPanel, TAB_OPTIONS, type ContextTab } from "@/features/context/components/ContextPanel";
+import { ContextPanelStrip } from "@/features/context/components/ContextPanelStrip";
 import { PanelExpandModal } from "@/components/PanelExpandModal";
 import { ExpandedContext } from "@/features/context/lib/expandedContext";
 import { ExecApprovalOverlay } from "@/features/exec-approvals/components/ExecApprovalOverlay";
@@ -195,6 +196,10 @@ const AgentStudioPage = () => {
     return localStorage.getItem("studio:session-sidebar-collapsed") === "true";
   });
   const [mobileSessionDrawerOpen, setMobileSessionDrawerOpen] = useState(false);
+  const [contextPanelOpen, setContextPanelOpen] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return localStorage.getItem("studio:context-panel-open") !== "false";
+  });
   /** "agent" = show ContextPanel (Tasks/Brain/Settings), "files" = show Files */
   const [contextMode, setContextMode] = useState<"agent" | "files">("agent");
   const [contextTab, setContextTab] = useState<ContextTab>("projects");
@@ -220,11 +225,24 @@ const AgentStudioPage = () => {
     localStorage.setItem("studio:session-sidebar-collapsed", String(sessionSidebarCollapsed));
   }, [sessionSidebarCollapsed]);
 
+  // Persist context panel open/closed state
+  useEffect(() => {
+    localStorage.setItem("studio:context-panel-open", String(contextPanelOpen));
+  }, [contextPanelOpen]);
+
+  // Keyboard shortcuts: Cmd+Shift+E expand, Cmd+\ toggle context panel, Cmd+Shift+P/T/B open specific tabs
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === "E") {
+      const mod = e.metaKey || e.ctrlKey;
+      if (mod && e.shiftKey && e.key === "E") {
         e.preventDefault();
         setExpandedTab((prev) => (prev ? null : contextTab));
+        return;
+      }
+      if (mod && e.key === "\\") {
+        e.preventDefault();
+        setContextPanelOpen((prev) => !prev);
+        return;
       }
     };
     document.addEventListener("keydown", handler);
@@ -1502,7 +1520,7 @@ const AgentStudioPage = () => {
   // Responsive breakpoint for progressive layout
   const breakpoint = useBreakpoint();
   const showSidebarInline = isDesktopOrAbove(breakpoint); // ≥1024px
-  const showContextInline = isWide(breakpoint); // ≥1440px
+  const showContextInline = isWide(breakpoint) && contextPanelOpen; // ≥1440px + user hasn't closed it
   const isXlViewport = isWide(breakpoint); // activity drawer visibility
   const configMutationStatusLine = activeConfigMutation
     ? `Applying config change: ${activeConfigMutation.label}`
@@ -1668,7 +1686,13 @@ const AgentStudioPage = () => {
             filesDisabled={false}
             channelsSnapshot={channelsSnapshot}
             channelsLoading={channelsLoading}
-            onOpenContext={() => setMobilePane("context")}
+            onOpenContext={() => {
+              if (isWide(breakpoint)) {
+                setContextPanelOpen(true);
+              } else {
+                setMobilePane("context");
+              }
+            }}
             onOpenSessionHistory={() => setMobileSessionDrawerOpen(true)}
             agents={breadcrumbAgents}
             selectedAgentId={focusedAgentId}
@@ -1989,6 +2013,16 @@ const AgentStudioPage = () => {
                 </div>
               </div>
             )}
+            {/* Collapsed context panel strip — visible on wide when panel is closed */}
+            {isWide(breakpoint) && !contextPanelOpen && (
+              <ContextPanelStrip
+                activeTab={contextTab}
+                onOpen={(tab) => {
+                  if (tab) setContextTab(tab);
+                  setContextPanelOpen(true);
+                }}
+              />
+            )}
             {/* Context Panel: agent-scoped (Tasks/Brain/Settings) or global (Files) */}
             <div
               className={`${showContextInline ? "static flex shrink-0 flex-none w-[360px] translate-x-0" : `fixed inset-y-0 right-0 z-50 w-[360px] transform transition-transform duration-300 ${mobilePane === "context" ? "translate-x-0" : "translate-x-full"}`} glass-panel min-h-0 overflow-hidden p-0`}
@@ -2000,6 +2034,7 @@ const AgentStudioPage = () => {
                   activeTab={contextTab}
                   expandedTab={expandedTab}
                   onExpandToggle={handleExpandToggle}
+                  onClose={showContextInline ? () => setContextPanelOpen(false) : undefined}
                   onTabChange={(tab) => {
                     setContextTab(tab);
                     if (tab === "settings" && focusedAgent && !settingsAgentId) {
