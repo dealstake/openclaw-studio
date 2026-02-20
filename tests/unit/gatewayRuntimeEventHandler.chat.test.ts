@@ -161,9 +161,11 @@ describe("gateway runtime event handler (chat)", () => {
       },
     });
 
-    expect(dispatched.some((entry) => entry.type === "appendOutput" && entry.line === "Done")).toBe(
-      true
-    );
+    expect(dispatched.some((entry) => {
+      if (entry.type !== "appendPart") return false;
+      const part = (entry as Record<string, unknown>).part as Record<string, unknown>;
+      return part.type === "text" && part.text === "Done";
+    })).toBe(true);
     expect(
       dispatched.some((entry) => {
         if (entry.type !== "updateAgent") return false;
@@ -252,7 +254,7 @@ describe("gateway runtime event handler (chat)", () => {
     });
 
     expect(dispatch).toHaveBeenCalledWith(
-      expect.objectContaining({ type: "appendOutput", agentId: "agent-1", line: "Run aborted." })
+      expect.objectContaining({ type: "appendPart", agentId: "agent-1", part: { type: "text", text: "Run aborted.", streaming: false } })
     );
 
     handler.handleEvent({
@@ -268,7 +270,7 @@ describe("gateway runtime event handler (chat)", () => {
     });
 
     expect(dispatch).toHaveBeenCalledWith(
-      expect.objectContaining({ type: "appendOutput", agentId: "agent-1", line: "Error: bad" })
+      expect.objectContaining({ type: "appendPart", agentId: "agent-1", part: { type: "text", text: "Error: bad", streaming: false } })
     );
   });
 });

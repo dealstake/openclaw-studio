@@ -122,9 +122,9 @@ describe("session settings mutations helper", () => {
     });
 
     expect(dispatch).toHaveBeenCalledWith({
-      type: "appendOutput",
+      type: "appendPart",
       agentId: "agent-1",
-      line: "Model update failed: network timeout",
+      part: { type: "text", text: "Model update failed: network timeout" },
     });
   });
 });

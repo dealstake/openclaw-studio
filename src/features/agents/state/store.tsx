@@ -89,7 +89,6 @@ type Action =
   | { type: "setError"; error: string | null }
   | { type: "setLoading"; loading: boolean }
   | { type: "updateAgent"; agentId: string; patch: Partial<AgentState> }
-  | { type: "appendOutput"; agentId: string; line: string }
   | { type: "appendPart"; agentId: string; part: MessagePart }
   | { type: "updatePart"; agentId: string; index: number; patch: Partial<MessagePart> }
   | { type: "markActivity"; agentId: string; at?: number }
@@ -167,15 +166,6 @@ const reducer = (state: AgentStoreState, action: Action): AgentStoreState => {
         agents: state.agents.map((agent) =>
           agent.agentId === action.agentId
             ? { ...agent, ...action.patch }
-            : agent
-        ),
-      };
-    case "appendOutput":
-      return {
-        ...state,
-        agents: state.agents.map((agent) =>
-          agent.agentId === action.agentId
-            ? { ...agent, outputLines: [...agent.outputLines, action.line] }
             : agent
         ),
       };

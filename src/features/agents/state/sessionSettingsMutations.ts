@@ -23,11 +23,6 @@ type SessionSettingsDispatchAction =
       };
     }
   | {
-      type: "appendOutput";
-      agentId: string;
-      line: string;
-    }
-  | {
       type: "appendPart";
       agentId: string;
       part: MessagePart;
@@ -98,11 +93,6 @@ export const applySessionSettingMutation = async ({
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : buildFallbackError(field);
-    dispatch({
-      type: "appendOutput",
-      agentId,
-      line: `${buildErrorPrefix(field)}: ${msg}`,
-    });
     dispatch({
       type: "appendPart",
       agentId,

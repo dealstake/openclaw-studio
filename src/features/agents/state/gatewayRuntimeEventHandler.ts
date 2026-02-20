@@ -1,7 +1,6 @@
 import type { AgentState } from "@/features/agents/state/store";
 import {
   classifyGatewayEventKind,
-  dedupeRunLines,
   getAgentSummaryPatch,
   getChatSummaryPatch,
   isReasoningRuntimeAgentStream,
@@ -17,19 +16,16 @@ import {
   extractText,
   extractThinking,
   extractThinkingFromTaggedStream,
-  extractToolLines,
-  formatThinkingMarkdown,
-  formatToolCallMarkdown,
-  isTraceMarkdown,
   isUiMetadataPrefix,
   stripUiMetadata,
 } from "@/lib/text/message-extract";
+// NOTE: formatToolCallMarkdown, formatThinkingMarkdown, isTraceMarkdown, extractToolLines
+// removed — no longer needed now that appendOutput/outputLines are eliminated from live events.
 
 import type { MessagePart } from "@/lib/chat/types";
 
 type RuntimeDispatchAction =
   | { type: "updateAgent"; agentId: string; patch: Partial<AgentState> }
-  | { type: "appendOutput"; agentId: string; line: string }
   | { type: "appendPart"; agentId: string; part: MessagePart }
   | { type: "updatePart"; agentId: string; index: number; patch: Partial<MessagePart> }
   | { type: "markActivity"; agentId: string; at?: number };
@@ -155,7 +151,6 @@ export function createGatewayRuntimeEventHandler(
   const chatRunSeen = new Set<string>();
   const assistantStreamByRun = new Map<string, string>();
   const thinkingStreamByRun = new Map<string, string>();
-  const toolLinesSeenByRun = new Map<string, Set<string>>();
   const thinkingDebugBySession = new Set<string>();
   const lastActivityMarkByAgent = new Map<string, number>();
 
@@ -183,28 +178,11 @@ export function createGatewayRuntimeEventHandler(
   let sessionsRefreshTimer: number | null = null;
   let cronRefreshTimer: number | null = null;
 
-  const appendUniqueToolLines = (agentId: string, runId: string | null | undefined, lines: string[]) => {
-    if (lines.length === 0) return;
-    if (!runId) {
-      for (const line of lines) {
-        deps.dispatch({ type: "appendOutput", agentId, line });
-      }
-      return;
-    }
-    const current = toolLinesSeenByRun.get(runId) ?? new Set<string>();
-    const { appended, nextSeen } = dedupeRunLines(current, lines);
-    toolLinesSeenByRun.set(runId, nextSeen);
-    for (const line of appended) {
-      deps.dispatch({ type: "appendOutput", agentId, line });
-    }
-  };
-
   const clearRunTracking = (runId?: string | null) => {
     if (!runId) return;
     chatRunSeen.delete(runId);
     assistantStreamByRun.delete(runId);
     thinkingStreamByRun.delete(runId);
-    toolLinesSeenByRun.delete(runId);
     // Clean up part index entries for this run
     for (const key of partIndexByKey.keys()) {
       if (key.includes(`:${runId}:`)) {
@@ -242,7 +220,6 @@ export function createGatewayRuntimeEventHandler(
     chatRunSeen.clear();
     assistantStreamByRun.clear();
     thinkingStreamByRun.clear();
-    toolLinesSeenByRun.clear();
     thinkingDebugBySession.clear();
     lastActivityMarkByAgent.clear();
     partIndexByKey.clear();
@@ -282,14 +259,12 @@ export function createGatewayRuntimeEventHandler(
     const nextTextRaw = extractText(payload.message);
     const nextText = nextTextRaw ? stripUiMetadata(nextTextRaw) : null;
     const nextThinking = extractThinking(payload.message ?? payload);
-    const toolLines = extractToolLines(payload.message ?? payload);
     const isToolRole = role === "tool" || role === "toolResult";
 
     if (payload.state === "delta") {
       if (typeof nextTextRaw === "string" && isUiMetadataPrefix(nextTextRaw.trim())) {
         return;
       }
-      appendUniqueToolLines(agentId, payload.runId ?? null, toolLines);
       const patch: Partial<AgentState> = {};
       if (nextThinking) {
         patch.thinkingTrace = nextThinking;
@@ -318,20 +293,13 @@ export function createGatewayRuntimeEventHandler(
         });
       }
       const thinkingText = nextThinking ?? agent?.thinkingTrace ?? null;
-      const thinkingLine = thinkingText ? formatThinkingMarkdown(thinkingText) : "";
-      if (thinkingLine) {
-        deps.dispatch({
-          type: "appendOutput",
-          agentId,
-          line: thinkingLine,
-        });
-      }
-      appendUniqueToolLines(agentId, payload.runId ?? null, toolLines);
+      // If no thinking was extracted for this turn and none exists in messageParts,
+      // reload history to try to recover it from the server.
       if (
-        !thinkingLine &&
+        !thinkingText &&
         role === "assistant" &&
         agent &&
-        !agent.outputLines.some((line) => isTraceMarkdown(line.trim()))
+        !agent.messageParts.some((p) => p.type === "reasoning")
       ) {
         void deps.loadAgentHistory(agentId);
       }
@@ -344,11 +312,6 @@ export function createGatewayRuntimeEventHandler(
         });
       }
       if (!isToolRole && typeof nextText === "string") {
-        deps.dispatch({
-          type: "appendOutput",
-          agentId,
-          line: nextText,
-        });
         deps.dispatch({
           type: "appendPart",
           agentId,
@@ -392,9 +355,9 @@ export function createGatewayRuntimeEventHandler(
       clearRunTracking(payload.runId ?? null);
       deps.clearPendingLivePatch(agentId);
       deps.dispatch({
-        type: "appendOutput",
+        type: "appendPart",
         agentId,
-        line: "Run aborted.",
+        part: { type: "text", text: "Run aborted.", streaming: false },
       });
       deps.dispatch({
         type: "updateAgent",
@@ -408,9 +371,9 @@ export function createGatewayRuntimeEventHandler(
       clearRunTracking(payload.runId ?? null);
       deps.clearPendingLivePatch(agentId);
       deps.dispatch({
-        type: "appendOutput",
+        type: "appendPart",
         agentId,
-        line: payload.errorMessage ? `Error: ${payload.errorMessage}` : "Run error.",
+        part: { type: "text", text: payload.errorMessage ? `Error: ${payload.errorMessage}` : "Run error.", streaming: false },
       });
       deps.dispatch({
         type: "updateAgent",
@@ -552,14 +515,6 @@ export function createGatewayRuntimeEventHandler(
           (data?.input as unknown) ??
           (data?.parameters as unknown) ??
           null;
-        const line = formatToolCallMarkdown({
-          id: toolCallId || undefined,
-          name,
-          arguments: args,
-        });
-        if (line) {
-          appendUniqueToolLines(match, payload.runId, [line]);
-        }
         // Populate messageParts with tool invocation
         const toolKey = getPartKey(match, payload.runId, `tool:${toolCallId || name}`);
         const toolPhase = phase === "start" ? "pending" : "running";
@@ -578,7 +533,6 @@ export function createGatewayRuntimeEventHandler(
       const isError = typeof data?.isError === "boolean" ? data.isError : undefined;
       const resultRecord =
         result && typeof result === "object" ? (result as Record<string, unknown>) : null;
-      const details = resultRecord && "details" in resultRecord ? resultRecord.details : undefined;
       let content: unknown = result;
       if (resultRecord) {
         if (Array.isArray(resultRecord.content)) {
@@ -587,15 +541,6 @@ export function createGatewayRuntimeEventHandler(
           content = resultRecord.text;
         }
       }
-      const message = {
-        role: "tool",
-        toolName: name,
-        toolCallId,
-        isError,
-        details,
-        content,
-      };
-      appendUniqueToolLines(match, payload.runId, extractToolLines(message));
       // Update messageParts tool invocation to complete
       const toolResultKey = getPartKey(match, payload.runId, `tool:${toolCallId || name}`);
       const resultStr = typeof content === "string" ? content : JSON.stringify(content);
@@ -626,11 +571,6 @@ export function createGatewayRuntimeEventHandler(
       const finalText = agent.streamText?.trim();
       if (finalText) {
         const assistantCompletionAt = now();
-        deps.dispatch({
-          type: "appendOutput",
-          agentId: match,
-          line: finalText,
-        });
         deps.dispatch({
           type: "updateAgent",
           agentId: match,

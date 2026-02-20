@@ -1137,11 +1137,6 @@ const AgentStudioPage = () => {
         const message = err instanceof Error ? err.message : "Failed to start new session.";
         setError(message);
         dispatch({
-          type: "appendOutput",
-          agentId,
-          line: `New session failed: ${message}`,
-        });
-        dispatch({
           type: "appendPart",
           agentId,
           part: { type: "text", text: `New session failed: ${message}` },
@@ -1166,11 +1161,6 @@ const AgentStudioPage = () => {
       runtimeEventHandlerRef.current?.clearRunTracking(runId);
       const agent = stateRef.current.agents.find((entry) => entry.agentId === agentId);
       if (!agent) {
-        dispatch({
-          type: "appendOutput",
-          agentId,
-          line: "Error: Agent not found.",
-        });
         dispatch({
           type: "appendPart",
           agentId,
@@ -1197,11 +1187,6 @@ const AgentStudioPage = () => {
           lastUserMessage: trimmed,
           lastActivityAt: Date.now(),
         },
-      });
-      dispatch({
-        type: "appendOutput",
-        agentId,
-        line: `> ${trimmed}`,
       });
       dispatch({
         type: "appendPart",
@@ -1248,11 +1233,6 @@ const AgentStudioPage = () => {
           patch: { status: "error", runId: null, streamText: null, thinkingTrace: null },
         });
         dispatch({
-          type: "appendOutput",
-          agentId,
-          line: `Error: ${msg}`,
-        });
-        dispatch({
           type: "appendPart",
           agentId,
           part: { type: "text", text: `Error: ${msg}` },
@@ -1285,11 +1265,6 @@ const AgentStudioPage = () => {
         const message = err instanceof Error ? err.message : "Failed to stop run.";
         setError(message);
         console.error(message);
-        dispatch({
-          type: "appendOutput",
-          agentId,
-          line: `Stop failed: ${message}`,
-        });
         dispatch({
           type: "appendPart",
           agentId,
