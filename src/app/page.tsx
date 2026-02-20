@@ -8,7 +8,6 @@ import {
   AgentBrainPanel,
   AgentSettingsPanel,
 } from "@/features/agents/components/AgentInspectPanels";
-import type { SubAgentEntry, AgentTokenInfo } from "@/features/agents/components/FleetSidebar";
 import { SessionHistorySidebar } from "@/features/sessions/components/SessionHistorySidebar";
 import type { BreadcrumbAgent } from "@/features/agents/components/AgentBreadcrumb";
 import { HeaderBar } from "@/features/agents/components/HeaderBar";
@@ -75,7 +74,6 @@ import { upsertLiveSession, addSystemEvent } from "@/features/activity/hooks/use
 import { pushHeartbeatEntry } from "@/features/activity/hooks/useHeartbeatEntries";
 import { useTranscriptCapture } from "@/features/activity/hooks/useTranscriptCapture";
 import { filterHeartbeatTurns } from "@/features/activity/lib/heartbeatFilter";
-// StatusBar removed — connection info moved to HeaderBar status dot + agent breadcrumb
 import { TraceViewer } from "@/features/sessions/components/TraceViewer";
 import { useChannelsStatus } from "@/features/channels/hooks/useChannelsStatus";
 import { useAllSessions } from "@/features/sessions/hooks/useAllSessions";
@@ -87,7 +85,7 @@ import { useSessionUsage } from "@/features/sessions/hooks/useSessionUsage";
 import { useTranscripts, useTranscriptSearch, fetchTranscriptMessages } from "@/features/sessions/hooks/useTranscripts";
 import { useGatewayStatus } from "@/features/status/hooks/useGatewayStatus";
 const ConfigMutationModals = lazy(() => import("@/features/agents/components/ConfigMutationModals").then(m => ({ default: m.ConfigMutationModals })));
-import type { MobilePane } from "@/features/agents/components/MobilePaneToggle";
+type MobilePane = "chat" | "context";
 import { useConfigMutationQueue } from "@/features/agents/hooks/useConfigMutationQueue";
 import { useDraftBatching } from "@/features/agents/hooks/useDraftBatching";
 import { useVisibilityRefresh } from "@/hooks/useVisibilityRefresh";
@@ -162,8 +160,6 @@ const AgentStudioPage = () => {
   const focusFilterTouchedRef = useRef(false);
   const sessionsUpdateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cronUpdateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [subAgentRunningKeys, setSubAgentRunningKeys] = useState<Set<string>>(new Set());
-
   // Stable refs for load functions — avoids useEffect dependency cascades that
   // cause event handler teardown/recreation loops and RPC call storms.
   // Initialized with no-ops; updated after their hooks define them below.
@@ -428,41 +424,6 @@ const AgentStudioPage = () => {
   const selectedBrainAgentId = useMemo(() => {
     return focusedAgent?.agentId ?? agents[0]?.agentId ?? null;
   }, [agents, focusedAgent]);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- kept for Phase 6 (FleetSidebar removal)
-  const subAgentSessions = useMemo(() => {
-    const map = new Map<string, SubAgentEntry[]>();
-    for (const session of allSessions) {
-      const key = session.key;
-      // Pattern: agent:<name>:subagent:<uuid>
-      const match = key.match(/^agent:([^:]+):subagent:(.+)$/);
-      if (!match) continue;
-      const parentAgentId = match[1];
-      const subId = match[2];
-      const updatedAt = session.updatedAt ?? null;
-      const isRunning = subAgentRunningKeys.has(key);
-      const entry: SubAgentEntry = {
-        sessionKey: key,
-        sessionIdShort: subId.slice(0, 6),
-        parentAgentId,
-        updatedAt,
-        isRunning,
-      };
-      const existing = map.get(parentAgentId);
-      if (existing) {
-        existing.push(entry);
-      } else {
-        map.set(parentAgentId, [entry]);
-      }
-    }
-    // Sort each agent's sub-agents by updatedAt desc, limit to 5
-    for (const [agentId, entries] of map) {
-      entries.sort((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0));
-      if (entries.length > 5) map.set(agentId, entries.slice(0, 5));
-    }
-    return map;
-  }, [allSessions, subAgentRunningKeys]);
-
-  // Build token info map for Fleet sidebar progress bars
   // Match a model key (could be "claude-opus-4-6" or "anthropic/claude-opus-4-6") against gateway model list
   const findModelMatch = useCallback(
     (modelKey: string | undefined | null) => {
@@ -473,30 +434,6 @@ const AgentStudioPage = () => {
     },
     [gatewayModels]
   );
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- kept for Phase 6 (FleetSidebar removal)
-  const agentTokenInfo = useMemo(() => {
-    const map = new Map<string, AgentTokenInfo>();
-    if (focusedAgent) {
-      const cw = agentContextWindow.get(focusedAgent.agentId);
-      if (cw && cw.totalTokens > 0) {
-        // Use last turn's totalTokens (actual context utilization) and contextTokens from gateway
-        const limit = cw.contextTokens > 0 ? cw.contextTokens : findModelMatch(focusedAgent.model)?.contextWindow;
-        map.set(focusedAgent.agentId, {
-          used: cw.totalTokens,
-          limit,
-        });
-      } else if (sessionUsage) {
-        // Fallback: use cumulative usage (less accurate but better than nothing)
-        const match = findModelMatch(focusedAgent.model);
-        map.set(focusedAgent.agentId, {
-          used: sessionUsage.inputTokens + sessionUsage.outputTokens,
-          limit: match?.contextWindow,
-        });
-      }
-    }
-    return map;
-  }, [focusedAgent, agentContextWindow, sessionUsage, findModelMatch]);
 
   const faviconHref = "/branding/trident.svg";
   const errorMessage = state.error ?? gatewayModelsError;
@@ -1478,12 +1415,9 @@ const AgentStudioPage = () => {
           ...event,
         });
       },
-      onSubAgentLifecycle: (sessionKey: string, phase: string) => {
-        if (phase === "start") {
-          setSubAgentRunningKeys(prev => { const next = new Set(prev); next.add(sessionKey); return next; });
-        } else if (phase === "end" || phase === "error") {
-          setSubAgentRunningKeys(prev => { const next = new Set(prev); next.delete(sessionKey); return next; });
-        }
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      onSubAgentLifecycle: (_sessionKey: string, _phase: string) => {
+        // Sub-agent lifecycle tracking — available for future use
       },
     });
     runtimeEventHandlerRef.current = handler;
@@ -2325,7 +2259,6 @@ const AgentStudioPage = () => {
             />
           </div>
 	        )}
-        {/* StatusBar removed — info moved to HeaderBar connection dot + agent breadcrumb */}
 	      </div>
       {execApprovalQueue.length > 0 ? (
         <ExecApprovalOverlay

@@ -21,12 +21,12 @@ test.describe("Sessions panel", () => {
   test("renders sessions panel with header and refresh button", async ({ page }) => {
     await page.goto("/");
     // Wait for main UI to load
-    await expect(page.getByTestId("fleet-sidebar")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByTestId("agent-breadcrumb-trigger")).toBeVisible({ timeout: 10_000 });
   });
 
   test("sessions list shows empty state when no sessions", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByTestId("fleet-sidebar")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByTestId("agent-breadcrumb-trigger")).toBeVisible({ timeout: 10_000 });
     // Without a gateway connection, the sessions panel should be present but may show empty
   });
 });
