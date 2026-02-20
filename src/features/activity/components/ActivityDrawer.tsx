@@ -3,13 +3,18 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Group, Panel, Separator } from "react-resizable-panels";
 import type { PanelSize } from "react-resizable-panels";
-import { Activity, ChevronLeft, ChevronRight, Maximize2, History, Radio } from "lucide-react";
+import { Activity, BarChart3, ChevronLeft, ChevronRight, Maximize2, History, Radio } from "lucide-react";
 import { SectionLabel } from "@/components/SectionLabel";
 import { PanelExpandModal } from "@/components/PanelExpandModal";
 import { PanelIconButton } from "@/components/PanelIconButton";
 import { HistoryActivityFeed } from "./HistoryActivityFeed";
 import { LiveActivityFeed } from "./LiveActivityFeed";
+import { CronAnalyticsSummary } from "./CronAnalyticsSummary";
+import { CronJobRankingTable } from "./CronJobRankingTable";
+import { useCronAnalytics } from "@/features/activity/hooks/useCronAnalytics";
 import { useActivityDrawer, type DrawerTab } from "@/features/activity/hooks/useActivityDrawer";
+import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
+import type { CronJobSummary } from "@/lib/cron/types";
 import { cn } from "@/lib/utils";
 
 const DRAWER_STATE_KEY = "studio:activity-drawer-state";
@@ -36,6 +41,9 @@ export interface ActivityDrawerProps {
   children: React.ReactNode;
   hidden?: boolean;
   agentId?: string | null;
+  client?: GatewayClient | null;
+  status?: GatewayStatus;
+  cronJobs?: CronJobSummary[];
 }
 
 const CollapsedIndicator = React.memo(function CollapsedIndicator({
@@ -86,11 +94,30 @@ const TAB_LABELS: Record<DrawerTab, string> = {
 const DrawerContent = React.memo(function DrawerContent({
   agentId,
   onCollapse,
+  client,
+  status,
+  cronJobs,
 }: {
   agentId: string | null;
   onCollapse: () => void;
+  client?: GatewayClient | null;
+  status?: GatewayStatus;
+  cronJobs?: CronJobSummary[];
 }) {
   const { tab, setTab, expandedTab, expandTab, closeExpand, hasRunning, hasErrors } = useActivityDrawer();
+  const { jobStats, loading: statsLoading, refresh: refreshStats } = useCronAnalytics(
+    client as GatewayClient,
+    status ?? "disconnected",
+    cronJobs ?? []
+  );
+  const [statsOpen, setStatsOpen] = useState(false);
+
+  // Load stats when stats section is opened
+  useEffect(() => {
+    if (statsOpen && status === "connected") {
+      refreshStats();
+    }
+  }, [statsOpen, status, refreshStats]);
 
   return (
     <>
@@ -104,6 +131,13 @@ const DrawerContent = React.memo(function DrawerContent({
             )}
           </div>
           <div className="flex items-center gap-0.5">
+            <PanelIconButton
+              onClick={() => setStatsOpen((v) => !v)}
+              aria-label={statsOpen ? "Hide stats" : "Show stats"}
+              title={statsOpen ? "Hide stats" : "Show stats"}
+            >
+              <BarChart3 className={cn("h-3 w-3", statsOpen && "text-primary")} />
+            </PanelIconButton>
             <PanelIconButton
               onClick={() => expandTab(tab)}
               aria-label="Expand activity panel"
@@ -154,6 +188,14 @@ const DrawerContent = React.memo(function DrawerContent({
           </button>
         </div>
 
+        {/* Collapsible Stats Section */}
+        {statsOpen && client && (
+          <div className="max-h-[40%] overflow-y-auto border-b border-border">
+            <CronAnalyticsSummary jobStats={jobStats} loading={statsLoading} />
+            <CronJobRankingTable jobStats={jobStats} loading={statsLoading} client={client} />
+          </div>
+        )}
+
         {/* Content */}
         <div className="flex-1 overflow-hidden">
           {tab === "live" ? (
@@ -188,6 +230,9 @@ export const ActivityDrawer = React.memo(function ActivityDrawer({
   children,
   hidden = false,
   agentId = null,
+  client = null,
+  status = "disconnected",
+  cronJobs = [],
 }: ActivityDrawerProps) {
   const { eventCount, hasRunning, hasErrors } = useActivityDrawer();
   const [drawerState, setDrawerState] = useState<DrawerPersist>(loadDrawerState);
@@ -268,7 +313,7 @@ export const ActivityDrawer = React.memo(function ActivityDrawer({
             onExpand={handleExpand}
           />
         ) : (
-          <DrawerContent agentId={agentId} onCollapse={handleCollapse} />
+          <DrawerContent agentId={agentId} onCollapse={handleCollapse} client={client} status={status} cronJobs={cronJobs} />
         )}
       </Panel>
     </Group>

@@ -1717,7 +1717,7 @@ const AgentStudioPage = () => {
               className="glass-panel flex min-h-0 flex-1 overflow-hidden p-2 sm:p-3"
               data-testid="focused-agent-panel"
             >
-              <ActivityDrawer hidden={!isXlViewport} agentId={focusedAgentId}>
+              <ActivityDrawer hidden={!isXlViewport} agentId={focusedAgentId} client={client} status={status} cronJobs={allCronJobs}>
               {focusedAgent ? (
                 <AgentChatPanel
                   agent={focusedAgent}
