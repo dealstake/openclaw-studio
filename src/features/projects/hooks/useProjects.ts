@@ -35,6 +35,10 @@ export function useProjects(
   const [error, setError] = useState<string | null>(null);
   const loadRef = useRef<() => Promise<void>>(() => Promise.resolve());
   const hasLoadedOnce = useRef(false);
+  const projectsRef = useRef<ProjectEntry[]>([]);
+
+  // Keep ref in sync with state for stable rollback access
+  projectsRef.current = projects;
 
   const loadProjects = useCallback(async () => {
     if (!agentId) return;
@@ -99,118 +103,18 @@ export function useProjects(
     }
   }, [eventTick]);
 
-  const toggleStatus = useCallback(
-    async (project: ProjectEntry) => {
+  // ─── Unified status change helper ──────────────────────────────────────
+  const applyStatusChange = useCallback(
+    async (
+      project: ProjectEntry,
+      newEmoji: string,
+      newLabel: string,
+      opts?: { successMessage?: string },
+    ) => {
       if (!agentId) return;
-      const toggle = TOGGLE_MAP[project.statusEmoji];
-      if (!toggle) return;
-
-      const newStatus = `${toggle.emoji} ${toggle.label}`;
-      const prevProjects = projects;
-
-      // Optimistic update
-      setProjects((prev) =>
-        prev.map((p) =>
-          p.doc === project.doc
-            ? { ...p, status: `${toggle.emoji} ${toggle.label}`, statusEmoji: toggle.emoji }
-            : p,
-        ),
-      );
-
-      try {
-        const res = await fetch("/api/workspace/project", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ agentId, doc: project.doc, status: newStatus }),
-        });
-        if (!res.ok) {
-          const data = (await res.json()) as { error?: string };
-          setProjects(prevProjects);
-          toast.error(`Failed to update "${project.name}": ${data.error ?? "Unknown error"}`);
-          return;
-        }
-
-        if (client && project.details?.associatedTasks?.length) {
-          const isParkingProject = toggle.emoji === "⏸️";
-          await manageProjectCronJobs(
-            client,
-            project.details.associatedTasks,
-            !isParkingProject,
-          );
-        }
-
-        toast.success(
-          toggle.emoji === "⏸️"
-            ? `"${project.name}" paused`
-            : `"${project.name}" activated`,
-        );
-        void loadRef.current?.();
-      } catch (err) {
-        setProjects(prevProjects);
-        toast.error(`Failed to update "${project.name}"`);
-        console.error("Failed to toggle project status:", err);
-      }
-    },
-    [agentId, client, projects],
-  );
-
-  const archive = useCallback(
-    async (project: ProjectEntry) => {
-      if (!agentId) return;
-      const prevProjects = projects;
-
-      // Optimistic removal
-      setProjects((prev) => prev.filter((p) => p.doc !== project.doc));
-
-      try {
-        const res = await fetch("/api/workspace/project", {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ agentId, doc: project.doc }),
-        });
-        if (!res.ok) {
-          const data = (await res.json()) as { error?: string };
-          setProjects(prevProjects);
-          toast.error(`Failed to archive "${project.name}": ${data.error ?? "Unknown error"}`);
-          return;
-        }
-        toast.success(`"${project.name}" archived`);
-        void loadRef.current?.();
-      } catch (err) {
-        setProjects(prevProjects);
-        toast.error(`Failed to archive "${project.name}"`);
-        console.error("Failed to archive project:", err);
-      }
-    },
-    [agentId, projects],
-  );
-
-  // ─── Building queue logic ───────────────────────────────────────────────
-  const buildingProjects = useMemo(
-    () => projects.filter((p) => p.statusEmoji === "🚧"),
-    [projects],
-  );
-
-  const buildingCount = buildingProjects.length;
-
-  const getQueuePosition = useCallback(
-    (doc: string) => {
-      if (buildingCount <= 1) return 0;
-      const idx = buildingProjects.findIndex((p) => p.doc === doc);
-      // First building project is actively building (position 0 = not queued)
-      return idx <= 0 ? 0 : idx;
-    },
-    [buildingProjects, buildingCount],
-  );
-
-  // ─── Change status (click-to-cycle) ───────────────────────────────────
-  const changeStatus = useCallback(
-    async (project: ProjectEntry, newEmoji: string, newLabel: string) => {
-      if (!agentId) return;
-      if (project.statusEmoji === newEmoji) return; // no-op
 
       const newStatus = `${newEmoji} ${newLabel}`;
-      const prevProjects = projects;
+      const prevProjects = projectsRef.current;
 
       // Optimistic update
       setProjects((prev) =>
@@ -247,7 +151,7 @@ export function useProjects(
           }
         }
 
-        toast.success(`"${project.name}" → ${newLabel}`);
+        toast.success(opts?.successMessage ?? `"${project.name}" → ${newLabel}`);
         void loadRef.current?.();
       } catch (err) {
         setProjects(prevProjects);
@@ -255,7 +159,79 @@ export function useProjects(
         console.error("Failed to change project status:", err);
       }
     },
-    [agentId, client, projects],
+    [agentId, client],
+  );
+
+  const toggleStatus = useCallback(
+    async (project: ProjectEntry) => {
+      const toggle = TOGGLE_MAP[project.statusEmoji];
+      if (!toggle) return;
+
+      await applyStatusChange(project, toggle.emoji, toggle.label, {
+        successMessage:
+          toggle.emoji === "⏸️"
+            ? `"${project.name}" paused`
+            : `"${project.name}" activated`,
+      });
+    },
+    [applyStatusChange],
+  );
+
+  const archive = useCallback(
+    async (project: ProjectEntry) => {
+      if (!agentId) return;
+      const prevProjects = projectsRef.current;
+
+      // Optimistic removal
+      setProjects((prev) => prev.filter((p) => p.doc !== project.doc));
+
+      try {
+        const res = await fetch("/api/workspace/project", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ agentId, doc: project.doc }),
+        });
+        if (!res.ok) {
+          const data = (await res.json()) as { error?: string };
+          setProjects(prevProjects);
+          toast.error(`Failed to archive "${project.name}": ${data.error ?? "Unknown error"}`);
+          return;
+        }
+        toast.success(`"${project.name}" archived`);
+        void loadRef.current?.();
+      } catch (err) {
+        setProjects(prevProjects);
+        toast.error(`Failed to archive "${project.name}"`);
+        console.error("Failed to archive project:", err);
+      }
+    },
+    [agentId],
+  );
+
+  // ─── Building queue logic ───────────────────────────────────────────────
+  const buildingProjects = useMemo(
+    () => projects.filter((p) => p.statusEmoji === "🚧"),
+    [projects],
+  );
+
+  const buildingCount = buildingProjects.length;
+
+  const getQueuePosition = useCallback(
+    (doc: string) => {
+      if (buildingCount <= 1) return 0;
+      const idx = buildingProjects.findIndex((p) => p.doc === doc);
+      // First building project is actively building (position 0 = not queued)
+      return idx <= 0 ? 0 : idx;
+    },
+    [buildingProjects, buildingCount],
+  );
+
+  const changeStatus = useCallback(
+    async (project: ProjectEntry, newEmoji: string, newLabel: string) => {
+      if (project.statusEmoji === newEmoji) return; // no-op
+      await applyStatusChange(project, newEmoji, newLabel);
+    },
+    [applyStatusChange],
   );
 
   const refresh = useCallback(() => {
