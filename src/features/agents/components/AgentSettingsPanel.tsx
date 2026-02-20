@@ -1,15 +1,15 @@
 "use client";
 
 import { memo, useEffect, useState } from "react";
-import { AlertTriangle, Copy, Play, Trash2 } from "lucide-react";
+import { AlertTriangle, Copy } from "lucide-react";
 
 import type { AgentState } from "@/features/agents/state/store";
 import { formatCronPayload, formatCronSchedule, type CronJobSummary } from "@/lib/cron/types";
 import type { AgentHeartbeatSummary } from "@/lib/gateway/agentConfig";
 import { AgentInspectHeader } from "./AgentInspectHeader";
-import { PanelIconButton } from "@/components/PanelIconButton";
+import { SettingsListSection } from "./SettingsListSection";
+import { SettingsListItem } from "./SettingsListItem";
 import { SectionLabel, sectionLabelClass} from "@/components/SectionLabel";
-import { ErrorBanner } from "@/components/ErrorBanner";
 import {
   Tooltip,
   TooltipContent,
@@ -273,186 +273,109 @@ export const AgentSettingsPanel = memo(function AgentSettingsPanel({
           </TooltipProvider>
         </section>
 
-        <section
-          className="rounded-md border border-border/80 bg-card/70 p-4"
-          data-testid="agent-settings-cron"
+        <SettingsListSection
+          label="Cron status"
+          testId="agent-settings-cron"
+          count={cronJobs.length}
+          loading={cronLoading}
+          error={cronError}
+          onRetry={onRetryCron}
+          emptyMessage="No cron jobs for this agent."
+          isEmpty={cronJobs.length === 0}
+          footer={onNavigateToTasks ? (
+            <button
+              type="button"
+              className="mt-1 text-[11px] text-muted-foreground transition hover:text-foreground"
+              onClick={onNavigateToTasks}
+            >
+              View in Tasks →
+            </button>
+          ) : undefined}
         >
-          <div className="flex items-center justify-between">
-            <SectionLabel>
-              Cron status
-            </SectionLabel>
-            {!cronLoading && !cronError && cronJobs.length > 0 && (
-              <span className="text-[11px] text-muted-foreground">
-                {cronJobs.length} job{cronJobs.length !== 1 ? "s" : ""}
-              </span>
-            )}
-          </div>
-          {cronLoading ? (
-            <div className="mt-3 text-[11px] text-muted-foreground">Loading cron jobs...</div>
-          ) : null}
-          {!cronLoading && cronError ? (
-            <ErrorBanner message={cronError} onRetry={onRetryCron} className="mt-3" />
-          ) : null}
-          {!cronLoading && !cronError && cronJobs.length === 0 ? (
-            <div className="mt-3 text-[11px] text-muted-foreground">
-              No cron jobs for this agent.
-            </div>
-          ) : null}
-          {!cronLoading && !cronError && cronJobs.length > 0 ? (
-            <div className="mt-3 flex flex-col gap-2">
-              {cronJobs.map((job) => {
-                const runBusy = cronRunBusyJobId === job.id;
-                const deleteBusy = cronDeleteBusyJobId === job.id;
-                const busy = runBusy || deleteBusy;
-                return (
-                  <div
-                    key={job.id}
-                    className="group/cron flex items-start justify-between gap-2 rounded-md border border-border/80 bg-card/75 px-3 py-2"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <div className={`truncate ${sectionLabelClass} text-foreground`}>
-                        {job.name}
-                      </div>
-                      <div className="truncate text-[11px] text-muted-foreground">
-                        {formatCronSchedule(job.schedule)}
-                      </div>
-                      <div className="truncate text-[11px] text-muted-foreground">
-                        {formatCronPayload(job.payload)}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1 opacity-0 transition group-focus-within/cron:opacity-100 group-hover/cron:opacity-100">
-                      <PanelIconButton
-                        aria-label={`Run cron job ${job.name} now`}
-                        onClick={() => {
-                          void onRunCronJob(job.id);
-                        }}
-                        disabled={busy}
-                      >
-                        <Play className="h-3.5 w-3.5" />
-                      </PanelIconButton>
-                      <PanelIconButton
-                        variant="destructive"
-                        aria-label={`Delete cron job ${job.name}`}
-                        onClick={() => {
-                          void onDeleteCronJob(job.id);
-                        }}
-                        disabled={busy}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </PanelIconButton>
-                    </div>
+          {cronJobs.map((job) => (
+            <SettingsListItem
+              key={job.id}
+              id={job.id}
+              title={job.name}
+              groupName="cron"
+              metadata={
+                <>
+                  <div className="truncate text-[11px] text-muted-foreground">
+                    {formatCronSchedule(job.schedule)}
                   </div>
-                );
-              })}
-              {onNavigateToTasks && (
-                <button
-                  type="button"
-                  className="mt-1 text-[11px] text-muted-foreground transition hover:text-foreground"
-                  onClick={onNavigateToTasks}
-                >
-                  View in Tasks →
-                </button>
-              )}
-            </div>
-          ) : null}
-        </section>
+                  <div className="truncate text-[11px] text-muted-foreground">
+                    {formatCronPayload(job.payload)}
+                  </div>
+                </>
+              }
+              runBusy={cronRunBusyJobId === job.id}
+              deleteBusy={cronDeleteBusyJobId === job.id}
+              runLabel={`Run cron job ${job.name} now`}
+              deleteLabel={`Delete cron job ${job.name}`}
+              onRun={() => { void onRunCronJob(job.id); }}
+              onDelete={() => { void onDeleteCronJob(job.id); }}
+            />
+          ))}
+        </SettingsListSection>
 
-        <section
-          className="rounded-md border border-border/80 bg-card/70 p-4"
-          data-testid="agent-settings-heartbeat"
+        <SettingsListSection
+          label="Heartbeats"
+          testId="agent-settings-heartbeat"
+          count={heartbeats.length}
+          loading={heartbeatLoading}
+          error={heartbeatError}
+          onRetry={onRetryHeartbeats}
+          emptyMessage="No heartbeats for this agent."
+          isEmpty={heartbeats.length === 0}
         >
-          <SectionLabel>
-            Heartbeats
-          </SectionLabel>
-          {heartbeatLoading ? (
-            <div className="mt-3 text-[11px] text-muted-foreground">Loading heartbeats...</div>
-          ) : null}
-          {!heartbeatLoading && heartbeatError ? (
-            <ErrorBanner message={heartbeatError} onRetry={onRetryHeartbeats} className="mt-3" />
-          ) : null}
-          {!heartbeatLoading && !heartbeatError && heartbeats.length === 0 ? (
-            <div className="mt-3 text-[11px] text-muted-foreground">
-              No heartbeats for this agent.
-            </div>
-          ) : null}
-          {!heartbeatLoading && !heartbeatError && heartbeats.length > 0 ? (
-            <div className="mt-3 flex flex-col gap-2">
-              {heartbeats.map((heartbeat) => {
-                const runBusy = heartbeatRunBusyId === heartbeat.id;
-                const deleteBusy = heartbeatDeleteBusyId === heartbeat.id;
-                const busy = runBusy || deleteBusy;
-                const deleteAllowed = heartbeat.source === "override";
-                return (
-                  <div
-                    key={heartbeat.id}
-                    className="group/heartbeat flex items-start justify-between gap-2 rounded-md border border-border/80 bg-card/75 px-3 py-2"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <div className={`truncate ${sectionLabelClass} text-foreground`}>
-                        {heartbeat.agentId}
+          {heartbeats.map((heartbeat) => (
+            <SettingsListItem
+              key={heartbeat.id}
+              id={heartbeat.id}
+              title={heartbeat.agentId}
+              groupName="heartbeat"
+              deleteAllowed={heartbeat.source === "override"}
+              metadata={
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="truncate text-[11px] text-muted-foreground">
+                        {formatHeartbeatSchedule(heartbeat)}
                       </div>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <div className="truncate text-[11px] text-muted-foreground">
-                              {formatHeartbeatSchedule(heartbeat)}
-                            </div>
-                          </TooltipTrigger>
-                          <TooltipContent>How often the heartbeat fires</TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <div className="truncate text-[11px] text-muted-foreground">
-                              {formatHeartbeatTarget(heartbeat)}
-                            </div>
-                          </TooltipTrigger>
-                          <TooltipContent>Which session receives the heartbeat</TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <div className="truncate text-[11px] text-muted-foreground">
-                              {formatHeartbeatSource(heartbeat)}
-                            </div>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            {heartbeat.source === "override"
-                              ? "Configured as an agent-level override"
-                              : "Inherited from global gateway config"}
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </div>
-                    <div className="flex items-center gap-1 opacity-0 transition group-focus-within/heartbeat:opacity-100 group-hover/heartbeat:opacity-100">
-                      <PanelIconButton
-                        aria-label={`Run heartbeat for ${heartbeat.agentId} now`}
-                        onClick={() => {
-                          void onRunHeartbeat(heartbeat.id);
-                        }}
-                        disabled={busy}
-                      >
-                        <Play className="h-3.5 w-3.5" />
-                      </PanelIconButton>
-                      <PanelIconButton
-                        variant="destructive"
-                        aria-label={`Delete heartbeat for ${heartbeat.agentId}`}
-                        onClick={() => {
-                          void onDeleteHeartbeat(heartbeat.id);
-                        }}
-                        disabled={busy || !deleteAllowed}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </PanelIconButton>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : null}
-        </section>
+                    </TooltipTrigger>
+                    <TooltipContent>How often the heartbeat fires</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="truncate text-[11px] text-muted-foreground">
+                        {formatHeartbeatTarget(heartbeat)}
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>Which session receives the heartbeat</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="truncate text-[11px] text-muted-foreground">
+                        {formatHeartbeatSource(heartbeat)}
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {heartbeat.source === "override"
+                        ? "Configured as an agent-level override"
+                        : "Inherited from global gateway config"}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              }
+              runBusy={heartbeatRunBusyId === heartbeat.id}
+              deleteBusy={heartbeatDeleteBusyId === heartbeat.id}
+              runLabel={`Run heartbeat for ${heartbeat.agentId} now`}
+              deleteLabel={`Delete heartbeat for ${heartbeat.agentId}`}
+              onRun={() => { void onRunHeartbeat(heartbeat.id); }}
+              onDelete={() => { void onDeleteHeartbeat(heartbeat.id); }}
+            />
+          ))}
+        </SettingsListSection>
 
         {canDelete ? (
           <section className="rounded-md border border-destructive/50 bg-destructive/5 p-4">
