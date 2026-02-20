@@ -10,6 +10,13 @@ export interface ActivityEvent {
   status: ActivityStatus;
   summary: string;
   meta: ActivityMeta;
+  /** Enriched fields (optional — added by transcript capture) */
+  sessionKey?: string | null;
+  transcriptJson?: string | null;
+  model?: string | null;
+  tokensIn?: number | null;
+  tokensOut?: number | null;
+  agentId?: string | null;
 }
 
 export interface ActivityMeta {

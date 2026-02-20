@@ -61,6 +61,12 @@ export const activityEvents = sqliteTable("activity_events", {
   status: text("status").notNull(),
   summary: text("summary").notNull(),
   metaJson: text("meta_json"),
+  sessionKey: text("session_key"),
+  transcriptJson: text("transcript_json"),
+  tokensIn: integer("tokens_in").default(0),
+  tokensOut: integer("tokens_out").default(0),
+  model: text("model"),
+  agentId: text("agent_id"),
   createdAt: text("created_at")
     .notNull()
     .$defaultFn(() => new Date().toISOString()),

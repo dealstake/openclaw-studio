@@ -17,6 +17,12 @@ function rowToEvent(row: typeof activityEvents.$inferSelect): ActivityEvent {
     status: row.status as ActivityEvent["status"],
     summary: row.summary,
     meta: row.metaJson ? (JSON.parse(row.metaJson) as ActivityMeta) : {},
+    sessionKey: row.sessionKey ?? null,
+    transcriptJson: row.transcriptJson ?? null,
+    tokensIn: row.tokensIn ?? null,
+    tokensOut: row.tokensOut ?? null,
+    model: row.model ?? null,
+    agentId: row.agentId ?? null,
   };
 }
 
@@ -29,6 +35,7 @@ export interface ActivityQueryFilters {
   status?: string | null;
   limit?: number;
   offset?: number;
+  includeTranscript?: boolean;
 }
 
 /** Query activity events with optional filters, paginated. */
@@ -38,6 +45,7 @@ export function query(
 ): { events: ActivityEvent[]; total: number } {
   const limit = Math.min(filters.limit ?? 50, 200);
   const offset = filters.offset ?? 0;
+  const includeTranscript = filters.includeTranscript ?? false;
 
   // Build WHERE conditions
   const conditions = [];
@@ -66,7 +74,17 @@ export function query(
     .offset(offset)
     .all();
 
-  return { events: rows.map(rowToEvent), total };
+  return {
+    events: rows.map((r) => {
+      const event = rowToEvent(r);
+      // Strip transcript by default (can be large)
+      if (!includeTranscript) {
+        event.transcriptJson = null;
+      }
+      return event;
+    }),
+    total,
+  };
 }
 
 /** Insert a single activity event. */
@@ -83,6 +101,12 @@ export function insert(db: StudioDb, event: ActivityEvent): void {
       status: event.status,
       summary: event.summary,
       metaJson: Object.keys(event.meta).length > 0 ? JSON.stringify(event.meta) : null,
+      sessionKey: event.sessionKey ?? null,
+      transcriptJson: event.transcriptJson ?? null,
+      tokensIn: event.tokensIn ?? null,
+      tokensOut: event.tokensOut ?? null,
+      model: event.model ?? null,
+      agentId: event.agentId ?? null,
     })
     .onConflictDoNothing()
     .run();

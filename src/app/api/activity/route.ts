@@ -30,6 +30,7 @@ export async function GET(request: Request) {
     const taskIdFilter = url.searchParams.get("taskId")?.trim() || null;
     const projectSlugFilter = url.searchParams.get("projectSlug")?.trim() || null;
     const statusFilter = url.searchParams.get("status")?.trim() || null;
+    const includeTranscript = url.searchParams.get("include")?.includes("transcript") ?? false;
 
     // ─── Sidecar path (Cloud Run) — still file-based ──────────────────
     if (isSidecarConfigured()) {
@@ -43,6 +44,7 @@ export async function GET(request: Request) {
       taskId: taskIdFilter,
       projectSlug: projectSlugFilter,
       status: statusFilter,
+      includeTranscript,
       limit,
       offset,
     });
@@ -59,6 +61,7 @@ export async function GET(request: Request) {
             taskId: taskIdFilter,
             projectSlug: projectSlugFilter,
             status: statusFilter,
+            includeTranscript,
             limit,
             offset,
           });
@@ -109,6 +112,13 @@ export async function POST(request: Request) {
       status: body.status as "success" | "error" | "partial",
       summary: (body.summary as string) ?? "",
       meta: (body.meta as Record<string, unknown>) ?? {},
+      // Enriched fields (optional)
+      sessionKey: (body.sessionKey as string | null) ?? null,
+      transcriptJson: typeof body.transcript === "object" ? JSON.stringify(body.transcript) : (body.transcriptJson as string | null) ?? null,
+      tokensIn: typeof body.tokensIn === "number" ? body.tokensIn : null,
+      tokensOut: typeof body.tokensOut === "number" ? body.tokensOut : null,
+      model: (body.model as string | null) ?? null,
+      agentId: (body.agentId as string | null) ?? null,
     };
 
     if (!isSidecarConfigured()) {

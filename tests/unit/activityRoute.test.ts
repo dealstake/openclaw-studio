@@ -93,6 +93,7 @@ describe("GET /api/activity", () => {
       taskId: null,
       projectSlug: null,
       status: "success",
+      includeTranscript: false,
       limit: 10,
       offset: 5,
     });
