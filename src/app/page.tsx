@@ -189,7 +189,11 @@ const AgentStudioPage = () => {
   } = useGatewayModels(client, status);
   const [stopBusyAgentId, setStopBusyAgentId] = useState<string | null>(null);
   const [mobilePane, setMobilePane] = useState<MobilePane>("chat");
-  const [sessionSidebarCollapsed, setSessionSidebarCollapsed] = useState(false);
+  const [sessionSidebarCollapsed, setSessionSidebarCollapsed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("studio:session-sidebar-collapsed") === "true";
+  });
+  const [mobileSessionDrawerOpen, setMobileSessionDrawerOpen] = useState(false);
   /** "agent" = show ContextPanel (Tasks/Brain/Settings), "files" = show Files */
   const [contextMode, setContextMode] = useState<"agent" | "files">("agent");
   const [contextTab, setContextTab] = useState<ContextTab>("projects");
@@ -210,6 +214,11 @@ const AgentStudioPage = () => {
   }, [contextTab]);
 
   // Cmd+Shift+E keyboard shortcut for expand/collapse
+  // Persist session sidebar collapsed state
+  useEffect(() => {
+    localStorage.setItem("studio:session-sidebar-collapsed", String(sessionSidebarCollapsed));
+  }, [sessionSidebarCollapsed]);
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === "E") {
@@ -1663,6 +1672,7 @@ const AgentStudioPage = () => {
             channelsSnapshot={channelsSnapshot}
             channelsLoading={channelsLoading}
             onOpenContext={() => setMobilePane("context")}
+            onOpenSessionHistory={() => setMobileSessionDrawerOpen(true)}
             agents={breadcrumbAgents}
             selectedAgentId={focusedAgentId}
             onSelectAgent={(agentId) => {
@@ -1714,6 +1724,36 @@ const AgentStudioPage = () => {
                 className="fixed inset-0 z-40 bg-black/50 xl:hidden"
                 onClick={switchToChat}
               />
+            ) : null}
+            {/* Mobile session history overlay drawer */}
+            {mobileSessionDrawerOpen ? (
+              <div
+                className="fixed inset-0 z-50 lg:hidden"
+                onClick={() => setMobileSessionDrawerOpen(false)}
+              >
+                <div className="absolute inset-0 bg-black/50" />
+                <div
+                  className="absolute inset-y-0 left-0 w-[240px] animate-in slide-in-from-left duration-200"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <SessionHistorySidebar
+                    client={client}
+                    status={status}
+                    agentId={focusedAgentId}
+                    activeSessionKey={viewingSessionKey ?? (focusedAgent ? `${focusedAgent.agentId}:main` : null)}
+                    onSelectSession={(key) => {
+                      setViewingSessionKey(key === `${focusedAgentId}:main` ? null : key);
+                      setMobileSessionDrawerOpen(false);
+                    }}
+                    onNewSession={() => {
+                      stableChatOnNewSession();
+                      setMobileSessionDrawerOpen(false);
+                    }}
+                    collapsed={false}
+                    onToggleCollapse={() => setMobileSessionDrawerOpen(false)}
+                  />
+                </div>
+              </div>
             ) : null}
             {/* Session history sidebar — desktop only, collapsible */}
             <div className="hidden lg:flex lg:flex-[0_0_auto] lg:min-h-0">

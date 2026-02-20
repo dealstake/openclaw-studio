@@ -7,7 +7,7 @@ import { LogoutButton } from "@/components/brand/LogoutButton";
 import { ChannelStatusPills } from "@/features/channels/components/ChannelStatusPills";
 import type { ChannelsStatusSnapshot } from "@/lib/gateway/channels";
 import { NotificationBell } from "@/features/notifications/components/NotificationBell";
-import { FolderOpen, Ellipsis, PanelRight } from "lucide-react";
+import { FolderOpen, Ellipsis, PanelRight, Menu } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getCfIdentity, type CfIdentity } from "@/lib/cloudflare-auth";
 
@@ -23,6 +23,8 @@ type HeaderBarProps = {
   channelsSnapshot?: ChannelsStatusSnapshot | null;
   channelsLoading?: boolean;
   onOpenContext?: () => void;
+  /** Session history sidebar toggle for mobile */
+  onOpenSessionHistory?: () => void;
   /** Agent breadcrumb props */
   agents?: BreadcrumbAgent[];
   selectedAgentId?: string | null;
@@ -116,6 +118,7 @@ export const HeaderBar = memo(function HeaderBar({
   channelsSnapshot = null,
   channelsLoading = false,
   onOpenContext,
+  onOpenSessionHistory,
   agents,
   selectedAgentId,
   onSelectAgent,
@@ -144,7 +147,17 @@ export const HeaderBar = memo(function HeaderBar({
       <div className="pointer-events-none absolute inset-0 header-gradient-overlay opacity-55" />
       <div className="relative flex items-center gap-4">
         <div className="flex min-w-0 flex-1 items-center gap-3">
-          {/* Agent breadcrumb replaces the old fleet hamburger menu */}
+          {/* Session history hamburger for mobile */}
+          {onOpenSessionHistory ? (
+            <HeaderIconButton
+              onClick={onOpenSessionHistory}
+              aria-label="Open session history"
+              className="lg:hidden"
+              data-testid="session-history-toggle"
+            >
+              <Menu className="h-[15px] w-[15px]" />
+            </HeaderIconButton>
+          ) : null}
           <BrandMark size="sm" />
           <ConnectionDot
             status={status}
