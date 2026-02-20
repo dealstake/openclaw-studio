@@ -26,7 +26,7 @@ type UsageRpcResult = {
   }>;
 };
 
-function parseUsageResult(result: UsageRpcResult): SessionUsage {
+export function parseUsageResult(result: UsageRpcResult): SessionUsage {
   const totals = result.totals;
   const messageCount = (result.sessions ?? []).reduce(
     (sum, s) => sum + (s?.usage?.messageCounts?.total ?? 0),
@@ -89,46 +89,4 @@ export const useSessionUsage = (client: GatewayClient, status: GatewayStatus) =>
   };
 };
 
-/** Cumulative usage across ALL sessions (no key filter). */
-export const useCumulativeUsage = (client: GatewayClient, status: GatewayStatus) => {
-  const [cumulativeUsage, setCumulativeUsage] = useState<SessionUsage | null>(null);
-  const [cumulativeUsageLoading, setCumulativeUsageLoading] = useState(false);
-  const cumulativeLoadingRef = useRef(false);
-  const lastCumulativeCallRef = useRef(0);
-
-  const loadCumulativeUsage = useCallback(async () => {
-    if (status !== "connected" || cumulativeLoadingRef.current) {
-      setCumulativeUsage(null);
-      return;
-    }
-    const now = Date.now();
-    if (now - lastCumulativeCallRef.current < USAGE_THROTTLE_MS) return;
-    lastCumulativeCallRef.current = now;
-    cumulativeLoadingRef.current = true;
-    setCumulativeUsageLoading(true);
-    try {
-      const result = await client.call<UsageRpcResult>("sessions.usage", { limit: 500 });
-      setCumulativeUsage(parseUsageResult(result));
-    } catch (err) {
-      if (!isGatewayDisconnectLikeError(err)) {
-        console.error("Failed to load cumulative usage.", err);
-      }
-      setCumulativeUsage(null);
-    } finally {
-      cumulativeLoadingRef.current = false;
-      setCumulativeUsageLoading(false);
-    }
-  }, [client, status]);
-
-  const resetCumulativeUsage = useCallback(() => {
-    setCumulativeUsage(null);
-    setCumulativeUsageLoading(false);
-  }, []);
-
-  return {
-    cumulativeUsage,
-    cumulativeUsageLoading,
-    loadCumulativeUsage,
-    resetCumulativeUsage,
-  };
-};
+// useCumulativeUsage removed — sessions.usage aggregate eliminated (P0 perf fix)

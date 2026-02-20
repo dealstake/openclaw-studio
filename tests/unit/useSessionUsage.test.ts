@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
-import { useSessionUsage, useCumulativeUsage } from "@/features/sessions/hooks/useSessionUsage";
+import { useSessionUsage } from "@/features/sessions/hooks/useSessionUsage";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 
 function makeClient(result: unknown = { totals: {}, sessions: [] }) {
@@ -126,41 +126,4 @@ describe("useSessionUsage", () => {
   });
 });
 
-describe("useCumulativeUsage", () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-  });
-
-  it("loads cumulative usage without session key", async () => {
-    const client = makeClient(USAGE_RESULT);
-    const { result } = renderHook(() => useCumulativeUsage(client, "connected"));
-
-    await act(async () => {
-      await result.current.loadCumulativeUsage();
-    });
-
-    expect(client.call).toHaveBeenCalledWith("sessions.usage", { limit: 500 });
-    expect(result.current.cumulativeUsage).toEqual({
-      inputTokens: 1000,
-      outputTokens: 500,
-      totalCost: 0.05,
-      currency: "USD",
-      messageCount: 15,
-    });
-  });
-
-  it("resets cumulative usage", async () => {
-    const client = makeClient(USAGE_RESULT);
-    const { result } = renderHook(() => useCumulativeUsage(client, "connected"));
-
-    await act(async () => {
-      await result.current.loadCumulativeUsage();
-    });
-    expect(result.current.cumulativeUsage).not.toBeNull();
-
-    act(() => {
-      result.current.resetCumulativeUsage();
-    });
-    expect(result.current.cumulativeUsage).toBeNull();
-  });
-});
+// useCumulativeUsage tests removed — hook was dead code (sessions.usage aggregate eliminated)

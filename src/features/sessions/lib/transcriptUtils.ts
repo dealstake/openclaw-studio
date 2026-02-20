@@ -3,7 +3,7 @@
  * Extracted from SessionsPanel for testability and reuse.
  */
 import type { TranscriptEntry } from "../hooks/useTranscripts";
-import { CHANNEL_TYPE_LABELS } from "./sessionKeyUtils";
+import { CHANNEL_TYPE_LABELS, inferSessionType } from "./sessionKeyUtils";
 
 export type TranscriptType = "main" | "cron" | "subagent" | "channel" | "unknown";
 
@@ -11,6 +11,8 @@ const CHANNEL_TYPES = Object.keys(CHANNEL_TYPE_LABELS);
 
 /**
  * Infer the type of a transcript from its sessionKey or preview content.
+ * Delegates key-based inference to inferSessionType from sessionKeyUtils,
+ * with TranscriptEntry-specific fallbacks for entries without a sessionKey.
  */
 export function inferTranscriptType(entry: TranscriptEntry): TranscriptType {
   const key = entry.sessionKey;
@@ -29,23 +31,15 @@ export function inferTranscriptType(entry: TranscriptEntry): TranscriptType {
     if (preview.includes("sub-agent") || preview.includes("subagent")) return "subagent";
     return "unknown";
   }
+  // Delegate key-based inference to the canonical implementation
+  const result = inferSessionType(key);
+  if (result !== "unknown") return result;
+
+  // Fallback for non-standard key formats (e.g., "name:cron:id" without agent prefix)
   const lower = key.toLowerCase();
-  if (/:main$/i.test(key) || lower.endsWith("-main")) return "main";
-  if (/:cron:/i.test(key) || /^cron:/i.test(key) || lower.includes(":cron:") || lower.includes("-cron-")) return "cron";
+  if (/:cron:/i.test(key) || lower.includes("-cron-")) return "cron";
   if (/:subagent:/i.test(key) || lower.includes("-subagent")) return "subagent";
-  for (const ch of CHANNEL_TYPES) {
-    if (lower.startsWith(ch)) return "channel";
-  }
-  // Check for gateway agent key format: channel:G-AGENT-name-type
-  const agentMatch = lower.match(/^([a-z]+):g-agent-[a-z0-9]+-(.+)$/);
-  if (agentMatch) {
-    const suffix = agentMatch[2];
-    if (suffix === "main") return "main";
-    if (suffix.startsWith("subagent")) return "subagent";
-    if (suffix.startsWith("cron")) return "cron";
-    // If channel prefix is known, it's a channel session
-    if (CHANNEL_TYPE_LABELS[agentMatch[1]]) return "channel";
-  }
+  if (/:main$/i.test(key) || lower.endsWith("-main")) return "main";
   return "unknown";
 }
 

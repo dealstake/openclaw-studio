@@ -8,6 +8,7 @@ import { humanizeSessionKey, humanizeOriginLabel, inferSessionType } from "@/fea
 import { formatTokens, formatCost } from "@/lib/text/format";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import { isGatewayDisconnectLikeError, parseAgentIdFromSessionKey } from "@/lib/gateway/GatewayClient";
+import { parseUsageResult } from "@/features/sessions/hooks/useSessionUsage";
 import { formatRelativeTime } from "@/lib/text/time";
 import { PanelIconButton } from "@/components/PanelIconButton";
 
@@ -62,18 +63,10 @@ export const SessionCard = memo(function SessionCard({
     setUsageLoading(true);
     try {
       const result = await client.call<{
-        totals?: { input?: number; output?: number; totalCost?: number };
+        totals?: { input?: number; output?: number; totalTokens?: number; totalCost?: number };
         sessions?: Array<{ usage?: { messageCounts?: { total?: number } } }>;
       }>("sessions.usage", { key: session.key });
-      const totals = result.totals;
-      const firstSession = result.sessions?.[0];
-      setUsage({
-        inputTokens: totals?.input ?? 0,
-        outputTokens: totals?.output ?? 0,
-        totalCost: totals?.totalCost != null && totals.totalCost > 0 ? totals.totalCost : null,
-        currency: "USD",
-        messageCount: firstSession?.usage?.messageCounts?.total ?? 0,
-      });
+      setUsage(parseUsageResult(result));
       setUsageLoaded(true);
     } catch (err) {
       if (!isGatewayDisconnectLikeError(err)) {

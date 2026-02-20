@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 
 import { ErrorBanner } from "@/components/ErrorBanner";
@@ -46,9 +46,9 @@ export const TraceViewer = React.memo(function TraceViewer({
     overscan: 10,
   });
 
-  const maxLatency = turns.reduce(
-    (max, t) => (t.latencyMs && t.latencyMs > max ? t.latencyMs : max),
-    0,
+  const maxLatency = useMemo(
+    () => turns.reduce((max, t) => (t.latencyMs && t.latencyMs > max ? t.latencyMs : max), 0),
+    [turns],
   );
 
   const selectedTurn =
