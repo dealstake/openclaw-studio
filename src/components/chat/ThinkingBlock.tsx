@@ -8,6 +8,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { MarkdownViewer } from "@/components/MarkdownViewer";
+import { formatElapsedLabel } from "@/lib/text/time";
 
 export type ThinkingBlockProps = {
   /** The reasoning/thinking text content */
@@ -43,7 +44,7 @@ export const ThinkingBlock = React.memo(function ThinkingBlock({
     if (streaming) setOpen(true);
   }, [streaming]);
 
-  const durationLabel = getDurationLabel(startedAt, completedAt, streaming);
+  const durationLabel = formatElapsedLabel(startedAt, completedAt, streaming);
 
   return (
     <Collapsible open={open} onOpenChange={setOpen} className={className}>
@@ -100,20 +101,4 @@ export const ThinkingBlock = React.memo(function ThinkingBlock({
   );
 });
 
-/* ── Helpers ── */
-
-function getDurationLabel(
-  startedAt?: number,
-  completedAt?: number,
-  streaming?: boolean,
-): string | null {
-  if (streaming) return null;
-  if (startedAt != null && completedAt != null) {
-    const secs = Math.max(0, Math.round((completedAt - startedAt) / 1000));
-    if (secs < 60) return `${secs}s`;
-    const mins = Math.floor(secs / 60);
-    const rem = secs % 60;
-    return `${mins}m ${String(rem).padStart(2, "0")}s`;
-  }
-  return null;
-}
+/* getDurationLabel replaced by shared formatElapsedLabel from @/lib/text/time */

@@ -2,8 +2,8 @@ import { describe, it, expect, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
 import {
   TokenCostDisplay,
-  formatTokenCount,
 } from "@/components/chat/TokenCostDisplay";
+import { formatTokens } from "@/lib/text/format";
 
 describe("TokenCostDisplay", () => {
   afterEach(() => cleanup());
@@ -73,22 +73,22 @@ describe("TokenCostDisplay", () => {
   });
 });
 
-describe("formatTokenCount", () => {
+describe("formatTokens (shared)", () => {
   it("formats numbers < 1000 as-is", () => {
-    expect(formatTokenCount(0)).toBe("0");
-    expect(formatTokenCount(999)).toBe("999");
+    expect(formatTokens(0)).toBe("0");
+    expect(formatTokens(999)).toBe("999");
   });
 
   it("formats thousands with K suffix", () => {
-    expect(formatTokenCount(1000)).toBe("1K");
-    expect(formatTokenCount(1200)).toBe("1.2K");
-    expect(formatTokenCount(3400)).toBe("3.4K");
-    expect(formatTokenCount(10000)).toBe("10K");
+    expect(formatTokens(1000)).toBe("1.0K");
+    expect(formatTokens(1200)).toBe("1.2K");
+    expect(formatTokens(3400)).toBe("3.4K");
+    expect(formatTokens(10000)).toBe("10.0K");
   });
 
   it("formats millions with M suffix", () => {
-    expect(formatTokenCount(1000000)).toBe("1M");
-    expect(formatTokenCount(1500000)).toBe("1.5M");
-    expect(formatTokenCount(2000000)).toBe("2M");
+    expect(formatTokens(1000000)).toBe("1.0M");
+    expect(formatTokens(1500000)).toBe("1.5M");
+    expect(formatTokens(2000000)).toBe("2.0M");
   });
 });

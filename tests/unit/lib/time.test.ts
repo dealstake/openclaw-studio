@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { formatDuration, formatDurationCompact, formatRelativeTime } from "@/lib/text/time";
+import { formatDuration, formatDurationCompact, formatElapsedLabel, formatRelativeTime } from "@/lib/text/time";
 
 describe("formatDuration", () => {
   it("formats milliseconds", () => {
@@ -36,6 +36,34 @@ describe("formatDurationCompact", () => {
 
   it("formats minutes compactly", () => {
     expect(formatDurationCompact(90000)).toBe("1.5m");
+  });
+});
+
+describe("formatElapsedLabel", () => {
+  it("returns null when streaming", () => {
+    expect(formatElapsedLabel(1000, 5000, true)).toBeNull();
+  });
+
+  it("returns null when timestamps are missing", () => {
+    expect(formatElapsedLabel(undefined, undefined)).toBeNull();
+    expect(formatElapsedLabel(1000, undefined)).toBeNull();
+    expect(formatElapsedLabel(undefined, 5000)).toBeNull();
+  });
+
+  it("formats seconds", () => {
+    expect(formatElapsedLabel(0, 5000)).toBe("5s");
+    expect(formatElapsedLabel(0, 0)).toBe("0s");
+    expect(formatElapsedLabel(0, 59000)).toBe("59s");
+  });
+
+  it("formats minutes and seconds", () => {
+    expect(formatElapsedLabel(0, 60000)).toBe("1m 00s");
+    expect(formatElapsedLabel(0, 125000)).toBe("2m 05s");
+    expect(formatElapsedLabel(0, 3600000)).toBe("60m 00s");
+  });
+
+  it("clamps negative durations to 0", () => {
+    expect(formatElapsedLabel(5000, 1000)).toBe("0s");
   });
 });
 

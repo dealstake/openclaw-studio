@@ -22,6 +22,26 @@ export function formatDurationCompact(ms: number | undefined): string {
 }
 
 /**
+ * Format elapsed time between two timestamps as "Xs" or "Xm XXs".
+ * Returns null if timestamps are missing or if `streaming` is true.
+ */
+export function formatElapsedLabel(
+  startMs: number | undefined,
+  completedMs: number | undefined,
+  streaming?: boolean,
+): string | null {
+  if (streaming) return null;
+  if (startMs != null && completedMs != null) {
+    const secs = Math.max(0, Math.round((completedMs - startMs) / 1000));
+    if (secs < 60) return `${secs}s`;
+    const mins = Math.floor(secs / 60);
+    const rem = secs % 60;
+    return `${mins}m ${String(rem).padStart(2, "0")}s`;
+  }
+  return null;
+}
+
+/**
  * Format a timestamp as a human-readable relative time string.
  * Handles both past ("5m ago") and future ("in 5m") timestamps.
  */

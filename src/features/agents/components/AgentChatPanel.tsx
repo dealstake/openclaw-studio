@@ -10,12 +10,7 @@ import {
   type MutableRefObject,
 } from "react";
 
-/** Format token count as human-readable string (e.g. 125K, 1.2M) */
-function formatTokenCount(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
-  if (n >= 1_000) return `${Math.round(n / 1_000)}K`;
-  return String(n);
-}
+import { formatTokens } from "@/lib/text/format";
 import type { AgentState as AgentRecord } from "@/features/agents/state/store";
 import type { MessagePart } from "@/lib/chat/types";
 import { AlertTriangle, ArrowLeft, ArrowUp, ChevronDown, ChevronUp, RefreshCw, Settings, Shuffle, SquarePen, X, Zap } from "lucide-react";
@@ -626,7 +621,7 @@ export const AgentChatPanel = memo(function AgentChatPanel({
                       <TokenProgressBar used={tokenUsed} limit={tokenLimit} />
                     </div>
                     <span className="shrink-0 font-mono text-[10px] text-muted-foreground/70">
-                      {formatTokenCount(tokenUsed)}/{formatTokenCount(tokenLimit)}
+                      {formatTokens(tokenUsed)}/{formatTokens(tokenLimit)}
                     </span>
                   </div>
                 ) : null}

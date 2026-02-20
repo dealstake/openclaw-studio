@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/collapsible";
 import { MarkdownViewer } from "@/components/MarkdownViewer";
 import { ErrorBanner } from "@/components/ErrorBanner";
+import { formatElapsedLabel } from "@/lib/text/time";
 
 export type ToolCallPhase = "pending" | "running" | "complete" | "error";
 
@@ -80,7 +81,7 @@ export const ToolCallBlock = React.memo(function ToolCallBlock({
     if (phase === "running") setOpen(true);
   }, [phase]);
 
-  const durationLabel = getDurationLabel(startedAt, completedAt, phase);
+  const durationLabel = formatElapsedLabel(startedAt, completedAt, phase === "running" || phase === "pending" ? true : undefined);
   const hasContent = !!(args || result);
 
   return (
@@ -167,22 +168,6 @@ function phaseBadgeClass(phase: ToolCallPhase): string {
     case "error":
       return "bg-destructive/10 text-destructive";
   }
-}
-
-function getDurationLabel(
-  startedAt?: number,
-  completedAt?: number,
-  phase?: ToolCallPhase,
-): string | null {
-  if (phase === "running" || phase === "pending") return null;
-  if (startedAt != null && completedAt != null) {
-    const secs = Math.max(0, Math.round((completedAt - startedAt) / 1000));
-    if (secs < 60) return `${secs}s`;
-    const mins = Math.floor(secs / 60);
-    const rem = secs % 60;
-    return `${mins}m ${String(rem).padStart(2, "0")}s`;
-  }
-  return null;
 }
 
 function formatArgs(args: string): string {
