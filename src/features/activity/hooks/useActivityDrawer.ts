@@ -13,10 +13,14 @@ export interface ActivityDrawerState {
   expandedTab: DrawerTab | null;
   /** Count of running sessions (for badge) */
   runningCount: number;
+  /** Count of errored sessions (for error indicator) */
+  errorCount: number;
   /** Total event count (live sessions + system events, for collapsed indicator) */
   eventCount: number;
   /** Whether any session is currently running */
   hasRunning: boolean;
+  /** Whether any session has errors */
+  hasErrors: boolean;
   /** Sorted live sessions */
   liveSessions: LiveActivityEntry[];
   /** Recent system events */
@@ -51,6 +55,11 @@ export function useActivityDrawer(): ActivityDrawerState & ActivityDrawerActions
     [liveSessions]
   );
 
+  const errorCount = useMemo(
+    () => liveSessions.filter((s) => s.status === "error").length,
+    [liveSessions]
+  );
+
   const recentSystemEvents = useMemo(
     () => systemEvents.slice(-10).reverse(),
     [systemEvents]
@@ -58,6 +67,7 @@ export function useActivityDrawer(): ActivityDrawerState & ActivityDrawerActions
 
   const eventCount = liveSessions.length + recentSystemEvents.length;
   const hasRunning = runningCount > 0;
+  const hasErrors = errorCount > 0;
 
   const expandTab = useCallback((t: DrawerTab) => setExpandedTab(t), []);
   const closeExpand = useCallback(() => setExpandedTab(null), []);
@@ -66,8 +76,10 @@ export function useActivityDrawer(): ActivityDrawerState & ActivityDrawerActions
     tab,
     expandedTab,
     runningCount,
+    errorCount,
     eventCount,
     hasRunning,
+    hasErrors,
     liveSessions,
     systemEvents: recentSystemEvents,
     setTab,

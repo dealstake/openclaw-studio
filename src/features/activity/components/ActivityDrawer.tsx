@@ -41,10 +41,12 @@ export interface ActivityDrawerProps {
 const CollapsedIndicator = React.memo(function CollapsedIndicator({
   eventCount,
   hasRunning,
+  hasErrors,
   onExpand,
 }: {
   eventCount: number;
   hasRunning: boolean;
+  hasErrors: boolean;
   onExpand: () => void;
 }) {
   return (
@@ -54,12 +56,20 @@ const CollapsedIndicator = React.memo(function CollapsedIndicator({
       aria-label="Open activity drawer"
       className="flex h-full w-8 flex-col items-center justify-center gap-2 border-l border-border bg-card/30 transition-colors hover:bg-card/60"
     >
-      <Activity className="h-4 w-4 text-muted-foreground" />
-      {hasRunning && (
+      <Activity className={cn("h-4 w-4", hasErrors ? "text-red-400" : "text-muted-foreground")} />
+      {hasErrors && (
+        <span className="h-2 w-2 animate-pulse rounded-full bg-red-400" />
+      )}
+      {hasRunning && !hasErrors && (
         <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
       )}
       {eventCount > 0 && (
-        <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
+        <span className={cn(
+          "flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold",
+          hasErrors
+            ? "bg-red-500/15 text-red-400"
+            : "bg-primary text-primary-foreground"
+        )}>
           {eventCount > 99 ? "99+" : eventCount}
         </span>
       )}
@@ -80,14 +90,19 @@ const DrawerContent = React.memo(function DrawerContent({
   agentId: string | null;
   onCollapse: () => void;
 }) {
-  const { tab, setTab, expandedTab, expandTab, closeExpand, hasRunning } = useActivityDrawer();
+  const { tab, setTab, expandedTab, expandTab, closeExpand, hasRunning, hasErrors } = useActivityDrawer();
 
   return (
     <>
       <div className="flex h-full flex-col overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-3 py-2">
-          <SectionLabel>Activity</SectionLabel>
+          <div className="flex items-center gap-1.5">
+            <SectionLabel>Activity</SectionLabel>
+            {hasErrors && (
+              <span className="h-2 w-2 animate-pulse rounded-full bg-red-400" title="Errors detected" />
+            )}
+          </div>
           <div className="flex items-center gap-0.5">
             <PanelIconButton
               onClick={() => expandTab(tab)}
@@ -174,7 +189,7 @@ export const ActivityDrawer = React.memo(function ActivityDrawer({
   hidden = false,
   agentId = null,
 }: ActivityDrawerProps) {
-  const { eventCount, hasRunning } = useActivityDrawer();
+  const { eventCount, hasRunning, hasErrors } = useActivityDrawer();
   const [drawerState, setDrawerState] = useState<DrawerPersist>(loadDrawerState);
 
   useEffect(() => {
@@ -249,6 +264,7 @@ export const ActivityDrawer = React.memo(function ActivityDrawer({
           <CollapsedIndicator
             eventCount={eventCount}
             hasRunning={hasRunning}
+            hasErrors={hasErrors}
             onExpand={handleExpand}
           />
         ) : (
