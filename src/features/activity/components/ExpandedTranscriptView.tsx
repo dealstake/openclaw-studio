@@ -15,6 +15,7 @@ import { ThinkingBlock } from "@/components/chat/ThinkingBlock";
 import { ToolCallBlock } from "@/components/chat/ToolCallBlock";
 import { ChatStatusBar } from "@/components/chat/ChatStatusBar";
 import { transformMessagesToMessageParts } from "@/features/sessions/lib/transformMessages";
+import { filterHeartbeatTurns } from "@/features/activity/lib/heartbeatFilter";
 import { fetchTranscriptMessages } from "@/features/sessions/hooks/useTranscripts";
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -142,7 +143,7 @@ export const ExpandedTranscriptView = React.memo(function ExpandedTranscriptView
       .then((resp) => {
         if (cancelled) return;
         const transformed = transformMessagesToMessageParts(resp.messages);
-        setParts(transformed);
+        setParts(filterHeartbeatTurns(transformed));
       })
       .catch((err) => {
         if (cancelled) return;

@@ -71,6 +71,7 @@ import { ActivityDrawer } from "@/features/activity/components/ActivityDrawer";
 import { upsertLiveSession, addSystemEvent } from "@/features/activity/hooks/useLiveActivityStore";
 import { pushHeartbeatEntry } from "@/features/activity/hooks/useHeartbeatEntries";
 import { useTranscriptCapture } from "@/features/activity/hooks/useTranscriptCapture";
+import { filterHeartbeatTurns } from "@/features/activity/lib/heartbeatFilter";
 import { StatusBar } from "@/features/status/components/StatusBar";
 import { TraceViewer } from "@/features/sessions/components/TraceViewer";
 import { useChannelsStatus } from "@/features/channels/hooks/useChannelsStatus";
@@ -2079,7 +2080,8 @@ const AgentStudioPage = () => {
                         setViewingSessionHistory([]);
                         client.call<{ messages?: Array<{ role?: string; content?: string; text?: string }> }>("sessions.history", { sessionKey, limit: 50 })
                           .then((result) => {
-                            setViewingSessionHistory(transformMessagesToMessageParts(result.messages ?? []));
+                            const parts = transformMessagesToMessageParts(result.messages ?? []);
+                            setViewingSessionHistory(filterHeartbeatTurns(parts));
                           })
                           .catch((err) => {
                             console.error("Failed to load session history:", err);
