@@ -62,7 +62,7 @@ const CollapsedIndicator = React.memo(function CollapsedIndicator({
       type="button"
       onClick={onExpand}
       aria-label="Open activity drawer"
-      className="flex h-full w-8 flex-col items-center justify-center gap-2 border-l border-border bg-card/30 transition-colors hover:bg-card/60"
+      className="flex h-full w-8 flex-col items-center justify-center gap-2 bg-[var(--surface-elevated)] transition-colors hover:bg-card/60"
     >
       <Activity className={cn("h-4 w-4", hasErrors ? "text-red-400" : "text-muted-foreground")} />
       {hasErrors && (
@@ -121,7 +121,7 @@ const DrawerContent = React.memo(function DrawerContent({
 
   return (
     <>
-      <div className="flex h-full flex-col overflow-hidden">
+      <div className="flex h-full flex-col overflow-hidden bg-[var(--surface-elevated)]">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-3 py-2">
           <div className="flex items-center gap-1.5">
@@ -282,12 +282,12 @@ export const ActivityDrawer = React.memo(function ActivityDrawer({
       <Panel id="chat-main" minSize="40%">
         {children}
       </Panel>
-      <Separator className="group relative flex w-2 items-center justify-center hover:bg-border/30 transition-colors">
+      <Separator className="group relative flex w-2 items-center justify-center transition-colors">
         <button
           type="button"
           onClick={handleToggle}
           aria-label={drawerState.collapsed ? "Open activity drawer" : "Close activity drawer"}
-          className="absolute z-10 flex h-6 w-4 items-center justify-center rounded-sm bg-card border border-border text-muted-foreground hover:text-foreground transition-colors"
+          className="absolute z-10 flex h-6 w-4 items-center justify-center rounded-sm bg-[var(--surface-elevated)] border border-border/20 text-muted-foreground hover:text-foreground transition-colors"
         >
           {drawerState.collapsed ? (
             <ChevronLeft className="h-3 w-3" />
@@ -295,7 +295,7 @@ export const ActivityDrawer = React.memo(function ActivityDrawer({
             <ChevronRight className="h-3 w-3" />
           )}
         </button>
-        <div className="h-8 w-px bg-border group-hover:bg-foreground/20 transition-colors" />
+        <div className="h-8 w-px bg-transparent group-hover:bg-foreground/10 transition-colors" />
       </Separator>
       <Panel
         id="activity-drawer"
