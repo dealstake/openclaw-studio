@@ -25,21 +25,10 @@ const GATEWAY_CLIENT_MODES = {
   WEBCHAT: "webchat",
 } as const;
 
-export type GatewayEventFrame = {
-  type: "event";
-  event: string;
-  payload?: unknown;
-  seq?: number;
-  stateVersion?: { presence: number; health: number };
-};
+// Re-export shared frame types (consolidated from near-duplicate definitions)
+export type { EventFrame as GatewayEventFrame, ResFrame as GatewayResponseFrame } from "../types";
 
-export type GatewayResponseFrame = {
-  type: "res";
-  id: string;
-  ok: boolean;
-  payload?: unknown;
-  error?: { code: string; message: string; details?: unknown };
-};
+import type { EventFrame as GatewayEventFrame, ResFrame as GatewayResponseFrame } from "../types";
 
 export type GatewayHelloOk = {
   type: "hello-ok";
