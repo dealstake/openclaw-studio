@@ -50,7 +50,7 @@ const LazyToolCallBlock = React.memo(function LazyToolCallBlock({
         <span className="text-[11px]">
           {part.phase === "complete" ? "completed" : part.phase}
         </span>
-        <span className="ml-auto text-[10px] text-muted-foreground/40">click to expand</span>
+        <span className="ml-auto text-xs text-muted-foreground/40">click to expand</span>
       </button>
     );
   }

@@ -179,7 +179,7 @@ const ArtifactRow = memo(function ArtifactRow({
         <div className="truncate text-[12px] font-medium leading-tight text-foreground transition-colors group-hover:text-primary-text">
           {file.name}
         </div>
-        <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground">
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
           <span className="font-mono uppercase tracking-wide">{fileTypeLabel(file.mimeType)}</span>
           <span>{formatSize(file.size)}</span>
           <span>{formatTimestamp(file.modifiedTime)}</span>

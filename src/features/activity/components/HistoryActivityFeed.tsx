@@ -177,7 +177,7 @@ export const HistoryActivityFeed = React.memo(function HistoryActivityFeed({
   return (
     <div className={className}>
       <div className="flex items-center justify-between px-3 py-1.5">
-        <span className="text-[10px] text-muted-foreground">{total} events</span>
+        <span className="text-xs text-muted-foreground">{total} events</span>
         <button
           type="button"
           onClick={() => void loadEvents()}

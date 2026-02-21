@@ -320,7 +320,7 @@ export const AgentSettingsPanel = memo(function AgentSettingsPanel({
               toggleBusy={cronToggleBusyJobId === job.id}
               onToggle={(enabled) => { void onToggleCronJob(job.id, enabled); }}
               statusLine={
-                <div className="mt-0.5 flex items-center gap-2 text-[10px] text-muted-foreground">
+                <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
                   {job.state.lastStatus ? (
                     <span className="inline-flex items-center gap-1">
                       <span className={job.state.lastStatus === "ok" ? "text-emerald-500" : job.state.lastStatus === "error" ? "text-destructive" : "text-muted-foreground"}>

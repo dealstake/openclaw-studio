@@ -106,7 +106,7 @@ const JobRow = memo(function JobRow({
             </div>
           )}
           {!loadingRuns && runs.length === 0 && (
-            <p className="text-[10px] text-muted-foreground py-1">No run history.</p>
+            <p className="text-xs text-muted-foreground py-1">No run history.</p>
           )}
           {runs.map((run) => (
             <div

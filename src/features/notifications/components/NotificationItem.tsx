@@ -41,7 +41,7 @@ export const NotificationItem = React.memo(function NotificationItem({
             <span className="truncate text-xs font-semibold text-foreground">
               {notification.title}
             </span>
-            <span className="shrink-0 text-[10px] text-muted-foreground">
+            <span className="shrink-0 text-xs text-muted-foreground">
               {formatRelativeTime(notification.timestamp)}
             </span>
           </div>

@@ -62,7 +62,7 @@ export const CronAnalyticsSummary = memo(function CronAnalyticsSummary({
             key={card.label}
             className="rounded-xl border border-border bg-card p-3 shadow-sm"
           >
-            <div className="text-[10px] text-muted-foreground">{card.label}</div>
+            <div className="text-xs text-muted-foreground">{card.label}</div>
             <div className="text-lg font-semibold text-foreground">{card.value}</div>
           </div>
         ))}

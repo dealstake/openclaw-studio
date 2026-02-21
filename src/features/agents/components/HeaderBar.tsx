@@ -187,7 +187,7 @@ function OverflowMenu({
           {identity?.email ? (
             <>
               <div className="my-1 border-t border-border/40" />
-              <div className="px-3 py-1 text-[10px] text-muted-foreground truncate">
+              <div className="px-3 py-1 text-xs text-muted-foreground truncate">
                 {identity.email}
               </div>
               <LogoutButton className="w-full" />

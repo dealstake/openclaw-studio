@@ -267,7 +267,7 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
           ) : null}
 
           {/* Meta */}
-          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-muted-foreground">
+          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
             {editing ? (
               <div className="flex items-center gap-1.5">
                 <span>Model:</span>

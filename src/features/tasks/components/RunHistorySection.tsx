@@ -64,7 +64,7 @@ export const RunHistorySection = memo(function RunHistorySection({
       ) : null}
 
       {error ? (
-        <div className="mt-2 flex items-center gap-2 rounded-md border border-destructive bg-destructive/10 px-3 py-2 text-[10px] text-destructive">
+        <div className="mt-2 flex items-center gap-2 rounded-md border border-destructive bg-destructive/10 px-3 py-2 text-xs text-destructive">
           <span className="flex-1">{error}</span>
           <button
             type="button"
@@ -82,7 +82,7 @@ export const RunHistorySection = memo(function RunHistorySection({
           <p className="text-[11px] text-muted-foreground">
             No runs yet
           </p>
-          <p className="max-w-[180px] text-[10px] text-muted-foreground/60">
+          <p className="max-w-[180px] text-xs text-muted-foreground/60">
             Run history will appear here after the task executes.
           </p>
         </div>
@@ -106,14 +106,14 @@ export const RunHistorySection = memo(function RunHistorySection({
                 <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.08em] text-foreground">
                   {run.status}
                 </span>
-                <span className="text-[10px] text-muted-foreground">
+                <span className="text-xs text-muted-foreground">
                   {formatRelativeTime(run.startedAtMs)}
                 </span>
-                <span className="text-[10px] text-muted-foreground">
+                <span className="text-xs text-muted-foreground">
                   {formatDuration(run.durationMs)}
                 </span>
                 {run.error ? (
-                  <span className="min-w-0 flex-1 truncate text-[10px] text-destructive">
+                  <span className="min-w-0 flex-1 truncate text-xs text-destructive">
                     {run.error}
                   </span>
                 ) : null}

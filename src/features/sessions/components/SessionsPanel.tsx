@@ -235,7 +235,7 @@ export const SessionsPanel = memo(function SessionsPanel({
                 ) : null}
               </div>
               {usageByType ? (
-                <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground/80">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground/80">
                   {usageByType.cron > 0 ? <span>{formatTokens(usageByType.cron)} cron</span> : null}
                   {usageByType.main > 0 ? <span>{formatTokens(usageByType.main)} main</span> : null}
                   {usageByType.subagent > 0 ? <span>{formatTokens(usageByType.subagent)} sub-agent</span> : null}
@@ -252,7 +252,7 @@ export const SessionsPanel = memo(function SessionsPanel({
               <div className="font-mono text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                 Current Session
               </div>
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-muted-foreground/80">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground/80">
                 <span>
                   {formatTokens(aggregateUsage.inputTokens + aggregateUsage.outputTokens)} tokens
                 </span>

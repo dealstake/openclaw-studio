@@ -105,7 +105,7 @@ export const FileViewer = memo(function FileViewer({
           <div className="truncate text-xs font-medium text-foreground">
             {file.path}
           </div>
-          <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span>{formatSize(file.size)}</span>
             <span>{formatRelativeTime(file.updatedAt)}</span>
             {editor.saveSuccess && (
@@ -180,10 +180,10 @@ export const FileViewer = memo(function FileViewer({
 
       {editing && (
         <div className="flex items-center justify-between border-t border-border/40 px-3 py-1.5">
-          <span className="text-[10px] text-muted-foreground">
+          <span className="text-xs text-muted-foreground">
             {editor.dirty ? "Unsaved changes" : "No changes"}
           </span>
-          <span className="text-[10px] text-muted-foreground">
+          <span className="text-xs text-muted-foreground">
             ⌘S save · Esc cancel
           </span>
         </div>

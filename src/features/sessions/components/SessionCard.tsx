@@ -142,7 +142,7 @@ export const SessionCard = memo(function SessionCard({
             ) : null}
           </CardMeta>
           {!isExpanded && usage && (
-            <div className="mt-0.5 text-[10px] text-muted-foreground/70">
+            <div className="mt-0.5 text-xs text-muted-foreground/70">
               {formatTokens(usage.inputTokens)} in · {formatTokens(usage.outputTokens)} out
               {usage.totalCost !== null ? ` · ${formatCost(usage.totalCost, usage.currency)}` : ""}
             </div>

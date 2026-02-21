@@ -243,14 +243,14 @@ export const ProjectsPanel = memo(function ProjectsPanel({
 
       {/* Empty */}
       {!loading && !error && projects.length === 0 && (
-        <div className="py-6 text-center font-mono text-[10px] text-muted-foreground/60">
+        <div className="py-6 text-center font-mono text-xs text-muted-foreground/60">
           No projects/INDEX.md found
         </div>
       )}
 
       {/* Filtered empty */}
       {!loading && !error && projects.length > 0 && filteredProjects.length === 0 && (
-        <div className="py-6 text-center font-mono text-[10px] text-muted-foreground/60">
+        <div className="py-6 text-center font-mono text-xs text-muted-foreground/60">
           No {STATUS_CONFIG[statusFilter!]?.label ?? ""} projects
         </div>
       )}

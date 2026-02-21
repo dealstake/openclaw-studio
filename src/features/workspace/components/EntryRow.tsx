@@ -74,7 +74,7 @@ export const EntryRow = memo(function EntryRow({
             </span>
           ) : null}
         </div>
-        <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
           {entry.size !== undefined && <span>{formatSize(entry.size)}</span>}
           {entry.updatedAt ? <span>{formatRelativeTime(entry.updatedAt)}</span> : null}
         </div>

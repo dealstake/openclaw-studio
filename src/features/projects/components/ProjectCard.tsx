@@ -205,14 +205,14 @@ export const ProjectCard = memo(function ProjectCard({
           )}
 
           {!isDone && details.continuation.nextStep && (
-            <div className="flex items-start gap-1.5 text-[10px] text-muted-foreground">
+            <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
               <span className="shrink-0 font-semibold text-primary-text/80">Next:</span>
               <MarkdownViewer content={details.continuation.nextStep} className="line-clamp-1 [&>*]:m-0 [&>*]:inline" />
             </div>
           )}
 
           {!isDone && isBlocked && (
-            <div className="flex items-start gap-1.5 text-[10px] text-red-400">
+            <div className="flex items-start gap-1.5 text-xs text-red-400">
               <span className="shrink-0 font-semibold">Blocked:</span>
               <span className="line-clamp-1">{details.continuation.blockedBy}</span>
             </div>

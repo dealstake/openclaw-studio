@@ -49,7 +49,7 @@ export const AlertRulesConfig = React.memo(function AlertRulesConfig({
             </button>
             <div className="min-w-0 flex-1">
               <div className="text-xs font-medium text-foreground">{rule.label}</div>
-              <div className="text-[10px] text-muted-foreground">
+              <div className="text-xs text-muted-foreground">
                 {rule.type === "budget" && `Threshold: ${(rule.threshold / 1000).toFixed(0)}K tokens`}
                 {rule.type === "completion" && "All sub-agent completions"}
                 {rule.type === "error" && `${rule.threshold} errors in window`}

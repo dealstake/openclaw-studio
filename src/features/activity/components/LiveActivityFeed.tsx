@@ -61,7 +61,7 @@ export const LiveActivityFeed = React.memo(function LiveActivityFeed({
       <div className={`flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground ${className ?? ""}`}>
         <Activity className="h-8 w-8 opacity-30" />
         <p className="text-xs">No live activity</p>
-        <p className="text-[10px] text-muted-foreground/60">
+        <p className="text-xs text-muted-foreground/60">
           Running cron jobs and sub-agents appear here
         </p>
       </div>

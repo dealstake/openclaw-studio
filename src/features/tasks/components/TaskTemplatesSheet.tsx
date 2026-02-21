@@ -90,7 +90,7 @@ export const TaskTemplatesSheet = memo(function TaskTemplatesSheet({
                       <p className="mt-0.5 text-[11px] text-muted-foreground">
                         {template.description}
                       </p>
-                      <p className="mt-1 text-[10px] text-muted-foreground/70">
+                      <p className="mt-1 text-xs text-muted-foreground/70">
                         {scheduleLabel}
                       </p>
                     </div>

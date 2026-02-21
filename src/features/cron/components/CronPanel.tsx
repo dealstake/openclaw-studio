@@ -276,12 +276,12 @@ export const CronPanel = memo(function CronPanel({
                               </span>
                             ) : null}
                             {job.state.lastRunAtMs ? (
-                              <span className="text-[10px] text-muted-foreground">
+                              <span className="text-xs text-muted-foreground">
                                 Last: {formatRelativeTime(job.state.lastRunAtMs)}
                               </span>
                             ) : null}
                             {nextRun ? (
-                              <span className="text-[10px] text-muted-foreground/70">
+                              <span className="text-xs text-muted-foreground/70">
                                 Next: {nextRun}
                               </span>
                             ) : null}
@@ -362,7 +362,7 @@ export const CronPanel = memo(function CronPanel({
                           ) : null}
                           {/* Full prompt text */}
                           <div className="mt-1.5">
-                            <div className="text-[10px] font-medium text-foreground/70 mb-0.5">Prompt:</div>
+                            <div className="text-xs font-medium text-foreground/70 mb-0.5">Prompt:</div>
                             <div className="max-h-24 overflow-y-auto rounded border border-border/40 bg-muted/30 px-2 py-1 text-[11px] text-muted-foreground whitespace-pre-wrap">
                               {payloadText}
                             </div>
@@ -404,17 +404,17 @@ export const CronPanel = memo(function CronPanel({
                                     {run.status}
                                   </span>
                                   {run.startedAtMs ? (
-                                    <span className="text-[10px] text-muted-foreground">
+                                    <span className="text-xs text-muted-foreground">
                                       {formatRelativeTime(run.startedAtMs)}
                                     </span>
                                   ) : null}
                                   {run.durationMs !== undefined ? (
-                                    <span className="text-[10px] text-muted-foreground">
+                                    <span className="text-xs text-muted-foreground">
                                       {run.durationMs < 1000 ? `${run.durationMs}ms` : `${(run.durationMs / 1000).toFixed(1)}s`}
                                     </span>
                                   ) : null}
                                   {run.error ? (
-                                    <span className="truncate text-[10px] text-destructive">
+                                    <span className="truncate text-xs text-destructive">
                                       {run.error}
                                     </span>
                                   ) : null}
