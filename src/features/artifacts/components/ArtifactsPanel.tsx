@@ -355,7 +355,7 @@ export const ArtifactsPanel = memo(function ArtifactsPanel({ isSelected }: Artif
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className="flex items-center gap-1 rounded-md px-2 py-1.5 font-mono text-[9px] font-semibold uppercase tracking-[0.1em] text-muted-foreground transition hover:bg-muted/50 hover:text-foreground disabled:opacity-40 focus-ring"
+            className="flex items-center gap-1 rounded-md px-2 py-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground transition hover:bg-muted/50 hover:text-foreground disabled:opacity-40 focus-ring"
             title="Upload file"
           >
             <Upload className={`h-3 w-3 ${uploading ? "animate-pulse" : ""}`} />
@@ -364,7 +364,7 @@ export const ArtifactsPanel = memo(function ArtifactsPanel({ isSelected }: Artif
           <button
             type="button"
             onClick={toggleSort}
-            className="flex items-center gap-1 rounded-md px-2 py-1.5 font-mono text-[9px] font-semibold uppercase tracking-[0.1em] text-muted-foreground transition hover:bg-muted/50 hover:text-foreground focus-ring"
+            className="flex items-center gap-1 rounded-md px-2 py-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground transition hover:bg-muted/50 hover:text-foreground focus-ring"
             title={sortDir === "newest" ? "Sorted newest first" : "Sorted oldest first"}
           >
             {sortDir === "newest" ? (

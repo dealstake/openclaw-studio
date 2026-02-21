@@ -239,12 +239,12 @@ export const CronPanel = memo(function CronPanel({
                               </TooltipContent>
                             </Tooltip>
                             {!job.enabled ? (
-                              <span className="rounded px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] border border-border/70 bg-muted text-muted-foreground">
+                              <span className="rounded px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] border border-border/70 bg-muted text-muted-foreground">
                                 Disabled
                               </span>
                             ) : null}
                             {isRunning ? (
-                              <span className="rounded px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] border border-primary/30 bg-primary/15 text-primary animate-pulse">
+                              <span className="rounded px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] border border-primary/30 bg-primary/15 text-primary animate-pulse">
                                 Running
                               </span>
                             ) : null}
@@ -270,7 +270,7 @@ export const CronPanel = memo(function CronPanel({
                           <div className="mt-1 flex flex-wrap items-center gap-2">
                             {job.state.lastStatus ? (
                               <span
-                                className={`rounded px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] border ${lastStatusClass}`}
+                                className={`rounded px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] border ${lastStatusClass}`}
                               >
                                 {job.state.lastStatus}
                               </span>
@@ -399,7 +399,7 @@ export const CronPanel = memo(function CronPanel({
                                   className="flex items-center gap-2 rounded-md border border-border/60 bg-card/50 px-2 py-1"
                                 >
                                   <span
-                                    className={`rounded px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] border ${runStatusClass}`}
+                                    className={`rounded px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] border ${runStatusClass}`}
                                   >
                                     {run.status}
                                   </span>

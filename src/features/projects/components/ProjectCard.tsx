@@ -77,7 +77,7 @@ export const ProjectCard = memo(function ProjectCard({
           <Popover.Trigger asChild>
             <button
               type="button"
-              className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] transition hover:brightness-125 ${statusColors}`}
+              className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] transition hover:brightness-125 ${statusColors}`}
               onClick={(e) => { e.stopPropagation(); }}
               aria-label={`Change status (current: ${statusLabel})`}
             >
@@ -160,7 +160,7 @@ export const ProjectCard = memo(function ProjectCard({
         </h3>
         {linkedTasks.length > 0 && (
           <span
-            className="inline-flex shrink-0 items-center gap-0.5 rounded-full border border-border/60 bg-muted/40 px-1.5 py-0.5 font-mono text-[9px] text-muted-foreground"
+            className="inline-flex shrink-0 items-center gap-0.5 rounded-full border border-border/60 bg-muted/40 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground"
             title={`${linkedTasks.length} linked task${linkedTasks.length > 1 ? "s" : ""}`}
           >
             <LinkIcon className="h-2.5 w-2.5" />
@@ -196,7 +196,7 @@ export const ProjectCard = memo(function ProjectCard({
                   />
                 )}
               </div>
-              <span className="font-mono text-[9px] text-muted-foreground">
+              <span className="font-mono text-[10px] text-muted-foreground">
                 {details.progress.total > 0
                   ? `${details.progress.completed}/${details.progress.total}`
                   : "—"}

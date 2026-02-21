@@ -163,7 +163,7 @@ export const AgentChatPanel = memo(function AgentChatPanel({
                 <ArrowLeft className="h-3 w-3" />
                 Back to live session
               </button>
-              <span className="truncate font-mono text-[9px] text-muted-foreground">
+              <span className="truncate font-mono text-[10px] text-muted-foreground">
                 {viewingSessionKey}
               </span>
             </div>

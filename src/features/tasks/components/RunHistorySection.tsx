@@ -68,7 +68,7 @@ export const RunHistorySection = memo(function RunHistorySection({
           <span className="flex-1">{error}</span>
           <button
             type="button"
-            className="shrink-0 rounded border border-destructive/40 px-2 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.08em] transition hover:bg-destructive/20"
+            className="shrink-0 rounded border border-destructive/40 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.08em] transition hover:bg-destructive/20"
             onClick={onRetry}
           >
             Retry
@@ -103,7 +103,7 @@ export const RunHistorySection = memo(function RunHistorySection({
                 <StatusIcon
                   className={`h-3 w-3 shrink-0 ${statusClass}`}
                 />
-                <span className="font-mono text-[9px] font-semibold uppercase tracking-[0.08em] text-foreground">
+                <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.08em] text-foreground">
                   {run.status}
                 </span>
                 <span className="text-[10px] text-muted-foreground">

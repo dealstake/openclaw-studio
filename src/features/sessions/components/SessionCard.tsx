@@ -136,7 +136,7 @@ export const SessionCard = memo(function SessionCard({
             {agentId ? <span>Agent: {agentId}</span> : null}
             <span>{formatRelativeTime(session.updatedAt)}</span>
             {session.origin?.label ? (
-              <span className="max-w-[140px] truncate rounded border border-border/70 bg-muted px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+              <span className="max-w-[140px] truncate rounded border border-border/70 bg-muted px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                 {humanizeOriginLabel(session.origin.label)}
               </span>
             ) : null}
@@ -156,7 +156,7 @@ export const SessionCard = memo(function SessionCard({
           >
             {onSessionClick && (
               <button
-                className="flex h-7 items-center rounded-md border border-border/80 bg-card/70 px-2 font-mono text-[9px] font-semibold uppercase tracking-[0.1em] text-muted-foreground transition hover:border-border hover:bg-muted/65"
+                className="flex h-7 items-center rounded-md border border-border/80 bg-card/70 px-2 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground transition hover:border-border hover:bg-muted/65"
                 type="button"
                 onClick={() => onSessionClick(session.key, agentId)}
               >

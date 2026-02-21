@@ -64,7 +64,7 @@ export const SearchResultCard = memo(function SearchResultCard({
             Archived
           </span>
         )}
-        <span className="ml-auto font-mono text-[9px] text-muted-foreground/60">
+        <span className="ml-auto font-mono text-[10px] text-muted-foreground/60">
           {result.matches.length} match{result.matches.length !== 1 ? "es" : ""}
         </span>
       </CardHeader>
@@ -79,7 +79,7 @@ export const SearchResultCard = memo(function SearchResultCard({
             key={i}
             className="line-clamp-2 rounded bg-muted/30 px-2 py-1 text-[11px] leading-relaxed text-muted-foreground/80"
           >
-            <span className="font-mono text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/60">
+            <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/60">
               {match.role}:{" "}
             </span>
             <HighlightedSnippet text={match.snippet} query={query ?? ""} />

@@ -4,17 +4,17 @@ import { memo } from "react";
 import { formatCost } from "@/lib/text/format";
 import type { TrendBucket } from "@/features/usage/lib/trendAggregator";
 
-/** Model color palette (oklch-aligned) */
+/** Model color palette using semantic chart tokens */
 const MODEL_COLORS: Record<string, string> = {
-  "claude-opus-4": "bg-[oklch(0.35_0.05_260)]",
-  "claude-sonnet-4": "bg-[oklch(0.65_0.15_85)]",
-  "claude-haiku-3.5": "bg-[oklch(0.55_0.08_200)]",
+  "claude-opus-4": "bg-chart-1",
+  "claude-sonnet-4": "bg-chart-2",
+  "claude-haiku-3.5": "bg-chart-3",
 };
 
 const FALLBACK_COLORS = [
-  "bg-[oklch(0.45_0.10_300)]",
-  "bg-[oklch(0.50_0.12_150)]",
-  "bg-[oklch(0.60_0.10_30)]",
+  "bg-chart-4",
+  "bg-chart-5",
+  "bg-chart-3",
 ];
 
 function getModelColor(model: string, idx: number): string {

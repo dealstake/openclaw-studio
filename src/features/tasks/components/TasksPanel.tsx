@@ -181,7 +181,7 @@ export const TasksPanel = memo(function TasksPanel({
             Tasks
           </SectionLabel>
           {tasks.length > 0 ? (
-            <span className="rounded-full bg-muted px-1.5 py-0.5 font-mono text-[9px] font-semibold text-muted-foreground">
+            <span className="rounded-full bg-muted px-1.5 py-0.5 font-mono text-[10px] font-semibold text-muted-foreground">
               {tasks.length}
             </span>
           ) : null}
@@ -194,7 +194,7 @@ export const TasksPanel = memo(function TasksPanel({
             onClick={onNewTask}
           >
             <Plus className="h-3.5 w-3.5" />
-            <span className="font-mono text-[9px] font-semibold uppercase tracking-[0.12em]">
+            <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em]">
               New
             </span>
           </button>
@@ -215,7 +215,7 @@ export const TasksPanel = memo(function TasksPanel({
             <button
               key={tab.value}
               type="button"
-              className={`flex items-center gap-1.5 rounded-md px-2 py-1 font-mono text-[9px] font-semibold uppercase tracking-[0.08em] transition focus-ring ${
+              className={`flex items-center gap-1.5 rounded-md px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.08em] transition focus-ring ${
                 filter === tab.value
                   ? "bg-muted text-foreground"
                   : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
@@ -298,7 +298,7 @@ export const TasksPanel = memo(function TasksPanel({
               onClick={onNewTask}
             >
               <Plus className="h-3.5 w-3.5" />
-              <span className="font-mono text-[9px] font-semibold uppercase tracking-[0.12em]">
+              <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em]">
                 Create Task
               </span>
             </button>

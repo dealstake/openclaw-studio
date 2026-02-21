@@ -183,7 +183,7 @@ export const ProjectsPanel = memo(function ProjectsPanel({
         <div className="flex flex-wrap items-center gap-1">
           <button
             type="button"
-            className={`rounded-md border px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.1em] transition ${
+            className={`rounded-md border px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] transition ${
               statusFilter === null
                 ? "border-primary/40 bg-primary/10 text-foreground"
                 : "border-border/60 bg-card/50 text-muted-foreground hover:border-border hover:text-foreground"
@@ -201,7 +201,7 @@ export const ProjectsPanel = memo(function ProjectsPanel({
               <button
                 key={emoji}
                 type="button"
-                className={`rounded-md border px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.1em] transition ${
+                className={`rounded-md border px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] transition ${
                   isActive
                     ? `${config.colors}`
                     : "border-border/60 bg-card/50 text-muted-foreground hover:border-border hover:text-foreground"

@@ -166,7 +166,7 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
                 disabled={busy || !editName.trim()}
               >
                 <Save className="h-3 w-3" />
-                <span className="font-mono text-[9px] font-semibold uppercase tracking-[0.12em]">Save</span>
+                <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em]">Save</span>
               </button>
               <button
                 className="flex h-7 items-center justify-center rounded-md border border-border/80 bg-card/70 px-2 text-muted-foreground transition hover:border-border hover:bg-muted/65"
@@ -174,7 +174,7 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
                 aria-label="Cancel editing"
                 onClick={cancelEditing}
               >
-                <span className="font-mono text-[9px] font-semibold uppercase tracking-[0.12em]">Cancel</span>
+                <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em]">Cancel</span>
               </button>
             </>
           ) : (
@@ -208,7 +208,7 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
               </span>
             </div>
             <span
-              className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] ${typeConfig.className}`}
+              className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] ${typeConfig.className}`}
             >
               <TypeIcon className="h-2.5 w-2.5" />
               {typeConfig.label}
@@ -349,7 +349,7 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
             onClick={() => onToggle(task.id, !task.enabled)}
             disabled={busy}
           >
-            <span className="font-mono text-[9px] font-semibold uppercase tracking-[0.12em]">
+            <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em]">
               {task.enabled ? "Pause" : "Resume"}
             </span>
           </button>
@@ -360,7 +360,7 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
             disabled={busy}
           >
             <Play className="h-3 w-3" />
-            <span className="font-mono text-[9px] font-semibold uppercase tracking-[0.12em]">
+            <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em]">
               Run Now
             </span>
           </button>
@@ -371,7 +371,7 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
             disabled={busy}
           >
             <Trash2 className="h-3 w-3" />
-            <span className="font-mono text-[9px] font-semibold uppercase tracking-[0.12em]">
+            <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em]">
               Delete
             </span>
           </button>
