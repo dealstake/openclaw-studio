@@ -15,7 +15,7 @@ import { HeaderBar } from "@/features/agents/components/HeaderBar";
 import { ConnectionPanel } from "@/features/agents/components/ConnectionPanel";
 import { EmptyStatePanel } from "@/features/agents/components/EmptyStatePanel";
 import { BrandMark } from "@/components/brand/BrandMark";
-import { ArrowLeft, Users } from "lucide-react";
+import { Users } from "lucide-react";
 import { sectionLabelClass } from "@/components/SectionLabel";
 import {
   buildAgentInstruction,
@@ -63,6 +63,7 @@ import type { ContextTab } from "@/features/context/components/ContextPanel";
 type ExpandableTab = ContextTab | "sessions" | "usage" | "channels" | "cron" | "settings";
 import { ContextTabCluster } from "@/features/context/components/ContextTabCluster";
 import { PanelExpandModal } from "@/components/PanelExpandModal";
+import { ManagementDrawer } from "@/components/ManagementDrawer";
 import { ExpandedContext } from "@/features/context/lib/expandedContext";
 import { ExecApprovalOverlay } from "@/features/exec-approvals/components/ExecApprovalOverlay";
 import {
@@ -391,8 +392,8 @@ const AgentStudioPage = () => {
     if (tab === "settings" && focusedAgent && !settingsAgentId) {
       setSettingsAgentId(focusedAgent.agentId);
     }
-    // Open management views in the expanded modal overlay instead of replacing chat
-    setExpandedTab((prev) => (prev === tab ? null : tab));
+    // Toggle: clicking the active tab closes the drawer
+    setManagementView((prev) => (prev === tab ? null : tab));
   }, [focusedAgent, settingsAgentId, setSettingsAgentId]);
 
   const handleBackToChat = useCallback(() => {
@@ -1843,7 +1844,7 @@ const AgentStudioPage = () => {
                           setMobileSessionDrawerOpen(false);
                         }}
                         className={`flex w-full items-center rounded-lg px-3 py-2.5 text-left text-[13px] font-medium transition-colors min-h-[44px] ${
-                          expandedTab === item.value
+                          managementView === item.value
                             ? "bg-accent text-accent-foreground"
                             : "text-foreground/80 hover:bg-muted"
                         }`}
@@ -1886,7 +1887,7 @@ const AgentStudioPage = () => {
                 collapsed={sessionSidebarCollapsed}
                 onToggleCollapse={() => setSessionSidebarCollapsed((p) => !p)}
                 onManagementNav={handleManagementNav}
-                activeManagementTab={expandedTab === "sessions" || expandedTab === "usage" || expandedTab === "channels" || expandedTab === "cron" || expandedTab === "settings" ? expandedTab as ManagementTab : null}
+                activeManagementTab={managementView}
               />
             </div>
             {/* ── Chat canvas: base layer filling viewport ─────────── */}
@@ -1895,25 +1896,15 @@ const AgentStudioPage = () => {
               data-testid="focused-agent-panel"
               {...swipeHandlers}
             >
-              {managementView ? (
-                <div className="flex h-full w-full flex-col overflow-hidden bg-background animate-in fade-in duration-150">
-                  {/* Back-to-chat header */}
-                  <div className="flex items-center gap-2 border-b border-border/20 bg-card/80 backdrop-blur-md px-4 py-2.5">
-                    <button
-                      type="button"
-                      onClick={handleBackToChat}
-                      className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                      aria-label="Back to chat"
-                    >
-                      <ArrowLeft className="h-4 w-4" />
-                    </button>
-                    <span className="text-sm font-medium text-foreground">
-                      {{ sessions: "Sessions", usage: "Usage", channels: "Channels", cron: "Cron", settings: "Settings" }[managementView]}
-                    </span>
-                  </div>
-                  <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-                    <Suspense fallback={null}>
-                      {managementView === "sessions" && (
+              {/* Management drawer — slides in from left beside sidebar */}
+              <ManagementDrawer
+                open={managementView !== null}
+                onOpenChange={(open) => { if (!open) setManagementView(null); }}
+                title={managementView ? ({ sessions: "Sessions", usage: "Usage", channels: "Channels", cron: "Cron", settings: "Settings" } as Record<ManagementTab, string>)[managementView] : ""}
+                sidebarOffsetPx={sessionSidebarCollapsed ? 56 : 288}
+              >
+                <Suspense fallback={null}>
+                  {managementView === "sessions" && (
                         <SessionsPanel
                           client={client}
                           agentId={focusedAgentId}
@@ -2015,10 +2006,9 @@ const AgentStudioPage = () => {
                           onNavigateToTasks={() => setContextTab("tasks")}
                         />
                       )}
-                    </Suspense>
-                  </div>
-                </div>
-              ) : (
+                </Suspense>
+              </ManagementDrawer>
+
               <ActivityDrawer hidden={!isXlViewport} agentId={focusedAgentId} client={client} status={status} cronJobs={allCronJobs}>
               {focusedAgent ? (
                 <AgentChatPanel
@@ -2057,7 +2047,6 @@ const AgentStudioPage = () => {
                 </div>
               )}
               </ActivityDrawer>
-              )}
             </div>
             {/* Expanded panel modal */}
             {expandedTab && (
