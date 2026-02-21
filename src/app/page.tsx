@@ -359,14 +359,7 @@ const AgentStudioPage = () => {
   const agents = state.agents;
   const {
     settingsAgentId, setSettingsAgentId, settingsAgent,
-    settingsCronJobs, settingsCronLoading, settingsCronError,
-    cronRunBusyJobId, cronDeleteBusyJobId,
-    settingsHeartbeats, settingsHeartbeatLoading, settingsHeartbeatError,
-    heartbeatRunBusyId, heartbeatDeleteBusyId,
-    handleRunCronJob, handleDeleteCronJob, cronToggleBusyJobId, handleToggleCronJob,
-    handleRunHeartbeat, handleDeleteHeartbeat,
-    reloadCronJobs, reloadHeartbeats,
-  } = useSettingsPanel({ client, status, agents });
+  } = useSettingsPanel({ status, agents });
   const selectedAgent = useMemo(() => getSelectedAgent(state), [state]);
   const filteredAgents = useMemo(
     () => getFilteredAgents(state, focusFilter),
@@ -1978,6 +1971,8 @@ const AgentStudioPage = () => {
                         <AgentSettingsPanel
                           key={settingsAgent.agentId}
                           agent={settingsAgent}
+                          client={client}
+                          status={status}
                           onClose={handleBackToChat}
                           onRename={(name) => handleRenameAgent(settingsAgent.agentId, name)}
                           onNewSession={() => handleNewSession(settingsAgent.agentId)}
@@ -1985,24 +1980,6 @@ const AgentStudioPage = () => {
                           canDelete={settingsAgent.agentId !== RESERVED_MAIN_AGENT_ID}
                           onToolCallingToggle={(enabled) => handleToolCallingToggle(settingsAgent.agentId, enabled)}
                           onThinkingTracesToggle={(enabled) => handleThinkingTracesToggle(settingsAgent.agentId, enabled)}
-                          cronJobs={settingsCronJobs}
-                          cronLoading={settingsCronLoading}
-                          cronError={settingsCronError}
-                          cronRunBusyJobId={cronRunBusyJobId}
-                          cronDeleteBusyJobId={cronDeleteBusyJobId}
-                          onRunCronJob={(jobId) => handleRunCronJob(settingsAgent.agentId, jobId)}
-                          onDeleteCronJob={(jobId) => handleDeleteCronJob(settingsAgent.agentId, jobId)}
-                          cronToggleBusyJobId={cronToggleBusyJobId}
-                          onToggleCronJob={(jobId, enabled) => handleToggleCronJob(settingsAgent.agentId, jobId, enabled)}
-                          heartbeats={settingsHeartbeats}
-                          heartbeatLoading={settingsHeartbeatLoading}
-                          heartbeatError={settingsHeartbeatError}
-                          heartbeatRunBusyId={heartbeatRunBusyId}
-                          heartbeatDeleteBusyId={heartbeatDeleteBusyId}
-                          onRunHeartbeat={(heartbeatId) => handleRunHeartbeat(settingsAgent.agentId, heartbeatId)}
-                          onDeleteHeartbeat={(heartbeatId) => handleDeleteHeartbeat(settingsAgent.agentId, heartbeatId)}
-                          onRetryCron={reloadCronJobs}
-                          onRetryHeartbeats={reloadHeartbeats}
                           onNavigateToTasks={() => setContextTab("tasks")}
                         />
                       )}
@@ -2173,6 +2150,8 @@ const AgentStudioPage = () => {
                       <AgentSettingsPanel
                         key={settingsAgent.agentId}
                         agent={settingsAgent}
+                        client={client}
+                        status={status}
                         onClose={clearExpandedTab}
                         onRename={(name) => handleRenameAgent(settingsAgent.agentId, name)}
                         onNewSession={() => handleNewSession(settingsAgent.agentId)}
@@ -2180,24 +2159,6 @@ const AgentStudioPage = () => {
                         canDelete={settingsAgent.agentId !== RESERVED_MAIN_AGENT_ID}
                         onToolCallingToggle={(enabled) => handleToolCallingToggle(settingsAgent.agentId, enabled)}
                         onThinkingTracesToggle={(enabled) => handleThinkingTracesToggle(settingsAgent.agentId, enabled)}
-                        cronJobs={settingsCronJobs}
-                        cronLoading={settingsCronLoading}
-                        cronError={settingsCronError}
-                        cronRunBusyJobId={cronRunBusyJobId}
-                        cronDeleteBusyJobId={cronDeleteBusyJobId}
-                        onRunCronJob={(jobId) => handleRunCronJob(settingsAgent.agentId, jobId)}
-                        onDeleteCronJob={(jobId) => handleDeleteCronJob(settingsAgent.agentId, jobId)}
-                        cronToggleBusyJobId={cronToggleBusyJobId}
-                        onToggleCronJob={(jobId, enabled) => handleToggleCronJob(settingsAgent.agentId, jobId, enabled)}
-                        heartbeats={settingsHeartbeats}
-                        heartbeatLoading={settingsHeartbeatLoading}
-                        heartbeatError={settingsHeartbeatError}
-                        heartbeatRunBusyId={heartbeatRunBusyId}
-                        heartbeatDeleteBusyId={heartbeatDeleteBusyId}
-                        onRunHeartbeat={(heartbeatId) => handleRunHeartbeat(settingsAgent.agentId, heartbeatId)}
-                        onDeleteHeartbeat={(heartbeatId) => handleDeleteHeartbeat(settingsAgent.agentId, heartbeatId)}
-                        onRetryCron={reloadCronJobs}
-                        onRetryHeartbeats={reloadHeartbeats}
                         onNavigateToTasks={() => setContextTab("tasks")}
                       />
                     )}
