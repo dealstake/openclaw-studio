@@ -99,7 +99,9 @@ import { useVisibilityRefresh } from "@/hooks/useVisibilityRefresh";
 import { useLivePatchBatching } from "@/features/agents/hooks/useLivePatchBatching";
 import { useSpecialUpdates } from "@/features/agents/hooks/useSpecialUpdates";
 import { useAgentHistorySync } from "@/features/agents/hooks/useAgentHistorySync";
-import { useAgentLifecycle } from "@/features/agents/hooks/useAgentLifecycle";
+import { useDeleteAgent } from "@/features/agents/hooks/useDeleteAgent";
+import { useCreateAgent } from "@/features/agents/hooks/useCreateAgent";
+import { useRenameAgent } from "@/features/agents/hooks/useRenameAgent";
 import { useGatewayModels } from "@/features/agents/hooks/useGatewayModels";
 import { useSettingsPanel } from "@/features/agents/hooks/useSettingsPanel";
 import { useBreakpoint, isDesktopOrAbove, isWide, isTabletOrBelow } from "@/hooks/useBreakpoint";
@@ -887,7 +889,7 @@ const AgentStudioPage = () => {
     status,
   ]);
 
-  // Break circular dependency: useAgentLifecycle needs enqueueConfigMutation,
+  // Break circular dependency: lifecycle hooks need enqueueConfigMutation,
   // useConfigMutationQueue needs lifecycle block phases. Use a ref.
   const enqueueConfigMutationRef = useRef<(params: {
     kind: "create-agent" | "rename-agent" | "delete-agent";
@@ -895,27 +897,39 @@ const AgentStudioPage = () => {
     run: () => Promise<void>;
   }) => Promise<void>>(async () => {});
 
+  const stableEnqueueConfigMutation = useCallback(
+    (params: { kind: "create-agent" | "rename-agent" | "delete-agent"; label: string; run: () => Promise<void> }) =>
+      enqueueConfigMutationRef.current(params),
+    []
+  );
+
   const {
     deleteAgentBlock,
-    createAgentBlock,
-    renameAgentBlock,
     deleteConfirmAgentId,
     setDeleteConfirmAgentId,
     handleConfirmDeleteAgent,
     handleDeleteAgent,
-    handleRenameAgent,
-  } = useAgentLifecycle({
+  } = useDeleteAgent({
+    client,
+    agents,
+    status,
+    setError,
+    enqueueConfigMutation: stableEnqueueConfigMutation,
+    loadAgents,
+    setSettingsAgentId,
+    setMobilePane,
+    isBusy: false, // mutual exclusion handled at UI level
+  });
+
+  const {
+    createAgentBlock,
+  } = useCreateAgent({
     client,
     dispatch,
-    agents,
     stateRef,
     status,
     setError,
-    enqueueConfigMutation: useCallback(
-      (params: { kind: "create-agent" | "rename-agent" | "delete-agent"; label: string; run: () => Promise<void> }) =>
-        enqueueConfigMutationRef.current(params),
-      []
-    ),
+    enqueueConfigMutation: stableEnqueueConfigMutation,
     loadAgents,
     flushPendingDraft,
     focusedAgentId: focusedAgent?.agentId ?? null,
@@ -923,6 +937,22 @@ const AgentStudioPage = () => {
     focusFilterTouchedRef,
     setSettingsAgentId,
     setMobilePane,
+    isBusy: false,
+  });
+
+  const {
+    renameAgentBlock,
+    handleRenameAgent,
+  } = useRenameAgent({
+    client,
+    dispatch,
+    agents,
+    status,
+    setError,
+    enqueueConfigMutation: stableEnqueueConfigMutation,
+    loadAgents,
+    setMobilePane,
+    isBusy: false,
   });
 
   const {
