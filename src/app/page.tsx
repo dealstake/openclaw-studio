@@ -1651,6 +1651,7 @@ const AgentStudioPage = () => {
         <div className="w-full">
           <HeaderBar
             status={status}
+            running={focusedAgentRunning}
             onConnectionSettings={() => setShowConnectionPanel((prev) => !prev)}
             onFilesToggle={handleFilesToggle}
             filesActive={contextMode === "files"}
@@ -1662,6 +1663,15 @@ const AgentStudioPage = () => {
               }
             }}
             onOpenSessionHistory={() => setMobileSessionDrawerOpen(true)}
+            onNewSession={stableChatOnNewSession}
+            onOpenSettings={() => {
+              setContextTab("settings");
+              if (isWide(breakpoint)) {
+                setContextPanelOpen(true);
+              } else {
+                setMobilePane("context");
+              }
+            }}
             agents={breadcrumbAgents}
             selectedAgentId={focusedAgentId}
             onSelectAgent={(agentId) => {
