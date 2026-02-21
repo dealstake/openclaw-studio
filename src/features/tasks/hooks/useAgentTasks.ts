@@ -231,30 +231,30 @@ export const useAgentTasks = (
         const task = tasksRef.current.find((t) => t.id === taskId);
         if (!task) throw new Error("Task not found.");
 
-        // If schedule changed, update the gateway cron job
+        // Build a single cron patch with all changed fields
+        const cronPatch: Record<string, unknown> = {};
+
         if (updates.schedule) {
-          const cronSchedule = taskScheduleToCronSchedule(updates.schedule);
-          await updateCronJob(client, task.cronJobId, { schedule: cronSchedule });
+          cronPatch.schedule = taskScheduleToCronSchedule(updates.schedule);
         }
 
-        // If prompt or model changed, update the cron job payload
         if (updates.prompt !== undefined || updates.model !== undefined) {
           const newPrompt = updates.prompt ?? task.prompt;
           const newModel = updates.model ?? task.model;
-          await updateCronJob(client, task.cronJobId, {
-            payload: {
-              kind: "agentTurn",
-              message: buildCronPayloadMessage(task.id, newPrompt),
-              model: newModel,
-            },
-          });
+          cronPatch.payload = {
+            kind: "agentTurn",
+            message: buildCronPayloadMessage(task.id, newPrompt),
+            model: newModel,
+          };
         }
 
-        // If name changed, update the cron job name
         if (updates.name !== undefined) {
-          await updateCronJob(client, task.cronJobId, {
-            name: `[TASK] ${updates.name}`,
-          });
+          cronPatch.name = `[TASK] ${updates.name}`;
+        }
+
+        // Single RPC call instead of up to 3 sequential calls
+        if (Object.keys(cronPatch).length > 0) {
+          await updateCronJob(client, task.cronJobId, cronPatch);
         }
 
         // Update Studio metadata

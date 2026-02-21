@@ -62,7 +62,8 @@ const TYPE_CARDS: Array<{
 interface TaskWizardModalProps {
   open: boolean;
   agents: string[];
-  creating: boolean;
+  /** @deprecated WizardChat handles creating state internally */
+  creating?: boolean;
   client: GatewayClient;
   onClose: () => void;
   onCreateTask: (payload: CreateTaskPayload) => Promise<void>;
@@ -74,7 +75,7 @@ interface TaskWizardModalProps {
 export const TaskWizardModal = memo(function TaskWizardModal({
   open,
   agents,
-  creating: _creating,
+  creating: _creating = false,
   client,
   onClose,
   onCreateTask,
@@ -95,9 +96,6 @@ export const TaskWizardModal = memo(function TaskWizardModal({
   const [showAgentCreation, setShowAgentCreation] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
   const [localAgents, setLocalAgents] = useState<string[]>(agents);
-
-  const [error, _setError] = useState<string | null>(null);
-  void _setError; // Error state now handled by WizardChat internally
 
   // Mount animation: delay "visible" state by one frame so CSS transitions fire
   const [visible, setVisible] = useState(false);
@@ -229,12 +227,6 @@ export const TaskWizardModal = memo(function TaskWizardModal({
             <X className="h-4 w-4" />
           </button>
         </div>
-
-        {error && (
-          <div className="shrink-0 bg-destructive/10 px-4 py-2 text-center text-xs text-destructive">
-            {error}
-          </div>
-        )}
 
         {/* Step content */}
         <div className="min-h-0 flex-1 overflow-hidden">

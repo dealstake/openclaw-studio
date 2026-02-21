@@ -168,6 +168,42 @@ describe("enrichTasksWithCronData", () => {
     expect(result).toHaveLength(0);
   });
 
+  it("reads consecutiveErrors from cron state when available", () => {
+    const tasks = [makeTask()];
+    const cronJobs = [
+      makeCronJob({
+        state: { runCount: 10, lastStatus: "error", lastRunAtMs: 1700000000000, consecutiveErrors: 5 } as CronJobSummary["state"] & { consecutiveErrors: number },
+      }),
+    ];
+
+    const result = enrichTasksWithCronData(tasks, cronJobs, "agent-1");
+    expect(result[0].consecutiveErrors).toBe(5);
+  });
+
+  it("defaults consecutiveErrors to 1 when cron state has error but no consecutiveErrors field", () => {
+    const tasks = [makeTask()];
+    const cronJobs = [
+      makeCronJob({
+        state: { runCount: 3, lastStatus: "error", lastRunAtMs: 1700000000000 },
+      }),
+    ];
+
+    const result = enrichTasksWithCronData(tasks, cronJobs, "agent-1");
+    expect(result[0].consecutiveErrors).toBe(1);
+  });
+
+  it("resets consecutiveErrors to 0 when last status is ok", () => {
+    const tasks = [makeTask({ consecutiveErrors: 3 })];
+    const cronJobs = [
+      makeCronJob({
+        state: { runCount: 10, lastStatus: "ok", lastRunAtMs: 1700000000000 },
+      }),
+    ];
+
+    const result = enrichTasksWithCronData(tasks, cronJobs, "agent-1");
+    expect(result[0].consecutiveErrors).toBe(0);
+  });
+
   it("gives unnamed orphans a default name", () => {
     const cronJobs = [
       makeCronJob({ id: "orphan-1", name: "" }),
