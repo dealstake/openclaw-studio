@@ -151,6 +151,7 @@ export const AgentSettingsPanel = memo(function AgentSettingsPanel({
   };
 
   return (
+    <TooltipProvider>
     <div
       className="agent-inspect-panel"
       data-testid="agent-settings-panel"
@@ -177,23 +178,21 @@ export const AgentSettingsPanel = memo(function AgentSettingsPanel({
             <span className="text-[11px] text-muted-foreground">
               ID: <span className="font-mono">{agent.agentId}</span>
             </span>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    type="button"
-                    className="inline-flex h-5 w-5 items-center justify-center rounded text-muted-foreground transition hover:bg-muted hover:text-foreground focus-ring"
-                    onClick={handleCopyId}
-                    aria-label="Copy agent ID"
-                  >
-                    <Copy className="h-3 w-3" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right">
-                  {idCopied ? "Copied!" : "Copy agent ID"}
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  className="inline-flex h-5 w-5 items-center justify-center rounded text-muted-foreground transition hover:bg-muted hover:text-foreground focus-ring"
+                  onClick={handleCopyId}
+                  aria-label="Copy agent ID"
+                >
+                  <Copy className="h-3 w-3" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                {idCopied ? "Copied!" : "Copy agent ID"}
+              </TooltipContent>
+            </Tooltip>
           </div>
 
           <label className={`mt-3 flex flex-col gap-2 ${sectionLabelClass} text-muted-foreground`}>
@@ -266,27 +265,25 @@ export const AgentSettingsPanel = memo(function AgentSettingsPanel({
           <div className="mt-3 text-[11px] text-muted-foreground">
             Start this agent in a fresh session and clear the visible transcript in Studio.
           </div>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="mt-3 block">
-                  <button
-                    className={`w-full rounded-md border border-border/80 bg-card/75 px-3 py-2 ${sectionLabelClass} text-foreground transition hover:border-border hover:bg-muted/70 disabled:cursor-not-allowed disabled:opacity-70 focus-ring`}
-                    type="button"
-                    onClick={() => {
-                      void handleNewSession();
-                    }}
-                    disabled={sessionBusy}
-                  >
-                    {sessionBusy ? "Starting..." : "New session"}
-                  </button>
-                </span>
-              </TooltipTrigger>
-              {sessionBusy && (
-                <TooltipContent>Session is starting…</TooltipContent>
-              )}
-            </Tooltip>
-          </TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="mt-3 block">
+                <button
+                  className={`w-full rounded-md border border-border/80 bg-card/75 px-3 py-2 ${sectionLabelClass} text-foreground transition hover:border-border hover:bg-muted/70 disabled:cursor-not-allowed disabled:opacity-70 focus-ring`}
+                  type="button"
+                  onClick={() => {
+                    void handleNewSession();
+                  }}
+                  disabled={sessionBusy}
+                >
+                  {sessionBusy ? "Starting..." : "New session"}
+                </button>
+              </span>
+            </TooltipTrigger>
+            {sessionBusy && (
+              <TooltipContent>Session is starting…</TooltipContent>
+            )}
+          </Tooltip>
         </section>
 
         <SettingsListSection
@@ -338,28 +335,24 @@ export const AgentSettingsPanel = memo(function AgentSettingsPanel({
               }
               metadata={
                 <>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="truncate text-[11px] text-muted-foreground">
-                          {formatCronSchedule(job.schedule)}
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent side="top">{formatCronSchedule(job.schedule)}</TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="truncate text-[11px] text-muted-foreground">
-                          {formatCronPayload(job.payload)}
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-sm">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="truncate text-[11px] text-muted-foreground">
+                        {formatCronSchedule(job.schedule)}
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">{formatCronSchedule(job.schedule)}</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="truncate text-[11px] text-muted-foreground">
                         {formatCronPayload(job.payload)}
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-sm">
+                      {formatCronPayload(job.payload)}
+                    </TooltipContent>
+                  </Tooltip>
                 </>
               }
               runBusy={cronRunBusyJobId === job.id}
@@ -391,7 +384,7 @@ export const AgentSettingsPanel = memo(function AgentSettingsPanel({
               deleteAllowed={heartbeat.source === "override"}
               deleteDisabledTooltip={heartbeat.source !== "override" ? "Inherited from gateway config — cannot be deleted here" : undefined}
               metadata={
-                <TooltipProvider>
+                <>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <div className="truncate text-[11px] text-muted-foreground">
@@ -420,7 +413,7 @@ export const AgentSettingsPanel = memo(function AgentSettingsPanel({
                         : "Inherited from global gateway config"}
                     </TooltipContent>
                   </Tooltip>
-                </TooltipProvider>
+                </>
               }
               runBusy={heartbeatRunBusyId === heartbeat.id}
               deleteBusy={heartbeatDeleteBusyId === heartbeat.id}
@@ -495,5 +488,6 @@ export const AgentSettingsPanel = memo(function AgentSettingsPanel({
         )}
       </div>
     </div>
+    </TooltipProvider>
   );
 });
