@@ -132,7 +132,8 @@ describe("handleRuntimeChatEvent", () => {
       );
     });
 
-    it("routes heartbeat final alert to appendPart + idle", () => {
+    it("routes heartbeat final alert to activity message store (not main chat)", () => {
+      deps.onActivityMessage = vi.fn();
       handleRuntimeChatEvent(
         {
           sessionKey: "agent:agent-1:main",
@@ -146,11 +147,16 @@ describe("handleRuntimeChatEvent", () => {
       expect(deps.onHeartbeatEvent).toHaveBeenCalledWith(
         expect.objectContaining({ status: "alert" })
       );
-      expect(deps.dispatch).toHaveBeenCalledWith(
+      // Non-OK heartbeats no longer pollute main chat — routed to activity
+      expect(deps.dispatch).not.toHaveBeenCalledWith(
+        expect.objectContaining({ type: "appendPart" })
+      );
+      expect(deps.onActivityMessage).toHaveBeenCalledWith(
+        "heartbeat-run-hb",
         expect.objectContaining({
-          type: "appendPart",
-          agentId: "agent-1",
-          part: expect.objectContaining({ type: "text", text: "Alert: something wrong" }),
+          sourceName: "Heartbeat",
+          sourceType: "heartbeat",
+          status: "error",
         })
       );
     });

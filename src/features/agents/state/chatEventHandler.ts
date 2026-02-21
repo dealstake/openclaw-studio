@@ -65,17 +65,44 @@ export function handleRuntimeChatEvent(
   const agentId = findAgentBySessionKey(agentsSnapshot, payload.sessionKey);
 
   // Route cron/subagent chat events to activity feed
-  if (!agentId && deps.onActivityEvent) {
+  if (!agentId) {
     const isCron = payload.sessionKey.includes(":cron:");
     const isSubAgent = payload.sessionKey.includes(":subagent:");
     if (isCron || isSubAgent) {
       const text = extractText(payload.message);
       const snippet = text ? stripUiMetadata(text)?.slice(0, 120) ?? "" : "";
-      deps.onActivityEvent(payload.sessionKey, {
-        lastTextSnippet: snippet || undefined,
-        streaming: payload.state === "delta",
-        status: payload.state === "error" ? "error" : "running",
-      });
+      // Legacy snippet-based activity event (LiveActivityFeed)
+      if (deps.onActivityEvent) {
+        deps.onActivityEvent(payload.sessionKey, {
+          lastTextSnippet: snippet || undefined,
+          streaming: payload.state === "delta",
+          status: payload.state === "error" ? "error" : "running",
+        });
+      }
+      // Full message content to activity message store (Phase 3)
+      if (deps.onActivityMessage) {
+        const thinking = extractThinking(payload.message);
+        const parts: import("@/lib/chat/types").MessagePart[] = [];
+        if (thinking) {
+          parts.push({ type: "reasoning", text: thinking, streaming: payload.state === "delta" });
+        }
+        const cleanedText = text ? stripUiMetadata(text) : null;
+        if (cleanedText) {
+          parts.push({ type: "text", text: cleanedText, streaming: payload.state === "delta" });
+        }
+        if (parts.length > 0) {
+          const sourceType = isCron ? "cron" as const : "subagent" as const;
+          const status = payload.state === "error" ? "error" as const
+            : payload.state === "final" ? "complete" as const
+            : "streaming" as const;
+          deps.onActivityMessage(payload.sessionKey, {
+            sourceName: "",
+            sourceType,
+            parts,
+            status,
+          });
+        }
+      }
     }
   }
 
@@ -104,11 +131,13 @@ export function handleRuntimeChatEvent(
         agentId,
         patch: { status: "idle", runId: null, streamText: null, thinkingTrace: null },
       });
-      if (!isOk && typeof text === "string" && text.trim()) {
-        deps.dispatch({
-          type: "appendPart",
-          agentId,
-          part: { type: "text", text, streaming: false },
+      // Non-OK heartbeat content now routes to activity only — no main chat pollution
+      if (deps.onActivityMessage) {
+        deps.onActivityMessage(`heartbeat-${payload.runId}`, {
+          sourceName: "Heartbeat",
+          sourceType: "heartbeat",
+          parts: [{ type: "text", text, streaming: false }],
+          status: isOk ? "complete" : "error",
         });
       }
       return;

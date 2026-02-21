@@ -80,6 +80,7 @@ import { WorkspaceExplorerPanel } from "@/features/workspace/components/Workspac
 import { ActivityDrawer } from "@/features/activity/components/ActivityDrawer";
 import { ActivityPanel } from "@/features/activity/components/ActivityPanel";
 import { upsertLiveSession, addSystemEvent } from "@/features/activity/hooks/useLiveActivityStore";
+import { appendActivityParts, finalizeActivityMessage } from "@/features/activity/hooks/useActivityMessageStore";
 import { pushHeartbeatEntry } from "@/features/activity/hooks/useHeartbeatEntries";
 import { useTranscriptCapture } from "@/features/activity/hooks/useTranscriptCapture";
 import { TraceViewer } from "@/features/sessions/components/TraceViewer";
@@ -1454,6 +1455,35 @@ const AgentStudioPage = () => {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       onSubAgentLifecycle: (_sessionKey: string, _phase: string) => {
         // Sub-agent lifecycle tracking — available for future use
+      },
+      onActivityMessage: (sourceKey, data) => {
+        // Resolve task name from cron job ID for display
+        let sourceName = data.sourceName;
+        if (!sourceName) {
+          const cronMatch = sourceKey.match(/:cron:([^:]+)/);
+          if (cronMatch) {
+            const job = allCronJobsRef.current.find((j) => j.id === cronMatch[1]);
+            if (job) sourceName = job.name;
+          }
+          if (!sourceName) sourceName = data.sourceType === "heartbeat" ? "Heartbeat" : "Agent Run";
+        }
+        if (data.status === "streaming") {
+          // Accumulate parts for streaming messages
+          appendActivityParts(sourceKey, data.parts, {
+            sourceName,
+            sourceType: data.sourceType,
+            status: "streaming",
+          });
+        } else if (data.status === "complete" || data.status === "error") {
+          // For final/error: append any remaining parts then finalize
+          if (data.parts.length > 0) {
+            appendActivityParts(sourceKey, data.parts, {
+              sourceName,
+              sourceType: data.sourceType,
+            });
+          }
+          finalizeActivityMessage(sourceKey, data.status);
+        }
       },
     });
     runtimeEventHandlerRef.current = handler;

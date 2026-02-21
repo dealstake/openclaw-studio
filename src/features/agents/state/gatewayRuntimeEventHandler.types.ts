@@ -54,6 +54,13 @@ export type GatewayRuntimeEventHandlerDeps = {
     text: string;
     status: "ok" | "alert";
   }) => void;
+  /** Route full message content to the activity message store (Phase 3). */
+  onActivityMessage?: (sourceKey: string, data: {
+    sourceName: string;
+    sourceType: "heartbeat" | "cron" | "subagent" | "system";
+    parts: import("@/lib/chat/types").MessagePart[];
+    status: "streaming" | "complete" | "error";
+  }) => void;
 };
 
 export type GatewayRuntimeEventHandler = {
