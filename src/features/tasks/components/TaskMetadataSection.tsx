@@ -75,6 +75,7 @@ export const TaskMetadataSection = memo(function TaskMetadataSection({
           <div className="mt-2 flex items-center gap-2">
             <Clock className="h-3 w-3 shrink-0 text-muted-foreground" />
             <select
+              aria-label="Task schedule interval"
               className="h-7 rounded-md border border-border/80 bg-card/70 px-2 font-mono text-[11px] text-foreground outline-none transition hover:border-border focus:border-primary/60 disabled:cursor-not-allowed disabled:opacity-60"
               value={task.schedule.intervalMs}
               disabled={busy}
