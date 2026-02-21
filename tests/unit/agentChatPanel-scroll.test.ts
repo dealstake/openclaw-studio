@@ -47,6 +47,7 @@ describe("AgentChatPanel scrolling", () => {
 
   it("shows jump-to-latest when unpinned and new output arrives, and jumps on click", async () => {
     (Element.prototype as unknown as { scrollIntoView: unknown }).scrollIntoView = vi.fn();
+    Element.prototype.scrollTo = vi.fn() as unknown as typeof Element.prototype.scrollTo;
 
     const agent = createAgent();
     const parts1: MessagePart[] = [
@@ -100,9 +101,6 @@ describe("AgentChatPanel scrolling", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Jump to latest" }));
 
-    expect(
-      (Element.prototype as unknown as { scrollIntoView: ReturnType<typeof vi.fn> })
-        .scrollIntoView
-    ).toHaveBeenCalled();
+    expect(Element.prototype.scrollTo).toHaveBeenCalled();
   });
 });
