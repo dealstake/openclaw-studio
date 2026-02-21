@@ -126,6 +126,28 @@ The \`prompt\` field is the most important part — it's the instruction the age
   "Read your previous state from tasks/{taskId}/state.json. Compare current results against last-known state. Write updated state back to tasks/{taskId}/state.json. ONLY report NEW findings since your last check."
 - For scheduled tasks, focus on thorough output since they run less often
 
+## Dual-Model Workflow (Opus + Gemini 2.5 Pro)
+
+When generating task prompts, integrate the dual-model workflow for any task that involves:
+- **UI/UX work**: Visual QA, design reviews, frontend changes, screenshot analysis
+- **Large codebase analysis**: Code audits, DRY checks, pattern consistency, refactoring
+- **E2E testing**: Browser screenshots, layout verification, mobile responsiveness
+- **Competitive analysis**: Comparing our app against other apps
+- **Accessibility audits**: Visual and structural accessibility checks
+
+For these tasks, the generated prompt MUST include instructions to:
+1. Read \`reference/dual-model-workflow.md\` for the full Opus + Gemini workflow
+2. Use the \`image\` tool with \`model="google/gemini-2.5-pro"\` for visual analysis
+3. Feed relevant screenshots (desktop 1440x900 + mobile 390x844) to Gemini
+4. For codebase audits: feed the entire target folder to Gemini via the \`image\` tool prompt
+5. Include Gemini's analysis rating in the task output
+
+Example prompt addition for UI tasks:
+"After making changes, take desktop (1440x900) and mobile (390x844) screenshots via the browser tool. Feed both screenshots to Gemini 2.5 Pro (image tool, model='google/gemini-2.5-pro') with context about what changed. Fix any P0 issues Gemini flags before reporting completion."
+
+Example prompt addition for audit tasks:
+"After reading all files, feed the entire folder contents to Gemini 2.5 Pro (image tool, model='google/gemini-2.5-pro') for supplementary cross-file pattern analysis. Gemini's 1M token context excels at finding DRY violations and inconsistencies across many files."
+
 ## Strict Rules
 - NEVER mention cron expressions, milliseconds, or internal implementation
 - Explain schedules in human terms: "every 5 minutes", "weekdays at 9am"

@@ -136,6 +136,21 @@ If the user asks to change something, output an updated \`json:project-config\` 
 - Include a testing/verification task in the final phase
 - Total tasks across all phases: typically 8-20
 
+### Dual-Model Workflow (Opus + Gemini 2.5 Pro)
+For projects involving UI, visual design, large codebase changes, or E2E testing, integrate the dual-model workflow:
+
+**For feature/UI projects**, include these phases or tasks:
+- A "Gemini Design Audit" task in Phase 1: "Take desktop (1440×900) + mobile (390×844) screenshots of the current UI. Also screenshot 2-3 competitor apps (ChatGPT, Linear, Notion). Feed all screenshots + relevant codebase context to Gemini 2.5 Pro via the image tool for design analysis. Save findings to reference/gemini-<project-slug>-<date>.md"
+- A "Gemini Visual QA" task in the final phase: "Take before/after screenshots at desktop and mobile viewports. Feed to Gemini 2.5 Pro for production-grade visual QA sign-off. Fix any P0 issues before marking complete."
+
+**For infrastructure/refactor projects**, include:
+- A "Gemini Codebase Analysis" task: "Feed the entire target folder to Gemini 2.5 Pro for cross-file pattern analysis. Gemini's 1M token context excels at finding DRY violations, inconsistencies, and opportunities for shared utilities across many files."
+
+**For research projects**, include:
+- A "Gemini Competitive Analysis" task if applicable: "Screenshot competitor implementations. Feed to Gemini 2.5 Pro with our codebase context for gap analysis and feature comparison."
+
+This is standard process — Opus (the implementation agent) handles all code writing and tool use. Gemini 2.5 Pro handles all visual reasoning, large-context analysis, and design reviews.
+
 ### Priority Guidelines
 - **🔴 P0**: Blocks other work, production issues, security fixes
 - **🟡 P1**: Important for product quality, should be done soon

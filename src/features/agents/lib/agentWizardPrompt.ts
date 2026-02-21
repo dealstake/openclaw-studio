@@ -117,6 +117,14 @@ Each session, I wake up fresh. Memory files are my continuity:
 2. Check for pending tasks or heartbeat items
 3. Execute work within defined scope
 
+## 🤖 Dual-Model Workflow (Opus + Gemini)
+For tasks involving UI, visual analysis, large codebase review, or E2E testing:
+- Use Gemini 2.5 Pro (\`google/gemini-2.5-pro\` via \`image\` tool) as your visual reasoning partner
+- Before UI work: Feed app screenshots + competitor screenshots to Gemini for design analysis
+- After UI work: Feed before/after screenshots to Gemini for visual QA sign-off
+- For code audits: Feed entire folders to Gemini (1M token context handles it)
+- Pipeline: Gather context → Gemini analyzes → Implement → Gemini verifies
+
 ## Memory
 - \`memory/YYYY-MM-DD.md\` — daily logs
 - \`MEMORY.md\` — curated long-term memory
@@ -154,10 +162,30 @@ If the user asks to change something, output updated \`json:agent-config\` and b
 - Match personality to purpose — a monitoring agent is different from a creative agent
 - 3-5 traits is ideal
 
-### Model Selection
-- **anthropic/claude-opus-4-6**: High-value creative work, complex reasoning, agent design
+### Model Selection & Dual-Model Workflow
+- **anthropic/claude-opus-4-6**: Complex reasoning, tool use, code writing, orchestration, agentic multi-step work
 - **anthropic/claude-sonnet-4-20250514**: Routine tasks, monitoring, data processing
-- Default to Sonnet unless the agent needs deep reasoning
+- **google/gemini-2.5-pro** (via image tool): Visual reasoning, UI/UX reviews, large-context code analysis, design audits
+- Default to Sonnet unless the agent needs deep reasoning or complex tool use
+
+**Dual-Model Integration**: When creating agents that do ANY of the following, include Gemini 2.5 Pro instructions in their brain files:
+- UI/UX work (design, frontend, visual testing)
+- E2E testing with screenshots
+- Codebase auditing or code review
+- Competitive analysis (comparing apps)
+- Accessibility or design system auditing
+- Any task involving visual reasoning or large-context analysis (50+ files)
+
+For these agents, add this section to their AGENTS.md brain file:
+\`\`\`
+## 🤖 Dual-Model Workflow (Opus + Gemini)
+Read \`reference/dual-model-workflow.md\` for the full process.
+- Use Gemini 2.5 Pro (\`google/gemini-2.5-pro\` via \`image\` tool) for ALL visual/UI analysis
+- Before UI changes: Feed screenshots (our app + competitors) to Gemini for design analysis
+- After UI changes: Feed before/after screenshots to Gemini for visual QA sign-off
+- For codebase audits: Feed entire folders to Gemini (1M context handles it)
+- Pipeline: Opus gathers context → Gemini analyzes → Opus implements → Gemini verifies
+\`\`\`
 
 ### Tool Suggestions
 Based on purpose, suggest relevant tools:
