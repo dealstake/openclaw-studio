@@ -12,8 +12,8 @@ import { isGatewayDisconnectLikeError, parseAgentIdFromSessionKey } from "@/lib/
 import { parseUsageResult } from "@/features/sessions/hooks/useSessionUsage";
 import { formatRelativeTime } from "@/lib/text/time";
 import { PanelIconButton } from "@/components/PanelIconButton";
-
 import { sectionLabelClass } from "@/components/SectionLabel";
+import { BaseCard, CardHeader, CardMeta } from "@/components/ui/BaseCard";
 
 const SESSION_TYPE_ICON: Record<string, { icon: typeof MessageCircle; label: string }> = {
   main: { icon: MessageCircle, label: "Main session" },
@@ -85,17 +85,15 @@ export const SessionCard = memo(function SessionCard({
   }, [isExpanded, usageLoaded, loadUsage]);
 
   return (
-    <div
-      className={`group/session rounded-md border transition-all duration-200 ${
-        isActive
-          ? "border-primary/40 bg-card/90 shadow-sm"
-          : "border-border/80 bg-card/70 hover:border-border hover:bg-muted/55"
-      }`}
+    <BaseCard
+      variant="compact"
+      isSelected={isActive}
+      isHoverable={!isActive}
     >
       <div
         role="button"
         tabIndex={0}
-        className="flex cursor-pointer items-start gap-2 p-3"
+        className="flex cursor-pointer items-start gap-2"
         onClick={(e) => {
           if ((e.target as HTMLElement).closest("[data-action]")) return;
           onToggle();
@@ -121,18 +119,20 @@ export const SessionCard = memo(function SessionCard({
         </div>
 
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5">
-            {isActive && (
-              <span className="inline-block h-1.5 w-1.5 flex-shrink-0 rounded-full bg-emerald-500" />
-            )}
-            <span
-              className={`truncate sm:truncate ${sectionLabelClass} text-foreground max-sm:line-clamp-2 max-sm:whitespace-normal`}
-              title={humanizeSessionKey(session.displayName ?? session.key)}
-            >
-              {humanizeSessionKey(session.displayName ?? session.key)}
-            </span>
-          </div>
-          <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+          <CardHeader>
+            <div className="flex items-center gap-1.5 min-w-0 flex-1">
+              {isActive && (
+                <span className="inline-block h-1.5 w-1.5 flex-shrink-0 rounded-full bg-emerald-500" />
+              )}
+              <span
+                className={`truncate sm:truncate ${sectionLabelClass} text-foreground max-sm:line-clamp-2 max-sm:whitespace-normal`}
+                title={humanizeSessionKey(session.displayName ?? session.key)}
+              >
+                {humanizeSessionKey(session.displayName ?? session.key)}
+              </span>
+            </div>
+          </CardHeader>
+          <CardMeta className="mt-1 flex-wrap text-[11px]">
             {agentId ? <span>Agent: {agentId}</span> : null}
             <span>{formatRelativeTime(session.updatedAt)}</span>
             {session.origin?.label ? (
@@ -140,7 +140,7 @@ export const SessionCard = memo(function SessionCard({
                 {humanizeOriginLabel(session.origin.label)}
               </span>
             ) : null}
-          </div>
+          </CardMeta>
           {!isExpanded && usage && (
             <div className="mt-0.5 text-[10px] text-muted-foreground/70">
               {formatTokens(usage.inputTokens)} in · {formatTokens(usage.outputTokens)} out
@@ -152,7 +152,7 @@ export const SessionCard = memo(function SessionCard({
         {!isConfirming && (
           <div
             data-action="true"
-            className="flex items-center gap-1 opacity-0 transition group-focus-within/session:opacity-100 group-hover/session:opacity-100"
+            className="flex items-center gap-1 opacity-0 transition group-focus-within/card:opacity-100 group-hover/card:opacity-100"
           >
             {onSessionClick && (
               <button
@@ -191,7 +191,7 @@ export const SessionCard = memo(function SessionCard({
       </div>
 
       {isConfirming && (
-        <div className="flex items-center gap-2 px-3 pb-3" data-action="true">
+        <div className="flex items-center gap-2 pt-2" data-action="true">
           <span className="text-[11px] text-muted-foreground">Are you sure?</span>
           <button
             className={`rounded-md border border-destructive/50 bg-transparent px-2 py-1 ${sectionLabelClass} text-destructive transition hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-60`}
@@ -217,7 +217,7 @@ export const SessionCard = memo(function SessionCard({
           isExpanded ? "max-h-[200px] opacity-100" : "max-h-0 opacity-0"
         }`}
       >
-        <div className="border-t border-border/40 px-3 pb-3 pt-1">
+        <div className="border-t border-border/40 pt-1 mt-2">
           {usageLoading && !usage ? <UsageSkeleton /> : null}
           {usage ? <UsageDetails usage={usage} /> : null}
           {!usageLoading && !usage && usageLoaded ? (
@@ -225,6 +225,6 @@ export const SessionCard = memo(function SessionCard({
           ) : null}
         </div>
       </div>
-    </div>
+    </BaseCard>
   );
 });

@@ -13,6 +13,7 @@ import { LinkedTaskRow } from "./LinkedTaskRow";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import type { ProjectEntry } from "./ProjectsPanel";
 import { MarkdownViewer } from "@/components/MarkdownViewer";
+import { BaseCard, CardHeader } from "@/components/ui/BaseCard";
 
 interface ProjectCardProps {
   project: ProjectEntry;
@@ -60,8 +61,10 @@ export const ProjectCard = memo(function ProjectCard({
   }, [onOpenFile]);
 
   return (
-    <div
-      className="group/task rounded-md border border-border/80 bg-card/70 px-3 py-2.5 transition hover:border-border hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-1 focus-visible:ring-offset-card cursor-pointer"
+    <BaseCard
+      variant="compact"
+      isHoverable
+      className="cursor-pointer"
       role="button"
       tabIndex={0}
       onClick={onOpenFile}
@@ -69,7 +72,7 @@ export const ProjectCard = memo(function ProjectCard({
       aria-label={`Open ${project.name} project file`}
     >
       {/* Header Row: Clickable Status Badge + Priority + Name + Task Badge */}
-      <div className="flex items-center gap-2">
+      <CardHeader>
         <Popover.Root open={statusOpen} onOpenChange={setStatusOpen}>
           <Popover.Trigger asChild>
             <button
@@ -95,7 +98,6 @@ export const ProjectCard = memo(function ProjectCard({
                 if (!cfg) return null;
                 const Icon = cfg.icon;
                 const isCurrent = project.statusEmoji === emoji;
-                // Show warning if selecting Building and another project is already building
                 const wouldQueue = emoji === "🚧" && !isCurrent && buildingCount > 0;
                 return (
                   <button
@@ -129,7 +131,6 @@ export const ProjectCard = memo(function ProjectCard({
                   </button>
                 );
               })}
-              {/* Archive — separated at bottom */}
               <div className="my-1 border-t border-border/40" />
               <button
                 type="button"
@@ -166,12 +167,11 @@ export const ProjectCard = memo(function ProjectCard({
             {linkedTasks.length}
           </span>
         )}
-      </div>
+      </CardHeader>
 
       {/* Description */}
       <MarkdownViewer content={project.oneLiner} className="mt-1 text-xs leading-relaxed text-muted-foreground/80 line-clamp-2 [&>*]:m-0 [&>*>*]:m-0" />
 
-      {/* Details (Progress + Next Step) */}
       <ConfirmDialog
         open={pendingDone}
         onOpenChange={(open) => { if (!open) setPendingDone(false); }}
@@ -186,7 +186,6 @@ export const ProjectCard = memo(function ProjectCard({
 
       {details && (
         <div className="mt-1 space-y-0.5 border-t border-border/40 pt-1">
-          {/* Progress Bar — always visible; greyed out when no checkboxes */}
           {!isDone && (
             <div className="flex items-center gap-2">
               <div className="h-1.5 flex-1 rounded-full bg-border overflow-hidden">
@@ -205,7 +204,6 @@ export const ProjectCard = memo(function ProjectCard({
             </div>
           )}
 
-          {/* Next Step — suppress for Done projects */}
           {!isDone && details.continuation.nextStep && (
             <div className="flex items-start gap-1.5 text-[10px] text-muted-foreground">
               <span className="shrink-0 font-semibold text-primary/80">Next:</span>
@@ -213,7 +211,6 @@ export const ProjectCard = memo(function ProjectCard({
             </div>
           )}
 
-          {/* Blocked Warning — suppress for Done projects */}
           {!isDone && isBlocked && (
             <div className="flex items-start gap-1.5 text-[10px] text-red-400">
               <span className="shrink-0 font-semibold">Blocked:</span>
@@ -221,7 +218,6 @@ export const ProjectCard = memo(function ProjectCard({
             </div>
           )}
 
-          {/* Linked Tasks (expandable) */}
           {linkedTasks.length > 0 && (
             <div className="pt-0.5">
               <button
@@ -250,6 +246,6 @@ export const ProjectCard = memo(function ProjectCard({
           )}
         </div>
       )}
-    </div>
+    </BaseCard>
   );
 });

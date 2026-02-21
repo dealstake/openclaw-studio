@@ -6,8 +6,8 @@ import type { TranscriptSearchResult } from "@/features/sessions/hooks/useTransc
 import { splitByQuery } from "@/features/sessions/lib/transcriptUtils";
 import { humanizeSessionKey } from "@/features/sessions/lib/sessionKeyUtils";
 import { formatRelativeTime } from "@/lib/text/time";
-
 import { sectionLabelClass } from "@/components/SectionLabel";
+import { BaseCard, CardHeader } from "@/components/ui/BaseCard";
 
 function HighlightedSnippet({ text, query }: { text: string; query: string }) {
   const segments = splitByQuery(text, query);
@@ -40,10 +40,12 @@ export const SearchResultCard = memo(function SearchResultCard({
     : result.sessionId.slice(0, 12);
 
   return (
-    <div
+    <BaseCard
+      variant="compact"
+      isHoverable
+      className="cursor-pointer"
       role="button"
       tabIndex={0}
-      className="group/result cursor-pointer rounded-md border border-border/80 bg-card/70 p-3 transition-all duration-200 hover:border-border hover:bg-muted/55"
       onClick={onClick}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
@@ -52,7 +54,7 @@ export const SearchResultCard = memo(function SearchResultCard({
         }
       }}
     >
-      <div className="flex items-center gap-1.5">
+      <CardHeader>
         <Search className="h-3 w-3 flex-shrink-0 text-muted-foreground/60" />
         <span className={`truncate ${sectionLabelClass} text-foreground`}>
           {displayName}
@@ -65,7 +67,7 @@ export const SearchResultCard = memo(function SearchResultCard({
         <span className="ml-auto font-mono text-[9px] text-muted-foreground/60">
           {result.matches.length} match{result.matches.length !== 1 ? "es" : ""}
         </span>
-      </div>
+      </CardHeader>
       {result.startedAt && (
         <div className="mt-1 text-[11px] text-muted-foreground">
           {formatRelativeTime(new Date(result.startedAt).getTime())}
@@ -84,6 +86,6 @@ export const SearchResultCard = memo(function SearchResultCard({
           </div>
         ))}
       </div>
-    </div>
+    </BaseCard>
   );
 });

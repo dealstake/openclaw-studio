@@ -6,6 +6,7 @@ import { humanReadableSchedule } from "@/features/tasks/lib/schedule";
 import { formatRelativeTime } from "@/lib/text/time";
 import { formatDurationCompact as formatDuration } from "@/lib/text/time";
 import { TYPE_CONFIG, STATUS_DOT_CLASS, getTaskStatusKey } from "@/features/tasks/lib/taskTypeConfig";
+import { BaseCard, CardHeader, CardBadge, CardMeta } from "@/components/ui/BaseCard";
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -46,23 +47,24 @@ export const TaskCard = memo(function TaskCard({
   }, [onSelect, task.id]);
 
   return (
-    <div
-      data-task-card
-      className={`group/task rounded-md border bg-card/70 px-3 py-2.5 cursor-pointer transition-all ${
-        selected
-          ? "border-primary/50 bg-primary/5 ring-1 ring-primary/20"
-          : focused
-            ? "border-primary/30 bg-card/90 ring-1 ring-primary/10"
-            : "border-border/80 hover:border-border hover:bg-card/90 hover:shadow-sm"
+    <BaseCard
+      variant="compact"
+      isSelected={selected}
+      isHoverable={!selected && !focused}
+      className={`cursor-pointer ${
+        focused && !selected
+          ? "border-primary/30 bg-card/90 ring-1 ring-primary/10"
+          : ""
       }`}
       onClick={handleSelect}
       role="option"
       aria-selected={selected || focused}
       tabIndex={-1}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") handleSelect(); }}
+      data-task-card
     >
       {/* Title row: status dot + name + toggle */}
-      <div className="flex items-center gap-2">
+      <CardHeader>
         <span className={`h-2 w-2 shrink-0 rounded-full ${dotClass}`} />
         <span className="min-w-0 flex-1 truncate font-mono text-[11px] font-semibold tracking-wide text-foreground">
           {task.name}
@@ -89,16 +91,14 @@ export const TaskCard = memo(function TaskCard({
             }`}
           />
         </button>
-      </div>
+      </CardHeader>
 
       {/* Type badge + schedule */}
       <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-        <span
-          className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] ${typeConfig.className}`}
-        >
+        <CardBadge className={typeConfig.className}>
           <TypeIcon className="h-2.5 w-2.5" />
           {typeConfig.label}
-        </span>
+        </CardBadge>
         <span className="text-[10px] text-muted-foreground">
           {humanReadableSchedule(task.schedule)}
         </span>
@@ -112,7 +112,7 @@ export const TaskCard = memo(function TaskCard({
       ) : null}
 
       {/* Runtime info */}
-      <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground">
+      <CardMeta className="mt-1 flex-wrap gap-x-2 gap-y-0.5 text-[10px]">
         {task.runningAtMs ? (
           <span className="font-semibold text-purple-400">Running…</span>
         ) : task.nextRunAtMs ? (
@@ -134,7 +134,7 @@ export const TaskCard = memo(function TaskCard({
         {task.runCount > 0 ? (
           <span>Runs: {task.runCount}</span>
         ) : null}
-      </div>
-    </div>
+      </CardMeta>
+    </BaseCard>
   );
 });
