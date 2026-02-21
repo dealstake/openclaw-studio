@@ -28,15 +28,32 @@ export const BaseCard = React.memo(function BaseCard({
   isHoverable = true,
   className,
   children,
+  onClick,
   ...props
 }: BaseCardProps) {
+  const isInteractive = !!onClick;
   return (
     <div
+      role={isInteractive ? "button" : undefined}
+      tabIndex={isInteractive ? 0 : undefined}
+      onKeyDown={
+        isInteractive
+          ? (e: React.KeyboardEvent<HTMLDivElement>) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onClick?.(e as unknown as React.MouseEvent<HTMLDivElement>);
+              }
+            }
+          : undefined
+      }
+      onClick={onClick}
       className={cn(
-        "group/card relative transition-all duration-150",
+        "group/card relative transition-all duration-150 outline-none",
+        "focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-1 focus-visible:ring-offset-background",
         variantClasses[variant],
         isHoverable && !isSelected && "hover:bg-card/70 hover:border-border/80 hover:shadow-sm",
         isSelected && "ring-2 ring-primary/40 border-primary/30 bg-primary/5",
+        isInteractive && "cursor-pointer",
         className,
       )}
       {...props}
