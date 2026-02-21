@@ -176,7 +176,7 @@ const ArtifactRow = memo(function ArtifactRow({
         {fileIcon(file.mimeType)}
       </div>
       <div className="min-w-0 flex-1">
-        <div className="truncate text-[12px] font-medium leading-tight text-foreground group-hover:text-primary-text">
+        <div className="truncate text-[12px] font-medium leading-tight text-foreground transition-colors group-hover:text-primary-text">
           {file.name}
         </div>
         <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground">
@@ -391,7 +391,7 @@ export const ArtifactsPanel = memo(function ArtifactsPanel({ isSelected }: Artif
         <div className="mx-3 mb-2 flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-[11px] text-destructive">
           <AlertCircle className="h-3.5 w-3.5 shrink-0" />
           <span className="flex-1">{uploadError}</span>
-          <button type="button" onClick={() => setUploadError(null)} className="shrink-0 rounded p-0.5 hover:bg-destructive/20">
+          <button type="button" onClick={() => setUploadError(null)} className="shrink-0 rounded p-0.5 transition-colors hover:bg-destructive/20">
             <X className="h-3 w-3" />
           </button>
         </div>

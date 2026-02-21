@@ -31,7 +31,7 @@ export const SearchInput = memo(function SearchInput({
       {value && (
         <button
           type="button"
-          className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground/60 hover:text-foreground"
+          className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground/60 transition-colors hover:text-foreground"
           onClick={onClear ?? (() => onChange(""))}
           aria-label="Clear search"
         >

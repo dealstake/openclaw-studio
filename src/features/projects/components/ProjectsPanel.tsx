@@ -168,7 +168,7 @@ export const ProjectsPanel = memo(function ProjectsPanel({
           {searchQuery && (
             <button
               type="button"
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground/60 hover:text-foreground"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground/60 transition-colors hover:text-foreground"
               onClick={() => { handleSearchChange(""); searchInputRef.current?.focus(); }}
               aria-label="Clear search"
             >

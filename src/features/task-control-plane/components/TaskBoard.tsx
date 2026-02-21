@@ -127,7 +127,7 @@ function Column({
               </p>
               <div className="flex items-center gap-1">
                 <PanelIconButton
-                  className={`border-border/70 bg-background/60 hover:bg-background hover:text-foreground ${card.description ? "" : "opacity-60"}`}
+                  className={`border-border/70 bg-background/60 transition-colors hover:bg-background hover:text-foreground ${card.description ? "" : "opacity-60"}`}
                   aria-label={`View details for ${card.id}`}
                   data-testid={`task-control-card-description-${card.id}`}
                   onClick={() => onOpenDetails(card)}

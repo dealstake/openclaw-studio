@@ -152,7 +152,7 @@ export const ContextPanel = memo(function ContextPanel({
           <div role="tabpanel" className="flex h-full w-full flex-col items-center justify-center gap-2 text-muted-foreground">
             <Maximize2 className="h-5 w-5" />
             <span className="text-xs">Viewing in expanded mode</span>
-            <button type="button" onClick={onExpandToggle} className="text-xs text-primary-text hover:underline">
+            <button type="button" onClick={onExpandToggle} className="text-xs text-primary-text transition-colors hover:underline">
               Collapse
             </button>
           </div>

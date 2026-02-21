@@ -157,7 +157,7 @@ export const HistoryActivityFeed = React.memo(function HistoryActivityFeed({
         <button
           type="button"
           onClick={() => void loadEvents()}
-          className="flex items-center gap-1 text-xs text-primary-text hover:underline"
+          className="flex items-center gap-1 text-xs text-primary-text transition-colors hover:underline"
         >
           <RefreshCw className="h-3 w-3" />
           Retry

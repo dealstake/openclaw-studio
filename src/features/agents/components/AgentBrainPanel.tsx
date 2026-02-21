@@ -346,7 +346,7 @@ export const AgentBrainPanel = memo(function AgentBrainPanel({
               )}
               <button
                 type="button"
-                className="flex-none rounded p-0.5 text-muted-foreground hover:text-foreground"
+                className="flex-none rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground"
                 onClick={closeSearch}
                 aria-label="Close search"
               >

@@ -69,7 +69,7 @@ export const WorkspaceFlatView = memo(function WorkspaceFlatView({
           {filter && (
             <button
               type="button"
-              className="flex h-4 w-4 items-center justify-center rounded text-muted-foreground hover:text-foreground"
+              className="flex h-4 w-4 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground"
               onClick={() => {
                 setFilter("");
                 setActiveIndex(-1);
