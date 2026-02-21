@@ -6,8 +6,6 @@ import {
   FolderGit2,
   Plus,
   RefreshCw,
-  Search,
-  X,
 } from "lucide-react";
 import type { ProjectDetails } from "../lib/parseProject";
 import { ProjectCard } from "./ProjectCard";
@@ -18,6 +16,10 @@ import { useProjects } from "../hooks/useProjects";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import { PanelIconButton } from "@/components/PanelIconButton";
 import { SectionLabel } from "@/components/SectionLabel";
+import { PanelToolbar } from "@/components/ui/PanelToolbar";
+import { FilterPillGroup } from "@/components/ui/FilterPillGroup";
+import type { FilterOption } from "@/components/ui/FilterPillGroup";
+import { PanelSearchInput } from "@/components/ui/PanelSearchInput";
 import { STATUS_CONFIG, STATUS_KEYS } from "../lib/constants";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -56,7 +58,7 @@ export const ProjectsPanel = memo(function ProjectsPanel({
 }: ProjectsPanelProps) {
   const [showWizard, setShowWizard] = useState(false);
   const [archiveTarget, setArchiveTarget] = useState<ProjectEntry | null>(null);
-  const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [editingProjectDoc, setEditingProjectDoc] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
@@ -72,7 +74,6 @@ export const ProjectsPanel = memo(function ProjectsPanel({
       return () => cancelAnimationFrame(id);
     }
   }, [requestCreateProject]);
-  const searchInputRef = useRef<HTMLInputElement>(null);
   const { projects, loading, error, refresh, changeStatus, archive, buildingCount, getQueuePosition } =
     useProjects(agentId, client, { isTabActive, eventTick });
 
@@ -95,15 +96,24 @@ export const ProjectsPanel = memo(function ProjectsPanel({
     return counts;
   }, [projects]);
 
-  // Only show filter buttons for statuses that have projects
-  const activeStatuses = useMemo(
-    () => STATUS_KEYS.filter((k) => (statusCounts[k] ?? 0) > 0),
-    [statusCounts],
-  );
+  // Build FilterPillGroup options from status counts
+  const filterOptions = useMemo<FilterOption[]>(() => {
+    const opts: FilterOption[] = [
+      { value: "all", label: "All", count: projects.length },
+    ];
+    for (const key of STATUS_KEYS) {
+      const count = statusCounts[key] ?? 0;
+      if (count > 0) {
+        const cfg = STATUS_CONFIG[key];
+        if (cfg) opts.push({ value: key, label: cfg.label, count });
+      }
+    }
+    return opts;
+  }, [projects.length, statusCounts]);
 
   const filteredProjects = useMemo(() => {
     let result = projects;
-    if (statusFilter) result = result.filter((p) => p.statusEmoji === statusFilter);
+    if (statusFilter !== "all") result = result.filter((p) => p.statusEmoji === statusFilter);
     if (debouncedQuery.trim()) {
       const q = debouncedQuery.trim().toLowerCase();
       result = result.filter((p) =>
@@ -126,7 +136,7 @@ export const ProjectsPanel = memo(function ProjectsPanel({
           </SectionLabel>
           {!loading && projects.length > 0 && (
             <span className="font-mono text-[10px] text-muted-foreground/60">
-              {statusFilter ? `${filteredProjects.length}/${projects.length}` : projects.length}
+              {statusFilter !== "all" ? `${filteredProjects.length}/${projects.length}` : projects.length}
             </span>
           )}
         </div>
@@ -153,66 +163,24 @@ export const ProjectsPanel = memo(function ProjectsPanel({
         </div>
       </div>
 
-      {/* Search */}
-      {projects.length > 5 && (
-        <div className="relative">
-          <Search className="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground/60" />
-          <input
-            ref={searchInputRef}
-            type="text"
-            placeholder="Search projects…"
-            value={searchQuery}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            className="w-full rounded-md border border-border/60 bg-card/50 py-1.5 pl-7 pr-7 font-mono text-[11px] text-foreground placeholder:text-muted-foreground/40 focus:border-border focus:outline-none focus:ring-1 focus:ring-primary/30"
-          />
-          {searchQuery && (
-            <button
-              type="button"
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground/60 transition-colors hover:text-foreground"
-              onClick={() => { handleSearchChange(""); searchInputRef.current?.focus(); }}
-              aria-label="Clear search"
-            >
-              <X className="h-3 w-3" />
-            </button>
+      {/* Toolbar: Search + Filters */}
+      {projects.length > 0 && (
+        <PanelToolbar className="rounded-lg border-0 px-0 py-0">
+          {projects.length > 5 && (
+            <PanelSearchInput
+              value={searchQuery}
+              onChange={handleSearchChange}
+              placeholder="Search projects…"
+            />
           )}
-        </div>
-      )}
-
-      {/* Status Filters */}
-      {activeStatuses.length > 1 && (
-        <div className="flex flex-wrap items-center gap-1">
-          <button
-            type="button"
-            className={`rounded-md border px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] transition ${
-              statusFilter === null
-                ? "border-primary/40 bg-primary/10 text-foreground"
-                : "border-border/60 bg-card/50 text-muted-foreground hover:border-border hover:text-foreground"
-            }`}
-            onClick={() => setStatusFilter(null)}
-          >
-            All{projects.length > 0 ? ` ${projects.length}` : ""}
-          </button>
-          {activeStatuses.map((emoji) => {
-            const config = STATUS_CONFIG[emoji];
-            if (!config) return null;
-            const isActive = statusFilter === emoji;
-            const count = statusCounts[emoji] ?? 0;
-            return (
-              <button
-                key={emoji}
-                type="button"
-                className={`rounded-md border px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] transition ${
-                  isActive
-                    ? `${config.colors}`
-                    : "border-border/60 bg-card/50 text-muted-foreground hover:border-border hover:text-foreground"
-                }`}
-                onClick={() => setStatusFilter(isActive ? null : emoji)}
-              >
-                {config.label}{count > 0 ? ` ${count}` : ""}
-              </button>
-            );
-          })}
-        </div>
+          {filterOptions.length > 2 && (
+            <FilterPillGroup
+              options={filterOptions}
+              value={statusFilter}
+              onChange={setStatusFilter}
+            />
+          )}
+        </PanelToolbar>
       )}
 
       {/* Loading Skeletons */}
@@ -251,7 +219,7 @@ export const ProjectsPanel = memo(function ProjectsPanel({
       {/* Filtered empty */}
       {!loading && !error && projects.length > 0 && filteredProjects.length === 0 && (
         <div className="py-6 text-center font-mono text-xs text-muted-foreground/60">
-          No {STATUS_CONFIG[statusFilter!]?.label ?? ""} projects
+          No {statusFilter !== "all" ? (STATUS_CONFIG[statusFilter]?.label ?? "") + " " : "matching "}projects
         </div>
       )}
 
