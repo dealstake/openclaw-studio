@@ -52,7 +52,7 @@ export const CompactActivityCard = React.memo(function CompactActivityCard({
         <span className="shrink-0 text-base leading-none">{icon}</span>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
-            <span className="truncate text-xs font-medium text-foreground">
+            <span className="truncate text-xs font-medium text-foreground" title={title}>
               {title}
             </span>
             {badge && (
@@ -66,7 +66,7 @@ export const CompactActivityCard = React.memo(function CompactActivityCard({
               </span>
             )}
           </div>
-          <p className="truncate text-[11px] text-muted-foreground">{subtitle}</p>
+          <p className="truncate text-[11px] text-muted-foreground" title={subtitle}>{subtitle}</p>
         </div>
         <span
           className={cn(

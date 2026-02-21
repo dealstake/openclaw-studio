@@ -102,7 +102,7 @@ export const FileViewer = memo(function FileViewer({
           <ArrowLeft className="h-3.5 w-3.5" />
         </PanelIconButton>
         <div className="min-w-0 flex-1">
-          <div className="truncate text-xs font-medium text-foreground">
+          <div className="truncate text-xs font-medium text-foreground" title={file.path}>
             {file.path}
           </div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">

@@ -53,7 +53,7 @@ const SessionItem = memo(function SessionItem({
     >
       <MessageSquare className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[13px] font-medium leading-tight">
+        <p className="truncate text-[13px] font-medium leading-tight" title={session.displayName}>
           {session.displayName}
         </p>
         <p className="mt-0.5 truncate text-[11px] text-muted-foreground">

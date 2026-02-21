@@ -64,7 +64,7 @@ export const EntryRow = memo(function EntryRow({
       <EntryIconEl entry={entry} />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
-          <span className="truncate text-xs font-medium text-foreground">{entry.name}</span>
+          <span className="truncate text-xs font-medium text-foreground" title={entry.name}>{entry.name}</span>
           {statusBadge ? (
             <span
               className={`flex-shrink-0 text-[10px] ${statusBadge.color}`}

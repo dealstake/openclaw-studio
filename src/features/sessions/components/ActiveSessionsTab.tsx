@@ -1,8 +1,9 @@
 "use client";
 
 import { memo } from "react";
+import { MonitorSmartphone } from "lucide-react";
 import { SearchInput } from "@/components/SearchInput";
-import { EmptyStatePanel } from "@/features/agents/components/EmptyStatePanel";
+import { Skeleton } from "@/components/Skeleton";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import type { SessionEntry } from "./SessionsPanel";
 import { SessionCard } from "./SessionCard";
@@ -64,13 +65,20 @@ export const ActiveSessionsTab = memo(function ActiveSessionsTab({
       {loading && sessions.length === 0 ? (
         <div className="flex flex-col gap-2">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="h-[72px] animate-pulse rounded-md border border-border/50 bg-muted/20" />
+            <div key={i} className="flex flex-col gap-2 rounded-md border border-border/50 p-3">
+              <Skeleton className="h-3.5 w-32" />
+              <Skeleton className="h-3 w-48" />
+              <Skeleton className="h-3 w-20" />
+            </div>
           ))}
         </div>
       ) : null}
 
       {!loading && !error && sessions.length === 0 ? (
-        <EmptyStatePanel title={activeSearch ? "No matching sessions." : "No sessions found."} compact className="p-3 text-xs" />
+        <div className="flex flex-col items-center justify-center gap-2 py-12 text-muted-foreground">
+          <MonitorSmartphone className="h-5 w-5" />
+          <p className="text-xs">{activeSearch ? "No matching sessions." : "No active sessions."}</p>
+        </div>
       ) : null}
 
       {sessions.length > 0 ? (

@@ -71,7 +71,7 @@ const JobRow = memo(function JobRow({
           <ChevronRight
             className={`h-3 w-3 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-90" : ""}`}
           />
-          <span className="flex-1 truncate text-xs font-medium text-foreground min-w-[100px]">
+          <span className="flex-1 truncate text-xs font-medium text-foreground min-w-[100px]" title={job.jobName}>
             {job.jobName}
           </span>
           <span className="text-[10px] text-muted-foreground">{job.totalRuns} runs</span>
@@ -121,7 +121,7 @@ const JobRow = memo(function JobRow({
                 {formatDuration(run.durationMs ?? 0)}
               </span>
               {run.error && (
-                <span className="truncate text-[10px] text-red-400">{run.error}</span>
+                <span className="truncate text-[10px] text-red-400" title={run.error}>{run.error}</span>
               )}
             </div>
           ))}

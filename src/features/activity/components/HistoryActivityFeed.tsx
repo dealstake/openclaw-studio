@@ -2,7 +2,8 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { Loader2, AlertCircle, RefreshCw } from "lucide-react";
+import { AlertCircle, RefreshCw, History } from "lucide-react";
+import { Skeleton } from "@/components/Skeleton";
 import { CompactActivityCard } from "./CompactActivityCard";
 import { ExpandedTranscriptView } from "./ExpandedTranscriptView";
 import type { ActivityEvent } from "../lib/activityTypes";
@@ -140,9 +141,17 @@ export const HistoryActivityFeed = React.memo(function HistoryActivityFeed({
 
   if (loading && events.length === 0) {
     return (
-      <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" />
-        <span className="text-xs">Loading history…</span>
+      <div className="flex flex-col gap-3 px-3 py-4">
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="flex items-center gap-3 rounded-md p-2">
+            <Skeleton className="h-8 w-8 rounded-full" />
+            <div className="flex flex-1 flex-col gap-1.5">
+              <Skeleton className="h-3 w-40" />
+              <Skeleton className="h-2.5 w-24" />
+            </div>
+            <Skeleton className="h-5 w-14 rounded-full" />
+          </div>
+        ))}
       </div>
     );
   }
@@ -168,8 +177,10 @@ export const HistoryActivityFeed = React.memo(function HistoryActivityFeed({
 
   if (events.length === 0) {
     return (
-      <div className="py-8 text-center text-xs text-muted-foreground">
-        No activity history yet
+      <div className="flex flex-col items-center justify-center gap-2 py-12 text-muted-foreground">
+        <History className="h-5 w-5" />
+        <p className="text-xs">No activity history yet</p>
+        <p className="text-[10px]">Cron runs and sub-agent completions will appear here</p>
       </div>
     );
   }

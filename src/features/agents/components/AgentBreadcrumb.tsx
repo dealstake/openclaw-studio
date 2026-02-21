@@ -78,7 +78,7 @@ export const AgentBreadcrumb = memo(function AgentBreadcrumb({
           avatarUrl={selected.avatarUrl}
           size={20}
         />
-        <span className="max-w-[140px] truncate text-sm font-semibold text-foreground">
+        <span className="max-w-[140px] truncate text-sm font-semibold text-foreground" title={selected.name || selected.agentId}>
           {selected.name || selected.agentId}
         </span>
         <span

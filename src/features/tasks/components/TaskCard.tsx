@@ -66,7 +66,7 @@ export const TaskCard = memo(function TaskCard({
       {/* Title row: status dot + name + toggle */}
       <CardHeader>
         <span className={`h-2 w-2 shrink-0 rounded-full ${dotClass}`} />
-        <span className="min-w-0 flex-1 truncate font-mono text-[11px] font-semibold tracking-wide text-foreground">
+        <span className="min-w-0 flex-1 truncate font-mono text-[11px] font-semibold tracking-wide text-foreground" title={task.name}>
           {task.name}
         </span>
         {/* Persistent toggle — green when enabled, grey when disabled */}

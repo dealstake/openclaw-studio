@@ -2,6 +2,7 @@
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useVisibilityRefresh } from "@/hooks/useVisibilityRefresh";
+import { Skeleton } from "@/components/Skeleton";
 import {
   File,
   FileCode,
@@ -17,6 +18,7 @@ import {
   Pin,
   Upload,
   X,
+  PackageOpen,
 } from "lucide-react";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -176,7 +178,7 @@ const ArtifactRow = memo(function ArtifactRow({
         {fileIcon(file.mimeType)}
       </div>
       <div className="min-w-0 flex-1">
-        <div className="truncate text-[12px] font-medium leading-tight text-foreground transition-colors group-hover:text-primary-text">
+        <div className="truncate text-[12px] font-medium leading-tight text-foreground transition-colors group-hover:text-primary-text" title={file.name}>
           {file.name}
         </div>
         <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
@@ -405,11 +407,16 @@ export const ArtifactsPanel = memo(function ArtifactsPanel({ isSelected }: Artif
         onDragLeave={handleDragLeave}
       >
         {loading && !files.length ? (
-          <div className="flex items-center justify-center py-12">
-            <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground" />
-            <span className="ml-2 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
-              Loading artifacts…
-            </span>
+          <div className="flex flex-col gap-3">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="flex items-center gap-3 rounded-md p-2">
+                <Skeleton className="h-8 w-8 rounded-md" />
+                <div className="flex flex-1 flex-col gap-1.5">
+                  <Skeleton className="h-3 w-32" />
+                  <Skeleton className="h-2.5 w-20" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : error && !files.length ? (
           <div className="flex flex-col items-center justify-center gap-2 py-12">
@@ -422,6 +429,12 @@ export const ArtifactsPanel = memo(function ArtifactsPanel({ isSelected }: Artif
             >
               Retry
             </button>
+          </div>
+        ) : files.length === 0 ? (
+          <div className="flex flex-col items-center justify-center gap-2 py-12 text-muted-foreground">
+            <PackageOpen className="h-5 w-5" />
+            <p className="text-xs">No artifacts yet</p>
+            <p className="text-[10px]">Upload files or let agents generate them</p>
           </div>
         ) : (
           <div className="flex flex-col gap-2.5">

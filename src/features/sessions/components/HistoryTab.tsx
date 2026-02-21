@@ -1,8 +1,9 @@
 "use client";
 
 import { memo, useCallback } from "react";
-import { ArrowDownAZ, ArrowUpAZ } from "lucide-react";
+import { ArrowDownAZ, ArrowUpAZ, ScrollText } from "lucide-react";
 import { SearchInput } from "@/components/SearchInput";
+import { Skeleton } from "@/components/Skeleton";
 import type { TranscriptEntry, TranscriptSearchResult } from "@/features/sessions/hooks/useTranscripts";
 import {
   TRANSCRIPT_TYPE_LABELS,
@@ -167,17 +168,24 @@ export const HistoryTab = memo(function HistoryTab({
           {transcriptsLoading && transcripts.length === 0 ? (
             <div className="flex flex-col gap-2">
               {[0, 1, 2, 3].map((i) => (
-                <div key={i} className="h-[72px] animate-pulse rounded-md border border-border/50 bg-muted/20" />
+                <div key={i} className="flex flex-col gap-2 rounded-md border border-border/50 p-3">
+                  <Skeleton className="h-3.5 w-32" />
+                  <Skeleton className="h-3 w-48" />
+                  <Skeleton className="h-3 w-20" />
+                </div>
               ))}
             </div>
           ) : null}
 
           {!transcriptsLoading && !transcriptsError && filteredTranscripts.length === 0 ? (
-            <EmptyStatePanel
-              title={transcriptFilter !== "all" ? `No ${TRANSCRIPT_TYPE_LABELS[transcriptFilter]} transcripts found.` : "No session history found."}
-              compact
-              className="p-3 text-xs"
-            />
+            <div className="flex flex-col items-center justify-center gap-2 py-12 text-muted-foreground">
+              <ScrollText className="h-5 w-5" />
+              <p className="text-xs">
+                {transcriptFilter !== "all"
+                  ? `No ${TRANSCRIPT_TYPE_LABELS[transcriptFilter]} transcripts found.`
+                  : "No session history found."}
+              </p>
+            </div>
           ) : null}
 
           {filteredTranscripts.length > 0 ? (
