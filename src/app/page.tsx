@@ -9,6 +9,7 @@ import {
   AgentSettingsPanel,
 } from "@/features/agents/components/AgentInspectPanels";
 import { SessionHistorySidebar } from "@/features/sessions/components/SessionHistorySidebar";
+import { AppSidebar, type ManagementTab } from "@/layout/AppSidebar";
 import type { BreadcrumbAgent } from "@/features/agents/components/AgentBreadcrumb";
 import { HeaderBar } from "@/features/agents/components/HeaderBar";
 import { ConnectionPanel } from "@/features/agents/components/ConnectionPanel";
@@ -372,6 +373,13 @@ const AgentStudioPage = () => {
   const focusedAgentId = focusedAgent?.agentId ?? null;
 
   // Command Palette (Cmd+K)
+  const handleManagementNav = useCallback((tab: ManagementTab) => {
+    if (tab === "settings" && focusedAgent && !settingsAgentId) {
+      setSettingsAgentId(focusedAgent.agentId);
+    }
+    setExpandedTab(tab as ExpandableTab);
+  }, [focusedAgent, settingsAgentId, setSettingsAgentId]);
+
   const handleCmdNavTab = useCallback((tab: ContextTab | "sessions" | "usage" | "channels" | "cron" | "settings") => {
     const contextTabs = new Set<string>(["projects", "tasks", "brain", "workspace"]);
     if (contextTabs.has(tab)) {
@@ -1757,9 +1765,9 @@ const AgentStudioPage = () => {
                 </div>
               </div>
             ) : null}
-            {/* Session history sidebar — desktop only, collapsible */}
+            {/* App sidebar — desktop only, collapsible: management nav + session history */}
             <div className={`${showSidebarInline ? "flex flex-[0_0_auto] min-h-0" : "hidden"}`}>
-              <SessionHistorySidebar
+              <AppSidebar
                 client={client}
                 status={status}
                 agentId={focusedAgentId}
@@ -1768,6 +1776,8 @@ const AgentStudioPage = () => {
                 onNewSession={stableChatOnNewSession}
                 collapsed={sessionSidebarCollapsed}
                 onToggleCollapse={() => setSessionSidebarCollapsed((p) => !p)}
+                onManagementNav={handleManagementNav}
+                activeManagementTab={expandedTab && ["sessions", "usage", "channels", "cron", "settings"].includes(expandedTab) ? expandedTab as ManagementTab : null}
               />
             </div>
             <div
