@@ -8,6 +8,13 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import {
+  BaseCard,
+  CardTitle,
+  CardDescription,
+  CardBadge,
+  CardMeta,
+} from "@/components/ui/BaseCard";
 import { PRIORITY_COLORS, PRIORITY_DOT_FULL } from "../lib/constants";
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -47,35 +54,33 @@ export const ProjectPreviewCard = React.memo(function ProjectPreviewCard({
   const priorityLabel = config.priority.slice(2).trim(); // "P0", "P1", "P2"
 
   return (
-    <div
-      className={`rounded-xl border border-border bg-card shadow-lg p-4 space-y-3 ${className}`}
-    >
-      {/* Header: Name + badges */}
+    <BaseCard variant="compact" isHoverable={false} className={`space-y-3 ${className}`}>
+      {/* Header: Name + description */}
       <div className="space-y-1.5">
-        <h3 className="text-sm font-semibold text-foreground leading-tight">
+        <CardTitle className="font-semibold leading-tight">
           {config.name}
-        </h3>
-        <p className="text-xs text-muted-foreground leading-relaxed">
+        </CardTitle>
+        <CardDescription className="text-xs">
           {config.description}
-        </p>
+        </CardDescription>
       </div>
 
       {/* Badges row */}
-      <div className="flex items-center gap-2 flex-wrap">
+      <CardMeta className="flex-wrap">
         {/* Priority badge */}
-        <span
-          className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-semibold ${PRIORITY_COLORS[config.priority] ?? "bg-muted text-muted-foreground"}`}
+        <CardBadge
+          className={`gap-1.5 rounded-full border-0 px-2 ${PRIORITY_COLORS[config.priority] ?? "bg-muted text-muted-foreground"}`}
         >
           <span
             className={`h-1.5 w-1.5 rounded-full ${PRIORITY_DOT_FULL[config.priority] ?? "bg-muted-foreground"}`}
           />
           {priorityLabel}
-        </span>
+        </CardBadge>
 
         {/* Type badge */}
-        <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground capitalize">
+        <CardBadge className="rounded-full border-0 bg-muted font-medium normal-case tracking-normal text-muted-foreground capitalize">
           {config.type}
-        </span>
+        </CardBadge>
 
         {/* Stats */}
         <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground ml-auto">
@@ -86,7 +91,7 @@ export const ProjectPreviewCard = React.memo(function ProjectPreviewCard({
           <ListChecks className="h-3 w-3" />
           {totalTasks} tasks
         </span>
-      </div>
+      </CardMeta>
 
       {/* Collapsible phases */}
       <Collapsible open={phasesOpen} onOpenChange={setPhasesOpen}>
@@ -138,6 +143,6 @@ export const ProjectPreviewCard = React.memo(function ProjectPreviewCard({
           Revise
         </button>
       </div>
-    </div>
+    </BaseCard>
   );
 });
