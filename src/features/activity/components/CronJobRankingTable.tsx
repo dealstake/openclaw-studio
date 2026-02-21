@@ -37,17 +37,19 @@ const JobRow = memo(function JobRow({
   const [open, setOpen] = useState(false);
   const [runs, setRuns] = useState<CronRunEntry[]>([]);
   const [loadingRuns, setLoadingRuns] = useState(false);
+  const [runError, setRunError] = useState<string | null>(null);
   const fetchedRef = useRef(false);
 
   const loadRuns = useCallback(async () => {
     if (fetchedRef.current) return;
     fetchedRef.current = true;
     setLoadingRuns(true);
+    setRunError(null);
     try {
       const result = await fetchCronRuns(client, job.jobId, 10);
       setRuns(result);
-    } catch {
-      // silently fail — row just stays empty
+    } catch (err) {
+      setRunError(err instanceof Error ? err.message : "Failed to load runs");
     } finally {
       setLoadingRuns(false);
     }
@@ -66,6 +68,7 @@ const JobRow = memo(function JobRow({
       <CollapsibleTrigger asChild>
         <button
           type="button"
+          aria-label={`${open ? "Collapse" : "Expand"} ${job.jobName}`}
           className="flex w-full flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-border/60 bg-card/50 px-3 py-2 text-left transition hover:bg-muted/30"
         >
           <ChevronRight
@@ -105,7 +108,10 @@ const JobRow = memo(function JobRow({
               <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
             </div>
           )}
-          {!loadingRuns && runs.length === 0 && (
+          {!loadingRuns && runError && (
+            <p className="text-xs text-red-400 py-1">Error: {runError}</p>
+          )}
+          {!loadingRuns && !runError && runs.length === 0 && (
             <p className="text-xs text-muted-foreground py-1">No run history.</p>
           )}
           {runs.map((run) => (
