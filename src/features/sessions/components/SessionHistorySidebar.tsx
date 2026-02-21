@@ -1,5 +1,6 @@
 import { memo, useCallback, useEffect } from "react";
-import { Plus, Search, MessageSquare, ChevronLeft } from "lucide-react";
+import { Plus, MessageSquare, ChevronLeft } from "lucide-react";
+import { SearchInput } from "@/components/SearchInput";
 import { formatRelativeTime } from "@/lib/text/time";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { useSessionHistory, type SessionHistoryEntry } from "../hooks/useSessionHistory";
@@ -108,16 +109,11 @@ export const SessionHistorySidebar = memo(function SessionHistorySidebar({
 
       {/* Search */}
       <div className="px-3 py-2">
-        <div className="flex items-center gap-2 rounded-md border border-border/50 bg-background px-2 py-1.5">
-          <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search sessions…"
-            className="w-full bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground/60 focus:outline-none"
-          />
-        </div>
+        <SearchInput
+          value={search}
+          onChange={setSearch}
+          placeholder="Search sessions…"
+        />
       </div>
 
       {/* Session list */}

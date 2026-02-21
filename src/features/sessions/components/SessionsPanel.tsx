@@ -1,7 +1,8 @@
 "use client";
 
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowDownAZ, ArrowUpAZ, RefreshCw, Search, X } from "lucide-react";
+import { ArrowDownAZ, ArrowUpAZ, RefreshCw } from "lucide-react";
+import { SearchInput } from "@/components/SearchInput";
 import { useTranscripts, useTranscriptSearch } from "@/features/sessions/hooks/useTranscripts";
 import type { TranscriptEntry, TranscriptSearchResult } from "@/features/sessions/hooks/useTranscripts";
 import {
@@ -304,26 +305,12 @@ export const SessionsPanel = memo(function SessionsPanel({
       {/* ─── Active tab ─── */}
       <div className={`min-h-0 flex-1 overflow-y-auto p-4 ${tab === "active" ? "" : "hidden"}`}>
         {/* Active search */}
-        <div className="relative mb-3 flex-shrink-0">
-          <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/60" />
-          <input
-            type="text"
-            className="w-full rounded-md border border-border/80 bg-card/70 py-1.5 pl-8 pr-8 font-mono text-[11px] text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:outline-none focus:ring-1 focus:ring-primary/20"
-            placeholder="Search active sessions…"
-            value={activeSearch}
-            onChange={(e) => setActiveSearch(e.target.value)}
-          />
-          {activeSearch && (
-            <button
-              type="button"
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground/60 hover:text-foreground"
-              onClick={() => setActiveSearch("")}
-              aria-label="Clear search"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          )}
-        </div>
+        <SearchInput
+          value={activeSearch}
+          onChange={setActiveSearch}
+          placeholder="Search active sessions…"
+          className="mb-3 flex-shrink-0"
+        />
 
         {error || actionError ? (
           <div className="mb-3 rounded-md border border-destructive bg-destructive px-3 py-2 text-xs text-destructive-foreground">
@@ -370,26 +357,13 @@ export const SessionsPanel = memo(function SessionsPanel({
       <div className={`min-h-0 flex-1 flex flex-col overflow-hidden ${tab === "history" ? "" : "hidden"}`}>
         {/* Search input */}
         {agentId ? (
-          <div className="relative mx-4 mt-4 mb-3 flex-shrink-0">
-            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/60" />
-            <input
-              type="text"
-              className="w-full rounded-md border border-border/80 bg-card/70 py-1.5 pl-8 pr-8 font-mono text-[11px] text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:outline-none focus:ring-1 focus:ring-primary/20"
-              placeholder="Search transcripts…"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground/60 hover:text-foreground"
-                onClick={clearSearch}
-                aria-label="Clear search"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            )}
-          </div>
+          <SearchInput
+            value={searchQuery}
+            onChange={setSearchQuery}
+            onClear={clearSearch}
+            placeholder="Search transcripts…"
+            className="mx-4 mt-4 mb-3 flex-shrink-0"
+          />
         ) : null}
 
         {/* Search results */}
