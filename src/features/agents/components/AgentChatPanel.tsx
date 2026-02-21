@@ -66,7 +66,7 @@ const ChatEmptyState = memo(function ChatEmptyState({
             key={s.text}
             type="button"
             onClick={() => onSend(s.prompt)}
-            className="rounded-2xl border border-border/50 bg-transparent px-4 py-3 text-left text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            className="rounded-2xl border border-border/50 bg-transparent px-4 py-3.5 text-left text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground min-h-[44px]"
           >
             {s.text}
           </button>
@@ -423,6 +423,25 @@ const AgentChatComposer = memo(function AgentChatComposer({
     };
   }, []);
 
+  // Mobile keyboard awareness: adjust composer position when virtual keyboard opens/closes
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const handler = () => {
+      // When keyboard opens, visualViewport.height shrinks.
+      // Apply a CSS custom property so the composer stays above the keyboard.
+      const offset = window.innerHeight - vv.height;
+      document.documentElement.style.setProperty("--keyboard-offset", `${offset}px`);
+    };
+    vv.addEventListener("resize", handler);
+    vv.addEventListener("scroll", handler);
+    return () => {
+      vv.removeEventListener("resize", handler);
+      vv.removeEventListener("scroll", handler);
+      document.documentElement.style.removeProperty("--keyboard-offset");
+    };
+  }, []);
+
   const sendDisabled = !canSend || running || isEmpty;
 
   const tokenPct = tokenUsed && tokenLimit && tokenLimit > 0
@@ -430,7 +449,7 @@ const AgentChatComposer = memo(function AgentChatComposer({
     : null;
 
   return (
-    <div className="absolute inset-x-0 bottom-0 z-10 pb-[calc(12px+env(safe-area-inset-bottom))] px-4">
+    <div className="absolute inset-x-0 bottom-0 z-10 px-4" style={{ paddingBottom: `calc(12px + env(safe-area-inset-bottom) + var(--keyboard-offset, 0px))` }}>
       {/* Gradient fade above composer */}
       <div className="pointer-events-none h-24 bg-gradient-to-t from-background via-background/80 to-transparent" />
       {/* Model / Thinking selectors above pill */}
@@ -480,7 +499,7 @@ const AgentChatComposer = memo(function AgentChatComposer({
         {/* Attach button placeholder */}
         <button
           type="button"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted sm:h-9 sm:w-9"
           aria-label="Attach file"
           disabled
         >
@@ -501,7 +520,7 @@ const AgentChatComposer = memo(function AgentChatComposer({
 
         {running ? (
           <button
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50 sm:h-8 sm:w-8"
             type="button"
             aria-label="Stop agent"
             onClick={onStop}
@@ -511,7 +530,7 @@ const AgentChatComposer = memo(function AgentChatComposer({
           </button>
         ) : (
           <button
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50 sm:h-8 sm:w-8"
             type="button"
             aria-label="Send message"
             onClick={handleClickSend}

@@ -68,26 +68,25 @@ export function useSessionHistory(client: GatewayClient, status: GatewayStatus, 
       });
       const raw = result.sessions ?? [];
       // Filter to sessions belonging to this agent (key starts with agentId/ or is agentId:main)
+      // Session keys use "agent:<agentId>:<sessionId>" format (e.g. "agent:alex:main")
+      const mainKey = `agent:${agentId}:main`;
+      const agentPrefix = `agent:${agentId}:`;
       const agentSessions = raw
         .filter((s) => {
           const key = s.key;
-          return (
-            key === `${agentId}:main` ||
-            key.startsWith(`${agentId}/`) ||
-            key.startsWith(`${agentId}:`)
-          );
+          return key.startsWith(agentPrefix);
         })
         .filter((s) => {
           // Exclude cron/subagent sessions — only show user-initiated sessions
           const key = s.key;
-          return !key.includes("/cron-") && !key.includes("/sub-");
+          return !key.includes(":cron:") && !key.includes(":sub:");
         })
         .map((s): SessionHistoryEntry => ({
           key: s.key,
-          displayName: s.displayName || (s.key === `${agentId}:main` ? "Main Session" : s.key.split("/").pop() || s.key),
+          displayName: s.displayName || (s.key === mainKey ? "Main Session" : s.key.slice(agentPrefix.length) || s.key),
           updatedAt: s.updatedAt ?? 0,
           messageCount: s.messageCount ?? 0,
-          isMain: s.key === `${agentId}:main`,
+          isMain: s.key === mainKey,
         }))
         .sort((a, b) => b.updatedAt - a.updatedAt);
 

@@ -1787,7 +1787,7 @@ const AgentStudioPage = () => {
                               dispatch({ type: "selectAgent", agentId: agent.agentId });
                               setMobileSessionDrawerOpen(false);
                             }}
-                            className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[13px] font-medium transition-colors ${
+                            className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2.5 text-left text-[13px] font-medium transition-colors min-h-[44px] ${
                               agent.agentId === focusedAgentId
                                 ? "bg-accent text-accent-foreground"
                                 : "text-foreground/80 hover:bg-muted"
@@ -1818,7 +1818,7 @@ const AgentStudioPage = () => {
                           handleManagementNav(item.value);
                           setMobileSessionDrawerOpen(false);
                         }}
-                        className={`flex w-full items-center rounded-lg px-3 py-2 text-left text-[13px] font-medium transition-colors ${
+                        className={`flex w-full items-center rounded-lg px-3 py-2.5 text-left text-[13px] font-medium transition-colors min-h-[44px] ${
                           managementView === item.value
                             ? "bg-accent text-accent-foreground"
                             : "text-foreground/80 hover:bg-muted"
@@ -2246,10 +2246,20 @@ const AgentStudioPage = () => {
                 />
               </div>
             )}
-            {/* Context Panel: floating overlay — always fixed positioned */}
+            {/* Context Panel: floating overlay — bottom sheet on mobile, right panel on desktop */}
             <div
-              className={`fixed top-12 right-0 bottom-0 z-20 w-[360px] transform-gpu transition-transform duration-300 ease-out ${showContextInline || mobilePane === "context" ? "translate-x-0" : "translate-x-full"} bg-background/60 backdrop-blur-xl ring-1 ring-white/[0.06] min-h-0 overflow-hidden p-0 shadow-[-4px_0_24px_-6px_rgba(0,0,0,0.3)]`}
+              className={
+                isMobileLayout
+                  ? `fixed inset-x-0 bottom-0 z-40 h-[70vh] rounded-t-2xl transform-gpu transition-transform duration-300 ease-out ${mobilePane === "context" ? "translate-y-0" : "translate-y-full"} bg-background/95 backdrop-blur-xl ring-1 ring-white/[0.06] min-h-0 overflow-hidden p-0 shadow-[0_-4px_24px_-6px_rgba(0,0,0,0.3)]`
+                  : `fixed top-12 right-0 bottom-0 z-20 w-[360px] transform-gpu transition-transform duration-300 ease-out ${showContextInline ? "translate-x-0" : "translate-x-full"} bg-background/60 backdrop-blur-xl ring-1 ring-white/[0.06] min-h-0 overflow-hidden p-0 shadow-[-4px_0_24px_-6px_rgba(0,0,0,0.3)]`
+              }
             >
+              {/* Bottom sheet drag handle — mobile only */}
+              {isMobileLayout && (
+                <div className="flex justify-center py-2" aria-hidden="true">
+                  <div className="h-1 w-10 rounded-full bg-muted-foreground/30" />
+                </div>
+              )}
               {contextMode === "files" ? (
                 <ArtifactsPanel isSelected />
               ) : (
