@@ -61,7 +61,7 @@ import type { ContextTab } from "@/features/context/components/ContextPanel";
 
 /** Extended tab type for expanded modal — includes management tabs not shown in the context panel */
 type ExpandableTab = ContextTab | "sessions" | "usage" | "channels" | "cron" | "settings";
-import { ContextTabCluster } from "@/features/context/components/ContextTabCluster";
+// ContextTabCluster is now integrated into HeaderBar on wide viewports
 import { PanelExpandModal } from "@/components/PanelExpandModal";
 import { ManagementDrawer } from "@/components/ManagementDrawer";
 import { ExpandedContext } from "@/features/context/lib/expandedContext";
@@ -1501,7 +1501,7 @@ const AgentStudioPage = () => {
   const breakpoint = useBreakpoint();
   const showSidebarInline = isDesktopOrAbove(breakpoint); // ≥1024px
   const showContextInline = isWide(breakpoint) && contextPanelOpen; // ≥1440px + user hasn't closed it
-  const isXlViewport = isWide(breakpoint); // activity drawer visibility
+  // isWide(breakpoint) used for context tab integration into header
   const isMobileLayout = isTabletOrBelow(breakpoint); // <1024px
 
   // Auto-hide header on scroll (desktop only)
@@ -1732,6 +1732,18 @@ const AgentStudioPage = () => {
             }}
             gatewayVersion={gatewayVersion}
             gatewayUptime={gatewayUptime}
+            showContextTabs={isWide(breakpoint)}
+            contextTab={contextTab}
+            contextPanelOpen={contextPanelOpen}
+            onContextTabClick={(tab) => {
+              if (contextPanelOpen && contextTab === tab) {
+                setContextPanelOpen(false);
+              } else {
+                setContextTab(tab);
+                setContextPanelOpen(true);
+              }
+            }}
+            onContextClose={() => setContextPanelOpen(false)}
           />
         </div>
 
@@ -2207,25 +2219,7 @@ const AgentStudioPage = () => {
                 </div>
               </div>
             )}
-            {/* Floating context tab cluster — top-right corner */}
-            {isWide(breakpoint) && (
-              <div className="fixed top-3 right-4 z-30">
-                <ContextTabCluster
-                  activeTab={contextTab}
-                  panelOpen={contextPanelOpen}
-                  onTabClick={(tab) => {
-                    if (contextPanelOpen && contextTab === tab) {
-                      // Clicking the active tab closes the panel
-                      setContextPanelOpen(false);
-                    } else {
-                      setContextTab(tab);
-                      setContextPanelOpen(true);
-                    }
-                  }}
-                  onClose={() => setContextPanelOpen(false)}
-                />
-              </div>
-            )}
+            {/* Context tab cluster is now integrated into HeaderBar on wide viewports */}
             {/* Context Panel: floating overlay — bottom sheet on mobile, right panel on desktop */}
             <div
               className={

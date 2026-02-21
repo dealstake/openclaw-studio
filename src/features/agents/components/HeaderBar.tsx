@@ -14,10 +14,16 @@ import {
   Settings,
   Plus,
   Wifi,
+  FolderKanban,
+  ListChecks,
+  Brain,
+  Activity,
+  X,
 } from "lucide-react";
 import { getCfIdentity, type CfIdentity } from "@/lib/cloudflare-auth";
 import { formatUptime } from "@/lib/text/time";
 import { AgentBreadcrumb, type BreadcrumbAgent } from "./AgentBreadcrumb";
+import type { ContextTab } from "@/features/context/components/ContextPanel";
 
 type HeaderBarProps = {
   status: GatewayStatus;
@@ -36,7 +42,27 @@ type HeaderBarProps = {
   onNewSession?: () => void;
   onOpenSettings?: () => void;
   running?: boolean;
+  /** Context tab cluster — unified into header on wide viewports */
+  showContextTabs?: boolean;
+  contextTab?: ContextTab;
+  contextPanelOpen?: boolean;
+  onContextTabClick?: (tab: ContextTab) => void;
+  onContextClose?: () => void;
 };
+
+/* ── Context tab items (for unified strip) ───────────────────────────── */
+
+const CONTEXT_TAB_ITEMS: Array<{
+  value: ContextTab;
+  label: string;
+  Icon: typeof FolderKanban;
+}> = [
+  { value: "projects", label: "Projects", Icon: FolderKanban },
+  { value: "tasks", label: "Tasks", Icon: ListChecks },
+  { value: "brain", label: "Brain", Icon: Brain },
+  { value: "workspace", label: "Files", Icon: FolderOpen },
+  { value: "activity", label: "Activity", Icon: Activity },
+];
 
 /* ── Connection status dot ───────────────────────────────────────────── */
 
@@ -215,6 +241,11 @@ export const HeaderBar = memo(function HeaderBar({
   gatewayUptime,
   onNewSession,
   onOpenSettings,
+  showContextTabs,
+  contextTab,
+  contextPanelOpen,
+  onContextTabClick,
+  onContextClose,
 }: HeaderBarProps) {
   const [identity, setIdentity] = useState<CfIdentity | null>(null);
   const { unreadCount } = useNotificationStore();
@@ -277,26 +308,83 @@ export const HeaderBar = memo(function HeaderBar({
         ) : null}
       </div>
 
-      {/* Right section */}
-      <div className="flex shrink-0 items-center gap-1.5">
-        {/* NotificationBell — hidden on mobile, shown in overflow instead */}
-        <div className="hidden sm:flex">
+      {/* Right section — unified strip on wide viewports */}
+      {showContextTabs ? (
+        <div
+          className="flex shrink-0 items-center gap-0.5 rounded-full bg-background/60 backdrop-blur-md px-1.5 py-1 ring-1 ring-white/[0.06] shadow-lg"
+          data-testid="unified-toolbar"
+        >
+          {/* Context tabs */}
+          {CONTEXT_TAB_ITEMS.map(({ value, label, Icon }) => {
+            const isActive = contextPanelOpen && contextTab === value;
+            return (
+              <button
+                key={value}
+                type="button"
+                onClick={() => onContextTabClick?.(value)}
+                className={`flex h-7 w-7 items-center justify-center rounded-full transition-colors ${
+                  isActive
+                    ? "bg-accent text-accent-foreground"
+                    : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                }`}
+                aria-label={label}
+                title={label}
+              >
+                <Icon className="h-3.5 w-3.5" />
+              </button>
+            );
+          })}
+          {contextPanelOpen && onContextClose && (
+            <>
+              <div className="mx-0.5 h-4 w-px bg-border/30" />
+              <button
+                type="button"
+                onClick={onContextClose}
+                className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+                aria-label="Close panel"
+                title="Close panel (⌘\)"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </>
+          )}
+          {/* Divider between context tabs and utility icons */}
+          <div className="mx-1 h-4 w-px bg-border/30" />
+          {/* Utility icons */}
           <NotificationBell />
-        </div>
-        <div className="hidden sm:flex">
           <ThemeToggle />
+          <OverflowMenu
+            onNewSession={onNewSession}
+            onOpenSettings={onOpenSettings}
+            onConnectionSettings={onConnectionSettings}
+            onFilesToggle={onFilesToggle}
+            filesActive={filesActive}
+            onOpenContext={onOpenContext}
+            unreadCount={unreadCount}
+            identity={identity}
+          />
         </div>
-        <OverflowMenu
-          onNewSession={onNewSession}
-          onOpenSettings={onOpenSettings}
-          onConnectionSettings={onConnectionSettings}
-          onFilesToggle={onFilesToggle}
-          filesActive={filesActive}
-          onOpenContext={onOpenContext}
-          unreadCount={unreadCount}
-          identity={identity}
-        />
-      </div>
+      ) : (
+        <div className="flex shrink-0 items-center gap-1.5">
+          {/* NotificationBell — hidden on mobile, shown in overflow instead */}
+          <div className="hidden sm:flex">
+            <NotificationBell />
+          </div>
+          <div className="hidden sm:flex">
+            <ThemeToggle />
+          </div>
+          <OverflowMenu
+            onNewSession={onNewSession}
+            onOpenSettings={onOpenSettings}
+            onConnectionSettings={onConnectionSettings}
+            onFilesToggle={onFilesToggle}
+            filesActive={filesActive}
+            onOpenContext={onOpenContext}
+            unreadCount={unreadCount}
+            identity={identity}
+          />
+        </div>
+      )}
     </div>
   );
 });
