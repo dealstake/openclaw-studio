@@ -205,6 +205,7 @@ export const ProjectsPanel = memo(function ProjectsPanel({
           icon={FolderKanban}
           title="No projects"
           description="Projects organize your agent's work into trackable goals"
+          action={{ label: "New Project", onClick: () => setShowWizard(true) }}
         />
       )}
 
