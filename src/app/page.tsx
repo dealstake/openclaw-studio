@@ -2217,7 +2217,7 @@ const AgentStudioPage = () => {
             )}
             {/* Trace Viewer overlay */}
             {viewingTrace && (
-              <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+              <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
                 <div className="h-[90vh] w-full max-w-6xl">
                   <TraceViewer
                     agentId={viewingTrace.agentId}
