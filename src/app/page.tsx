@@ -78,12 +78,9 @@ const UsagePanel = lazy(() => import("@/features/usage/components/UsagePanel").t
 import { CommandPalette } from "@/features/command-palette/components/CommandPalette";
 import { useCommandPalette } from "@/features/command-palette/hooks/useCommandPalette";
 import { WorkspaceExplorerPanel } from "@/features/workspace/components/WorkspaceExplorerPanel";
-import { ActivityDrawer } from "@/features/activity/components/ActivityDrawer";
 import { ActivityPanel } from "@/features/activity/components/ActivityPanel";
-import { addSystemEvent } from "@/features/activity/hooks/useLiveActivityStore";
 import { appendActivityParts, finalizeActivityMessage } from "@/features/activity/hooks/useActivityMessageStore";
 import { pushHeartbeatEntry } from "@/features/activity/hooks/useHeartbeatEntries";
-import { useTranscriptCapture } from "@/features/activity/hooks/useTranscriptCapture";
 import { TraceViewer } from "@/features/sessions/components/TraceViewer";
 import { useChannelsStatus } from "@/features/channels/hooks/useChannelsStatus";
 import { useAllSessions } from "@/features/sessions/hooks/useAllSessions";
@@ -467,8 +464,6 @@ const AgentStudioPage = () => {
   loadTasksRef.current = loadTasks;
 
   // Capture transcripts from completed cron/subagent sessions
-  useTranscriptCapture(focusedAgentId);
-
   const focusedAgentRef = useRef(focusedAgent);
   focusedAgentRef.current = focusedAgent;
   const focusedAgentRunning = focusedAgent?.status === "running";
@@ -1435,13 +1430,8 @@ const AgentStudioPage = () => {
       onHeartbeatEvent: (entry) => {
         pushHeartbeatEntry(entry);
       },
-      onSystemEvent: (event) => {
-        addSystemEvent({
-          id: `${event.kind}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-          icon: event.kind === "exec-approval" ? "🔐" : event.kind === "cron-schedule" ? "⏰" : "📋",
-          timestamp: Date.now(),
-          ...event,
-        });
+      onSystemEvent: () => {
+        // System events now routed via onActivityMessage to useActivityMessageStore
       },
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       onSubAgentLifecycle: (_sessionKey: string, _phase: string) => {
@@ -2009,7 +1999,6 @@ const AgentStudioPage = () => {
                 </Suspense>
               </ManagementDrawer>
 
-              <ActivityDrawer hidden={!isXlViewport} agentId={focusedAgentId} client={client} status={status} cronJobs={allCronJobs}>
               {focusedAgent ? (
                 <AgentChatPanel
                   agent={focusedAgent}
@@ -2046,7 +2035,6 @@ const AgentStudioPage = () => {
                   )}
                 </div>
               )}
-              </ActivityDrawer>
             </div>
             {/* Expanded panel modal */}
             {expandedTab && (
