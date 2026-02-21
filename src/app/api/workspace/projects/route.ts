@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 
 import { readWorkspaceFile } from "@/lib/workspace/resolve";
-import { isSidecarConfigured, sidecarGet } from "@/lib/workspace/sidecar";
+import { isSidecarConfigured } from "@/lib/workspace/sidecar";
 import { validateAgentId, handleApiError } from "@/lib/api/helpers";
 import { parseIndex } from "@/features/projects/lib/indexTable";
+import { readIndexContent, readProjectFileContent } from "@/lib/workspace/indexFile";
 import { getDb } from "@/lib/database";
 import * as projectsRepo from "@/lib/database/repositories/projectsRepo";
 import { importFromMarkdown } from "@/lib/database/repositories/projectsRepo";
@@ -42,7 +43,6 @@ export async function GET(request: Request) {
 
       if (rows.length > 0) {
         // Enrich with file content, using DB cache when available to avoid N+1 file reads.
-        // If the cache has a recent entry (within 60s), skip re-reading the file.
         const now = Date.now();
         const CACHE_TTL_MS = 60_000;
 
@@ -79,20 +79,8 @@ export async function GET(request: Request) {
     }
 
     // Sidecar fallback: parse INDEX.md directly (Cloud Run)
-    let indexContent: string | null = null;
-    if (isSidecarConfigured()) {
-      const res = await sidecarGet("/file", { agentId, path: "projects/INDEX.md" });
-      if (!res.ok) {
-        if (res.status === 404) return NextResponse.json({ projects: [] });
-        return NextResponse.json({ error: `Failed to read INDEX.md: ${res.status}` }, { status: res.status });
-      }
-      const data = (await res.json()) as { content?: string };
-      indexContent = data.content ?? null;
-    } else {
-      const result = readWorkspaceFile(agentId, "projects/INDEX.md");
-      indexContent = result.content ?? null;
-    }
-
+    const { content: indexContent, error: readError } = await readIndexContent(agentId);
+    if (readError) return readError;
     if (!indexContent) return NextResponse.json({ projects: [] });
 
     const parsed = parseIndex(indexContent);
@@ -101,17 +89,7 @@ export async function GET(request: Request) {
     const enriched = await Promise.all(
       parsed.map(async (project) => {
         try {
-          let content: string | null = null;
-          if (isSidecarConfigured()) {
-            const res = await sidecarGet("/file", { agentId, path: `projects/${project.doc}` });
-            if (res.ok) {
-              const data = (await res.json()) as { content?: string };
-              content = data.content ?? null;
-            }
-          } else {
-            const result = readWorkspaceFile(agentId, `projects/${project.doc}`);
-            content = result.content ?? null;
-          }
+          const content = await readProjectFileContent(agentId, project.doc);
           return { ...project, fileContent: content };
         } catch {
           return { ...project, fileContent: null };
