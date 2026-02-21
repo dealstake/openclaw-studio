@@ -1,27 +1,20 @@
 "use client";
 
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowDownAZ, ArrowUpAZ, RefreshCw } from "lucide-react";
-import { SearchInput } from "@/components/SearchInput";
+import { RefreshCw } from "lucide-react";
 import { useTranscripts, useTranscriptSearch } from "@/features/sessions/hooks/useTranscripts";
-import type { TranscriptEntry, TranscriptSearchResult } from "@/features/sessions/hooks/useTranscripts";
 import {
   inferTranscriptType,
-  TRANSCRIPT_TYPE_LABELS,
   type TranscriptType,
 } from "@/features/sessions/lib/transcriptUtils";
-import { EmptyStatePanel } from "@/features/agents/components/EmptyStatePanel";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import { isGatewayDisconnectLikeError } from "@/lib/gateway/GatewayClient";
 import type { UsageByType } from "@/features/sessions/hooks/useAllSessions";
 import { formatCost, formatTokens } from "@/lib/text/format";
-import { SessionCard } from "./SessionCard";
-import { TranscriptCard } from "./TranscriptCard";
-import { SearchResultCard } from "./SearchResultCard";
-import { VirtualCardList } from "./VirtualCardList";
 import { PanelIconButton } from "@/components/PanelIconButton";
-
 import { sectionLabelClass } from "@/components/SectionLabel";
+import { ActiveSessionsTab } from "./ActiveSessionsTab";
+import { HistoryTab } from "./HistoryTab";
 
 export type SessionEntry = {
   key: string;
@@ -47,9 +40,6 @@ type SessionsPanelProps = {
   usageByType?: UsageByType | null;
   onTranscriptClick?: (sessionId: string, agentId: string) => void;
 };
-
-const TRANSCRIPT_CARD_HEIGHT = 88;
-const SEARCH_CARD_HEIGHT = 100;
 
 export const SessionsPanel = memo(function SessionsPanel({
   client,
@@ -86,6 +76,7 @@ export const SessionsPanel = memo(function SessionsPanel({
     error: searchError,
     clearSearch,
   } = useTranscriptSearch(agentId);
+
   const [tab, setTab] = useState<"active" | "history">("active");
   const [activeSearch, setActiveSearch] = useState("");
   const [transcriptFilter, setTranscriptFilter] = useState<TranscriptType | "all">("all");
@@ -108,41 +99,33 @@ export const SessionsPanel = memo(function SessionsPanel({
     }
   }, [activeSessionKey]);
 
-  const sorted = useMemo(
-    () => [...sessions].sort((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0)),
-    [sessions]
-  );
-
   const filteredSorted = useMemo(() => {
+    const sorted = [...sessions].sort((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0));
     if (!activeSearch.trim()) return sorted;
     const q = activeSearch.toLowerCase();
     return sorted.filter((s) => {
       const name = (s.displayName ?? s.key).toLowerCase();
       return name.includes(q);
     });
-  }, [sorted, activeSearch]);
+  }, [sessions, activeSearch]);
 
   const filteredTranscripts = useMemo(() => {
     let list = transcripts;
     if (transcriptFilter !== "all") {
       list = list.filter((t) => inferTranscriptType(t) === transcriptFilter);
     }
-    const sorted = [...list].sort((a, b) => {
+    return [...list].sort((a, b) => {
       const aTime = a.startedAt ? new Date(a.startedAt).getTime() : 0;
       const bTime = b.startedAt ? new Date(b.startedAt).getTime() : 0;
       return transcriptSortNewest ? bTime - aTime : aTime - bTime;
     });
-    return sorted;
   }, [transcripts, transcriptFilter, transcriptSortNewest]);
 
   const toggleExpanded = useCallback((key: string) => {
     setExpandedKeys((prev) => {
       const next = new Set(prev);
-      if (next.has(key)) {
-        next.delete(key);
-      } else {
-        next.add(key);
-      }
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
       return next;
     });
   }, []);
@@ -186,32 +169,13 @@ export const SessionsPanel = memo(function SessionsPanel({
     [client, onRefresh]
   );
 
-  const renderTranscriptCard = useCallback(
-    (t: TranscriptEntry) => (
-      <TranscriptCard
-        transcript={t}
-        onClick={() => onTranscriptClick?.(t.sessionId, t.sessionKey?.split(":")?.[1] ?? "")}
-      />
-    ),
-    [onTranscriptClick]
-  );
-
-  const renderSearchCard = useCallback(
-    (r: TranscriptSearchResult) => (
-      <SearchResultCard
-        result={r}
-        query={searchQuery}
-        onClick={() => onTranscriptClick?.(r.sessionId, r.sessionKey?.split(":")?.[1] ?? "")}
-      />
-    ),
-    [onTranscriptClick, searchQuery]
-  );
-
-  const transcriptKeyExtractor = useCallback((t: TranscriptEntry) => t.sessionId, []);
-  const searchKeyExtractor = useCallback((r: TranscriptSearchResult) => r.sessionId, []);
+  const handleDeleteVoid = useCallback((key: string) => { void handleDelete(key); }, [handleDelete]);
+  const handleCompactVoid = useCallback((key: string) => { void handleCompact(key); }, [handleCompact]);
+  const handleToggleSort = useCallback(() => setTranscriptSortNewest((prev) => !prev), []);
 
   return (
     <div className="flex h-full w-full min-w-0 flex-col overflow-hidden">
+      {/* Tab header */}
       <div className="flex items-center justify-between border-b border-border/40 px-4 py-3">
         <div className="flex items-center gap-1">
           <button
@@ -302,174 +266,52 @@ export const SessionsPanel = memo(function SessionsPanel({
         </div>
       ) : null}
 
-      {/* ─── Active tab ─── */}
-      <div className={`min-h-0 flex-1 overflow-y-auto p-4 ${tab === "active" ? "" : "hidden"}`}>
-        {/* Active search */}
-        <SearchInput
-          value={activeSearch}
-          onChange={setActiveSearch}
-          placeholder="Search active sessions…"
-          className="mb-3 flex-shrink-0"
+      {/* Active tab */}
+      <div className={tab === "active" ? "flex min-h-0 flex-1 flex-col" : "hidden"}>
+        <ActiveSessionsTab
+          sessions={filteredSorted}
+          loading={loading}
+          error={error}
+          actionError={actionError}
+          activeSearch={activeSearch}
+          onActiveSearchChange={setActiveSearch}
+          activeSessionKey={activeSessionKey}
+          expandedKeys={expandedKeys}
+          onToggleExpanded={toggleExpanded}
+          onSessionClick={onSessionClick}
+          onViewTrace={onViewTrace}
+          client={client}
+          busyKey={busyKey}
+          confirmDeleteKey={confirmDeleteKey}
+          onSetConfirmDelete={setConfirmDeleteKey}
+          onDelete={handleDeleteVoid}
+          onCompact={handleCompactVoid}
         />
-
-        {error || actionError ? (
-          <div className="mb-3 rounded-md border border-destructive bg-destructive px-3 py-2 text-xs text-destructive-foreground">
-            {error ?? actionError}
-          </div>
-        ) : null}
-
-        {loading && sessions.length === 0 ? (
-          <div className="flex flex-col gap-2">
-            {[0, 1, 2].map((i) => (
-              <div key={i} className="h-[72px] animate-pulse rounded-md border border-border/50 bg-muted/20" />
-            ))}
-          </div>
-        ) : null}
-
-        {!loading && !error && filteredSorted.length === 0 ? (
-          <EmptyStatePanel title={activeSearch ? "No matching sessions." : "No sessions found."} compact className="p-3 text-xs" />
-        ) : null}
-
-        {filteredSorted.length > 0 ? (
-          <div className="flex flex-col gap-2">
-            {filteredSorted.map((session) => (
-              <SessionCard
-                key={session.key}
-                session={session}
-                isActive={session.key === activeSessionKey}
-                isExpanded={expandedKeys.has(session.key)}
-                onToggle={() => toggleExpanded(session.key)}
-                onSessionClick={onSessionClick}
-                client={client}
-                busyKey={busyKey}
-                confirmDeleteKey={confirmDeleteKey}
-                onSetConfirmDelete={setConfirmDeleteKey}
-                onDelete={(key) => { void handleDelete(key); }}
-                onCompact={(key) => { void handleCompact(key); }}
-                onViewTrace={onViewTrace}
-              />
-            ))}
-          </div>
-        ) : null}
       </div>
 
-      {/* ─── History tab ─── */}
-      <div className={`min-h-0 flex-1 flex flex-col overflow-hidden ${tab === "history" ? "" : "hidden"}`}>
-        {/* Search input */}
-        {agentId ? (
-          <SearchInput
-            value={searchQuery}
-            onChange={setSearchQuery}
-            onClear={clearSearch}
-            placeholder="Search transcripts…"
-            className="mx-4 mt-4 mb-3 flex-shrink-0"
-          />
-        ) : null}
-
-        {/* Search results */}
-        {searchQuery.trim() ? (
-          <div className="min-h-0 flex-1 overflow-hidden px-4 pb-4">
-            {searchError ? (
-              <div className="mb-3 rounded-md border border-destructive bg-destructive px-3 py-2 text-xs text-destructive-foreground">
-                {searchError}
-              </div>
-            ) : null}
-
-            {searchLoading ? (
-              <div className="flex flex-col gap-2">
-                {[0, 1, 2].map((i) => (
-                  <div key={i} className="h-[72px] animate-pulse rounded-md border border-border/50 bg-muted/20" />
-                ))}
-              </div>
-            ) : null}
-
-            {!searchLoading && !searchError && searchResults.length === 0 ? (
-              <EmptyStatePanel title="No results found." compact className="p-3 text-xs" />
-            ) : null}
-
-            {!searchLoading && searchResults.length > 0 ? (
-              <>
-                <div className="mb-2 font-mono text-[9px] text-muted-foreground">
-                  {searchResults.length} session{searchResults.length !== 1 ? "s" : ""} matched
-                </div>
-                <VirtualCardList
-                  items={searchResults}
-                  estimateSize={SEARCH_CARD_HEIGHT}
-                  keyExtractor={searchKeyExtractor}
-                  renderItem={renderSearchCard}
-                />
-              </>
-            ) : null}
-          </div>
-        ) : (
-          <div className="min-h-0 flex-1 overflow-hidden px-4 pb-4">
-            {/* Filter chips + sort toggle */}
-            <div className="mb-2 flex flex-wrap items-center gap-1.5">
-              {(["all", "main", "cron", "subagent", "channel"] as const).map((type) => (
-                <button
-                  key={type}
-                  type="button"
-                  className={`rounded-full border px-2 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] transition ${
-                    transcriptFilter === type
-                      ? "border-primary/50 bg-primary/10 text-primary"
-                      : "border-border/60 bg-card/70 text-muted-foreground hover:border-border hover:text-foreground"
-                  }`}
-                  onClick={() => setTranscriptFilter(type)}
-                >
-                  {type === "all" ? "All" : TRANSCRIPT_TYPE_LABELS[type]}
-                </button>
-              ))}
-              <button
-                type="button"
-                className="ml-auto flex items-center gap-1 rounded-md border border-border/60 bg-card/70 px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground transition hover:border-border hover:text-foreground"
-                onClick={() => setTranscriptSortNewest((prev) => !prev)}
-                aria-label={transcriptSortNewest ? "Sort oldest first" : "Sort newest first"}
-              >
-                {transcriptSortNewest ? <ArrowDownAZ className="h-3 w-3" /> : <ArrowUpAZ className="h-3 w-3" />}
-                {transcriptSortNewest ? "Newest" : "Oldest"}
-              </button>
-            </div>
-
-            {transcriptsError ? (
-              <div className="mb-3 rounded-md border border-destructive bg-destructive px-3 py-2 text-xs text-destructive-foreground">
-                {transcriptsError}
-              </div>
-            ) : null}
-
-            {transcriptsLoading && transcripts.length === 0 ? (
-              <div className="flex flex-col gap-2">
-                {[0, 1, 2, 3].map((i) => (
-                  <div key={i} className="h-[72px] animate-pulse rounded-md border border-border/50 bg-muted/20" />
-                ))}
-              </div>
-            ) : null}
-
-            {!transcriptsLoading && !transcriptsError && filteredTranscripts.length === 0 ? (
-              <EmptyStatePanel
-                title={transcriptFilter !== "all" ? `No ${TRANSCRIPT_TYPE_LABELS[transcriptFilter]} transcripts found.` : "No session history found."}
-                compact
-                className="p-3 text-xs"
-              />
-            ) : null}
-
-            {filteredTranscripts.length > 0 ? (
-              <>
-                <div className="mb-2 font-mono text-[9px] text-muted-foreground">
-                  {filteredTranscripts.length} transcript{filteredTranscripts.length !== 1 ? "s" : ""}
-                  {transcriptFilter !== "all" ? ` (${TRANSCRIPT_TYPE_LABELS[transcriptFilter]})` : ""}
-                </div>
-                <VirtualCardList
-                  items={filteredTranscripts}
-                  estimateSize={TRANSCRIPT_CARD_HEIGHT}
-                  keyExtractor={transcriptKeyExtractor}
-                  renderItem={renderTranscriptCard}
-                  onLoadMore={transcriptsHasMore ? transcriptsLoadMore : undefined}
-                  loadingMore={transcriptsLoadingMore}
-                />
-              </>
-            ) : null}
-          </div>
-        )}
+      {/* History tab */}
+      <div className={tab === "history" ? "flex min-h-0 flex-1 flex-col overflow-hidden" : "hidden"}>
+        <HistoryTab
+          agentId={agentId}
+          searchQuery={searchQuery}
+          onSearchQueryChange={setSearchQuery}
+          onClearSearch={clearSearch}
+          searchResults={searchResults}
+          searchLoading={searchLoading}
+          searchError={searchError}
+          transcripts={transcripts}
+          filteredTranscripts={filteredTranscripts}
+          transcriptsLoading={transcriptsLoading}
+          transcriptsLoadingMore={transcriptsLoadingMore}
+          transcriptsError={transcriptsError}
+          transcriptsHasMore={transcriptsHasMore}
+          onLoadMore={transcriptsLoadMore}
+          transcriptFilter={transcriptFilter}
+          onTranscriptFilterChange={setTranscriptFilter}
+          transcriptSortNewest={transcriptSortNewest}
+          onToggleSort={handleToggleSort}
+          onTranscriptClick={onTranscriptClick}
+        />
       </div>
     </div>
   );
