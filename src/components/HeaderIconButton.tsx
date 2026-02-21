@@ -17,6 +17,8 @@ export const HeaderIconButton = memo(function HeaderIconButton({
   children,
   active = false,
   className = "",
+  title,
+  "aria-label": ariaLabel,
   ...rest
 }: HeaderIconButtonProps) {
   return (
@@ -27,6 +29,8 @@ export const HeaderIconButton = memo(function HeaderIconButton({
           ? "border-border bg-muted text-foreground"
           : "border-input/90 bg-background/75 text-foreground hover:border-ring hover:bg-card"
       } disabled:cursor-not-allowed disabled:opacity-40 ${className}`}
+      title={title ?? ariaLabel}
+      aria-label={ariaLabel}
       {...rest}
     >
       {children}

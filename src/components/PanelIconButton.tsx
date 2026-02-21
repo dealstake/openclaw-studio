@@ -31,12 +31,16 @@ export const PanelIconButton = React.memo(function PanelIconButton({
   children,
   variant = "default",
   className = "",
+  title,
+  "aria-label": ariaLabel,
   ...rest
 }: PanelIconButtonProps) {
   return (
     <button
       type="button"
       className={`flex h-9 w-9 sm:h-7 sm:w-7 items-center justify-center rounded-md border transition active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60 focus-ring ${variantClasses[variant]} ${className}`}
+      title={title ?? ariaLabel}
+      aria-label={ariaLabel}
       {...rest}
     >
       {children}
