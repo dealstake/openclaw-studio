@@ -430,7 +430,9 @@ const AgentChatComposer = memo(function AgentChatComposer({
     : null;
 
   return (
-    <div className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-background via-background to-transparent pt-6 pb-[calc(12px+env(safe-area-inset-bottom))] px-4">
+    <div className="absolute inset-x-0 bottom-0 z-10 pb-[calc(12px+env(safe-area-inset-bottom))] px-4">
+      {/* Gradient fade above composer */}
+      <div className="pointer-events-none h-24 bg-gradient-to-t from-background via-background/80 to-transparent" />
       {/* Model / Thinking selectors above pill */}
       <div className="mx-auto mb-2 flex max-w-3xl items-center gap-2 px-1">
         {models.length > 0 && (
@@ -474,7 +476,7 @@ const AgentChatComposer = memo(function AgentChatComposer({
       </div>
 
       {/* Main composer pill */}
-      <div className="mx-auto flex max-w-3xl items-end gap-2 rounded-[26px] border border-border/60 bg-card/50 p-2 shadow-lg backdrop-blur-md focus-within:border-border focus-within:bg-card transition">
+      <div className="mx-auto flex max-w-3xl items-end gap-2 rounded-2xl border border-border/20 bg-card/80 p-2 shadow-lg backdrop-blur-md focus-within:border-border focus-within:bg-card transition">
         {/* Attach button placeholder */}
         <button
           type="button"
