@@ -16,6 +16,7 @@ import {
   Wifi,
 } from "lucide-react";
 import { getCfIdentity, type CfIdentity } from "@/lib/cloudflare-auth";
+import { formatUptime } from "@/lib/text/time";
 import { AgentBreadcrumb, type BreadcrumbAgent } from "./AgentBreadcrumb";
 
 type HeaderBarProps = {
@@ -76,20 +77,6 @@ function ConnectionDot({
       data-testid="gateway-status-dot"
     />
   );
-}
-
-function formatUptime(startedAtMs: number): string {
-  const elapsed = Math.max(0, Date.now() - startedAtMs);
-  const seconds = Math.floor(elapsed / 1000);
-  if (seconds < 60) return `${seconds}s`;
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  const remainingMins = minutes % 60;
-  if (hours < 24) return `${hours}h ${remainingMins}m`;
-  const days = Math.floor(hours / 24);
-  const remainingHours = hours % 24;
-  return `${days}d ${remainingHours}h`;
 }
 
 /* ── Overflow menu ───────────────────────────────────────────────────── */

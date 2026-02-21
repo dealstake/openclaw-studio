@@ -45,6 +45,28 @@ export function formatElapsedLabel(
  * Format a timestamp as a human-readable relative time string.
  * Handles both past ("5m ago") and future ("in 5m") timestamps.
  */
+/**
+ * Format an uptime duration from a start timestamp.
+ * Examples: "45s", "12m", "3h 25m", "2d 5h"
+ */
+export function formatUptime(startedAtMs: number): string {
+  const elapsed = Math.max(0, Date.now() - startedAtMs);
+  const seconds = Math.floor(elapsed / 1000);
+  if (seconds < 60) return `${seconds}s`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  const remainingMins = minutes % 60;
+  if (hours < 24) return `${hours}h ${remainingMins}m`;
+  const days = Math.floor(hours / 24);
+  const remainingHours = hours % 24;
+  return `${days}d ${remainingHours}h`;
+}
+
+/**
+ * Format a timestamp as a human-readable relative time string.
+ * Handles both past ("5m ago") and future ("in 5m") timestamps.
+ */
 export const formatRelativeTime = (timestamp: number | null | undefined): string => {
   if (!timestamp) return "—";
   const elapsed = Date.now() - timestamp;
