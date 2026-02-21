@@ -76,6 +76,7 @@ export type GatewayBrowserClientOptions = {
 };
 
 const CONNECT_FAILED_CLOSE_CODE = 4008;
+const MAX_PENDING_REQUESTS = 100;
 
 export class GatewayBrowserClient {
   private ws: WebSocket | null = null;
@@ -299,6 +300,9 @@ export class GatewayBrowserClient {
   request<T = unknown>(method: string, params?: unknown): Promise<T> {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
       return Promise.reject(new Error("gateway not connected"));
+    }
+    if (this.pending.size >= MAX_PENDING_REQUESTS) {
+      return Promise.reject(new Error("too many pending gateway requests"));
     }
     const id = generateUUID();
     const frame = { type: "req", id, method, params };

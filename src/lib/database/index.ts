@@ -14,6 +14,7 @@ export type StudioDb = BetterSQLite3Database<typeof schema>;
 let _db: StudioDb | null = null;
 let _sqlite: Database.Database | null = null;
 let _migrationCount: number = 0;
+let _migrationsChecked = false;
 
 /**
  * Get the singleton database connection. Creates on first call, and
@@ -62,7 +63,8 @@ export function getDb(dbPath?: string): StudioDb {
     _db = drizzle(_sqlite, { schema });
   }
 
-  // Always check for pending migrations (idempotent — checks __drizzle_migrations)
+  // Check for pending migrations — skip filesystem scan after first successful check
+  if (!_migrationsChecked) {
   const migrationsFolder = path.join(process.cwd(), "drizzle");
   if (fs.existsSync(migrationsFolder)) {
     const migrationFiles = fs.readdirSync(migrationsFolder).filter((f) => f.endsWith(".sql"));
@@ -93,7 +95,11 @@ export function getDb(dbPath?: string): StudioDb {
           console.warn(`[studio-db] Empty tables after migration: ${emptyTables.join(", ")} — auto-import will populate on first API request`);
         }
       }
+    } else {
+      // No new migrations — mark as checked to skip future readdirSync calls
+      _migrationsChecked = true;
     }
+  }
   }
 
   return _db;
@@ -110,6 +116,7 @@ export function closeDb(): void {
   }
   _db = null;
   _migrationCount = 0;
+  _migrationsChecked = false;
 }
 
 /**

@@ -88,6 +88,11 @@ export interface ListFilesResult {
 
 const FILE_FIELDS = "id, name, mimeType, modifiedTime, size, webViewLink, createdTime, parents";
 
+/** Sanitize a value for use in a Drive API query string (escape backslashes then single quotes). */
+function sanitizeDriveQuery(value: string): string {
+  return value.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+}
+
 function mapFile(f: drive_v3.Schema$File): DriveFile {
   return {
     id: f.id ?? "",
@@ -118,7 +123,7 @@ export async function listFiles(options: ListFilesOptions = {}): Promise<ListFil
 
   let q = "trashed = false";
   if (folderId) {
-    q += ` and '${folderId}' in parents`;
+    q += ` and '${sanitizeDriveQuery(folderId)}' in parents`;
   }
   if (query) {
     q += ` and ${query}`;
@@ -193,8 +198,7 @@ export async function searchFiles(
 ): Promise<DriveFile[]> {
   const drive = getDriveClient();
 
-  // Sanitize for Drive API query: escape backslashes first, then single quotes
-  const sanitized = searchQuery.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+  const sanitized = sanitizeDriveQuery(searchQuery);
   const q = `trashed = false and (name contains '${sanitized}' or fullText contains '${sanitized}')`;
 
   const res = await drive.files.list({
