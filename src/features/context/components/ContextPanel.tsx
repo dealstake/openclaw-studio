@@ -1,12 +1,12 @@
 "use client";
 
 import { memo, useCallback, useRef, useState, useEffect, type ReactNode } from "react";
-import { ChevronDown, Maximize2, X } from "lucide-react";
+import { Maximize2, X } from "lucide-react";
 
 import { PanelIconButton } from "@/components/PanelIconButton";
 import { sectionLabelClass } from "@/components/SectionLabel";
 
-export type ContextTab = "projects" | "tasks" | "brain" | "settings" | "channels" | "sessions" | "usage" | "cron" | "workspace";
+export type ContextTab = "projects" | "tasks" | "brain" | "workspace";
 
 interface ContextPanelProps {
   activeTab: ContextTab;
@@ -17,11 +17,6 @@ interface ContextPanelProps {
   projectsContent?: ReactNode;
   tasksContent: ReactNode;
   brainContent: ReactNode;
-  settingsContent: ReactNode;
-  channelsContent?: ReactNode;
-  sessionsContent?: ReactNode;
-  usageContent?: ReactNode;
-  cronContent?: ReactNode;
   workspaceContent?: ReactNode;
 }
 
@@ -30,15 +25,7 @@ export const TAB_OPTIONS: Array<{ value: ContextTab; label: string }> = [
   { value: "tasks", label: "Tasks" },
   { value: "brain", label: "Brain" },
   { value: "workspace", label: "Files" },
-  { value: "sessions", label: "Sessions" },
-  { value: "usage", label: "Usage" },
-  { value: "channels", label: "Channels" },
-  { value: "cron", label: "Cron" },
-  { value: "settings", label: "Settings" },
 ];
-
-const PRIMARY_TABS = TAB_OPTIONS.slice(0, 4);
-const OVERFLOW_TABS = TAB_OPTIONS.slice(4);
 
 export const ContextPanel = memo(function ContextPanel({
   activeTab,
@@ -49,16 +36,8 @@ export const ContextPanel = memo(function ContextPanel({
   projectsContent,
   tasksContent,
   brainContent,
-  settingsContent,
-  channelsContent,
-  sessionsContent,
-  usageContent,
-  cronContent,
   workspaceContent,
 }: ContextPanelProps) {
-  const [moreOpen, setMoreOpen] = useState(false);
-  const moreRef = useRef<HTMLDivElement>(null);
-
   // Lazy mount: track which tabs have been activated at least once.
   const [mountedTabs, setMountedTabs] = useState<Set<ContextTab>>(
     () => new Set<ContextTab>([activeTab])
@@ -68,22 +47,9 @@ export const ContextPanel = memo(function ContextPanel({
     ? mountedTabs
     : new Set([...mountedTabs, activeTab]);
 
-  // Close dropdown on outside click
-  useEffect(() => {
-    if (!moreOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (moreRef.current && !moreRef.current.contains(e.target as Node)) {
-        setMoreOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [moreOpen]);
-
   const handleTabClick = useCallback(
     (tab: ContextTab) => {
       onTabChange(tab);
-      setMoreOpen(false);
       setMountedTabs((prev) => {
         if (prev.has(tab)) return prev;
         const next = new Set(prev);
@@ -94,7 +60,6 @@ export const ContextPanel = memo(function ContextPanel({
     [onTabChange]
   );
 
-  const activeOverflowTab = OVERFLOW_TABS.find((t) => t.value === activeTab);
   const mobileTabBarRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll active tab into view on mobile
@@ -109,7 +74,7 @@ export const ContextPanel = memo(function ContextPanel({
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden">
-      {/* Tab bar — mobile: scrollable row; desktop: primary tabs + More dropdown */}
+      {/* Tab bar — mobile: scrollable row; desktop: all 4 tabs inline */}
       {/* Mobile */}
       <div ref={mobileTabBarRef} className="flex items-center gap-0 overflow-x-auto border-b border-border/20 px-3 pt-2 lg:hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="tablist">
         {TAB_OPTIONS.map((tab) => {
@@ -140,7 +105,7 @@ export const ContextPanel = memo(function ContextPanel({
       </div>
       {/* Desktop */}
       <div className="hidden items-center gap-0 border-b border-border/20 px-3 pt-2 lg:flex" role="tablist">
-        {PRIMARY_TABS.map((tab) => {
+        {TAB_OPTIONS.map((tab) => {
           const isActive = activeTab === tab.value;
           return (
             <button
@@ -160,42 +125,6 @@ export const ContextPanel = memo(function ContextPanel({
             </button>
           );
         })}
-        {OVERFLOW_TABS.length > 0 ? (
-          <div className="relative" ref={moreRef}>
-            <button
-              type="button"
-              className={`flex items-center gap-1 px-2.5 pb-2 ${sectionLabelClass} transition-colors ${
-                activeOverflowTab
-                  ? "text-foreground font-semibold border-b-2 border-primary"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-              onClick={() => setMoreOpen((prev) => !prev)}
-              aria-label="More tabs"
-            >
-              {activeOverflowTab ? activeOverflowTab.label : "More"}
-              <ChevronDown className={`h-3 w-3 transition-transform ${moreOpen ? "rotate-180" : ""}`} />
-            </button>
-            {moreOpen ? (
-              <div className="absolute right-0 top-full z-20 mt-1 min-w-[120px] rounded-md border border-border bg-card p-1 shadow-lg">
-                {OVERFLOW_TABS.map((tab) => (
-                  <button
-                    key={tab.value}
-                    type="button"
-                    className={`flex w-full items-center rounded-md px-2.5 py-1.5 ${sectionLabelClass} transition ${
-                      activeTab === tab.value
-                        ? "bg-muted text-foreground"
-                        : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
-                    }`}
-                    onClick={() => handleTabClick(tab.value)}
-                    data-testid={`context-tab-${tab.value}`}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-            ) : null}
-          </div>
-        ) : null}
         <div className="ml-auto flex items-center gap-0.5">
           {onExpandToggle && (
             <PanelIconButton onClick={onExpandToggle} aria-label="Expand panel" data-testid="expand-panel-btn-desktop">
@@ -240,31 +169,6 @@ export const ContextPanel = memo(function ContextPanel({
             {effectiveMountedTabs.has("workspace") && (
               <div role="tabpanel" className={activeTab === "workspace" ? "flex h-full w-full flex-col overflow-hidden" : "hidden"}>
                 {workspaceContent ?? null}
-              </div>
-            )}
-            {effectiveMountedTabs.has("settings") && (
-              <div role="tabpanel" className={activeTab === "settings" ? "flex h-full w-full flex-col overflow-hidden" : "hidden"}>
-                {settingsContent}
-              </div>
-            )}
-            {effectiveMountedTabs.has("channels") && (
-              <div role="tabpanel" className={activeTab === "channels" ? "flex h-full w-full flex-col overflow-hidden" : "hidden"}>
-                {channelsContent ?? null}
-              </div>
-            )}
-            {effectiveMountedTabs.has("sessions") && (
-              <div role="tabpanel" className={activeTab === "sessions" ? "flex h-full w-full flex-col overflow-hidden" : "hidden"}>
-                {sessionsContent ?? null}
-              </div>
-            )}
-            {effectiveMountedTabs.has("usage") && (
-              <div role="tabpanel" className={activeTab === "usage" ? "flex h-full w-full flex-col overflow-hidden" : "hidden"}>
-                {usageContent ?? null}
-              </div>
-            )}
-            {effectiveMountedTabs.has("cron") && (
-              <div role="tabpanel" className={activeTab === "cron" ? "flex h-full w-full flex-col overflow-hidden" : "hidden"}>
-                {cronContent ?? null}
               </div>
             )}
           </>

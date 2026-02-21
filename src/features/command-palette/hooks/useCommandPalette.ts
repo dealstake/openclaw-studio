@@ -17,12 +17,14 @@ import {
   Plus,
   Zap,
 } from "lucide-react";
-import type { ContextTab } from "@/features/context/components/ContextPanel";
 import type { CommandAction, CommandPaletteProps } from "../lib/types";
 import { useRecentItems } from "./useRecentItems";
 
+/** All navigable tabs — context panel tabs + management tabs (opened in expanded modal) */
+type NavTab = "projects" | "tasks" | "brain" | "workspace" | "sessions" | "usage" | "channels" | "cron" | "settings";
+
 const TAB_COMMANDS: Array<{
-  tab: ContextTab;
+  tab: NavTab;
   label: string;
   icon: typeof LayoutGrid;
   shortcut?: string;

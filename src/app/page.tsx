@@ -54,7 +54,11 @@ import { ProjectsPanel } from "@/features/projects/components/ProjectsPanel";
 const TaskWizardModal = lazy(() => import("@/features/tasks/components/TaskWizardModal").then(m => ({ default: m.TaskWizardModal })));
 const AgentWizardModal = lazy(() => import("@/features/agents/components/AgentWizardModal").then(m => ({ default: m.AgentWizardModal })));
 import { useAgentTasks } from "@/features/tasks/hooks/useAgentTasks";
-import { ContextPanel, TAB_OPTIONS, type ContextTab } from "@/features/context/components/ContextPanel";
+import { ContextPanel, TAB_OPTIONS } from "@/features/context/components/ContextPanel";
+import type { ContextTab } from "@/features/context/components/ContextPanel";
+
+/** Extended tab type for expanded modal — includes management tabs not shown in the context panel */
+type ExpandableTab = ContextTab | "sessions" | "usage" | "channels" | "cron" | "settings";
 import { ContextPanelStrip } from "@/features/context/components/ContextPanelStrip";
 import { PanelExpandModal } from "@/components/PanelExpandModal";
 import { ExpandedContext } from "@/features/context/lib/expandedContext";
@@ -75,7 +79,6 @@ import { ActivityDrawer } from "@/features/activity/components/ActivityDrawer";
 import { upsertLiveSession, addSystemEvent } from "@/features/activity/hooks/useLiveActivityStore";
 import { pushHeartbeatEntry } from "@/features/activity/hooks/useHeartbeatEntries";
 import { useTranscriptCapture } from "@/features/activity/hooks/useTranscriptCapture";
-import { filterHeartbeatTurns } from "@/features/activity/lib/heartbeatFilter";
 import { TraceViewer } from "@/features/sessions/components/TraceViewer";
 import { useChannelsStatus } from "@/features/channels/hooks/useChannelsStatus";
 import { useAllSessions } from "@/features/sessions/hooks/useAllSessions";
@@ -202,7 +205,7 @@ const AgentStudioPage = () => {
   /** "agent" = show ContextPanel (Tasks/Brain/Settings), "files" = show Files */
   const [contextMode, setContextMode] = useState<"agent" | "files">("agent");
   const [contextTab, setContextTab] = useState<ContextTab>("projects");
-  const [expandedTab, setExpandedTab] = useState<ContextTab | null>(null);
+  const [expandedTab, setExpandedTab] = useState<ExpandableTab | null>(null);
   // Lifted brain panel state — shared between normal and expanded views
   const [brainFileTab, setBrainFileTab] = useState<import("@/lib/agents/agentFiles").AgentFileName>("AGENTS.md");
   const [brainPreviewMode, setBrainPreviewMode] = useState(true);
@@ -369,11 +372,20 @@ const AgentStudioPage = () => {
   const focusedAgentId = focusedAgent?.agentId ?? null;
 
   // Command Palette (Cmd+K)
-  const handleCmdNavTab = useCallback((tab: ContextTab) => {
-    setContextTab(tab);
-    setContextPanelOpen(true);
-    if (mobilePane !== "context") setMobilePane("context");
-  }, [mobilePane]);
+  const handleCmdNavTab = useCallback((tab: ContextTab | "sessions" | "usage" | "channels" | "cron" | "settings") => {
+    const contextTabs = new Set<string>(["projects", "tasks", "brain", "workspace"]);
+    if (contextTabs.has(tab)) {
+      setContextTab(tab as ContextTab);
+      setContextPanelOpen(true);
+      if (mobilePane !== "context") setMobilePane("context");
+    } else {
+      // Management tabs open in expanded modal
+      if (tab === "settings" && focusedAgent && !settingsAgentId) {
+        setSettingsAgentId(focusedAgent.agentId);
+      }
+      setExpandedTab(tab as ExpandableTab);
+    }
+  }, [mobilePane, focusedAgent, settingsAgentId, setSettingsAgentId]);
   const handleCmdOpenCtx = useCallback(() => setContextPanelOpen(true), []);
   const handleCmdSwitchAgent = useCallback((agentId: string) => {
     flushPendingDraft(focusedAgent?.agentId ?? null);
@@ -1040,15 +1052,15 @@ const AgentStudioPage = () => {
     }
   }, [setLoading, status]);
 
-  // When the selected agent changes, update settings to follow if the settings tab is active
+  // When the selected agent changes, update settings to follow if the settings expanded tab is active
   useEffect(() => {
     if (!state.selectedAgentId) return;
-    if (contextTab === "settings" && state.selectedAgentId !== settingsAgentId) {
+    if (expandedTab === "settings" && state.selectedAgentId !== settingsAgentId) {
       setSettingsAgentId(state.selectedAgentId);
     } else if (settingsAgentId && state.selectedAgentId !== settingsAgentId) {
       setSettingsAgentId(null);
     }
-  }, [contextTab, settingsAgentId, setSettingsAgentId, state.selectedAgentId]);
+  }, [expandedTab, settingsAgentId, setSettingsAgentId, state.selectedAgentId]);
 
   // Settings agent reset + cron/heartbeat loading handled by useSettingsPanel hook
 
@@ -1058,13 +1070,6 @@ const AgentStudioPage = () => {
     if (selectedBrainAgentId) return;
     setContextTab("tasks");
   }, [contextMode, contextTab, selectedBrainAgentId]);
-
-  // Auto-close context panel settings tab if no agent selected
-  useEffect(() => {
-    if (contextTab !== "settings" || contextMode !== "agent") return;
-    if (settingsAgent) return;
-    setContextTab("tasks");
-  }, [contextMode, contextTab, settingsAgent]);
 
   // Model loading is handled by useGatewayModels hook
 
@@ -1665,12 +1670,10 @@ const AgentStudioPage = () => {
             onOpenSessionHistory={() => setMobileSessionDrawerOpen(true)}
             onNewSession={stableChatOnNewSession}
             onOpenSettings={() => {
-              setContextTab("settings");
-              if (isWide(breakpoint)) {
-                setContextPanelOpen(true);
-              } else {
-                setMobilePane("context");
+              if (focusedAgent && !settingsAgentId) {
+                setSettingsAgentId(focusedAgent.agentId);
               }
+              setExpandedTab("settings");
             }}
             agents={breadcrumbAgents}
             selectedAgentId={focusedAgentId}
@@ -1816,7 +1819,7 @@ const AgentStudioPage = () => {
               <PanelExpandModal
                 open
                 onOpenChange={clearExpandedTab}
-                title={TAB_OPTIONS.find((t) => t.value === expandedTab)?.label ?? ""}
+                title={TAB_OPTIONS.find((t) => t.value === expandedTab)?.label ?? ({ sessions: "Sessions", usage: "Usage", channels: "Channels", cron: "Cron", settings: "Settings" } as Record<string, string>)[expandedTab] ?? ""}
               >
                 <ExpandedContext.Provider value={true}>
                   <div className="flex h-full w-full flex-col overflow-y-auto">
@@ -2010,15 +2013,10 @@ const AgentStudioPage = () => {
               ) : (
                 <ContextPanel
                   activeTab={contextTab}
-                  expandedTab={expandedTab}
+                  expandedTab={expandedTab === "projects" || expandedTab === "tasks" || expandedTab === "brain" || expandedTab === "workspace" ? expandedTab : null}
                   onExpandToggle={handleExpandToggle}
                   onClose={showContextInline ? () => setContextPanelOpen(false) : undefined}
-                  onTabChange={(tab) => {
-                    setContextTab(tab);
-                    if (tab === "settings" && focusedAgent && !settingsAgentId) {
-                      setSettingsAgentId(focusedAgent.agentId);
-                    }
-                  }}
+                  onTabChange={setContextTab}
                   projectsContent={
                     <div className="flex h-full w-full flex-col overflow-y-auto">
                       <ProjectsPanel
@@ -2065,119 +2063,6 @@ const AgentStudioPage = () => {
                       }}
                     />
                   }
-                  channelsContent={
-                    <ChannelsPanel
-                      snapshot={channelsSnapshot}
-                      loading={channelsLoading}
-                      error={channelsError}
-                      onRefresh={() => {
-                        void loadChannelsStatus();
-                      }}
-                    />
-                  }
-                  sessionsContent={
-                    <SessionsPanel
-                      client={client}
-                      sessions={allSessions}
-                      loading={allSessionsLoading}
-                      error={allSessionsError}
-                      onRefresh={() => {
-                        void loadAllSessions();
-                      }}
-                      activeSessionKey={focusedAgent?.sessionKey ?? null}
-                      aggregateUsage={aggregateUsage}
-                      aggregateUsageLoading={aggregateUsageLoading}
-                      cumulativeUsage={aggregateUsageFromList ? {
-                        inputTokens: aggregateUsageFromList.inputTokens,
-                        outputTokens: aggregateUsageFromList.outputTokens,
-                        totalCost: null,
-                        messageCount: aggregateUsageFromList.messageCount,
-                      } : null}
-                      cumulativeUsageLoading={allSessionsLoading}
-                      usageByType={usageByType}
-                      transcripts={transcripts}
-                      transcriptsLoading={transcriptsLoading}
-                      transcriptsLoadingMore={transcriptsLoadingMore}
-                      transcriptsError={transcriptsError}
-                      transcriptsHasMore={transcriptsHasMore}
-                      onTranscriptsRefresh={transcriptsRefresh}
-                      onTranscriptsLoadMore={transcriptsLoadMore}
-                      searchQuery={searchQuery}
-                      onSearchQueryChange={setSearchQuery}
-                      searchResults={searchResults}
-                      searchLoading={searchLoading}
-                      searchError={searchError}
-                      onClearSearch={clearSearch}
-                      onViewTrace={handleViewTrace}
-                      onTranscriptClick={(sessionId, agentId) => {
-                        const effectiveAgentId = agentId || focusedAgent?.agentId || "";
-                        if (!effectiveAgentId) return;
-                        setViewingSessionKey(sessionId);
-                        setViewingSessionLoading(true);
-                        setViewingSessionHistory([]);
-                        setMobilePane("chat");
-                        fetchTranscriptMessages(effectiveAgentId, sessionId, 0, 200)
-                          .then((result) => {
-                            setViewingSessionHistory(transformMessagesToMessageParts(result.messages));
-                          })
-                          .catch((err) => {
-                            console.error("Failed to load transcript:", err);
-                            setViewingSessionHistory([{
-                              type: "text",
-                              text: `Error loading transcript: ${err instanceof Error ? err.message : "Unknown error"}`,
-                            }]);
-                          })
-                          .finally(() => setViewingSessionLoading(false));
-                      }}
-                      onSessionClick={(sessionKey, agentId) => {
-                        if (agentId) {
-                          flushPendingDraft(focusedAgent?.agentId ?? null);
-                          dispatch({ type: "selectAgent", agentId });
-                          setMobilePane("chat");
-                        }
-                        // Load session history
-                        setViewingSessionKey(sessionKey);
-                        setViewingSessionLoading(true);
-                        setViewingSessionHistory([]);
-                        client.call<{ messages?: Array<{ role?: string; content?: string; text?: string }> }>("sessions.history", { sessionKey, limit: 50 })
-                          .then((result) => {
-                            const parts = transformMessagesToMessageParts(result.messages ?? []);
-                            setViewingSessionHistory(filterHeartbeatTurns(parts));
-                          })
-                          .catch((err) => {
-                            console.error("Failed to load session history:", err);
-                            setViewingSessionHistory([{ type: "text", text: `Error loading session history: ${err instanceof Error ? err.message : "Unknown error"}` }]);
-                          })
-                          .finally(() => setViewingSessionLoading(false));
-                      }}
-                    />
-                  }
-                  usageContent={
-                    <UsagePanel client={client} status={status} />
-                  }
-                  cronContent={
-                    <CronPanel
-                      client={client}
-                      cronJobs={allCronJobs}
-                      loading={allCronLoading}
-                      error={allCronError}
-                      runBusyJobId={allCronRunBusyJobId}
-                      deleteBusyJobId={allCronDeleteBusyJobId}
-                      toggleBusyJobId={allCronToggleBusyJobId}
-                      onRunJob={(jobId) => {
-                        void handleAllCronRunJob(jobId);
-                      }}
-                      onDeleteJob={(jobId) => {
-                        void handleAllCronDeleteJob(jobId);
-                      }}
-                      onToggleEnabled={(jobId) => {
-                        void handleAllCronToggleEnabled(jobId);
-                      }}
-                      onRefresh={() => {
-                        void loadAllCronJobs();
-                      }}
-                    />
-                  }
                   workspaceContent={
                     <WorkspaceExplorerPanel
                       key={focusedAgent?.agentId ?? "none"}
@@ -2186,55 +2071,6 @@ const AgentStudioPage = () => {
                       isTabActive={contextTab === "workspace"}
                       eventTick={cronEventTick}
                     />
-                  }
-                  settingsContent={
-                    settingsAgent ? (
-                      <AgentSettingsPanel
-                        key={settingsAgent.agentId}
-                        agent={settingsAgent}
-                        onClose={() => {
-                          setSettingsAgentId(null);
-                          setContextTab("tasks");
-                        }}
-                        onRename={(name) => handleRenameAgent(settingsAgent.agentId, name)}
-                        onNewSession={() => handleNewSession(settingsAgent.agentId)}
-                        onDelete={() => handleDeleteAgent(settingsAgent.agentId)}
-                        canDelete={settingsAgent.agentId !== RESERVED_MAIN_AGENT_ID}
-                        onToolCallingToggle={(enabled) =>
-                          handleToolCallingToggle(settingsAgent.agentId, enabled)
-                        }
-                        onThinkingTracesToggle={(enabled) =>
-                          handleThinkingTracesToggle(settingsAgent.agentId, enabled)
-                        }
-                        cronJobs={settingsCronJobs}
-                        cronLoading={settingsCronLoading}
-                        cronError={settingsCronError}
-                        cronRunBusyJobId={cronRunBusyJobId}
-                        cronDeleteBusyJobId={cronDeleteBusyJobId}
-                        onRunCronJob={(jobId) => handleRunCronJob(settingsAgent.agentId, jobId)}
-                        onDeleteCronJob={(jobId) => handleDeleteCronJob(settingsAgent.agentId, jobId)}
-                        cronToggleBusyJobId={cronToggleBusyJobId}
-                        onToggleCronJob={(jobId, enabled) => handleToggleCronJob(settingsAgent.agentId, jobId, enabled)}
-                        heartbeats={settingsHeartbeats}
-                        heartbeatLoading={settingsHeartbeatLoading}
-                        heartbeatError={settingsHeartbeatError}
-                        heartbeatRunBusyId={heartbeatRunBusyId}
-                        heartbeatDeleteBusyId={heartbeatDeleteBusyId}
-                        onRunHeartbeat={(heartbeatId) =>
-                          handleRunHeartbeat(settingsAgent.agentId, heartbeatId)
-                        }
-                        onDeleteHeartbeat={(heartbeatId) =>
-                          handleDeleteHeartbeat(settingsAgent.agentId, heartbeatId)
-                        }
-                        onRetryCron={reloadCronJobs}
-                        onRetryHeartbeats={reloadHeartbeats}
-                        onNavigateToTasks={() => setContextTab("tasks")}
-                      />
-                    ) : (
-                      <div className="flex h-full items-center justify-center p-6 text-center text-[11px] text-muted-foreground">
-                        Select an agent to view settings.
-                      </div>
-                    )
                   }
                 />
               )}

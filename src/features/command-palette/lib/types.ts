@@ -1,6 +1,9 @@
 import type { LucideIcon } from "lucide-react";
 import type { ContextTab } from "@/features/context/components/ContextPanel";
 
+/** All navigable tabs — context panel tabs + management tabs (opened in expanded modal) */
+export type NavTab = ContextTab | "sessions" | "usage" | "channels" | "cron" | "settings";
+
 export interface CommandAction {
   /** Unique identifier */
   id: string;
@@ -29,7 +32,7 @@ export interface RecentItem {
 
 export interface CommandPaletteProps {
   /** Navigate to a context panel tab */
-  onNavigateTab: (tab: ContextTab) => void;
+  onNavigateTab: (tab: NavTab) => void;
   /** Open context panel if closed */
   onOpenContextPanel: () => void;
   /** Available agent IDs for switching */
