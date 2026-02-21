@@ -268,7 +268,7 @@ export const AgentBrainPanel = memo(function AgentBrainPanel({
                   className={`rounded-full border px-3 py-1.5 ${sectionLabelClass} transition ${
                     active
                       ? "border-border bg-background text-foreground shadow-sm"
-                      : "border-transparent bg-muted/60 text-muted-foreground hover:border-border/80 hover:bg-muted"
+                      : "border-transparent bg-muted/60 text-muted-foreground hover:border-border/80 hover:bg-muted focus-ring"
                   }`}
                   onClick={() => {
                     void handleTabChange(name);
