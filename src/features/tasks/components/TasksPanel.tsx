@@ -103,6 +103,10 @@ export const TasksPanel = memo(function TasksPanel({
     setPendingDeleteId(null);
   }, []);
 
+  const handleDeleteDialogChange = useCallback((open: boolean) => {
+    if (!open) handleDeleteCancel();
+  }, [handleDeleteCancel]);
+
   const filterOptionsWithCounts = useMemo<FilterOption<FilterTab>[]>(() => {
     const counts: Record<FilterTab, number> = {
       all: tasks.length,
@@ -144,11 +148,15 @@ export const TasksPanel = memo(function TasksPanel({
     [filtered, focusIndex, handleSelect],
   );
 
-  // Scroll focused item into view
+  // Move DOM focus + scroll focused item into view
   useEffect(() => {
     if (focusIndex < 0 || !listRef.current) return;
-    const items = listRef.current.querySelectorAll("[data-task-card]");
-    items[focusIndex]?.scrollIntoView({ block: "nearest" });
+    const items = listRef.current.querySelectorAll<HTMLElement>("[data-task-card]");
+    const target = items[focusIndex];
+    if (target) {
+      target.focus({ preventScroll: false });
+      target.scrollIntoView({ block: "nearest" });
+    }
   }, [focusIndex]);
 
   if (!isSelected) return null;
@@ -318,7 +326,7 @@ export const TasksPanel = memo(function TasksPanel({
 
       <ConfirmDialog
         open={pendingDeleteId !== null}
-        onOpenChange={(open) => { if (!open) handleDeleteCancel(); }}
+        onOpenChange={handleDeleteDialogChange}
         title="Delete task?"
         description={`This will stop "${pendingDeleteTask?.name ?? "this task"}" and remove all run history. This cannot be undone.`}
         confirmLabel="Delete"
