@@ -111,7 +111,7 @@ export const ContextPanel = memo(function ContextPanel({
     <div className="flex h-full w-full flex-col overflow-hidden">
       {/* Tab bar — mobile: scrollable row; desktop: primary tabs + More dropdown */}
       {/* Mobile */}
-      <div ref={mobileTabBarRef} className="flex items-center gap-1 overflow-x-auto border-b border-border/40 px-3 pt-3 pb-2 lg:hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="tablist">
+      <div ref={mobileTabBarRef} className="flex items-center gap-0 overflow-x-auto border-b border-border/20 px-3 pt-2 lg:hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="tablist">
         {TAB_OPTIONS.map((tab) => {
           const isActive = activeTab === tab.value;
           return (
@@ -120,10 +120,10 @@ export const ContextPanel = memo(function ContextPanel({
               type="button"
               role="tab"
               aria-selected={isActive}
-              className={`flex-shrink-0 rounded-md border px-2 py-1.5 ${sectionLabelClass} transition ${
+              className={`flex-shrink-0 px-2.5 pb-2 ${sectionLabelClass} transition-colors ${
                 isActive
-                  ? "border-border bg-muted text-foreground shadow-xs"
-                  : "border-border/80 bg-card/65 text-muted-foreground hover:border-border hover:bg-muted/70"
+                  ? "text-foreground font-semibold border-b-2 border-primary"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
               onClick={() => handleTabClick(tab.value)}
               data-testid={`context-tab-${tab.value}`}
@@ -139,7 +139,7 @@ export const ContextPanel = memo(function ContextPanel({
         )}
       </div>
       {/* Desktop */}
-      <div className="hidden items-center gap-1 border-b border-border/40 px-3 pt-3 pb-2 lg:flex" role="tablist">
+      <div className="hidden items-center gap-0 border-b border-border/20 px-3 pt-2 lg:flex" role="tablist">
         {PRIMARY_TABS.map((tab) => {
           const isActive = activeTab === tab.value;
           return (
@@ -148,10 +148,10 @@ export const ContextPanel = memo(function ContextPanel({
               type="button"
               role="tab"
               aria-selected={isActive}
-              className={`flex-shrink-0 rounded-md border px-2 py-1.5 ${sectionLabelClass} transition ${
+              className={`flex-shrink-0 px-2.5 pb-2 ${sectionLabelClass} transition-colors ${
                 isActive
-                  ? "border-border bg-muted text-foreground shadow-xs"
-                  : "border-border/80 bg-card/65 text-muted-foreground hover:border-border hover:bg-muted/70"
+                  ? "text-foreground font-semibold border-b-2 border-primary"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
               onClick={() => handleTabClick(tab.value)}
               data-testid={`context-tab-${tab.value}`}
@@ -164,10 +164,10 @@ export const ContextPanel = memo(function ContextPanel({
           <div className="relative" ref={moreRef}>
             <button
               type="button"
-              className={`flex items-center gap-1 rounded-md border px-2 py-1.5 ${sectionLabelClass} transition ${
+              className={`flex items-center gap-1 px-2.5 pb-2 ${sectionLabelClass} transition-colors ${
                 activeOverflowTab
-                  ? "border-border bg-muted text-foreground shadow-xs"
-                  : "border-border/80 bg-card/65 text-muted-foreground hover:border-border hover:bg-muted/70"
+                  ? "text-foreground font-semibold border-b-2 border-primary"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
               onClick={() => setMoreOpen((prev) => !prev)}
               aria-label="More tabs"
