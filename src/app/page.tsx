@@ -1668,8 +1668,9 @@ const AgentStudioPage = () => {
           </div>
         </div>
       ) : null}
-      <div className="relative flex w-full flex-col overflow-hidden bg-background" style={{ height: '100dvh' }}>
-        <div className="w-full">
+      <div className="relative w-full overflow-hidden bg-background" style={{ height: '100dvh' }}>
+        {/* ── Header: fixed glassmorphic bar ─────────────────────────── */}
+        <div className="fixed inset-x-0 top-0 z-30">
           <HeaderBar
             status={status}
             running={focusedAgentRunning}
@@ -1702,8 +1703,9 @@ const AgentStudioPage = () => {
           />
         </div>
 
+        {/* ── Status banners: fixed below header ───────────────────── */}
         {connectionPanelVisible ? (
-          <div className="w-full">
+          <div className="fixed inset-x-0 top-12 z-30">
             <div className="rounded-lg bg-card px-4 py-4 sm:px-6 sm:py-6">
               <ConnectionPanel
                 gatewayUrl={gatewayUrl}
@@ -1720,14 +1722,14 @@ const AgentStudioPage = () => {
         ) : null}
 
         {errorMessage ? (
-          <div className="w-full">
+          <div className="fixed inset-x-0 top-12 z-30">
             <div className="rounded-md border border-destructive bg-destructive px-4 py-2 text-sm text-destructive-foreground">
               {errorMessage}
             </div>
           </div>
         ) : null}
         {configMutationStatusLine ? (
-          <div className="w-full">
+          <div className="fixed inset-x-0 top-12 z-30">
             <div className="rounded-md border border-border/80 bg-card/80 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.11em] text-muted-foreground">
               {configMutationStatusLine}
             </div>
@@ -1735,7 +1737,7 @@ const AgentStudioPage = () => {
         ) : null}
 
         {showFleetLayout ? (
-          <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+          <div className="absolute inset-0 pt-12">
             {/* Backdrop for mobile context drawer */}
             {mobilePane !== "chat" && !showContextInline ? (
               <div
@@ -1831,8 +1833,8 @@ const AgentStudioPage = () => {
                 </div>
               </div>
             ) : null}
-            {/* App sidebar — desktop only, collapsible: management nav + session history */}
-            <div className={`${showSidebarInline ? "flex flex-[0_0_auto] min-h-0" : "hidden"}`}>
+            {/* App sidebar — desktop only, collapsible: floating overlay */}
+            <div className={`${showSidebarInline ? "fixed inset-y-0 left-0 top-12 z-20 flex" : "hidden"}`}>
               <AppSidebar
                 client={client}
                 status={status}
@@ -1846,15 +1848,16 @@ const AgentStudioPage = () => {
                 activeManagementTab={managementView}
               />
             </div>
+            {/* ── Chat canvas: base layer filling viewport ─────────── */}
             <div
-              className="flex min-h-0 flex-1 overflow-hidden bg-background"
+              className="absolute inset-0 z-0 flex overflow-hidden"
               data-testid="focused-agent-panel"
               {...swipeHandlers}
             >
               {managementView ? (
-                <div className="flex h-full w-full flex-col overflow-hidden animate-in fade-in duration-150">
+                <div className="flex h-full w-full flex-col overflow-hidden bg-background animate-in fade-in duration-150">
                   {/* Back-to-chat header */}
-                  <div className="flex items-center gap-2 border-b border-border/20 bg-[var(--surface-elevated)] px-4 py-2.5">
+                  <div className="flex items-center gap-2 border-b border-border/20 bg-card/80 backdrop-blur-md px-4 py-2.5">
                     <button
                       type="button"
                       onClick={handleBackToChat}
@@ -2207,8 +2210,9 @@ const AgentStudioPage = () => {
                 </div>
               </div>
             )}
-            {/* Collapsed context panel strip — visible on wide when panel is closed */}
+            {/* Collapsed context panel strip — fixed right edge */}
             {isWide(breakpoint) && !contextPanelOpen && (
+              <div className="fixed top-12 right-0 bottom-0 z-20">
               <ContextPanelStrip
                 activeTab={contextTab}
                 onOpen={(tab) => {
@@ -2216,10 +2220,11 @@ const AgentStudioPage = () => {
                   setContextPanelOpen(true);
                 }}
               />
+              </div>
             )}
-            {/* Context Panel: agent-scoped (Tasks/Brain/Settings) or global (Files) */}
+            {/* Context Panel: floating overlay — always fixed positioned */}
             <div
-              className={`${showContextInline ? "static flex shrink-0 flex-none w-[360px] translate-x-0" : `fixed inset-y-0 right-0 z-50 w-[360px] transform transition-transform duration-300 ${mobilePane === "context" ? "translate-x-0" : "translate-x-full"}`} bg-[var(--surface-elevated)] min-h-0 overflow-hidden p-0 border-l border-border/20`}
+              className={`fixed top-12 right-0 bottom-0 z-20 w-[360px] transform-gpu transition-transform duration-300 ease-out ${showContextInline || mobilePane === "context" ? "translate-x-0" : "translate-x-full"} bg-background/60 backdrop-blur-xl ring-1 ring-white/[0.06] min-h-0 overflow-hidden p-0 shadow-[-4px_0_24px_-6px_rgba(0,0,0,0.3)]`}
             >
               {contextMode === "files" ? (
                 <ArtifactsPanel isSelected />
@@ -2290,7 +2295,7 @@ const AgentStudioPage = () => {
             </div>
           </div>
         ) : (
-          <div className="bg-background rounded-xl fade-up-delay flex min-h-0 flex-1 flex-col overflow-hidden p-5 sm:p-6">
+          <div className="absolute inset-0 pt-12 bg-background rounded-xl fade-up-delay flex flex-col overflow-hidden p-5 sm:p-6">
             <EmptyStatePanel
               label="Fleet"
               title="No agents available"

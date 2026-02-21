@@ -239,7 +239,7 @@ export const HeaderBar = memo(function HeaderBar({
   }, []);
 
   return (
-    <div className="flex h-12 w-full items-center justify-between border-b border-border/10 bg-background/95 px-4 backdrop-blur-sm">
+    <div className="flex h-12 w-full items-center justify-between bg-background/80 px-4 backdrop-blur-xl">
       {/* Left section */}
       <div className="flex min-w-0 flex-1 items-center gap-3">
         {onOpenSessionHistory ? (

@@ -120,7 +120,7 @@ export const AppSidebar = memo(function AppSidebar({
   /* ── Collapsed: icon rail only ── */
   if (collapsed) {
     return (
-      <div className="flex h-full w-10 flex-col items-center border-r border-border/20 bg-[var(--surface-elevated)] py-3">
+      <div className="flex h-full w-10 flex-col items-center bg-background/60 backdrop-blur-xl ring-1 ring-white/[0.06] py-3 shadow-[4px_0_24px_-6px_rgba(0,0,0,0.3)]">
         <TooltipProvider delayDuration={300}>
           <div ref={navContainerRef} role="navigation" aria-label="Management navigation">
           {NAV_ITEMS.map((item, index) => {
@@ -191,7 +191,7 @@ export const AppSidebar = memo(function AppSidebar({
 
   /* ── Expanded: nav icons + session history ── */
   return (
-    <div className="flex h-full w-[240px] flex-col border-r border-border/20 bg-[var(--surface-elevated)]">
+    <div className="flex h-full w-[240px] flex-col bg-background/60 backdrop-blur-xl ring-1 ring-white/[0.06] shadow-[4px_0_24px_-6px_rgba(0,0,0,0.3)]">
       {/* Management nav */}
       <div ref={navContainerRef} className="flex items-center gap-1 border-b border-border/20 px-2 py-2" role="navigation" aria-label="Management navigation">
         <TooltipProvider delayDuration={300}>
