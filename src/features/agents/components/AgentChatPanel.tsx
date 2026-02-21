@@ -456,7 +456,7 @@ const AgentChatComposer = memo(function AgentChatComposer({
       <div className="mx-auto mb-2 flex max-w-3xl items-center gap-2 px-1">
         {models.length > 0 && (
           <select
-            className="h-7 rounded-full border border-border/60 bg-muted/50 px-2.5 text-[11px] font-medium text-foreground outline-none transition hover:bg-muted focus:border-border"
+            className="h-10 rounded-full border border-border/60 bg-muted/50 px-4 text-sm font-medium text-foreground outline-none transition hover:bg-muted focus:border-border sm:h-7 sm:px-2.5 sm:text-[11px]"
             value={modelValue}
             onChange={(e) => onModelChange(e.target.value || null)}
             aria-label="Select model"
@@ -470,7 +470,7 @@ const AgentChatComposer = memo(function AgentChatComposer({
         )}
         {allowThinking && (
           <select
-            className="h-7 rounded-full border border-border/60 bg-muted/50 px-2.5 text-[11px] font-medium text-foreground outline-none transition hover:bg-muted focus:border-border"
+            className="h-10 rounded-full border border-border/60 bg-muted/50 px-4 text-sm font-medium text-foreground outline-none transition hover:bg-muted focus:border-border sm:h-7 sm:px-2.5 sm:text-[11px]"
             value={thinkingLevel}
             onChange={(e) => onThinkingChange(e.target.value || null)}
             aria-label="Thinking level"
