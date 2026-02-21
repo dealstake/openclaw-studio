@@ -4,19 +4,14 @@ import {
   resolveAssistantCompletionTimestamp,
   type ChatEventPayload,
 } from "@/features/agents/state/runtimeEventBridge";
-import { isSameSessionKey } from "@/lib/gateway/GatewayClient";
 import {
   extractText,
   extractThinking,
   isUiMetadataPrefix,
   stripUiMetadata,
 } from "@/lib/text/message-extract";
+import { findAgentBySessionKey } from "./agentLookup";
 import type { RuntimeTrackingState } from "./runtimeTrackingState";
-
-const findAgentBySessionKey = (agents: AgentState[], sessionKey: string): string | null => {
-  const exact = agents.find((agent) => isSameSessionKey(agent.sessionKey, sessionKey));
-  return exact ? exact.agentId : null;
-};
 
 const resolveRole = (message: unknown) =>
   message && typeof message === "object"

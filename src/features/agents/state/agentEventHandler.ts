@@ -7,7 +7,6 @@ import {
   shouldPublishAssistantStream,
   type AgentEventPayload,
 } from "@/features/agents/state/runtimeEventBridge";
-import { isSameSessionKey } from "@/lib/gateway/GatewayClient";
 import {
   extractText,
   extractThinking,
@@ -15,17 +14,8 @@ import {
   isUiMetadataPrefix,
   stripUiMetadata,
 } from "@/lib/text/message-extract";
+import { findAgentByRunId, findAgentBySessionKey } from "./agentLookup";
 import type { RuntimeTrackingState } from "./runtimeTrackingState";
-
-const findAgentBySessionKey = (agents: AgentState[], sessionKey: string): string | null => {
-  const exact = agents.find((agent) => isSameSessionKey(agent.sessionKey, sessionKey));
-  return exact ? exact.agentId : null;
-};
-
-const findAgentByRunId = (agents: AgentState[], runId: string): string | null => {
-  const match = agents.find((agent) => agent.runId === runId);
-  return match ? match.agentId : null;
-};
 
 const extractReasoningBody = (value: string): string | null => {
   const trimmed = value.trim();
