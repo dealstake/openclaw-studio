@@ -631,14 +631,21 @@ const AgentStudioPage = () => {
   // ── Escape key closes mobile drawers ────────────────────────────────────
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && mobilePane !== "chat") {
-        e.preventDefault();
-        setMobilePane("chat");
+      if (e.key === "Escape") {
+        if (mobileSessionDrawerOpen) {
+          e.preventDefault();
+          setMobileSessionDrawerOpen(false);
+          return;
+        }
+        if (mobilePane !== "chat") {
+          e.preventDefault();
+          setMobilePane("chat");
+        }
       }
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [mobilePane]);
+  }, [mobilePane, mobileSessionDrawerOpen]);
 
   // Aggregate usage: use the focused session's usage as the primary data source
   // (per-session usage loads lazily in SessionsPanel cards)
@@ -1528,6 +1535,14 @@ const AgentStudioPage = () => {
           }
         }
       : undefined,
+    onSwipeDown: isMobileLayout
+      ? () => {
+          // Swipe down on context bottom sheet: dismiss it
+          if (mobilePane === "context") {
+            setMobilePane("chat");
+          }
+        }
+      : undefined,
   });
 
   const configMutationStatusLine = activeConfigMutation
@@ -1758,7 +1773,7 @@ const AgentStudioPage = () => {
             {/* Backdrop for mobile context drawer */}
             {mobilePane !== "chat" && !showContextInline ? (
               <div
-                className="fixed inset-0 z-40 bg-black/50"
+                className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
                 onClick={switchToChat}
               />
             ) : null}
@@ -1768,9 +1783,9 @@ const AgentStudioPage = () => {
                 className="fixed inset-0 z-50"
                 onClick={() => setMobileSessionDrawerOpen(false)}
               >
-                <div className="absolute inset-0 bg-black/50" />
+                <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
                 <div
-                  className="absolute inset-y-0 left-0 w-[280px] animate-in slide-in-from-left duration-200 bg-[var(--surface-elevated)] flex flex-col"
+                  className="absolute inset-y-0 left-0 w-[280px] animate-in slide-in-from-left duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] bg-[var(--surface-elevated)] flex flex-col"
                   onClick={(e) => e.stopPropagation()}
                 >
                   {/* Agent list for mobile */}
@@ -2250,13 +2265,18 @@ const AgentStudioPage = () => {
             <div
               className={
                 isMobileLayout
-                  ? `fixed inset-x-0 bottom-0 z-40 h-[70vh] rounded-t-2xl transform-gpu transition-transform duration-300 ease-out ${mobilePane === "context" ? "translate-y-0" : "translate-y-full"} bg-background/95 backdrop-blur-xl ring-1 ring-white/[0.06] min-h-0 overflow-hidden p-0 shadow-[0_-4px_24px_-6px_rgba(0,0,0,0.3)]`
+                  ? `fixed inset-x-0 bottom-0 z-40 h-[85vh] rounded-t-3xl transform-gpu transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${mobilePane === "context" ? "translate-y-0" : "translate-y-full"} bg-background/95 backdrop-blur-xl ring-1 ring-white/[0.06] border-t border-border/50 min-h-0 overflow-hidden p-0 shadow-[0_-4px_24px_-6px_rgba(0,0,0,0.3)]`
                   : `fixed top-12 right-0 bottom-0 z-20 w-[360px] transform-gpu transition-transform duration-300 ease-out ${showContextInline ? "translate-x-0" : "translate-x-full"} bg-background/60 backdrop-blur-xl ring-1 ring-white/[0.06] min-h-0 overflow-hidden p-0 shadow-[-4px_0_24px_-6px_rgba(0,0,0,0.3)]`
               }
             >
-              {/* Bottom sheet drag handle — mobile only */}
+              {/* Bottom sheet drag handle — mobile only, swipe down to dismiss */}
               {isMobileLayout && (
-                <div className="flex justify-center py-2" aria-hidden="true">
+                <div
+                  className="flex justify-center py-3 cursor-grab active:cursor-grabbing"
+                  aria-hidden="true"
+                  onTouchStart={swipeHandlers.onTouchStart}
+                  onTouchEnd={swipeHandlers.onTouchEnd}
+                >
                   <div className="h-1 w-10 rounded-full bg-muted-foreground/30" />
                 </div>
               )}
