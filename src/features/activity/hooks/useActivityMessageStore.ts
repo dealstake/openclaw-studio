@@ -32,9 +32,11 @@ const MAX_ENTRIES = 200;
 let messages: ActivityMessage[] = [];
 let version = 0;
 const listeners = new Set<() => void>();
+let snapshot = { messages: messages as readonly ActivityMessage[], version };
 
 function emit() {
   version++;
+  snapshot = { messages, version };
   for (const fn of listeners) fn();
 }
 
@@ -141,7 +143,7 @@ function subscribe(cb: () => void) {
 }
 
 function getSnapshot(): { messages: readonly ActivityMessage[]; version: number } {
-  return { messages, version };
+  return snapshot;
 }
 
 function getServerSnapshot(): { messages: readonly ActivityMessage[]; version: number } {
