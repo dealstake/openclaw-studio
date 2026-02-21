@@ -62,17 +62,14 @@ describe("AgentChatPanel scrolling", () => {
     const { rerender } = render(
       createElement(AgentChatPanel, {
         agent: { ...agent, messageParts: parts1 },
-        isSelected: true,
         canSend: true,
         models,
         stopBusy: false,
-        onOpenSettings: vi.fn(),
         onModelChange: vi.fn(),
         onThinkingChange: vi.fn(),
         onDraftChange: vi.fn(),
         onSend: vi.fn(),
         onStopRun: vi.fn(),
-        onAvatarShuffle: vi.fn(),
       })
     );
 
@@ -86,17 +83,14 @@ describe("AgentChatPanel scrolling", () => {
     rerender(
       createElement(AgentChatPanel, {
         agent: { ...agent, messageParts: parts2 },
-        isSelected: true,
         canSend: true,
         models,
         stopBusy: false,
-        onOpenSettings: vi.fn(),
         onModelChange: vi.fn(),
         onThinkingChange: vi.fn(),
         onDraftChange: vi.fn(),
         onSend: vi.fn(),
         onStopRun: vi.fn(),
-        onAvatarShuffle: vi.fn(),
       })
     );
 

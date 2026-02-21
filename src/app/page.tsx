@@ -1135,18 +1135,6 @@ const AgentStudioPage = () => {
     dispatch({ type: "selectAgent", agentId: nextId });
   }, [dispatch, focusedAgent, state.selectedAgentId]);
 
-  const handleOpenAgentSettings = useCallback(
-    (agentId: string) => {
-      flushPendingDraft(focusedAgent?.agentId ?? null);
-      setSettingsAgentId(agentId);
-      setContextMode("agent");
-      setContextTab("settings");
-      setMobilePane("context");
-      dispatch({ type: "selectAgent", agentId });
-    },
-    [dispatch, flushPendingDraft, focusedAgent, setSettingsAgentId]
-  );
-
   const handleFilesToggle = useCallback(() => {
     setContextMode((prev) => {
       if (prev === "files") {
@@ -1476,30 +1464,6 @@ const AgentStudioPage = () => {
     updateSpecialLatestUpdate,
   ]);
 
-  const handleAvatarShuffle = useCallback(
-    async (agentId: string) => {
-      const avatarSeed = crypto.randomUUID();
-      dispatch({
-        type: "updateAgent",
-        agentId,
-        patch: { avatarSeed },
-      });
-      const key = gatewayUrl.trim();
-      if (!key) return;
-      settingsCoordinator.schedulePatch(
-        {
-          avatars: {
-            [key]: {
-              [agentId]: avatarSeed,
-            },
-          },
-        },
-        0
-      );
-    },
-    [dispatch, gatewayUrl, settingsCoordinator]
-  );
-
   const connectionPanelVisible = showConnectionPanel;
   const hasAnyAgents = agents.length > 0;
   const showFleetLayout = hasAnyAgents || status === "connected";
@@ -1585,11 +1549,6 @@ const AgentStudioPage = () => {
       : null;
 
   // ── Stable callbacks for AgentChatPanel (avoid inline arrows that defeat memo) ──
-  const stableChatOnOpenSettings = useCallback(() => {
-    const fa = focusedAgentRef.current;
-    if (fa) handleOpenAgentSettings(fa.agentId);
-  }, [handleOpenAgentSettings]);
-
   const stableChatOnModelChange = useCallback((value: string | null) => {
     const fa = focusedAgentRef.current;
     if (fa) handleModelChange(fa.agentId, fa.sessionKey, value);
@@ -1617,11 +1576,6 @@ const AgentStudioPage = () => {
     const fa = focusedAgentRef.current;
     if (fa) handleStopRun(fa.agentId, fa.sessionKey);
   }, [handleStopRun]);
-
-  const stableChatOnAvatarShuffle = useCallback(() => {
-    const fa = focusedAgentRef.current;
-    if (fa) handleAvatarShuffle(fa.agentId);
-  }, [handleAvatarShuffle]);
 
   const stableChatOnNewSession = useCallback(() => {
     const fa = focusedAgentRef.current;
@@ -1815,17 +1769,14 @@ const AgentStudioPage = () => {
               {focusedAgent ? (
                 <AgentChatPanel
                   agent={focusedAgent}
-                  isSelected={false}
                   canSend={status === "connected"}
                   models={gatewayModels}
                   stopBusy={stopBusyAgentId === focusedAgent.agentId}
-                  onOpenSettings={stableChatOnOpenSettings}
                   onModelChange={stableChatOnModelChange}
                   onThinkingChange={stableChatOnThinkingChange}
                   onDraftChange={stableChatOnDraftChange}
                   onSend={stableChatOnSend}
                   onStopRun={stableChatOnStopRun}
-                  onAvatarShuffle={stableChatOnAvatarShuffle}
                   onNewSession={stableChatOnNewSession}
                   tokenUsed={stableChatTokenUsed}
                   tokenLimit={stableChatTokenLimit}

@@ -47,123 +47,20 @@ describe("AgentChatPanel controls", () => {
     cleanup();
   });
 
-  it("renders_runtime_controls_in_agent_header_and_no_inline_name_editor", () => {
-    render(
-      createElement(AgentChatPanel, {
-        agent: createAgent(),
-        isSelected: true,
-        canSend: true,
-        models,
-        stopBusy: false,
-        onOpenSettings: vi.fn(),
-        onModelChange: vi.fn(),
-        onThinkingChange: vi.fn(),
-        onDraftChange: vi.fn(),
-        onSend: vi.fn(),
-        onStopRun: vi.fn(),
-        onAvatarShuffle: vi.fn(),
-      })
-    );
-
-    expect(screen.getByLabelText("Model")).toBeInTheDocument();
-    expect(screen.getByLabelText("Thinking")).toBeInTheDocument();
-    expect(screen.queryByDisplayValue("Agent One")).not.toBeInTheDocument();
-    expect(screen.getByTestId("agent-settings-toggle")).toBeInTheDocument();
-    expect(screen.getByLabelText("Open agent settings")).toBeInTheDocument();
-    expect(screen.queryByText("Inspect")).not.toBeInTheDocument();
-  });
-
-  it("invokes_on_model_change_when_model_select_changes", () => {
-    const onModelChange = vi.fn();
-    render(
-      createElement(AgentChatPanel, {
-        agent: createAgent(),
-        isSelected: true,
-        canSend: true,
-        models,
-        stopBusy: false,
-        onOpenSettings: vi.fn(),
-        onModelChange,
-        onThinkingChange: vi.fn(),
-        onDraftChange: vi.fn(),
-        onSend: vi.fn(),
-        onStopRun: vi.fn(),
-        onAvatarShuffle: vi.fn(),
-      })
-    );
-
-    fireEvent.change(screen.getByLabelText("Model"), {
-      target: { value: "openai/gpt-5-mini" },
-    });
-    expect(onModelChange).toHaveBeenCalledWith("openai/gpt-5-mini");
-  });
-
-  it("invokes_on_thinking_change_when_thinking_select_changes", () => {
-    const onThinkingChange = vi.fn();
-    render(
-      createElement(AgentChatPanel, {
-        agent: createAgent(),
-        isSelected: true,
-        canSend: true,
-        models,
-        stopBusy: false,
-        onOpenSettings: vi.fn(),
-        onModelChange: vi.fn(),
-        onThinkingChange,
-        onDraftChange: vi.fn(),
-        onSend: vi.fn(),
-        onStopRun: vi.fn(),
-        onAvatarShuffle: vi.fn(),
-      })
-    );
-
-    fireEvent.change(screen.getByLabelText("Thinking"), {
-      target: { value: "high" },
-    });
-    expect(onThinkingChange).toHaveBeenCalledWith("high");
-  });
-
-  it("invokes_on_open_settings_when_control_clicked", () => {
-    const onOpenSettings = vi.fn();
-
-    render(
-      createElement(AgentChatPanel, {
-        agent: createAgent(),
-        isSelected: true,
-        canSend: true,
-        models,
-        stopBusy: false,
-        onOpenSettings,
-        onModelChange: vi.fn(),
-        onThinkingChange: vi.fn(),
-        onDraftChange: vi.fn(),
-        onSend: vi.fn(),
-        onStopRun: vi.fn(),
-        onAvatarShuffle: vi.fn(),
-      })
-    );
-
-    fireEvent.click(screen.getByTestId("agent-settings-toggle"));
-    expect(onOpenSettings).toHaveBeenCalledTimes(1);
-  });
-
   it("shows_stop_button_while_running_and_invokes_stop_handler", () => {
     const onStopRun = vi.fn();
 
     render(
       createElement(AgentChatPanel, {
         agent: { ...createAgent(), status: "running" },
-        isSelected: true,
         canSend: true,
         models,
         stopBusy: false,
-        onOpenSettings: vi.fn(),
         onModelChange: vi.fn(),
         onThinkingChange: vi.fn(),
         onDraftChange: vi.fn(),
         onSend: vi.fn(),
         onStopRun,
-        onAvatarShuffle: vi.fn(),
       })
     );
 
@@ -179,17 +76,14 @@ describe("AgentChatPanel controls", () => {
     render(
       createElement(AgentChatPanel, {
         agent: { ...createAgent(), status: "running", messageParts: parts },
-        isSelected: true,
         canSend: true,
         models,
         stopBusy: false,
-        onOpenSettings: vi.fn(),
         onModelChange: vi.fn(),
         onThinkingChange: vi.fn(),
         onDraftChange: vi.fn(),
         onSend: vi.fn(),
         onStopRun: vi.fn(),
-        onAvatarShuffle: vi.fn(),
       })
     );
 
@@ -206,17 +100,14 @@ describe("AgentChatPanel controls", () => {
     render(
       createElement(AgentChatPanel, {
         agent: { ...createAgent(), status: "running", messageParts: parts },
-        isSelected: true,
         canSend: true,
         models,
         stopBusy: false,
-        onOpenSettings: vi.fn(),
         onModelChange: vi.fn(),
         onThinkingChange: vi.fn(),
         onDraftChange: vi.fn(),
         onSend: vi.fn(),
         onStopRun: vi.fn(),
-        onAvatarShuffle: vi.fn(),
       })
     );
 
@@ -234,17 +125,14 @@ describe("AgentChatPanel controls", () => {
     render(
       createElement(AgentChatPanel, {
         agent: { ...createAgent(), status: "running", messageParts: parts },
-        isSelected: true,
         canSend: true,
         models,
         stopBusy: false,
-        onOpenSettings: vi.fn(),
         onModelChange: vi.fn(),
         onThinkingChange: vi.fn(),
         onDraftChange: vi.fn(),
         onSend: vi.fn(),
         onStopRun: vi.fn(),
-        onAvatarShuffle: vi.fn(),
       })
     );
 
@@ -260,17 +148,14 @@ describe("AgentChatPanel controls", () => {
     render(
       createElement(AgentChatPanel, {
         agent: { ...createAgent(), messageParts: parts },
-        isSelected: true,
         canSend: true,
         models,
         stopBusy: false,
-        onOpenSettings: vi.fn(),
         onModelChange: vi.fn(),
         onThinkingChange: vi.fn(),
         onDraftChange: vi.fn(),
         onSend: vi.fn(),
         onStopRun: vi.fn(),
-        onAvatarShuffle: vi.fn(),
       })
     );
 
@@ -282,17 +167,14 @@ describe("AgentChatPanel controls", () => {
     render(
       createElement(AgentChatPanel, {
         agent: createAgent(),
-        isSelected: true,
         canSend: true,
         models,
         stopBusy: false,
-        onOpenSettings: vi.fn(),
         onModelChange: vi.fn(),
         onThinkingChange: vi.fn(),
         onDraftChange: vi.fn(),
         onSend: vi.fn(),
         onStopRun: vi.fn(),
-        onAvatarShuffle: vi.fn(),
       })
     );
 

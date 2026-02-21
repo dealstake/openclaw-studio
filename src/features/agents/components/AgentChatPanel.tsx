@@ -2,7 +2,6 @@ import {
   memo,
   useCallback,
   useEffect,
-  useMemo,
   useRef,
   useState,
   type ChangeEvent,
@@ -10,30 +9,23 @@ import {
   type MutableRefObject,
 } from "react";
 
-import { formatTokens } from "@/lib/text/format";
 import type { AgentState as AgentRecord } from "@/features/agents/state/store";
 import type { MessagePart } from "@/lib/chat/types";
-import { AlertTriangle, ArrowLeft, ArrowUp, ChevronDown, ChevronUp, RefreshCw, Settings, Shuffle, Sparkles, SquarePen, X, Zap } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ArrowUp, RefreshCw, Sparkles, X, Zap } from "lucide-react";
 import type { GatewayModelChoice } from "@/lib/gateway/models";
 import { isNearBottom } from "@/lib/dom";
-import { AgentAvatar } from "./AgentAvatar";
 import { AgentChatView } from "./AgentChatView";
 import { EmptyStatePanel } from "./EmptyStatePanel";
-import { TokenProgressBar } from "@/components/TokenProgressBar";
-
 type AgentChatPanelProps = {
   agent: AgentRecord;
-  isSelected: boolean;
   canSend: boolean;
   models: GatewayModelChoice[];
   stopBusy: boolean;
-  onOpenSettings: () => void;
   onModelChange: (value: string | null) => void;
   onThinkingChange: (value: string | null) => void;
   onDraftChange: (value: string) => void;
   onSend: (message: string) => void;
   onStopRun: () => void;
-  onAvatarShuffle: () => void;
   tokenUsed?: number;
   tokenLimit?: number;
   onNewSession?: () => void;
@@ -395,20 +387,13 @@ const AgentChatComposer = memo(function AgentChatComposer({
 
 export const AgentChatPanel = memo(function AgentChatPanel({
   agent,
-  isSelected,
   canSend,
-  models,
   stopBusy,
-  onOpenSettings,
-  onModelChange,
-  onThinkingChange,
   onDraftChange,
   onSend,
   onStopRun,
-  onAvatarShuffle,
   tokenUsed,
   tokenLimit,
-  onNewSession,
   viewingSessionKey,
   viewingSessionHistory = [],
   viewingSessionLoading = false,
@@ -419,7 +404,6 @@ export const AgentChatPanel = memo(function AgentChatPanel({
   const draftRef = useRef<HTMLTextAreaElement | null>(null);
   const scrollToBottomNextOutputRef = useRef(false);
   const plainDraftRef = useRef(agent.draft);
-  const [mobileHeaderExpanded, setMobileHeaderExpanded] = useState(false);
 
   // Escape key exits transcript viewer
   useEffect(() => {
@@ -433,10 +417,6 @@ export const AgentChatPanel = memo(function AgentChatPanel({
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [viewingSessionKey, onExitSessionView]);
-
-  const toggleMobileHeader = useCallback(() => {
-    setMobileHeaderExpanded((prev) => !prev);
-  }, []);
 
   const resizeDraft = useCallback(() => {
     const el = draftRef.current;
@@ -464,40 +444,6 @@ export const AgentChatPanel = memo(function AgentChatPanel({
     [agent.status, canSend, onSend]
   );
 
-  const statusColor =
-    agent.status === "running"
-      ? "border border-primary/30 bg-primary/15 text-foreground"
-      : agent.status === "error"
-        ? "border border-destructive/35 bg-destructive/12 text-destructive"
-        : "border border-border/70 bg-muted text-muted-foreground";
-  const statusLabel =
-    agent.status === "running"
-      ? "Running"
-      : agent.status === "error"
-        ? "Error"
-        : "Idle";
-
-  const modelOptions = useMemo(
-    () =>
-      models.map((entry) => ({
-        value: `${entry.provider}/${entry.id}`,
-        label:
-          entry.name === `${entry.provider}/${entry.id}`
-            ? entry.name
-            : `${entry.name} (${entry.provider}/${entry.id})`,
-        reasoning: entry.reasoning,
-      })),
-    [models]
-  );
-  const modelValue = agent.model ?? "";
-  const modelOptionsWithFallback =
-    modelValue && !modelOptions.some((option) => option.value === modelValue)
-      ? [{ value: modelValue, label: modelValue, reasoning: undefined }, ...modelOptions]
-      : modelOptions;
-  const selectedModel = modelOptionsWithFallback.find((option) => option.value === modelValue);
-  const allowThinking = selectedModel?.reasoning !== false;
-
-  const avatarSeed = agent.avatarSeed ?? agent.agentId;
   const running = agent.status === "running";
 
   const handleComposerDraftChange = useCallback(
@@ -517,191 +463,6 @@ export const AgentChatPanel = memo(function AgentChatPanel({
 
   return (
     <div data-agent-panel className="group fade-up relative flex h-full w-full min-w-0 flex-col overflow-hidden">
-      {/* Slim toolbar — agent name + controls + model/thinking inline */}
-      <div className="flex shrink-0 items-center gap-2 border-b border-border/50 px-3 py-2 sm:px-4">
-        <div className="group/avatar relative shrink-0">
-          <AgentAvatar
-            seed={avatarSeed}
-            name={agent.name}
-            avatarUrl={agent.avatarUrl ?? null}
-            size={32}
-            isSelected={isSelected}
-          />
-          <button
-            className="nodrag pointer-events-none absolute -bottom-0.5 -right-0.5 hidden h-5 w-5 items-center justify-center rounded-full border border-border/80 bg-card/90 text-muted-foreground opacity-0 shadow-sm transition group-focus-within/avatar:pointer-events-auto group-focus-within/avatar:opacity-100 group-hover/avatar:pointer-events-auto group-hover/avatar:opacity-100 hover:border-border hover:bg-muted/65 sm:flex"
-            type="button"
-            aria-label="Shuffle avatar"
-            data-testid="agent-avatar-shuffle"
-            onClick={(event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              onAvatarShuffle();
-            }}
-          >
-            <Shuffle className="h-2.5 w-2.5" />
-          </button>
-        </div>
-
-        <span className="min-w-0 truncate text-sm font-semibold text-foreground">
-          {agent.name}
-        </span>
-        <span
-          className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.14em] ${statusColor}`}
-        >
-          {statusLabel}
-        </span>
-
-        {/* Spacer */}
-        <div className="flex-1" />
-
-        {/* Model selector — inline compact */}
-        <select
-          className="hidden h-7 max-w-[180px] min-w-0 overflow-hidden text-ellipsis whitespace-nowrap rounded-md border border-border bg-card/75 px-2 text-[11px] font-medium text-muted-foreground transition hover:text-foreground sm:block"
-          aria-label="Model"
-          title={modelValue}
-          value={modelValue}
-          onChange={(event) => {
-            const value = event.target.value.trim();
-            onModelChange(value ? value : null);
-          }}
-        >
-          {modelOptionsWithFallback.length === 0 ? (
-            <option value="">No models</option>
-          ) : null}
-          {modelOptionsWithFallback.map((option) => (
-            <option key={option.value} value={option.value} title={option.value}>
-              {option.label.split(" (")[0]}
-            </option>
-          ))}
-        </select>
-
-        {/* Thinking selector — inline compact */}
-        {allowThinking ? (
-          <select
-            className="hidden h-7 w-[90px] rounded-md border border-border bg-card/75 px-2 text-[11px] font-medium text-muted-foreground transition hover:text-foreground sm:block"
-            aria-label="Thinking"
-            value={agent.thinkingLevel ?? ""}
-            onChange={(event) => {
-              const value = event.target.value.trim();
-              onThinkingChange(value ? value : null);
-            }}
-          >
-            <option value="">Thinking</option>
-            <option value="off">Off</option>
-            <option value="minimal">Minimal</option>
-            <option value="low">Low</option>
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
-            <option value="xhigh">XHigh</option>
-          </select>
-        ) : null}
-
-        {/* Token usage — slim inline */}
-        {typeof tokenUsed === "number" && tokenLimit ? (
-          <div className="hidden items-center gap-1.5 sm:flex">
-            <div className="w-16">
-              <TokenProgressBar used={tokenUsed} limit={tokenLimit} />
-            </div>
-            <span className="shrink-0 font-mono text-[10px] text-muted-foreground/70">
-              {formatTokens(tokenUsed)}
-            </span>
-          </div>
-        ) : null}
-
-        {/* Action buttons */}
-        {onNewSession ? (
-          <button
-            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
-            type="button"
-            data-testid="agent-new-session"
-            aria-label="New session"
-            title="New session"
-            onClick={onNewSession}
-            disabled={running}
-          >
-            <SquarePen className="h-3.5 w-3.5" />
-          </button>
-        ) : null}
-        <button
-          className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground"
-          type="button"
-          data-testid="agent-settings-toggle"
-          aria-label="Open agent settings"
-          title="Agent settings"
-          onClick={onOpenSettings}
-        >
-          <Settings className="h-3.5 w-3.5" />
-        </button>
-
-        {/* Mobile: expand model settings */}
-        <button
-          type="button"
-          className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground sm:hidden"
-          onClick={toggleMobileHeader}
-          aria-expanded={mobileHeaderExpanded}
-          aria-controls="mobile-model-settings"
-          aria-label={mobileHeaderExpanded ? "Collapse model settings" : "Expand model settings"}
-        >
-          {mobileHeaderExpanded ? (
-            <ChevronUp className="h-3.5 w-3.5" />
-          ) : (
-            <ChevronDown className="h-3.5 w-3.5" />
-          )}
-        </button>
-      </div>
-
-      {/* Mobile model settings (expandable) */}
-      {mobileHeaderExpanded && (
-        <div id="mobile-model-settings" className="border-b border-border/50 px-3 py-2 sm:hidden">
-          <div className="flex gap-2">
-            <select
-              className="h-7 min-w-0 flex-1 rounded-md border border-border bg-card/75 px-2 text-[11px] font-medium text-foreground"
-              aria-label="Model"
-              value={modelValue}
-              onChange={(event) => {
-                const value = event.target.value.trim();
-                onModelChange(value ? value : null);
-              }}
-            >
-              {modelOptionsWithFallback.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label.split(" (")[0]}
-                </option>
-              ))}
-            </select>
-            {allowThinking ? (
-              <select
-                className="h-7 w-[90px] rounded-md border border-border bg-card/75 px-2 text-[11px] font-medium text-foreground"
-                aria-label="Thinking"
-                value={agent.thinkingLevel ?? ""}
-                onChange={(event) => {
-                  const value = event.target.value.trim();
-                  onThinkingChange(value ? value : null);
-                }}
-              >
-                <option value="">Thinking</option>
-                <option value="off">Off</option>
-                <option value="minimal">Minimal</option>
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-                <option value="xhigh">XHigh</option>
-              </select>
-            ) : null}
-          </div>
-          {typeof tokenUsed === "number" && tokenLimit ? (
-            <div className="mt-2 flex items-center gap-2">
-              <div className="min-w-0 flex-1">
-                <TokenProgressBar used={tokenUsed} limit={tokenLimit} />
-              </div>
-              <span className="shrink-0 font-mono text-[10px] text-muted-foreground/70">
-                {formatTokens(tokenUsed)}/{formatTokens(tokenLimit)}
-              </span>
-            </div>
-          ) : null}
-        </div>
-      )}
-
       {/* Context warning banner — slim pill at 80%+ utilization */}
       {typeof tokenUsed === "number" && tokenLimit && tokenLimit > 0 && tokenUsed / tokenLimit >= 0.8 && (
         <div className="mx-auto mt-2 flex w-full max-w-3xl items-center gap-2 rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-3 py-1.5 text-xs sm:px-6">
