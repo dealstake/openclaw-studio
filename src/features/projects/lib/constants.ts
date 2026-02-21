@@ -1,11 +1,15 @@
 import {
   CheckCircle2,
   ClipboardList,
+  FlaskConical,
+  FolderGit2,
   Hammer,
   Loader2,
   PauseCircle,
   Inbox,
   ListOrdered,
+  Server,
+  Sparkles,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -68,6 +72,62 @@ export const PRIORITY_DOT: Record<string, string> = {
   "🟡": "bg-yellow-400",
   "🟢": "bg-green-400",
 };
+
+// ─── Priority Colors (full-label keyed — for preview cards and badges) ───────
+
+export const PRIORITY_COLORS: Record<string, string> = {
+  "🔴 P0": "bg-red-500/20 text-red-400",
+  "🟡 P1": "bg-yellow-500/20 text-yellow-400",
+  "🟢 P2": "bg-green-500/20 text-green-400",
+};
+
+/** Full-label priority dot colors (for preview cards) */
+export const PRIORITY_DOT_FULL: Record<string, string> = {
+  "🔴 P0": "bg-red-500",
+  "🟡 P1": "bg-yellow-500",
+  "🟢 P2": "bg-green-500",
+};
+
+// ─── Type Cards (for project wizard type selection) ──────────────────────────
+
+export type ProjectType = "feature" | "infrastructure" | "research" | "other";
+
+export const TYPE_CARDS: Array<{
+  type: ProjectType;
+  icon: typeof Sparkles;
+  title: string;
+  desc: string;
+  color: string;
+}> = [
+  {
+    type: "feature",
+    icon: Sparkles,
+    title: "New Feature",
+    desc: "Build a new user-facing capability or component.",
+    color: "border-green-500/40 hover:border-green-500/70 hover:bg-green-500/5",
+  },
+  {
+    type: "infrastructure",
+    icon: Server,
+    title: "Infrastructure",
+    desc: "Update cloud resources, CI/CD, or deployment logic.",
+    color: "border-purple-500/40 hover:border-purple-500/70 hover:bg-purple-500/5",
+  },
+  {
+    type: "research",
+    icon: FlaskConical,
+    title: "Research Spike",
+    desc: "Explore a new technology, API, or design pattern.",
+    color: "border-orange-500/40 hover:border-orange-500/70 hover:bg-orange-500/5",
+  },
+  {
+    type: "other",
+    icon: FolderGit2,
+    title: "Other",
+    desc: "Something else — define the scope yourself.",
+    color: "border-zinc-500/40 hover:border-zinc-500/70 hover:bg-zinc-500/5",
+  },
+];
 
 // ─── Status Toggle Mappings (legacy — kept for backward compat) ──────────────
 

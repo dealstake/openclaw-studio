@@ -7,9 +7,6 @@ import {
   X,
   ArrowLeft,
   Sparkles,
-  FolderGit2,
-  FlaskConical,
-  Server,
   Loader2,
 } from "lucide-react";
 import { appendRow } from "../lib/indexTable";
@@ -26,10 +23,11 @@ import {
   type ProjectConfig,
 } from "./ProjectPreviewCard";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
+import { TYPE_CARDS, type ProjectType } from "../lib/constants";
+import { slugify, generateMarkdown } from "../lib/projectMarkdown";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-type ProjectType = "feature" | "infrastructure" | "research" | "other";
 type WizardStep = "type-select" | "chat";
 
 interface ProjectWizardModalProps {
@@ -38,100 +36,6 @@ interface ProjectWizardModalProps {
   client: GatewayClient | null;
   onClose: () => void;
   onCreated: () => void;
-}
-
-// ─── Type cards ──────────────────────────────────────────────────────────────
-
-const TYPE_CARDS: Array<{
-  type: ProjectType;
-  icon: typeof Sparkles;
-  title: string;
-  desc: string;
-  color: string;
-}> = [
-  {
-    type: "feature",
-    icon: Sparkles,
-    title: "New Feature",
-    desc: "Build a new user-facing capability or component.",
-    color: "border-green-500/40 hover:border-green-500/70 hover:bg-green-500/5",
-  },
-  {
-    type: "infrastructure",
-    icon: Server,
-    title: "Infrastructure",
-    desc: "Update cloud resources, CI/CD, or deployment logic.",
-    color: "border-purple-500/40 hover:border-purple-500/70 hover:bg-purple-500/5",
-  },
-  {
-    type: "research",
-    icon: FlaskConical,
-    title: "Research Spike",
-    desc: "Explore a new technology, API, or design pattern.",
-    color: "border-orange-500/40 hover:border-orange-500/70 hover:bg-orange-500/5",
-  },
-  {
-    type: "other",
-    icon: FolderGit2,
-    title: "Other",
-    desc: "Something else — define the scope yourself.",
-    color: "border-zinc-500/40 hover:border-zinc-500/70 hover:bg-zinc-500/5",
-  },
-];
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-export function slugify(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 60);
-}
-
-export function generateMarkdown(config: ProjectConfig): string {
-  const now = new Date().toISOString().slice(0, 10);
-
-  const phaseSections = config.phases
-    .map(
-      (phase) =>
-        `### ${phase.name}\n${phase.tasks.map((t) => `- [ ] ${t}`).join("\n")}`,
-    )
-    .join("\n\n");
-
-  return `# ${config.name}
-
-> ${config.description}
-
-## Status: 📋 Defined
-## Priority: ${config.priority}
-
-## Problem
-
-_Describe the problem this project solves._
-
-## Research Findings
-
-_To be filled during research phase._
-
-## Implementation Plan
-
-${phaseSections}
-
-## Key Decisions
-
-_Document technical choices and rationale here._
-
-## Continuation Context
-_Updated by the agent at end of each work session_
-- **Last worked on**: ${now} — Project created via AI wizard
-- **Immediate next step**: Define implementation plan details and begin Phase 1
-- **Blocked by**: Nothing
-- **Context needed**: TBD
-
-## History
-- ${now}: Project created via Studio AI wizard.
-`;
 }
 
 // ─── Config extractor ────────────────────────────────────────────────────────

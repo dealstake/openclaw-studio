@@ -1,10 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor, cleanup, act } from "@testing-library/react";
-import {
-  ProjectWizardModal,
-  slugify,
-  generateMarkdown,
-} from "@/features/projects/components/ProjectWizardModal";
+import { ProjectWizardModal } from "@/features/projects/components/ProjectWizardModal";
+import { slugify, generateMarkdown } from "@/features/projects/lib/projectMarkdown";
 import type { ProjectConfig } from "@/features/projects/components/ProjectPreviewCard";
 
 // ── Polyfill scrollIntoView for jsdom ──────────────────────────────────

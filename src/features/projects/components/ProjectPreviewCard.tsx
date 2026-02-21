@@ -8,6 +8,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { PRIORITY_COLORS, PRIORITY_DOT_FULL } from "../lib/constants";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -24,20 +25,6 @@ export interface ProjectConfig {
   type: string;
   phases: ProjectPhase[];
 }
-
-// ── Priority helpers ───────────────────────────────────────────────────
-
-const PRIORITY_COLORS: Record<string, string> = {
-  "🔴 P0": "bg-red-500/20 text-red-400",
-  "🟡 P1": "bg-yellow-500/20 text-yellow-400",
-  "🟢 P2": "bg-green-500/20 text-green-400",
-};
-
-const PRIORITY_DOT: Record<string, string> = {
-  "🔴 P0": "bg-red-500",
-  "🟡 P1": "bg-yellow-500",
-  "🟢 P2": "bg-green-500",
-};
 
 // ── Component ──────────────────────────────────────────────────────────
 
@@ -80,7 +67,7 @@ export const ProjectPreviewCard = React.memo(function ProjectPreviewCard({
           className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-semibold ${PRIORITY_COLORS[config.priority] ?? "bg-muted text-muted-foreground"}`}
         >
           <span
-            className={`h-1.5 w-1.5 rounded-full ${PRIORITY_DOT[config.priority] ?? "bg-muted-foreground"}`}
+            className={`h-1.5 w-1.5 rounded-full ${PRIORITY_DOT_FULL[config.priority] ?? "bg-muted-foreground"}`}
           />
           {priorityLabel}
         </span>

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { slugify, generateMarkdown } from "@/features/projects/components/ProjectWizardModal";
+import { slugify, generateMarkdown } from "@/features/projects/lib/projectMarkdown";
 import type { ProjectConfig } from "@/features/projects/components/ProjectPreviewCard";
 
 function makeConfig(overrides: Partial<ProjectConfig> = {}): ProjectConfig {
@@ -44,6 +44,14 @@ describe("slugify", () => {
 
   it("handles numbers only", () => {
     expect(slugify("123 456")).toBe("123-456");
+  });
+
+  it("handles unicode characters", () => {
+    expect(slugify("café résumé")).toBe("caf-r-sum");
+  });
+
+  it("handles all special characters", () => {
+    expect(slugify("!@#$%^&*()")).toBe("");
   });
 });
 
