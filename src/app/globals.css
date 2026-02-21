@@ -198,6 +198,11 @@
   stroke-width: 1.75;
 }
 
+@utility clickable {
+  cursor: pointer;
+  user-select: none;
+}
+
 @utility scrollbar-none {
   scrollbar-width: none;
   &::-webkit-scrollbar {
@@ -425,10 +430,10 @@ summary:active {
   animation: thinkingShimmer 2.4s ease-in-out infinite;
 }
 
-/* 3. Smooth scroll for chat transcript */
-[role="log"] {
-  scroll-behavior: smooth;
-}
+/* 3. Chat transcript scroll — NO scroll-behavior:smooth here!
+ * Smooth scrolling on long conversations (40K+ pixels) makes auto-scroll
+ * take seconds to reach the bottom, making mobile unusable on refresh.
+ * Smooth scrolling is applied programmatically only for "Jump to latest" clicks. */
 
 /* ============================================================
  * Mobile viewport fixes

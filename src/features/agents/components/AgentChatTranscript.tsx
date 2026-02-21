@@ -32,30 +32,25 @@ export const AgentChatTranscript = memo(function AgentChatTranscript({
   const userScrollingRef = useRef(false);
   const userScrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const initialScrollDone = useRef(false);
+  const initialScrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastScrollHeightRef = useRef(0);
   const [isPinned, setIsPinned] = useState(true);
 
-  /** Scroll to bottom of chat. Instant for initial load, smooth for streaming updates. */
-  const scrollChatToBottom = useCallback((instant?: boolean) => {
+  // ---------------------------------------------------------------------------
+  // Core scroll helper — ALWAYS instant except for explicit user-triggered
+  // "Jump to latest" clicks. CSS scroll-smooth was removed from the container
+  // because it made ALL scrolls animate — on 40K+ pixel conversations, smooth
+  // scrolling from top to bottom takes seconds, making the chat unusable.
+  // ---------------------------------------------------------------------------
+  const scrollToBottom = useCallback((smooth?: boolean) => {
     const el = chatRef.current;
     if (!el) return;
-    // Skip if user is actively scrolling up
     if (userScrollingRef.current) return;
-    if (instant) {
-      // For initial load: bypass CSS scroll-behavior by setting scrollTop directly.
-      // CSS `scroll-smooth` on the container can override JS `behavior: "instant"`
-      // in some browsers, causing a slow animated scroll on long conversations.
-      el.style.scrollBehavior = "auto";
-      el.scrollTop = el.scrollHeight;
-      // Restore smooth scrolling after a frame
-      requestAnimationFrame(() => {
-        el.style.scrollBehavior = "";
-      });
+    if (smooth) {
+      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
     } else {
-      el.scrollTo({
-        top: el.scrollHeight,
-        behavior: "smooth",
-      });
+      // Instant: direct assignment, no animation
+      el.scrollTop = el.scrollHeight;
     }
   }, []);
 
@@ -65,7 +60,6 @@ export const AgentChatTranscript = memo(function AgentChatTranscript({
     setIsPinned(nextPinned);
   }, []);
 
-  // Generous threshold: 300px accounts for tool call blocks and rapid streaming
   const updatePinnedFromScroll = useCallback(() => {
     const el = chatRef.current;
     if (!el) return;
@@ -85,57 +79,75 @@ export const AgentChatTranscript = memo(function AgentChatTranscript({
     if (scrollFrameRef.current !== null) return;
     scrollFrameRef.current = requestAnimationFrame(() => {
       scrollFrameRef.current = null;
-      scrollChatToBottom();
+      scrollToBottom();
     });
-  }, [scrollChatToBottom]);
+  }, [scrollToBottom]);
 
   useEffect(() => {
     updatePinnedFromScroll();
   }, [updatePinnedFromScroll]);
 
-  // Force scroll to bottom on initial content load and when switching agents.
-  // For long conversations, the DOM may need multiple frames to fully render,
-  // so we retry the instant scroll a few times to ensure we reach the bottom.
+  // ---------------------------------------------------------------------------
+  // Initial scroll: on page load / refresh / agent switch.
+  // Uses aggressive retry strategy because on real mobile devices, rendering
+  // hundreds of messages can take 300-500ms+ and the DOM height keeps growing.
+  // ---------------------------------------------------------------------------
   const partCount = messageParts.length;
   useEffect(() => {
     if (partCount > 0 && !initialScrollDone.current) {
       initialScrollDone.current = true;
-      let retries = 0;
-      const maxRetries = 5;
-      const tryScroll = () => {
+
+      // Attempt 1: immediate after 2 frames (handles fast renders)
+      let rafRetries = 0;
+      const tryScrollRaf = () => {
+        scrollToBottom();
         const el = chatRef.current;
-        if (!el) return;
-        scrollChatToBottom(true);
-        // Check if we actually reached the bottom; if not, retry
-        const atBottom = el.scrollHeight - el.clientHeight - el.scrollTop < 50;
-        if (!atBottom && retries < maxRetries) {
-          retries++;
-          requestAnimationFrame(tryScroll);
-        } else {
-          // After initial scroll settles, update pinned state
-          updatePinnedFromScroll();
+        if (el) {
+          const gap = el.scrollHeight - el.clientHeight - el.scrollTop;
+          if (gap > 50 && rafRetries < 8) {
+            rafRetries++;
+            requestAnimationFrame(tryScrollRaf);
+            return;
+          }
         }
+        updatePinnedFromScroll();
       };
-      // Start after 2 frames to let React render
       requestAnimationFrame(() => {
-        requestAnimationFrame(tryScroll);
+        requestAnimationFrame(tryScrollRaf);
       });
+
+      // Attempt 2: delayed fallback (handles slow mobile DOM rendering)
+      // Fires after 300ms and 800ms as safety nets
+      const timer1 = setTimeout(() => {
+        scrollToBottom();
+        updatePinnedFromScroll();
+      }, 300);
+      const timer2 = setTimeout(() => {
+        scrollToBottom();
+        updatePinnedFromScroll();
+      }, 800);
+      initialScrollTimerRef.current = timer2;
+
+      return () => {
+        clearTimeout(timer1);
+        clearTimeout(timer2);
+      };
     }
     if (partCount === 0) {
       initialScrollDone.current = false;
     }
-  }, [partCount, scrollChatToBottom, updatePinnedFromScroll]);
+  }, [partCount, scrollToBottom, updatePinnedFromScroll]);
 
   const showJumpToLatest = !isPinned && partCount > 0;
 
-  // Scroll on new message parts
+  // Scroll on new message parts (streaming / new messages arriving)
   useEffect(() => {
     const shouldForceScroll = scrollToBottomNextOutputRef.current;
     if (shouldForceScroll) {
       scrollToBottomNextOutputRef.current = false;
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          scrollChatToBottom();
+          scrollToBottom();
         });
       });
       return;
@@ -148,11 +160,13 @@ export const AgentChatTranscript = memo(function AgentChatTranscript({
   }, [
     partCount,
     scheduleScrollToBottom,
-    scrollChatToBottom,
+    scrollToBottom,
     scrollToBottomNextOutputRef,
   ]);
 
-  // KEY FIX: ResizeObserver on chat content to auto-scroll during streaming.
+  // ResizeObserver: auto-scroll during streaming when content height changes.
+  // During streaming, individual text parts grow (content mutates) without
+  // the messageParts array length changing.
   useEffect(() => {
     const el = chatRef.current;
     if (!el) return;
@@ -175,6 +189,7 @@ export const AgentChatTranscript = memo(function AgentChatTranscript({
     return () => observer.disconnect();
   }, [scheduleScrollToBottom, partCount]);
 
+  // Cleanup
   useEffect(() => {
     return () => {
       if (scrollFrameRef.current !== null) {
@@ -183,6 +198,9 @@ export const AgentChatTranscript = memo(function AgentChatTranscript({
       }
       if (userScrollTimeoutRef.current !== null) {
         clearTimeout(userScrollTimeoutRef.current);
+      }
+      if (initialScrollTimerRef.current !== null) {
+        clearTimeout(initialScrollTimerRef.current);
       }
     };
   }, []);
@@ -198,10 +216,11 @@ export const AgentChatTranscript = memo(function AgentChatTranscript({
           role="log"
           aria-label="Chat messages"
           aria-live="polite"
-          className="h-full overflow-y-auto overflow-x-hidden scroll-smooth py-3 pb-36 sm:py-4 sm:pb-40"
+          className="h-full overflow-y-auto overflow-x-hidden py-3 pb-36 sm:py-4 sm:pb-40"
           onScroll={() => updatePinnedFromScroll()}
           onWheel={(event) => {
             event.stopPropagation();
+            // Detect manual scroll-up to prevent auto-scroll from fighting user
             if (event.deltaY < 0) {
               userScrollingRef.current = true;
               if (userScrollTimeoutRef.current) clearTimeout(userScrollTimeoutRef.current);
@@ -250,7 +269,7 @@ export const AgentChatTranscript = memo(function AgentChatTranscript({
               className="pointer-events-auto mx-auto flex items-center gap-1.5 rounded-full border border-border/80 bg-card px-3 py-1.5 text-xs font-medium text-foreground shadow-sm transition hover:bg-muted/70"
               onClick={() => {
                 setPinned(true);
-                scrollChatToBottom();
+                scrollToBottom(true);
               }}
               aria-label="Jump to latest"
             >
