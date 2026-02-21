@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Plus, RefreshCw, Zap, Clock, Calendar, Search } from "lucide-react";
+import { Plus, RefreshCw, Zap, Clock, Calendar } from "lucide-react";
 import { EmptyStatePanel } from "@/features/agents/components/EmptyStatePanel";
 import { Skeleton } from "@/components/Skeleton";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
@@ -11,12 +11,15 @@ import { TaskDetailDrawer } from "./TaskDetailDrawer";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { PanelIconButton } from "@/components/PanelIconButton";
 import { SectionLabel } from "@/components/SectionLabel";
+import { PanelToolbar } from "@/components/ui/PanelToolbar";
+import { FilterPillGroup, type FilterOption } from "@/components/ui/FilterPillGroup";
+import { PanelSearchInput } from "@/components/ui/PanelSearchInput";
 
 // ─── Filter tabs ─────────────────────────────────────────────────────────────
 
 type FilterTab = "all" | TaskType;
 
-const FILTER_TABS: Array<{ value: FilterTab; label: string }> = [
+const FILTER_OPTIONS: FilterOption<FilterTab>[] = [
   { value: "all", label: "All" },
   { value: "constant", label: "Constant" },
   { value: "periodic", label: "Periodic" },
@@ -100,12 +103,15 @@ export const TasksPanel = memo(function TasksPanel({
     setPendingDeleteId(null);
   }, []);
 
-  const counts = useMemo<Record<FilterTab, number>>(() => ({
-    all: tasks.length,
-    constant: tasks.filter((t) => t.type === "constant").length,
-    periodic: tasks.filter((t) => t.type === "periodic").length,
-    scheduled: tasks.filter((t) => t.type === "scheduled").length,
-  }), [tasks]);
+  const filterOptionsWithCounts = useMemo<FilterOption<FilterTab>[]>(() => {
+    const counts: Record<FilterTab, number> = {
+      all: tasks.length,
+      constant: tasks.filter((t) => t.type === "constant").length,
+      periodic: tasks.filter((t) => t.type === "periodic").length,
+      scheduled: tasks.filter((t) => t.type === "scheduled").length,
+    };
+    return FILTER_OPTIONS.map((opt) => ({ ...opt, count: counts[opt.value] }));
+  }, [tasks]);
 
   const filtered = useMemo(() => {
     let result = filter === "all" ? tasks : tasks.filter((t) => t.type === filter);
@@ -208,49 +214,21 @@ export const TasksPanel = memo(function TasksPanel({
         </div>
       </div>
 
-      {/* Filter tabs */}
+      {/* Toolbar: filters + search */}
       {tasks.length > 0 ? (
-        <div className="flex items-center gap-1 border-b border-border/30 px-4 py-2">
-          {FILTER_TABS.map((tab) => (
-            <button
-              key={tab.value}
-              type="button"
-              className={`flex items-center gap-1.5 rounded-md px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.08em] transition focus-ring ${
-                filter === tab.value
-                  ? "bg-muted text-foreground"
-                  : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-              }`}
-              onClick={() => setFilter(tab.value)}
-            >
-              {tab.label}
-              {counts[tab.value] > 0 ? (
-                <span className={`inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[8px] font-bold ${
-                  filter === tab.value
-                    ? "bg-primary/20 text-primary"
-                    : "bg-muted-foreground/15 text-muted-foreground"
-                }`}>
-                  {counts[tab.value]}
-                </span>
-              ) : null}
-            </button>
-          ))}
-        </div>
-      ) : null}
-
-      {/* Search */}
-      {tasks.length > 0 ? (
-        <div className="border-b border-border/30 px-4 py-2">
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search tasks…"
-              className="h-7 w-full rounded-md border border-border/50 bg-muted/30 pl-7 pr-2 font-mono text-[10px] text-foreground placeholder:text-muted-foreground/60 focus:border-primary/40 focus:outline-none focus:ring-1 focus:ring-primary/20"
-            />
-          </div>
-        </div>
+        <PanelToolbar>
+          <FilterPillGroup<FilterTab>
+            options={filterOptionsWithCounts}
+            value={filter}
+            onChange={setFilter}
+          />
+          <PanelSearchInput
+            value={search}
+            onChange={setSearch}
+            placeholder="Search tasks…"
+            className="max-w-[200px] sm:max-w-[160px]"
+          />
+        </PanelToolbar>
       ) : null}
 
       {/* Content */}
