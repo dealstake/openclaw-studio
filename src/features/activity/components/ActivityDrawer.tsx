@@ -136,7 +136,7 @@ const DrawerContent = React.memo(function DrawerContent({
               aria-label={statsOpen ? "Hide stats" : "Show stats"}
               title={statsOpen ? "Hide stats" : "Show stats"}
             >
-              <BarChart3 className={cn("h-3 w-3", statsOpen && "text-primary")} />
+              <BarChart3 className={cn("h-3 w-3", statsOpen && "text-primary-text")} />
             </PanelIconButton>
             <PanelIconButton
               onClick={() => expandTab(tab)}

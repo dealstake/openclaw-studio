@@ -227,7 +227,7 @@ export const AgentWizardModal = React.memo(function AgentWizardModal({
               </button>
             )}
             <div className="flex items-center gap-1.5">
-              <Sparkles className="h-4 w-4 text-primary" />
+              <Sparkles className="h-4 w-4 text-primary-text" />
               <SectionLabel as="span">
                 {step === "chat" ? "Agent Wizard" : "Review Agent"}
               </SectionLabel>

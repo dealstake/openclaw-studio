@@ -36,7 +36,7 @@ export const PanelIconButton = React.memo(function PanelIconButton({
   return (
     <button
       type="button"
-      className={`flex h-9 w-9 sm:h-7 sm:w-7 items-center justify-center rounded-md border transition active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60 ${variantClasses[variant]} ${className}`}
+      className={`flex h-9 w-9 sm:h-7 sm:w-7 items-center justify-center rounded-md border transition active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60 focus-ring ${variantClasses[variant]} ${className}`}
       {...rest}
     >
       {children}

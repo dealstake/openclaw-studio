@@ -224,7 +224,7 @@ export const ProjectWizardModal = memo(function ProjectWizardModal({
                 </button>
               )}
               <div className="flex items-center gap-1.5">
-                <Sparkles className="h-4 w-4 text-primary" />
+                <Sparkles className="h-4 w-4 text-primary-text" />
                 <Dialog.Title
                   className={`${sectionLabelClass} text-muted-foreground`}
                 >

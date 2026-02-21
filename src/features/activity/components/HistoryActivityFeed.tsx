@@ -157,7 +157,7 @@ export const HistoryActivityFeed = React.memo(function HistoryActivityFeed({
         <button
           type="button"
           onClick={() => void loadEvents()}
-          className="flex items-center gap-1 text-xs text-primary hover:underline"
+          className="flex items-center gap-1 text-xs text-primary-text hover:underline"
         >
           <RefreshCw className="h-3 w-3" />
           Retry
@@ -237,7 +237,7 @@ export const HistoryActivityFeed = React.memo(function HistoryActivityFeed({
                           <span className="text-[10px] text-muted-foreground/60">{event.model}</span>
                         )}
                         {event.projectName && (
-                          <span className="text-[10px] font-medium text-primary/70">{event.projectName}</span>
+                          <span className="text-[10px] font-medium text-primary-text/70">{event.projectName}</span>
                         )}
                       </div>
                       <div style={{ height: 230 }}>

@@ -22,7 +22,7 @@ export const HeaderIconButton = memo(function HeaderIconButton({
   return (
     <button
       type="button"
-      className={`inline-flex h-9 w-9 items-center justify-center rounded-md border shadow-sm transition ${
+      className={`inline-flex h-9 w-9 items-center justify-center rounded-md border shadow-sm transition focus-ring ${
         active
           ? "border-border bg-muted text-foreground"
           : "border-input/90 bg-background/75 text-foreground hover:border-ring hover:bg-card"

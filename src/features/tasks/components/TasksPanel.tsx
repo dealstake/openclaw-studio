@@ -188,7 +188,7 @@ export const TasksPanel = memo(function TasksPanel({
         </div>
         <div className="flex items-center gap-1.5">
           <button
-            className="flex h-7 items-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-2.5 text-primary transition hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex h-7 items-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-2.5 text-primary transition focus-ring hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
             type="button"
             aria-label="Create new task"
             onClick={onNewTask}
@@ -215,7 +215,7 @@ export const TasksPanel = memo(function TasksPanel({
             <button
               key={tab.value}
               type="button"
-              className={`flex items-center gap-1.5 rounded-md px-2 py-1 font-mono text-[9px] font-semibold uppercase tracking-[0.08em] transition ${
+              className={`flex items-center gap-1.5 rounded-md px-2 py-1 font-mono text-[9px] font-semibold uppercase tracking-[0.08em] transition focus-ring ${
                 filter === tab.value
                   ? "bg-muted text-foreground"
                   : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
@@ -294,7 +294,7 @@ export const TasksPanel = memo(function TasksPanel({
             </div>
             <button
               type="button"
-              className="relative z-10 flex items-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-3 py-1.5 text-primary transition hover:bg-primary/20"
+              className="relative z-10 flex items-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-3 py-1.5 text-primary transition focus-ring hover:bg-primary/20"
               onClick={onNewTask}
             >
               <Plus className="h-3.5 w-3.5" />

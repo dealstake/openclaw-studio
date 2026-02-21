@@ -64,7 +64,7 @@ export const AgentPreviewCard = React.memo(function AgentPreviewCard({
       {/* Header */}
       <div className="space-y-1.5">
         <div className="flex items-center gap-2">
-          <Bot className="h-4 w-4 text-primary shrink-0" />
+          <Bot className="h-4 w-4 text-primary-text shrink-0" />
           <h3 className="text-sm font-semibold text-foreground leading-tight">
             {config.name}
           </h3>

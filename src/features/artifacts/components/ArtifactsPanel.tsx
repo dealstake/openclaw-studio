@@ -176,7 +176,7 @@ const ArtifactRow = memo(function ArtifactRow({
         {fileIcon(file.mimeType)}
       </div>
       <div className="min-w-0 flex-1">
-        <div className="truncate text-[12px] font-medium leading-tight text-foreground group-hover:text-primary">
+        <div className="truncate text-[12px] font-medium leading-tight text-foreground group-hover:text-primary-text">
           {file.name}
         </div>
         <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground">

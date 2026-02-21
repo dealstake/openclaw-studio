@@ -90,7 +90,7 @@ export const ContextPanel = memo(function ContextPanel({
               type="button"
               role="tab"
               aria-selected={isActive}
-              className={`flex-shrink-0 min-w-[44px] px-2.5 pb-2 ${sectionLabelClass} transition-colors ${
+              className={`flex-shrink-0 min-w-[44px] px-2.5 pb-2 ${sectionLabelClass} transition-colors focus-ring rounded-sm ${
                 isActive
                   ? "text-foreground font-semibold border-b-2 border-primary"
                   : "text-muted-foreground hover:text-foreground"
@@ -118,7 +118,7 @@ export const ContextPanel = memo(function ContextPanel({
               type="button"
               role="tab"
               aria-selected={isActive}
-              className={`flex-shrink-0 px-2.5 pb-2 ${sectionLabelClass} transition-colors ${
+              className={`flex-shrink-0 px-2.5 pb-2 ${sectionLabelClass} transition-colors focus-ring rounded-sm ${
                 isActive
                   ? "text-foreground font-semibold border-b-2 border-primary"
                   : "text-muted-foreground hover:text-foreground"
@@ -152,7 +152,7 @@ export const ContextPanel = memo(function ContextPanel({
           <div role="tabpanel" className="flex h-full w-full flex-col items-center justify-center gap-2 text-muted-foreground">
             <Maximize2 className="h-5 w-5" />
             <span className="text-xs">Viewing in expanded mode</span>
-            <button type="button" onClick={onExpandToggle} className="text-xs text-primary hover:underline">
+            <button type="button" onClick={onExpandToggle} className="text-xs text-primary-text hover:underline">
               Collapse
             </button>
           </div>

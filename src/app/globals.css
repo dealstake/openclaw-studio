@@ -40,7 +40,8 @@
   --border: oklch(0.845 0.012 232 / 0.62);
   --input: oklch(0.965 0.005 230);
   --ring: oklch(0.76 0.14 85);
-  --chart-1: oklch(0.58 0.07 220);
+  --primary-text: oklch(0.52 0.14 85);
+  --chart-1: oklch(0.50 0.07 220);
   --chart-2: oklch(0.66 0.08 170);
   --chart-3: oklch(0.62 0.07 250);
   --chart-4: oklch(0.71 0.06 205);
@@ -102,6 +103,7 @@
   --border: oklch(0.44 0.014 252 / 0.66);
   --input: oklch(0.20 0.016 250);
   --ring: oklch(0.76 0.14 85);
+  --primary-text: oklch(0.72 0.13 85);
   --chart-1: oklch(0.69 0.09 218);
   --chart-2: oklch(0.7 0.08 170);
   --chart-3: oklch(0.68 0.08 255);
@@ -131,6 +133,7 @@
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-text: var(--primary-text);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
@@ -180,6 +183,13 @@
   --shadow-lg: 0 24px 60px -26px color-mix(in oklch, var(--shadow-color) 58%, transparent);
   --shadow-xl: 0 36px 90px -38px color-mix(in oklch, var(--shadow-color) 66%, transparent);
   --shadow-2xl: 0 44px 120px -45px color-mix(in oklch, var(--shadow-color) 78%, transparent);
+}
+
+@utility focus-ring {
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--background), 0 0 0 4px oklch(from var(--ring) l c h / 0.5);
+  }
 }
 
 @utility scrollbar-none {

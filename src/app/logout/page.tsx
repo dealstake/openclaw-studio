@@ -39,7 +39,7 @@ export default function LogoutPage() {
           </p>
           <a
             href="/login"
-            className="mt-2 inline-block text-sm font-medium text-primary underline underline-offset-4 transition hover:brightness-110"
+            className="mt-2 inline-block text-sm font-medium text-primary-text underline underline-offset-4 transition hover:brightness-110"
           >
             Return to sign in
           </a>

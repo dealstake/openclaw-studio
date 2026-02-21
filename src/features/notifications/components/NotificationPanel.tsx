@@ -53,7 +53,7 @@ export const NotificationPanel = React.memo(function NotificationPanel() {
             key={tab.value}
             type="button"
             onClick={() => setFilter(tab.value)}
-            className={`rounded-md px-2 py-1 text-[10px] font-semibold uppercase tracking-wider transition ${
+            className={`rounded-md px-2 py-1 text-[10px] font-semibold uppercase tracking-wider transition focus-ring ${
               filter === tab.value
                 ? "bg-primary/10 text-primary"
                 : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"

@@ -127,7 +127,7 @@ export const ProjectCard = memo(function ProjectCard({
                     {wouldQueue && (
                       <span className="text-[8px] text-orange-400">queued</span>
                     )}
-                    {isCurrent && <Check className="h-3 w-3 shrink-0 text-primary" />}
+                    {isCurrent && <Check className="h-3 w-3 shrink-0 text-primary-text" />}
                   </button>
                 );
               })}
@@ -206,7 +206,7 @@ export const ProjectCard = memo(function ProjectCard({
 
           {!isDone && details.continuation.nextStep && (
             <div className="flex items-start gap-1.5 text-[10px] text-muted-foreground">
-              <span className="shrink-0 font-semibold text-primary/80">Next:</span>
+              <span className="shrink-0 font-semibold text-primary-text/80">Next:</span>
               <MarkdownViewer content={details.continuation.nextStep} className="line-clamp-1 [&>*]:m-0 [&>*]:inline" />
             </div>
           )}

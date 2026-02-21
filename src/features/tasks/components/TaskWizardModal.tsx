@@ -204,7 +204,7 @@ export const TaskWizardModal = memo(function TaskWizardModal({
               </button>
             ) : null}
             <div className="flex items-center gap-1.5">
-              <Sparkles className="h-4 w-4 text-primary" />
+              <Sparkles className="h-4 w-4 text-primary-text" />
               <SectionLabel as="span">
                 {showTemplates
                   ? "Templates"
@@ -278,7 +278,7 @@ export const TaskWizardModal = memo(function TaskWizardModal({
           <div className="flex shrink-0 items-center justify-between border-t border-border/30 px-4 py-3 pb-safe">
             <button
               type="button"
-              className="flex items-center gap-2 text-[11px] font-medium text-muted-foreground transition hover:text-primary"
+              className="flex items-center gap-2 text-[11px] font-medium text-muted-foreground transition hover:text-primary-text"
               onClick={handleShowAgentCreation}
             >
               <Sparkles className="h-3.5 w-3.5" />

@@ -137,7 +137,7 @@ export const HistoryTab = memo(function HistoryTab({
               <button
                 key={type}
                 type="button"
-                className={`rounded-full border px-2 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] transition ${
+                className={`rounded-full border px-2 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] transition focus-ring ${
                   transcriptFilter === type
                     ? "border-primary/50 bg-primary/10 text-primary"
                     : "border-border/60 bg-card/70 text-muted-foreground hover:border-border hover:text-foreground"
@@ -149,7 +149,7 @@ export const HistoryTab = memo(function HistoryTab({
             ))}
             <button
               type="button"
-              className="ml-auto flex items-center gap-1 rounded-md border border-border/60 bg-card/70 px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground transition hover:border-border hover:text-foreground"
+              className="ml-auto flex items-center gap-1 rounded-md border border-border/60 bg-card/70 px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground transition focus-ring hover:border-border hover:text-foreground"
               onClick={onToggleSort}
               aria-label={transcriptSortNewest ? "Sort oldest first" : "Sort newest first"}
             >
