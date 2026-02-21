@@ -173,7 +173,7 @@ function OverflowMenu({
             </button>
           ) : null}
           <div className="my-1 border-t border-border/40" />
-          <div className="sm:hidden px-1 py-1">
+          <div className="px-1 py-1">
             <ThemeToggle />
           </div>
           <button

@@ -391,7 +391,8 @@ const AgentStudioPage = () => {
     if (tab === "settings" && focusedAgent && !settingsAgentId) {
       setSettingsAgentId(focusedAgent.agentId);
     }
-    setManagementView((prev) => (prev === tab ? null : tab));
+    // Open management views in the expanded modal overlay instead of replacing chat
+    setExpandedTab((prev) => (prev === tab ? null : tab));
   }, [focusedAgent, settingsAgentId, setSettingsAgentId]);
 
   const handleBackToChat = useCallback(() => {
@@ -1842,7 +1843,7 @@ const AgentStudioPage = () => {
                           setMobileSessionDrawerOpen(false);
                         }}
                         className={`flex w-full items-center rounded-lg px-3 py-2.5 text-left text-[13px] font-medium transition-colors min-h-[44px] ${
-                          managementView === item.value
+                          expandedTab === item.value
                             ? "bg-accent text-accent-foreground"
                             : "text-foreground/80 hover:bg-muted"
                         }`}
@@ -1885,7 +1886,7 @@ const AgentStudioPage = () => {
                 collapsed={sessionSidebarCollapsed}
                 onToggleCollapse={() => setSessionSidebarCollapsed((p) => !p)}
                 onManagementNav={handleManagementNav}
-                activeManagementTab={managementView}
+                activeManagementTab={expandedTab === "sessions" || expandedTab === "usage" || expandedTab === "channels" || expandedTab === "cron" || expandedTab === "settings" ? expandedTab as ManagementTab : null}
               />
             </div>
             {/* ── Chat canvas: base layer filling viewport ─────────── */}
