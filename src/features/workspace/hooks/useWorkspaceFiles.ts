@@ -3,43 +3,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { WorkspaceEntry, WorkspaceFileContent } from "../types";
+import { fetchWithFallback } from "../lib/fetchWithFallback";
+import { buildBreadcrumbs } from "../lib/breadcrumbs";
 import { useVisibilityRefresh } from "@/hooks/useVisibilityRefresh";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import { readGatewayAgentFile, writeGatewayAgentFile } from "@/lib/gateway/agentFiles";
 import { AGENT_FILE_NAMES, type AgentFileName, isAgentFileName } from "@/lib/agents/agentFiles";
-
-/**
- * Try an API call first; if it fails (throws or returns !ok), try a gateway
- * fallback.  Returns the result of whichever succeeds, or null if both fail.
- */
-async function fetchWithFallback<T>(
-  apiFn: () => Promise<Response>,
-  parseApi: (res: Response) => Promise<T>,
-  gatewayFn: (() => Promise<T>) | null
-): Promise<{ data: T; source: "api" | "gateway" } | null> {
-  // Try API
-  try {
-    const res = await apiFn();
-    if (res.ok) {
-      const data = await parseApi(res);
-      return { data, source: "api" };
-    }
-  } catch {
-    // fall through to gateway
-  }
-
-  // Try gateway fallback
-  if (gatewayFn) {
-    try {
-      const data = await gatewayFn();
-      return { data, source: "gateway" };
-    } catch {
-      // both failed
-    }
-  }
-
-  return null;
-}
 
 type UseWorkspaceFilesParams = {
   agentId: string | null | undefined;
@@ -365,18 +334,7 @@ export const useWorkspaceFiles = ({
   }, [fetchDir, fetchFile]);
 
   // Build breadcrumbs
-  const breadcrumbs = useMemo(() => {
-    const crumbs = [{ label: "~", path: "" }];
-    if (currentPath) {
-      const parts = currentPath.split("/").filter(Boolean);
-      let accumulated = "";
-      for (const part of parts) {
-        accumulated = accumulated ? `${accumulated}/${part}` : part;
-        crumbs.push({ label: part, path: accumulated });
-      }
-    }
-    return crumbs;
-  }, [currentPath]);
+  const breadcrumbs = useMemo(() => buildBreadcrumbs(currentPath), [currentPath]);
 
   return {
     entries,

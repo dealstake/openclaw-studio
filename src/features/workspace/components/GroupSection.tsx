@@ -4,7 +4,7 @@ import { memo, useState } from "react";
 import { Brain, Calendar, ChevronDown, ChevronRight, ClipboardList, Folder } from "lucide-react";
 
 import type { WorkspaceEntry, WorkspaceGroup } from "../types";
-import { GROUP_LABELS } from "./workspace-helpers";
+import { GROUP_LABELS } from "../lib/workspace-helpers";
 import { EntryRow } from "./EntryRow";
 import { SectionLabel } from "@/components/SectionLabel";
 import {

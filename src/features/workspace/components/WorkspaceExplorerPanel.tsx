@@ -19,7 +19,7 @@ import { useListNavigation } from "../hooks/useListNavigation";
 import { useWorkspaceFiles } from "../hooks/useWorkspaceFiles";
 import { useProjectStatuses } from "../hooks/useProjectStatuses";
 import { classifyEntry, type WorkspaceEntry, type WorkspaceGroup } from "../types";
-import { GROUP_ORDER } from "./workspace-helpers";
+import { GROUP_ORDER } from "../lib/workspace-helpers";
 import { EntryRow } from "./EntryRow";
 import { GroupSection } from "./GroupSection";
 import { NewFileDialog } from "./NewFileDialog";
