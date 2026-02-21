@@ -15,7 +15,7 @@ import { HeaderBar } from "@/features/agents/components/HeaderBar";
 import { ConnectionPanel } from "@/features/agents/components/ConnectionPanel";
 import { EmptyStatePanel } from "@/features/agents/components/EmptyStatePanel";
 import { BrandMark } from "@/components/brand/BrandMark";
-import { Users } from "lucide-react";
+import { ArrowLeft, Users } from "lucide-react";
 import {
   buildAgentInstruction,
 } from "@/lib/text/message-extract";
@@ -373,12 +373,19 @@ const AgentStudioPage = () => {
   const focusedAgentId = focusedAgent?.agentId ?? null;
 
   // Command Palette (Cmd+K)
+  /** Management view shown inline in center area (replaces chat). Null = show chat. */
+  const [managementView, setManagementView] = useState<ManagementTab | null>(null);
+
   const handleManagementNav = useCallback((tab: ManagementTab) => {
     if (tab === "settings" && focusedAgent && !settingsAgentId) {
       setSettingsAgentId(focusedAgent.agentId);
     }
-    setExpandedTab(tab as ExpandableTab);
+    setManagementView((prev) => (prev === tab ? null : tab));
   }, [focusedAgent, settingsAgentId, setSettingsAgentId]);
+
+  const handleBackToChat = useCallback(() => {
+    setManagementView(null);
+  }, []);
 
   const handleCmdNavTab = useCallback((tab: ContextTab | "sessions" | "usage" | "channels" | "cron" | "settings") => {
     const contextTabs = new Set<string>(["projects", "tasks", "brain", "workspace"]);
@@ -387,11 +394,11 @@ const AgentStudioPage = () => {
       setContextPanelOpen(true);
       if (mobilePane !== "context") setMobilePane("context");
     } else {
-      // Management tabs open in expanded modal
+      // Management tabs show inline in center area
       if (tab === "settings" && focusedAgent && !settingsAgentId) {
         setSettingsAgentId(focusedAgent.agentId);
       }
-      setExpandedTab(tab as ExpandableTab);
+      setManagementView(tab as ManagementTab);
     }
   }, [mobilePane, focusedAgent, settingsAgentId, setSettingsAgentId]);
   const handleCmdOpenCtx = useCallback(() => setContextPanelOpen(true), []);
@@ -1060,15 +1067,15 @@ const AgentStudioPage = () => {
     }
   }, [setLoading, status]);
 
-  // When the selected agent changes, update settings to follow if the settings expanded tab is active
+  // When the selected agent changes, update settings to follow if settings is active
   useEffect(() => {
     if (!state.selectedAgentId) return;
-    if (expandedTab === "settings" && state.selectedAgentId !== settingsAgentId) {
+    if ((expandedTab === "settings" || managementView === "settings") && state.selectedAgentId !== settingsAgentId) {
       setSettingsAgentId(state.selectedAgentId);
     } else if (settingsAgentId && state.selectedAgentId !== settingsAgentId) {
       setSettingsAgentId(null);
     }
-  }, [expandedTab, settingsAgentId, setSettingsAgentId, state.selectedAgentId]);
+  }, [expandedTab, managementView, settingsAgentId, setSettingsAgentId, state.selectedAgentId]);
 
   // Settings agent reset + cron/heartbeat loading handled by useSettingsPanel hook
 
@@ -1681,7 +1688,7 @@ const AgentStudioPage = () => {
               if (focusedAgent && !settingsAgentId) {
                 setSettingsAgentId(focusedAgent.agentId);
               }
-              setExpandedTab("settings");
+              setManagementView("settings");
             }}
             agents={breadcrumbAgents}
             selectedAgentId={focusedAgentId}
@@ -1735,7 +1742,7 @@ const AgentStudioPage = () => {
                 onClick={switchToChat}
               />
             ) : null}
-            {/* Mobile session history overlay drawer */}
+            {/* Mobile session history overlay drawer — includes management nav + session history */}
             {mobileSessionDrawerOpen && !showSidebarInline ? (
               <div
                 className="fixed inset-0 z-50"
@@ -1743,25 +1750,54 @@ const AgentStudioPage = () => {
               >
                 <div className="absolute inset-0 bg-black/50" />
                 <div
-                  className="absolute inset-y-0 left-0 w-[240px] animate-in slide-in-from-left duration-200"
+                  className="absolute inset-y-0 left-0 w-[280px] animate-in slide-in-from-left duration-200 bg-[var(--surface-elevated)] flex flex-col"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <SessionHistorySidebar
-                    client={client}
-                    status={status}
-                    agentId={focusedAgentId}
-                    activeSessionKey={viewingSessionKey ?? (focusedAgent ? `${focusedAgent.agentId}:main` : null)}
-                    onSelectSession={(key) => {
-                      setViewingSessionKey(key === `${focusedAgentId}:main` ? null : key);
-                      setMobileSessionDrawerOpen(false);
-                    }}
-                    onNewSession={() => {
-                      stableChatOnNewSession();
-                      setMobileSessionDrawerOpen(false);
-                    }}
-                    collapsed={false}
-                    onToggleCollapse={() => setMobileSessionDrawerOpen(false)}
-                  />
+                  {/* Management nav items for mobile */}
+                  <div className="flex flex-col gap-0.5 border-b border-border/20 px-3 py-3">
+                    {([
+                      { value: "sessions" as ManagementTab, label: "Sessions" },
+                      { value: "usage" as ManagementTab, label: "Usage" },
+                      { value: "channels" as ManagementTab, label: "Channels" },
+                      { value: "cron" as ManagementTab, label: "Cron" },
+                      { value: "settings" as ManagementTab, label: "Settings" },
+                    ]).map((item) => (
+                      <button
+                        key={item.value}
+                        type="button"
+                        onClick={() => {
+                          handleManagementNav(item.value);
+                          setMobileSessionDrawerOpen(false);
+                        }}
+                        className={`flex w-full items-center rounded-lg px-3 py-2 text-left text-[13px] font-medium transition-colors ${
+                          managementView === item.value
+                            ? "bg-accent text-accent-foreground"
+                            : "text-foreground/80 hover:bg-muted"
+                        }`}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                  {/* Session history */}
+                  <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                    <SessionHistorySidebar
+                      client={client}
+                      status={status}
+                      agentId={focusedAgentId}
+                      activeSessionKey={viewingSessionKey ?? (focusedAgent ? `${focusedAgent.agentId}:main` : null)}
+                      onSelectSession={(key) => {
+                        setViewingSessionKey(key === `${focusedAgentId}:main` ? null : key);
+                        setMobileSessionDrawerOpen(false);
+                      }}
+                      onNewSession={() => {
+                        stableChatOnNewSession();
+                        setMobileSessionDrawerOpen(false);
+                      }}
+                      collapsed={false}
+                      onToggleCollapse={() => setMobileSessionDrawerOpen(false)}
+                    />
+                  </div>
                 </div>
               </div>
             ) : null}
@@ -1777,7 +1813,7 @@ const AgentStudioPage = () => {
                 collapsed={sessionSidebarCollapsed}
                 onToggleCollapse={() => setSessionSidebarCollapsed((p) => !p)}
                 onManagementNav={handleManagementNav}
-                activeManagementTab={expandedTab && ["sessions", "usage", "channels", "cron", "settings"].includes(expandedTab) ? expandedTab as ManagementTab : null}
+                activeManagementTab={managementView}
               />
             </div>
             <div
@@ -1785,6 +1821,142 @@ const AgentStudioPage = () => {
               data-testid="focused-agent-panel"
               {...swipeHandlers}
             >
+              {managementView ? (
+                <div className="flex h-full w-full flex-col overflow-hidden">
+                  {/* Back-to-chat header */}
+                  <div className="flex items-center gap-2 border-b border-border/20 bg-[var(--surface-elevated)] px-4 py-2.5">
+                    <button
+                      type="button"
+                      onClick={handleBackToChat}
+                      className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                      aria-label="Back to chat"
+                    >
+                      <ArrowLeft className="h-4 w-4" />
+                    </button>
+                    <span className="text-sm font-medium text-foreground">
+                      {{ sessions: "Sessions", usage: "Usage", channels: "Channels", cron: "Cron", settings: "Settings" }[managementView]}
+                    </span>
+                  </div>
+                  <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+                    <Suspense fallback={null}>
+                      {managementView === "sessions" && (
+                        <SessionsPanel
+                          client={client}
+                          sessions={allSessions}
+                          loading={allSessionsLoading}
+                          error={allSessionsError}
+                          onRefresh={() => { void loadAllSessions(); }}
+                          activeSessionKey={focusedAgent?.sessionKey ?? null}
+                          aggregateUsage={aggregateUsage}
+                          aggregateUsageLoading={aggregateUsageLoading}
+                          cumulativeUsage={aggregateUsageFromList ? {
+                            inputTokens: aggregateUsageFromList.inputTokens,
+                            outputTokens: aggregateUsageFromList.outputTokens,
+                            totalCost: null,
+                            messageCount: aggregateUsageFromList.messageCount,
+                          } : null}
+                          cumulativeUsageLoading={allSessionsLoading}
+                          usageByType={usageByType}
+                          transcripts={transcripts}
+                          transcriptsLoading={transcriptsLoading}
+                          transcriptsLoadingMore={transcriptsLoadingMore}
+                          transcriptsError={transcriptsError}
+                          transcriptsHasMore={transcriptsHasMore}
+                          onTranscriptsRefresh={transcriptsRefresh}
+                          onTranscriptsLoadMore={transcriptsLoadMore}
+                          searchQuery={searchQuery}
+                          onSearchQueryChange={setSearchQuery}
+                          searchResults={searchResults}
+                          searchLoading={searchLoading}
+                          searchError={searchError}
+                          onClearSearch={clearSearch}
+                          onViewTrace={handleViewTrace}
+                          onTranscriptClick={(sessionId, agentId) => {
+                            setManagementView(null);
+                            const effectiveAgentId = agentId || focusedAgent?.agentId || "";
+                            if (!effectiveAgentId) return;
+                            setViewingSessionKey(sessionId);
+                            setViewingSessionLoading(true);
+                            setViewingSessionHistory([]);
+                            setMobilePane("chat");
+                            fetchTranscriptMessages(effectiveAgentId, sessionId, 0, 200)
+                              .then((result) => {
+                                setViewingSessionHistory(transformMessagesToMessageParts(result.messages));
+                              })
+                              .catch((err) => {
+                                console.error("Failed to load transcript:", err);
+                                setViewingSessionHistory([{
+                                  type: "text",
+                                  text: `Failed to load transcript: ${err instanceof Error ? err.message : "Unknown error"}`,
+                                }]);
+                              })
+                              .finally(() => setViewingSessionLoading(false));
+                          }}
+                        />
+                      )}
+                      {managementView === "usage" && (
+                        <UsagePanel client={client} status={status} />
+                      )}
+                      {managementView === "channels" && (
+                        <ChannelsPanel
+                          snapshot={channelsSnapshot}
+                          loading={channelsLoading}
+                          error={channelsError}
+                          onRefresh={() => { void loadChannelsStatus(); }}
+                          hideHeader
+                        />
+                      )}
+                      {managementView === "cron" && (
+                        <CronPanel
+                          client={client}
+                          cronJobs={allCronJobs}
+                          loading={allCronLoading}
+                          error={allCronError}
+                          runBusyJobId={allCronRunBusyJobId}
+                          deleteBusyJobId={allCronDeleteBusyJobId}
+                          toggleBusyJobId={allCronToggleBusyJobId}
+                          onRunJob={(jobId) => { void handleAllCronRunJob(jobId); }}
+                          onDeleteJob={(jobId) => { void handleAllCronDeleteJob(jobId); }}
+                          onToggleEnabled={(jobId) => { void handleAllCronToggleEnabled(jobId); }}
+                          onRefresh={() => { void loadAllCronJobs(); }}
+                        />
+                      )}
+                      {managementView === "settings" && settingsAgent && (
+                        <AgentSettingsPanel
+                          key={settingsAgent.agentId}
+                          agent={settingsAgent}
+                          onClose={handleBackToChat}
+                          onRename={(name) => handleRenameAgent(settingsAgent.agentId, name)}
+                          onNewSession={() => handleNewSession(settingsAgent.agentId)}
+                          onDelete={() => handleDeleteAgent(settingsAgent.agentId)}
+                          canDelete={settingsAgent.agentId !== RESERVED_MAIN_AGENT_ID}
+                          onToolCallingToggle={(enabled) => handleToolCallingToggle(settingsAgent.agentId, enabled)}
+                          onThinkingTracesToggle={(enabled) => handleThinkingTracesToggle(settingsAgent.agentId, enabled)}
+                          cronJobs={settingsCronJobs}
+                          cronLoading={settingsCronLoading}
+                          cronError={settingsCronError}
+                          cronRunBusyJobId={cronRunBusyJobId}
+                          cronDeleteBusyJobId={cronDeleteBusyJobId}
+                          onRunCronJob={(jobId) => handleRunCronJob(settingsAgent.agentId, jobId)}
+                          onDeleteCronJob={(jobId) => handleDeleteCronJob(settingsAgent.agentId, jobId)}
+                          cronToggleBusyJobId={cronToggleBusyJobId}
+                          onToggleCronJob={(jobId, enabled) => handleToggleCronJob(settingsAgent.agentId, jobId, enabled)}
+                          heartbeats={settingsHeartbeats}
+                          heartbeatLoading={settingsHeartbeatLoading}
+                          heartbeatError={settingsHeartbeatError}
+                          heartbeatRunBusyId={heartbeatRunBusyId}
+                          heartbeatDeleteBusyId={heartbeatDeleteBusyId}
+                          onRunHeartbeat={(heartbeatId) => handleRunHeartbeat(settingsAgent.agentId, heartbeatId)}
+                          onDeleteHeartbeat={(heartbeatId) => handleDeleteHeartbeat(settingsAgent.agentId, heartbeatId)}
+                          onRetryCron={reloadCronJobs}
+                          onRetryHeartbeats={reloadHeartbeats}
+                          onNavigateToTasks={() => setContextTab("tasks")}
+                        />
+                      )}
+                    </Suspense>
+                  </div>
+                </div>
+              ) : (
               <ActivityDrawer hidden={!isXlViewport} agentId={focusedAgentId} client={client} status={status} cronJobs={allCronJobs}>
               {focusedAgent ? (
                 <AgentChatPanel
@@ -1823,6 +1995,7 @@ const AgentStudioPage = () => {
                 </div>
               )}
               </ActivityDrawer>
+              )}
             </div>
             {/* Expanded panel modal */}
             {expandedTab && (
