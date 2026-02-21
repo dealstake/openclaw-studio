@@ -39,10 +39,10 @@ type AgentChatPanelProps = {
 };
 
 const CHAT_STARTERS = [
-  { text: "What's on my agenda?", prompt: "What's on my agenda today?" },
-  { text: "Check project status", prompt: "Check the status of active projects" },
-  { text: "Review recent activity", prompt: "Review recent cron and agent activity" },
-  { text: "Help me build something", prompt: "Help me plan and build a new feature" },
+  { text: "📋 What's on my agenda?", prompt: "What's on my agenda today?" },
+  { text: "🔨 Check project status", prompt: "Check the status of active projects" },
+  { text: "📊 Review recent activity", prompt: "Review recent cron and agent activity" },
+  { text: "🛠️ Help me build something", prompt: "Help me plan and build a new feature" },
 ];
 
 const ChatEmptyState = memo(function ChatEmptyState({
@@ -53,23 +53,20 @@ const ChatEmptyState = memo(function ChatEmptyState({
   onSend: (message: string) => void;
 }) {
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-5 px-4">
+    <div className="flex h-full flex-col items-center justify-center gap-6 px-4">
       <div className="flex flex-col items-center gap-2">
-        <Sparkles className="h-8 w-8 text-brand-gold/70" />
-        <h2 className="text-base font-semibold text-foreground">
+        <Sparkles className="h-7 w-7 text-brand-gold/60" />
+        <h2 className="text-lg font-semibold text-foreground">
           What can {agentName} help with?
         </h2>
-        <p className="text-center text-sm text-muted-foreground">
-          Start a conversation or pick a suggestion below.
-        </p>
       </div>
-      <div className="flex flex-wrap justify-center gap-2">
+      <div className="grid w-full max-w-md grid-cols-2 gap-2">
         {CHAT_STARTERS.map((s) => (
           <button
             key={s.text}
             type="button"
             onClick={() => onSend(s.prompt)}
-            className="rounded-full border border-border bg-card px-3.5 py-2 text-xs font-medium text-foreground shadow-sm transition-colors hover:bg-muted"
+            className="rounded-2xl border border-border/50 bg-transparent px-4 py-3 text-left text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
             {s.text}
           </button>
