@@ -35,16 +35,28 @@ export const AgentChatTranscript = memo(function AgentChatTranscript({
   const lastScrollHeightRef = useRef(0);
   const [isPinned, setIsPinned] = useState(true);
 
-  /** Smoothly scroll to bottom of chat. Uses native smooth scrolling for fluid feel. */
+  /** Scroll to bottom of chat. Instant for initial load, smooth for streaming updates. */
   const scrollChatToBottom = useCallback((instant?: boolean) => {
     const el = chatRef.current;
     if (!el) return;
     // Skip if user is actively scrolling up
     if (userScrollingRef.current) return;
-    el.scrollTo({
-      top: el.scrollHeight,
-      behavior: instant ? "instant" : "smooth",
-    });
+    if (instant) {
+      // For initial load: bypass CSS scroll-behavior by setting scrollTop directly.
+      // CSS `scroll-smooth` on the container can override JS `behavior: "instant"`
+      // in some browsers, causing a slow animated scroll on long conversations.
+      el.style.scrollBehavior = "auto";
+      el.scrollTop = el.scrollHeight;
+      // Restore smooth scrolling after a frame
+      requestAnimationFrame(() => {
+        el.style.scrollBehavior = "";
+      });
+    } else {
+      el.scrollTo({
+        top: el.scrollHeight,
+        behavior: "smooth",
+      });
+    }
   }, []);
 
   const setPinned = useCallback((nextPinned: boolean) => {
@@ -81,22 +93,38 @@ export const AgentChatTranscript = memo(function AgentChatTranscript({
     updatePinnedFromScroll();
   }, [updatePinnedFromScroll]);
 
-  // Force scroll to bottom on initial content load and when switching agents
+  // Force scroll to bottom on initial content load and when switching agents.
+  // For long conversations, the DOM may need multiple frames to fully render,
+  // so we retry the instant scroll a few times to ensure we reach the bottom.
   const partCount = messageParts.length;
   useEffect(() => {
     if (partCount > 0 && !initialScrollDone.current) {
       initialScrollDone.current = true;
-      // Use instant scroll for initial load — no animation on page load
+      let retries = 0;
+      const maxRetries = 5;
+      const tryScroll = () => {
+        const el = chatRef.current;
+        if (!el) return;
+        scrollChatToBottom(true);
+        // Check if we actually reached the bottom; if not, retry
+        const atBottom = el.scrollHeight - el.clientHeight - el.scrollTop < 50;
+        if (!atBottom && retries < maxRetries) {
+          retries++;
+          requestAnimationFrame(tryScroll);
+        } else {
+          // After initial scroll settles, update pinned state
+          updatePinnedFromScroll();
+        }
+      };
+      // Start after 2 frames to let React render
       requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          scrollChatToBottom(true);
-        });
+        requestAnimationFrame(tryScroll);
       });
     }
     if (partCount === 0) {
       initialScrollDone.current = false;
     }
-  }, [partCount, scrollChatToBottom]);
+  }, [partCount, scrollChatToBottom, updatePinnedFromScroll]);
 
   const showJumpToLatest = !isPinned && partCount > 0;
 

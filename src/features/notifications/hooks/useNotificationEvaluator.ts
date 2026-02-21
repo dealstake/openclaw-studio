@@ -13,7 +13,6 @@ import {
   type AgentEventPayload,
 } from "../lib/alertEvaluator";
 import { sendBrowserNotification } from "../lib/browserNotifications";
-import { toast } from "sonner";
 import { isGatewayDisconnectLikeError } from "@/lib/gateway/GatewayClient";
 
 // ---------------------------------------------------------------------------
@@ -56,7 +55,6 @@ export function useNotificationEvaluator(
           if (n) {
             lastFiredRef.current.set(rule.id, now);
             addNotification(n);
-            toast(n.title, { description: n.body });
             sendBrowserNotification(n.title, n.body);
           }
         }
@@ -74,7 +72,6 @@ export function useNotificationEvaluator(
             if (n) {
               lastFiredRef.current.set(rule.id, now);
               addNotification(n);
-              toast.error(n.title, { description: n.body });
               sendBrowserNotification(n.title, n.body);
             }
           }
@@ -110,7 +107,6 @@ export function useNotificationEvaluator(
         if (n) {
           lastFiredRef.current.set(rule.id, now);
           addNotification(n);
-          toast.warning(n.title, { description: n.body });
           sendBrowserNotification(n.title, n.body);
         }
       }
@@ -125,7 +121,6 @@ export function useNotificationEvaluator(
           if (n) {
             lastFiredRef.current.set(rule.id, now);
             addNotification(n);
-            toast.warning(n.title, { description: n.body });
             sendBrowserNotification(n.title, n.body);
           }
         }
