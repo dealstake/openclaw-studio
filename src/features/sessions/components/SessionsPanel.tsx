@@ -2,6 +2,7 @@
 
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowDownAZ, ArrowUpAZ, RefreshCw, Search, X } from "lucide-react";
+import { useTranscripts, useTranscriptSearch } from "@/features/sessions/hooks/useTranscripts";
 import type { TranscriptEntry, TranscriptSearchResult } from "@/features/sessions/hooks/useTranscripts";
 import {
   inferTranscriptType,
@@ -30,6 +31,7 @@ export type SessionEntry = {
 
 type SessionsPanelProps = {
   client: GatewayClient;
+  agentId: string | null;
   sessions: SessionEntry[];
   loading: boolean;
   error: string | null;
@@ -42,20 +44,7 @@ type SessionsPanelProps = {
   cumulativeUsage?: { inputTokens: number; outputTokens: number; totalCost: number | null; messageCount: number } | null;
   cumulativeUsageLoading?: boolean;
   usageByType?: UsageByType | null;
-  transcripts?: TranscriptEntry[];
-  transcriptsLoading?: boolean;
-  transcriptsLoadingMore?: boolean;
-  transcriptsError?: string | null;
-  transcriptsHasMore?: boolean;
-  onTranscriptsRefresh?: () => void;
-  onTranscriptsLoadMore?: () => void;
   onTranscriptClick?: (sessionId: string, agentId: string) => void;
-  searchQuery?: string;
-  onSearchQueryChange?: (query: string) => void;
-  searchResults?: TranscriptSearchResult[];
-  searchLoading?: boolean;
-  searchError?: string | null;
-  onClearSearch?: () => void;
 };
 
 const TRANSCRIPT_CARD_HEIGHT = 88;
@@ -63,6 +52,7 @@ const SEARCH_CARD_HEIGHT = 100;
 
 export const SessionsPanel = memo(function SessionsPanel({
   client,
+  agentId,
   sessions,
   loading,
   error,
@@ -75,21 +65,26 @@ export const SessionsPanel = memo(function SessionsPanel({
   cumulativeUsage = null,
   cumulativeUsageLoading = false,
   usageByType = null,
-  transcripts = [],
-  transcriptsLoading = false,
-  transcriptsLoadingMore = false,
-  transcriptsError = null,
-  transcriptsHasMore = false,
-  onTranscriptsRefresh,
-  onTranscriptsLoadMore,
   onTranscriptClick,
-  searchQuery = "",
-  onSearchQueryChange,
-  searchResults = [],
-  searchLoading = false,
-  searchError = null,
-  onClearSearch,
 }: SessionsPanelProps) {
+  const {
+    transcripts,
+    loading: transcriptsLoading,
+    loadingMore: transcriptsLoadingMore,
+    error: transcriptsError,
+    hasMore: transcriptsHasMore,
+    loadMore: transcriptsLoadMore,
+    refresh: transcriptsRefresh,
+  } = useTranscripts(agentId);
+
+  const {
+    query: searchQuery,
+    setQuery: setSearchQuery,
+    results: searchResults,
+    searching: searchLoading,
+    error: searchError,
+    clearSearch,
+  } = useTranscriptSearch(agentId);
   const [tab, setTab] = useState<"active" | "history">("active");
   const [activeSearch, setActiveSearch] = useState("");
   const [transcriptFilter, setTranscriptFilter] = useState<TranscriptType | "all">("all");
@@ -239,7 +234,7 @@ export const SessionsPanel = memo(function SessionsPanel({
             onClick={() => {
               setTab("history");
               if (transcripts.length === 0 && !transcriptsLoading) {
-                onTranscriptsRefresh?.();
+                transcriptsRefresh();
               }
             }}
           >
@@ -248,7 +243,7 @@ export const SessionsPanel = memo(function SessionsPanel({
         </div>
         <PanelIconButton
           aria-label={tab === "active" ? "Refresh sessions" : "Refresh history"}
-          onClick={tab === "active" ? onRefresh : () => onTranscriptsRefresh?.()}
+          onClick={tab === "active" ? onRefresh : () => transcriptsRefresh()}
           disabled={tab === "active" ? loading : transcriptsLoading}
         >
           <RefreshCw className={`h-3.5 w-3.5 ${(tab === "active" ? loading : transcriptsLoading) ? "animate-spin" : ""}`} />
@@ -374,7 +369,7 @@ export const SessionsPanel = memo(function SessionsPanel({
       {/* ─── History tab ─── */}
       <div className={`min-h-0 flex-1 flex flex-col overflow-hidden ${tab === "history" ? "" : "hidden"}`}>
         {/* Search input */}
-        {onSearchQueryChange ? (
+        {agentId ? (
           <div className="relative mx-4 mt-4 mb-3 flex-shrink-0">
             <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/60" />
             <input
@@ -382,13 +377,13 @@ export const SessionsPanel = memo(function SessionsPanel({
               className="w-full rounded-md border border-border/80 bg-card/70 py-1.5 pl-8 pr-8 font-mono text-[11px] text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:outline-none focus:ring-1 focus:ring-primary/20"
               placeholder="Search transcripts…"
               value={searchQuery}
-              onChange={(e) => onSearchQueryChange(e.target.value)}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
             {searchQuery && (
               <button
                 type="button"
                 className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground/60 hover:text-foreground"
-                onClick={onClearSearch}
+                onClick={clearSearch}
                 aria-label="Clear search"
               >
                 <X className="h-3.5 w-3.5" />
@@ -494,7 +489,7 @@ export const SessionsPanel = memo(function SessionsPanel({
                   estimateSize={TRANSCRIPT_CARD_HEIGHT}
                   keyExtractor={transcriptKeyExtractor}
                   renderItem={renderTranscriptCard}
-                  onLoadMore={transcriptsHasMore ? onTranscriptsLoadMore : undefined}
+                  onLoadMore={transcriptsHasMore ? transcriptsLoadMore : undefined}
                   loadingMore={transcriptsLoadingMore}
                 />
               </>

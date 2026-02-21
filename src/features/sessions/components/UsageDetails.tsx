@@ -4,14 +4,11 @@ import { memo } from "react";
 import { formatCost, formatTokens } from "@/lib/text/format";
 import type { SessionUsage } from "../hooks/useSessionUsage";
 
-/** @deprecated Use `SessionUsage` from `useSessionUsage` instead. */
-export type SessionUsageData = SessionUsage;
-
 const STAT_LABEL_CLASS = "font-mono text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground";
 const STAT_VALUE_CLASS = "text-[11px] font-semibold text-foreground";
 const STAT_CELL_CLASS = "rounded border border-border/50 bg-muted/30 px-2 py-1";
 
-export const UsageDetails = memo(function UsageDetails({ usage }: { usage: SessionUsageData }) {
+export const UsageDetails = memo(function UsageDetails({ usage }: { usage: SessionUsage }) {
   return (
     <div className="mt-2 grid grid-cols-2 gap-1.5">
       <div className={STAT_CELL_CLASS}>

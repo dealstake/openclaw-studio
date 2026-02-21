@@ -3,7 +3,8 @@
 import { memo, useCallback, useEffect, useState } from "react";
 import { Archive, ChevronDown, ChevronRight, Clock, GitFork, ListTree, MessageCircle, Radio, Trash2 } from "lucide-react";
 import type { SessionEntry } from "./SessionsPanel";
-import { UsageDetails, UsageSkeleton, type SessionUsageData } from "./UsageDetails";
+import { UsageDetails, UsageSkeleton } from "./UsageDetails";
+import type { SessionUsage } from "@/features/sessions/hooks/useSessionUsage";
 import { humanizeSessionKey, humanizeOriginLabel, inferSessionType } from "@/features/sessions/lib/sessionKeyUtils";
 import { formatTokens, formatCost } from "@/lib/text/format";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
@@ -48,7 +49,7 @@ export const SessionCard = memo(function SessionCard({
   onCompact: (key: string) => void;
   onViewTrace?: (sessionKey: string, agentId: string | null) => void;
 }) {
-  const [usage, setUsage] = useState<SessionUsageData | null>(null);
+  const [usage, setUsage] = useState<SessionUsage | null>(null);
   const [usageLoading, setUsageLoading] = useState(false);
   const [usageLoaded, setUsageLoaded] = useState(false);
 

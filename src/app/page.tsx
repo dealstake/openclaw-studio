@@ -89,7 +89,7 @@ import type { CronJobSummary } from "@/lib/cron/types";
 import { useNotificationEvaluator } from "@/features/notifications/hooks/useNotificationEvaluator";
 import { useExecApprovals } from "@/features/exec-approvals/hooks/useExecApprovals";
 import { useSessionUsage } from "@/features/sessions/hooks/useSessionUsage";
-import { useTranscripts, useTranscriptSearch, fetchTranscriptMessages } from "@/features/sessions/hooks/useTranscripts";
+import { fetchTranscriptMessages } from "@/features/sessions/hooks/useTranscripts";
 import { useGatewayStatus } from "@/features/status/hooks/useGatewayStatus";
 const ConfigMutationModals = lazy(() => import("@/features/agents/components/ConfigMutationModals").then(m => ({ default: m.ConfigMutationModals })));
 type MobilePane = "chat" | "context";
@@ -438,25 +438,6 @@ const AgentStudioPage = () => {
       })),
     [agents],
   );
-
-  const {
-    transcripts,
-    loading: transcriptsLoading,
-    loadingMore: transcriptsLoadingMore,
-    error: transcriptsError,
-    hasMore: transcriptsHasMore,
-    loadMore: transcriptsLoadMore,
-    refresh: transcriptsRefresh,
-  } = useTranscripts(focusedAgentId);
-
-  const {
-    query: searchQuery,
-    setQuery: setSearchQuery,
-    results: searchResults,
-    searching: searchLoading,
-    error: searchError,
-    clearSearch,
-  } = useTranscriptSearch(focusedAgentId);
 
   const {
     tasks: agentTasks,
@@ -1907,6 +1888,7 @@ const AgentStudioPage = () => {
                       {managementView === "sessions" && (
                         <SessionsPanel
                           client={client}
+                          agentId={focusedAgentId}
                           sessions={allSessions}
                           loading={allSessionsLoading}
                           error={allSessionsError}
@@ -1922,19 +1904,6 @@ const AgentStudioPage = () => {
                           } : null}
                           cumulativeUsageLoading={allSessionsLoading}
                           usageByType={usageByType}
-                          transcripts={transcripts}
-                          transcriptsLoading={transcriptsLoading}
-                          transcriptsLoadingMore={transcriptsLoadingMore}
-                          transcriptsError={transcriptsError}
-                          transcriptsHasMore={transcriptsHasMore}
-                          onTranscriptsRefresh={transcriptsRefresh}
-                          onTranscriptsLoadMore={transcriptsLoadMore}
-                          searchQuery={searchQuery}
-                          onSearchQueryChange={setSearchQuery}
-                          searchResults={searchResults}
-                          searchLoading={searchLoading}
-                          searchError={searchError}
-                          onClearSearch={clearSearch}
                           onViewTrace={handleViewTrace}
                           onTranscriptClick={(sessionId, agentId) => {
                             setManagementView(null);
@@ -2115,6 +2084,7 @@ const AgentStudioPage = () => {
                     {expandedTab === "sessions" && (
                       <SessionsPanel
                         client={client}
+                        agentId={focusedAgentId}
                         sessions={allSessions}
                         loading={allSessionsLoading}
                         error={allSessionsError}
@@ -2130,19 +2100,6 @@ const AgentStudioPage = () => {
                         } : null}
                         cumulativeUsageLoading={allSessionsLoading}
                         usageByType={usageByType}
-                        transcripts={transcripts}
-                        transcriptsLoading={transcriptsLoading}
-                        transcriptsLoadingMore={transcriptsLoadingMore}
-                        transcriptsError={transcriptsError}
-                        transcriptsHasMore={transcriptsHasMore}
-                        onTranscriptsRefresh={transcriptsRefresh}
-                        onTranscriptsLoadMore={transcriptsLoadMore}
-                        searchQuery={searchQuery}
-                        onSearchQueryChange={setSearchQuery}
-                        searchResults={searchResults}
-                        searchLoading={searchLoading}
-                        searchError={searchError}
-                        onClearSearch={clearSearch}
                         onViewTrace={handleViewTrace}
                         onTranscriptClick={(sessionId, agentId) => {
                           setExpandedTab(null);
