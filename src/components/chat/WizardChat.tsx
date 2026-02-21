@@ -128,7 +128,7 @@ export const WizardChat = React.memo(function WizardChat({
         {showStarters && (
           <div className="flex flex-col items-center justify-center gap-4 py-8">
             <div className="flex items-center gap-2 text-muted-foreground">
-              <Sparkles size={16} className="text-brand-gold" />
+              <Sparkles size={16} strokeWidth={1.75} className="text-brand-gold" />
               <span className="text-sm font-medium">
                 What would you like to create?
               </span>
@@ -197,7 +197,7 @@ export const WizardChat = React.memo(function WizardChat({
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-destructive/10 text-destructive transition-colors hover:bg-destructive/20"
               aria-label="Stop generating"
             >
-              <Square size={16} />
+              <Square size={16} strokeWidth={1.75} />
             </button>
           ) : (
             <button
@@ -207,7 +207,7 @@ export const WizardChat = React.memo(function WizardChat({
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-gold/10 text-brand-gold transition-colors hover:bg-brand-gold/20 disabled:opacity-30"
               aria-label="Send message"
             >
-              <Send size={16} />
+              <Send size={16} strokeWidth={1.75} />
             </button>
           )}
         </div>

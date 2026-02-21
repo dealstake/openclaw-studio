@@ -170,7 +170,7 @@ const ArtifactRow = memo(function ArtifactRow({
     <button
       type="button"
       onClick={handleClick}
-      className="group flex w-full items-start gap-3.5 rounded-lg border border-border/70 bg-card/65 px-4 py-3.5 text-left transition hover:border-border hover:bg-muted/55"
+      className="group flex w-full items-start gap-3.5 rounded-lg border border-border/70 bg-card/65 px-4 py-3.5 text-left transition hover:border-border hover:bg-muted/55 focus-ring"
     >
       <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted/40">
         {fileIcon(file.mimeType)}
@@ -355,7 +355,7 @@ export const ArtifactsPanel = memo(function ArtifactsPanel({ isSelected }: Artif
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className="flex items-center gap-1 rounded-md px-2 py-1.5 font-mono text-[9px] font-semibold uppercase tracking-[0.1em] text-muted-foreground transition hover:bg-muted/50 hover:text-foreground disabled:opacity-40"
+            className="flex items-center gap-1 rounded-md px-2 py-1.5 font-mono text-[9px] font-semibold uppercase tracking-[0.1em] text-muted-foreground transition hover:bg-muted/50 hover:text-foreground disabled:opacity-40 focus-ring"
             title="Upload file"
           >
             <Upload className={`h-3 w-3 ${uploading ? "animate-pulse" : ""}`} />
@@ -364,7 +364,7 @@ export const ArtifactsPanel = memo(function ArtifactsPanel({ isSelected }: Artif
           <button
             type="button"
             onClick={toggleSort}
-            className="flex items-center gap-1 rounded-md px-2 py-1.5 font-mono text-[9px] font-semibold uppercase tracking-[0.1em] text-muted-foreground transition hover:bg-muted/50 hover:text-foreground"
+            className="flex items-center gap-1 rounded-md px-2 py-1.5 font-mono text-[9px] font-semibold uppercase tracking-[0.1em] text-muted-foreground transition hover:bg-muted/50 hover:text-foreground focus-ring"
             title={sortDir === "newest" ? "Sorted newest first" : "Sorted oldest first"}
           >
             {sortDir === "newest" ? (
@@ -378,7 +378,7 @@ export const ArtifactsPanel = memo(function ArtifactsPanel({ isSelected }: Artif
             type="button"
             onClick={() => void fetchFiles(true)}
             disabled={refreshing}
-            className="rounded-md p-1.5 text-muted-foreground transition hover:bg-muted/50 hover:text-foreground disabled:opacity-40"
+            className="rounded-md p-1.5 text-muted-foreground transition hover:bg-muted/50 hover:text-foreground disabled:opacity-40 focus-ring"
             title="Refresh"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />

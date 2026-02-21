@@ -50,7 +50,8 @@ export const ThinkingBlock = React.memo(function ThinkingBlock({
       <CollapsibleTrigger className="group/thinking flex items-center gap-1.5 rounded-md px-1 py-0.5 text-left transition-colors hover:bg-muted/50">
         {/* Chevron */}
         <ChevronRight
-          size={12}
+          size={14}
+          strokeWidth={1.75}
           className={`shrink-0 text-muted-foreground/50 transition-transform ${
             open ? "rotate-90" : ""
           }`}
@@ -58,7 +59,8 @@ export const ThinkingBlock = React.memo(function ThinkingBlock({
 
         {/* Icon with pulse while streaming */}
         <Brain
-          size={13}
+          size={14}
+          strokeWidth={1.75}
           className={`shrink-0 ${
             streaming
               ? "text-brand-gold animate-pulse"

@@ -46,6 +46,7 @@ export const ChatStatusBar = React.memo(function ChatStatusBar({
       {/* State icon */}
       <Icon
         size={14}
+        strokeWidth={1.75}
         className={`shrink-0 ${
           isActive
             ? "text-brand-gold animate-pulse"

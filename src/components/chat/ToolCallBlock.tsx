@@ -89,7 +89,8 @@ export const ToolCallBlock = React.memo(function ToolCallBlock({
         {/* Chevron — only if expandable */}
         {hasContent ? (
           <ChevronRight
-            size={12}
+            size={14}
+            strokeWidth={1.75}
             className={`shrink-0 text-muted-foreground/50 transition-transform ${
               open ? "rotate-90" : ""
             }`}
@@ -99,14 +100,14 @@ export const ToolCallBlock = React.memo(function ToolCallBlock({
         )}
 
         {/* Tool icon */}
-        <Wrench size={13} className="shrink-0 text-muted-foreground/60" />
+        <Wrench size={14} strokeWidth={1.75} className="shrink-0 text-muted-foreground/60" />
 
         {/* Tool name */}
         <span className="text-xs font-medium text-foreground/80">{name}</span>
 
         {/* Phase indicator */}
         <span className="flex items-center gap-1 text-[10px]">
-          <Icon size={10} className={config.iconClass} />
+          <Icon size={14} strokeWidth={1.75} className={config.iconClass} />
           <span className="text-muted-foreground/60">{config.label}</span>
         </span>
 

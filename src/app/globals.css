@@ -192,6 +192,12 @@
   }
 }
 
+/* Standardize Lucide icon stroke weight globally (1.75 vs default 2)
+ * for a cleaner, more refined look matching Linear/Vercel conventions */
+:where(.lucide) {
+  stroke-width: 1.75;
+}
+
 @utility scrollbar-none {
   scrollbar-width: none;
   &::-webkit-scrollbar {

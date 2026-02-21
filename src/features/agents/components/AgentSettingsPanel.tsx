@@ -182,7 +182,7 @@ export const AgentSettingsPanel = memo(function AgentSettingsPanel({
                 <TooltipTrigger asChild>
                   <button
                     type="button"
-                    className="inline-flex h-5 w-5 items-center justify-center rounded text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                    className="inline-flex h-5 w-5 items-center justify-center rounded text-muted-foreground transition hover:bg-muted hover:text-foreground focus-ring"
                     onClick={handleCopyId}
                     aria-label="Copy agent ID"
                   >
@@ -213,7 +213,7 @@ export const AgentSettingsPanel = memo(function AgentSettingsPanel({
           ) : null}
           <div className="mt-3 flex justify-end">
             <button
-              className={`rounded-md border border-transparent bg-primary/90 px-4 py-2 ${sectionLabelClass} text-primary-foreground transition hover:bg-primary disabled:cursor-not-allowed disabled:border-border disabled:bg-muted disabled:text-muted-foreground`}
+              className={`rounded-md border border-transparent bg-primary/90 px-4 py-2 ${sectionLabelClass} text-primary-foreground transition hover:bg-primary disabled:cursor-not-allowed disabled:border-border disabled:bg-muted disabled:text-muted-foreground focus-ring`}
               type="button"
               onClick={() => {
                 void handleRename();
@@ -271,7 +271,7 @@ export const AgentSettingsPanel = memo(function AgentSettingsPanel({
               <TooltipTrigger asChild>
                 <span className="mt-3 block">
                   <button
-                    className={`w-full rounded-md border border-border/80 bg-card/75 px-3 py-2 ${sectionLabelClass} text-foreground transition hover:border-border hover:bg-muted/70 disabled:cursor-not-allowed disabled:opacity-70`}
+                    className={`w-full rounded-md border border-border/80 bg-card/75 px-3 py-2 ${sectionLabelClass} text-foreground transition hover:border-border hover:bg-muted/70 disabled:cursor-not-allowed disabled:opacity-70 focus-ring`}
                     type="button"
                     onClick={() => {
                       void handleNewSession();
@@ -301,7 +301,7 @@ export const AgentSettingsPanel = memo(function AgentSettingsPanel({
           footer={onNavigateToTasks ? (
             <button
               type="button"
-              className="mt-1 text-[11px] text-muted-foreground transition hover:text-foreground"
+              className="mt-1 text-[11px] text-muted-foreground transition hover:text-foreground focus-ring rounded"
               onClick={onNavigateToTasks}
             >
               View in Tasks →
