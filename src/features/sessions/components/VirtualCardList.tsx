@@ -40,8 +40,12 @@ function VirtualCardListInner<T>({
   onLoadMoreRef.current = onLoadMore;
 
   const lastItemIndex = lastItem?.index ?? -1;
+  const loadingMoreRef = useRef(loadingMore);
+  loadingMoreRef.current = loadingMore;
+
   useEffect(() => {
     if (lastItemIndex < 0) return;
+    if (loadingMoreRef.current) return;
     if (lastItemIndex >= items.length - 5) {
       onLoadMoreRef.current?.();
     }

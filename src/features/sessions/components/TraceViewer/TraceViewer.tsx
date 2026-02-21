@@ -31,6 +31,7 @@ export const TraceViewer = React.memo(function TraceViewer({
     load,
   } = useSessionTrace(agentId, sessionId);
 
+  const containerRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
   // Auto-load on mount
@@ -56,9 +57,9 @@ export const TraceViewer = React.memo(function TraceViewer({
       ? turns[selectedTurnIndex]
       : null;
 
-  // Keyboard navigation
+  // Keyboard navigation — scoped to container (not window) to avoid capturing unrelated events
   const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
+    (e: React.KeyboardEvent) => {
       if (e.key === "Escape") {
         onClose();
         return;
@@ -79,10 +80,10 @@ export const TraceViewer = React.memo(function TraceViewer({
     [onClose, turns.length, setSelectedTurnIndex],
   );
 
+  // Auto-focus container so keyboard events are captured immediately
   useEffect(() => {
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handleKeyDown]);
+    containerRef.current?.focus();
+  }, [loading]);
 
   if (loading && turns.length === 0) {
     return (
@@ -100,7 +101,12 @@ export const TraceViewer = React.memo(function TraceViewer({
   }
 
   return (
-    <div className="flex h-full flex-col rounded-xl border border-border bg-card shadow-lg">
+    <div
+      ref={containerRef}
+      tabIndex={-1}
+      onKeyDown={handleKeyDown}
+      className="flex h-full flex-col rounded-xl border border-border bg-card shadow-lg outline-none"
+    >
       {summary && <TraceHeader summary={summary} onClose={onClose} />}
 
       {error && (

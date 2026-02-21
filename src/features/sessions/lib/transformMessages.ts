@@ -46,6 +46,10 @@ function extractToolResultText(content: string | ContentBlock[] | undefined): st
  * - Plain text messages (user + assistant)
  * - Structured content arrays with thinking/tool_use blocks
  * - Tool role messages (tool_result)
+ *
+ * Note: This intentionally performs basic type-based extraction rather than
+ * deep semantic analysis. The content block `type` field is sufficient for
+ * all current rendering needs.
  */
 export function transformMessagesToMessageParts(messages: MessageLike[]): MessagePart[] {
   const parts: MessagePart[] = [];

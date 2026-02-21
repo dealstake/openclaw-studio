@@ -273,20 +273,23 @@ describe("TraceViewer", () => {
 
   it("handles Escape key to close", () => {
     const onClose = vi.fn();
-    render(<TraceViewer agentId="alex" sessionId="s1" onClose={onClose} />);
-    fireEvent.keyDown(window, { key: "Escape" });
+    const { container } = render(<TraceViewer agentId="alex" sessionId="s1" onClose={onClose} />);
+    const wrapper = container.querySelector("[tabindex]")!;
+    fireEvent.keyDown(wrapper, { key: "Escape" });
     expect(onClose).toHaveBeenCalledOnce();
   });
 
   it("handles ArrowDown key for navigation", () => {
-    render(<TraceViewer agentId="alex" sessionId="s1" onClose={vi.fn()} />);
-    fireEvent.keyDown(window, { key: "ArrowDown" });
+    const { container } = render(<TraceViewer agentId="alex" sessionId="s1" onClose={vi.fn()} />);
+    const wrapper = container.querySelector("[tabindex]")!;
+    fireEvent.keyDown(wrapper, { key: "ArrowDown" });
     expect(mockSetSelectedTurnIndex).toHaveBeenCalled();
   });
 
   it("handles ArrowUp key for navigation", () => {
-    render(<TraceViewer agentId="alex" sessionId="s1" onClose={vi.fn()} />);
-    fireEvent.keyDown(window, { key: "ArrowUp" });
+    const { container } = render(<TraceViewer agentId="alex" sessionId="s1" onClose={vi.fn()} />);
+    const wrapper = container.querySelector("[tabindex]")!;
+    fireEvent.keyDown(wrapper, { key: "ArrowUp" });
     expect(mockSetSelectedTurnIndex).toHaveBeenCalled();
   });
 });
