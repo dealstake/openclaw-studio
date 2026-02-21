@@ -10,45 +10,11 @@ import { isSidecarConfigured, sidecarGet } from "@/lib/workspace/sidecar";
 
 export const runtime = "nodejs";
 
-type JsonlEntry = {
-  type: string;
-  id?: string;
-  parentId?: string | null;
-  timestamp?: string;
-  message?: {
-    role: string;
-    content: string | Array<{ type: string; text?: string; [key: string]: unknown }>;
-    usage?: {
-      input: number;
-      output: number;
-      cacheRead: number;
-      cacheWrite: number;
-      totalTokens: number;
-      cost: { input: number; output: number; cacheRead: number; cacheWrite: number; total: number };
-    };
-    model?: string;
-    stopReason?: string;
-    timestamp?: string;
-  };
-  [key: string]: unknown;
-};
-
-type TraceMessage = {
-  id: string;
-  role: string;
-  content: string | Array<{ type: string; text?: string; [key: string]: unknown }>;
-  timestamp: string;
-  usage?: {
-    input: number;
-    output: number;
-    cacheRead: number;
-    cacheWrite: number;
-    totalTokens: number;
-    cost: { input: number; output: number; cacheRead: number; cacheWrite: number; total: number };
-  };
-  model?: string;
-  stopReason?: string;
-};
+import {
+  type JsonlEntry,
+  type TraceMessage,
+  parseJsonlEntryToTraceMessage,
+} from "@/lib/sessions/traceParser";
 
 /**
  * GET /api/sessions/trace?agentId=<id>&sessionId=<id>&offset=0&limit=200
@@ -176,16 +142,8 @@ async function readJsonlLocal(
 
       // This is a valid message — check if it falls in our window
       if (messageIndex >= offset && messageIndex < offset + limit) {
-        const msg = entry.message;
-        items.push({
-          id: entry.id ?? crypto.randomUUID(),
-          role: msg.role,
-          content: msg.content,
-          timestamp: msg.timestamp ?? entry.timestamp ?? "",
-          ...(msg.usage ? { usage: msg.usage } : {}),
-          ...(msg.model ? { model: msg.model } : {}),
-          ...(msg.stopReason ? { stopReason: msg.stopReason } : {}),
-        });
+        const traced = parseJsonlEntryToTraceMessage(entry);
+        if (traced) items.push(traced);
       }
       messageIndex++;
     } catch {
@@ -238,16 +196,8 @@ async function readJsonlViaSidecar(
       if (entry.type !== "message" || !entry.message) continue;
 
       if (messageIndex >= offset && messageIndex < offset + limit) {
-        const msg = entry.message;
-        items.push({
-          id: entry.id ?? crypto.randomUUID(),
-          role: msg.role,
-          content: msg.content,
-          timestamp: msg.timestamp ?? entry.timestamp ?? "",
-          ...(msg.usage ? { usage: msg.usage } : {}),
-          ...(msg.model ? { model: msg.model } : {}),
-          ...(msg.stopReason ? { stopReason: msg.stopReason } : {}),
-        });
+        const traced = parseJsonlEntryToTraceMessage(entry);
+        if (traced) items.push(traced);
       }
       messageIndex++;
     } catch {
