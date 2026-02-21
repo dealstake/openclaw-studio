@@ -1,17 +1,20 @@
-import { memo } from "react";
+import { memo, useEffect, useState, useRef } from "react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { HeaderIconButton } from "@/components/HeaderIconButton";
 import type { GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { BrandMark } from "@/components/brand/BrandMark";
 import { LogoutButton } from "@/components/brand/LogoutButton";
-import { ChannelStatusPills } from "@/features/channels/components/ChannelStatusPills";
-import type { ChannelsStatusSnapshot } from "@/lib/gateway/channels";
 import { NotificationBell } from "@/features/notifications/components/NotificationBell";
-import { FolderOpen, Ellipsis, PanelRight, Menu } from "lucide-react";
-import { useEffect, useState } from "react";
+import {
+  Ellipsis,
+  Menu,
+  FolderOpen,
+  PanelRight,
+  Settings,
+  Plus,
+  Wifi,
+} from "lucide-react";
 import { getCfIdentity, type CfIdentity } from "@/lib/cloudflare-auth";
-
-import { sectionLabelClass } from "@/components/SectionLabel";
 import { AgentBreadcrumb, type BreadcrumbAgent } from "./AgentBreadcrumb";
 
 type HeaderBarProps = {
@@ -20,19 +23,17 @@ type HeaderBarProps = {
   onFilesToggle: () => void;
   filesActive: boolean;
   filesDisabled?: boolean;
-  channelsSnapshot?: ChannelsStatusSnapshot | null;
-  channelsLoading?: boolean;
   onOpenContext?: () => void;
-  /** Session history sidebar toggle for mobile */
   onOpenSessionHistory?: () => void;
-  /** Agent breadcrumb props */
   agents?: BreadcrumbAgent[];
   selectedAgentId?: string | null;
   onSelectAgent?: (agentId: string) => void;
-  /** Gateway version for status dot tooltip */
   gatewayVersion?: string;
-  /** Gateway uptime (startedAtMs) for status dot tooltip */
   gatewayUptime?: number;
+  /** New props for overflow menu actions */
+  onNewSession?: () => void;
+  onOpenSettings?: () => void;
+  running?: boolean;
 };
 
 /* ── Connection status dot ───────────────────────────────────────────── */
@@ -69,7 +70,7 @@ function ConnectionDot({
 
   return (
     <span
-      className={`inline-block h-2 w-2 shrink-0 rounded-full ${connectionDotClass[status]}`}
+      className={`hidden sm:inline-block h-2 w-2 shrink-0 rounded-full ${connectionDotClass[status]}`}
       title={title}
       data-testid="gateway-status-dot"
     />
@@ -90,33 +91,126 @@ function formatUptime(startedAtMs: number): string {
   return `${days}d ${remainingHours}h`;
 }
 
-/* ── Avatar button with hover label ──────────────────────────────────── */
+/* ── Overflow menu ───────────────────────────────────────────────────── */
 
-function AvatarButton({ identity }: { identity: CfIdentity | null }) {
-  if (!identity?.email) return null;
-  const initial = identity.email[0]?.toUpperCase() ?? "?";
+function OverflowMenu({
+  onNewSession,
+  onOpenSettings,
+  onConnectionSettings,
+  onFilesToggle,
+  filesActive,
+  onOpenContext,
+  identity,
+}: {
+  onNewSession?: () => void;
+  onOpenSettings?: () => void;
+  onConnectionSettings: () => void;
+  onFilesToggle: () => void;
+  filesActive: boolean;
+  onOpenContext?: () => void;
+  identity: CfIdentity | null;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
+
+  const menuItemClass =
+    "flex w-full items-center gap-2 rounded-sm px-3 py-2 text-left text-xs font-medium text-foreground transition hover:bg-muted";
+
   return (
-    <div className="group hidden items-center sm:flex">
-      <span className="mr-2 max-w-0 overflow-hidden whitespace-nowrap text-[10px] font-semibold text-muted-foreground opacity-0 transition-all duration-200 group-hover:max-w-[200px] group-hover:opacity-100">
-        {identity.email}
-      </span>
-      <HeaderIconButton aria-label={identity.email}>
-        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/15 text-[10px] font-bold text-primary">
-          {initial}
-        </span>
+    <div className="relative" ref={ref}>
+      <HeaderIconButton
+        onClick={() => setOpen((v) => !v)}
+        aria-label="Open studio menu"
+        data-testid="studio-menu-toggle"
+      >
+        <Ellipsis className="h-4 w-4" />
       </HeaderIconButton>
+
+      {open ? (
+        <div className="absolute right-0 top-11 z-50 min-w-48 rounded-md border border-border/80 bg-popover/95 p-1 shadow-lg backdrop-blur">
+          {onNewSession ? (
+            <button
+              className={menuItemClass}
+              type="button"
+              onClick={() => { onNewSession(); setOpen(false); }}
+            >
+              <Plus className="h-3.5 w-3.5 text-muted-foreground" />
+              New Session
+            </button>
+          ) : null}
+          {onOpenSettings ? (
+            <button
+              className={menuItemClass}
+              type="button"
+              onClick={() => { onOpenSettings(); setOpen(false); }}
+            >
+              <Settings className="h-3.5 w-3.5 text-muted-foreground" />
+              Agent Settings
+            </button>
+          ) : null}
+          <button
+            className={menuItemClass}
+            type="button"
+            onClick={() => { onFilesToggle(); setOpen(false); }}
+          >
+            <FolderOpen className="h-3.5 w-3.5 text-muted-foreground" />
+            {filesActive ? "Back to Context" : "Files"}
+          </button>
+          {onOpenContext ? (
+            <button
+              className={menuItemClass}
+              type="button"
+              onClick={() => { onOpenContext(); setOpen(false); }}
+            >
+              <PanelRight className="h-3.5 w-3.5 text-muted-foreground" />
+              Context Panel
+            </button>
+          ) : null}
+          <div className="my-1 border-t border-border/40" />
+          <div className="sm:hidden px-1 py-1">
+            <ThemeToggle />
+          </div>
+          <button
+            className={menuItemClass}
+            type="button"
+            onClick={() => { onConnectionSettings(); setOpen(false); }}
+          >
+            <Wifi className="h-3.5 w-3.5 text-muted-foreground" />
+            Gateway Connection
+          </button>
+          {identity?.email ? (
+            <>
+              <div className="my-1 border-t border-border/40" />
+              <div className="px-3 py-1 text-[10px] text-muted-foreground truncate">
+                {identity.email}
+              </div>
+              <LogoutButton className="w-full" />
+            </>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }
+
+/* ── Header bar ──────────────────────────────────────────────────────── */
 
 export const HeaderBar = memo(function HeaderBar({
   status,
   onConnectionSettings,
   onFilesToggle,
   filesActive,
-  filesDisabled = false,
-  channelsSnapshot = null,
-  channelsLoading = false,
   onOpenContext,
   onOpenSessionHistory,
   agents,
@@ -124,6 +218,8 @@ export const HeaderBar = memo(function HeaderBar({
   onSelectAgent,
   gatewayVersion,
   gatewayUptime,
+  onNewSession,
+  onOpenSettings,
 }: HeaderBarProps) {
   const [identity, setIdentity] = useState<CfIdentity | null>(null);
 
@@ -143,104 +239,49 @@ export const HeaderBar = memo(function HeaderBar({
   }, []);
 
   return (
-    <div className="fade-up relative z-30 overflow-visible rounded-xl border border-border bg-background/80 px-4 py-2 shadow-lg backdrop-blur-xl">
-      <div className="pointer-events-none absolute inset-0 header-gradient-overlay opacity-55" />
-      <div className="relative flex items-center gap-4">
-        <div className="flex min-w-0 flex-1 items-center gap-3">
-          {/* Session history hamburger for mobile */}
-          {onOpenSessionHistory ? (
-            <HeaderIconButton
-              onClick={onOpenSessionHistory}
-              aria-label="Open session history"
-              className="lg:hidden"
-              data-testid="session-history-toggle"
-            >
-              <Menu className="h-[15px] w-[15px]" />
-            </HeaderIconButton>
-          ) : null}
-          <BrandMark size="sm" />
-          <ConnectionDot
-            status={status}
-            gatewayVersion={gatewayVersion}
-            gatewayUptime={gatewayUptime}
-          />
-          {agents?.length && onSelectAgent ? (
-            <AgentBreadcrumb
-              agents={agents}
-              selectedAgentId={selectedAgentId ?? null}
-              onSelectAgent={onSelectAgent}
-            />
-          ) : null}
-          <ChannelStatusPills snapshot={channelsSnapshot} loading={channelsLoading} />
-        </div>
-
-        <div className="flex shrink-0 items-center gap-2">
-          {status === "connecting" ? (
-            <span
-              className={`inline-flex items-center rounded-md border border-border/70 bg-secondary px-3 py-2 ${sectionLabelClass} text-secondary-foreground`}
-              data-testid="gateway-connecting-indicator"
-            >
-              Connecting
-            </span>
-          ) : null}
-
-          <AvatarButton identity={identity} />
-
-          <NotificationBell />
-
-          <div className="hidden sm:flex">
-            <ThemeToggle />
-          </div>
-
+    <div className="flex h-12 w-full items-center justify-between border-b border-border/10 bg-background/95 px-4 backdrop-blur-sm">
+      {/* Left section */}
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        {onOpenSessionHistory ? (
           <HeaderIconButton
-            onClick={onFilesToggle}
-            active={filesActive}
-            disabled={filesDisabled}
-            aria-label={filesActive ? "Back to context" : "Files"}
-            data-testid="files-toggle"
+            onClick={onOpenSessionHistory}
+            aria-label="Open session history"
+            className="lg:hidden"
+            data-testid="session-history-toggle"
           >
-            {filesActive ? (
-              <PanelRight className="h-[15px] w-[15px]" />
-            ) : (
-              <FolderOpen className="h-[15px] w-[15px]" />
-            )}
+            <Menu className="h-4 w-4" />
           </HeaderIconButton>
+        ) : null}
+        <BrandMark size="sm" className="hidden sm:flex" />
+        <ConnectionDot
+          status={status}
+          gatewayVersion={gatewayVersion}
+          gatewayUptime={gatewayUptime}
+        />
+        {agents?.length && onSelectAgent ? (
+          <AgentBreadcrumb
+            agents={agents}
+            selectedAgentId={selectedAgentId ?? null}
+            onSelectAgent={onSelectAgent}
+          />
+        ) : null}
+      </div>
 
-          {onOpenContext ? (
-            <HeaderIconButton
-              onClick={onOpenContext}
-              aria-label="Open context panel"
-              className="md:hidden"
-            >
-              <PanelRight className="h-[15px] w-[15px]" />
-            </HeaderIconButton>
-          ) : null}
-
-          <details className="group relative">
-            <summary
-              className="inline-flex h-10 w-10 cursor-pointer list-none items-center justify-center rounded-md border border-input/90 bg-background/75 text-foreground shadow-sm transition hover:border-ring hover:bg-card [&::-webkit-details-marker]:hidden"
-              data-testid="studio-menu-toggle"
-            >
-              <Ellipsis className="h-[15px] w-[15px]" />
-              <span className="sr-only">Open studio menu</span>
-            </summary>
-            <div className="absolute right-0 top-11 z-20 min-w-44 rounded-md border border-border/80 bg-popover/95 p-1 shadow-lg backdrop-blur">
-              <button
-                className="w-full rounded-sm px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.1em] text-foreground transition hover:bg-muted"
-                type="button"
-                onClick={(event) => {
-                  onConnectionSettings();
-                  (event.currentTarget.closest("details") as HTMLDetailsElement | null)?.removeAttribute("open");
-                }}
-              >
-                Gateway Connection
-              </button>
-              {identity?.email ? (
-                <LogoutButton className="w-full" />
-              ) : null}
-            </div>
-          </details>
+      {/* Right section */}
+      <div className="flex shrink-0 items-center gap-1.5">
+        <NotificationBell />
+        <div className="hidden sm:flex">
+          <ThemeToggle />
         </div>
+        <OverflowMenu
+          onNewSession={onNewSession}
+          onOpenSettings={onOpenSettings}
+          onConnectionSettings={onConnectionSettings}
+          onFilesToggle={onFilesToggle}
+          filesActive={filesActive}
+          onOpenContext={onOpenContext}
+          identity={identity}
+        />
       </div>
     </div>
   );

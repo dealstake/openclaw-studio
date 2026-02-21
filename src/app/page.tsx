@@ -1654,9 +1654,6 @@ const AgentStudioPage = () => {
             onConnectionSettings={() => setShowConnectionPanel((prev) => !prev)}
             onFilesToggle={handleFilesToggle}
             filesActive={contextMode === "files"}
-            filesDisabled={false}
-            channelsSnapshot={channelsSnapshot}
-            channelsLoading={channelsLoading}
             onOpenContext={() => {
               if (isWide(breakpoint)) {
                 setContextPanelOpen(true);

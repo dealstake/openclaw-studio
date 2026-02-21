@@ -25,7 +25,7 @@ describe("HeaderBar brain toggle", () => {
     vi.unstubAllGlobals();
   });
 
-  it("renders_brain_toggle_and_calls_handler", () => {
+  it("renders_files_toggle_in_overflow_menu_and_calls_handler", () => {
     const onFilesToggle = vi.fn();
 
     render(
@@ -37,10 +37,14 @@ describe("HeaderBar brain toggle", () => {
       })
     );
 
-    const brainToggle = screen.getByTestId("files-toggle");
-    expect(brainToggle).toBeInTheDocument();
+    // Open the overflow menu
+    const menuToggle = screen.getByTestId("studio-menu-toggle");
+    fireEvent.click(menuToggle);
 
-    fireEvent.click(brainToggle);
+    // Click Files in overflow menu
+    const filesButton = screen.getByText("Files");
+    expect(filesButton).toBeInTheDocument();
+    fireEvent.click(filesButton);
     expect(onFilesToggle).toHaveBeenCalledTimes(1);
   });
 });
