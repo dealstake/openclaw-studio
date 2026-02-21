@@ -210,7 +210,18 @@ export const AgentChatPanel = memo(function AgentChatPanel({
             stopBusy={stopBusy}
             running={running}
             models={models}
-            modelValue={agent.model ?? models[0]?.id ?? ""}
+            modelValue={
+              // agent.model may include provider prefix (e.g. "anthropic/claude-opus-4-6")
+              // but select option values are just the model id (e.g. "claude-opus-4-6").
+              // Strip the provider prefix so the select matches correctly.
+              (() => {
+                const raw = agent.model ?? "";
+                const stripped = raw.includes("/") ? raw.split("/").slice(1).join("/") : raw;
+                // If the stripped value matches a known model id, use it; otherwise fall back to first model
+                const match = models.find((m) => m.id === stripped);
+                return match ? match.id : models[0]?.id ?? "";
+              })()
+            }
             onModelChange={onModelChange}
             thinkingLevel={agent.thinkingLevel ?? "off"}
             onThinkingChange={onThinkingChange}

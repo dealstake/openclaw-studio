@@ -148,5 +148,14 @@ export const buildGatewayModelChoices = (
       if (fallback) model.contextWindow = fallback;
     }
   }
+  // Sort to match config order: primary model first, then allowed keys order
+  if (allowedKeys.length > 0) {
+    const orderMap = new Map(allowedKeys.map((key, i) => [key, i]));
+    result.sort((a, b) => {
+      const aIdx = orderMap.get(`${a.provider}/${a.id}`) ?? allowedKeys.length;
+      const bIdx = orderMap.get(`${b.provider}/${b.id}`) ?? allowedKeys.length;
+      return aIdx - bIdx;
+    });
+  }
   return result;
 };
