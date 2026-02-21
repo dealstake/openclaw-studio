@@ -10,7 +10,7 @@ import {
   isToolInvocationPart,
   isStatusPart,
 } from "@/lib/chat/types";
-import { MarkdownViewer } from "@/components/MarkdownViewer";
+import { MessageBubble } from "@/components/chat/MessageBubble";
 import { ThinkingBlock } from "@/components/chat/ThinkingBlock";
 import { ToolCallBlock } from "@/components/chat/ToolCallBlock";
 import { ChatStatusBar } from "@/components/chat/ChatStatusBar";
@@ -78,17 +78,9 @@ const PartRenderer = React.memo(function PartRenderer({
     const isUser = part.text.trimStart().startsWith(">");
     if (isUser) {
       const cleaned = part.text.replace(/^>\s*/, "").trim();
-      return (
-        <div className="rounded-md border border-border/70 bg-muted/70 px-3 py-2">
-          <MarkdownViewer content={cleaned} />
-        </div>
-      );
+      return <MessageBubble role="user" content={cleaned} />;
     }
-    return (
-      <div className="px-1">
-        <MarkdownViewer content={part.text} />
-      </div>
-    );
+    return <MessageBubble role="assistant" content={part.text} />;
   }
 
   if (isReasoningPart(part)) {
