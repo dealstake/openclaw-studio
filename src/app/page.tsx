@@ -79,7 +79,7 @@ import { useCommandPalette } from "@/features/command-palette/hooks/useCommandPa
 import { WorkspaceExplorerPanel } from "@/features/workspace/components/WorkspaceExplorerPanel";
 import { ActivityDrawer } from "@/features/activity/components/ActivityDrawer";
 import { ActivityPanel } from "@/features/activity/components/ActivityPanel";
-import { upsertLiveSession, addSystemEvent } from "@/features/activity/hooks/useLiveActivityStore";
+import { addSystemEvent } from "@/features/activity/hooks/useLiveActivityStore";
 import { appendActivityParts, finalizeActivityMessage } from "@/features/activity/hooks/useActivityMessageStore";
 import { pushHeartbeatEntry } from "@/features/activity/hooks/useHeartbeatEntries";
 import { useTranscriptCapture } from "@/features/activity/hooks/useTranscriptCapture";
@@ -1429,17 +1429,6 @@ const AgentStudioPage = () => {
       onCronUpdate: () => {
         void loadAllCronJobsRef.current();
         setCronEventTick((prev) => prev + 1);
-      },
-      onActivityEvent: (sessionKey, data) => {
-        // Resolve task name from cron job ID in session key (format: agent:<id>:cron:<jobId>:<ts>)
-        let taskName: string | undefined;
-        const cronMatch = sessionKey.match(/:cron:([^:]+)/);
-        if (cronMatch) {
-          const jobId = cronMatch[1];
-          const job = allCronJobsRef.current.find((j) => j.id === jobId);
-          if (job) taskName = job.name;
-        }
-        upsertLiveSession(sessionKey, { sessionKey, ...data, ...(taskName ? { taskName } : {}) });
       },
       onHeartbeatEvent: (entry) => {
         pushHeartbeatEntry(entry);

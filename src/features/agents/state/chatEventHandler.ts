@@ -70,16 +70,7 @@ export function handleRuntimeChatEvent(
     const isSubAgent = payload.sessionKey.includes(":subagent:");
     if (isCron || isSubAgent) {
       const text = extractText(payload.message);
-      const snippet = text ? stripUiMetadata(text)?.slice(0, 120) ?? "" : "";
-      // Legacy snippet-based activity event (LiveActivityFeed)
-      if (deps.onActivityEvent) {
-        deps.onActivityEvent(payload.sessionKey, {
-          lastTextSnippet: snippet || undefined,
-          streaming: payload.state === "delta",
-          status: payload.state === "error" ? "error" : "running",
-        });
-      }
-      // Full message content to activity message store (Phase 3)
+      // Full message content to activity message store
       if (deps.onActivityMessage) {
         const thinking = extractThinking(payload.message);
         const parts: import("@/lib/chat/types").MessagePart[] = [];

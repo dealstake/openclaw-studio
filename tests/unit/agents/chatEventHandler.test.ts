@@ -58,8 +58,9 @@ describe("handleRuntimeChatEvent", () => {
     expect(deps.dispatch).not.toHaveBeenCalled();
   });
 
-  it("routes cron events to activity feed when no agent match", () => {
+  it("routes cron events to activity message store when no agent match", () => {
     const cronDeps = makeDeps([]);
+    cronDeps.onActivityMessage = vi.fn();
     const cronState = new RuntimeTrackingState(cronDeps);
     handleRuntimeChatEvent(
       {
@@ -69,14 +70,15 @@ describe("handleRuntimeChatEvent", () => {
       } as ChatEventPayload,
       cronState
     );
-    expect(cronDeps.onActivityEvent).toHaveBeenCalledWith(
+    expect(cronDeps.onActivityMessage).toHaveBeenCalledWith(
       "agent:a1:cron:job1",
-      expect.objectContaining({ streaming: true, status: "running" })
+      expect.objectContaining({ sourceType: "cron", status: "streaming" })
     );
   });
 
-  it("routes subagent events to activity feed", () => {
+  it("routes subagent events to activity message store", () => {
     const subDeps = makeDeps([]);
+    subDeps.onActivityMessage = vi.fn();
     const subState = new RuntimeTrackingState(subDeps);
     handleRuntimeChatEvent(
       {
@@ -86,9 +88,9 @@ describe("handleRuntimeChatEvent", () => {
       } as ChatEventPayload,
       subState
     );
-    expect(subDeps.onActivityEvent).toHaveBeenCalledWith(
+    expect(subDeps.onActivityMessage).toHaveBeenCalledWith(
       "agent:a1:subagent:s1",
-      expect.objectContaining({ status: "error" })
+      expect.objectContaining({ sourceType: "subagent", status: "error" })
     );
   });
 

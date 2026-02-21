@@ -94,12 +94,25 @@ export function createGatewayRuntimeEventHandler(
           title: "Exec approval requested",
           subtitle: extractExecCommandSummary(event.payload),
         });
+        const cmdSummary = extractExecCommandSummary(event.payload);
+        deps.onActivityMessage?.(`exec-approval-${Date.now()}`, {
+          sourceName: "Exec Approval",
+          sourceType: "system",
+          parts: [{ type: "text", text: `Exec approval requested${cmdSummary ? `: \`${cmdSummary}\`` : ""}`, streaming: false }],
+          status: "complete",
+        });
       } else if (event.event === "exec.approval.resolved") {
         deps.onExecApprovalResolved?.(event.payload);
         deps.onSystemEvent?.({
           kind: "exec-approval",
           title: "Exec approval resolved",
           subtitle: "",
+        });
+        deps.onActivityMessage?.(`exec-resolved-${Date.now()}`, {
+          sourceName: "Exec Approval",
+          sourceType: "system",
+          parts: [{ type: "text", text: "Exec approval resolved", streaming: false }],
+          status: "complete",
         });
       }
       return;
@@ -116,6 +129,12 @@ export function createGatewayRuntimeEventHandler(
         title: "Session updated",
         subtitle: "",
       });
+      deps.onActivityMessage?.(`session-update-${Date.now()}`, {
+        sourceName: "Session Lifecycle",
+        sourceType: "system",
+        parts: [{ type: "text", text: "Session updated", streaming: false }],
+        status: "complete",
+      });
       if (sessionsRefreshTimer !== null) deps.clearTimeout(sessionsRefreshTimer);
       sessionsRefreshTimer = deps.setTimeout(() => {
         sessionsRefreshTimer = null;
@@ -129,6 +148,12 @@ export function createGatewayRuntimeEventHandler(
         kind: "cron-schedule",
         title: "Cron schedule updated",
         subtitle: "",
+      });
+      deps.onActivityMessage?.(`cron-update-${Date.now()}`, {
+        sourceName: "Cron Schedule",
+        sourceType: "system",
+        parts: [{ type: "text", text: "Cron schedule updated", streaming: false }],
+        status: "complete",
       });
       if (cronRefreshTimer !== null) deps.clearTimeout(cronRefreshTimer);
       cronRefreshTimer = deps.setTimeout(() => {

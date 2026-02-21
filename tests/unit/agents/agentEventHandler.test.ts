@@ -78,9 +78,10 @@ describe("handleRuntimeAgentEvent", () => {
     });
   });
 
-  describe("cron/subagent activity feed routing", () => {
-    it("routes cron tool events to activity feed", () => {
+  describe("cron/subagent activity message store routing", () => {
+    it("routes cron tool events to activity message store", () => {
       const noDeps = makeDeps([]);
+      noDeps.onActivityMessage = vi.fn();
       const noState = new RuntimeTrackingState(noDeps);
       handleRuntimeAgentEvent(
         {
@@ -91,14 +92,15 @@ describe("handleRuntimeAgentEvent", () => {
         } as AgentEventPayload,
         noState
       );
-      expect(noDeps.onActivityEvent).toHaveBeenCalledWith(
+      expect(noDeps.onActivityMessage).toHaveBeenCalledWith(
         "agent:a1:cron:job1",
-        expect.objectContaining({ lastToolName: "web_search" })
+        expect.objectContaining({ sourceType: "cron", status: "streaming" })
       );
     });
 
-    it("routes cron lifecycle start to activity feed", () => {
+    it("routes cron lifecycle start to activity message store", () => {
       const noDeps = makeDeps([]);
+      noDeps.onActivityMessage = vi.fn();
       const noState = new RuntimeTrackingState(noDeps);
       handleRuntimeAgentEvent(
         {
@@ -109,9 +111,9 @@ describe("handleRuntimeAgentEvent", () => {
         } as AgentEventPayload,
         noState
       );
-      expect(noDeps.onActivityEvent).toHaveBeenCalledWith(
+      expect(noDeps.onActivityMessage).toHaveBeenCalledWith(
         "agent:a1:cron:job1",
-        expect.objectContaining({ status: "running" })
+        expect.objectContaining({ sourceType: "cron", status: "streaming" })
       );
     });
   });

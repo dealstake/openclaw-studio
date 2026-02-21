@@ -67,8 +67,8 @@ export function handleRuntimeAgentEvent(
       deps.onSubAgentLifecycle?.(payload.sessionKey, phase);
       deps.onSessionsUpdate?.();
     }
-    // Route cron/subagent agent events to activity feed
-    if (deps.onActivityEvent && payload.sessionKey) {
+    // Route cron/subagent agent events to activity message store
+    if (deps.onActivityMessage && payload.sessionKey) {
       const isCron = payload.sessionKey.includes(":cron:");
       const isSubAgent = payload.sessionKey.includes(":subagent:");
       if (isCron || isSubAgent) {
@@ -78,58 +78,48 @@ export function handleRuntimeAgentEvent(
           const toolName = typeof pData?.name === "string" ? pData.name : "";
           const toolPhase = typeof pData?.phase === "string" ? pData.phase : "";
           if (toolName) {
-            deps.onActivityEvent(payload.sessionKey, {
-              lastToolName: toolName,
-              lastAction: `${toolName}${toolPhase === "result" ? " ✓" : "…"}`,
+            const toolCallId = typeof pData?.toolCallId === "string" ? pData.toolCallId : "";
+            const args = pData?.arguments ?? pData?.args ?? pData?.input ?? null;
+            const result = toolPhase === "result" ? pData?.result : undefined;
+            const sourceType = isCron ? "cron" as const : "subagent" as const;
+            deps.onActivityMessage(payload.sessionKey, {
+              sourceName: "",
+              sourceType,
+              parts: [{
+                type: "tool-invocation",
+                toolCallId: toolCallId || `${payload.runId}-${toolName}`,
+                name: toolName,
+                phase: toolPhase === "result" ? "complete" : "running",
+                args: args ? (typeof args === "string" ? args : JSON.stringify(args)) : undefined,
+                result: result != null ? (typeof result === "string" ? result : JSON.stringify(result)) : undefined,
+              }],
+              status: "streaming",
             });
-            // Full tool call info to activity message store
-            if (deps.onActivityMessage) {
-              const toolCallId = typeof pData?.toolCallId === "string" ? pData.toolCallId : "";
-              const args = pData?.arguments ?? pData?.args ?? pData?.input ?? null;
-              const result = toolPhase === "result" ? pData?.result : undefined;
-              const sourceType = isCron ? "cron" as const : "subagent" as const;
-              deps.onActivityMessage(payload.sessionKey, {
-                sourceName: "",
-                sourceType,
-                parts: [{
-                  type: "tool-invocation",
-                  toolCallId: toolCallId || `${payload.runId}-${toolName}`,
-                  name: toolName,
-                  phase: toolPhase === "result" ? "complete" : "running",
-                  args: args ? (typeof args === "string" ? args : JSON.stringify(args)) : undefined,
-                  result: result != null ? (typeof result === "string" ? result : JSON.stringify(result)) : undefined,
-                }],
-                status: "streaming",
-              });
-            }
           }
         } else if (stream === "lifecycle") {
           const phase = typeof pData?.phase === "string" ? pData.phase : "";
+          const sourceType = isCron ? "cron" as const : "subagent" as const;
           if (phase === "start") {
-            deps.onActivityEvent(payload.sessionKey, { status: "running" });
+            deps.onActivityMessage(payload.sessionKey, {
+              sourceName: "",
+              sourceType,
+              parts: [{ type: "status", state: "running" }],
+              status: "streaming",
+            });
           } else if (phase === "end") {
-            deps.onActivityEvent(payload.sessionKey, { status: "completed", streaming: false });
-            // Finalize activity message on lifecycle end
-            if (deps.onActivityMessage) {
-              const sourceType = isCron ? "cron" as const : "subagent" as const;
-              deps.onActivityMessage(payload.sessionKey, {
-                sourceName: "",
-                sourceType,
-                parts: [{ type: "status", state: "complete" }],
-                status: "complete",
-              });
-            }
+            deps.onActivityMessage(payload.sessionKey, {
+              sourceName: "",
+              sourceType,
+              parts: [{ type: "status", state: "complete" }],
+              status: "complete",
+            });
           } else if (phase === "error") {
-            deps.onActivityEvent(payload.sessionKey, { status: "error", streaming: false });
-            if (deps.onActivityMessage) {
-              const sourceType = isCron ? "cron" as const : "subagent" as const;
-              deps.onActivityMessage(payload.sessionKey, {
-                sourceName: "",
-                sourceType,
-                parts: [{ type: "status", state: "error" }],
-                status: "error",
-              });
-            }
+            deps.onActivityMessage(payload.sessionKey, {
+              sourceName: "",
+              sourceType,
+              parts: [{ type: "status", state: "error" }],
+              status: "error",
+            });
           }
         }
       }
