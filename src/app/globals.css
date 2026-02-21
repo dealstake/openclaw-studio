@@ -198,6 +198,11 @@
   stroke-width: 1.75;
 }
 
+@utility clickable {
+  cursor: pointer;
+  user-select: none;
+}
+
 @utility scrollbar-none {
   scrollbar-width: none;
   &::-webkit-scrollbar {

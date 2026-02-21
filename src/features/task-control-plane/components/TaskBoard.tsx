@@ -137,7 +137,7 @@ function Column({
                 <div className="relative" data-priority-menu-root={card.id}>
                   <button
                     type="button"
-                    className="rounded-full border border-border/70 px-2 py-0.5 text-[11px] text-muted-foreground transition hover:bg-background hover:text-foreground"
+                    className="rounded-full border border-border/70 px-2 py-0.5 text-[11px] text-muted-foreground transition hover:bg-background hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
                     aria-label={`Change priority for ${card.id}`}
                     data-testid={`task-control-card-priority-${card.id}`}
                     disabled={prioritySavingCardId === card.id}

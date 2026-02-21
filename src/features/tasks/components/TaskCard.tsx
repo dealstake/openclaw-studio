@@ -74,9 +74,7 @@ export const TaskCard = memo(function TaskCard({
           type="button"
           aria-label={task.enabled ? "Pause task" : "Resume task"}
           disabled={busy || busyAction === "toggle"}
-          className={`relative h-5 w-9 shrink-0 rounded-full border transition ${
-            busy ? "opacity-50 cursor-not-allowed" : ""
-          } ${
+          className={`relative h-5 w-9 shrink-0 rounded-full border transition disabled:opacity-50 disabled:cursor-not-allowed ${
             task.enabled
               ? "border-emerald-500/50 bg-emerald-500/30"
               : "border-border bg-muted/50"

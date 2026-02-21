@@ -201,7 +201,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
         {/* Attach button placeholder */}
         <button
           type="button"
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted sm:h-9 sm:w-9"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted sm:h-9 sm:w-9 disabled:cursor-not-allowed disabled:opacity-50"
           aria-label="Attach file"
           disabled
         >
