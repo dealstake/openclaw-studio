@@ -13,6 +13,7 @@ import type { UsageByType } from "@/features/sessions/hooks/useAllSessions";
 import { formatCost, formatTokens } from "@/lib/text/format";
 import { PanelIconButton } from "@/components/PanelIconButton";
 import { sectionLabelClass } from "@/components/SectionLabel";
+import { PanelToolbar } from "@/components/ui/PanelToolbar";
 import { ActiveSessionsTab } from "./ActiveSessionsTab";
 import { HistoryTab } from "./HistoryTab";
 
@@ -176,7 +177,17 @@ export const SessionsPanel = memo(function SessionsPanel({
   return (
     <div className="flex h-full w-full min-w-0 flex-col overflow-hidden">
       {/* Tab header */}
-      <div className="flex items-center justify-between border-b border-border/40 px-4 py-3">
+      <PanelToolbar
+        actions={
+          <PanelIconButton
+            aria-label={tab === "active" ? "Refresh sessions" : "Refresh history"}
+            onClick={tab === "active" ? onRefresh : () => transcriptsRefresh()}
+            disabled={tab === "active" ? loading : transcriptsLoading}
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${(tab === "active" ? loading : transcriptsLoading) ? "animate-spin" : ""}`} />
+          </PanelIconButton>
+        }
+      >
         <div className="flex items-center gap-1">
           <button
             type="button"
@@ -206,14 +217,7 @@ export const SessionsPanel = memo(function SessionsPanel({
             History
           </button>
         </div>
-        <PanelIconButton
-          aria-label={tab === "active" ? "Refresh sessions" : "Refresh history"}
-          onClick={tab === "active" ? onRefresh : () => transcriptsRefresh()}
-          disabled={tab === "active" ? loading : transcriptsLoading}
-        >
-          <RefreshCw className={`h-3.5 w-3.5 ${(tab === "active" ? loading : transcriptsLoading) ? "animate-spin" : ""}`} />
-        </PanelIconButton>
-      </div>
+      </PanelToolbar>
 
       {/* Usage summary (active tab only) */}
       {tab === "active" && (cumulativeUsage || aggregateUsage || cumulativeUsageLoading || aggregateUsageLoading) ? (

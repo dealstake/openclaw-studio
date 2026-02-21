@@ -4,6 +4,7 @@ import { memo } from "react";
 import { ChevronRight, FilePlus, RefreshCw } from "lucide-react";
 
 import { PanelIconButton } from "@/components/PanelIconButton";
+import { PanelToolbar } from "@/components/ui/PanelToolbar";
 import type { Breadcrumb } from "../lib/breadcrumbs";
 
 type WorkspaceBreadcrumbHeaderProps = {
@@ -24,8 +25,28 @@ export const WorkspaceBreadcrumbHeader = memo(function WorkspaceBreadcrumbHeader
   const total = breadcrumbs.length;
 
   return (
-    <div className="flex items-center justify-between border-b border-border/40 px-3 py-2">
-      <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto text-xs text-muted-foreground [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <PanelToolbar
+      actions={
+        <>
+          <PanelIconButton
+            onClick={onNewFile}
+            aria-label="New file"
+            data-testid="ws-new-file"
+          >
+            <FilePlus className="h-3.5 w-3.5" />
+          </PanelIconButton>
+          <PanelIconButton
+            onClick={onRefresh}
+            disabled={loading}
+            aria-label="Refresh workspace"
+            data-testid="ws-refresh"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+          </PanelIconButton>
+        </>
+      }
+    >
+      <div className="flex min-w-0 items-center gap-1 overflow-x-auto text-xs text-muted-foreground [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {breadcrumbs.map((crumb, i) => {
           // Collapse middle breadcrumbs when path is deep (4+ crumbs)
           if (total >= 4 && i > 0 && i < total - 2) {
@@ -58,23 +79,6 @@ export const WorkspaceBreadcrumbHeader = memo(function WorkspaceBreadcrumbHeader
           );
         })}
       </div>
-      <div className="flex flex-shrink-0 items-center gap-1 pl-2">
-        <PanelIconButton
-          onClick={onNewFile}
-          aria-label="New file"
-          data-testid="ws-new-file"
-        >
-          <FilePlus className="h-3.5 w-3.5" />
-        </PanelIconButton>
-        <PanelIconButton
-          onClick={onRefresh}
-          disabled={loading}
-          aria-label="Refresh workspace"
-          data-testid="ws-refresh"
-        >
-          <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-        </PanelIconButton>
-      </div>
-    </div>
+    </PanelToolbar>
   );
 });

@@ -10,6 +10,7 @@ import { formatCronPayload, formatCronSchedule, type CronJobSummary, type CronRu
 import { formatRelativeTime } from "@/lib/text/time";
 import { PanelIconButton } from "@/components/PanelIconButton";
 import { SectionLabel, sectionLabelClass } from "@/components/SectionLabel";
+import { PanelToolbar } from "@/components/ui/PanelToolbar";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import {
   Tooltip,
@@ -113,35 +114,36 @@ export const CronPanel = memo(function CronPanel({
   return (
     <TooltipProvider>
       <div className="flex h-full w-full flex-col overflow-hidden">
-        <div className="flex items-center justify-between border-b border-border/40 px-4 py-3">
-          <SectionLabel>
-            Cron jobs
-          </SectionLabel>
-          <div className="flex items-center gap-1">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span>
-                  <PanelIconButton
-                    aria-label="New cron job (use CLI)"
-                    disabled
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                  </PanelIconButton>
-                </span>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">
-                <p className="text-xs">Create jobs via CLI</p>
-              </TooltipContent>
-            </Tooltip>
-            <PanelIconButton
-              aria-label="Refresh cron jobs"
-              onClick={onRefresh}
-              disabled={loading}
-            >
-              <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-            </PanelIconButton>
-          </div>
-        </div>
+        <PanelToolbar
+          actions={
+            <>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span>
+                    <PanelIconButton
+                      aria-label="New cron job (use CLI)"
+                      disabled
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                    </PanelIconButton>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  <p className="text-xs">Create jobs via CLI</p>
+                </TooltipContent>
+              </Tooltip>
+              <PanelIconButton
+                aria-label="Refresh cron jobs"
+                onClick={onRefresh}
+                disabled={loading}
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+              </PanelIconButton>
+            </>
+          }
+        >
+          <SectionLabel>Cron jobs</SectionLabel>
+        </PanelToolbar>
 
         {/* Summary bar */}
         {cronJobs.length > 0 ? (
