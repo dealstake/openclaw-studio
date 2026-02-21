@@ -78,6 +78,7 @@ import { CommandPalette } from "@/features/command-palette/components/CommandPal
 import { useCommandPalette } from "@/features/command-palette/hooks/useCommandPalette";
 import { WorkspaceExplorerPanel } from "@/features/workspace/components/WorkspaceExplorerPanel";
 import { ActivityDrawer } from "@/features/activity/components/ActivityDrawer";
+import { ActivityPanel } from "@/features/activity/components/ActivityPanel";
 import { upsertLiveSession, addSystemEvent } from "@/features/activity/hooks/useLiveActivityStore";
 import { pushHeartbeatEntry } from "@/features/activity/hooks/useHeartbeatEntries";
 import { useTranscriptCapture } from "@/features/activity/hooks/useTranscriptCapture";
@@ -271,6 +272,13 @@ const AgentStudioPage = () => {
         if (mobilePane !== "context") setMobilePane("context");
         return;
       }
+      if (mod && e.shiftKey && (e.key === "A" || e.key === "a")) {
+        e.preventDefault();
+        setContextTab("activity");
+        setContextPanelOpen(true);
+        if (mobilePane !== "context") setMobilePane("context");
+        return;
+      }
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
@@ -390,7 +398,7 @@ const AgentStudioPage = () => {
   }, []);
 
   const handleCmdNavTab = useCallback((tab: ContextTab | "sessions" | "usage" | "channels" | "cron" | "settings") => {
-    const contextTabs = new Set<string>(["projects", "tasks", "brain", "workspace"]);
+    const contextTabs = new Set<string>(["projects", "tasks", "brain", "workspace", "activity"]);
     if (contextTabs.has(tab)) {
       setContextTab(tab as ContextTab);
       setContextPanelOpen(true);
@@ -2081,6 +2089,9 @@ const AgentStudioPage = () => {
                         eventTick={cronEventTick}
                       />
                     )}
+                    {expandedTab === "activity" && (
+                      <ActivityPanel />
+                    )}
                     {expandedTab === "sessions" && (
                       <SessionsPanel
                         client={client}
@@ -2242,7 +2253,7 @@ const AgentStudioPage = () => {
               ) : (
                 <ContextPanel
                   activeTab={contextTab}
-                  expandedTab={expandedTab === "projects" || expandedTab === "tasks" || expandedTab === "brain" || expandedTab === "workspace" ? expandedTab : null}
+                  expandedTab={expandedTab === "projects" || expandedTab === "tasks" || expandedTab === "brain" || expandedTab === "workspace" || expandedTab === "activity" ? expandedTab : null}
                   onExpandToggle={handleExpandToggle}
                   onClose={showContextInline ? () => setContextPanelOpen(false) : undefined}
                   onTabChange={setContextTab}
@@ -2302,6 +2313,7 @@ const AgentStudioPage = () => {
                       eventTick={cronEventTick}
                     />
                   }
+                  activityContent={<ActivityPanel />}
                 />
               )}
             </div>

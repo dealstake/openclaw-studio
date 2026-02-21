@@ -1,7 +1,7 @@
 "use client";
 
 import { memo } from "react";
-import { FolderKanban, ListChecks, Brain, FolderOpen, X } from "lucide-react";
+import { FolderKanban, ListChecks, Brain, FolderOpen, Activity, X } from "lucide-react";
 import type { ContextTab } from "./ContextPanel";
 
 const TAB_ITEMS: Array<{
@@ -13,6 +13,7 @@ const TAB_ITEMS: Array<{
   { value: "tasks", label: "Tasks", Icon: ListChecks },
   { value: "brain", label: "Brain", Icon: Brain },
   { value: "workspace", label: "Files", Icon: FolderOpen },
+  { value: "activity", label: "Activity", Icon: Activity },
 ];
 
 interface ContextTabClusterProps {

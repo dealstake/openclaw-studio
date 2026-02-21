@@ -6,7 +6,7 @@ import { Maximize2, X } from "lucide-react";
 import { PanelIconButton } from "@/components/PanelIconButton";
 import { sectionLabelClass } from "@/components/SectionLabel";
 
-export type ContextTab = "projects" | "tasks" | "brain" | "workspace";
+export type ContextTab = "projects" | "tasks" | "brain" | "workspace" | "activity";
 
 interface ContextPanelProps {
   activeTab: ContextTab;
@@ -20,6 +20,7 @@ interface ContextPanelProps {
   tasksContent: ReactNode;
   brainContent: ReactNode;
   workspaceContent?: ReactNode;
+  activityContent?: ReactNode;
 }
 
 export const TAB_OPTIONS: Array<{ value: ContextTab; label: string }> = [
@@ -27,6 +28,7 @@ export const TAB_OPTIONS: Array<{ value: ContextTab; label: string }> = [
   { value: "tasks", label: "Tasks" },
   { value: "brain", label: "Brain" },
   { value: "workspace", label: "Files" },
+  { value: "activity", label: "Activity" },
 ];
 
 export const ContextPanel = memo(function ContextPanel({
@@ -40,6 +42,7 @@ export const ContextPanel = memo(function ContextPanel({
   tasksContent,
   brainContent,
   workspaceContent,
+  activityContent,
 }: ContextPanelProps) {
   // Lazy mount: track which tabs have been activated at least once.
   const [mountedTabs, setMountedTabs] = useState<Set<ContextTab>>(
@@ -176,6 +179,11 @@ export const ContextPanel = memo(function ContextPanel({
             {effectiveMountedTabs.has("workspace") && (
               <div role="tabpanel" className={activeTab === "workspace" ? "flex h-full w-full flex-col overflow-hidden" : "hidden"}>
                 {workspaceContent ?? null}
+              </div>
+            )}
+            {effectiveMountedTabs.has("activity") && (
+              <div role="tabpanel" className={activeTab === "activity" ? "flex h-full w-full flex-col overflow-hidden" : "hidden"}>
+                {activityContent ?? null}
               </div>
             )}
           </>

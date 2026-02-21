@@ -9,6 +9,7 @@ const TAB_ICONS: Array<{ value: ContextTab; label: string; shortLabel: string }>
   { value: "tasks", label: "Tasks", shortLabel: "T" },
   { value: "brain", label: "Brain", shortLabel: "B" },
   { value: "workspace", label: "Files", shortLabel: "F" },
+  { value: "activity", label: "Activity", shortLabel: "A" },
 ];
 
 interface ContextPanelStripProps {
