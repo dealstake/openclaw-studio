@@ -5,6 +5,7 @@ import type { GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { BrandMark } from "@/components/brand/BrandMark";
 import { LogoutButton } from "@/components/brand/LogoutButton";
 import { NotificationBell } from "@/features/notifications/components/NotificationBell";
+import { useNotificationStore } from "@/features/notifications/hooks/useNotifications";
 import {
   Ellipsis,
   Menu,
@@ -100,6 +101,7 @@ function OverflowMenu({
   onFilesToggle,
   filesActive,
   onOpenContext,
+  unreadCount,
   identity,
 }: {
   onNewSession?: () => void;
@@ -108,6 +110,7 @@ function OverflowMenu({
   onFilesToggle: () => void;
   filesActive: boolean;
   onOpenContext?: () => void;
+  unreadCount?: number;
   identity: CfIdentity | null;
 }) {
   const [open, setOpen] = useState(false);
@@ -134,7 +137,12 @@ function OverflowMenu({
         aria-label="Open studio menu"
         data-testid="studio-menu-toggle"
       >
-        <Ellipsis className="h-4 w-4" />
+        <div className="relative">
+          <Ellipsis className="h-4 w-4" />
+          {(unreadCount ?? 0) > 0 ? (
+            <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-destructive sm:hidden" />
+          ) : null}
+        </div>
       </HeaderIconButton>
 
       {open ? (
@@ -222,6 +230,7 @@ export const HeaderBar = memo(function HeaderBar({
   onOpenSettings,
 }: HeaderBarProps) {
   const [identity, setIdentity] = useState<CfIdentity | null>(null);
+  const { unreadCount } = useNotificationStore();
 
   useEffect(() => {
     let cancelled = false;
@@ -240,8 +249,8 @@ export const HeaderBar = memo(function HeaderBar({
 
   return (
     <div className="flex h-12 w-full items-center justify-between bg-background/60 px-4 backdrop-blur-xl transition-colors duration-300 hover:bg-background/80">
-      {/* Left section */}
-      <div className="flex min-w-0 flex-1 items-center gap-3">
+      {/* Left section — hamburger + brand (desktop only) */}
+      <div className="flex min-w-0 items-center gap-3 sm:flex-1">
         {onOpenSessionHistory ? (
           <HeaderIconButton
             onClick={onOpenSessionHistory}
@@ -258,6 +267,20 @@ export const HeaderBar = memo(function HeaderBar({
           gatewayVersion={gatewayVersion}
           gatewayUptime={gatewayUptime}
         />
+        {/* Desktop breadcrumb — left-aligned */}
+        <div className="hidden sm:flex min-w-0">
+          {agents?.length && onSelectAgent ? (
+            <AgentBreadcrumb
+              agents={agents}
+              selectedAgentId={selectedAgentId ?? null}
+              onSelectAgent={onSelectAgent}
+            />
+          ) : null}
+        </div>
+      </div>
+
+      {/* Center section — mobile breadcrumb, centered */}
+      <div className="flex flex-1 justify-center sm:hidden min-w-0">
         {agents?.length && onSelectAgent ? (
           <AgentBreadcrumb
             agents={agents}
@@ -269,7 +292,10 @@ export const HeaderBar = memo(function HeaderBar({
 
       {/* Right section */}
       <div className="flex shrink-0 items-center gap-1.5">
-        <NotificationBell />
+        {/* NotificationBell — hidden on mobile, shown in overflow instead */}
+        <div className="hidden sm:flex">
+          <NotificationBell />
+        </div>
         <div className="hidden sm:flex">
           <ThemeToggle />
         </div>
@@ -280,6 +306,7 @@ export const HeaderBar = memo(function HeaderBar({
           onFilesToggle={onFilesToggle}
           filesActive={filesActive}
           onOpenContext={onOpenContext}
+          unreadCount={unreadCount}
           identity={identity}
         />
       </div>
