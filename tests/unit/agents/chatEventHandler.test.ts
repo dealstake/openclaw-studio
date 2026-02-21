@@ -38,8 +38,7 @@ function makeDeps(agents: AgentState[] = []): GatewayRuntimeEventHandlerDeps {
     isDisconnectLikeError: () => false,
     logWarn: vi.fn(),
     updateSpecialLatestUpdate: vi.fn(),
-    onActivityEvent: vi.fn(),
-    onHeartbeatEvent: vi.fn(),
+    onActivityMessage: vi.fn(),
   };
 }
 
@@ -122,8 +121,9 @@ describe("handleRuntimeChatEvent", () => {
         } as ChatEventPayload,
         state
       );
-      expect(deps.onHeartbeatEvent).toHaveBeenCalledWith(
-        expect.objectContaining({ status: "ok", text: "HEARTBEAT_OK" })
+      expect(deps.onActivityMessage).toHaveBeenCalledWith(
+        "heartbeat-run-hb",
+        expect.objectContaining({ sourceName: "Heartbeat", sourceType: "heartbeat", status: "complete" })
       );
       expect(deps.dispatch).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -135,7 +135,6 @@ describe("handleRuntimeChatEvent", () => {
     });
 
     it("routes heartbeat final alert to activity message store (not main chat)", () => {
-      deps.onActivityMessage = vi.fn();
       handleRuntimeChatEvent(
         {
           sessionKey: "agent:agent-1:main",
@@ -145,9 +144,6 @@ describe("handleRuntimeChatEvent", () => {
           message: { role: "assistant", content: "Alert: something wrong" },
         } as ChatEventPayload,
         state
-      );
-      expect(deps.onHeartbeatEvent).toHaveBeenCalledWith(
-        expect.objectContaining({ status: "alert" })
       );
       // Non-OK heartbeats no longer pollute main chat — routed to activity
       expect(deps.dispatch).not.toHaveBeenCalledWith(

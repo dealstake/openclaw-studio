@@ -8,14 +8,12 @@ import { MarkdownViewer } from "@/components/MarkdownViewer";
 import { ThinkingBlock } from "@/components/chat/ThinkingBlock";
 import { ToolCallBlock } from "@/components/chat/ToolCallBlock";
 import { ErrorBanner } from "@/components/ErrorBanner";
-import { useHeartbeatEntries } from "@/features/activity/hooks/useHeartbeatEntries";
 import {
   useActivityMessageStore,
   type ActivityMessage,
 } from "@/features/activity/hooks/useActivityMessageStore";
 import { useActivityHistory } from "@/features/activity/hooks/useActivityHistory";
 import type { ActivityEvent } from "@/features/activity/lib/activityTypes";
-import type { HeartbeatEntry } from "@/features/activity/hooks/useHeartbeatEntries";
 import type { MessagePart } from "@/lib/chat/types";
 import {
   isTextPart,
@@ -106,53 +104,7 @@ const MessagePartsRenderer = memo(function MessagePartsRenderer({
   );
 });
 
-// ── Unified timeline entry type ────────────────────────────────────────
-
-type TimelineEntry =
-  | { kind: "heartbeat"; data: HeartbeatEntry }
-  | { kind: "message"; data: ActivityMessage };
-
-function getEntryTimestamp(entry: TimelineEntry): number {
-  return entry.data.timestamp;
-}
-
-function getEntryKey(entry: TimelineEntry): string {
-  switch (entry.kind) {
-    case "heartbeat":
-      return `hb-${entry.data.runId}`;
-    case "message":
-      return `msg-${entry.data.sourceKey}`;
-  }
-}
-
 // ── Sub-components ─────────────────────────────────────────────────────
-
-const HeartbeatCard = memo(function HeartbeatCard({
-  entry,
-}: {
-  entry: HeartbeatEntry;
-}) {
-  const isOk = entry.status === "ok";
-  return (
-    <div className="group flex gap-2.5 rounded-lg px-3 py-2 transition-colors hover:bg-muted/40">
-      <div className="flex-shrink-0 pt-0.5 text-base leading-none">💓</div>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <span className="text-[13px] font-medium text-foreground">Heartbeat</span>
-          <span
-            className={`inline-block h-1.5 w-1.5 rounded-full flex-shrink-0 ${isOk ? "bg-emerald-400" : "bg-red-400"}`}
-          />
-        </div>
-        <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">
-          {isOk ? "All clear" : entry.text.slice(0, 120)}
-        </p>
-        <p className="mt-1 text-[10px] text-muted-foreground/60">
-          {formatTime(entry.timestamp)}
-        </p>
-      </div>
-    </div>
-  );
-});
 
 const ActivityMessageCard = memo(function ActivityMessageCard({
   entry,
@@ -444,7 +396,7 @@ type ActivityTab = "live" | "history";
 const VirtualizedTimeline = memo(function VirtualizedTimeline({
   timeline,
 }: {
-  timeline: TimelineEntry[];
+  timeline: ActivityMessage[];
 }) {
   const parentRef = useRef<HTMLDivElement>(null);
 
@@ -459,7 +411,7 @@ const VirtualizedTimeline = memo(function VirtualizedTimeline({
   const prevTopKeyRef = useRef<string | null>(null);
   useEffect(() => {
     if (timeline.length === 0) return;
-    const topKey = getEntryKey(timeline[0]);
+    const topKey = timeline[0].sourceKey;
     if (prevTopKeyRef.current !== topKey) {
       prevTopKeyRef.current = topKey;
       virtualizer.scrollToIndex(0, { behavior: "smooth" });
@@ -476,17 +428,13 @@ const VirtualizedTimeline = memo(function VirtualizedTimeline({
           const entry = timeline[virtualItem.index];
           return (
             <div
-              key={getEntryKey(entry)}
+              key={entry.sourceKey}
               data-index={virtualItem.index}
               ref={virtualizer.measureElement}
               className="absolute left-0 top-0 w-full"
               style={{ transform: `translateY(${virtualItem.start}px)` }}
             >
-              {entry.kind === "heartbeat" ? (
-                <HeartbeatCard entry={entry.data} />
-              ) : (
-                <ActivityMessageCard entry={entry.data} />
-              )}
+              <ActivityMessageCard entry={entry} />
             </div>
           );
         })}
@@ -504,40 +452,24 @@ const VirtualizedTimeline = memo(function VirtualizedTimeline({
  */
 export const ActivityPanel = memo(function ActivityPanel() {
   const [activeTab, setActiveTab] = useState<ActivityTab>("live");
-  const heartbeatEntries = useHeartbeatEntries();
   const { messages: activityMessages } = useActivityMessageStore();
 
-  // Build unified timeline from all sources
+  // Build unified timeline from activity message store (heartbeats, cron, subagent, system)
   const timeline = useMemo(() => {
-    const entries: TimelineEntry[] = [];
-
-    // Heartbeats (last 10)
-    for (const hb of heartbeatEntries.slice(0, 10)) {
-      entries.push({ kind: "heartbeat", data: hb });
-    }
-
-    // Activity messages from the unified store (cron, subagent, heartbeat, system events)
-    for (const msg of activityMessages) {
-      entries.push({ kind: "message", data: msg });
-    }
-
-    // Sort: streaming entries first, then by timestamp descending
-    entries.sort((a, b) => {
-      const aRunning = a.kind === "message" && a.data.status === "streaming";
-      const bRunning = b.kind === "message" && b.data.status === "streaming";
+    const sorted = [...activityMessages];
+    // Streaming entries first, then by timestamp descending
+    sorted.sort((a, b) => {
+      const aRunning = a.status === "streaming";
+      const bRunning = b.status === "streaming";
       if (aRunning && !bRunning) return -1;
       if (!aRunning && bRunning) return 1;
-      return getEntryTimestamp(b) - getEntryTimestamp(a);
+      return b.timestamp - a.timestamp;
     });
-
-    return entries;
-  }, [heartbeatEntries, activityMessages]);
+    return sorted;
+  }, [activityMessages]);
 
   const runningCount = useMemo(
-    () =>
-      timeline.filter(
-        (e) => e.kind === "message" && e.data.status === "streaming",
-      ).length,
+    () => timeline.filter((e) => e.status === "streaming").length,
     [timeline],
   );
 

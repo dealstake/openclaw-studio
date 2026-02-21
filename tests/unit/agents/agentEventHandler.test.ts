@@ -39,7 +39,7 @@ function makeDeps(agents: AgentState[] = []): GatewayRuntimeEventHandlerDeps {
     isDisconnectLikeError: () => false,
     logWarn: vi.fn(),
     updateSpecialLatestUpdate: vi.fn(),
-    onActivityEvent: vi.fn(),
+    onActivityMessage: vi.fn(),
     onSubAgentLifecycle: vi.fn(),
     onSessionsUpdate: vi.fn(),
   };

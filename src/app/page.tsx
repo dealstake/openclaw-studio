@@ -80,7 +80,7 @@ import { useCommandPalette } from "@/features/command-palette/hooks/useCommandPa
 import { WorkspaceExplorerPanel } from "@/features/workspace/components/WorkspaceExplorerPanel";
 import { ActivityPanel } from "@/features/activity/components/ActivityPanel";
 import { appendActivityParts, finalizeActivityMessage } from "@/features/activity/hooks/useActivityMessageStore";
-import { pushHeartbeatEntry } from "@/features/activity/hooks/useHeartbeatEntries";
+// Heartbeat entries now routed exclusively via onActivityMessage to useActivityMessageStore
 import { TraceViewer } from "@/features/sessions/components/TraceViewer";
 import { useChannelsStatus } from "@/features/channels/hooks/useChannelsStatus";
 import { useAllSessions } from "@/features/sessions/hooks/useAllSessions";
@@ -1427,9 +1427,7 @@ const AgentStudioPage = () => {
         void loadAllCronJobsRef.current();
         setCronEventTick((prev) => prev + 1);
       },
-      onHeartbeatEvent: (entry) => {
-        pushHeartbeatEntry(entry);
-      },
+      // Heartbeats routed via onActivityMessage below — no separate store needed
       onSystemEvent: () => {
         // System events now routed via onActivityMessage to useActivityMessageStore
       },

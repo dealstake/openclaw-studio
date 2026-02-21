@@ -34,27 +34,12 @@ export type GatewayRuntimeEventHandlerDeps = {
   onSessionsUpdate?: () => void;
   onCronUpdate?: () => void;
   onSubAgentLifecycle?: (sessionKey: string, phase: string) => void;
-  onActivityEvent?: (sessionKey: string, data: {
-    lastAction?: string;
-    lastToolName?: string;
-    lastTextSnippet?: string;
-    streaming?: boolean;
-    status?: "running" | "completed" | "error";
-    agentId?: string;
-    taskName?: string;
-  }) => void;
   onSystemEvent?: (event: {
     kind: "exec-approval" | "session-lifecycle" | "cron-schedule";
     title: string;
     subtitle: string;
   }) => void;
-  onHeartbeatEvent?: (entry: {
-    runId: string;
-    timestamp: number;
-    text: string;
-    status: "ok" | "alert";
-  }) => void;
-  /** Route full message content to the activity message store (Phase 3). */
+  /** Route full message content to the activity message store. */
   onActivityMessage?: (sourceKey: string, data: {
     sourceName: string;
     sourceType: "heartbeat" | "cron" | "subagent" | "system";

@@ -100,8 +100,8 @@ export function handleRuntimeChatEvent(
   if (!agentId) return;
   const agent = agentsSnapshot.find((entry) => entry.agentId === agentId);
 
-  // Route heartbeat messages to activity drawer instead of main chat
-  if (payload.isHeartbeat && deps.onHeartbeatEvent) {
+  // Route heartbeat messages to activity store only — no main chat pollution
+  if (payload.isHeartbeat) {
     if (payload.state === "delta") {
       state.markActivityThrottled(agentId);
       return;
@@ -109,12 +109,6 @@ export function handleRuntimeChatEvent(
     if (payload.state === "final") {
       const text = extractText(payload.message) ?? "";
       const isOk = /HEARTBEAT_OK/i.test(text);
-      deps.onHeartbeatEvent({
-        runId: payload.runId,
-        timestamp: state.now(),
-        text,
-        status: isOk ? "ok" : "alert",
-      });
       state.clearRunTracking(payload.runId ?? null);
       deps.clearPendingLivePatch(agentId);
       deps.dispatch({
@@ -122,7 +116,6 @@ export function handleRuntimeChatEvent(
         agentId,
         patch: { status: "idle", runId: null, streamText: null, thinkingTrace: null },
       });
-      // Non-OK heartbeat content now routes to activity only — no main chat pollution
       if (deps.onActivityMessage) {
         deps.onActivityMessage(`heartbeat-${payload.runId}`, {
           sourceName: "Heartbeat",
