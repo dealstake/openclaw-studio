@@ -2,7 +2,8 @@
 
 import { memo, useMemo } from "react";
 import { Radio, RefreshCw } from "lucide-react";
-import { Skeleton } from "@/components/Skeleton";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { CardSkeleton } from "@/components/ui/CardSkeleton";
 import { PanelIconButton } from "@/components/PanelIconButton";
 import type { ChannelsStatusSnapshot } from "@/lib/gateway/channels";
 import { resolveChannelLabel, resolveChannelHealth, type ChannelHealth } from "@/lib/gateway/channels";
@@ -89,29 +90,13 @@ export const ChannelsPanel = memo(function ChannelsPanel({
 
       <div className="mt-3 flex flex-1 flex-col gap-2 overflow-y-auto">
         {loading && keys.length === 0 ? (
-          <div className="flex flex-col gap-2">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-3 rounded-md border border-border/80 bg-card/75 px-3 py-2">
-                <Skeleton className="h-2 w-2 rounded-full" />
-                <div className="flex-1 space-y-2">
-                  <Skeleton className="h-3 w-24" />
-                  <Skeleton className="h-2.5 w-16" />
-                </div>
-              </div>
-            ))}
-          </div>
+          <CardSkeleton count={3} variant="list" />
         ) : keys.length === 0 ? (
-          <div className="flex flex-1 flex-col items-center justify-center gap-3 py-8">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-border/60 bg-muted/40">
-              <Radio className="h-5 w-5 text-muted-foreground/60" />
-            </div>
-            <div className="text-center">
-              <p className={`${sectionLabelClass} text-muted-foreground`}>No channels configured</p>
-              <p className="mt-1 max-w-[240px] text-[11px] leading-relaxed text-muted-foreground/60">
-                Connect messaging channels like WhatsApp, Telegram, Discord, or Slack to this agent.
-              </p>
-            </div>
-          </div>
+          <EmptyState
+            icon={Radio}
+            title="No channels configured"
+            description="Connect messaging channels like WhatsApp, Telegram, Discord, or Slack to this agent."
+          />
         ) : (
           keys.map((key) => {
             const entry = channels[key];

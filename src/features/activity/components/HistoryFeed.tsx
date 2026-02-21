@@ -2,6 +2,7 @@
 
 import { memo, useRef, useEffect, useCallback } from "react";
 import { History, RefreshCw, Loader2 } from "lucide-react";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ErrorBanner } from "@/components/ErrorBanner";
 import { useActivityHistory } from "@/features/activity/hooks/useActivityHistory";
@@ -46,13 +47,11 @@ export const HistoryFeed = memo(function HistoryFeed() {
 
   if (!loading && events.length === 0) {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-2 py-12 text-center text-muted-foreground">
-        <History className="h-8 w-8 opacity-30" />
-        <p className="text-sm font-medium">No activity history</p>
-        <p className="text-xs text-muted-foreground/60">
-          Completed cron runs and agent activity will appear here
-        </p>
-      </div>
+      <EmptyState
+        icon={History}
+        title="No activity history"
+        description="Completed cron runs and agent activity will appear here"
+      />
     );
   }
 

@@ -1,9 +1,9 @@
 "use client";
 
 import { memo, useCallback, useState } from "react";
-import { ChevronDown, ChevronRight, Play, Plus, RefreshCw, ToggleLeft, ToggleRight, Trash2 } from "lucide-react";
-import { EmptyStatePanel } from "@/features/agents/components/EmptyStatePanel";
-import { Skeleton } from "@/components/Skeleton";
+import { ChevronDown, ChevronRight, Clock, Play, Plus, RefreshCw, ToggleLeft, ToggleRight, Trash2 } from "lucide-react";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { CardSkeleton } from "@/components/ui/CardSkeleton";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import { isGatewayDisconnectLikeError } from "@/lib/gateway/GatewayClient";
 import { formatCronPayload, formatCronSchedule, type CronJobSummary, type CronRunEntry, fetchCronRuns } from "@/lib/cron/types";
@@ -168,19 +168,15 @@ export const CronPanel = memo(function CronPanel({
           ) : null}
 
           {loading && cronJobs.length === 0 ? (
-            <div className="flex flex-col gap-2">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="rounded-md border border-border/80 bg-card/70 p-3 space-y-2">
-                  <Skeleton className="h-3 w-32" />
-                  <Skeleton className="h-2.5 w-48" />
-                  <Skeleton className="h-2.5 w-24" />
-                </div>
-              ))}
-            </div>
+            <CardSkeleton count={3} variant="card" />
           ) : null}
 
           {!loading && !error && cronJobs.length === 0 ? (
-            <EmptyStatePanel title="No cron jobs found." compact className="w-full p-4 text-center text-xs" />
+            <EmptyState
+              icon={Clock}
+              title="No cron jobs"
+              description="Schedule recurring tasks for your agent"
+            />
           ) : null}
 
           {cronJobs.length > 0 ? (

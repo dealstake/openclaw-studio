@@ -1,9 +1,9 @@
 "use client";
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Plus, RefreshCw, Zap, Clock, Calendar } from "lucide-react";
-import { EmptyStatePanel } from "@/features/agents/components/EmptyStatePanel";
-import { Skeleton } from "@/components/Skeleton";
+import { Plus, RefreshCw, ListChecks } from "lucide-react";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { CardSkeleton } from "@/components/ui/CardSkeleton";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import type { StudioTask, TaskType, TaskSchedule, UpdateTaskPayload } from "@/features/tasks/types";
 import { TaskCard } from "./TaskCard";
@@ -248,47 +248,16 @@ export const TasksPanel = memo(function TasksPanel({
         ) : null}
 
         {loading && tasks.length === 0 ? (
-          <div className="flex flex-col gap-2">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div
-                key={i}
-                className="rounded-md border border-border/80 bg-card/70 p-3 space-y-2"
-              >
-                <Skeleton className="h-3 w-32" />
-                <Skeleton className="h-2.5 w-48" />
-                <Skeleton className="h-2.5 w-24" />
-              </div>
-            ))}
-          </div>
+          <CardSkeleton count={3} variant="card" />
         ) : null}
 
         {!loading && !error && tasks.length === 0 ? (
-          <div className="flex flex-1 flex-col items-center justify-center gap-4 py-12">
-            <div className="flex items-center gap-3 text-muted-foreground">
-              <Zap className="h-5 w-5 opacity-40" />
-              <Clock className="h-5 w-5 opacity-40" />
-              <Calendar className="h-5 w-5 opacity-40" />
-            </div>
-            <div className="text-center">
-              <SectionLabel as="p">
-                No tasks yet
-              </SectionLabel>
-              <p className="mt-1.5 max-w-[220px] text-[11px] leading-relaxed text-muted-foreground">
-                Create automated tasks to have your agents monitor, report, and
-                act on your behalf.
-              </p>
-            </div>
-            <button
-              type="button"
-              className="relative z-10 flex items-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-3 py-1.5 text-primary transition focus-ring hover:bg-primary/20"
-              onClick={onNewTask}
-            >
-              <Plus className="h-3.5 w-3.5" />
-              <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em]">
-                Create Task
-              </span>
-            </button>
-          </div>
+          <EmptyState
+            icon={ListChecks}
+            title="No tasks yet"
+            description="Create automated tasks to have your agents monitor, report, and act on your behalf."
+            action={{ label: "Create Task", onClick: onNewTask }}
+          />
         ) : null}
 
         {filtered.length > 0 ? (
@@ -316,10 +285,10 @@ export const TasksPanel = memo(function TasksPanel({
         ) : null}
 
         {tasks.length > 0 && filtered.length === 0 && !loading ? (
-          <EmptyStatePanel
-            title={`No ${filter} tasks.`}
-            compact
-            className="w-full p-4 text-center text-xs"
+          <EmptyState
+            icon={ListChecks}
+            title={`No ${filter} tasks`}
+            className="py-8"
           />
         ) : null}
       </div>

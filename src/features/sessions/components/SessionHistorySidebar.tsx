@@ -1,5 +1,7 @@
 import { memo, useCallback, useEffect } from "react";
-import { Plus, MessageSquare, ChevronLeft } from "lucide-react";
+import { Plus, MessageSquare, ChevronLeft, SearchX } from "lucide-react";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { CardSkeleton } from "@/components/ui/CardSkeleton";
 import { SearchInput } from "@/components/SearchInput";
 import { formatRelativeTime } from "@/lib/text/time";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
@@ -119,13 +121,14 @@ export const SessionHistorySidebar = memo(function SessionHistorySidebar({
       {/* Session list */}
       <div className="flex-1 overflow-y-auto px-1.5 pb-2">
         {loading && groups.length === 0 ? (
-          <div className="px-2 py-4 text-center text-[12px] text-muted-foreground">
-            Loading sessions…
-          </div>
+          <CardSkeleton count={4} variant="compact" className="px-1" />
         ) : groups.length === 0 ? (
-          <div className="px-2 py-4 text-center text-[12px] text-muted-foreground">
-            {search ? "No matching sessions" : "No sessions yet"}
-          </div>
+          <EmptyState
+            icon={search ? SearchX : MessageSquare}
+            title={search ? "No matching sessions" : "No sessions yet"}
+            description={search ? undefined : "Start chatting to see your session history here"}
+            className="py-8"
+          />
         ) : (
           groups.map((group) => (
             <div key={group.label} className="mb-2">

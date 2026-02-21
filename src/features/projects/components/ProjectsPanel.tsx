@@ -4,9 +4,13 @@ import { memo, useMemo, useState, useCallback, useRef, useEffect } from "react";
 import {
   FileText,
   FolderGit2,
+  FolderKanban,
   Plus,
   RefreshCw,
+  SearchX,
 } from "lucide-react";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { CardSkeleton } from "@/components/ui/CardSkeleton";
 import type { ProjectDetails } from "../lib/parseProject";
 import { ProjectCard } from "./ProjectCard";
 import { ProjectWizardModal } from "./ProjectWizardModal";
@@ -185,21 +189,7 @@ export const ProjectsPanel = memo(function ProjectsPanel({
 
       {/* Loading Skeletons */}
       {loading && projects.length === 0 && (
-        <div className="flex flex-col gap-2">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="rounded-md border border-border/80 bg-card/70 px-3 py-2.5 animate-pulse">
-              <div className="flex items-center gap-2">
-                <div className="h-4 w-16 rounded bg-muted/40" />
-                <div className="h-2 w-2 rounded-full bg-muted/40" />
-                <div className="h-4 w-32 rounded bg-muted/40" />
-              </div>
-              <div className="mt-2 h-3 w-3/4 rounded bg-muted/30" />
-              <div className="mt-2 border-t border-border/40 pt-2">
-                <div className="h-1.5 w-full rounded-full bg-muted/30" />
-              </div>
-            </div>
-          ))}
-        </div>
+        <CardSkeleton count={3} variant="card" />
       )}
 
       {/* Error */}
@@ -211,16 +201,20 @@ export const ProjectsPanel = memo(function ProjectsPanel({
 
       {/* Empty */}
       {!loading && !error && projects.length === 0 && (
-        <div className="py-6 text-center font-mono text-xs text-muted-foreground/60">
-          No projects/INDEX.md found
-        </div>
+        <EmptyState
+          icon={FolderKanban}
+          title="No projects"
+          description="Projects organize your agent's work into trackable goals"
+        />
       )}
 
       {/* Filtered empty */}
       {!loading && !error && projects.length > 0 && filteredProjects.length === 0 && (
-        <div className="py-6 text-center font-mono text-xs text-muted-foreground/60">
-          No {statusFilter !== "all" ? (STATUS_CONFIG[statusFilter]?.label ?? "") + " " : "matching "}projects
-        </div>
+        <EmptyState
+          icon={SearchX}
+          title={`No ${statusFilter !== "all" ? (STATUS_CONFIG[statusFilter]?.label ?? "") + " " : "matching "}projects`}
+          className="py-8"
+        />
       )}
 
       {/* All projects — flat list, sorted by status */}

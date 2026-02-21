@@ -2,6 +2,7 @@
 
 import { memo, useMemo, useState } from "react";
 import { Activity, Radio, History } from "lucide-react";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { sectionLabelClass } from "@/components/SectionLabel";
 import { useActivityMessageStore } from "@/features/activity/hooks/useActivityMessageStore";
 import { LiveActivityFeed } from "./LiveActivityFeed";
@@ -84,13 +85,11 @@ export const ActivityPanel = memo(function ActivityPanel() {
       {/* Content */}
       {activeTab === "live" ? (
         timeline.length === 0 ? (
-          <div className="flex flex-1 flex-col items-center justify-center gap-2 py-12 text-center text-muted-foreground">
-            <Activity className="h-8 w-8 opacity-30" />
-            <p className="text-sm font-medium">No live activity</p>
-            <p className="text-xs text-muted-foreground/60">
-              Running cron jobs, heartbeats, and sub-agents appear here
-            </p>
-          </div>
+          <EmptyState
+            icon={Activity}
+            title="No live activity"
+            description="Running cron jobs, heartbeats, and sub-agents appear here"
+          />
         ) : (
           <LiveActivityFeed timeline={timeline} />
         )
