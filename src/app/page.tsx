@@ -16,6 +16,7 @@ import { ConnectionPanel } from "@/features/agents/components/ConnectionPanel";
 import { EmptyStatePanel } from "@/features/agents/components/EmptyStatePanel";
 import { BrandMark } from "@/components/brand/BrandMark";
 import { ArrowLeft, Users } from "lucide-react";
+import { sectionLabelClass } from "@/components/SectionLabel";
 import {
   buildAgentInstruction,
 } from "@/lib/text/message-extract";
@@ -1753,6 +1754,35 @@ const AgentStudioPage = () => {
                   className="absolute inset-y-0 left-0 w-[280px] animate-in slide-in-from-left duration-200 bg-[var(--surface-elevated)] flex flex-col"
                   onClick={(e) => e.stopPropagation()}
                 >
+                  {/* Agent list for mobile */}
+                  {breadcrumbAgents.length > 1 && (
+                    <div className="border-b border-border/20 px-3 py-2.5">
+                      <p className={`${sectionLabelClass} mb-1.5 px-0.5 text-[10px]`}>Agents</p>
+                      <div className="flex flex-col gap-0.5">
+                        {breadcrumbAgents.map((agent) => (
+                          <button
+                            key={agent.agentId}
+                            type="button"
+                            onClick={() => {
+                              flushPendingDraft(focusedAgent?.agentId ?? null);
+                              dispatch({ type: "selectAgent", agentId: agent.agentId });
+                              setMobileSessionDrawerOpen(false);
+                            }}
+                            className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[13px] font-medium transition-colors ${
+                              agent.agentId === focusedAgentId
+                                ? "bg-accent text-accent-foreground"
+                                : "text-foreground/80 hover:bg-muted"
+                            }`}
+                          >
+                            <span className={`inline-block h-2 w-2 rounded-full shrink-0 ${
+                              agent.status === "running" ? "bg-emerald-400" : "bg-muted-foreground/30"
+                            }`} />
+                            {agent.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   {/* Management nav items for mobile */}
                   <div className="flex flex-col gap-0.5 border-b border-border/20 px-3 py-3">
                     {([
