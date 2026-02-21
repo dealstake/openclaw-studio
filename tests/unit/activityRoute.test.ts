@@ -206,12 +206,13 @@ describe("POST /api/activity", () => {
     expect(mockFsPromises.appendFile).toHaveBeenCalled();
   });
 
-  it("skips DB insert when sidecar is configured", async () => {
+  it("writes to both DB and JSONL when sidecar is configured", async () => {
     mockIsSidecarConfigured.mockReturnValue(true);
     const body = { id: "evt-2", timestamp: "2026-01-01", status: "error" };
     const res = await POST(makePostRequest(body, { agentId: "alex" }));
     expect(res.status).toBe(200);
-    expect(mockInsert).not.toHaveBeenCalled();
+    // DB write happens in both modes for data consistency
+    expect(mockInsert).toHaveBeenCalled();
     // Still writes to JSONL
     expect(mockFsPromises.appendFile).toHaveBeenCalled();
   });

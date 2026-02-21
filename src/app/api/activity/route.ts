@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 
 import { NextResponse } from "next/server";
 
+import { parseAndFilterJsonlEvents } from "@/lib/activity/parseJsonlEvents";
 import { handleApiError, validateAgentId } from "@/lib/api/helpers";
 import { getDb } from "@/lib/database";
 import * as activityRepo from "@/lib/database/repositories/activityRepo";
@@ -32,9 +33,23 @@ export async function GET(request: Request) {
     const statusFilter = url.searchParams.get("status")?.trim() || null;
     const includeTranscript = url.searchParams.get("include")?.includes("transcript") ?? false;
 
-    // ─── Sidecar path (Cloud Run) — still file-based ──────────────────
+    // ─── Sidecar path (Cloud Run) — JSONL file-based ──────────────────
     if (isSidecarConfigured()) {
-      return handleSidecarFallback(agentId, { limit, offset, typeFilter, taskIdFilter, projectSlugFilter, statusFilter });
+      const resp = await sidecarGet("/file", { agentId, path: "reports/activity.jsonl" });
+      if (!resp.ok) {
+        return NextResponse.json({ events: [], total: 0 });
+      }
+      const data = (await resp.json()) as { content?: string };
+      return NextResponse.json(
+        parseAndFilterJsonlEvents(data.content ?? "", {
+          type: typeFilter,
+          taskId: taskIdFilter,
+          projectSlug: projectSlugFilter,
+          status: statusFilter,
+          limit,
+          offset,
+        }),
+      );
     }
 
     // ─── Database path (local) ────────────────────────────────────────
@@ -81,7 +96,7 @@ export async function GET(request: Request) {
  * POST /api/activity — Insert a new activity event.
  *
  * Body: ActivityEvent JSON object.
- * Also appends to activity.jsonl for backward compatibility.
+ * Writes to both DB and JSONL (backward compatibility).
  */
 export async function POST(request: Request) {
   try {
@@ -121,12 +136,16 @@ export async function POST(request: Request) {
       agentId: (body.agentId as string | null) ?? null,
     };
 
-    if (!isSidecarConfigured()) {
+    // Always write to DB (both local and sidecar modes)
+    try {
       const db = getDb();
       activityRepo.insert(db, event);
+    } catch {
+      // DB write failure in sidecar mode is non-fatal — JSONL is the primary store there
+      if (!isSidecarConfigured()) throw new Error("DB write failed");
     }
 
-    // Dual-write: also append to JSONL for backward compat
+    // Also append to JSONL for backward compat
     try {
       const { absolute } = resolveWorkspacePath(agentId, "reports/activity.jsonl");
       await fs.appendFile(absolute, JSON.stringify(body) + "\n", "utf-8");
@@ -138,58 +157,4 @@ export async function POST(request: Request) {
   } catch (err) {
     return handleApiError(err, "activity POST", "Failed to insert activity event.");
   }
-}
-
-// ─── Sidecar fallback (unchanged file-based logic) ────────────────────────
-
-async function handleSidecarFallback(
-  agentId: string,
-  filters: {
-    limit: number;
-    offset: number;
-    typeFilter: string | null;
-    taskIdFilter: string | null;
-    projectSlugFilter: string | null;
-    statusFilter: string | null;
-  },
-) {
-  const resp = await sidecarGet("/file", { agentId, path: "reports/activity.jsonl" });
-  if (!resp.ok) {
-    return NextResponse.json({ events: [], total: 0 });
-  }
-  const data = (await resp.json()) as { content?: string };
-  const raw = data.content ?? "";
-
-  if (!raw.trim()) {
-    return NextResponse.json({ events: [], total: 0 });
-  }
-
-  type RawEvent = {
-    type?: string;
-    taskId?: string;
-    projectSlug?: string;
-    status?: string;
-    timestamp?: string;
-  };
-
-  let events: RawEvent[] = [];
-  for (const line of raw.split("\n").filter((l) => l.trim())) {
-    try {
-      events.push(JSON.parse(line) as RawEvent);
-    } catch {
-      // Skip malformed
-    }
-  }
-
-  if (filters.typeFilter) events = events.filter((e) => e.type === filters.typeFilter);
-  if (filters.taskIdFilter) events = events.filter((e) => e.taskId === filters.taskIdFilter);
-  if (filters.projectSlugFilter) events = events.filter((e) => e.projectSlug === filters.projectSlugFilter);
-  if (filters.statusFilter) events = events.filter((e) => e.status === filters.statusFilter);
-
-  events.sort((a, b) => (b.timestamp ?? "").localeCompare(a.timestamp ?? ""));
-
-  const total = events.length;
-  const paged = events.slice(filters.offset, filters.offset + filters.limit);
-
-  return NextResponse.json({ events: paged, total });
 }
