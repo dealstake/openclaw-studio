@@ -281,8 +281,8 @@ summary,
 }
 
 *::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 6px;
+  height: 6px;
 }
 
 *::-webkit-scrollbar-track {
@@ -290,9 +290,13 @@ summary,
 }
 
 *::-webkit-scrollbar-thumb {
-  background: color-mix(in oklch, var(--foreground) 18%, var(--border));
+  background: transparent;
   border-radius: 999px;
-  border: 2px solid transparent;
+}
+
+*:hover > ::-webkit-scrollbar-thumb,
+*::-webkit-scrollbar-thumb:active {
+  background: color-mix(in oklch, var(--foreground) 18%, var(--border));
 }
 
 *::-webkit-scrollbar-thumb:hover {
@@ -311,8 +315,8 @@ textarea::-webkit-scrollbar {
 textarea:hover::-webkit-scrollbar,
 textarea:focus-visible::-webkit-scrollbar,
 textarea:focus::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 6px;
+  height: 6px;
 }
 
 /* glass-panel removed — borderless panel integration */

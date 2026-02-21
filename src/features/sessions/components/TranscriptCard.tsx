@@ -29,7 +29,7 @@ export const TranscriptCard = memo(function TranscriptCard({
     <div
       role="button"
       tabIndex={0}
-      className="group/transcript cursor-pointer rounded-md border border-border/80 bg-card/70 p-3 transition-all duration-200 hover:border-border hover:bg-muted/55"
+      className="group/transcript cursor-pointer border-b border-border/30 bg-transparent p-3 transition-all duration-200 hover:bg-muted/40"
       onClick={onClick}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {

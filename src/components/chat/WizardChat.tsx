@@ -128,7 +128,7 @@ export const WizardChat = React.memo(function WizardChat({
         {showStarters && (
           <div className="flex flex-col items-center justify-center gap-4 py-8">
             <div className="flex items-center gap-2 text-muted-foreground">
-              <Sparkles size={16} strokeWidth={1.75} className="text-brand-gold" />
+              <Sparkles size={16} strokeWidth={1.75} className="text-muted-foreground" />
               <span className="text-sm font-medium">
                 What would you like to create?
               </span>
@@ -188,7 +188,7 @@ export const WizardChat = React.memo(function WizardChat({
             placeholder="Describe what you need..."
             rows={1}
             disabled={isStreaming}
-            className="flex-1 resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-brand-gold/50 disabled:opacity-50"
+            className="flex-1 resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring/50 disabled:opacity-50"
           />
           {isStreaming ? (
             <button
@@ -204,7 +204,7 @@ export const WizardChat = React.memo(function WizardChat({
               type="button"
               onClick={handleSend}
               disabled={!input.trim()}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-gold/10 text-brand-gold transition-colors hover:bg-brand-gold/20 disabled:opacity-30"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary-text transition-colors hover:bg-primary/20 disabled:opacity-30"
               aria-label="Send message"
             >
               <Send size={16} strokeWidth={1.75} />

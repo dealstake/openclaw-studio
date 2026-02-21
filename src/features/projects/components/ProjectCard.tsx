@@ -62,7 +62,7 @@ export const ProjectCard = memo(function ProjectCard({
 
   return (
     <BaseCard
-      variant="compact"
+      variant="flush"
       isHoverable
       className="cursor-pointer"
       role="button"

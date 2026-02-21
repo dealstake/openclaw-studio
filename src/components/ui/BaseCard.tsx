@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 const variantClasses = {
   default: "rounded-lg border border-border/60 bg-card/40 p-4",
   compact: "rounded-lg border border-border/60 bg-card/40 p-3",
-  flush: "rounded-none border-x-0 border-t-0 border-b border-border/30 p-3",
+  flush: "rounded-none border-x-0 border-t-0 border-b border-border/30 bg-transparent p-3",
 } as const;
 
 export type BaseCardVariant = keyof typeof variantClasses;
@@ -51,7 +51,9 @@ export const BaseCard = React.memo(function BaseCard({
         "group/card relative transition-all duration-150 outline-none",
         "focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-1 focus-visible:ring-offset-background",
         variantClasses[variant],
-        isHoverable && !isSelected && "hover:bg-card/70 hover:border-border/80 hover:shadow-sm",
+        isHoverable && !isSelected && variant === "flush"
+          ? "hover:bg-muted/30"
+          : isHoverable && !isSelected && "hover:bg-card/70 hover:border-border/80 hover:shadow-sm",
         isSelected && "ring-2 ring-primary/40 border-primary/30 bg-primary/5",
         isInteractive && "cursor-pointer",
         className,

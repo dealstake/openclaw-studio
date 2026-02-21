@@ -86,7 +86,7 @@ export const SessionCard = memo(function SessionCard({
 
   return (
     <BaseCard
-      variant="compact"
+      variant="flush"
       isSelected={isActive}
       isHoverable={!isActive}
     >
