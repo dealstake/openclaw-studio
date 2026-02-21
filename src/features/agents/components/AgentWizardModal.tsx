@@ -40,7 +40,6 @@ export const AgentWizardModal = React.memo(function AgentWizardModal({
   const [step, setStep] = useState<ModalStep>("chat");
   const [agentConfig, setAgentConfig] = useState<AgentConfig | null>(null);
   const [brainFiles, setBrainFiles] = useState<Record<string, string>>({});
-  // lastAssistantText reserved for future revision flow
   const [existingAgents, setExistingAgents] = useState<
     Array<{ id: string; name: string }>
   >([]);

@@ -97,7 +97,7 @@ describe("AgentBrainPanel", () => {
       })
     );
 
-    expect(screen.getByRole("button", { name: "AGENTS" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "AGENTS" })).toBeInTheDocument();
 
     await waitFor(() => {
       expect(screen.getByText("alpha agents")).toBeInTheDocument();

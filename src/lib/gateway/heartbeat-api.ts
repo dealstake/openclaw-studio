@@ -6,7 +6,7 @@ import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import { isRecord } from "@/lib/type-guards";
 import { resolveRequiredId } from "@/lib/validation";
 import type { ConfigAgentEntry, GatewayConfigSnapshot } from "@/lib/gateway/agentConfigTypes";
-import { readConfigAgentList, writeConfigAgentList, upsertConfigAgentEntry } from "@/lib/gateway/agentConfigTypes";
+import { writeConfigAgentList, upsertConfigAgentEntry } from "@/lib/gateway/agentConfigTypes";
 import { withGatewayConfigMutation } from "@/lib/gateway/configMutation";
 import type {
   AgentHeartbeatResult,

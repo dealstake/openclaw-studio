@@ -253,7 +253,7 @@ export const AgentBrainPanel = memo(function AgentBrainPanel({
             </div>
           ) : null}
 
-          <div className="mt-4 flex flex-wrap items-end gap-2">
+          <div className="mt-4 flex flex-wrap items-end gap-2" role="tablist" aria-label="Agent brain files">
             {AGENT_FILE_NAMES.map((name, idx) => {
               const active = name === agentFileTab;
               const label = AGENT_FILE_META[name].title.replace(".md", "");
@@ -262,6 +262,8 @@ export const AgentBrainPanel = memo(function AgentBrainPanel({
                 <button
                   key={name}
                   type="button"
+                  role="tab"
+                  aria-selected={active}
                   title={`${AGENT_FILE_META[name].hint} (${shortcut})`}
                   className={`rounded-full border px-3 py-1.5 ${sectionLabelClass} transition ${
                     active
