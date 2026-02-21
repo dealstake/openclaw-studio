@@ -14,6 +14,8 @@ interface ContextPanelProps {
   onExpandToggle?: () => void;
   onClose?: () => void;
   expandedTab?: ContextTab | null;
+  /** Hide the internal tab bar (when external ContextTabCluster provides tab navigation) */
+  hideTabBar?: boolean;
   projectsContent?: ReactNode;
   tasksContent: ReactNode;
   brainContent: ReactNode;
@@ -33,6 +35,7 @@ export const ContextPanel = memo(function ContextPanel({
   onExpandToggle,
   onClose,
   expandedTab,
+  hideTabBar,
   projectsContent,
   tasksContent,
   brainContent,
@@ -74,7 +77,9 @@ export const ContextPanel = memo(function ContextPanel({
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden">
-      {/* Tab bar — mobile: scrollable row; desktop: all 4 tabs inline */}
+      {/* Tab bar — hidden when external ContextTabCluster provides navigation */}
+      {!hideTabBar && (
+      <>
       {/* Mobile */}
       <div ref={mobileTabBarRef} className="flex items-center gap-0 overflow-x-auto border-b border-border/20 px-3 pt-2 lg:hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="tablist">
         {TAB_OPTIONS.map((tab) => {
@@ -138,6 +143,8 @@ export const ContextPanel = memo(function ContextPanel({
           )}
         </div>
       </div>
+      </>
+      )}
 
       {/* Tab content — lazy mount */}
       <div className="min-h-0 min-w-0 flex-1 overflow-hidden">

@@ -61,7 +61,7 @@ import type { ContextTab } from "@/features/context/components/ContextPanel";
 
 /** Extended tab type for expanded modal — includes management tabs not shown in the context panel */
 type ExpandableTab = ContextTab | "sessions" | "usage" | "channels" | "cron" | "settings";
-import { ContextPanelStrip } from "@/features/context/components/ContextPanelStrip";
+import { ContextTabCluster } from "@/features/context/components/ContextTabCluster";
 import { PanelExpandModal } from "@/components/PanelExpandModal";
 import { ExpandedContext } from "@/features/context/lib/expandedContext";
 import { ExecApprovalOverlay } from "@/features/exec-approvals/components/ExecApprovalOverlay";
@@ -2227,16 +2227,23 @@ const AgentStudioPage = () => {
                 </div>
               </div>
             )}
-            {/* Collapsed context panel strip — fixed right edge */}
-            {isWide(breakpoint) && !contextPanelOpen && (
-              <div className="fixed top-12 right-0 bottom-0 z-20">
-              <ContextPanelStrip
-                activeTab={contextTab}
-                onOpen={(tab) => {
-                  if (tab) setContextTab(tab);
-                  setContextPanelOpen(true);
-                }}
-              />
+            {/* Floating context tab cluster — top-right corner */}
+            {isWide(breakpoint) && (
+              <div className="fixed top-3 right-4 z-30">
+                <ContextTabCluster
+                  activeTab={contextTab}
+                  panelOpen={contextPanelOpen}
+                  onTabClick={(tab) => {
+                    if (contextPanelOpen && contextTab === tab) {
+                      // Clicking the active tab closes the panel
+                      setContextPanelOpen(false);
+                    } else {
+                      setContextTab(tab);
+                      setContextPanelOpen(true);
+                    }
+                  }}
+                  onClose={() => setContextPanelOpen(false)}
+                />
               </div>
             )}
             {/* Context Panel: floating overlay — always fixed positioned */}
@@ -2252,6 +2259,7 @@ const AgentStudioPage = () => {
                   onExpandToggle={handleExpandToggle}
                   onClose={showContextInline ? () => setContextPanelOpen(false) : undefined}
                   onTabChange={setContextTab}
+                  hideTabBar={isWide(breakpoint)}
                   projectsContent={
                     <div className="flex h-full w-full flex-col overflow-y-auto">
                       <ProjectsPanel
