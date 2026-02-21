@@ -7,12 +7,14 @@ vi.mock("@/lib/google/drive", () => ({
   uploadFile: (...args: unknown[]) => mockUploadFile(...args),
 }));
 
-vi.mock("@/lib/api/helpers", () => ({
-  handleApiError: (_err: unknown, _tag: string, fallback?: string) => {
-    const { NextResponse } = require("next/server");
-    return NextResponse.json({ error: fallback ?? "Internal server error." }, { status: 500 });
-  },
-}));
+vi.mock("@/lib/api/helpers", async () => {
+  const { NextResponse } = await import("next/server");
+  return {
+    handleApiError: (_err: unknown, _tag: string, fallback?: string) => {
+      return NextResponse.json({ error: fallback ?? "Internal server error." }, { status: 500 });
+    },
+  };
+});
 
 import { POST } from "@/app/api/artifacts/upload/route";
 
@@ -24,14 +26,6 @@ const INTERNAL_KEY = process.env.ARTIFACTS_INTERNAL_KEY || "";
 // File objects — calls to request.formData() hang indefinitely. We test what
 // we can (auth validation, missing-file validation) and skip upload-path tests
 // that require formData parsing of File objects.
-
-function makeJsonRequest(body: Record<string, unknown>, headers: Record<string, string> = {}) {
-  return new Request("http://localhost/api/artifacts/upload", {
-    method: "POST",
-    headers: { "content-type": "application/json", ...headers },
-    body: JSON.stringify(body),
-  }) as unknown as Request;
-}
 
 function makeFormRequest(fields: Record<string, string>, headers: Record<string, string> = {}) {
   const formData = new FormData();
@@ -70,8 +64,6 @@ describe("POST /api/artifacts/upload", () => {
 
   it("returns 401 when auth key required but missing", async () => {
     if (!INTERNAL_KEY) return;
-    const req = makeFormRequest({ notAFile: "text" }, {}); // no auth header
-    // Override to remove the auth key
     const formData = new FormData();
     formData.append("notAFile", "text");
     const rawReq = new Request("http://localhost/api/artifacts/upload", {

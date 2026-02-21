@@ -7,12 +7,14 @@ vi.mock("@/lib/google/drive", () => ({
   listFiles: (...args: unknown[]) => mockListFiles(...args),
 }));
 
-vi.mock("@/lib/api/helpers", () => ({
-  handleApiError: (_err: unknown, _tag: string, fallback?: string) => {
-    const { NextResponse } = require("next/server");
-    return NextResponse.json({ error: fallback ?? "Internal server error." }, { status: 500 });
-  },
-}));
+vi.mock("@/lib/api/helpers", async () => {
+  const { NextResponse } = await import("next/server");
+  return {
+    handleApiError: (_err: unknown, _tag: string, fallback?: string) => {
+      return NextResponse.json({ error: fallback ?? "Internal server error." }, { status: 500 });
+    },
+  };
+});
 
 import { GET } from "@/app/api/artifacts/route";
 
