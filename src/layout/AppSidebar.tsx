@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback } from "react";
+import { memo, useCallback, useRef } from "react";
 import {
   MessageSquare,
   BarChart3,
@@ -96,12 +96,33 @@ export const AppSidebar = memo(function AppSidebar({
     void load();
   }, [load]);
 
+  const navContainerRef = useRef<HTMLDivElement>(null);
+
+  /** Arrow-key navigation within sidebar nav items */
+  const handleNavKeyDown = useCallback(
+    (e: React.KeyboardEvent, index: number) => {
+      const items = navContainerRef.current?.querySelectorAll<HTMLButtonElement>("[data-nav-item]");
+      if (!items) return;
+      let nextIndex = -1;
+      if (e.key === "ArrowDown" || e.key === "ArrowRight") {
+        e.preventDefault();
+        nextIndex = (index + 1) % items.length;
+      } else if (e.key === "ArrowUp" || e.key === "ArrowLeft") {
+        e.preventDefault();
+        nextIndex = (index - 1 + items.length) % items.length;
+      }
+      if (nextIndex >= 0) items[nextIndex]?.focus();
+    },
+    [],
+  );
+
   /* ── Collapsed: icon rail only ── */
   if (collapsed) {
     return (
       <div className="flex h-full w-10 flex-col items-center border-r border-border/20 bg-[var(--surface-elevated)] py-3">
         <TooltipProvider delayDuration={300}>
-          {NAV_ITEMS.map((item) => {
+          <div ref={navContainerRef} role="navigation" aria-label="Management navigation">
+          {NAV_ITEMS.map((item, index) => {
             const Icon = item.icon;
             const isActive = activeManagementTab === item.value;
             return (
@@ -109,13 +130,16 @@ export const AppSidebar = memo(function AppSidebar({
                 <TooltipTrigger asChild>
                   <button
                     type="button"
+                    data-nav-item
                     onClick={() => onManagementNav(item.value)}
-                    className={`flex h-8 w-8 items-center justify-center rounded-md transition-colors ${
+                    onKeyDown={(e) => handleNavKeyDown(e, index)}
+                    className={`relative flex h-8 w-8 items-center justify-center rounded-md transition-all duration-150 ${
                       isActive
-                        ? "bg-accent text-accent-foreground"
+                        ? "bg-accent text-accent-foreground before:absolute before:inset-y-1 before:-left-1 before:w-0.5 before:rounded-full before:bg-primary"
                         : "text-muted-foreground hover:bg-muted hover:text-foreground"
                     }`}
                     aria-label={item.label}
+                    aria-current={isActive ? "page" : undefined}
                   >
                     <Icon className="h-4 w-4" />
                   </button>
@@ -126,6 +150,7 @@ export const AppSidebar = memo(function AppSidebar({
               </Tooltip>
             );
           })}
+          </div>
         </TooltipProvider>
         <div className="my-2 h-px w-5 bg-border/40" />
         <button
@@ -144,9 +169,9 @@ export const AppSidebar = memo(function AppSidebar({
   return (
     <div className="flex h-full w-[240px] flex-col border-r border-border/20 bg-[var(--surface-elevated)]">
       {/* Management nav */}
-      <div className="flex items-center gap-1 border-b border-border/20 px-2 py-2">
+      <div ref={navContainerRef} className="flex items-center gap-1 border-b border-border/20 px-2 py-2" role="navigation" aria-label="Management navigation">
         <TooltipProvider delayDuration={300}>
-          {NAV_ITEMS.map((item) => {
+          {NAV_ITEMS.map((item, index) => {
             const Icon = item.icon;
             const isActive = activeManagementTab === item.value;
             return (
@@ -154,13 +179,16 @@ export const AppSidebar = memo(function AppSidebar({
                 <TooltipTrigger asChild>
                   <button
                     type="button"
+                    data-nav-item
                     onClick={() => onManagementNav(item.value)}
-                    className={`flex h-7 w-7 items-center justify-center rounded-md transition-colors ${
+                    onKeyDown={(e) => handleNavKeyDown(e, index)}
+                    className={`relative flex h-7 w-7 items-center justify-center rounded-md transition-all duration-150 ${
                       isActive
-                        ? "bg-accent text-accent-foreground"
+                        ? "bg-accent text-accent-foreground before:absolute before:-bottom-2 before:left-1.5 before:right-1.5 before:h-0.5 before:rounded-full before:bg-primary"
                         : "text-muted-foreground hover:bg-muted hover:text-foreground"
                     }`}
                     aria-label={item.label}
+                    aria-current={isActive ? "page" : undefined}
                   >
                     <Icon className="h-3.5 w-3.5" />
                   </button>

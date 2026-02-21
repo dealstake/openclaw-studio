@@ -1852,7 +1852,7 @@ const AgentStudioPage = () => {
               {...swipeHandlers}
             >
               {managementView ? (
-                <div className="flex h-full w-full flex-col overflow-hidden">
+                <div className="flex h-full w-full flex-col overflow-hidden animate-in fade-in duration-150">
                   {/* Back-to-chat header */}
                   <div className="flex items-center gap-2 border-b border-border/20 bg-[var(--surface-elevated)] px-4 py-2.5">
                     <button
