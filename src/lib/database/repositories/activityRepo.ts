@@ -28,13 +28,9 @@ function rowToEvent(row: typeof activityEvents.$inferSelect): ActivityEvent {
 
 // ─── Repository ──────────────────────────────────────────────────────────────
 
-export interface ActivityQueryFilters {
-  type?: string | null;
-  taskId?: string | null;
-  projectSlug?: string | null;
-  status?: string | null;
-  limit?: number;
-  offset?: number;
+import type { BaseActivityFilters } from "@/lib/activity/activityFilters";
+
+export interface ActivityQueryFilters extends Partial<BaseActivityFilters> {
   includeTranscript?: boolean;
 }
 

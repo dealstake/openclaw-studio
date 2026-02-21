@@ -16,14 +16,9 @@ export interface RawActivityEvent {
   meta?: Record<string, unknown>;
 }
 
-export interface ActivityFilters {
-  type?: string | null;
-  taskId?: string | null;
-  projectSlug?: string | null;
-  status?: string | null;
-  limit: number;
-  offset: number;
-}
+// Re-export shared filter type for backwards compatibility
+export type { BaseActivityFilters as ActivityFilters } from "./activityFilters";
+import type { BaseActivityFilters as ActivityFilters } from "./activityFilters";
 
 export function parseAndFilterJsonlEvents(
   raw: string,

@@ -12,7 +12,7 @@ import {
   isHeartbeatPrompt,
   stripUiMetadata,
 } from "@/lib/text/message-extract";
-import { parseMessageParts } from "@/lib/chat/useMessageParts";
+import { parseMessageParts } from "@/lib/chat/parseMessageParts";
 import { extractMessageTimestamp } from "./timestampUtils";
 
 export const buildHistoryLines = (messages: ChatHistoryMessage[]): HistoryLinesResult => {

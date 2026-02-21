@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseMessageParts, type ParseMessagePartsInput } from "@/lib/chat/useMessageParts";
+import { parseMessageParts, type ParseMessagePartsInput } from "@/lib/chat/parseMessageParts";
 
 const make = (overrides: Partial<ParseMessagePartsInput> = {}): ParseMessagePartsInput => ({
   outputLines: [],

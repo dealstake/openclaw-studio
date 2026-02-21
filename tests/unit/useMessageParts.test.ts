@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseMessageParts } from "@/lib/chat/useMessageParts";
+import { parseMessageParts } from "@/lib/chat/parseMessageParts";
 
 describe("parseMessageParts", () => {
   it("returns empty array for empty input", () => {

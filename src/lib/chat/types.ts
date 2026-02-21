@@ -1,7 +1,7 @@
 /**
  * Structured message part types for the chat rendering pipeline.
  *
- * Gateway WebSocket events → useMessageParts hook → MessagePart[] → UI components
+ * Gateway WebSocket events → parseMessageParts → MessagePart[] → UI components
  *
  * Consumed by:
  * - Main Chat Rebuild (AgentChatPanel replacement)
