@@ -1,6 +1,10 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { SettingsListItem } from "@/features/agents/components/SettingsListItem";
+import { TooltipProvider } from "@/components/ui/tooltip";
+
+const renderWithProvider = (ui: React.ReactElement) =>
+  render(<TooltipProvider>{ui}</TooltipProvider>);
 
 describe("SettingsListItem", () => {
   const baseProps = () => ({
@@ -14,14 +18,14 @@ describe("SettingsListItem", () => {
   });
 
   it("renders title and metadata", () => {
-    render(<SettingsListItem {...baseProps()} />);
+    renderWithProvider(<SettingsListItem {...baseProps()} />);
     expect(screen.getByText("My Cron Job")).toBeInTheDocument();
     expect(screen.getByText("Every 5 minutes")).toBeInTheDocument();
   });
 
   it("calls onRun when play button clicked", () => {
     const props = baseProps();
-    const { container } = render(<SettingsListItem {...props} />);
+    const { container } = renderWithProvider(<SettingsListItem {...props} />);
     const btn = container.querySelector('button[aria-label="Run job now"]')!;
     fireEvent.click(btn);
     expect(props.onRun).toHaveBeenCalledOnce();
@@ -29,14 +33,14 @@ describe("SettingsListItem", () => {
 
   it("calls onDelete when delete button clicked", () => {
     const props = baseProps();
-    const { container } = render(<SettingsListItem {...props} />);
+    const { container } = renderWithProvider(<SettingsListItem {...props} />);
     const btn = container.querySelector('button[aria-label="Delete job"]')!;
     fireEvent.click(btn);
     expect(props.onDelete).toHaveBeenCalledOnce();
   });
 
   it("disables buttons when runBusy", () => {
-    const { container } = render(<SettingsListItem {...baseProps()} runBusy />);
+    const { container } = renderWithProvider(<SettingsListItem {...baseProps()} runBusy />);
     const run = container.querySelector('button[aria-label="Run job now"]') as HTMLButtonElement;
     const del = container.querySelector('button[aria-label="Delete job"]') as HTMLButtonElement;
     expect(run.disabled).toBe(true);
@@ -44,7 +48,7 @@ describe("SettingsListItem", () => {
   });
 
   it("disables buttons when deleteBusy", () => {
-    const { container } = render(<SettingsListItem {...baseProps()} deleteBusy />);
+    const { container } = renderWithProvider(<SettingsListItem {...baseProps()} deleteBusy />);
     const run = container.querySelector('button[aria-label="Run job now"]') as HTMLButtonElement;
     const del = container.querySelector('button[aria-label="Delete job"]') as HTMLButtonElement;
     expect(run.disabled).toBe(true);
@@ -52,7 +56,7 @@ describe("SettingsListItem", () => {
   });
 
   it("disables delete when deleteAllowed is false", () => {
-    const { container } = render(<SettingsListItem {...baseProps()} deleteAllowed={false} />);
+    const { container } = renderWithProvider(<SettingsListItem {...baseProps()} deleteAllowed={false} />);
     const run = container.querySelector('button[aria-label="Run job now"]') as HTMLButtonElement;
     const del = container.querySelector('button[aria-label="Delete job"]') as HTMLButtonElement;
     expect(run.disabled).toBe(false);

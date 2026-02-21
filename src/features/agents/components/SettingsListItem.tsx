@@ -7,7 +7,6 @@ import { PanelIconButton } from "@/components/PanelIconButton";
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
@@ -69,7 +68,6 @@ export const SettingsListItem = memo(function SettingsListItem({
 }: SettingsListItemProps) {
   const busy = runBusy || deleteBusy;
   return (
-    <TooltipProvider>
     <div
       className={`group/${groupName} flex items-start justify-between gap-2 rounded-md border border-border/80 bg-card/75 px-3 py-2${!enabled ? " opacity-60" : ""}`}
     >
@@ -139,6 +137,5 @@ export const SettingsListItem = memo(function SettingsListItem({
         )}
       </div>
     </div>
-    </TooltipProvider>
   );
 });
