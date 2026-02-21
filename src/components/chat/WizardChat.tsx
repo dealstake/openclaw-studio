@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Send, Square, Sparkles } from "lucide-react";
-import { MarkdownViewer } from "@/components/MarkdownViewer";
+import { MessageBubble } from "@/components/chat/MessageBubble";
 import { ThinkingBlock } from "@/components/chat/ThinkingBlock";
 import { cn } from "@/lib/utils";
 import {
@@ -150,7 +150,7 @@ export const WizardChat = React.memo(function WizardChat({
 
         {/* Message list */}
         {messages.map((msg, i) => (
-          <WizardMessageBubble key={i} role={msg.role} content={msg.content} />
+          <MessageBubble key={i} role={msg.role} content={msg.content} />
         ))}
 
         {/* Thinking trace (while streaming) */}
@@ -164,7 +164,7 @@ export const WizardChat = React.memo(function WizardChat({
 
         {/* Streaming assistant text */}
         {streamText && (
-          <WizardMessageBubble role="assistant" content={streamText} streaming />
+          <MessageBubble role="assistant" content={streamText} streaming />
         )}
 
         {/* Error banner */}
@@ -216,39 +216,4 @@ export const WizardChat = React.memo(function WizardChat({
   );
 });
 
-// ── Message Bubble ─────────────────────────────────────────────────────
-
-type WizardMessageBubbleProps = {
-  role: "user" | "assistant";
-  content: string;
-  streaming?: boolean;
-};
-
-const WizardMessageBubble = React.memo(function WizardMessageBubble({
-  role,
-  content,
-  streaming = false,
-}: WizardMessageBubbleProps) {
-  if (role === "user") {
-    return (
-      <div className="flex justify-end">
-        <div className="max-w-[85%] rounded-2xl rounded-br-md bg-brand-gold/10 px-3 py-2 text-sm text-foreground">
-          {content}
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex justify-start">
-      <div
-        className={cn(
-          "max-w-[85%] rounded-2xl rounded-bl-md bg-muted/50 px-3 py-2",
-          streaming && "animate-pulse",
-        )}
-      >
-        <MarkdownViewer content={content} className="text-sm" />
-      </div>
-    </div>
-  );
-});
+// WizardMessageBubble removed — now uses shared MessageBubble from @/components/chat/MessageBubble
