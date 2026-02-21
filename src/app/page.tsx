@@ -104,6 +104,7 @@ import { useGatewayModels } from "@/features/agents/hooks/useGatewayModels";
 import { useSettingsPanel } from "@/features/agents/hooks/useSettingsPanel";
 import { useBreakpoint, isDesktopOrAbove, isWide, isTabletOrBelow } from "@/hooks/useBreakpoint";
 import { useSwipeDrawer } from "@/hooks/useSwipeDrawer";
+import { useAutoHideHeader } from "@/hooks/useAutoHideHeader";
 
 type AgentsListResult = {
   defaultId: string;
@@ -1496,6 +1497,11 @@ const AgentStudioPage = () => {
   const isXlViewport = isWide(breakpoint); // activity drawer visibility
   const isMobileLayout = isTabletOrBelow(breakpoint); // <1024px
 
+  // Auto-hide header on scroll (desktop only)
+  const { isVisible: headerVisible, onHoverZoneEnter, onHoverZoneLeave } = useAutoHideHeader({
+    disabled: isMobileLayout,
+  });
+
   // Swipe gestures for mobile drawer open/close
   const swipeHandlers = useSwipeDrawer({
     onSwipeRight: isMobileLayout
@@ -1669,8 +1675,19 @@ const AgentStudioPage = () => {
         </div>
       ) : null}
       <div className="relative w-full overflow-hidden bg-background" style={{ height: '100dvh' }}>
-        {/* ── Header: fixed glassmorphic bar ─────────────────────────── */}
-        <div className="fixed inset-x-0 top-0 z-30">
+        {/* ── Header hover zone: reveals header on mouse enter ──────── */}
+        <div
+          className="fixed inset-x-0 top-0 z-30 h-3"
+          onMouseEnter={onHoverZoneEnter}
+          onMouseLeave={onHoverZoneLeave}
+          aria-hidden="true"
+        />
+        {/* ── Header: fixed glassmorphic bar with auto-hide ──────────── */}
+        <div
+          className={`fixed inset-x-0 top-0 z-30 transform-gpu transition-transform duration-300 ease-out ${headerVisible ? "translate-y-0" : "-translate-y-full"}`}
+          onMouseEnter={onHoverZoneEnter}
+          onMouseLeave={onHoverZoneLeave}
+        >
           <HeaderBar
             status={status}
             running={focusedAgentRunning}
