@@ -6,6 +6,7 @@ import {
   getAttentionForAgent,
   getFilteredAgents,
   initialAgentStoreState,
+  MAX_PARTS,
   type AgentStoreSeed,
 } from "@/features/agents/state/store";
 
@@ -277,6 +278,162 @@ describe("agent store", () => {
     const after = state.agents.find((agent) => agent.agentId === "agent-2");
     expect(after?.hasUnseenActivity).toBe(false);
     expect(getAttentionForAgent(after!, state.selectedAgentId)).toBe("normal");
+  });
+
+  it("appends a message part to the correct agent", () => {
+    const seed: AgentStoreSeed = {
+      agentId: "agent-1",
+      name: "Agent One",
+      sessionKey: "agent:agent-1:main",
+    };
+    let state = agentStoreReducer(initialAgentStoreState, {
+      type: "hydrateAgents",
+      agents: [seed],
+    });
+    state = agentStoreReducer(state, {
+      type: "appendPart",
+      agentId: "agent-1",
+      part: { type: "text", text: "Hello" },
+    });
+    expect(state.agents[0].messageParts).toHaveLength(1);
+    expect(state.agents[0].messageParts[0]).toEqual({ type: "text", text: "Hello" });
+  });
+
+  it("trims oldest parts when MAX_PARTS is exceeded", () => {
+    const seed: AgentStoreSeed = {
+      agentId: "agent-1",
+      name: "Agent One",
+      sessionKey: "agent:agent-1:main",
+    };
+    let state = agentStoreReducer(initialAgentStoreState, {
+      type: "hydrateAgents",
+      agents: [seed],
+    });
+
+    // Fill to MAX_PARTS
+    const parts = Array.from({ length: MAX_PARTS }, (_, i) => ({
+      type: "text" as const,
+      text: `msg-${i}`,
+    }));
+    state = agentStoreReducer(state, {
+      type: "updateAgent",
+      agentId: "agent-1",
+      patch: { messageParts: parts },
+    });
+    expect(state.agents[0].messageParts).toHaveLength(MAX_PARTS);
+
+    // Append one more — should trim
+    state = agentStoreReducer(state, {
+      type: "appendPart",
+      agentId: "agent-1",
+      part: { type: "text", text: "overflow" },
+    });
+    // After trim: marker + (MAX_PARTS - 100) remaining + 1 new = MAX_PARTS - 99
+    expect(state.agents[0].messageParts.length).toBeLessThan(MAX_PARTS);
+    // First part should be the trim marker
+    expect(state.agents[0].messageParts[0].type).toBe("text");
+    expect((state.agents[0].messageParts[0] as { text: string }).text).toContain("trimmed");
+    // Last part should be the new one
+    const last = state.agents[0].messageParts[state.agents[0].messageParts.length - 1];
+    expect((last as { text: string }).text).toBe("overflow");
+  });
+
+  it("updates a part at a specific index", () => {
+    const seed: AgentStoreSeed = {
+      agentId: "agent-1",
+      name: "Agent One",
+      sessionKey: "agent:agent-1:main",
+    };
+    let state = agentStoreReducer(initialAgentStoreState, {
+      type: "hydrateAgents",
+      agents: [seed],
+    });
+    state = agentStoreReducer(state, {
+      type: "appendPart",
+      agentId: "agent-1",
+      part: { type: "text", text: "original" },
+    });
+    state = agentStoreReducer(state, {
+      type: "updatePart",
+      agentId: "agent-1",
+      index: 0,
+      patch: { text: "updated" },
+    });
+    expect((state.agents[0].messageParts[0] as { text: string }).text).toBe("updated");
+  });
+
+  it("ignores updatePart with out-of-bounds index", () => {
+    const seed: AgentStoreSeed = {
+      agentId: "agent-1",
+      name: "Agent One",
+      sessionKey: "agent:agent-1:main",
+    };
+    let state = agentStoreReducer(initialAgentStoreState, {
+      type: "hydrateAgents",
+      agents: [seed],
+    });
+    state = agentStoreReducer(state, {
+      type: "appendPart",
+      agentId: "agent-1",
+      part: { type: "text", text: "only" },
+    });
+    const before = state.agents[0].messageParts;
+    state = agentStoreReducer(state, {
+      type: "updatePart",
+      agentId: "agent-1",
+      index: 5,
+      patch: { text: "nope" },
+    });
+    expect(state.agents[0].messageParts).toBe(before);
+  });
+
+  it("does not mark activity as unseen for the selected agent", () => {
+    const seeds: AgentStoreSeed[] = [
+      { agentId: "agent-1", name: "One", sessionKey: "agent:agent-1:main" },
+    ];
+    let state = agentStoreReducer(initialAgentStoreState, {
+      type: "hydrateAgents",
+      agents: seeds,
+    });
+    // agent-1 is auto-selected
+    state = agentStoreReducer(state, {
+      type: "markActivity",
+      agentId: "agent-1",
+      at: 1000,
+    });
+    expect(state.agents[0].hasUnseenActivity).toBe(false);
+    expect(state.agents[0].lastActivityAt).toBe(1000);
+  });
+
+  it("selectAgent with null does not modify agents", () => {
+    const seeds: AgentStoreSeed[] = [
+      { agentId: "agent-1", name: "One", sessionKey: "agent:agent-1:main" },
+    ];
+    let state = agentStoreReducer(initialAgentStoreState, {
+      type: "hydrateAgents",
+      agents: seeds,
+    });
+    state = agentStoreReducer(state, {
+      type: "markActivity",
+      agentId: "agent-1",
+      at: 1000,
+    });
+    // hasUnseenActivity is false because agent-1 is selected
+    const agentsBefore = state.agents;
+    state = agentStoreReducer(state, { type: "selectAgent", agentId: null });
+    expect(state.selectedAgentId).toBeNull();
+    expect(state.agents).toBe(agentsBefore);
+  });
+
+  it("setError clears loading", () => {
+    let state = agentStoreReducer(initialAgentStoreState, {
+      type: "setLoading",
+      loading: true,
+    });
+    expect(state.loading).toBe(true);
+    state = agentStoreReducer(state, { type: "setError", error: "boom" });
+    expect(state.error).toBe("boom");
+    expect(state.loading).toBe(false);
   });
 
   it("sorts_filtered_agents_by_latest_assistant_message", () => {
