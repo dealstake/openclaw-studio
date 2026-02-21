@@ -37,7 +37,7 @@ export default function ControlPlanePage() {
 
   return (
     <main className="mx-auto flex h-screen w-full max-w-[1600px] flex-col gap-4 p-4">
-      <header className="glass-panel flex items-center justify-between rounded-xl px-4 py-3">
+      <header className="bg-card rounded-xl flex items-center justify-between px-4 py-3">
         <div>
           <h1 className="font-display text-3xl tracking-wide text-foreground">Task Control Plane</h1>
           <p className="text-sm text-muted-foreground">
@@ -55,12 +55,12 @@ export default function ControlPlanePage() {
 
       <section data-testid="task-control-plane-page" className="min-h-0 flex-1">
         {loading ? (
-          <div className="glass-panel flex h-full items-center justify-center rounded-xl p-4 text-muted-foreground">
+          <div className="bg-card flex h-full items-center justify-center rounded-xl p-4 text-muted-foreground">
             Loading task board...
           </div>
         ) : null}
         {!loading && error ? (
-          <div className="glass-panel rounded-xl border-destructive/40 p-4">
+          <div className="bg-card rounded-xl border border-destructive/40 p-4">
             <p className="text-sm font-semibold text-destructive">Unable to load task board</p>
             <p className="mt-1 text-sm text-muted-foreground">{error}</p>
           </div>

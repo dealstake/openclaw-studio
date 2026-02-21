@@ -105,7 +105,7 @@ function Column({
   return (
     <section
       data-testid={dataTestId}
-      className="glass-panel flex min-h-[360px] w-full min-w-[260px] flex-col p-3"
+      className="bg-card rounded-xl flex min-h-[360px] w-full min-w-[260px] flex-col p-3"
     >
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-sm font-semibold tracking-wide text-foreground/85">
@@ -331,7 +331,7 @@ export const TaskBoard = memo(function TaskBoard({ snapshot, onRequestRefresh }:
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-4">
-      <div className="glass-panel rounded-xl px-4 py-3">
+      <div className="bg-card rounded-xl px-4 py-3">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="text-sm font-medium text-foreground">

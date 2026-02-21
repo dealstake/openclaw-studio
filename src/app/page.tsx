@@ -1623,7 +1623,7 @@ const AgentStudioPage = () => {
     return (
       <div className="relative w-screen overflow-hidden bg-background" style={{ minHeight: '100dvh' }}>
         <div className="flex items-center justify-center px-6" style={{ minHeight: '100dvh' }}>
-          <div className="glass-panel w-full max-w-md px-6 py-8 flex flex-col items-center gap-4">
+          <div className="bg-card rounded-lg w-full max-w-md px-6 py-8 flex flex-col items-center gap-4">
             <BrandMark size="lg" />
             <div className="text-sm text-muted-foreground">
               {status === "connecting" ? "Connecting to gateway…" : "Loading agents…"}
@@ -1642,12 +1642,12 @@ const AgentStudioPage = () => {
     <div className="relative w-screen overflow-hidden bg-background" style={{ minHeight: '100dvh' }}>
       {state.loading ? (
         <div className="pointer-events-none fixed bottom-4 left-0 right-0 z-50 flex justify-center px-3">
-          <div className="glass-panel px-6 py-3 font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+          <div className="bg-card rounded-lg px-6 py-3 font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
             Loading agents…
           </div>
         </div>
       ) : null}
-      <div className="relative z-10 mx-auto flex w-full max-w-[1920px] flex-col gap-4 px-3 py-3 sm:px-4 sm:py-4 md:px-6 md:py-6" style={{ height: '100dvh' }}>
+      <div className="relative flex w-full flex-col overflow-hidden bg-background" style={{ height: '100dvh' }}>
         <div className="w-full">
           <HeaderBar
             status={status}
@@ -1685,7 +1685,7 @@ const AgentStudioPage = () => {
 
         {connectionPanelVisible ? (
           <div className="w-full">
-            <div className="glass-panel px-4 py-4 sm:px-6 sm:py-6">
+            <div className="rounded-lg bg-card px-4 py-4 sm:px-6 sm:py-6">
               <ConnectionPanel
                 gatewayUrl={gatewayUrl}
                 token={token}
@@ -1716,7 +1716,7 @@ const AgentStudioPage = () => {
         ) : null}
 
         {showFleetLayout ? (
-          <div className="flex min-h-0 flex-1 flex-col gap-4 lg:flex-row">
+          <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
             {/* Backdrop for mobile context drawer */}
             {mobilePane !== "chat" && !showContextInline ? (
               <div
@@ -1768,7 +1768,7 @@ const AgentStudioPage = () => {
               />
             </div>
             <div
-              className="glass-panel flex min-h-0 flex-1 overflow-hidden p-2 sm:p-3"
+              className="flex min-h-0 flex-1 overflow-hidden bg-background"
               data-testid="focused-agent-panel"
               {...swipeHandlers}
             >
@@ -2003,7 +2003,7 @@ const AgentStudioPage = () => {
             )}
             {/* Context Panel: agent-scoped (Tasks/Brain/Settings) or global (Files) */}
             <div
-              className={`${showContextInline ? "static flex shrink-0 flex-none w-[360px] translate-x-0" : `fixed inset-y-0 right-0 z-50 w-[360px] transform transition-transform duration-300 ${mobilePane === "context" ? "translate-x-0" : "translate-x-full"}`} glass-panel min-h-0 overflow-hidden p-0`}
+              className={`${showContextInline ? "static flex shrink-0 flex-none w-[360px] translate-x-0" : `fixed inset-y-0 right-0 z-50 w-[360px] transform transition-transform duration-300 ${mobilePane === "context" ? "translate-x-0" : "translate-x-full"}`} bg-[var(--surface-elevated)] min-h-0 overflow-hidden p-0 border-l border-border/20`}
             >
               {contextMode === "files" ? (
                 <ArtifactsPanel isSelected />
@@ -2241,7 +2241,7 @@ const AgentStudioPage = () => {
             </div>
           </div>
         ) : (
-          <div className="glass-panel fade-up-delay flex min-h-0 flex-1 flex-col overflow-hidden p-5 sm:p-6">
+          <div className="bg-background rounded-xl fade-up-delay flex min-h-0 flex-1 flex-col overflow-hidden p-5 sm:p-6">
             <EmptyStatePanel
               label="Fleet"
               title="No agents available"

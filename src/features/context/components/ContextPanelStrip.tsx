@@ -23,7 +23,7 @@ export const ContextPanelStrip = memo(function ContextPanelStrip({
 }: ContextPanelStripProps) {
   return (
     <div
-      className="flex h-full w-8 flex-col items-center gap-1 border-l border-border/40 bg-card/50 py-3"
+      className="flex h-full w-8 flex-col items-center gap-1 bg-[var(--surface-elevated)] py-3"
       data-testid="context-panel-strip"
     >
       <button
