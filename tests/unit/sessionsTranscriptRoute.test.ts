@@ -6,6 +6,11 @@ vi.mock("@/lib/workspace/sidecar", () => ({
   SidecarUnavailableError: class extends Error { name = "SidecarUnavailableError"; },
 }));
 
+vi.mock("@/lib/workspace/resolve", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/workspace/resolve")>();
+  return { ...actual, resolveAgentWorkspace: vi.fn(() => "/tmp/test-workspace") };
+});
+
 import { GET } from "@/app/api/sessions/transcript/route";
 import { isSidecarConfigured, sidecarGet } from "@/lib/workspace/sidecar";
 
@@ -38,10 +43,11 @@ describe("GET /api/sessions/transcript", () => {
     expect(data.error).toContain("sessionId");
   });
 
-  it("returns 503 when sidecar not configured", async () => {
+  it("returns error when local file not found (sidecar not configured)", async () => {
     mockedIsSidecar.mockReturnValue(false);
     const res = await GET(makeRequest({ agentId: "agent-1", sessionId: "s1" }));
-    expect(res.status).toBe(503);
+    // Local fallback fails because the test workspace doesn't exist
+    expect([404, 500]).toContain(res.status);
   });
 
   it("proxies to sidecar when configured", async () => {

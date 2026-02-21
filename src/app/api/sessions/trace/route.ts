@@ -154,6 +154,9 @@ async function readJsonlLocal(
   return { items, total: messageIndex };
 }
 
+/** Maximum file size (10MB) to load via sidecar to prevent OOM */
+const MAX_SIDECAR_FILE_SIZE = 10 * 1024 * 1024;
+
 async function readJsonlViaSidecar(
   agentId: string,
   sessionId: string,
@@ -180,6 +183,14 @@ async function readJsonlViaSidecar(
 
   if (content === null) {
     throw new Error(`Session transcript not found: ${sessionId}`);
+  }
+
+  // Guard against OOM: reject files that exceed the size limit
+  if (content.length > MAX_SIDECAR_FILE_SIZE) {
+    throw new Error(
+      `Session transcript too large (${Math.round(content.length / 1024 / 1024)}MB). ` +
+      `Maximum supported size is ${MAX_SIDECAR_FILE_SIZE / 1024 / 1024}MB.`
+    );
   }
 
   // Parse lazily: count total messages but only collect the window we need.

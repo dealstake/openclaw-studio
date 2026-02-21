@@ -6,6 +6,11 @@ vi.mock("@/lib/workspace/sidecar", () => ({
   sidecarGet: vi.fn(),
 }));
 
+vi.mock("@/lib/workspace/resolve", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/workspace/resolve")>();
+  return { ...actual, resolveAgentWorkspace: vi.fn(() => "/tmp/test-workspace") };
+});
+
 import { GET } from "@/app/api/sessions/search/route";
 import { isSidecarConfigured, sidecarGet } from "@/lib/workspace/sidecar";
 
@@ -39,12 +44,14 @@ describe("GET /api/sessions/search", () => {
     expect(body.error).toMatch(/query/);
   });
 
-  it("returns 503 when sidecar is not configured", async () => {
+  it("returns empty results when sidecar not configured and no local files", async () => {
     mockIsSidecarConfigured.mockReturnValue(false);
     const resp = await GET(
       makeRequest("/api/sessions/search?agentId=alex&query=test")
     );
-    expect(resp.status).toBe(503);
+    expect(resp.status).toBe(200);
+    const body = await resp.json();
+    expect(body.results).toEqual([]);
   });
 
   it("proxies to sidecar and returns results", async () => {
