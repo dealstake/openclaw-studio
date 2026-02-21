@@ -8,6 +8,8 @@ export interface PanelSearchInputProps {
   onChange: (value: string) => void;
   placeholder?: string;
   className?: string;
+  /** Accessible label for the search input (defaults to placeholder text) */
+  "aria-label"?: string;
 }
 
 /**
@@ -19,6 +21,7 @@ export const PanelSearchInput = React.memo(function PanelSearchInput({
   onChange,
   placeholder = "Search…",
   className = "",
+  "aria-label": ariaLabel,
 }: PanelSearchInputProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -36,6 +39,7 @@ export const PanelSearchInput = React.memo(function PanelSearchInput({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
+        aria-label={ariaLabel ?? placeholder}
         className="h-7 w-full rounded-md border border-border/50 bg-muted/30 pl-7 pr-7 font-mono text-[10px] text-foreground placeholder:text-muted-foreground/60 focus:border-primary/40 focus:outline-none focus:ring-1 focus:ring-primary/20"
       />
       {value && (

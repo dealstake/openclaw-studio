@@ -100,7 +100,9 @@ export const ProjectWizardModal = memo(function ProjectWizardModal({
   }, []);
 
   const handleConfigExtracted = useCallback((config: unknown) => {
-    setPreviewConfig(config as ProjectConfig);
+    if (config && typeof config === "object" && "name" in config) {
+      setPreviewConfig(config as ProjectConfig);
+    }
   }, []);
 
   const handleConfirm = useCallback(async () => {
