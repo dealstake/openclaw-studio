@@ -460,9 +460,15 @@ summary:active {
   }
 }
 
-/* Ensure smooth touch scrolling on all scroll containers */
+/* Touch scrolling: enable native momentum + prevent scroll chain leaking */
 .overflow-auto,
 .overflow-y-auto {
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
+}
+
+/* Vertical-only scroll containers: tell browser to handle pan-y natively.
+ * This eliminates touch delay and ensures momentum is fully interruptible. */
+.overflow-y-auto {
+  touch-action: pan-y;
 }
