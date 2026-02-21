@@ -90,7 +90,7 @@ export const ContextPanel = memo(function ContextPanel({
               type="button"
               role="tab"
               aria-selected={isActive}
-              className={`flex-shrink-0 min-w-[44px] px-2.5 pb-2 ${sectionLabelClass} transition-colors focus-ring rounded-sm ${
+              className={`flex-shrink-0 min-w-[44px] px-2.5 pb-2 ${sectionLabelClass} transition-colors focus-ring rounded-md ${
                 isActive
                   ? "text-foreground font-semibold border-b-2 border-primary"
                   : "text-muted-foreground hover:text-foreground"
@@ -118,7 +118,7 @@ export const ContextPanel = memo(function ContextPanel({
               type="button"
               role="tab"
               aria-selected={isActive}
-              className={`flex-shrink-0 px-2.5 pb-2 ${sectionLabelClass} transition-colors focus-ring rounded-sm ${
+              className={`flex-shrink-0 px-2.5 pb-2 ${sectionLabelClass} transition-colors focus-ring rounded-md ${
                 isActive
                   ? "text-foreground font-semibold border-b-2 border-primary"
                   : "text-muted-foreground hover:text-foreground"

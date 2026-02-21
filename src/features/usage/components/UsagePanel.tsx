@@ -97,10 +97,10 @@ export const UsagePanel = memo(function UsagePanel({
       <div className="grid grid-cols-2 gap-2">
         {loading && !totalSessions ? (
           <>
-            <Skeleton className="h-20 rounded-xl" />
-            <Skeleton className="h-20 rounded-xl" />
-            <Skeleton className="h-20 rounded-xl" />
-            <Skeleton className="h-20 rounded-xl" />
+            <Skeleton className="h-20 rounded-lg" />
+            <Skeleton className="h-20 rounded-lg" />
+            <Skeleton className="h-20 rounded-lg" />
+            <Skeleton className="h-20 rounded-lg" />
           </>
         ) : (
           <>
@@ -179,7 +179,7 @@ const SummaryCard = memo(function SummaryCard({
   subValue?: string;
 }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-3 shadow-sm">
+    <div className="rounded-lg border border-border bg-card p-3 shadow-sm">
       <p className="text-xs font-medium text-muted-foreground">{label}</p>
       <p className="mt-1 text-lg font-semibold text-foreground">{value}</p>
       {subValue && (

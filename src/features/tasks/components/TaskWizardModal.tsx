@@ -183,7 +183,7 @@ export const TaskWizardModal = memo(function TaskWizardModal({
       }}
     >
       {/* Mobile: full-height sheet from bottom; Desktop: centered card */}
-      <div data-state={visible ? "open" : "closed"} className="flex h-full w-full flex-col overflow-hidden bg-card shadow-2xl transition-all duration-300 ease-out data-[state=closed]:translate-y-full data-[state=closed]:opacity-0 sm:data-[state=closed]:scale-95 sm:data-[state=closed]:translate-y-0 sm:h-[min(85vh,680px)] sm:max-w-lg sm:rounded-xl sm:border sm:border-border">
+      <div data-state={visible ? "open" : "closed"} className="flex h-full w-full flex-col overflow-hidden bg-card shadow-lg transition-all duration-300 ease-out data-[state=closed]:translate-y-full data-[state=closed]:opacity-0 sm:data-[state=closed]:scale-95 sm:data-[state=closed]:translate-y-0 sm:h-[min(85vh,680px)] sm:max-w-lg sm:rounded-lg sm:border sm:border-border">
         {/* Modal header */}
         <div className="flex shrink-0 items-center justify-between border-b border-border/40 px-4 py-3">
           <div className="flex items-center gap-2">
@@ -319,7 +319,7 @@ const TypeSelectStep = memo(function TypeSelectStep({
             <button
               key={card.type}
               type="button"
-              className={`flex items-start gap-4 rounded-xl border bg-card/70 p-5 text-left transition ${card.color}`}
+              className={`flex items-start gap-4 rounded-lg border bg-card/70 p-5 text-left transition ${card.color}`}
               onClick={() => onSelect(card.type)}
             >
               <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted/50">

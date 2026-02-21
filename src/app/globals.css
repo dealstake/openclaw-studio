@@ -3,6 +3,20 @@
 @import "../../node_modules/react-mentions-ts/styles/tailwind.css";
 @import "./styles/markdown.css";
 
+/*
+ * Border Radius System
+ *   rounded-md  — cards, panels, badges, inline elements
+ *   rounded-lg  — modals, dialogs, overlays, large containers
+ *   rounded-full — avatars, pills, circular buttons
+ *   Avoid: rounded-xl, rounded-sm, bare rounded- (no modifier)
+ *
+ * Shadow Hierarchy
+ *   shadow-xs  — subtle depth (inline elements)
+ *   shadow-sm  — cards, raised surfaces
+ *   shadow-lg  — modals, dialogs, overlays, popovers
+ *   Avoid: shadow-xl, shadow-2xl outside modals
+ */
+
 @custom-variant dark (&:is(.dark *));
 
 /* ============================================================

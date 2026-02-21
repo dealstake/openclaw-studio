@@ -287,7 +287,7 @@ export const ActivityDrawer = React.memo(function ActivityDrawer({
           type="button"
           onClick={handleToggle}
           aria-label={drawerState.collapsed ? "Open activity drawer" : "Close activity drawer"}
-          className="absolute z-10 flex h-6 w-4 items-center justify-center rounded-sm bg-[var(--surface-elevated)] border border-border/20 text-muted-foreground hover:text-foreground transition-colors"
+          className="absolute z-10 flex h-6 w-4 items-center justify-center rounded-md bg-[var(--surface-elevated)] border border-border/20 text-muted-foreground hover:text-foreground transition-colors"
         >
           {drawerState.collapsed ? (
             <ChevronLeft className="h-3 w-3" />

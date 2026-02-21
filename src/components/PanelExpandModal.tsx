@@ -27,7 +27,7 @@ export const PanelExpandModal = React.memo(function PanelExpandModal({
       <Dialog.Portal>
         <ModalOverlay />
         <Dialog.Content
-          className="fixed left-1/2 top-1/2 z-[100] flex h-screen w-screen -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-none border border-border bg-card shadow-2xl data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 xl:h-[90vh] xl:w-[95vw] xl:max-w-7xl xl:rounded-xl"
+          className="fixed left-1/2 top-1/2 z-[100] flex h-screen w-screen -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-none border border-border bg-card shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 xl:h-[90vh] xl:w-[95vw] xl:max-w-7xl xl:rounded-lg"
           data-panel-expand-modal
           aria-describedby={undefined}
         >

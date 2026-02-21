@@ -71,7 +71,7 @@ export const TaskTemplatesSheet = memo(function TaskTemplatesSheet({
                     key={template.id}
                     type="button"
                     disabled={busyId !== null}
-                    className="flex items-start gap-3 rounded-xl border border-border/80 bg-card/70 p-3 text-left transition hover:border-border hover:bg-muted/30 hover:border-primary/50 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="flex items-start gap-3 rounded-lg border border-border/80 bg-card/70 p-3 text-left transition hover:border-border hover:bg-muted/30 hover:border-primary/50 disabled:cursor-not-allowed disabled:opacity-60"
                     onClick={() => void handleUse(template)}
                   >
                     <span className="mt-0.5 text-lg">{template.icon}</span>

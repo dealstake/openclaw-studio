@@ -61,7 +61,7 @@ export default function LoginPage() {
         </div>
 
         {/* Card */}
-        <div className="space-y-5 rounded-xl border border-border bg-card p-6 shadow-lg">
+        <div className="space-y-5 rounded-lg border border-border bg-card p-6 shadow-lg">
           <h2 className="text-center text-lg font-semibold text-card-foreground">
             Sign in to your account
           </h2>

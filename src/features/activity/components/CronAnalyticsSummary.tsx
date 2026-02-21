@@ -36,7 +36,7 @@ export const CronAnalyticsSummary = memo(function CronAnalyticsSummary({
         <SectionLabel>Overview</SectionLabel>
         <div className="grid grid-cols-2 gap-2">
           {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="h-20 rounded-xl" />
+            <Skeleton key={i} className="h-20 rounded-lg" />
           ))}
         </div>
       </div>
@@ -60,7 +60,7 @@ export const CronAnalyticsSummary = memo(function CronAnalyticsSummary({
         {cards.map((card) => (
           <div
             key={card.label}
-            className="rounded-xl border border-border bg-card p-3 shadow-sm"
+            className="rounded-lg border border-border bg-card p-3 shadow-sm"
           >
             <div className="text-xs text-muted-foreground">{card.label}</div>
             <div className="text-lg font-semibold text-foreground">{card.value}</div>

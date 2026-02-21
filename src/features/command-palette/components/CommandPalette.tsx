@@ -60,7 +60,7 @@ export const CommandPalette = memo(function CommandPalette({
           <Cmdk
             label="Command Palette"
             loop
-            className="rounded-xl border border-border bg-card shadow-2xl overflow-hidden"
+            className="rounded-lg border border-border bg-card shadow-lg overflow-hidden"
           >
             <div className="flex items-center gap-2 border-b border-border px-3">
               <svg

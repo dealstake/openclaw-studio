@@ -59,7 +59,7 @@ export const AgentPreviewCard = React.memo(function AgentPreviewCard({
 
   return (
     <div
-      className={`rounded-xl border border-border bg-card shadow-lg p-4 space-y-3 ${className}`}
+      className={`rounded-lg border border-border bg-card shadow-lg p-4 space-y-3 ${className}`}
     >
       {/* Header */}
       <div className="space-y-1.5">

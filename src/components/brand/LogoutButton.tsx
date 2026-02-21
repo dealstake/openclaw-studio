@@ -9,7 +9,7 @@ type LogoutButtonProps = {
 export function LogoutButton({ iconOnly = false, className }: LogoutButtonProps) {
   return (
     <button
-      className={`flex items-center gap-2 rounded-sm px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.1em] text-destructive transition hover:bg-muted ${className ?? ""}`}
+      className={`flex items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.1em] text-destructive transition hover:bg-muted ${className ?? ""}`}
       type="button"
       onClick={logout}
       data-testid="logout-button"

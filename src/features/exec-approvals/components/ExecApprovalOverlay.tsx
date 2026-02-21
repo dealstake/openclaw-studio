@@ -62,7 +62,7 @@ export const ExecApprovalOverlay = ({
       aria-label="Exec approval requested"
       data-testid="exec-approval-overlay"
     >
-      <div className="w-full max-w-lg rounded-lg border border-border bg-card/95 p-6 shadow-2xl">
+      <div className="w-full max-w-lg rounded-lg border border-border bg-card/95 p-6 shadow-lg">
         <div className="flex items-center gap-3">
           <ShieldAlert className="h-5 w-5 shrink-0 text-primary-text" />
           <SectionLabel>

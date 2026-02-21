@@ -2307,7 +2307,7 @@ const AgentStudioPage = () => {
             </div>
           </div>
         ) : (
-          <div className="absolute inset-0 pt-12 bg-background rounded-xl fade-up-delay flex flex-col overflow-hidden p-5 sm:p-6">
+          <div className="absolute inset-0 pt-12 bg-background rounded-lg fade-up-delay flex flex-col overflow-hidden p-5 sm:p-6">
             <EmptyStatePanel
               label="Fleet"
               title="No agents available"

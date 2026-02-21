@@ -30,7 +30,7 @@ export default function LogoutPage() {
         </div>
 
         {/* Card */}
-        <div className="space-y-4 rounded-xl border border-border bg-card p-8 text-center shadow-lg">
+        <div className="space-y-4 rounded-lg border border-border bg-card p-8 text-center shadow-lg">
           <h2 className="text-xl font-semibold text-card-foreground">
             You&apos;ve been signed out
           </h2>

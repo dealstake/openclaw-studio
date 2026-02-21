@@ -211,7 +211,7 @@ export const AgentWizardModal = React.memo(function AgentWizardModal({
     >
       <div
         data-state={visible ? "open" : "closed"}
-        className="flex h-full w-full flex-col overflow-hidden bg-card shadow-2xl transition-all duration-300 ease-out data-[state=closed]:translate-y-full data-[state=closed]:opacity-0 sm:data-[state=closed]:scale-95 sm:data-[state=closed]:translate-y-0 sm:h-[min(85vh,680px)] sm:max-w-lg sm:rounded-xl sm:border sm:border-border"
+        className="flex h-full w-full flex-col overflow-hidden bg-card shadow-lg transition-all duration-300 ease-out data-[state=closed]:translate-y-full data-[state=closed]:opacity-0 sm:data-[state=closed]:scale-95 sm:data-[state=closed]:translate-y-0 sm:h-[min(85vh,680px)] sm:max-w-lg sm:rounded-lg sm:border sm:border-border"
       >
         {/* Header */}
         <div className="flex shrink-0 items-center justify-between border-b border-border/40 px-4 py-3">

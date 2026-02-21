@@ -22,7 +22,7 @@ const RestartBlockingModal: FC<RestartBlockingModalProps> = memo(
       aria-modal="true"
       aria-label={ariaLabel}
     >
-      <div className="w-full max-w-md rounded-lg border border-border bg-card/95 p-6 shadow-2xl">
+      <div className="w-full max-w-md rounded-lg border border-border bg-card/95 p-6 shadow-lg">
         <SectionLabel>
           {title}
         </SectionLabel>

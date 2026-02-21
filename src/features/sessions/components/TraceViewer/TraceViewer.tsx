@@ -88,7 +88,7 @@ export const TraceViewer = React.memo(function TraceViewer({
 
   if (loading && turns.length === 0) {
     return (
-      <div className="flex h-full flex-col rounded-xl border border-border bg-card">
+      <div className="flex h-full flex-col rounded-lg border border-border bg-card">
         <div className="border-b border-border px-4 py-3">
           <Skeleton className="h-4 w-32" />
         </div>
@@ -106,7 +106,7 @@ export const TraceViewer = React.memo(function TraceViewer({
       ref={containerRef}
       tabIndex={-1}
       onKeyDown={handleKeyDown}
-      className="flex h-full flex-col rounded-xl border border-border bg-card shadow-lg outline-none"
+      className="flex h-full flex-col rounded-lg border border-border bg-card shadow-lg outline-none"
     >
       {summary && <TraceHeader summary={summary} onClose={onClose} />}
 

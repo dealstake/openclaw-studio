@@ -105,7 +105,7 @@ function Column({
   return (
     <section
       data-testid={dataTestId}
-      className="bg-card rounded-xl flex min-h-[360px] w-full min-w-[260px] flex-col p-3"
+      className="bg-card rounded-lg flex min-h-[360px] w-full min-w-[260px] flex-col p-3"
     >
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-sm font-semibold tracking-wide text-foreground/85">
@@ -119,7 +119,7 @@ function Column({
         {cards.map((card) => (
           <article
             key={card.id}
-            className="rounded-xl border border-border/70 bg-card/90 p-3 shadow-xs"
+            className="rounded-lg border border-border/70 bg-card/90 p-3 shadow-xs"
           >
             <div className="mb-2 flex items-start justify-between gap-2">
               <p className="font-mono text-[11px] font-medium uppercase text-muted-foreground">
@@ -146,7 +146,7 @@ function Column({
                     {card.priority === null ? "P-" : `P${card.priority}`}
                   </button>
                   {priorityMenuCardId === card.id ? (
-                    <div className="absolute right-0 top-full z-10 mt-1 w-48 overflow-hidden rounded-lg border border-border/70 bg-card/95 shadow-xl">
+                    <div className="absolute right-0 top-full z-10 mt-1 w-48 overflow-hidden rounded-lg border border-border/70 bg-card/95 shadow-lg">
                       {[
                         { value: 0, label: "Critical" },
                         { value: 1, label: "High" },
@@ -331,7 +331,7 @@ export const TaskBoard = memo(function TaskBoard({ snapshot, onRequestRefresh }:
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-4">
-      <div className="bg-card rounded-xl px-4 py-3">
+      <div className="bg-card rounded-lg px-4 py-3">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="text-sm font-medium text-foreground">
@@ -429,7 +429,7 @@ export const TaskBoard = memo(function TaskBoard({ snapshot, onRequestRefresh }:
           onClick={() => setDetailsCard(null)}
         >
           <div
-            className="w-full max-w-2xl rounded-xl border border-border bg-card/95 shadow-2xl"
+            className="w-full max-w-2xl rounded-lg border border-border bg-card/95 shadow-lg"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-3 border-b border-border/80 px-4 py-3">

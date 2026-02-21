@@ -115,7 +115,7 @@ function OverflowMenu({
   }, [open]);
 
   const menuItemClass =
-    "flex w-full items-center gap-2 rounded-sm px-3 py-2 text-left text-xs font-medium text-foreground transition hover:bg-muted";
+    "flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-medium text-foreground transition hover:bg-muted";
 
   return (
     <div className="relative" ref={ref}>
