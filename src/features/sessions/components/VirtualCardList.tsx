@@ -86,4 +86,7 @@ function VirtualCardListInner<T>({
   );
 }
 
-export const VirtualCardList = memo(VirtualCardListInner) as typeof VirtualCardListInner;
+// Cast through NamedExoticComponent to preserve generic type + set displayName
+const MemoizedVirtualCardList = memo(VirtualCardListInner) as unknown as typeof VirtualCardListInner & { displayName?: string };
+MemoizedVirtualCardList.displayName = "VirtualCardList";
+export const VirtualCardList = MemoizedVirtualCardList as typeof VirtualCardListInner;

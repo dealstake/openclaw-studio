@@ -13,7 +13,6 @@ import { humanizeSessionKey } from "@/features/sessions/lib/sessionKeyUtils";
 import { formatRelativeTime } from "@/lib/text/time";
 
 import { sectionLabelClass } from "@/components/SectionLabel";
-import { MarkdownViewer } from "@/components/MarkdownViewer";
 import { BaseCard, CardHeader, CardMeta } from "@/components/ui/BaseCard";
 
 export const TranscriptCard = memo(function TranscriptCard({
@@ -59,7 +58,9 @@ export const TranscriptCard = memo(function TranscriptCard({
         <span className="text-muted-foreground/60">{(transcript.size / 1024).toFixed(0)} KB</span>
       </CardMeta>
       {transcript.preview && (
-        <MarkdownViewer content={transcript.preview} className="mt-1.5 line-clamp-2 text-[11px] leading-relaxed text-muted-foreground/80 [&>*]:m-0 [&>*>*]:m-0" />
+        <p className="mt-1.5 line-clamp-2 text-[11px] leading-relaxed text-muted-foreground/80">
+          {transcript.preview}
+        </p>
       )}
     </BaseCard>
   );

@@ -3,7 +3,7 @@
 import React from "react";
 import { Bot, User, Cpu, Wrench } from "lucide-react";
 
-import { formatCost as sharedFormatCost, formatTokens as sharedFormatTokens } from "@/lib/text/format";
+import { formatCostOrEmpty, formatTokensOrEmpty } from "@/lib/text/format";
 import type { TraceTurn } from "../../lib/traceParser";
 
 const roleIcon: Record<string, React.ReactNode> = {
@@ -11,17 +11,6 @@ const roleIcon: Record<string, React.ReactNode> = {
   assistant: <Bot className="h-3.5 w-3.5 text-emerald-400" />,
   system: <Cpu className="h-3.5 w-3.5 text-amber-400" />,
 };
-
-/** Return empty string for zero values to keep the row clean. */
-function formatCost(cost: number): string {
-  if (cost === 0) return "";
-  return sharedFormatCost(cost, "USD");
-}
-
-function formatTokens(n: number): string {
-  if (n === 0) return "";
-  return sharedFormatTokens(n);
-}
 
 type TraceTurnRowProps = {
   turn: TraceTurn;
@@ -82,12 +71,12 @@ export const TraceTurnRow = React.memo(function TraceTurnRow({
 
       {/* Tokens */}
       <span className="hidden w-10 shrink-0 text-right font-mono text-[10px] text-muted-foreground sm:block">
-        {formatTokens(turn.tokens.total)}
+        {formatTokensOrEmpty(turn.tokens.total)}
       </span>
 
       {/* Cost */}
       <span className="hidden w-12 shrink-0 text-right font-mono text-[10px] text-muted-foreground md:block">
-        {formatCost(turn.cost.total)}
+        {formatCostOrEmpty(turn.cost.total)}
       </span>
     </button>
   );
