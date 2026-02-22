@@ -6,6 +6,7 @@ import type { StudioTask, TaskSchedule } from "@/features/tasks/types";
 import {
   PERIODIC_INTERVAL_OPTIONS,
   CONSTANT_INTERVAL_OPTIONS,
+  STAGGER_OPTIONS,
 } from "@/features/tasks/types";
 import { humanReadableSchedule } from "@/features/tasks/lib/schedule";
 import { formatRelativeTime } from "@/lib/text/time";
@@ -87,16 +88,26 @@ export const TaskMetadataSection = memo(function TaskMetadataSection({
                     ? task.schedule.intervalMs
                     : 0;
                 if (!ms || ms === currentMs) return;
+                const sched = task.schedule;
                 const newSchedule: TaskSchedule =
-                  task.schedule.type === "constant"
+                  sched.type === "constant"
                     ? {
                         type: "constant",
                         intervalMs: ms,
-                        ...(task.schedule.activeHours
-                          ? { activeHours: task.schedule.activeHours }
+                        ...(sched.activeHours
+                          ? { activeHours: sched.activeHours }
+                          : {}),
+                        ...(sched.staggerMs
+                          ? { staggerMs: sched.staggerMs }
                           : {}),
                       }
-                    : { type: "periodic", intervalMs: ms };
+                    : {
+                        type: "periodic",
+                        intervalMs: ms,
+                        ...("staggerMs" in sched && sched.staggerMs
+                          ? { staggerMs: sched.staggerMs }
+                          : {}),
+                      };
                 onUpdateSchedule(task.id, newSchedule);
               }}
             >
@@ -104,6 +115,32 @@ export const TaskMetadataSection = memo(function TaskMetadataSection({
                 ? CONSTANT_INTERVAL_OPTIONS
                 : PERIODIC_INTERVAL_OPTIONS
               ).map((opt) => (
+                <option key={opt.ms} value={opt.ms}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+            {/* Stagger control */}
+            <select
+              aria-label="Task stagger window"
+              className="h-7 rounded-md border border-border/80 bg-card/70 px-2 font-mono text-[11px] text-foreground outline-none transition hover:border-border focus:border-primary/60 disabled:cursor-not-allowed disabled:opacity-60"
+              value={task.schedule.staggerMs ?? 0}
+              disabled={busy}
+              onChange={(e) => {
+                const staggerMs = Number(e.target.value);
+                const current =
+                  task.schedule.type === "constant" || task.schedule.type === "periodic"
+                    ? (task.schedule.staggerMs ?? 0)
+                    : 0;
+                if (staggerMs === current) return;
+                const newSchedule: TaskSchedule = {
+                  ...task.schedule,
+                  staggerMs: staggerMs || undefined,
+                } as TaskSchedule;
+                onUpdateSchedule(task.id, newSchedule);
+              }}
+            >
+              {STAGGER_OPTIONS.map((opt) => (
                 <option key={opt.ms} value={opt.ms}>
                   {opt.label}
                 </option>
