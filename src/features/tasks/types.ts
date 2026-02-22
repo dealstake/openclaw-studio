@@ -117,6 +117,17 @@ export interface WizardTaskConfig {
   deliveryChannel?: string | null;
 }
 
+// ─── Stagger options ─────────────────────────────────────────────────────────
+
+export const STAGGER_OPTIONS = [
+  { label: "Exact", ms: 0 },
+  { label: "±1 min", ms: 60_000 },
+  { label: "±5 min", ms: 300_000 },
+  { label: "±10 min", ms: 600_000 },
+  { label: "±20 min", ms: 1_200_000 },
+  { label: "±30 min", ms: 1_800_000 },
+] as const;
+
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 export const CONSTANT_INTERVAL_OPTIONS = [
