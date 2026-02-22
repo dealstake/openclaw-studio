@@ -88,41 +88,40 @@ export const ContextPanel = memo(function ContextPanel({
     <div className="flex h-full w-full flex-col overflow-hidden">
       {/* Single tab bar — responsive via CSS, no duplication */}
       {!hideTabBar && (
-        <div
-          ref={tabBarRef}
-          className="flex items-center gap-0 overflow-x-auto border-b border-border/20 px-3 pt-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-          role="tablist"
-        >
-          {CONTEXT_TAB_CONFIG.map((tab) => {
-            const isActive = activeTab === tab.value;
-            return (
-              <button
-                key={tab.value}
-                type="button"
-                role="tab"
-                id={tabButtonId(tab.value)}
-                aria-selected={isActive}
-                aria-controls={tabPanelId(tab.value)}
-                className={`flex-shrink-0 min-w-[44px] px-2.5 pb-2 ${sectionLabelClass} transition-colors focus-ring rounded-md ${
-                  isActive
-                    ? "text-foreground font-semibold border-b-2 border-primary"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-                onClick={() => handleTabClick(tab.value)}
-                data-testid={`context-tab-${tab.value}`}
-              >
-                {tab.label}
-              </button>
-            );
-          })}
-          <div className="ml-auto flex items-center gap-1">
+        <div className="flex items-center border-b border-border/20 px-3 pt-2">
+          {/* Scrollable tab buttons */}
+          <div
+            ref={tabBarRef}
+            className="flex min-w-0 flex-1 items-center gap-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            role="tablist"
+          >
+            {CONTEXT_TAB_CONFIG.map((tab) => {
+              const isActive = activeTab === tab.value;
+              return (
+                <button
+                  key={tab.value}
+                  type="button"
+                  role="tab"
+                  id={tabButtonId(tab.value)}
+                  aria-selected={isActive}
+                  aria-controls={tabPanelId(tab.value)}
+                  className={`flex-shrink-0 min-w-[44px] px-2.5 pb-2 ${sectionLabelClass} transition-colors focus-ring rounded-md ${
+                    isActive
+                      ? "text-foreground font-semibold border-b-2 border-primary"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                  onClick={() => handleTabClick(tab.value)}
+                  data-testid={`context-tab-${tab.value}`}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+          {/* Pinned action buttons — never scroll off-screen */}
+          <div className="ml-auto flex flex-shrink-0 items-center gap-1 pl-2">
             {onExpandToggle && (
-              <PanelIconButton onClick={onExpandToggle} aria-label="Expand panel" data-testid="expand-panel-btn" className="flex-shrink-0 hidden lg:flex">
-                <Maximize2 className="h-3.5 w-3.5" />
-              </PanelIconButton>
-            )}
-            {onExpandToggle && (
-              <PanelIconButton onClick={onExpandToggle} aria-label="Expand panel" data-testid="expand-panel-btn-mobile" className="flex-shrink-0 lg:hidden">
+              <PanelIconButton onClick={onExpandToggle} aria-label="Expand panel" data-testid="expand-panel-btn">
                 <Maximize2 className="h-3.5 w-3.5" />
               </PanelIconButton>
             )}
