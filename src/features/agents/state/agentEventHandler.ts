@@ -130,6 +130,15 @@ export function handleRuntimeAgentEvent(
   const agent = agentsSnapshot.find((entry) => entry.agentId === match);
   if (!agent) return;
 
+  // Suppress ALL agent events (tool invocations, lifecycle, etc.) while the
+  // agent is in heartbeat mode. The chatEventHandler sets this flag when an
+  // isHeartbeat delta arrives. Without this, tool invocation cards ("cron
+  // Running...", "browser Running...") still appear in the main chat during
+  // heartbeats even though the chat text is suppressed.
+  if (state.heartbeatActiveAgents.has(match)) {
+    return;
+  }
+
   state.markActivityThrottled(match);
   const stream = typeof payload.stream === "string" ? payload.stream : "";
   const data =
