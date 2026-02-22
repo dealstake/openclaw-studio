@@ -6,7 +6,6 @@ import type { MessagePart } from "@/lib/chat/types";
 import { transformMessagesToMessageParts } from "@/features/sessions/lib/transformMessages";
 import {
   AgentBrainPanel,
-  AgentSettingsPanel,
 } from "@/features/agents/components/AgentInspectPanels";
 import { SessionHistorySidebar } from "@/features/sessions/components/SessionHistorySidebar";
 import { AppSidebar, type ManagementTab } from "@/layout/AppSidebar";
@@ -61,6 +60,7 @@ import type { ContextTab } from "@/features/context/components/ContextPanel";
 
 // ContextTabCluster is now integrated into HeaderBar on wide viewports
 import { PanelExpandModal } from "@/components/PanelExpandModal";
+import { ManagementPanelContent } from "@/components/ManagementPanelContent";
 import { ManagementDrawer } from "@/components/ManagementDrawer";
 import { ExpandedContext } from "@/features/context/lib/expandedContext";
 import { ExecApprovalOverlay } from "@/features/exec-approvals/components/ExecApprovalOverlay";
@@ -69,10 +69,7 @@ import {
   parseExecApprovalResolved,
   pruneExpired,
 } from "@/features/exec-approvals/types";
-import { ChannelsPanel } from "@/features/channels/components/ChannelsPanel";
-const SessionsPanel = lazy(() => import("@/features/sessions/components/SessionsPanel").then(m => ({ default: m.SessionsPanel })));
-const CronPanel = lazy(() => import("@/features/cron/components/CronPanel").then(m => ({ default: m.CronPanel })));
-const UsagePanel = lazy(() => import("@/features/usage/components/UsagePanel").then(m => ({ default: m.UsagePanel })));
+// SessionsPanel, CronPanel, UsagePanel, ChannelsPanel, AgentSettingsPanel moved to ManagementPanelContent
 import { CommandPalette } from "@/features/command-palette/components/CommandPalette";
 import { useCommandPalette } from "@/features/command-palette/hooks/useCommandPalette";
 import { WorkspaceExplorerPanel } from "@/features/workspace/components/WorkspaceExplorerPanel";
@@ -139,8 +136,6 @@ type SessionsListResult = {
   sessions?: SessionsListEntry[];
 };
 
-const RESERVED_MAIN_AGENT_ID = "main";
-
 const AgentStudioPage = () => {
   const [settingsCoordinator] = useState(() => createStudioSettingsCoordinator());
   const {
@@ -165,7 +160,7 @@ const AgentStudioPage = () => {
     contextPanelOpen, setContextPanelOpen,
     contextMode, setContextMode,
     contextTab, setContextTab,
-    expandedTab, setExpandedTab,
+    expandedTab,
     brainFileTab, setBrainFileTab,
     brainPreviewMode, setBrainPreviewMode,
     managementView, setManagementView,
@@ -1531,6 +1526,101 @@ const AgentStudioPage = () => {
     return sessionUsage ? sessionUsage.inputTokens + sessionUsage.outputTokens : undefined;
   }, [focusedAgent, agentContextWindow, sessionUsage]);
 
+  // Shared transcript click handler — used by both ManagementDrawer and PanelExpandModal
+  const handleTranscriptClick = useCallback(
+    (sessionId: string, agentId: string | null, dismissFn?: () => void) => {
+      dismissFn?.();
+      const effectiveAgentId = agentId || focusedAgent?.agentId || "";
+      if (!effectiveAgentId) return;
+      setViewingSessionKey(sessionId);
+      setViewingSessionLoading(true);
+      setViewingSessionHistory([]);
+      setMobilePane("chat");
+      fetchTranscriptMessages(effectiveAgentId, sessionId, 0, 200)
+        .then((result) => {
+          setViewingSessionHistory(transformMessagesToMessageParts(result.messages));
+        })
+        .catch((err) => {
+          console.error("Failed to load transcript:", err);
+          setViewingSessionHistory([{
+            type: "text",
+            text: `Failed to load transcript: ${err instanceof Error ? err.message : "Unknown error"}`,
+          }]);
+        })
+        .finally(() => setViewingSessionLoading(false));
+    },
+    [focusedAgent?.agentId, setMobilePane],
+  );
+
+  const handleDrawerTranscriptClick = useCallback(
+    (sessionId: string, agentId: string | null) => {
+      handleTranscriptClick(sessionId, agentId, () => setManagementView(null));
+    },
+    [handleTranscriptClick, setManagementView],
+  );
+
+  const handleExpandedTranscriptClick = useCallback(
+    (sessionId: string, agentId: string | null) => {
+      handleTranscriptClick(sessionId, agentId, clearExpandedTab);
+    },
+    [handleTranscriptClick, clearExpandedTab],
+  );
+
+  // Shared management panel props — used by both ManagementDrawer and PanelExpandModal
+  const managementPanelProps = useMemo(() => ({
+    client,
+    status,
+    focusedAgentId,
+    allSessions,
+    allSessionsLoading,
+    allSessionsError,
+    onRefreshSessions: () => { void loadAllSessions(); },
+    activeSessionKey: focusedAgent?.sessionKey ?? null,
+    aggregateUsage,
+    aggregateUsageLoading,
+    cumulativeUsage: aggregateUsageFromList ? {
+      inputTokens: aggregateUsageFromList.inputTokens,
+      outputTokens: aggregateUsageFromList.outputTokens,
+      totalCost: null,
+      messageCount: aggregateUsageFromList.messageCount,
+    } : null,
+    cumulativeUsageLoading: allSessionsLoading,
+    usageByType,
+    onViewTrace: handleViewTrace,
+    channelsSnapshot,
+    channelsLoading,
+    channelsError,
+    onRefreshChannels: () => { void loadChannelsStatus(); },
+    allCronJobs,
+    allCronLoading,
+    allCronError,
+    allCronRunBusyJobId,
+    allCronDeleteBusyJobId,
+    allCronToggleBusyJobId,
+    onRunJob: (jobId: string) => { void handleAllCronRunJob(jobId); },
+    onDeleteJob: (jobId: string) => { void handleAllCronDeleteJob(jobId); },
+    onToggleEnabled: (jobId: string) => { void handleAllCronToggleEnabled(jobId); },
+    onRefreshCron: () => { void loadAllCronJobs(); },
+    settingsAgent: settingsAgent ?? null,
+    onCloseSettings: handleBackToChat,
+    onRenameAgent: (name: string) => settingsAgent ? handleRenameAgent(settingsAgent.agentId, name) : Promise.resolve(false),
+    onNewSession: () => { if (settingsAgent) handleNewSession(settingsAgent.agentId); },
+    onDeleteAgent: () => { if (settingsAgent) handleDeleteAgent(settingsAgent.agentId); },
+    onToolCallingToggle: (enabled: boolean) => { if (settingsAgent) handleToolCallingToggle(settingsAgent.agentId, enabled); },
+    onThinkingTracesToggle: (enabled: boolean) => { if (settingsAgent) handleThinkingTracesToggle(settingsAgent.agentId, enabled); },
+    onNavigateToTasks: () => setContextTab("tasks"),
+  }), [
+    client, status, focusedAgentId, allSessions, allSessionsLoading, allSessionsError,
+    loadAllSessions, focusedAgent?.sessionKey, aggregateUsage, aggregateUsageLoading,
+    aggregateUsageFromList, usageByType, handleViewTrace,
+    channelsSnapshot, channelsLoading, channelsError, loadChannelsStatus,
+    allCronJobs, allCronLoading, allCronError, allCronRunBusyJobId,
+    allCronDeleteBusyJobId, allCronToggleBusyJobId,
+    handleAllCronRunJob, handleAllCronDeleteJob, handleAllCronToggleEnabled, loadAllCronJobs,
+    settingsAgent, handleBackToChat, handleRenameAgent, handleNewSession,
+    handleDeleteAgent, handleToolCallingToggle, handleThinkingTracesToggle, setContextTab,
+  ]);
+
   const stableChatTokenLimit = useMemo(() => {
     if (!focusedAgent) return undefined;
     const cw = agentContextWindow.get(focusedAgent.agentId);
@@ -1783,94 +1873,11 @@ const AgentStudioPage = () => {
                 title={managementView ? ({ sessions: "Sessions", usage: "Usage", channels: "Channels", cron: "Cron", settings: "Settings" } as Record<ManagementTab, string>)[managementView] : ""}
                 sidebarOffsetPx={sessionSidebarCollapsed ? 56 : 288}
               >
-                <Suspense fallback={null}>
-                  {managementView === "sessions" && (
-                        <SessionsPanel
-                          client={client}
-                          agentId={focusedAgentId}
-                          sessions={allSessions}
-                          loading={allSessionsLoading}
-                          error={allSessionsError}
-                          onRefresh={() => { void loadAllSessions(); }}
-                          activeSessionKey={focusedAgent?.sessionKey ?? null}
-                          aggregateUsage={aggregateUsage}
-                          aggregateUsageLoading={aggregateUsageLoading}
-                          cumulativeUsage={aggregateUsageFromList ? {
-                            inputTokens: aggregateUsageFromList.inputTokens,
-                            outputTokens: aggregateUsageFromList.outputTokens,
-                            totalCost: null,
-                            messageCount: aggregateUsageFromList.messageCount,
-                          } : null}
-                          cumulativeUsageLoading={allSessionsLoading}
-                          usageByType={usageByType}
-                          onViewTrace={handleViewTrace}
-                          onTranscriptClick={(sessionId, agentId) => {
-                            setManagementView(null);
-                            const effectiveAgentId = agentId || focusedAgent?.agentId || "";
-                            if (!effectiveAgentId) return;
-                            setViewingSessionKey(sessionId);
-                            setViewingSessionLoading(true);
-                            setViewingSessionHistory([]);
-                            setMobilePane("chat");
-                            fetchTranscriptMessages(effectiveAgentId, sessionId, 0, 200)
-                              .then((result) => {
-                                setViewingSessionHistory(transformMessagesToMessageParts(result.messages));
-                              })
-                              .catch((err) => {
-                                console.error("Failed to load transcript:", err);
-                                setViewingSessionHistory([{
-                                  type: "text",
-                                  text: `Failed to load transcript: ${err instanceof Error ? err.message : "Unknown error"}`,
-                                }]);
-                              })
-                              .finally(() => setViewingSessionLoading(false));
-                          }}
-                        />
-                      )}
-                      {managementView === "usage" && (
-                        <UsagePanel client={client} status={status} />
-                      )}
-                      {managementView === "channels" && (
-                        <ChannelsPanel
-                          snapshot={channelsSnapshot}
-                          loading={channelsLoading}
-                          error={channelsError}
-                          onRefresh={() => { void loadChannelsStatus(); }}
-                          hideHeader
-                        />
-                      )}
-                      {managementView === "cron" && (
-                        <CronPanel
-                          client={client}
-                          cronJobs={allCronJobs}
-                          loading={allCronLoading}
-                          error={allCronError}
-                          runBusyJobId={allCronRunBusyJobId}
-                          deleteBusyJobId={allCronDeleteBusyJobId}
-                          toggleBusyJobId={allCronToggleBusyJobId}
-                          onRunJob={(jobId) => { void handleAllCronRunJob(jobId); }}
-                          onDeleteJob={(jobId) => { void handleAllCronDeleteJob(jobId); }}
-                          onToggleEnabled={(jobId) => { void handleAllCronToggleEnabled(jobId); }}
-                          onRefresh={() => { void loadAllCronJobs(); }}
-                        />
-                      )}
-                      {managementView === "settings" && settingsAgent && (
-                        <AgentSettingsPanel
-                          key={settingsAgent.agentId}
-                          agent={settingsAgent}
-                          client={client}
-                          status={status}
-                          onClose={handleBackToChat}
-                          onRename={(name) => handleRenameAgent(settingsAgent.agentId, name)}
-                          onNewSession={() => handleNewSession(settingsAgent.agentId)}
-                          onDelete={() => handleDeleteAgent(settingsAgent.agentId)}
-                          canDelete={settingsAgent.agentId !== RESERVED_MAIN_AGENT_ID}
-                          onToolCallingToggle={(enabled) => handleToolCallingToggle(settingsAgent.agentId, enabled)}
-                          onThinkingTracesToggle={(enabled) => handleThinkingTracesToggle(settingsAgent.agentId, enabled)}
-                          onNavigateToTasks={() => setContextTab("tasks")}
-                        />
-                      )}
-                </Suspense>
+                <ManagementPanelContent
+                  tab={managementView}
+                  {...managementPanelProps}
+                  onTranscriptClick={handleDrawerTranscriptClick}
+                />
               </ManagementDrawer>
 
               {focusedAgent ? (
@@ -1963,92 +1970,12 @@ const AgentStudioPage = () => {
                     {expandedTab === "activity" && (
                       <ActivityPanel />
                     )}
-                    {expandedTab === "sessions" && (
-                      <SessionsPanel
-                        client={client}
-                        agentId={focusedAgentId}
-                        sessions={allSessions}
-                        loading={allSessionsLoading}
-                        error={allSessionsError}
-                        onRefresh={() => { void loadAllSessions(); }}
-                        activeSessionKey={focusedAgent?.sessionKey ?? null}
-                        aggregateUsage={aggregateUsage}
-                        aggregateUsageLoading={aggregateUsageLoading}
-                        cumulativeUsage={aggregateUsageFromList ? {
-                          inputTokens: aggregateUsageFromList.inputTokens,
-                          outputTokens: aggregateUsageFromList.outputTokens,
-                          totalCost: null,
-                          messageCount: aggregateUsageFromList.messageCount,
-                        } : null}
-                        cumulativeUsageLoading={allSessionsLoading}
-                        usageByType={usageByType}
-                        onViewTrace={handleViewTrace}
-                        onTranscriptClick={(sessionId, agentId) => {
-                          setExpandedTab(null);
-                          const effectiveAgentId = agentId || focusedAgent?.agentId || "";
-                          if (!effectiveAgentId) return;
-                          setViewingSessionKey(sessionId);
-                          setViewingSessionLoading(true);
-                          setViewingSessionHistory([]);
-                          setMobilePane("chat");
-                          fetchTranscriptMessages(effectiveAgentId, sessionId, 0, 200)
-                            .then((result) => {
-                              setViewingSessionHistory(transformMessagesToMessageParts(result.messages));
-                            })
-                            .catch((err) => {
-                              console.error("Failed to load transcript:", err);
-                              setViewingSessionHistory([{
-                                type: "text",
-                                text: `Failed to load transcript: ${err instanceof Error ? err.message : "Unknown error"}`,
-                              }]);
-                            })
-                            .finally(() => setViewingSessionLoading(false));
-                        }}
-                      />
-                    )}
-                    {expandedTab === "usage" && (
-                      <UsagePanel client={client} status={status} />
-                    )}
-                    {expandedTab === "channels" && (
-                      <ChannelsPanel
-                        snapshot={channelsSnapshot}
-                        loading={channelsLoading}
-                        error={channelsError}
-                        onRefresh={() => { void loadChannelsStatus(); }}
-                        hideHeader
-                      />
-                    )}
-                    {expandedTab === "cron" && (
-                      <CronPanel
-                        client={client}
-                        cronJobs={allCronJobs}
-                        loading={allCronLoading}
-                        error={allCronError}
-                        runBusyJobId={allCronRunBusyJobId}
-                        deleteBusyJobId={allCronDeleteBusyJobId}
-                        toggleBusyJobId={allCronToggleBusyJobId}
-                        onRunJob={(jobId) => { void handleAllCronRunJob(jobId); }}
-                        onDeleteJob={(jobId) => { void handleAllCronDeleteJob(jobId); }}
-                        onToggleEnabled={(jobId) => { void handleAllCronToggleEnabled(jobId); }}
-                        onRefresh={() => { void loadAllCronJobs(); }}
-                      />
-                    )}
-                    {expandedTab === "settings" && settingsAgent && (
-                      <AgentSettingsPanel
-                        key={settingsAgent.agentId}
-                        agent={settingsAgent}
-                        client={client}
-                        status={status}
-                        onClose={clearExpandedTab}
-                        onRename={(name) => handleRenameAgent(settingsAgent.agentId, name)}
-                        onNewSession={() => handleNewSession(settingsAgent.agentId)}
-                        onDelete={() => handleDeleteAgent(settingsAgent.agentId)}
-                        canDelete={settingsAgent.agentId !== RESERVED_MAIN_AGENT_ID}
-                        onToolCallingToggle={(enabled) => handleToolCallingToggle(settingsAgent.agentId, enabled)}
-                        onThinkingTracesToggle={(enabled) => handleThinkingTracesToggle(settingsAgent.agentId, enabled)}
-                        onNavigateToTasks={() => setContextTab("tasks")}
-                      />
-                    )}
+                    <ManagementPanelContent
+                      tab={expandedTab === "sessions" || expandedTab === "usage" || expandedTab === "channels" || expandedTab === "cron" || expandedTab === "settings" ? expandedTab : null}
+                      {...managementPanelProps}
+                      onCloseSettings={clearExpandedTab}
+                      onTranscriptClick={handleExpandedTranscriptClick}
+                    />
                   </div>
                 </ExpandedContext.Provider>
               </PanelExpandModal>
