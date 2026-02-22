@@ -247,7 +247,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
     >
       {/* Drag overlay */}
       {isDragging && (
-        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-primary bg-background/80 backdrop-blur-sm animate-in fade-in">
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-primary bg-background/80 backdrop-blur-sm animate-in fade-in zoom-in-95">
           <UploadCloud className="mb-2 h-10 w-10 animate-bounce text-primary" />
           <span className="text-sm font-medium text-foreground">Drop files here</span>
         </div>
