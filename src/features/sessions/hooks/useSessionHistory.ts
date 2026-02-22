@@ -180,5 +180,7 @@ export function useSessionHistory(client: GatewayClient, status: GatewayStatus, 
     togglePin,
     deleteSession,
     renameSession,
+    totalFiltered: filtered.length,
+    totalCount: sessions.length,
   };
 }

@@ -1,8 +1,9 @@
-import { memo, useCallback, useEffect, useRef, useState } from "react";
-import { Plus, MessageSquare, ChevronLeft, SearchX, Pin } from "lucide-react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Plus, MessageSquare, ChevronLeft, ChevronRight, SearchX, Pin } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { CardSkeleton } from "@/components/ui/CardSkeleton";
 import { SearchInput } from "@/components/SearchInput";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatRelativeTime } from "@/lib/text/time";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { useSessionHistory, type SessionHistoryEntry } from "../hooks/useSessionHistory";
@@ -70,6 +71,7 @@ const InlineRenameInput = memo(function InlineRenameInput({
 const SessionItem = memo(function SessionItem({
   session,
   active,
+  focused,
   pinned,
   renaming,
   searchQuery,
@@ -82,6 +84,7 @@ const SessionItem = memo(function SessionItem({
 }: {
   session: SessionHistoryEntry;
   active: boolean;
+  focused: boolean;
   pinned: boolean;
   renaming: boolean;
   searchQuery: string;
@@ -92,6 +95,7 @@ const SessionItem = memo(function SessionItem({
   onDelete: (key: string) => void;
   onTogglePin: (key: string) => void;
 }) {
+  const itemRef = useRef<HTMLButtonElement>(null);
   const handleClick = useCallback(() => onSelect(session.key), [onSelect, session.key]);
   const handleDoubleClick = useCallback(() => onRenameStart(session.key), [onRenameStart, session.key]);
   const handleRenameSave = useCallback(
@@ -99,15 +103,24 @@ const SessionItem = memo(function SessionItem({
     [onRename, session.key],
   );
 
+  useEffect(() => {
+    if (focused) itemRef.current?.scrollIntoView({ block: "nearest" });
+  }, [focused]);
+
   return (
     <button
+      ref={itemRef}
       type="button"
+      role="option"
+      aria-selected={active}
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
       className={`group flex w-full items-start gap-2.5 rounded-lg px-2.5 py-2.5 text-left transition-all duration-200 focus-ring min-h-[44px] ${
         active
           ? "bg-accent text-accent-foreground"
-          : "text-foreground/80 hover:bg-muted hover:translate-x-0.5"
+          : focused
+            ? "bg-muted/70 text-foreground ring-1 ring-primary/30"
+            : "text-foreground/80 hover:bg-muted hover:translate-x-0.5"
       }`}
     >
       {pinned ? (
@@ -170,9 +183,27 @@ export const SessionHistorySidebar = memo(function SessionHistorySidebar({
     togglePin,
     deleteSession,
     renameSession,
+    totalFiltered,
+    totalCount,
   } = useSessionHistory(client, status, agentId);
 
   const [renamingKey, setRenamingKey] = useState<string | null>(null);
+  const [focusedIndex, setFocusedIndex] = useState(-1);
+
+  // Flat list of all visible session keys for keyboard navigation
+  const flatKeys = useMemo(
+    () => groups.flatMap((g) => g.sessions.map((s) => s.key)),
+    [groups],
+  );
+
+  // Reset focus when search changes — wrap setSearch to also reset focus
+  const handleSearchChange = useCallback(
+    (value: string) => {
+      setSearch(value);
+      setFocusedIndex(-1);
+    },
+    [setSearch],
+  );
 
   const handleRenameStart = useCallback((key: string) => {
     setRenamingKey(key);
@@ -197,22 +228,98 @@ export const SessionHistorySidebar = memo(function SessionHistorySidebar({
     [deleteSession],
   );
 
+  const handleListKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (renamingKey) return;
+      const len = flatKeys.length;
+      if (!len) return;
+
+      let next = focusedIndex;
+      switch (e.key) {
+        case "ArrowDown":
+          e.preventDefault();
+          next = focusedIndex < len - 1 ? focusedIndex + 1 : 0;
+          break;
+        case "ArrowUp":
+          e.preventDefault();
+          next = focusedIndex > 0 ? focusedIndex - 1 : len - 1;
+          break;
+        case "Home":
+          e.preventDefault();
+          next = 0;
+          break;
+        case "End":
+          e.preventDefault();
+          next = len - 1;
+          break;
+        case "Enter":
+          if (focusedIndex >= 0 && focusedIndex < len) {
+            e.preventDefault();
+            onSelectSession(flatKeys[focusedIndex]);
+          }
+          return;
+        default:
+          return;
+      }
+      setFocusedIndex(next);
+    },
+    [flatKeys, focusedIndex, renamingKey, onSelectSession],
+  );
+
   // Load on mount and when agentId changes
   useEffect(() => {
     void load();
   }, [load]);
 
+  // Recent sessions for collapsed strip (top 3 non-pinned)
+  const recentForCollapsed = useMemo(() => {
+    const all = groups.flatMap((g) => g.sessions);
+    return all.slice(0, 3);
+  }, [groups]);
+
   if (collapsed) {
     return (
-      <div className="flex h-full w-10 flex-col items-center bg-background/60 backdrop-blur-xl ring-1 ring-white/[0.06] py-3">
+      <div className="flex h-full w-10 flex-col items-center bg-background/60 backdrop-blur-xl ring-1 ring-white/[0.06] py-3 gap-2 transition-all duration-200">
         <button
           type="button"
           onClick={onToggleCollapse}
           className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           aria-label="Expand session history"
         >
-          <MessageSquare className="h-4 w-4" />
+          <ChevronRight className="h-4 w-4" />
         </button>
+        <div className="mt-2 flex flex-col items-center gap-1.5">
+          {recentForCollapsed.map((s) => {
+            const initials = s.displayName
+              .split(/\s+/)
+              .slice(0, 2)
+              .map((w) => w[0]?.toUpperCase() ?? "")
+              .join("");
+            return (
+              <Tooltip key={s.key}>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onToggleCollapse();
+                      onSelectSession(s.key);
+                    }}
+                    className={`flex h-7 w-7 items-center justify-center rounded-md text-[9px] font-semibold transition-colors ${
+                      s.key === activeSessionKey
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+                    }`}
+                  >
+                    {initials || "?"}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="text-xs">
+                  {s.displayName}
+                </TooltipContent>
+              </Tooltip>
+            );
+          })}
+        </div>
       </div>
     );
   }
@@ -244,13 +351,24 @@ export const SessionHistorySidebar = memo(function SessionHistorySidebar({
       <div className="px-3 py-2">
         <SearchInput
           value={search}
-          onChange={setSearch}
+          onChange={handleSearchChange}
           placeholder="Search sessions…"
         />
+        {search.trim() && (
+          <p className="mt-1 px-1 text-[10px] text-muted-foreground">
+            {totalFiltered} of {totalCount} sessions
+          </p>
+        )}
       </div>
 
       {/* Session list */}
-      <div className="flex-1 overflow-y-auto px-1.5 pb-2">
+      <div
+        className="flex-1 overflow-y-auto px-1.5 pb-2"
+        role="listbox"
+        aria-label="Session history"
+        tabIndex={0}
+        onKeyDown={handleListKeyDown}
+      >
         {loading && groups.length === 0 ? (
           <CardSkeleton count={4} variant="compact" className="px-1" />
         ) : groups.length === 0 ? (
@@ -272,6 +390,7 @@ export const SessionHistorySidebar = memo(function SessionHistorySidebar({
                     key={session.key}
                     session={session}
                     active={session.key === activeSessionKey}
+                    focused={flatKeys[focusedIndex] === session.key}
                     pinned={pinnedKeys.has(session.key)}
                     renaming={renamingKey === session.key}
                     searchQuery={search}
