@@ -15,8 +15,6 @@ import { MessageBubble } from "@/components/chat/MessageBubble";
 import { ThinkingBlock } from "@/components/chat/ThinkingBlock";
 import { ToolCallBlock } from "@/components/chat/ToolCallBlock";
 import { ChatStatusBar } from "@/components/chat/ChatStatusBar";
-// TokenCostDisplay will be used in Phase 3 when wiring token data per turn
-// import { TokenCostDisplay } from "@/components/chat/TokenCostDisplay";
 import { MessageActions } from "./MessageActions";
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -170,7 +168,7 @@ function renderPart(part: MessagePart, index: number) {
  *
  * Replaces the old string-based rendering pipeline (chatItems.ts + inline JSX)
  * with typed components: ThinkingBlock, ToolCallBlock, ChatStatusBar,
- * TokenCostDisplay, and MarkdownViewer for text.
+ * and MarkdownViewer for text.
  */
 export const AgentChatView = memo(function AgentChatView({
   parts,

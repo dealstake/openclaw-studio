@@ -11,6 +11,7 @@ import type {
   TextPart,
   ReasoningPart,
   ToolInvocationPart,
+  ImagePart,
   StatusPart,
 } from "./types";
 
@@ -47,11 +48,18 @@ export type ElementsStatusProps = {
   runStartedAt: number | null;
 };
 
+export type ElementsImageProps = {
+  type: "image";
+  src: string;
+  alt: string;
+};
+
 export type ElementsPart =
   | ElementsTextProps
   | ElementsReasoningProps
   | ElementsToolProps
-  | ElementsStatusProps;
+  | ElementsStatusProps
+  | ElementsImageProps;
 
 // ── Converters ─────────────────────────────────────────────────────────
 
@@ -110,23 +118,33 @@ function statusToElements(part: StatusPart): ElementsStatusProps {
   };
 }
 
-// ── Main adapter ───────────────────────────────────────────────────────
+function imageToElements(part: ImagePart): ElementsImageProps {
+  return {
+    type: "image",
+    src: part.src,
+    alt: part.alt ?? "",
+  };
+}
 
-const converters: Record<
-  MessagePart["type"],
-  (part: never) => ElementsPart
-> = {
-  text: textToElements as (part: never) => ElementsPart,
-  reasoning: reasoningToElements as (part: never) => ElementsPart,
-  "tool-invocation": toolToElements as (part: never) => ElementsPart,
-  image: textToElements as (part: never) => ElementsPart, // Images rendered directly by AgentChatView, not via Elements
-  status: statusToElements as (part: never) => ElementsPart,
-};
+// ── Main adapter ───────────────────────────────────────────────────────
 
 /**
  * Convert an array of `MessagePart` (gateway-native) into
  * AI Elements–compatible props arrays.
  */
 export function gatewayToElements(parts: MessagePart[]): ElementsPart[] {
-  return parts.map((part) => converters[part.type](part as never));
+  return parts.map((part): ElementsPart => {
+    switch (part.type) {
+      case "text":
+        return textToElements(part);
+      case "reasoning":
+        return reasoningToElements(part);
+      case "tool-invocation":
+        return toolToElements(part);
+      case "status":
+        return statusToElements(part);
+      case "image":
+        return imageToElements(part);
+    }
+  });
 }

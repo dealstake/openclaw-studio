@@ -92,7 +92,6 @@ const ElapsedTimer = React.memo(function ElapsedTimer({
 
   React.useEffect(() => {
     if (!ref.current) return;
-    let raf: number;
 
     function tick() {
       if (!ref.current) return;
@@ -102,11 +101,11 @@ const ElapsedTimer = React.memo(function ElapsedTimer({
       ref.current.textContent = mins > 0
         ? `${mins}m ${String(secs).padStart(2, "0")}s`
         : `${secs}s`;
-      raf = requestAnimationFrame(tick);
     }
 
-    tick();
-    return () => cancelAnimationFrame(raf);
+    tick(); // immediate first render
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
   }, [runStartedAt]);
 
   return (

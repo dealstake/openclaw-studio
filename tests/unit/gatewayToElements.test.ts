@@ -165,4 +165,24 @@ describe("gatewayToElements", () => {
     const result = gatewayToElements(parts);
     expect(result[0]).toMatchObject({ args: "", result: "" });
   });
+
+  it("converts image parts with proper src and alt", () => {
+    const parts: MessagePart[] = [
+      { type: "image", src: "https://example.com/img.png", alt: "screenshot" },
+    ];
+    const result = gatewayToElements(parts);
+    expect(result[0]).toEqual({
+      type: "image",
+      src: "https://example.com/img.png",
+      alt: "screenshot",
+    });
+  });
+
+  it("defaults alt to empty string for image parts", () => {
+    const parts: MessagePart[] = [
+      { type: "image", src: "https://example.com/img.png" },
+    ];
+    const result = gatewayToElements(parts);
+    expect(result[0]).toMatchObject({ type: "image", alt: "" });
+  });
 });

@@ -4,11 +4,12 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Send, Square, Sparkles } from "lucide-react";
 import { MessageBubble } from "@/components/chat/MessageBubble";
 import { ThinkingBlock } from "@/components/chat/ThinkingBlock";
+import { ErrorBanner } from "@/components/ErrorBanner";
 import { cn } from "@/lib/utils";
 import {
   useWizardSession,
   type UseWizardSessionOptions,
-} from "@/components/chat/useWizardSession";
+} from "@/components/chat/hooks/useWizardSession";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -26,11 +27,13 @@ export type WizardChatProps = {
   starters?: WizardStarter[];
   onConfigExtracted?: (config: unknown) => void;
   configExtractor?: (text: string) => unknown | null;
-  onComplete?: () => void;
   className?: string;
 };
 
 // ── Component ──────────────────────────────────────────────────────────
+
+/** Counter for stable message keys across renders */
+let wizardMsgIdCounter = 0;
 
 export const WizardChat = React.memo(function WizardChat({
   client,
@@ -40,10 +43,8 @@ export const WizardChat = React.memo(function WizardChat({
   starters,
   onConfigExtracted,
   configExtractor,
-  onComplete: _onComplete = undefined,
   className,
 }: WizardChatProps) {
-  void _onComplete; // Reserved for future use
   const {
     messages,
     streamText,
@@ -65,6 +66,12 @@ export const WizardChat = React.memo(function WizardChat({
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const msgIdsRef = useRef<number[]>([]);
+
+  // Assign stable IDs as messages grow
+  while (msgIdsRef.current.length < messages.length) {
+    msgIdsRef.current.push(++wizardMsgIdCounter);
+  }
 
   // Auto-scroll on new messages or streaming text
   useEffect(() => {
@@ -123,7 +130,12 @@ export const WizardChat = React.memo(function WizardChat({
   return (
     <div className={cn("flex h-full flex-col", className)}>
       {/* ── Messages area ── */}
-      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+      <div
+        className="flex-1 overflow-y-auto px-4 py-3 space-y-3"
+        role="log"
+        aria-live="polite"
+        aria-label="Wizard conversation"
+      >
         {/* Welcome / starters */}
         {showStarters && (
           <div className="flex flex-col items-center justify-center gap-4 py-8">
@@ -133,7 +145,10 @@ export const WizardChat = React.memo(function WizardChat({
                 What would you like to create?
               </span>
             </div>
-            <div className="flex flex-wrap justify-center gap-2">
+            <div
+              className="flex flex-wrap justify-center gap-2"
+              aria-label="Conversation starters"
+            >
               {starters.map((s) => (
                 <button
                   key={s.text}
@@ -150,7 +165,7 @@ export const WizardChat = React.memo(function WizardChat({
 
         {/* Message list */}
         {messages.map((msg, i) => (
-          <MessageBubble key={i} role={msg.role} content={msg.content} />
+          <MessageBubble key={msgIdsRef.current[i]} role={msg.role} content={msg.content} />
         ))}
 
         {/* Thinking trace (while streaming) */}
@@ -168,11 +183,7 @@ export const WizardChat = React.memo(function WizardChat({
         )}
 
         {/* Error banner */}
-        {error && (
-          <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
-            {error}
-          </div>
-        )}
+        {error && <ErrorBanner message={error} />}
 
         <div ref={messagesEndRef} />
       </div>
@@ -215,5 +226,3 @@ export const WizardChat = React.memo(function WizardChat({
     </div>
   );
 });
-
-// WizardMessageBubble removed — now uses shared MessageBubble from @/components/chat/MessageBubble

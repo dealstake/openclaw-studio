@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
-import { useWizardSession } from "@/components/chat/useWizardSession";
+import { useWizardSession } from "@/components/chat/hooks/useWizardSession";
 import type { EventFrame, GatewayClient } from "@/lib/gateway/GatewayClient";
 
 // ── Mock GatewayClient ─────────────────────────────────────────────────

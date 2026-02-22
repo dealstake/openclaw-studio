@@ -13,7 +13,7 @@ const mockCleanup = vi.fn();
 
 let sessionOverrides: Record<string, unknown> = {};
 
-vi.mock("@/components/chat/useWizardSession", () => ({
+vi.mock("@/components/chat/hooks/useWizardSession", () => ({
   useWizardSession: () => ({
     messages: [],
     streamText: null,

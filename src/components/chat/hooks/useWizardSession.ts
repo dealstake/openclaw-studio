@@ -34,6 +34,14 @@ export type UseWizardSessionReturn = {
 
 // ── Hook ───────────────────────────────────────────────────────────────
 
+/**
+ * Manages a wizard chat session over the gateway WebSocket.
+ *
+ * **Important**: `systemPrompt` is sent once on the first `sendMessage` call
+ * and cannot be changed after that. If the prop changes after the first message,
+ * the new value is silently ignored. This is intentional — wizard sessions are
+ * single-use conversations with a fixed system prompt.
+ */
 export function useWizardSession({
   client,
   agentId,
