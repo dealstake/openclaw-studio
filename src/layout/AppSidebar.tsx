@@ -94,9 +94,13 @@ export const AppSidebar = memo(function AppSidebar({
 }: AppSidebarProps) {
   const { groups, loading, load, search, setSearch } = useSessionHistory(client, status, agentId);
 
+  const loadRef = useRef(load);
   useEffect(() => {
-    void load();
-  }, [load]);
+    loadRef.current = load;
+  });
+  useEffect(() => {
+    void loadRef.current();
+  }, [agentId, status]);
 
   const navContainerRef = useRef<HTMLDivElement>(null);
 
@@ -120,6 +124,7 @@ export const AppSidebar = memo(function AppSidebar({
 
   /* ── Single shell with animated width transition ── */
   return (
+    <TooltipProvider delayDuration={300}>
     <div
       className={`flex h-full flex-col bg-background/60 backdrop-blur-xl ring-1 ring-white/[0.06] shadow-[4px_0_24px_-6px_rgba(0,0,0,0.3)] transform-gpu transition-[width] duration-300 ease-out overflow-hidden ${
         collapsed ? "w-14" : "w-72"
@@ -129,7 +134,6 @@ export const AppSidebar = memo(function AppSidebar({
         /* ── Collapsed: icon rail ── */
         <>
           <div className="flex flex-col items-center py-3 shrink-0">
-            <TooltipProvider delayDuration={300}>
               <div ref={navContainerRef} role="navigation" aria-label="Management navigation">
                 {NAV_ITEMS.map((item, index) => {
                   const Icon = item.icon;
@@ -160,7 +164,6 @@ export const AppSidebar = memo(function AppSidebar({
                   );
                 })}
               </div>
-            </TooltipProvider>
             <div className="my-2 h-px w-5 bg-border/40" />
             <button
               type="button"
@@ -174,7 +177,6 @@ export const AppSidebar = memo(function AppSidebar({
           {/* Settings + theme toggle pinned to bottom */}
           <div className="mt-auto flex flex-col items-center gap-1 pb-3">
             <ThemeToggle />
-            <TooltipProvider delayDuration={300}>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
@@ -195,7 +197,6 @@ export const AppSidebar = memo(function AppSidebar({
                   Settings
                 </TooltipContent>
               </Tooltip>
-            </TooltipProvider>
           </div>
         </>
       ) : (
@@ -203,7 +204,6 @@ export const AppSidebar = memo(function AppSidebar({
         <>
           {/* Management nav */}
           <div ref={navContainerRef} className="flex items-center gap-1 border-b border-border/20 px-2 py-2 shrink-0" role="navigation" aria-label="Management navigation">
-            <TooltipProvider delayDuration={300}>
               {NAV_ITEMS.map((item, index) => {
                 const Icon = item.icon;
                 const isActive = activeManagementTab === item.value;
@@ -232,7 +232,6 @@ export const AppSidebar = memo(function AppSidebar({
                   </Tooltip>
                 );
               })}
-            </TooltipProvider>
           </div>
 
           {/* Session history header */}
@@ -303,7 +302,6 @@ export const AppSidebar = memo(function AppSidebar({
 
           {/* Settings + theme toggle pinned to bottom */}
           <div className="border-t border-border/20 px-2 py-2 shrink-0 flex items-center gap-1">
-            <TooltipProvider delayDuration={300}>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
@@ -325,11 +323,11 @@ export const AppSidebar = memo(function AppSidebar({
                   Settings
                 </TooltipContent>
               </Tooltip>
-            </TooltipProvider>
             <ThemeToggle />
           </div>
         </>
       )}
     </div>
+    </TooltipProvider>
   );
 });

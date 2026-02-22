@@ -5,10 +5,7 @@ type AgentsFilesGetResponse = {
   file?: { missing?: unknown; content?: unknown };
 };
 
-type AgentsListResult = {
-  defaultId: string;
-  agents: Array<{ id: string }>;
-};
+import type { AgentsListResult } from "@/lib/gateway/types";
 
 import { resolveRequiredId } from "@/lib/validation";
 

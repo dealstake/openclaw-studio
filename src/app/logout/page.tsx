@@ -10,6 +10,8 @@ import { BrandMark } from "@/components/brand/BrandMark";
 export default function LogoutPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
+      {/* Auto-redirect after 3s — meta refresh works in body per HTML spec */}
+      <meta httpEquiv="refresh" content="3;url=/login" />
       {/* Clear CF Access session via hidden iframe */}
       <iframe
         title="Cloudflare Access logout"
@@ -19,9 +21,6 @@ export default function LogoutPage() {
         tabIndex={-1}
         sandbox=""
       />
-
-      {/* Auto-redirect after 3s (no JS required) */}
-      <meta httpEquiv="refresh" content="3;url=/login" />
 
       <div className="w-full max-w-sm space-y-8">
         {/* Brand */}

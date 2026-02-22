@@ -41,6 +41,49 @@ export type EventFrame = {
 
 export type GatewayFrame = ReqFrame | ResFrame | EventFrame;
 
+/* ── Gateway RPC response types ─────────────────────────────────── */
+
+/** Single entry from `agents.list` RPC. */
+export type AgentsListAgent = {
+  id: string;
+  name?: string;
+  identity?: {
+    name?: string;
+    theme?: string;
+    emoji?: string;
+    avatar?: string;
+    avatarUrl?: string;
+  };
+};
+
+/** Result of `agents.list` RPC. */
+export type AgentsListResult = {
+  defaultId: string;
+  mainKey: string;
+  scope?: string;
+  agents: AgentsListAgent[];
+};
+
+/** Single entry from `sessions.list` RPC. */
+export type SessionsListEntry = {
+  key: string;
+  updatedAt?: number | null;
+  displayName?: string;
+  origin?: { label?: string | null; provider?: string | null } | null;
+  thinkingLevel?: string;
+  modelProvider?: string;
+  model?: string;
+  inputTokens?: number | null;
+  outputTokens?: number | null;
+  totalTokens?: number | null;
+  contextTokens?: number | null;
+};
+
+/** Result of `sessions.list` RPC. */
+export type SessionsListResult = {
+  sessions?: SessionsListEntry[];
+};
+
 export const parseGatewayFrame = (raw: string): GatewayFrame | null => {
   try {
     return JSON.parse(raw) as GatewayFrame;

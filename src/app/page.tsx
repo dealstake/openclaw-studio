@@ -45,6 +45,7 @@ import {
   isGatewayDisconnectLikeError,
   type EventFrame,
 } from "@/lib/gateway/GatewayClient";
+import type { AgentsListResult, SessionsListEntry, SessionsListResult } from "@/lib/gateway/types";
 import { ArtifactsPanel } from "@/features/artifacts/components/ArtifactsPanel";
 import { TasksPanel } from "@/features/tasks/components/TasksPanel";
 import { ProjectsPanel } from "@/features/projects/components/ProjectsPanel";
@@ -97,41 +98,6 @@ import { useSettingsPanel } from "@/features/agents/hooks/useSettingsPanel";
 import { useChatCallbacks } from "@/features/agents/hooks/useChatCallbacks";
 import { isWide } from "@/hooks/useBreakpoint";
 import { useAppLayout } from "@/hooks/useAppLayout";
-
-type AgentsListResult = {
-  defaultId: string;
-  mainKey: string;
-  scope?: string;
-  agents: Array<{
-    id: string;
-    name?: string;
-    identity?: {
-      name?: string;
-      theme?: string;
-      emoji?: string;
-      avatar?: string;
-      avatarUrl?: string;
-    };
-  }>;
-};
-
-type SessionsListEntry = {
-  key: string;
-  updatedAt?: number | null;
-  displayName?: string;
-  origin?: { label?: string | null; provider?: string | null } | null;
-  thinkingLevel?: string;
-  modelProvider?: string;
-  model?: string;
-  inputTokens?: number | null;
-  outputTokens?: number | null;
-  totalTokens?: number | null;
-  contextTokens?: number | null;
-};
-
-type SessionsListResult = {
-  sessions?: SessionsListEntry[];
-};
 
 const AgentStudioPage = () => {
   const [settingsCoordinator] = useState(() => createStudioSettingsCoordinator());

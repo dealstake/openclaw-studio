@@ -12,6 +12,7 @@ import {
   parseAgentIdFromSessionKey,
 } from "@/lib/gateway/GatewayClient";
 import { extractText, isHeartbeatPrompt, stripUiMetadata } from "@/lib/text/message-extract";
+import type { SessionsListResult } from "@/lib/gateway/types";
 
 type ChatHistoryMessage = Record<string, unknown>;
 type ChatHistoryResult = {
@@ -19,20 +20,6 @@ type ChatHistoryResult = {
   sessionId?: string;
   messages: ChatHistoryMessage[];
   thinkingLevel?: string;
-};
-type SessionsListEntry = {
-  key: string;
-  updatedAt?: number | null;
-  displayName?: string;
-  origin?: { label?: string | null; provider?: string | null } | null;
-  thinkingLevel?: string;
-  modelProvider?: string;
-  model?: string;
-  totalTokens?: number | null;
-  contextTokens?: number | null;
-};
-type SessionsListResult = {
-  sessions?: SessionsListEntry[];
 };
 
 const SPECIAL_UPDATE_HEARTBEAT_RE = /\bheartbeat\b/i;

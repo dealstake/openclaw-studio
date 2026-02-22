@@ -4,16 +4,7 @@ import { isGatewayDisconnectLikeError } from "@/lib/gateway/GatewayClient";
 import type { CronJobSummary } from "@/lib/cron/types";
 import { fetchCronRuns } from "@/lib/cron/types";
 import { computeJobStats, rankJobsByTokens, type JobStats } from "../lib/cronStatsCalculator";
-
-type SessionsListEntry = {
-  key: string;
-  updatedAt?: number | null;
-  totalTokens?: number;
-};
-
-type SessionsListResult = {
-  sessions?: SessionsListEntry[];
-};
+import type { SessionsListResult } from "@/lib/gateway/types";
 
 export const useCronAnalytics = (
   client: GatewayClient,
