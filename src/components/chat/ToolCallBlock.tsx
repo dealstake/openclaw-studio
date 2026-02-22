@@ -72,10 +72,32 @@ export const ToolCallBlock = React.memo(function ToolCallBlock({
   className = "",
 }: ToolCallBlockProps) {
   const [open, setOpen] = useState(false);
-  const config = phaseConfig[phase];
+
+  // Defensive: if a tool call has been "running" for > 60s without an update,
+  // treat it as complete. This prevents permanently stuck spinners when
+  // completion events are lost (e.g. gateway restart, filter bugs).
+  const effectivePhase = React.useMemo(() => {
+    if (phase !== "running" || !startedAt) return phase;
+    const elapsed = Date.now() - startedAt;
+    if (elapsed > 60_000) return "complete";
+    return phase;
+  }, [phase, startedAt]);
+
+  // Re-render after timeout so spinner disappears for stale tool calls
+  const [, forceUpdate] = React.useState(0);
+  React.useEffect(() => {
+    if (phase !== "running" || !startedAt) return;
+    const elapsed = Date.now() - startedAt;
+    const remaining = 60_000 - elapsed;
+    if (remaining <= 0) return; // already stale, effectivePhase handles it
+    const timer = setTimeout(() => forceUpdate((n) => n + 1), remaining + 100);
+    return () => clearTimeout(timer);
+  }, [phase, startedAt]);
+
+  const config = phaseConfig[effectivePhase];
   const { Icon } = config;
 
-  const durationLabel = formatElapsedLabel(startedAt, completedAt, phase === "running" || phase === "pending" ? true : undefined);
+  const durationLabel = formatElapsedLabel(startedAt, completedAt, effectivePhase === "running" || effectivePhase === "pending" ? true : undefined);
   const hasContent = !!(args || result);
 
   return (
