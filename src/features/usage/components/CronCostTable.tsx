@@ -60,11 +60,11 @@ export const CronCostTable = memo(function CronCostTable({
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-border bg-muted/50">
-            <th className="px-3 py-2 text-left font-medium text-muted-foreground">Job ID</th>
-            <th className="px-3 py-2 text-right font-medium text-muted-foreground">Runs</th>
-            <th className="px-3 py-2 text-right font-medium text-muted-foreground">Tokens</th>
-            <th className="px-3 py-2 text-right font-medium text-muted-foreground">Total</th>
-            <th className="px-3 py-2 text-right font-medium text-muted-foreground">Avg/Run</th>
+            <th scope="col" className="px-3 py-2 text-left font-medium text-muted-foreground">Job ID</th>
+            <th scope="col" className="px-3 py-2 text-right font-medium text-muted-foreground">Runs</th>
+            <th scope="col" className="px-3 py-2 text-right font-medium text-muted-foreground">Tokens</th>
+            <th scope="col" className="px-3 py-2 text-right font-medium text-muted-foreground">Total</th>
+            <th scope="col" className="px-3 py-2 text-right font-medium text-muted-foreground">Avg/Run</th>
           </tr>
         </thead>
         <tbody>

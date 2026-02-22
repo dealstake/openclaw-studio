@@ -81,6 +81,7 @@ export const UsagePanel = memo(function UsagePanel({
             key={r.value}
             type="button"
             onClick={() => setTimeRange(r.value)}
+            aria-pressed={timeRange === r.value}
             className={`rounded-md border px-3 py-1.5 text-xs font-medium transition ${
               timeRange === r.value
                 ? "border-border bg-muted text-foreground shadow-xs"
@@ -132,10 +133,10 @@ export const UsagePanel = memo(function UsagePanel({
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-muted/50">
-                  <th className="px-3 py-2 text-left font-medium text-muted-foreground">Model</th>
-                  <th className="px-3 py-2 text-right font-medium text-muted-foreground">Sessions</th>
-                  <th className="px-3 py-2 text-right font-medium text-muted-foreground">Tokens</th>
-                  <th className="px-3 py-2 text-right font-medium text-muted-foreground">Cost</th>
+                  <th scope="col" className="px-3 py-2 text-left font-medium text-muted-foreground">Model</th>
+                  <th scope="col" className="px-3 py-2 text-right font-medium text-muted-foreground">Sessions</th>
+                  <th scope="col" className="px-3 py-2 text-right font-medium text-muted-foreground">Tokens</th>
+                  <th scope="col" className="px-3 py-2 text-right font-medium text-muted-foreground">Cost</th>
                 </tr>
               </thead>
               <tbody>
