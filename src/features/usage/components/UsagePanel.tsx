@@ -11,6 +11,7 @@ import { PanelIconButton } from "@/components/PanelIconButton";
 import { formatTokens, formatCost } from "@/lib/text/format";
 import { DailyTrendChart } from "@/features/usage/components/DailyTrendChart";
 import { CronCostTable } from "@/features/usage/components/CronCostTable";
+import { SummaryCard } from "@/features/usage/components/SummaryCard";
 
 const TIME_RANGES: Array<{ value: TimeRange; label: string }> = [
   { value: "today", label: "Today" },
@@ -80,7 +81,7 @@ export const UsagePanel = memo(function UsagePanel({
             key={r.value}
             type="button"
             onClick={() => setTimeRange(r.value)}
-            className={`rounded-md border px-2 py-1 text-xs font-medium transition ${
+            className={`rounded-md border px-3 py-1.5 text-xs font-medium transition ${
               timeRange === r.value
                 ? "border-border bg-muted text-foreground shadow-xs"
                 : "border-border/80 bg-card/65 text-muted-foreground hover:border-border hover:bg-muted/70"
@@ -94,7 +95,7 @@ export const UsagePanel = memo(function UsagePanel({
       {error && <ErrorBanner message={error} onRetry={() => void refresh()} />}
 
       {/* Summary cards */}
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         {loading && !totalSessions ? (
           <>
             <Skeleton className="h-20 rounded-lg" />
@@ -135,7 +136,7 @@ export const UsagePanel = memo(function UsagePanel({
                   .sort(([, a], [, b]) => b.cost - a.cost)
                   .map(([model, data]) => (
                     <tr key={model} className="border-b border-border/50 last:border-0">
-                      <td className="px-3 py-2 font-medium text-foreground">{model}</td>
+                      <td className="px-3 py-2 font-medium text-foreground max-w-[120px] truncate" title={model}>{model}</td>
                       <td className="px-3 py-2 text-right text-muted-foreground">{data.requests}</td>
                       <td className="px-3 py-2 text-right text-muted-foreground">
                         {formatTokens(data.inputTokens + data.outputTokens)}
@@ -163,27 +164,6 @@ export const UsagePanel = memo(function UsagePanel({
           <SectionLabel className="mb-2">Cron Cost Attribution</SectionLabel>
           <CronCostTable entries={entries} />
         </div>
-      )}
-    </div>
-  );
-});
-
-/** Small summary card */
-const SummaryCard = memo(function SummaryCard({
-  label,
-  value,
-  subValue,
-}: {
-  label: string;
-  value: string;
-  subValue?: string;
-}) {
-  return (
-    <div className="rounded-lg border border-border bg-card p-3 shadow-sm">
-      <p className="text-xs font-medium text-muted-foreground">{label}</p>
-      <p className="mt-1 text-lg font-semibold text-foreground">{value}</p>
-      {subValue && (
-        <p className="mt-0.5 text-xs text-muted-foreground">{subValue}</p>
       )}
     </div>
   );

@@ -68,8 +68,8 @@ export function getModelPricing(model: string): ModelPricing | null {
 export function getModelDisplayName(model: string): string {
   const normalized = normalizeModelId(model);
   if (normalized.includes("opus")) return "Opus 4";
-  if (normalized.includes("sonnet-4") || normalized.includes("sonnet-4")) return "Sonnet 4";
-  if (normalized.includes("sonnet-3") || normalized.includes("sonnet-3.5")) return "Sonnet 3.5";
+  if (normalized.includes("sonnet-4")) return "Sonnet 4";
+  if (normalized.includes("sonnet-3") || normalized.includes("sonnet-3.5") || normalized.includes("3-5-sonnet")) return "Sonnet 3.5";
   if (normalized.includes("haiku-3.5") || normalized.includes("haiku-3-5")) return "Haiku 3.5";
   if (normalized.includes("haiku")) return "Haiku 3";
   return normalized;

@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { isGatewayDisconnectLikeError } from "@/lib/gateway/GatewayClient";
 import {
@@ -7,7 +7,11 @@ import {
   type SessionCostEntry,
   type ModelCostBreakdown,
 } from "@/features/usage/lib/costCalculator";
-import { aggregateByDay, type TrendBucket } from "@/features/usage/lib/trendAggregator";
+import {
+  aggregateByDay,
+  filterByTimeRange,
+  type TrendBucket,
+} from "@/features/usage/lib/trendAggregator";
 
 export type TimeRange = "today" | "7d" | "30d" | "all";
 
@@ -31,21 +35,6 @@ export type UsageData = {
 };
 
 const THROTTLE_MS = 5000;
-
-function filterByTimeRange(
-  entries: SessionCostEntry[],
-  range: TimeRange
-): SessionCostEntry[] {
-  if (range === "all") return entries;
-  const now = Date.now();
-  const cutoff =
-    range === "today"
-      ? now - 24 * 60 * 60 * 1000
-      : range === "7d"
-        ? now - 7 * 24 * 60 * 60 * 1000
-        : now - 30 * 24 * 60 * 60 * 1000;
-  return entries.filter((e) => e.updatedAt !== null && e.updatedAt >= cutoff);
-}
 
 export const useUsageData = (
   client: GatewayClient,
@@ -88,35 +77,49 @@ export const useUsageData = (
     }
   }, [client, status]);
 
-  // Derived state: filter + aggregate
-  const filtered = filterByTimeRange(allEntries, timeRange);
-  const costByModel = new Map<string, ModelCostBreakdown>();
-  let totalCost = 0;
-  let totalInputTokens = 0;
-  let totalOutputTokens = 0;
+  // Derived state: filter + aggregate (memoized)
+  const filtered = useMemo(
+    () => filterByTimeRange(allEntries, timeRange),
+    [allEntries, timeRange]
+  );
 
-  for (const entry of filtered) {
-    totalInputTokens += entry.inputTokens;
-    totalOutputTokens += entry.outputTokens;
-    if (entry.cost !== null) totalCost += entry.cost;
+  const { costByModel, totalCost, totalInputTokens, totalOutputTokens } =
+    useMemo(() => {
+      const byModel = new Map<string, ModelCostBreakdown>();
+      let cost = 0;
+      let inTok = 0;
+      let outTok = 0;
 
-    const existing = costByModel.get(entry.modelDisplayName);
-    if (existing) {
-      existing.requests += 1;
-      existing.inputTokens += entry.inputTokens;
-      existing.outputTokens += entry.outputTokens;
-      existing.cost += entry.cost ?? 0;
-    } else {
-      costByModel.set(entry.modelDisplayName, {
-        requests: 1,
-        inputTokens: entry.inputTokens,
-        outputTokens: entry.outputTokens,
-        cost: entry.cost ?? 0,
-      });
-    }
-  }
+      for (const entry of filtered) {
+        inTok += entry.inputTokens;
+        outTok += entry.outputTokens;
+        if (entry.cost !== null) cost += entry.cost;
 
-  const dailyTrends = aggregateByDay(filtered);
+        const existing = byModel.get(entry.modelDisplayName);
+        if (existing) {
+          existing.requests += 1;
+          existing.inputTokens += entry.inputTokens;
+          existing.outputTokens += entry.outputTokens;
+          existing.cost += entry.cost ?? 0;
+        } else {
+          byModel.set(entry.modelDisplayName, {
+            requests: 1,
+            inputTokens: entry.inputTokens,
+            outputTokens: entry.outputTokens,
+            cost: entry.cost ?? 0,
+          });
+        }
+      }
+
+      return {
+        costByModel: byModel,
+        totalCost: cost,
+        totalInputTokens: inTok,
+        totalOutputTokens: outTok,
+      };
+    }, [filtered]);
+
+  const dailyTrends = useMemo(() => aggregateByDay(filtered), [filtered]);
 
   return {
     entries: filtered,
