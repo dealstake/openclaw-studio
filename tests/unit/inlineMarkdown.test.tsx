@@ -12,8 +12,8 @@ vi.mock("@/components/MarkdownViewer", () => ({
   ),
 }));
 
-describe("TranscriptCard inline markdown", () => {
-  it("renders MarkdownViewer for preview text", () => {
+describe("TranscriptCard preview", () => {
+  it("renders preview as plain text paragraph", () => {
     const transcript = {
       sessionId: "test-session",
       sessionKey: "test-key",
@@ -21,18 +21,16 @@ describe("TranscriptCard inline markdown", () => {
       size: 1024,
       startedAt: new Date().toISOString(),
       model: "anthropic/claude-opus-4-6",
-      preview: "Some `code` and **bold** text",
+      preview: "Some code and bold text",
       archived: false,
       updatedAt: new Date().toISOString(),
     };
 
     render(<TranscriptCard transcript={transcript} />);
-    const viewer = screen.getByTestId("markdown-viewer");
-    expect(viewer).toBeDefined();
-    expect(viewer.getAttribute("data-content")).toBe("Some `code` and **bold** text");
+    expect(screen.getByText("Some code and bold text")).toBeInTheDocument();
   });
 
-  it("does not render MarkdownViewer when no preview", () => {
+  it("does not render preview paragraph when no preview", () => {
     const transcript = {
       sessionId: "test-session",
       sessionKey: "test-key",
@@ -46,7 +44,7 @@ describe("TranscriptCard inline markdown", () => {
     };
 
     const { container } = render(<TranscriptCard transcript={transcript} />);
-    expect(container.querySelector("[data-testid='markdown-viewer']")).toBeNull();
+    expect(container.querySelector(".line-clamp-2")).toBeNull();
   });
 });
 
