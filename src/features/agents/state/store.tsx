@@ -82,7 +82,7 @@ export type AgentStoreState = {
   error: string | null;
 };
 
-type Action =
+export type Action =
   | { type: "hydrateAgents"; agents: AgentStoreSeed[] }
   | { type: "setError"; error: string | null }
   | { type: "setLoading"; loading: boolean }
