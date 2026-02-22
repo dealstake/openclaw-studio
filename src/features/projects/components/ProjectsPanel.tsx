@@ -219,17 +219,19 @@ export const ProjectsPanel = memo(function ProjectsPanel({
       )}
 
       {/* All projects — flat list, sorted by status */}
-      {filteredProjects.map((project) => (
-        <ProjectCard
-          key={project.doc}
-          project={project}
-          onOpenFile={() => setEditingProjectDoc(project.doc)}
-          onChangeStatus={(emoji, label) => void changeStatus(project, emoji, label)}
-          onArchive={() => setArchiveTarget(project)}
-          buildingCount={buildingCount}
-          queuePosition={getQueuePosition(project.doc)}
-        />
-      ))}
+      <div className="animate-in fade-in duration-300">
+        {filteredProjects.map((project) => (
+          <ProjectCard
+            key={project.doc}
+            project={project}
+            onOpenFile={() => setEditingProjectDoc(project.doc)}
+            onChangeStatus={(emoji, label) => void changeStatus(project, emoji, label)}
+            onArchive={() => setArchiveTarget(project)}
+            buildingCount={buildingCount}
+            queuePosition={getQueuePosition(project.doc)}
+          />
+        ))}
+      </div>
 
       {agentId && (
         <ProjectWizardModal

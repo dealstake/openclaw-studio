@@ -98,7 +98,8 @@ export const ChannelsPanel = memo(function ChannelsPanel({
             description="Connect messaging channels like WhatsApp, Telegram, Discord, or Slack to this agent."
           />
         ) : (
-          keys.map((key) => {
+          <div className="animate-in fade-in duration-300 flex flex-col gap-2">
+          {keys.map((key) => {
             const entry = channels[key];
             const health = resolveChannelHealth(entry);
             const label = resolveChannelLabel(snapshot, key);
@@ -125,7 +126,8 @@ export const ChannelsPanel = memo(function ChannelsPanel({
                 </div>
               </div>
             );
-          })
+          })}
+          </div>
         )}
       </div>
     </div>

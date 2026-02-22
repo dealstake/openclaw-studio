@@ -180,7 +180,7 @@ export const CronPanel = memo(function CronPanel({
           ) : null}
 
           {cronJobs.length > 0 ? (
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 animate-in fade-in duration-300">
               {cronJobs.map((job) => {
                 const runBusy = runBusyJobId === job.id;
                 const deleteBusy = deleteBusyJobId === job.id;

@@ -277,6 +277,10 @@ summary,
 
 * {
   scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+*:hover {
   scrollbar-color: color-mix(in oklch, var(--foreground) 18%, var(--border)) transparent;
 }
 
