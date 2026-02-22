@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useCallback, useEffect, useRef, useState } from "react";
-import { ChevronDown, Check } from "lucide-react";
+import { ChevronDown, Check, Plus } from "lucide-react";
 import { AgentAvatar } from "./AgentAvatar";
 import type { AgentStatus } from "@/features/agents/state/store";
 
@@ -18,6 +18,7 @@ type AgentBreadcrumbProps = {
   agents: BreadcrumbAgent[];
   selectedAgentId: string | null;
   onSelectAgent: (agentId: string) => void;
+  onCreateAgent?: () => void;
 };
 
 const statusDotClass: Record<AgentStatus, string> = {
@@ -26,10 +27,37 @@ const statusDotClass: Record<AgentStatus, string> = {
   error: "bg-destructive",
 };
 
+const statusLabel: Record<AgentStatus, string> = {
+  idle: "Idle",
+  running: "Running",
+  error: "Error",
+};
+
+const statusLabelClass: Record<AgentStatus, string> = {
+  idle: "text-muted-foreground",
+  running: "text-emerald-400",
+  error: "text-destructive",
+};
+
+/** Extract short model name from full qualified id (e.g. "anthropic/claude-opus-4-6" → "Opus 4.6") */
+function formatModelShort(model: string): string {
+  const id = model.includes("/") ? model.split("/").pop()! : model;
+  if (id.includes("opus")) return "Opus " + extractVersion(id);
+  if (id.includes("sonnet")) return "Sonnet " + extractVersion(id);
+  if (id.includes("haiku")) return "Haiku " + extractVersion(id);
+  return id;
+}
+
+function extractVersion(id: string): string {
+  const m = id.match(/(\d+)[.-](\d+)/);
+  return m ? `${m[1]}.${m[2]}` : "";
+}
+
 export const AgentBreadcrumb = memo(function AgentBreadcrumb({
   agents,
   selectedAgentId,
   onSelectAgent,
+  onCreateAgent,
 }: AgentBreadcrumbProps) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -92,7 +120,7 @@ export const AgentBreadcrumb = memo(function AgentBreadcrumb({
 
       {open ? (
         <div
-          className="absolute left-1/2 -translate-x-1/2 sm:left-0 sm:translate-x-0 top-full z-50 mt-1 min-w-[220px] max-w-[calc(100vw-2rem)] rounded-lg border border-border/80 bg-popover/95 py-1 shadow-lg backdrop-blur"
+          className="absolute left-1/2 -translate-x-1/2 sm:left-0 sm:translate-x-0 top-full z-50 mt-1 min-w-[260px] max-w-[calc(100vw-2rem)] rounded-lg border border-border/80 bg-popover/95 py-1 shadow-lg backdrop-blur"
           role="listbox"
           aria-label="Select agent"
         >
@@ -102,7 +130,7 @@ export const AgentBreadcrumb = memo(function AgentBreadcrumb({
               type="button"
               role="option"
               aria-selected={agent.agentId === selectedAgentId}
-              className={`flex w-full min-h-[44px] items-center gap-3 px-3 py-2 text-left transition hover:bg-muted/60 focus-ring ${
+              className={`flex w-full min-h-[44px] items-center gap-3 px-3 py-2.5 text-left transition hover:bg-muted/60 focus-ring ${
                 agent.agentId === selectedAgentId ? "bg-muted/40" : ""
               }`}
               onClick={() => {
@@ -114,27 +142,48 @@ export const AgentBreadcrumb = memo(function AgentBreadcrumb({
                 seed={agent.avatarSeed ?? agent.agentId}
                 name={agent.name || agent.agentId}
                 avatarUrl={agent.avatarUrl}
-                size={20}
+                size={24}
               />
-              <div className="flex min-w-0 flex-1 flex-col">
-                <span className="truncate text-sm font-medium text-foreground">
-                  {agent.name || agent.agentId}
-                </span>
+              <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <div className="flex items-center gap-2">
+                  <span className="truncate text-sm font-medium text-foreground">
+                    {agent.name || agent.agentId}
+                  </span>
+                  <span className={`inline-flex items-center gap-1 text-[10px] font-medium ${statusLabelClass[agent.status]}`}>
+                    <span className={`h-1.5 w-1.5 rounded-full ${statusDotClass[agent.status]}`} />
+                    {statusLabel[agent.status]}
+                  </span>
+                </div>
                 {agent.model ? (
-                  <span className="truncate text-[10px] text-muted-foreground">
-                    {agent.model}
+                  <span className="truncate text-xs text-muted-foreground">
+                    {formatModelShort(agent.model)}
                   </span>
                 ) : null}
               </div>
-              <span
-                className={`h-1.5 w-1.5 shrink-0 rounded-full ${statusDotClass[agent.status]}`}
-                title={agent.status}
-              />
               {agent.agentId === selectedAgentId ? (
-                <Check className="h-3.5 w-3.5 shrink-0 text-primary-text" />
-              ) : <div className="w-3.5 shrink-0" />}
+                <Check className="h-4 w-4 shrink-0 text-primary" />
+              ) : <div className="w-4 shrink-0" />}
             </button>
           ))}
+
+          {onCreateAgent ? (
+            <>
+              <div className="mx-3 my-1 border-t border-border/50" />
+              <button
+                type="button"
+                className="flex w-full min-h-[40px] items-center gap-3 px-3 py-2 text-left text-sm text-muted-foreground transition hover:bg-muted/60 hover:text-foreground focus-ring"
+                onClick={() => {
+                  onCreateAgent();
+                  setOpen(false);
+                }}
+              >
+                <div className="flex h-6 w-6 items-center justify-center rounded-full border border-dashed border-muted-foreground/40">
+                  <Plus className="h-3 w-3" />
+                </div>
+                <span className="text-sm font-medium">Create new agent</span>
+              </button>
+            </>
+          ) : null}
         </div>
       ) : null}
     </div>

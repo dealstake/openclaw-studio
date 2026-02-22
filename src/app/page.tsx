@@ -1764,6 +1764,7 @@ const AgentStudioPage = () => {
               flushPendingDraft(focusedAgent?.agentId ?? null);
               dispatch({ type: "selectAgent", agentId });
             }}
+            onCreateAgent={() => setShowAgentWizard(true)}
             gatewayVersion={gatewayVersion}
             gatewayUptime={gatewayUptime}
             showContextTabs={isWide(breakpoint)}

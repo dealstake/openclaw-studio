@@ -36,6 +36,7 @@ type HeaderBarProps = {
   agents?: BreadcrumbAgent[];
   selectedAgentId?: string | null;
   onSelectAgent?: (agentId: string) => void;
+  onCreateAgent?: () => void;
   gatewayVersion?: string;
   gatewayUptime?: number;
   /** New props for overflow menu actions */
@@ -237,6 +238,7 @@ export const HeaderBar = memo(function HeaderBar({
   agents,
   selectedAgentId,
   onSelectAgent,
+  onCreateAgent,
   gatewayVersion,
   gatewayUptime,
   onNewSession,
@@ -294,6 +296,7 @@ export const HeaderBar = memo(function HeaderBar({
             agents={agents}
             selectedAgentId={selectedAgentId ?? null}
             onSelectAgent={onSelectAgent}
+            onCreateAgent={onCreateAgent}
           />
         ) : null}
       </div>
