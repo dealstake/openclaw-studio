@@ -9,6 +9,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useCopyToClipboard } from "@/hooks/useCopyToClipboard";
 
 type IdentitySettingsSectionProps = {
   agentId: string;
@@ -24,7 +25,7 @@ export const IdentitySettingsSection = memo(function IdentitySettingsSection({
   const [nameDraft, setNameDraft] = useState(agentName);
   const [renameSaving, setRenameSaving] = useState(false);
   const [renameError, setRenameError] = useState<string | null>(null);
-  const [idCopied, setIdCopied] = useState(false);
+  const { isCopied: idCopied, copyToClipboard: copyAgentId } = useCopyToClipboard({ copiedDuration: 1500 });
 
   useEffect(() => {
     setNameDraft(agentName);
@@ -58,11 +59,8 @@ export const IdentitySettingsSection = memo(function IdentitySettingsSection({
   }, [agentName, nameDraft, onRename]);
 
   const handleCopyId = useCallback(() => {
-    void navigator.clipboard.writeText(agentId).then(() => {
-      setIdCopied(true);
-      setTimeout(() => setIdCopied(false), 1500);
-    });
-  }, [agentId]);
+    copyAgentId(agentId);
+  }, [agentId, copyAgentId]);
 
   return (
     <section

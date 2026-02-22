@@ -20,6 +20,8 @@ export function useCopyToClipboard({
       navigator.clipboard.writeText(value).then(() => {
         setIsCopied(true);
         setTimeout(() => setIsCopied(false), copiedDuration);
+      }).catch((err: unknown) => {
+        console.warn("Clipboard write failed:", err);
       });
     },
     [copiedDuration],

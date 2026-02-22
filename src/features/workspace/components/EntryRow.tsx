@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback } from "react";
+import { memo } from "react";
 import {
   Calendar,
   ChevronRight,
@@ -13,6 +13,8 @@ import {
 
 import { formatSize } from "@/lib/text/format";
 import { formatRelativeTime } from "@/lib/text/time";
+
+import { useCopyToClipboard } from "@/hooks/useCopyToClipboard";
 
 import type { WorkspaceEntry } from "../types";
 
@@ -38,13 +40,12 @@ export const EntryRow = memo(function EntryRow({
   statusBadge?: { emoji: string; label: string; color: string } | null;
   isActive?: boolean;
 }) {
-  const handleCopyPath = useCallback(
-    (e: React.MouseEvent) => {
-      e.stopPropagation();
-      void navigator.clipboard.writeText(entry.path || entry.name);
-    },
-    [entry.path, entry.name]
-  );
+  const { copyToClipboard } = useCopyToClipboard();
+
+  const handleCopyPath = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    copyToClipboard(entry.path || entry.name);
+  };
 
   return (
     <div
