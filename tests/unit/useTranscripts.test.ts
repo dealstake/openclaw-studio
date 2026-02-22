@@ -1,184 +1,225 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { useTranscripts, useTranscriptSearch } from "@/features/sessions/hooks/useTranscripts";
 
-/* ─── Mock fetch ─── */
+// Mock fetch globally
 const mockFetch = vi.fn();
+vi.stubGlobal("fetch", mockFetch);
 
-beforeEach(() => {
-  mockFetch.mockReset();
-  vi.stubGlobal("fetch", mockFetch);
-});
-
-function okJson(data: unknown) {
-  return Promise.resolve({
-    ok: true,
-    status: 200,
-    json: () => Promise.resolve(data),
-  });
+function makeTranscriptList(count: number, hasMore = false) {
+  const transcripts = Array.from({ length: count }, (_, i) => ({
+    sessionId: `session-${i}`,
+    sessionKey: `agent:alex:session-${i}`,
+    archived: i % 2 === 0,
+    size: 1000 + i * 100,
+    startedAt: new Date(Date.now() - i * 3600_000).toISOString(),
+    updatedAt: new Date(Date.now() - i * 1800_000).toISOString(),
+    model: "claude-opus-4",
+    preview: `Preview text for session ${i}`,
+  }));
+  return { transcripts, hasMore, count: count + (hasMore ? 10 : 0) };
 }
 
-function errJson(error: string) {
-  return Promise.resolve({
-    ok: false,
-    status: 500,
-    json: () => Promise.resolve({ error }),
-  });
-}
-
-const ENTRY = {
-  sessionId: "abc",
-  sessionKey: null,
-  archived: false,
-  size: 100,
-  startedAt: null,
-  updatedAt: null,
-  model: null,
-  preview: null,
-};
-
-/* ─── useTranscripts ─── */
 describe("useTranscripts", () => {
-  it("fetches first page on mount with agentId", async () => {
-    mockFetch.mockReturnValue(okJson({ transcripts: [ENTRY], hasMore: false, count: 1 }));
+  beforeEach(() => {
+    mockFetch.mockReset();
+  });
 
-    const { result } = renderHook(() => useTranscripts("test-agent"));
-
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-      expect(result.current.transcripts).toHaveLength(1);
+  it("loads first page on mount with agentId", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve(makeTranscriptList(3)),
     });
 
-    expect(result.current.error).toBeNull();
+    const { result } = renderHook(() => useTranscripts("alex"));
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    expect(result.current.transcripts).toHaveLength(3);
     expect(result.current.hasMore).toBe(false);
+    expect(result.current.totalCount).toBe(3);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
     const url = mockFetch.mock.calls[0][0] as string;
-    expect(url).toContain("agentId=test-agent");
+    expect(url).toContain("agentId=alex");
     expect(url).toContain("page=1");
   });
 
-  it("does not fetch when agentId is null", async () => {
+  it("does not fetch without agentId", async () => {
     const { result } = renderHook(() => useTranscripts(null));
-    // Allow microtasks to flush
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 50));
-    });
-    expect(result.current.transcripts).toEqual([]);
-    expect(result.current.loading).toBe(false);
-    // Only check no transcript-related calls (there might be none)
-    const transcriptCalls = mockFetch.mock.calls.filter(
-      (c) => (c[0] as string).includes("transcripts"),
-    );
-    expect(transcriptCalls).toHaveLength(0);
+
+    // Give it a tick
+    await act(() => new Promise((r) => setTimeout(r, 50)));
+    expect(mockFetch).not.toHaveBeenCalled();
+    expect(result.current.transcripts).toHaveLength(0);
   });
 
-  it("sets error on fetch failure", async () => {
-    mockFetch.mockReturnValue(errJson("Server error"));
-
-    const { result } = renderHook(() => useTranscripts("agent"));
-
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-      expect(result.current.error).toBe("Server error");
+  it("loads more pages via loadMore", async () => {
+    // First page
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve(makeTranscriptList(5, true)),
     });
 
-    expect(result.current.transcripts).toEqual([]);
-  });
-
-  it("appends transcripts on loadMore()", async () => {
-    const page1 = [{ ...ENTRY, sessionId: "a" }];
-    const page2 = [{ ...ENTRY, sessionId: "b" }];
-
-    mockFetch.mockReturnValueOnce(okJson({ transcripts: page1, hasMore: true, count: 2 }));
-
-    const { result } = renderHook(() => useTranscripts("agent"));
+    const { result } = renderHook(() => useTranscripts("alex"));
     await waitFor(() => expect(result.current.loading).toBe(false));
 
     expect(result.current.hasMore).toBe(true);
+    expect(result.current.transcripts).toHaveLength(5);
 
-    mockFetch.mockReturnValueOnce(okJson({ transcripts: page2, hasMore: false, count: 2 }));
-    act(() => result.current.loadMore());
-
-    await waitFor(() => {
-      expect(result.current.transcripts).toHaveLength(2);
-      expect(result.current.transcripts[1].sessionId).toBe("b");
+    // Second page
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve(makeTranscriptList(3, false)),
     });
+
+    await act(() => {
+      result.current.loadMore();
+      return new Promise((r) => setTimeout(r, 50));
+    });
+
+    await waitFor(() => expect(result.current.loadingMore).toBe(false));
+    expect(result.current.transcripts).toHaveLength(8); // 5 + 3
+    expect(result.current.hasMore).toBe(false);
   });
 
-  it("refresh resets to page 1", async () => {
-    mockFetch.mockReturnValueOnce(okJson({ transcripts: [], hasMore: false, count: 0 }));
+  it("does not loadMore when hasMore is false", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve(makeTranscriptList(2, false)),
+    });
 
-    const { result } = renderHook(() => useTranscripts("agent"));
+    const { result } = renderHook(() => useTranscripts("alex"));
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    mockFetch.mockReturnValueOnce(
-      okJson({ transcripts: [{ ...ENTRY, sessionId: "refreshed" }], hasMore: false, count: 1 }),
-    );
-    act(() => result.current.refresh());
+    act(() => result.current.loadMore());
+    // Only the initial fetch
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
 
-    await waitFor(() => {
-      expect(result.current.transcripts).toHaveLength(1);
-      expect(result.current.transcripts[0].sessionId).toBe("refreshed");
+  it("refresh resets to first page", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve(makeTranscriptList(5, true)),
     });
+
+    const { result } = renderHook(() => useTranscripts("alex"));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve(makeTranscriptList(2, false)),
+    });
+
+    await act(() => {
+      result.current.refresh();
+      return new Promise((r) => setTimeout(r, 50));
+    });
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    // After refresh, should have the fresh page 1 data
+    expect(result.current.transcripts).toHaveLength(2);
+  });
+
+  it("handles fetch error", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      json: () => Promise.resolve({ error: "Internal Server Error" }),
+    });
+
+    const { result } = renderHook(() => useTranscripts("alex"));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    expect(result.current.error).toBe("Internal Server Error");
+    expect(result.current.transcripts).toHaveLength(0);
   });
 });
 
-/* ─── useTranscriptSearch ─── */
 describe("useTranscriptSearch", () => {
-  it("starts with empty state", () => {
-    const { result } = renderHook(() => useTranscriptSearch("agent"));
-    expect(result.current.query).toBe("");
-    expect(result.current.results).toEqual([]);
-    expect(result.current.searching).toBe(false);
-    expect(result.current.error).toBeNull();
+  beforeEach(() => {
+    mockFetch.mockReset();
+    vi.useFakeTimers({ shouldAdvanceTime: true });
   });
 
-  it("searches after debounce when query is set", async () => {
-    const searchResult = {
-      sessionId: "x",
-      sessionKey: null,
-      archived: false,
-      startedAt: null,
-      updatedAt: null,
-      matches: [{ role: "user", timestamp: null, snippet: "hello" }],
-    };
-    mockFetch.mockReturnValue(okJson({ results: [searchResult] }));
+  afterEach(() => {
+    vi.useRealTimers();
+  });
 
-    const { result } = renderHook(() => useTranscriptSearch("agent"));
+  it("debounces search queries", async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ results: [{ sessionId: "s1", matches: [] }] }),
+    });
 
-    act(() => result.current.setQuery("test"));
+    const { result } = renderHook(() => useTranscriptSearch("alex"));
 
-    await waitFor(
-      () => {
-        expect(result.current.results).toHaveLength(1);
-      },
-      { timeout: 2000 },
-    );
+    act(() => result.current.setQuery("hel"));
+    act(() => result.current.setQuery("hello"));
 
-    // Verify a search call was made with query param
-    const searchCalls = mockFetch.mock.calls.filter((c) =>
-      (c[0] as string).includes("query=test"),
-    );
-    expect(searchCalls.length).toBeGreaterThanOrEqual(1);
+    // Not yet fired
+    expect(mockFetch).not.toHaveBeenCalled();
+
+    // Advance past debounce (400ms)
+    await act(() => vi.advanceTimersByTimeAsync(450));
+
+    await waitFor(() => expect(result.current.searching).toBe(false));
+    // Only one fetch for the final query
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    const url = mockFetch.mock.calls[0][0] as string;
+    expect(url).toContain("query=hello");
+  });
+
+  it("clears results when query is empty", async () => {
+    const { result } = renderHook(() => useTranscriptSearch("alex"));
+
+    act(() => result.current.setQuery(""));
+    await act(() => vi.advanceTimersByTimeAsync(450));
+
+    expect(result.current.results).toHaveLength(0);
+    expect(mockFetch).not.toHaveBeenCalled();
   });
 
   it("clearSearch resets state", async () => {
-    mockFetch.mockReturnValue(
-      okJson({
-        results: [
-          { sessionId: "x", sessionKey: null, archived: false, startedAt: null, updatedAt: null, matches: [] },
-        ],
-      }),
-    );
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ results: [{ sessionId: "s1", matches: [] }] }),
+    });
 
-    const { result } = renderHook(() => useTranscriptSearch("agent"));
+    const { result } = renderHook(() => useTranscriptSearch("alex"));
 
     act(() => result.current.setQuery("test"));
-    await waitFor(() => expect(result.current.results.length).toBeGreaterThan(0), { timeout: 2000 });
+    await act(() => vi.advanceTimersByTimeAsync(450));
+    await waitFor(() => expect(result.current.searching).toBe(false));
 
     act(() => result.current.clearSearch());
-
     expect(result.current.query).toBe("");
-    expect(result.current.results).toEqual([]);
+    expect(result.current.results).toHaveLength(0);
     expect(result.current.error).toBeNull();
+  });
+
+  it("handles search error", async () => {
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: () => Promise.resolve({ error: "Search engine down" }),
+    });
+
+    const { result } = renderHook(() => useTranscriptSearch("alex"));
+
+    act(() => result.current.setQuery("test"));
+    await act(() => vi.advanceTimersByTimeAsync(450));
+    await waitFor(() => expect(result.current.searching).toBe(false));
+
+    expect(result.current.error).toBe("Search engine down");
+  });
+
+  it("does not search without agentId", async () => {
+    const { result } = renderHook(() => useTranscriptSearch(null));
+
+    act(() => result.current.setQuery("test"));
+    await act(() => vi.advanceTimersByTimeAsync(450));
+
+    expect(mockFetch).not.toHaveBeenCalled();
+    expect(result.current.results).toHaveLength(0);
   });
 });
