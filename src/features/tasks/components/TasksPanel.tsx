@@ -270,16 +270,21 @@ export const TasksPanel = memo(function TasksPanel({
             onKeyDown={handleListKeyDown}
           >
             {filtered.map((task, i) => (
-              <TaskCard
+              <div
                 key={task.id}
-                task={task}
-                busy={busyTaskId === task.id}
-                busyAction={busyTaskId === task.id ? busyAction : null}
-                selected={selectedTaskId === task.id}
-                focused={focusIndex === i}
-                onSelect={handleSelect}
-                onToggle={onToggle}
-              />
+                className="animate-in fade-in slide-in-from-bottom-1 duration-200 fill-mode-both"
+                style={{ animationDelay: `${Math.min(i * 50, 300)}ms` }}
+              >
+                <TaskCard
+                  task={task}
+                  busy={busyTaskId === task.id}
+                  busyAction={busyTaskId === task.id ? busyAction : null}
+                  selected={selectedTaskId === task.id}
+                  focused={focusIndex === i}
+                  onSelect={handleSelect}
+                  onToggle={onToggle}
+                />
+              </div>
             ))}
           </div>
         ) : null}

@@ -99,14 +99,15 @@ export const ChannelsPanel = memo(function ChannelsPanel({
           />
         ) : (
           <div className="animate-in fade-in duration-300 flex flex-col gap-2">
-          {keys.map((key) => {
+          {keys.map((key, chIdx) => {
             const entry = channels[key];
             const health = resolveChannelHealth(entry);
             const label = resolveChannelLabel(snapshot, key);
             return (
               <div
                 key={key}
-                className="group/cron flex items-start justify-between gap-2 rounded-md border border-border/80 bg-card/75 px-3 py-2"
+                style={{ animationDelay: `${Math.min(chIdx * 50, 300)}ms` }}
+                className="animate-in fade-in slide-in-from-bottom-1 duration-200 fill-mode-both group/cron flex items-start justify-between gap-2 rounded-md border border-border/80 bg-card/75 px-3 py-2 transition-colors hover:bg-muted/30"
               >
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">

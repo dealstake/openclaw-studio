@@ -220,16 +220,21 @@ export const ProjectsPanel = memo(function ProjectsPanel({
 
       {/* All projects — flat list, sorted by status */}
       <div className="animate-in fade-in duration-300">
-        {filteredProjects.map((project) => (
-          <ProjectCard
+        {filteredProjects.map((project, i) => (
+          <div
             key={project.doc}
-            project={project}
-            onOpenFile={() => setEditingProjectDoc(project.doc)}
-            onChangeStatus={(emoji, label) => void changeStatus(project, emoji, label)}
-            onArchive={() => setArchiveTarget(project)}
-            buildingCount={buildingCount}
-            queuePosition={getQueuePosition(project.doc)}
-          />
+            className="animate-in fade-in slide-in-from-bottom-1 duration-200 fill-mode-both"
+            style={{ animationDelay: `${Math.min(i * 50, 300)}ms` }}
+          >
+            <ProjectCard
+              project={project}
+              onOpenFile={() => setEditingProjectDoc(project.doc)}
+              onChangeStatus={(emoji, label) => void changeStatus(project, emoji, label)}
+              onArchive={() => setArchiveTarget(project)}
+              buildingCount={buildingCount}
+              queuePosition={getQueuePosition(project.doc)}
+            />
+          </div>
         ))}
       </div>
 

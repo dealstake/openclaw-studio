@@ -181,7 +181,7 @@ export const CronPanel = memo(function CronPanel({
 
           {cronJobs.length > 0 ? (
             <div className="flex flex-col gap-2 animate-in fade-in duration-300">
-              {cronJobs.map((job) => {
+              {cronJobs.map((job, _cronIdx) => {
                 const runBusy = runBusyJobId === job.id;
                 const deleteBusy = deleteBusyJobId === job.id;
                 const toggleBusy = toggleBusyJobId === job.id;
@@ -199,7 +199,8 @@ export const CronPanel = memo(function CronPanel({
                 return (
                   <div
                     key={job.id}
-                    className={`rounded-md border bg-card/70 transition-all duration-150 ${
+                    style={{ animationDelay: `${Math.min(_cronIdx * 50, 300)}ms` }}
+                    className={`animate-in fade-in slide-in-from-bottom-1 duration-200 fill-mode-both rounded-md border bg-card/70 transition-all ${
                       !job.enabled
                         ? "border-border/40 opacity-60"
                         : isRunning
