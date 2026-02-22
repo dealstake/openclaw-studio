@@ -252,6 +252,43 @@ describe("staggerMs round-trip", () => {
     }
   });
 
+  it("preserves staggerMs when frequency changes (30min→1hr)", () => {
+    // Simulate: user changes interval from 30min to 1hr but keeps stagger
+    const original: PeriodicSchedule = {
+      type: "periodic",
+      intervalMs: 1_800_000, // 30min
+      staggerMs: 600_000, // ±10min
+    };
+    // Convert to cron (as Studio would when saving)
+    const cron1 = taskScheduleToCronSchedule(original);
+    if (cron1.kind === "cron" || cron1.kind === "every") {
+      expect(cron1.staggerMs).toBe(600_000);
+    }
+
+    // Read back from cron (as Studio would on next load)
+    const readBack = cronScheduleToTaskSchedule(cron1, "periodic");
+    expect(readBack.type).toBe("periodic");
+    if (readBack.type !== "periodic") throw new Error("Expected periodic");
+    expect(readBack.staggerMs).toBe(600_000);
+
+    // User changes frequency to 1hr, keeping stagger
+    const updated: PeriodicSchedule = {
+      type: "periodic",
+      intervalMs: 3_600_000, // 1hr
+      staggerMs: readBack.staggerMs, // preserved from read-back
+    };
+    const cron2 = taskScheduleToCronSchedule(updated);
+    if (cron2.kind === "cron" || cron2.kind === "every") {
+      expect(cron2.staggerMs).toBe(600_000);
+    }
+
+    // Final round-trip
+    const final = cronScheduleToTaskSchedule(cron2, "periodic");
+    if (final.type !== "periodic") throw new Error("Expected periodic");
+    expect(final.intervalMs).toBe(3_600_000);
+    expect(final.staggerMs).toBe(600_000);
+  });
+
   it("reads staggerMs from cron schedule with interval-style expr", () => {
     const cron: CronSchedule = {
       kind: "cron",
