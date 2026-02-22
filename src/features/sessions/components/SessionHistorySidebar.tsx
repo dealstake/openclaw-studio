@@ -1,5 +1,5 @@
-import { memo, useCallback, useEffect } from "react";
-import { Plus, MessageSquare, ChevronLeft, SearchX } from "lucide-react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { Plus, MessageSquare, ChevronLeft, SearchX, Pin } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { CardSkeleton } from "@/components/ui/CardSkeleton";
 import { SearchInput } from "@/components/SearchInput";
@@ -7,6 +7,8 @@ import { formatRelativeTime } from "@/lib/text/time";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { useSessionHistory, type SessionHistoryEntry } from "../hooks/useSessionHistory";
 import { sectionLabelClass } from "@/components/SectionLabel";
+import { SessionItemMenu } from "./SessionItemMenu";
+import { highlightMatch } from "../lib/highlightMatch";
 
 type SessionHistorySidebarProps = {
   client: GatewayClient;
@@ -19,40 +21,134 @@ type SessionHistorySidebarProps = {
   onToggleCollapse: () => void;
 };
 
+// --- Inline rename input ---
+
+const InlineRenameInput = memo(function InlineRenameInput({
+  initialValue,
+  onSave,
+  onCancel,
+}: {
+  initialValue: string;
+  onSave: (value: string) => void;
+  onCancel: () => void;
+}) {
+  const [value, setValue] = useState(initialValue);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    inputRef.current?.select();
+  }, []);
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Enter") {
+        const trimmed = value.trim();
+        if (trimmed && trimmed !== initialValue) onSave(trimmed);
+        else onCancel();
+      } else if (e.key === "Escape") {
+        onCancel();
+      }
+    },
+    [value, initialValue, onSave, onCancel],
+  );
+
+  return (
+    <input
+      ref={inputRef}
+      type="text"
+      className="w-full rounded border border-primary/40 bg-card px-1 py-0 text-[13px] font-medium leading-tight text-foreground outline-none ring-1 ring-primary/20"
+      value={value}
+      onChange={(e) => setValue(e.target.value)}
+      onKeyDown={handleKeyDown}
+      onBlur={onCancel}
+    />
+  );
+});
+
+// --- Session item ---
+
 const SessionItem = memo(function SessionItem({
   session,
   active,
+  pinned,
+  renaming,
+  searchQuery,
   onSelect,
+  onRename,
+  onRenameStart,
+  onRenameCancel,
+  onDelete,
+  onTogglePin,
 }: {
   session: SessionHistoryEntry;
   active: boolean;
+  pinned: boolean;
+  renaming: boolean;
+  searchQuery: string;
   onSelect: (key: string) => void;
+  onRename: (key: string, name: string) => void;
+  onRenameStart: (key: string) => void;
+  onRenameCancel: () => void;
+  onDelete: (key: string) => void;
+  onTogglePin: (key: string) => void;
 }) {
   const handleClick = useCallback(() => onSelect(session.key), [onSelect, session.key]);
+  const handleDoubleClick = useCallback(() => onRenameStart(session.key), [onRenameStart, session.key]);
+  const handleRenameSave = useCallback(
+    (name: string) => onRename(session.key, name),
+    [onRename, session.key],
+  );
 
   return (
     <button
       type="button"
       onClick={handleClick}
+      onDoubleClick={handleDoubleClick}
       className={`group flex w-full items-start gap-2.5 rounded-lg px-2.5 py-2.5 text-left transition-all duration-200 focus-ring min-h-[44px] ${
         active
           ? "bg-accent text-accent-foreground"
           : "text-foreground/80 hover:bg-muted hover:translate-x-0.5"
       }`}
     >
-      <MessageSquare className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+      {pinned ? (
+        <Pin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary/70" />
+      ) : (
+        <MessageSquare className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+      )}
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[13px] font-medium leading-tight">
-          {session.displayName}
-        </p>
+        {renaming ? (
+          <InlineRenameInput
+            initialValue={session.displayName}
+            onSave={handleRenameSave}
+            onCancel={onRenameCancel}
+          />
+        ) : (
+          <p className="truncate text-[13px] font-medium leading-tight">
+            {highlightMatch(session.displayName, searchQuery)}
+          </p>
+        )}
         <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
           {formatRelativeTime(session.updatedAt)}
           {session.messageCount > 0 ? ` · ${session.messageCount} msgs` : ""}
         </p>
       </div>
+      {!renaming && (
+        <div className="mt-0.5 shrink-0">
+          <SessionItemMenu
+            sessionKey={session.key}
+            displayName={session.displayName}
+            pinned={pinned}
+            onRename={onRenameStart}
+            onDelete={onDelete}
+            onTogglePin={onTogglePin}
+          />
+        </div>
+      )}
     </button>
   );
 });
+
+// --- Sidebar ---
 
 export const SessionHistorySidebar = memo(function SessionHistorySidebar({
   client,
@@ -64,7 +160,42 @@ export const SessionHistorySidebar = memo(function SessionHistorySidebar({
   collapsed,
   onToggleCollapse,
 }: SessionHistorySidebarProps) {
-  const { groups, loading, load, search, setSearch } = useSessionHistory(client, status, agentId);
+  const {
+    groups,
+    loading,
+    load,
+    search,
+    setSearch,
+    pinnedKeys,
+    togglePin,
+    deleteSession,
+    renameSession,
+  } = useSessionHistory(client, status, agentId);
+
+  const [renamingKey, setRenamingKey] = useState<string | null>(null);
+
+  const handleRenameStart = useCallback((key: string) => {
+    setRenamingKey(key);
+  }, []);
+
+  const handleRenameCancel = useCallback(() => {
+    setRenamingKey(null);
+  }, []);
+
+  const handleRename = useCallback(
+    (key: string, name: string) => {
+      void renameSession(key, name);
+      setRenamingKey(null);
+    },
+    [renameSession],
+  );
+
+  const handleDelete = useCallback(
+    (key: string) => {
+      void deleteSession(key);
+    },
+    [deleteSession],
+  );
 
   // Load on mount and when agentId changes
   useEffect(() => {
@@ -141,7 +272,15 @@ export const SessionHistorySidebar = memo(function SessionHistorySidebar({
                     key={session.key}
                     session={session}
                     active={session.key === activeSessionKey}
+                    pinned={pinnedKeys.has(session.key)}
+                    renaming={renamingKey === session.key}
+                    searchQuery={search}
                     onSelect={onSelectSession}
+                    onRename={handleRename}
+                    onRenameStart={handleRenameStart}
+                    onRenameCancel={handleRenameCancel}
+                    onDelete={handleDelete}
+                    onTogglePin={togglePin}
                   />
                 ))}
               </div>

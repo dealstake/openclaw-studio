@@ -17,22 +17,55 @@ export type SessionHistoryGroup = {
 
 import type { SessionsListResult } from "@/features/sessions/lib/types";
 
-function groupByDate(sessions: SessionHistoryEntry[]): SessionHistoryGroup[] {
+// --- Pin storage (localStorage) ---
+
+const PIN_STORAGE_KEY = "studio:pinned-sessions";
+
+function loadPinnedKeys(): Set<string> {
+  try {
+    const raw = localStorage.getItem(PIN_STORAGE_KEY);
+    if (!raw) return new Set();
+    const parsed = JSON.parse(raw);
+    return new Set(Array.isArray(parsed) ? parsed : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function savePinnedKeys(keys: Set<string>): void {
+  try {
+    localStorage.setItem(PIN_STORAGE_KEY, JSON.stringify([...keys]));
+  } catch {
+    // Ignore storage errors
+  }
+}
+
+// --- Grouping ---
+
+function groupByDate(sessions: SessionHistoryEntry[], pinnedKeys: Set<string>): SessionHistoryGroup[] {
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
   const yesterdayStart = todayStart - 86_400_000;
 
+  const pinned: SessionHistoryEntry[] = [];
   const today: SessionHistoryEntry[] = [];
   const yesterday: SessionHistoryEntry[] = [];
   const older: SessionHistoryEntry[] = [];
 
   for (const s of sessions) {
-    if (s.updatedAt >= todayStart) today.push(s);
-    else if (s.updatedAt >= yesterdayStart) yesterday.push(s);
-    else older.push(s);
+    if (pinnedKeys.has(s.key)) {
+      pinned.push(s);
+    } else if (s.updatedAt >= todayStart) {
+      today.push(s);
+    } else if (s.updatedAt >= yesterdayStart) {
+      yesterday.push(s);
+    } else {
+      older.push(s);
+    }
   }
 
   const groups: SessionHistoryGroup[] = [];
+  if (pinned.length) groups.push({ label: "Pinned", sessions: pinned });
   if (today.length) groups.push({ label: "Today", sessions: today });
   if (yesterday.length) groups.push({ label: "Yesterday", sessions: yesterday });
   if (older.length) groups.push({ label: "Older", sessions: older });
@@ -44,6 +77,7 @@ export function useSessionHistory(client: GatewayClient, status: GatewayStatus, 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [pinnedKeys, setPinnedKeys] = useState<Set<string>>(() => loadPinnedKeys());
   const loadingRef = useRef(false);
 
   const load = useCallback(async () => {
@@ -57,8 +91,6 @@ export function useSessionHistory(client: GatewayClient, status: GatewayStatus, 
         limit: 200,
       });
       const raw = result.sessions ?? [];
-      // Filter to sessions belonging to this agent (key starts with agentId/ or is agentId:main)
-      // Session keys use "agent:<agentId>:<sessionId>" format (e.g. "agent:alex:main")
       const mainKey = `agent:${agentId}:main`;
       const agentPrefix = `agent:${agentId}:`;
       const agentSessions = raw
@@ -67,7 +99,6 @@ export function useSessionHistory(client: GatewayClient, status: GatewayStatus, 
           return key.startsWith(agentPrefix);
         })
         .filter((s) => {
-          // Exclude cron/subagent sessions — only show user-initiated sessions
           const key = s.key;
           return !key.includes(":cron:") && !key.includes(":sub:");
         })
@@ -91,13 +122,63 @@ export function useSessionHistory(client: GatewayClient, status: GatewayStatus, 
     }
   }, [client, status, agentId]);
 
+  const togglePin = useCallback((key: string) => {
+    setPinnedKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      savePinnedKeys(next);
+      return next;
+    });
+  }, []);
+
+  const deleteSession = useCallback(async (key: string) => {
+    try {
+      await client.call("sessions.delete", { key });
+      setSessions((prev) => prev.filter((s) => s.key !== key));
+      // Also remove from pins if pinned
+      setPinnedKeys((prev) => {
+        if (!prev.has(key)) return prev;
+        const next = new Set(prev);
+        next.delete(key);
+        savePinnedKeys(next);
+        return next;
+      });
+    } catch (err) {
+      console.error("Failed to delete session:", err);
+    }
+  }, [client]);
+
+  const renameSession = useCallback(async (key: string, newName: string) => {
+    try {
+      await client.call("sessions.update", { key, displayName: newName });
+      setSessions((prev) =>
+        prev.map((s) => (s.key === key ? { ...s, displayName: newName } : s))
+      );
+    } catch (err) {
+      console.error("Failed to rename session:", err);
+    }
+  }, [client]);
+
   const filtered = useMemo(() => {
     if (!search.trim()) return sessions;
     const q = search.toLowerCase();
     return sessions.filter((s) => s.displayName.toLowerCase().includes(q));
   }, [sessions, search]);
 
-  const groups = useMemo(() => groupByDate(filtered), [filtered]);
+  const groups = useMemo(() => groupByDate(filtered, pinnedKeys), [filtered, pinnedKeys]);
 
-  return { sessions: filtered, groups, loading, error, load, search, setSearch };
+  return {
+    sessions: filtered,
+    groups,
+    loading,
+    error,
+    load,
+    search,
+    setSearch,
+    pinnedKeys,
+    togglePin,
+    deleteSession,
+    renameSession,
+  };
 }
