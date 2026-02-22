@@ -129,12 +129,7 @@ export function createGatewayRuntimeEventHandler(
         title: "Session updated",
         subtitle: "",
       });
-      deps.onActivityMessage?.(`session-update-${Date.now()}`, {
-        sourceName: "Session Lifecycle",
-        sourceType: "system",
-        parts: [{ type: "text", text: "Session updated", streaming: false }],
-        status: "complete",
-      });
+      // Removed onActivityMessage — low-value noise that floods the LIVE tab
       if (sessionsRefreshTimer !== null) deps.clearTimeout(sessionsRefreshTimer);
       sessionsRefreshTimer = deps.setTimeout(() => {
         sessionsRefreshTimer = null;
@@ -149,12 +144,7 @@ export function createGatewayRuntimeEventHandler(
         title: "Cron schedule updated",
         subtitle: "",
       });
-      deps.onActivityMessage?.(`cron-update-${Date.now()}`, {
-        sourceName: "Cron Schedule",
-        sourceType: "system",
-        parts: [{ type: "text", text: "Cron schedule updated", streaming: false }],
-        status: "complete",
-      });
+      // Removed onActivityMessage — low-value noise that floods the LIVE tab
       if (cronRefreshTimer !== null) deps.clearTimeout(cronRefreshTimer);
       cronRefreshTimer = deps.setTimeout(() => {
         cronRefreshTimer = null;

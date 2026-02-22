@@ -24,10 +24,10 @@ describe("filterHeartbeatTurns", () => {
     expect(result).toEqual([normalUser, normalAssist, normalUser, normalAssist]);
   });
 
-  it("keeps heartbeat-alert turns", () => {
+  it("removes heartbeat-alert turns (alerts route to Activity panel)", () => {
     const parts = [userHb, assistAlert];
     const result = filterHeartbeatTurns(parts);
-    expect(result).toEqual([userHb, assistAlert]);
+    expect(result).toEqual([]);
   });
 
   it("returns same array reference when no heartbeats", () => {
@@ -40,10 +40,10 @@ describe("filterHeartbeatTurns", () => {
     expect(filterHeartbeatTurns([])).toEqual([]);
   });
 
-  it("handles heartbeat at end without response", () => {
+  it("removes heartbeat user prompt even without response", () => {
     const parts = [normalUser, normalAssist, userHb];
     const result = filterHeartbeatTurns(parts);
-    expect(result).toBe(parts); // same ref, nothing removed
+    expect(result).toEqual([normalUser, normalAssist]);
   });
 
   it("skips tool call parts between user and assistant", () => {
@@ -67,6 +67,12 @@ describe("filterHeartbeatTurns", () => {
     const parts = [checkHb, assistOk];
     const result = filterHeartbeatTurns(parts);
     expect(result).toEqual([]);
+  });
+
+  it("removes alert heartbeat turns mixed with normal messages", () => {
+    const parts = [normalUser, normalAssist, userHb, assistAlert, normalUser, normalAssist];
+    const result = filterHeartbeatTurns(parts);
+    expect(result).toEqual([normalUser, normalAssist, normalUser, normalAssist]);
   });
 
   it("does not match non-user text with heartbeat content", () => {

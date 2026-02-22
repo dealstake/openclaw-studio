@@ -19,9 +19,6 @@ const HEARTBEAT_USER_PATTERNS = [
   /\bHEARTBEAT\.md\b/,
 ];
 
-/** Patterns that indicate a heartbeat-ok assistant response. */
-const HEARTBEAT_OK_PATTERN = /HEARTBEAT_OK/i;
-
 /**
  * Returns true if a text part looks like a heartbeat user prompt.
  * User messages from transformMessagesToMessageParts start with "> ".
@@ -35,24 +32,14 @@ function isHeartbeatUserPart(part: MessagePart): boolean {
 }
 
 /**
- * Returns true if a text part looks like a HEARTBEAT_OK assistant response.
- * Assistant messages are plain text (no "> " prefix).
- */
-function isHeartbeatOkPart(part: MessagePart): boolean {
-  if (part.type !== "text") return false;
-  const text = part.text ?? "";
-  if (text.startsWith("> ")) return false; // user message
-  return HEARTBEAT_OK_PATTERN.test(text);
-}
-
-/**
- * Filters heartbeat-ok turns from historical message parts.
+ * Filters ALL heartbeat turns from historical message parts.
  *
  * A "heartbeat turn" is a user message matching heartbeat patterns followed
- * by an assistant response that is HEARTBEAT_OK. Alert heartbeats (non-OK
- * responses) are kept since they contain actionable information.
+ * by any assistant response. Both HEARTBEAT_OK and alert responses are removed
+ * — alert content is routed exclusively to the Activity panel via
+ * chatEventHandler.ts, so it should not appear in the main chat.
  *
- * Returns a new array with heartbeat-ok turns removed.
+ * Returns a new array with all heartbeat turns removed.
  */
 export function filterHeartbeatTurns(parts: MessagePart[]): MessagePart[] {
   if (parts.length === 0) return parts;
@@ -66,11 +53,9 @@ export function filterHeartbeatTurns(parts: MessagePart[]): MessagePart[] {
     let j = i + 1;
     while (j < parts.length && parts[j].type !== "text") j++;
 
-    if (j < parts.length && isHeartbeatOkPart(parts[j])) {
-      // Mark entire turn for removal (user + intermediate parts + ok response)
-      for (let k = i; k <= j; k++) indicesToRemove.add(k);
-    }
-    // Alert responses are kept
+    // Remove entire turn regardless of response content (OK or alert)
+    const end = j < parts.length ? j : i;
+    for (let k = i; k <= end; k++) indicesToRemove.add(k);
   }
 
   if (indicesToRemove.size === 0) return parts;

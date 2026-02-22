@@ -1,10 +1,10 @@
 "use client";
 
 import { memo, useState } from "react";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Loader2 } from "lucide-react";
 import { isReasoningPart, isToolInvocationPart } from "@/lib/chat/types";
 import type { ActivityMessage } from "@/features/activity/hooks/useActivityMessageStore";
-import { taskEmoji, STATUS_COLORS, formatTime } from "@/features/activity/lib/activityDisplayUtils";
+import { taskIcon, STATUS_COLORS, formatTime } from "@/features/activity/lib/activityDisplayUtils";
 import { MessagePartsRenderer, getTextContent } from "./MessagePartsRenderer";
 
 /** Card for a single live activity message (streaming or complete) */
@@ -15,17 +15,35 @@ export const ActivityMessageCard = memo(function ActivityMessageCard({
 }) {
   const [expanded, setExpanded] = useState(false);
   const isStreaming = entry.status === "streaming";
-  const textSnippet = getTextContent(entry.parts).slice(0, 200);
+  const fullText = getTextContent(entry.parts);
   const hasRichContent =
     entry.parts.length > 1 ||
     entry.parts.some((p) => isReasoningPart(p) || isToolInvocationPart(p)) ||
-    getTextContent(entry.parts).length > 200;
+    fullText.length > 200;
+
+  // During streaming, show text truncated to last sentence boundary
+  // to avoid mid-word flicker from token-by-token updates.
+  const textSnippet = (() => {
+    const raw = fullText.slice(0, 200);
+    if (!isStreaming || !raw) return raw;
+    // Find last sentence boundary for clean display
+    const lastBoundary = Math.max(
+      raw.lastIndexOf(". "),
+      raw.lastIndexOf(".\n"),
+      raw.lastIndexOf("! "),
+      raw.lastIndexOf("? "),
+    );
+    return lastBoundary > 20 ? raw.slice(0, lastBoundary + 1) : raw;
+  })();
 
   return (
     <div className="group rounded-lg px-3 py-2.5 transition-colors hover:bg-muted/40">
       <div className="flex gap-2.5">
-        <div className="flex-shrink-0 pt-0.5 text-base leading-none">
-          {taskEmoji(entry.sourceName)}
+        <div className="flex-shrink-0 pt-0.5">
+          {(() => {
+            const { icon: Icon, className } = taskIcon(entry.sourceName);
+            return <Icon size={16} className={className} />;
+          })()}
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
@@ -50,6 +68,13 @@ export const ActivityMessageCard = memo(function ActivityMessageCard({
               </button>
             )}
           </div>
+
+          {!expanded && isStreaming && !textSnippet && (
+            <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Loader2 size={10} className="animate-spin" />
+              Working…
+            </p>
+          )}
 
           {!expanded && textSnippet && (
             <p className="mt-0.5 text-xs text-muted-foreground line-clamp-3">

@@ -4,7 +4,7 @@ import { memo, useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { MarkdownViewer } from "@/components/MarkdownViewer";
 import type { ActivityEvent } from "@/features/activity/lib/activityTypes";
-import { taskEmoji, STATUS_PILL, formatHistoryTime } from "@/features/activity/lib/activityDisplayUtils";
+import { taskIcon, STATUS_PILL, formatHistoryTime } from "@/features/activity/lib/activityDisplayUtils";
 
 /** Card for a completed activity history event */
 export const HistoryEventCard = memo(function HistoryEventCard({
@@ -19,8 +19,11 @@ export const HistoryEventCard = memo(function HistoryEventCard({
   return (
     <div className="group rounded-lg px-3 py-2.5 transition-colors hover:bg-muted/40">
       <div className="flex gap-2.5">
-        <div className="flex-shrink-0 pt-0.5 text-base leading-none">
-          {taskEmoji(event.taskName)}
+        <div className="flex-shrink-0 pt-0.5">
+          {(() => {
+            const { icon: Icon, className } = taskIcon(event.taskName);
+            return <Icon size={16} className={className} />;
+          })()}
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">

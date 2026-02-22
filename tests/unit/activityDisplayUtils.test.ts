@@ -1,11 +1,13 @@
 import { describe, it, expect } from "vitest";
 import {
   taskEmoji,
+  taskIcon,
   STATUS_COLORS,
   STATUS_PILL,
   formatTime,
   formatHistoryTime,
 } from "@/features/activity/lib/activityDisplayUtils";
+import { Zap, Search, Microscope, Eye, HeartPulse, Bot, Activity } from "lucide-react";
 
 describe("taskEmoji", () => {
   it("returns ⚡ for continuation tasks", () => {
@@ -25,6 +27,33 @@ describe("taskEmoji", () => {
   });
   it("returns 🤖 for unknown tasks", () => {
     expect(taskEmoji("Random Task")).toBe("🤖");
+  });
+});
+
+describe("taskIcon", () => {
+  it("returns Zap for continuation tasks", () => {
+    expect(taskIcon("Project Continuation").icon).toBe(Zap);
+  });
+  it("returns Search for auditor tasks", () => {
+    expect(taskIcon("Codebase Auditor").icon).toBe(Search);
+  });
+  it("returns Microscope for research tasks", () => {
+    expect(taskIcon("Product Research").icon).toBe(Microscope);
+  });
+  it("returns Eye for visual QA", () => {
+    expect(taskIcon("Visual QA").icon).toBe(Eye);
+  });
+  it("returns HeartPulse for health/gateway", () => {
+    expect(taskIcon("Gateway Health").icon).toBe(HeartPulse);
+  });
+  it("returns Activity for heartbeat", () => {
+    expect(taskIcon("Heartbeat").icon).toBe(Activity);
+  });
+  it("returns Bot for unknown tasks", () => {
+    expect(taskIcon("Random Task").icon).toBe(Bot);
+  });
+  it("includes color className", () => {
+    expect(taskIcon("Project Continuation").className).toBe("text-amber-400");
   });
 });
 
