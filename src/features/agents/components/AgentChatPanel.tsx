@@ -179,7 +179,7 @@ export const AgentChatPanel = memo(function AgentChatPanel({
               ) : viewingSessionHistory.length === 0 ? (
                 <EmptyStatePanel title="No messages in this session." compact className="p-3 text-xs" />
               ) : (
-                <div className="mx-auto flex w-full min-w-0 max-w-3xl flex-col gap-3 px-4 text-sm text-foreground sm:px-6">
+                <div className="mx-auto flex w-full min-w-0 max-w-3xl flex-col gap-4 px-4 text-sm text-foreground sm:px-8 md:px-12">
                   <AgentChatView
                     parts={viewingSessionHistory}
                     streaming={false}
