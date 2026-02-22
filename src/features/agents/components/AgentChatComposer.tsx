@@ -5,11 +5,15 @@ import {
   useRef,
   useState,
   type ChangeEvent,
+  type ClipboardEvent,
+  type DragEvent,
   type KeyboardEvent,
 } from "react";
 
 import type { GatewayModelChoice } from "@/lib/gateway/models";
-import { ArrowUp, Plus, Square } from "lucide-react";
+import { ArrowUp, Paperclip, Square, UploadCloud } from "lucide-react";
+import { ChatAttachmentPreview } from "./ChatAttachmentPreview";
+import { useFileUpload, type ChatAttachment } from "../hooks/useFileUpload";
 
 export const AgentChatComposer = memo(function AgentChatComposer({
   onDraftChange,
@@ -32,7 +36,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   allowThinking,
 }: {
   onDraftChange: (value: string) => void;
-  onSend: (message: string) => void;
+  onSend: (message: string, attachments?: ChatAttachment[]) => void;
   onStop: () => void;
   onResize: () => void;
   canSend: boolean;
@@ -52,7 +56,11 @@ export const AgentChatComposer = memo(function AgentChatComposer({
 }) {
   const localRef = useRef<HTMLTextAreaElement | null>(null);
   const pendingResizeRef = useRef<number | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [isEmpty, setIsEmpty] = useState(!initialDraft.trim());
+  const [isDragging, setIsDragging] = useState(false);
+  const dragCountRef = useRef(0);
+  const { files, addFiles, removeFile, clearFiles, getAttachments, hasFiles, acceptString } = useFileUpload();
 
   const handleRef = useCallback((el: HTMLTextAreaElement | HTMLInputElement | null) => {
     localRef.current = el instanceof HTMLTextAreaElement ? el : null;
@@ -94,29 +102,90 @@ export const AgentChatComposer = memo(function AgentChatComposer({
     onDraftChange("");
   }, [onDraftChange]);
 
+  const doSend = useCallback(() => {
+    const value = localRef.current?.value ?? "";
+    const trimmed = value.trim();
+    const attachments = getAttachments();
+    if (!trimmed && attachments.length === 0) return;
+    onSend(trimmed || "(attached files)", attachments.length > 0 ? attachments : undefined);
+    clearAfterSend();
+    clearFiles();
+  }, [onSend, clearAfterSend, getAttachments, clearFiles]);
+
   const handleKeyDown = useCallback(
     (event: KeyboardEvent<HTMLTextAreaElement>) => {
       if (event.key !== "Enter" || event.shiftKey) return;
       if (event.defaultPrevented) return;
       event.preventDefault();
-      const value = localRef.current?.value ?? "";
-      const trimmed = value.trim();
-      if (trimmed) {
-        onSend(trimmed);
-        clearAfterSend();
-      }
+      doSend();
     },
-    [onSend, clearAfterSend]
+    [doSend]
   );
 
   const handleClickSend = useCallback(() => {
-    const value = localRef.current?.value ?? "";
-    const trimmed = value.trim();
-    if (trimmed) {
-      onSend(trimmed);
-      clearAfterSend();
-    }
-  }, [onSend, clearAfterSend]);
+    doSend();
+  }, [doSend]);
+
+  // ── Paste handler ──────────────────────────────────────────────────
+  const handlePaste = useCallback(
+    (event: ClipboardEvent<HTMLTextAreaElement>) => {
+      const items = event.clipboardData?.items;
+      if (!items) return;
+      const imageFiles: File[] = [];
+      for (const item of Array.from(items)) {
+        if (item.type.startsWith("image/")) {
+          const file = item.getAsFile();
+          if (file) imageFiles.push(file);
+        }
+      }
+      if (imageFiles.length > 0) {
+        event.preventDefault();
+        void addFiles(imageFiles);
+      }
+    },
+    [addFiles]
+  );
+
+  // ── Drag & drop handlers ──────────────────────────────────────────
+  const handleDragEnter = useCallback((e: DragEvent) => {
+    e.preventDefault();
+    dragCountRef.current++;
+    if (dragCountRef.current === 1) setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: DragEvent) => {
+    e.preventDefault();
+    dragCountRef.current--;
+    if (dragCountRef.current === 0) setIsDragging(false);
+  }, []);
+
+  const handleDragOver = useCallback((e: DragEvent) => {
+    e.preventDefault();
+  }, []);
+
+  const handleDrop = useCallback(
+    (e: DragEvent) => {
+      e.preventDefault();
+      dragCountRef.current = 0;
+      setIsDragging(false);
+      const droppedFiles = Array.from(e.dataTransfer?.files ?? []);
+      if (droppedFiles.length > 0) {
+        void addFiles(droppedFiles);
+      }
+    },
+    [addFiles]
+  );
+
+  // ── File input handler ─────────────────────────────────────────────
+  const handleFileInputChange = useCallback(
+    (e: ChangeEvent<HTMLInputElement>) => {
+      const selected = Array.from(e.target.files ?? []);
+      if (selected.length > 0) void addFiles(selected);
+      // Reset input so same file can be selected again
+      e.target.value = "";
+    },
+    [addFiles]
+  );
 
   // Cleanup rAF on unmount
   useEffect(() => {
@@ -144,14 +213,28 @@ export const AgentChatComposer = memo(function AgentChatComposer({
     };
   }, []);
 
-  const sendDisabled = !canSend || running || isEmpty;
+  const sendDisabled = !canSend || running || (isEmpty && !hasFiles);
 
   const tokenPct = tokenUsed && tokenLimit && tokenLimit > 0
     ? Math.round((tokenUsed / tokenLimit) * 100)
     : null;
 
   return (
-    <div className="absolute inset-x-0 bottom-0 z-10 px-4" style={{ paddingBottom: `calc(12px + env(safe-area-inset-bottom) + var(--keyboard-offset, 0px))` }}>
+    <div
+      className="absolute inset-x-0 bottom-0 z-10 px-4"
+      style={{ paddingBottom: `calc(12px + env(safe-area-inset-bottom) + var(--keyboard-offset, 0px))` }}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
+      {/* Drag overlay */}
+      {isDragging && (
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-primary bg-background/80 backdrop-blur-sm animate-in fade-in">
+          <UploadCloud className="mb-2 h-10 w-10 animate-bounce text-primary" />
+          <span className="text-sm font-medium text-foreground">Drop files here</span>
+        </div>
+      )}
       {/* Gradient fade above composer */}
       <div className="pointer-events-none h-24 bg-gradient-to-t from-background via-background/80 to-transparent" />
       {/* Model / Thinking selectors above pill */}
@@ -197,50 +280,67 @@ export const AgentChatComposer = memo(function AgentChatComposer({
       </div>
 
       {/* Main composer pill */}
-      <div className="mx-auto flex max-w-3xl items-end gap-2 rounded-2xl border border-border/20 bg-card/80 p-2 shadow-lg backdrop-blur-md focus-within:border-border focus-within:bg-card transition">
-        {/* Attach button placeholder */}
-        <button
-          type="button"
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted sm:h-9 sm:w-9 disabled:cursor-not-allowed disabled:opacity-50"
-          aria-label="Attach file"
-          disabled
-        >
-          <Plus className="h-4 w-4" />
-        </button>
-
-        <textarea
-          ref={handleRef}
-          rows={1}
-          defaultValue={initialDraft}
-          className="max-h-[80px] flex-1 resize-none bg-transparent px-1 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground sm:max-h-[200px]"
-          aria-label="Message to agent"
-          onChange={handleChange}
-          onKeyDown={handleKeyDown}
-          onFocus={handleFocus}
-          placeholder={`Message ${agentName}...`}
-        />
-
-        {running ? (
-          <button
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50 sm:h-8 sm:w-8"
-            type="button"
-            aria-label="Stop agent"
-            onClick={onStop}
-            disabled={!canSend || stopBusy}
-          >
-            <Square className="h-3 w-3 fill-current" />
-          </button>
-        ) : (
-          <button
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50 sm:h-8 sm:w-8"
-            type="button"
-            aria-label="Send message"
-            onClick={handleClickSend}
-            disabled={sendDisabled}
-          >
-            <ArrowUp className="h-4 w-4" />
-          </button>
+      <div className="mx-auto flex max-w-3xl flex-col gap-2 rounded-2xl border border-border/20 bg-card/80 p-2 shadow-lg backdrop-blur-md focus-within:border-border focus-within:bg-card transition">
+        {/* Attachment preview row */}
+        {hasFiles && (
+          <ChatAttachmentPreview files={files} onRemove={removeFile} />
         )}
+
+        {/* Input row */}
+        <div className="flex items-end gap-2 w-full">
+          {/* Attach button */}
+          <button
+            type="button"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground sm:h-9 sm:w-9"
+            aria-label="Attach file"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Paperclip className="h-4 w-4" />
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            className="hidden"
+            accept={acceptString}
+            multiple
+            onChange={handleFileInputChange}
+          />
+
+          <textarea
+            ref={handleRef}
+            rows={1}
+            defaultValue={initialDraft}
+            className="max-h-[80px] flex-1 resize-none bg-transparent px-1 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground sm:max-h-[200px]"
+            aria-label="Message to agent"
+            onChange={handleChange}
+            onKeyDown={handleKeyDown}
+            onFocus={handleFocus}
+            onPaste={handlePaste}
+            placeholder={`Message ${agentName}...`}
+          />
+
+          {running ? (
+            <button
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50 sm:h-8 sm:w-8"
+              type="button"
+              aria-label="Stop agent"
+              onClick={onStop}
+              disabled={!canSend || stopBusy}
+            >
+              <Square className="h-3 w-3 fill-current" />
+            </button>
+          ) : (
+            <button
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50 sm:h-8 sm:w-8"
+              type="button"
+              aria-label="Send message"
+              onClick={handleClickSend}
+              disabled={sendDisabled}
+            >
+              <ArrowUp className="h-4 w-4" />
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

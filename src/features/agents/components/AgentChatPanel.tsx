@@ -9,6 +9,7 @@ import type { AgentState as AgentRecord } from "@/features/agents/state/store";
 import type { MessagePart } from "@/lib/chat/types";
 import { AlertTriangle, ArrowLeft, RefreshCw, X, Zap } from "lucide-react";
 import type { GatewayModelChoice } from "@/lib/gateway/models";
+import type { ChatAttachment } from "../hooks/useFileUpload";
 import { AgentChatView } from "./AgentChatView";
 import { EmptyStatePanel } from "./EmptyStatePanel";
 import { AgentChatTranscript } from "./AgentChatTranscript";
@@ -22,7 +23,7 @@ type AgentChatPanelProps = {
   onModelChange: (value: string | null) => void;
   onThinkingChange: (value: string | null) => void;
   onDraftChange: (value: string) => void;
-  onSend: (message: string) => void;
+  onSend: (message: string, attachments?: ChatAttachment[]) => void;
   onStopRun: () => void;
   tokenUsed?: number;
   tokenLimit?: number;
@@ -88,12 +89,12 @@ export const AgentChatPanel = memo(function AgentChatPanel({
   }, []);
 
   const handleSend = useCallback(
-    (message: string) => {
+    (message: string, attachments?: ChatAttachment[]) => {
       if (!canSend || agent.status === "running") return;
       const trimmed = message.trim();
-      if (!trimmed) return;
+      if (!trimmed && (!attachments || attachments.length === 0)) return;
       scrollToBottomNextOutputRef.current = true;
-      onSend(trimmed);
+      onSend(trimmed || "(attached files)", attachments);
     },
     [agent.status, canSend, onSend]
   );
@@ -109,8 +110,8 @@ export const AgentChatPanel = memo(function AgentChatPanel({
   );
 
   const handleComposerSend = useCallback(
-    (message: string) => {
-      handleSend(message);
+    (message: string, attachments?: ChatAttachment[]) => {
+      handleSend(message, attachments);
     },
     [handleSend]
   );

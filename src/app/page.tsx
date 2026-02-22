@@ -1224,7 +1224,7 @@ const AgentStudioPage = () => {
   );
 
   const handleSend = useCallback(
-    async (agentId: string, sessionKey: string, message: string) => {
+    async (agentId: string, sessionKey: string, message: string, attachments?: { mimeType: string; fileName: string; content: string }[]) => {
       const trimmed = message.trim();
       if (!trimmed) return;
       const pendingDraftTimer = pendingDraftTimersRef.current.get(agentId) ?? null;
@@ -1294,6 +1294,7 @@ const AgentStudioPage = () => {
           message: buildAgentInstruction({ message: trimmed }),
           deliver: false,
           idempotencyKey: runId,
+          ...(attachments && attachments.length > 0 ? { attachments } : {}),
         });
         if (!createdSession) {
           dispatch({
@@ -1627,11 +1628,11 @@ const AgentStudioPage = () => {
     if (fa) handleDraftChange(fa.agentId, value);
   }, [handleDraftChange]);
 
-  const stableChatOnSend = useCallback((message: string) => {
+  const stableChatOnSend = useCallback((message: string, attachments?: { mimeType: string; fileName: string; content: string }[]) => {
     const fa = focusedAgentRef.current;
     if (fa) {
       setViewingSessionKey(null);
-      handleSend(fa.agentId, fa.sessionKey, message);
+      handleSend(fa.agentId, fa.sessionKey, message, attachments);
     }
   }, [handleSend]);
 
