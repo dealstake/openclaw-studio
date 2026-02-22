@@ -75,15 +75,6 @@ export const ToolCallBlock = React.memo(function ToolCallBlock({
   const config = phaseConfig[phase];
   const { Icon } = config;
 
-  // Auto-open while running, auto-collapse when done
-  React.useEffect(() => {
-    if (phase === "running") {
-      setOpen(true);
-    } else if (phase === "complete" || phase === "error") {
-      setOpen(false);
-    }
-  }, [phase]);
-
   const durationLabel = formatElapsedLabel(startedAt, completedAt, phase === "running" || phase === "pending" ? true : undefined);
   const hasContent = !!(args || result);
 
