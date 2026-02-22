@@ -1,14 +1,11 @@
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
-import { Plus, MessageSquare, ChevronLeft, ChevronRight, SearchX } from "lucide-react";
-import { EmptyState } from "@/components/ui/EmptyState";
-import { ErrorBanner } from "@/components/ErrorBanner";
-import { CardSkeleton } from "@/components/ui/CardSkeleton";
+import { memo, useCallback, useEffect, useMemo } from "react";
+import { Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import { SearchInput } from "@/components/SearchInput";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { useSessionHistory } from "../hooks/useSessionHistory";
 import { sectionLabelClass } from "@/components/SectionLabel";
-import { SessionItem } from "./SessionItem";
+import { SessionList } from "./SessionList";
 
 /** Maximum recent sessions shown in collapsed strip. */
 const COLLAPSED_RECENT_COUNT = 3;
@@ -49,84 +46,17 @@ export const SessionHistorySidebar = memo(function SessionHistorySidebar({
     totalCount,
   } = useSessionHistory(client, status, agentId);
 
-  const [renamingKey, setRenamingKey] = useState<string | null>(null);
-  const [focusedIndex, setFocusedIndex] = useState(-1);
-
-  // Flat list of all visible session keys for keyboard navigation
-  const flatKeys = useMemo(
-    () => groups.flatMap((g) => g.sessions.map((s) => s.key)),
-    [groups],
-  );
-
-  // Reset focus when search changes
-  const handleSearchChange = useCallback(
-    (value: string) => {
-      setSearch(value);
-      setFocusedIndex(-1);
-    },
-    [setSearch],
-  );
-
-  const handleRenameStart = useCallback((key: string) => {
-    setRenamingKey(key);
-  }, []);
-
-  const handleRenameCancel = useCallback(() => {
-    setRenamingKey(null);
-  }, []);
-
   const handleRename = useCallback(
-    (key: string, name: string) => {
-      void renameSession(key, name);
-      setRenamingKey(null);
-    },
+    (key: string, name: string) => void renameSession(key, name),
     [renameSession],
   );
 
   const handleDelete = useCallback(
-    (key: string) => {
-      void deleteSession(key);
-    },
+    (key: string) => void deleteSession(key),
     [deleteSession],
   );
 
-  const handleListKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (renamingKey) return;
-      const len = flatKeys.length;
-      if (!len) return;
-
-      let next = focusedIndex;
-      switch (e.key) {
-        case "ArrowDown":
-          e.preventDefault();
-          next = focusedIndex < len - 1 ? focusedIndex + 1 : 0;
-          break;
-        case "ArrowUp":
-          e.preventDefault();
-          next = focusedIndex > 0 ? focusedIndex - 1 : len - 1;
-          break;
-        case "Home":
-          e.preventDefault();
-          next = 0;
-          break;
-        case "End":
-          e.preventDefault();
-          next = len - 1;
-          break;
-        case "Enter":
-          if (focusedIndex >= 0 && focusedIndex < len) {
-            e.preventDefault();
-            onSelectSession(flatKeys[focusedIndex]);
-          }
-          return;
-        default:
-          return;
-      }
-      setFocusedIndex(next);
-    },
-    [flatKeys, focusedIndex, renamingKey, onSelectSession],
-  );
+  const handleRetry = useCallback(() => void load(), [load]);
 
   // Load on mount and when agentId changes
   useEffect(() => {
@@ -213,7 +143,7 @@ export const SessionHistorySidebar = memo(function SessionHistorySidebar({
       <div className="px-3 py-2">
         <SearchInput
           value={search}
-          onChange={handleSearchChange}
+          onChange={setSearch}
           placeholder="Search sessions…"
         />
         {search.trim() && (
@@ -224,56 +154,19 @@ export const SessionHistorySidebar = memo(function SessionHistorySidebar({
       </div>
 
       {/* Session list */}
-      <div
-        className="flex-1 overflow-y-auto px-1.5 pb-2"
-        role="listbox"
-        aria-label="Session history"
-        tabIndex={0}
-        onKeyDown={handleListKeyDown}
-      >
-        {error ? (
-          <div className="px-1.5">
-            <ErrorBanner message={error} onRetry={() => void load()} />
-          </div>
-        ) : null}
-        {loading && groups.length === 0 ? (
-          <CardSkeleton count={4} variant="compact" className="px-1" />
-        ) : groups.length === 0 ? (
-          <EmptyState
-            icon={search ? SearchX : MessageSquare}
-            title={search ? "No matching sessions" : "No sessions yet"}
-            description={search ? undefined : "Start chatting to see your session history here"}
-            className="py-8"
-          />
-        ) : (
-          groups.map((group) => (
-            <div key={group.label} className="mb-2">
-              <div className={`${sectionLabelClass} px-2.5 py-1.5 text-[10px]`}>
-                {group.label}
-              </div>
-              <div className="flex flex-col gap-0.5">
-                {group.sessions.map((session) => (
-                  <SessionItem
-                    key={session.key}
-                    session={session}
-                    active={session.key === activeSessionKey}
-                    focused={flatKeys[focusedIndex] === session.key}
-                    pinned={pinnedKeys.has(session.key)}
-                    renaming={renamingKey === session.key}
-                    searchQuery={search}
-                    onSelect={onSelectSession}
-                    onRename={handleRename}
-                    onRenameStart={handleRenameStart}
-                    onRenameCancel={handleRenameCancel}
-                    onDelete={handleDelete}
-                    onTogglePin={togglePin}
-                  />
-                ))}
-              </div>
-            </div>
-          ))
-        )}
-      </div>
+      <SessionList
+        groups={groups}
+        loading={loading}
+        error={error}
+        search={search}
+        activeSessionKey={activeSessionKey}
+        pinnedKeys={pinnedKeys}
+        onRetry={handleRetry}
+        onSelect={onSelectSession}
+        onRename={handleRename}
+        onDelete={handleDelete}
+        onTogglePin={togglePin}
+      />
     </div>
   );
 });

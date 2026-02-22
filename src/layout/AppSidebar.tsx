@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useRef, useEffect, useState } from "react";
+import { memo, useCallback, useRef, useEffect } from "react";
 import {
   MessageSquare,
   BarChart3,
@@ -9,18 +9,14 @@ import {
   Settings,
   Plus,
   ChevronLeft,
-  SearchX,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { sectionLabelClass } from "@/components/SectionLabel";
 import { SearchInput } from "@/components/SearchInput";
-import { EmptyState } from "@/components/ui/EmptyState";
-import { ErrorBanner } from "@/components/ErrorBanner";
-import { CardSkeleton } from "@/components/ui/CardSkeleton";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { useSessionHistory } from "@/features/sessions/hooks/useSessionHistory";
-import { SessionItem } from "@/features/sessions/components/SessionItem";
+import { SessionList } from "@/features/sessions/components/SessionList";
 
 /** Management nav items that open in expanded modal */
 export type ManagementTab = "sessions" | "usage" | "channels" | "cron" | "settings";
@@ -137,22 +133,15 @@ export const AppSidebar = memo(function AppSidebar({
 
   const navContainerRef = useRef<HTMLDivElement>(null);
 
-  // Inline rename state
-  const [renamingKey, setRenamingKey] = useState<string | null>(null);
-
-  const handleRenameStart = useCallback((key: string) => setRenamingKey(key), []);
-  const handleRenameCancel = useCallback(() => setRenamingKey(null), []);
   const handleRename = useCallback(
-    (key: string, name: string) => {
-      void renameSession(key, name);
-      setRenamingKey(null);
-    },
+    (key: string, name: string) => void renameSession(key, name),
     [renameSession],
   );
   const handleDelete = useCallback(
     (key: string) => void deleteSession(key),
     [deleteSession],
   );
+  const handleRetry = useCallback(() => void load(), [load]);
 
   /** Arrow-key navigation within sidebar nav items */
   const handleNavKeyDown = useCallback(
@@ -271,50 +260,19 @@ export const AppSidebar = memo(function AppSidebar({
           </div>
 
           {/* Session list */}
-          <div className="min-h-0 flex-1 overflow-y-auto px-1.5 pb-2">
-            {error ? (
-              <div className="px-1.5">
-                <ErrorBanner message={error} onRetry={() => void load()} />
-              </div>
-            ) : null}
-            {loading && groups.length === 0 ? (
-              <CardSkeleton count={4} variant="compact" className="px-1" />
-            ) : groups.length === 0 ? (
-              <EmptyState
-                icon={search ? SearchX : MessageSquare}
-                title={search ? "No matching sessions" : "No sessions yet"}
-                description={search ? undefined : "Start chatting to see your history here"}
-                className="py-8"
-              />
-            ) : (
-              groups.map((group) => (
-                <div key={group.label} className="mb-2">
-                  <div className={`${sectionLabelClass} px-2.5 py-1.5 text-[10px]`}>
-                    {group.label}
-                  </div>
-                  <div className="flex flex-col gap-0.5">
-                    {group.sessions.map((session) => (
-                      <SessionItem
-                        key={session.key}
-                        session={session}
-                        active={session.key === activeSessionKey}
-                        focused={false}
-                        pinned={pinnedKeys.has(session.key)}
-                        renaming={renamingKey === session.key}
-                        searchQuery={search}
-                        onSelect={onSelectSession}
-                        onRename={handleRename}
-                        onRenameStart={handleRenameStart}
-                        onRenameCancel={handleRenameCancel}
-                        onDelete={handleDelete}
-                        onTogglePin={togglePin}
-                      />
-                    ))}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
+          <SessionList
+            groups={groups}
+            loading={loading}
+            error={error}
+            search={search}
+            activeSessionKey={activeSessionKey}
+            pinnedKeys={pinnedKeys}
+            onRetry={handleRetry}
+            onSelect={onSelectSession}
+            onRename={handleRename}
+            onDelete={handleDelete}
+            onTogglePin={togglePin}
+          />
 
           {/* Settings + theme toggle pinned to bottom */}
           <div className="border-t border-border/20 px-2 py-2 shrink-0 flex items-center gap-1">
