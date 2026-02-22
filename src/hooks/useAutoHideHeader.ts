@@ -10,13 +10,16 @@ import { useState, useEffect, useCallback, useRef } from "react";
 export function useAutoHideHeader(options?: {
   /** Scroll distance before header hides (default 50px) */
   threshold?: number;
-  /** Selector for the scroll container */
+  /** Ref to the scroll container element (preferred over scrollSelector) */
+  scrollContainerRef?: React.RefObject<HTMLElement | null>;
+  /** Selector for the scroll container (fallback if scrollContainerRef not provided) */
   scrollSelector?: string;
   /** Disable auto-hide (e.g. on mobile where header should always show) */
   disabled?: boolean;
 }) {
   const {
     threshold = 50,
+    scrollContainerRef,
     scrollSelector = '[data-testid="agent-chat-scroll"]',
     disabled = false,
   } = options ?? {};
@@ -29,7 +32,8 @@ export function useAutoHideHeader(options?: {
   useEffect(() => {
     if (disabled) return;
 
-    const container = document.querySelector(scrollSelector);
+    const container =
+      scrollContainerRef?.current ?? document.querySelector(scrollSelector);
     if (!container) return;
 
     function handleScroll() {
@@ -55,7 +59,7 @@ export function useAutoHideHeader(options?: {
 
     container.addEventListener("scroll", handleScroll, { passive: true });
     return () => container.removeEventListener("scroll", handleScroll);
-  }, [disabled, scrollSelector, threshold]);
+  }, [disabled, scrollContainerRef, scrollSelector, threshold]);
 
   const onHoverZoneEnter = useCallback(() => {
     if (!disabled) setHoverReveal(true);

@@ -152,4 +152,67 @@ describe("useAutoHideHeader", () => {
     // No container found, should stay visible
     expect(result.current.isVisible).toBe(true);
   });
+
+  it("uses scrollContainerRef when provided", async () => {
+    const mod = await import("@/hooks/useAutoHideHeader");
+    const refContainer = document.createElement("div");
+    Object.defineProperty(refContainer, "scrollTop", {
+      value: 0,
+      writable: true,
+    });
+    document.body.appendChild(refContainer);
+
+    const ref = { current: refContainer };
+    const { result } = renderHook(() =>
+      mod.useAutoHideHeader({
+        scrollContainerRef: ref,
+        threshold: 50,
+      })
+    );
+
+    // Scroll down past threshold on the ref container (not the selector one)
+    act(() => {
+      (refContainer as unknown as { scrollTop: number }).scrollTop = 100;
+      refContainer.dispatchEvent(new Event("scroll"));
+    });
+
+    expect(result.current.isVisible).toBe(false);
+
+    document.body.removeChild(refContainer);
+  });
+
+  it("scrollContainerRef takes priority over scrollSelector", async () => {
+    const mod = await import("@/hooks/useAutoHideHeader");
+    const refContainer = document.createElement("div");
+    Object.defineProperty(refContainer, "scrollTop", {
+      value: 0,
+      writable: true,
+    });
+    document.body.appendChild(refContainer);
+
+    const ref = { current: refContainer };
+    const { result } = renderHook(() =>
+      mod.useAutoHideHeader({
+        scrollContainerRef: ref,
+        scrollSelector: '[data-testid="agent-chat-scroll"]',
+        threshold: 50,
+      })
+    );
+
+    // Scroll the selector container — should NOT hide (ref takes priority)
+    act(() => {
+      (container as unknown as { scrollTop: number }).scrollTop = 200;
+      container.dispatchEvent(new Event("scroll"));
+    });
+    expect(result.current.isVisible).toBe(true);
+
+    // Scroll the ref container — should hide
+    act(() => {
+      (refContainer as unknown as { scrollTop: number }).scrollTop = 100;
+      refContainer.dispatchEvent(new Event("scroll"));
+    });
+    expect(result.current.isVisible).toBe(false);
+
+    document.body.removeChild(refContainer);
+  });
 });
