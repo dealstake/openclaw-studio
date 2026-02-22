@@ -79,7 +79,7 @@ export const ToolCallBlock = React.memo(function ToolCallBlock({
   const effectivePhase = React.useMemo(() => {
     if (phase !== "running" || !startedAt) return phase;
     const elapsed = Date.now() - startedAt;
-    if (elapsed > 60_000) return "complete";
+    if (elapsed > 10_000) return "complete";
     return phase;
   }, [phase, startedAt]);
 
@@ -88,7 +88,7 @@ export const ToolCallBlock = React.memo(function ToolCallBlock({
   React.useEffect(() => {
     if (phase !== "running" || !startedAt) return;
     const elapsed = Date.now() - startedAt;
-    const remaining = 60_000 - elapsed;
+    const remaining = 10_000 - elapsed;
     if (remaining <= 0) return; // already stale, effectivePhase handles it
     const timer = setTimeout(() => forceUpdate((n) => n + 1), remaining + 100);
     return () => clearTimeout(timer);
@@ -101,7 +101,7 @@ export const ToolCallBlock = React.memo(function ToolCallBlock({
   const hasContent = !!(args || result);
 
   return (
-    <Collapsible open={open} onOpenChange={setOpen} className={className}>
+    <Collapsible open={open} onOpenChange={setOpen} className={`hidden sm:block ${className}`}>
       <CollapsibleTrigger className="group/tool flex items-center gap-1.5 rounded-md px-1 py-0.5 text-left transition-colors hover:bg-muted/50">
         {/* Chevron — only if expandable */}
         {hasContent ? (
