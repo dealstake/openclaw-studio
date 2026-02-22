@@ -60,7 +60,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   const [isEmpty, setIsEmpty] = useState(!initialDraft.trim());
   const [isDragging, setIsDragging] = useState(false);
   const dragCountRef = useRef(0);
-  const { files, addFiles, removeFile, clearFiles, getAttachments, hasFiles, acceptString } = useFileUpload();
+  const { files, addFiles, removeFile, clearFiles, getAttachments, hasFiles, isEncoding, acceptString } = useFileUpload();
 
   const handleRef = useCallback((el: HTMLTextAreaElement | HTMLInputElement | null) => {
     localRef.current = el instanceof HTMLTextAreaElement ? el : null;
@@ -213,7 +213,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
     };
   }, []);
 
-  const sendDisabled = !canSend || running || (isEmpty && !hasFiles);
+  const sendDisabled = !canSend || running || (isEmpty && !hasFiles) || isEncoding;
 
   const tokenPct = tokenUsed && tokenLimit && tokenLimit > 0
     ? Math.round((tokenUsed / tokenLimit) * 100)
@@ -291,7 +291,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
           {/* Attach button */}
           <button
             type="button"
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground sm:h-9 sm:w-9"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground"
             aria-label="Attach file"
             onClick={() => fileInputRef.current?.click()}
           >
@@ -321,7 +321,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
 
           {running ? (
             <button
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50 sm:h-8 sm:w-8"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
               type="button"
               aria-label="Stop agent"
               onClick={onStop}
@@ -331,7 +331,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
             </button>
           ) : (
             <button
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50 sm:h-8 sm:w-8"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
               type="button"
               aria-label="Send message"
               onClick={handleClickSend}

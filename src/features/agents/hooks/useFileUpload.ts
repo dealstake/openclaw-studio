@@ -184,6 +184,7 @@ export function useFileUpload() {
   const hasFiles = files.length > 0;
   const allReady = files.length > 0 && files.every((f) => f.status === "ready");
   const hasErrors = files.some((f) => f.status === "error");
+  const isEncoding = files.some((f) => f.status === "encoding");
 
   return {
     files,
@@ -194,6 +195,7 @@ export function useFileUpload() {
     hasFiles,
     allReady,
     hasErrors,
+    isEncoding,
     acceptString: ACCEPT_STRING,
   };
 }
