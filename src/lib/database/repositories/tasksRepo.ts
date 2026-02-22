@@ -137,9 +137,11 @@ export function remove(db: StudioDb, id: string): boolean {
   return result.changes > 0;
 }
 
-/** Import tasks from an array (e.g., parsed from tasks.json). Idempotent. */
+/** Import tasks from an array (e.g., parsed from tasks.json). Idempotent. Wrapped in transaction for performance. */
 export function importFromArray(db: StudioDb, taskList: StudioTask[]): void {
-  for (const task of taskList) {
-    upsert(db, task);
-  }
+  db.transaction(() => {
+    for (const task of taskList) {
+      upsert(db, task);
+    }
+  });
 }

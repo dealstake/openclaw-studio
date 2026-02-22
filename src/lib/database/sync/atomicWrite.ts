@@ -9,7 +9,7 @@ import path from "node:path";
  */
 export function atomicWriteFileSync(filePath: string, content: string): void {
   const resolved = path.resolve(filePath);
-  const tmpPath = `${resolved}.tmp`;
+  const tmpPath = `${resolved}.${process.pid}.${Date.now()}.tmp`;
 
   // Ensure parent directory exists
   const dir = path.dirname(resolved);

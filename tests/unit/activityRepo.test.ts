@@ -140,8 +140,8 @@ describe("activityRepo", () => {
         JSON.stringify(makeEvent({ id: "evt-2" })),
       ].join("\n");
 
-      const count = activityRepo.importFromJsonl(db, jsonl);
-      expect(count).toBe(2);
+      const result1 = activityRepo.importFromJsonl(db, jsonl);
+      expect(result1.imported).toBe(2);
 
       const result = activityRepo.query(db);
       expect(result.total).toBe(2);
@@ -155,8 +155,9 @@ describe("activityRepo", () => {
         JSON.stringify(makeEvent({ id: "evt-also-good" })),
       ].join("\n");
 
-      const count = activityRepo.importFromJsonl(db, jsonl);
-      expect(count).toBe(2);
+      const result1 = activityRepo.importFromJsonl(db, jsonl);
+      expect(result1.imported).toBe(2);
+      expect(result1.skipped).toBe(2);
     });
 
     it("is idempotent", () => {

@@ -43,6 +43,13 @@
       "when": 1771588000000,
       "tag": "0005_activity_enrichment",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1771920300000,
+      "tag": "0006_database_indexes",
+      "breakpoints": true
     }
   ]
 }

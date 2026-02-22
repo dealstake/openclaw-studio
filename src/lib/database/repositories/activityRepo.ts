@@ -108,15 +108,19 @@ export function insert(db: StudioDb, event: ActivityEvent): void {
     .run();
 }
 
-/** Import events from JSONL content string. Idempotent (skips existing IDs). */
-export function importFromJsonl(db: StudioDb, jsonlContent: string): number {
+/** Import events from JSONL content string. Idempotent (skips existing IDs). Returns imported count and skipped count. */
+export function importFromJsonl(db: StudioDb, jsonlContent: string): { imported: number; skipped: number } {
   const lines = jsonlContent.split("\n").filter((l) => l.trim());
   let imported = 0;
+  let skipped = 0;
 
   for (const line of lines) {
     try {
       const raw = JSON.parse(line) as ActivityEvent;
-      if (!raw.id || !raw.timestamp || !raw.status) continue;
+      if (!raw.id || !raw.timestamp || !raw.status) {
+        skipped++;
+        continue;
+      }
       insert(db, {
         id: raw.id,
         timestamp: raw.timestamp,
@@ -131,9 +135,13 @@ export function importFromJsonl(db: StudioDb, jsonlContent: string): number {
       });
       imported++;
     } catch {
-      // Skip malformed lines
+      skipped++;
     }
   }
 
-  return imported;
+  if (skipped > 0 && process.env.NODE_ENV !== "test") {
+    console.warn(`[activityRepo] importFromJsonl: skipped ${skipped} malformed line(s)`);
+  }
+
+  return { imported, skipped };
 }

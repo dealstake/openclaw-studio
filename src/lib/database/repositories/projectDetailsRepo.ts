@@ -1,22 +1,7 @@
 import { eq } from "drizzle-orm";
-import { projectDetails } from "../schema";
+import { projectDetails, type ProjectDetailsRow } from "../schema";
 import type { StudioDb } from "../index";
 import { parseProjectFile, type ProjectDetails } from "@/features/projects/lib/parseProject";
-
-// ─── Types ───────────────────────────────────────────────────────────────────
-
-export interface ProjectDetailsRow {
-  doc: string;
-  lastWorkedOn: string | null;
-  nextStep: string | null;
-  blockedBy: string | null;
-  contextNeeded: string | null;
-  progressCompleted: number;
-  progressTotal: number;
-  progressPercent: number;
-  associatedTasksJson: string | null;
-  updatedAt: string;
-}
 
 // ─── Repository ──────────────────────────────────────────────────────────────
 

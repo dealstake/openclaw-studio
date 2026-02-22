@@ -148,7 +148,8 @@ function resolveDefaultDbPath(): string {
     return path.join(agentDir, "data", "studio.db");
   }
 
-  // Fallback: ~/.openclaw/agents/alex/data/studio.db
+  // Fallback: ~/.openclaw/agents/<agentId>/data/studio.db
   const home = process.env.HOME ?? process.env.USERPROFILE ?? "/tmp";
-  return path.join(home, ".openclaw", "agents", "alex", "data", "studio.db");
+  const agentId = process.env.OPENCLAW_AGENT_ID ?? "alex";
+  return path.join(home, ".openclaw", "agents", agentId, "data", "studio.db");
 }

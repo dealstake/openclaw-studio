@@ -50,7 +50,17 @@ export function checkIntegrity(
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
+const ALLOWED_TABLES = new Set([
+  "projects_index",
+  "tasks",
+  "activity_events",
+  "project_details",
+]);
+
 function getTableCount(db: StudioDb, tableName: string): number {
+  if (!ALLOWED_TABLES.has(tableName)) {
+    throw new Error(`[integrityCheck] Table name not in allowlist: ${tableName}`);
+  }
   try {
     const result = db.all<{ count: number }>(
       sql.raw(`SELECT COUNT(*) as count FROM ${tableName}`),
