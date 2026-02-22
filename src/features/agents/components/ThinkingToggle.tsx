@@ -2,6 +2,7 @@
 
 import { memo, useCallback } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useBreakpoint, isMobile } from "@/hooks/useBreakpoint";
 
 /* ── Thinking level metadata ────────────────────────────────────── */
 
@@ -28,6 +29,8 @@ export const ThinkingToggle = memo(function ThinkingToggle({
     [onChange]
   );
 
+  const bp = useBreakpoint();
+  const mobile = isMobile(bp);
   const currentLevel = THINKING_LEVELS.find((l) => l.value === value) ?? THINKING_LEVELS[0];
 
   return (
@@ -35,7 +38,7 @@ export const ThinkingToggle = memo(function ThinkingToggle({
       <Tooltip>
         <TooltipTrigger asChild>
           <div
-            className="flex h-8 items-center rounded-lg bg-muted/50 p-0.5"
+            className={`flex items-center rounded-lg bg-muted/50 p-0.5 ${mobile ? "h-10" : "h-8"}`}
             role="radiogroup"
             aria-label="Thinking level"
           >
@@ -48,7 +51,9 @@ export const ThinkingToggle = memo(function ThinkingToggle({
                   role="radio"
                   aria-checked={isActive}
                   aria-label={`Thinking: ${level.label}`}
-                  className={`flex h-7 items-center rounded-md px-2 text-[11px] font-medium transition ${
+                  className={`flex items-center rounded-md text-[11px] font-medium transition ${
+                    mobile ? "h-9 min-w-[44px] justify-center px-2.5" : "h-7 px-2"
+                  } ${
                     isActive
                       ? "bg-card text-foreground shadow-sm"
                       : "text-muted-foreground hover:text-foreground"
