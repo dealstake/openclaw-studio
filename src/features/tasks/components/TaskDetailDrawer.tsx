@@ -93,7 +93,7 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
   if (!task) return null;
 
   return (
-    <div className="flex h-full w-full flex-col overflow-hidden">
+    <div className="flex h-full w-full flex-col overflow-hidden animate-in slide-in-from-right-8 fade-in duration-200">
       <TaskDetailHeader
         taskName={task.name}
         editing={editing}

@@ -153,7 +153,7 @@ export const ContextPanel = memo(function ContextPanel({
                   role="tabpanel"
                   id={tabPanelId(value)}
                   aria-labelledby={tabButtonId(value)}
-                  className={activeTab === value ? "flex h-full w-full flex-col overflow-hidden" : "hidden"}
+                  className={activeTab === value ? "flex h-full w-full flex-col overflow-hidden animate-in fade-in duration-150" : "hidden"}
                 >
                   {contentMap[value] ?? null}
                 </div>

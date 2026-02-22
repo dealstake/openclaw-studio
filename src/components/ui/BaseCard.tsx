@@ -53,7 +53,7 @@ export const BaseCard = React.memo(function BaseCard({
         variantClasses[variant],
         isHoverable && !isSelected && variant === "flush"
           ? "hover:bg-muted/30"
-          : isHoverable && !isSelected && "hover:bg-card/70 hover:border-border/80 hover:shadow-sm",
+          : isHoverable && !isSelected && "hover:bg-card/70 hover:border-border/80 hover:shadow-sm hover:-translate-y-px",
         isSelected && "ring-2 ring-primary/40 border-primary/30 bg-primary/5",
         isInteractive && "cursor-pointer",
         className,
@@ -93,7 +93,7 @@ export const CardTitle = React.memo(function CardTitle({
   ...props
 }: CardTitleProps) {
   return (
-    <h3 className={cn("min-w-0 flex-1 truncate text-sm font-medium text-foreground leading-snug", className)} {...props}>
+    <h3 className={cn("min-w-0 flex-1 truncate text-sm font-medium text-foreground leading-snug transition-colors duration-150 group-hover/card:text-primary", className)} {...props}>
       {children}
     </h3>
   );

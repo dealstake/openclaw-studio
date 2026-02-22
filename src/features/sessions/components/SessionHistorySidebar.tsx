@@ -34,10 +34,10 @@ const SessionItem = memo(function SessionItem({
     <button
       type="button"
       onClick={handleClick}
-      className={`group flex w-full items-start gap-2.5 rounded-lg px-2.5 py-2.5 text-left transition-colors focus-ring min-h-[44px] ${
+      className={`group flex w-full items-start gap-2.5 rounded-lg px-2.5 py-2.5 text-left transition-all duration-200 focus-ring min-h-[44px] ${
         active
           ? "bg-accent text-accent-foreground"
-          : "text-foreground/80 hover:bg-muted"
+          : "text-foreground/80 hover:bg-muted hover:translate-x-0.5"
       }`}
     >
       <MessageSquare className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
