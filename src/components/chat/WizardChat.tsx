@@ -85,7 +85,7 @@ export const WizardChat = React.memo(function WizardChat({
   // Cleanup wizard session on unmount — abort streaming first to avoid race
   useEffect(() => {
     return () => {
-      abort().then(cleanup);
+      void Promise.resolve(abort()).then(cleanup);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
