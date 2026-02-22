@@ -8,6 +8,7 @@ import {
   extractText,
   extractThinking,
   extractImages,
+  isHeartbeatPrompt,
   isUiMetadataPrefix,
   stripUiMetadata,
 } from "@/lib/text/message-extract";
@@ -154,6 +155,17 @@ export function handleRuntimeChatEvent(
   }
 
   if (role === "user" || role === "system") {
+    // Pre-set heartbeat flag when we see a heartbeat user prompt BEFORE the
+    // isHeartbeat-tagged assistant delta arrives. This closes the race window
+    // where tool call events leak into the main chat because they arrive
+    // between the user message and the first assistant delta.
+    if (role === "user") {
+      const userText = extractText(payload.message) ?? "";
+      const stripped = stripUiMetadata(userText);
+      if (stripped && isHeartbeatPrompt(stripped)) {
+        state.heartbeatActiveAgents.add(agentId);
+      }
+    }
     return;
   }
 

@@ -71,13 +71,17 @@ export const ToolCallBlock = React.memo(function ToolCallBlock({
   completedAt,
   className = "",
 }: ToolCallBlockProps) {
-  const [open, setOpen] = useState(phase === "running");
+  const [open, setOpen] = useState(false);
   const config = phaseConfig[phase];
   const { Icon } = config;
 
-  // Keep open while running
+  // Auto-open while running, auto-collapse when done
   React.useEffect(() => {
-    if (phase === "running") setOpen(true);
+    if (phase === "running") {
+      setOpen(true);
+    } else if (phase === "complete" || phase === "error") {
+      setOpen(false);
+    }
   }, [phase]);
 
   const durationLabel = formatElapsedLabel(startedAt, completedAt, phase === "running" || phase === "pending" ? true : undefined);
