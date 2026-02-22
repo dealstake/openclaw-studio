@@ -73,24 +73,27 @@ export const ToolCallBlock = React.memo(function ToolCallBlock({
 }: ToolCallBlockProps) {
   const [open, setOpen] = useState(false);
 
-  // Defensive: if a tool call has been "running" for > 60s without an update,
+  // Defensive: if a tool call has been "running" for > 10s without an update,
   // treat it as complete. This prevents permanently stuck spinners when
   // completion events are lost (e.g. gateway restart, filter bugs).
+  const [nowMs, setNowMs] = React.useState(() => Date.now());
   const effectivePhase = React.useMemo(() => {
     if (phase !== "running" || !startedAt) return phase;
-    const elapsed = Date.now() - startedAt;
+    const elapsed = nowMs - startedAt;
     if (elapsed > 10_000) return "complete";
     return phase;
-  }, [phase, startedAt]);
+  }, [phase, startedAt, nowMs]);
 
   // Re-render after timeout so spinner disappears for stale tool calls
-  const [, forceUpdate] = React.useState(0);
   React.useEffect(() => {
     if (phase !== "running" || !startedAt) return;
     const elapsed = Date.now() - startedAt;
     const remaining = 10_000 - elapsed;
-    if (remaining <= 0) return; // already stale, effectivePhase handles it
-    const timer = setTimeout(() => forceUpdate((n) => n + 1), remaining + 100);
+    if (remaining <= 0) {
+      setNowMs(Date.now());
+      return;
+    }
+    const timer = setTimeout(() => setNowMs(Date.now()), remaining + 100);
     return () => clearTimeout(timer);
   }, [phase, startedAt]);
 
