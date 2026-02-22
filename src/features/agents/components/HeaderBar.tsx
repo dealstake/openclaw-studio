@@ -267,8 +267,8 @@ export const HeaderBar = memo(function HeaderBar({
 
   return (
     <div className="flex h-12 w-full items-center justify-between bg-background/60 px-4 backdrop-blur-xl transition-colors duration-300 hover:bg-background/80">
-      {/* Left section — hamburger + brand (desktop only) */}
-      <div className="flex min-w-0 items-center gap-3 sm:flex-1">
+      {/* Left section — hamburger + brand */}
+      <div className="flex shrink-0 items-center gap-3">
         {onOpenSessionHistory ? (
           <HeaderIconButton
             onClick={onOpenSessionHistory}
@@ -285,20 +285,10 @@ export const HeaderBar = memo(function HeaderBar({
           gatewayVersion={gatewayVersion}
           gatewayUptime={gatewayUptime}
         />
-        {/* Desktop breadcrumb — left-aligned */}
-        <div className="hidden sm:flex min-w-0">
-          {agents?.length && onSelectAgent ? (
-            <AgentBreadcrumb
-              agents={agents}
-              selectedAgentId={selectedAgentId ?? null}
-              onSelectAgent={onSelectAgent}
-            />
-          ) : null}
-        </div>
       </div>
 
-      {/* Center section — mobile breadcrumb, centered */}
-      <div className="flex flex-1 justify-center sm:hidden min-w-0">
+      {/* Center section — breadcrumb, centered on all viewports */}
+      <div className="flex flex-1 justify-center min-w-0">
         {agents?.length && onSelectAgent ? (
           <AgentBreadcrumb
             agents={agents}
