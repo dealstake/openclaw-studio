@@ -66,12 +66,12 @@ export const AgentBreadcrumb = memo(function AgentBreadcrumb({
       <button
         type="button"
         onClick={toggle}
-        className="flex min-h-[44px] items-center gap-2 rounded-lg px-2 py-1.5 transition hover:bg-muted/60"
+        className={`flex min-h-[44px] items-center gap-2 rounded-lg px-2 py-1.5 transition hover:bg-muted/60 ${open ? "bg-muted/60" : ""}`}
         data-testid="agent-breadcrumb-trigger"
         aria-expanded={open}
         aria-haspopup="listbox"
       >
-        <span className="text-muted-foreground/60 select-none">/</span>
+        <span className="text-muted-foreground/60 select-none" aria-hidden="true">/</span>
         <AgentAvatar
           seed={selected.avatarSeed ?? selected.agentId}
           name={selected.name || selected.agentId}
@@ -92,7 +92,7 @@ export const AgentBreadcrumb = memo(function AgentBreadcrumb({
 
       {open ? (
         <div
-          className="absolute left-0 top-full z-50 mt-1 min-w-[220px] rounded-lg border border-border/80 bg-popover/95 py-1 shadow-lg backdrop-blur"
+          className="absolute left-1/2 -translate-x-1/2 sm:left-0 sm:translate-x-0 top-full z-50 mt-1 min-w-[220px] max-w-[calc(100vw-2rem)] rounded-lg border border-border/80 bg-popover/95 py-1 shadow-lg backdrop-blur"
           role="listbox"
           aria-label="Select agent"
         >

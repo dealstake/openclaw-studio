@@ -1836,7 +1836,7 @@ const AgentStudioPage = () => {
                 >
                   {/* Agent list for mobile */}
                   {breadcrumbAgents.length > 1 && (
-                    <div className="border-b border-border/20 px-3 py-2.5">
+                    <div className="border-b border-border/40 px-3 py-2.5">
                       <p className={`${sectionLabelClass} mb-1.5 px-0.5 text-[10px]`}>Agents</p>
                       <div className="flex flex-col gap-0.5">
                         {breadcrumbAgents.map((agent) => (
@@ -1864,7 +1864,7 @@ const AgentStudioPage = () => {
                     </div>
                   )}
                   {/* Management nav items for mobile */}
-                  <div className="flex flex-col gap-0.5 border-b border-border/20 px-3 py-3">
+                  <div className="flex flex-col gap-0.5 border-b border-border/40 px-3 py-3">
                     {([
                       { value: "sessions" as ManagementTab, label: "Sessions" },
                       { value: "usage" as ManagementTab, label: "Usage" },

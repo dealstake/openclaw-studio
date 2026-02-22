@@ -83,7 +83,7 @@
   --tracking-normal: 0.005em;
   --panel: oklch(0.998 0.002 230 / 0.83);
   --panel-border: oklch(0.80 0.012 232 / 0.44);
-  --surface-elevated: oklch(0.98 0.01 250);
+  --surface-elevated: oklch(0.96 0.01 250);
 
   /* Z-index depth scale — Chat as Canvas Architecture
    * See src/lib/styles/z-index.ts for named constants */
