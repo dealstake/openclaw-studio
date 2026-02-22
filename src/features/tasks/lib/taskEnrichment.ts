@@ -43,10 +43,22 @@ export function enrichTasksWithCronData(
   const enrichedTasks = tasks.map((task) => {
     const cron = cronMap.get(task.cronJobId);
     if (!cron) return task;
+    // Read thinking from cron payload (authoritative)
+    const cronThinking = cron.payload.kind === "agentTurn" ? (cron.payload.thinking ?? null) : null;
+    // Read model from cron payload (authoritative)
+    const cronModel = cron.payload.kind === "agentTurn" ? (cron.payload.model ?? task.model) : task.model;
+    // Read delivery from cron (authoritative)
+    const cronDeliveryChannel = cron.delivery?.channel ?? task.deliveryChannel;
+    const cronDeliveryTarget = cron.delivery?.to ?? task.deliveryTarget;
+
     return {
       ...task,
       // Cron is authoritative for all runtime state
       enabled: cron.enabled,
+      model: cronModel,
+      thinking: cronThinking,
+      deliveryChannel: cronDeliveryChannel,
+      deliveryTarget: cronDeliveryTarget,
       schedule: cronScheduleToTaskSchedule(cron.schedule, task.type),
       lastRunAt: cron.state.lastRunAtMs
         ? new Date(cron.state.lastRunAtMs).toISOString()
@@ -89,8 +101,10 @@ export function enrichTasksWithCronData(
           : JSON.stringify(job.payload),
     model:
       job.payload.kind === "agentTurn" ? job.payload.model ?? "default" : "default",
-    deliveryChannel: null,
-    deliveryTarget: null,
+    thinking:
+      job.payload.kind === "agentTurn" ? job.payload.thinking ?? null : null,
+    deliveryChannel: job.delivery?.channel ?? null,
+    deliveryTarget: job.delivery?.to ?? null,
     enabled: job.enabled,
     createdAt: new Date(job.createdAtMs ?? Date.now()).toISOString(),
     updatedAt: new Date(job.createdAtMs ?? Date.now()).toISOString(),

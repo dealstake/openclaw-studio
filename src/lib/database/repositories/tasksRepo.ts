@@ -16,6 +16,7 @@ function rowToTask(row: typeof tasks.$inferSelect): StudioTask {
     schedule: row.scheduleJson ? (JSON.parse(row.scheduleJson) as TaskSchedule) : { type: "periodic", intervalMs: 300_000 },
     prompt: row.prompt,
     model: row.model,
+    thinking: null, // Thinking level is cron-owned, enriched from gateway at read time
     deliveryChannel: row.deliveryChannel ?? null,
     deliveryTarget: row.deliveryTarget ?? null,
     enabled: row.enabled,

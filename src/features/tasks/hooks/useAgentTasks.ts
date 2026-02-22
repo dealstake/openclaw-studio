@@ -85,6 +85,7 @@ export const useAgentTasks = (
             kind: "agentTurn",
             message: buildCronPayloadMessage(taskId, resolvedPrompt),
             model: payload.model,
+            ...(payload.thinking ? { thinking: payload.thinking } : {}),
           },
           agentId: payload.agentId,
           enabled: true,
@@ -107,6 +108,7 @@ export const useAgentTasks = (
           schedule: payload.schedule,
           prompt: resolvedPrompt,
           model: payload.model,
+          thinking: payload.thinking ?? null,
           deliveryChannel: payload.deliveryChannel ?? null,
           deliveryTarget: payload.deliveryTarget ?? null,
           enabled: true,
@@ -233,13 +235,26 @@ export const useAgentTasks = (
         // Schedule changes go through updateTaskSchedule(); enabled through toggleTask()
         const cronPatch: Record<string, unknown> = {};
 
-        if (updates.prompt !== undefined || updates.model !== undefined) {
+        if (updates.prompt !== undefined || updates.model !== undefined || updates.thinking !== undefined) {
           const newPrompt = updates.prompt ?? task.prompt;
           const newModel = updates.model ?? task.model;
+          const newThinking = updates.thinking !== undefined ? updates.thinking : task.thinking;
           cronPatch.payload = {
             kind: "agentTurn",
             message: buildCronPayloadMessage(task.id, newPrompt),
             model: newModel,
+            ...(newThinking ? { thinking: newThinking } : {}),
+          };
+        }
+
+        // Delivery changes go to cron
+        if (updates.deliveryChannel !== undefined || updates.deliveryTarget !== undefined) {
+          const channel = updates.deliveryChannel !== undefined ? updates.deliveryChannel : task.deliveryChannel;
+          const to = updates.deliveryTarget !== undefined ? updates.deliveryTarget : task.deliveryTarget;
+          cronPatch.delivery = {
+            mode: channel ? "announce" : "none",
+            ...(channel ? { channel } : {}),
+            ...(to ? { to } : {}),
           };
         }
 

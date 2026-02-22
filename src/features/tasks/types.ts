@@ -55,6 +55,8 @@ export interface StudioTask {
   // Execution
   prompt: string;
   model: string;
+  /** Thinking level for the model (e.g. "low", "medium", "high") */
+  thinking: string | null;
   deliveryChannel: string | null;
   deliveryTarget: string | null;
 
@@ -83,6 +85,7 @@ export interface CreateTaskPayload {
   schedule: TaskSchedule;
   prompt: string;
   model: string;
+  thinking?: string | null;
   deliveryChannel?: string | null;
   deliveryTarget?: string | null;
 }
@@ -100,6 +103,7 @@ export interface UpdateTaskPayload {
   description?: string;
   prompt?: string;
   model?: string;
+  thinking?: string | null;
   deliveryChannel?: string | null;
   deliveryTarget?: string | null;
 }
@@ -119,9 +123,26 @@ export interface WizardTaskConfig {
   schedule: TaskSchedule;
   prompt: string;
   model: string;
+  thinking?: string | null;
   agentId: string;
   deliveryChannel?: string | null;
 }
+
+// ─── Thinking level options ───────────────────────────────────────────────────
+
+export const THINKING_OPTIONS = [
+  { label: "Off", value: "" },
+  { label: "Low", value: "low" },
+  { label: "Medium", value: "medium" },
+  { label: "High", value: "high" },
+] as const;
+
+// ─── Delivery mode options ───────────────────────────────────────────────────
+
+export const DELIVERY_MODE_OPTIONS = [
+  { label: "Announce", value: "announce" },
+  { label: "None", value: "none" },
+] as const;
 
 // ─── Stagger options ─────────────────────────────────────────────────────────
 

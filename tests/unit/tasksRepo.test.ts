@@ -21,6 +21,7 @@ describe("tasksRepo", () => {
     schedule: { type: "periodic", intervalMs: 300_000 },
     prompt: "Do the thing",
     model: "anthropic/claude-sonnet-4-6",
+    thinking: null,
     deliveryChannel: null,
     deliveryTarget: null,
     enabled: true,

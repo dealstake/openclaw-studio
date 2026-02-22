@@ -23,6 +23,7 @@ function makeTask(id: string): StudioTask {
     schedule: { type: "periodic", intervalMs: 300_000 },
     prompt: "",
     model: "",
+    thinking: null,
     deliveryChannel: null,
     deliveryTarget: null,
     enabled: true,

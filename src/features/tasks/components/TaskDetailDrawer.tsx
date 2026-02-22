@@ -45,6 +45,7 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
 
   const {
     editing, editName, editDescription, editPrompt, editModel,
+    editThinking, editDeliveryChannel, editDeliveryTarget,
     startEditing: startEditingForm, cancelEditing, saveEdits, setField,
   } = useTaskEditForm({ task, onUpdateTask });
 
@@ -112,6 +113,9 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
           editing={editing}
           editDescription={editDescription}
           editModel={editModel}
+          editThinking={editThinking}
+          editDeliveryChannel={editDeliveryChannel}
+          editDeliveryTarget={editDeliveryTarget}
           busy={busy}
           onFieldChange={setField}
           onUpdateSchedule={onUpdateSchedule}

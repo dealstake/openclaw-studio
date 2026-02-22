@@ -69,6 +69,7 @@ function makeTask(overrides: Partial<StudioTask> = {}): StudioTask {
     schedule: { type: "periodic", intervalMs: 3_600_000 },
     prompt: "Do something",
     model: "anthropic/claude-sonnet-4-6",
+    thinking: null,
     deliveryChannel: null,
     deliveryTarget: null,
     enabled: true,

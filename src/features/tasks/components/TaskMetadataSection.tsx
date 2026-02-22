@@ -1,12 +1,14 @@
 "use client";
 
 import { memo } from "react";
-import { Clock, Play, Trash2 } from "lucide-react";
+import { Clock, Megaphone, Play, Trash2 } from "lucide-react";
 import type { StudioTask, TaskSchedule } from "@/features/tasks/types";
 import {
   PERIODIC_INTERVAL_OPTIONS,
   CONSTANT_INTERVAL_OPTIONS,
   STAGGER_OPTIONS,
+  THINKING_OPTIONS,
+  DELIVERY_MODE_OPTIONS,
 } from "@/features/tasks/types";
 import { humanReadableSchedule } from "@/features/tasks/lib/schedule";
 import { formatRelativeTime } from "@/lib/text/time";
@@ -25,8 +27,11 @@ interface TaskMetadataSectionProps {
   editing: boolean;
   editDescription: string;
   editModel: string;
+  editThinking: string;
+  editDeliveryChannel: string;
+  editDeliveryTarget: string;
   busy: boolean;
-  onFieldChange: (field: "name" | "description" | "model" | "prompt", value: string) => void;
+  onFieldChange: (field: "name" | "description" | "model" | "prompt" | "thinking" | "deliveryChannel" | "deliveryTarget", value: string) => void;
   onUpdateSchedule: (taskId: string, schedule: TaskSchedule) => void;
   onToggle: (taskId: string, enabled: boolean) => void;
   onRun: (taskId: string) => void;
@@ -38,6 +43,9 @@ export const TaskMetadataSection = memo(function TaskMetadataSection({
   editing,
   editDescription,
   editModel,
+  editThinking,
+  editDeliveryChannel,
+  editDeliveryTarget,
   busy,
   onFieldChange,
   onUpdateSchedule,
@@ -183,6 +191,25 @@ export const TaskMetadataSection = memo(function TaskMetadataSection({
           ) : (
             <span>Model: {task.model.split("/").pop()}</span>
           )}
+          {editing ? (
+            <div className="flex items-center gap-1.5">
+              <span>Thinking:</span>
+              <select
+                aria-label="Thinking level"
+                className="h-6 rounded-md border border-border/80 bg-card/70 px-1.5 font-mono text-[11px] text-foreground outline-none transition hover:border-border focus:border-primary/60"
+                value={editThinking}
+                onChange={(e) => onFieldChange("thinking", e.target.value)}
+              >
+                {THINKING_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : task.thinking ? (
+            <span>Thinking: {task.thinking}</span>
+          ) : null}
           <span>Agent: {task.agentId}</span>
           {task.runningAtMs ? (
             <span className="font-semibold text-purple-400">● Running now</span>
@@ -206,6 +233,63 @@ export const TaskMetadataSection = memo(function TaskMetadataSection({
           ) : null}
         </div>
       </div>
+
+      {/* Delivery */}
+      {(editing || task.deliveryChannel) ? (
+        <div className="border-b border-border/40 px-4 py-3">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Megaphone className="h-3 w-3 shrink-0" />
+            <span className={sectionLabelClass}>Delivery</span>
+          </div>
+          {editing ? (
+            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-2">
+              <div className="flex items-center gap-1.5 text-xs">
+                <span className="text-muted-foreground">Mode:</span>
+                <select
+                  aria-label="Delivery mode"
+                  className="h-6 rounded-md border border-border/80 bg-card/70 px-1.5 font-mono text-[11px] text-foreground outline-none transition hover:border-border focus:border-primary/60"
+                  value={editDeliveryChannel ? "announce" : "none"}
+                  onChange={(e) => {
+                    if (e.target.value === "none") {
+                      onFieldChange("deliveryChannel", "");
+                      onFieldChange("deliveryTarget", "");
+                    }
+                  }}
+                >
+                  {DELIVERY_MODE_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-center gap-1.5 text-xs">
+                <span className="text-muted-foreground">Channel:</span>
+                <input
+                  className={`${inputClass} w-32`}
+                  value={editDeliveryChannel}
+                  onChange={(e) => onFieldChange("deliveryChannel", e.target.value)}
+                  placeholder="e.g. whatsapp"
+                />
+              </div>
+              <div className="flex items-center gap-1.5 text-xs">
+                <span className="text-muted-foreground">Target:</span>
+                <input
+                  className={`${inputClass} w-40`}
+                  value={editDeliveryTarget}
+                  onChange={(e) => onFieldChange("deliveryTarget", e.target.value)}
+                  placeholder="e.g. user id"
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="mt-1 flex flex-wrap gap-x-4 text-xs text-muted-foreground">
+              <span>Channel: {task.deliveryChannel || "default"}</span>
+              {task.deliveryTarget ? <span>Target: {task.deliveryTarget}</span> : null}
+            </div>
+          )}
+        </div>
+      ) : null}
 
       {/* Actions */}
       <div className="flex items-center gap-2 border-b border-border/40 px-4 py-3">

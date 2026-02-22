@@ -9,6 +9,9 @@ interface EditFormState {
   description: string;
   prompt: string;
   model: string;
+  thinking: string;
+  deliveryChannel: string;
+  deliveryTarget: string;
 }
 
 type EditFormAction =
@@ -22,6 +25,9 @@ const initialState: EditFormState = {
   description: "",
   prompt: "",
   model: "",
+  thinking: "",
+  deliveryChannel: "",
+  deliveryTarget: "",
 };
 
 function editFormReducer(state: EditFormState, action: EditFormAction): EditFormState {
@@ -33,6 +39,9 @@ function editFormReducer(state: EditFormState, action: EditFormAction): EditForm
         description: action.task.description,
         prompt: action.task.prompt,
         model: action.task.model,
+        thinking: action.task.thinking ?? "",
+        deliveryChannel: action.task.deliveryChannel ?? "",
+        deliveryTarget: action.task.deliveryTarget ?? "",
       };
     case "cancel":
       return { ...state, editing: false };
@@ -74,6 +83,12 @@ export function useTaskEditForm({ task, onUpdateTask }: UseTaskEditFormOptions) 
     if (state.description !== task.description) updates.description = state.description;
     if (state.prompt.trim() && state.prompt.trim() !== task.prompt) updates.prompt = state.prompt.trim();
     if (state.model.trim() && state.model.trim() !== task.model) updates.model = state.model.trim();
+    const newThinking = state.thinking || null;
+    if (newThinking !== (task.thinking ?? null)) updates.thinking = newThinking;
+    const newDeliveryChannel = state.deliveryChannel || null;
+    if (newDeliveryChannel !== task.deliveryChannel) updates.deliveryChannel = newDeliveryChannel;
+    const newDeliveryTarget = state.deliveryTarget || null;
+    if (newDeliveryTarget !== task.deliveryTarget) updates.deliveryTarget = newDeliveryTarget;
 
     if (Object.keys(updates).length === 0) {
       dispatch({ type: "cancel" });
@@ -81,7 +96,7 @@ export function useTaskEditForm({ task, onUpdateTask }: UseTaskEditFormOptions) 
     }
     onUpdateTask(task.id, updates);
     dispatch({ type: "cancel" });
-  }, [task, state.name, state.description, state.prompt, state.model, onUpdateTask]);
+  }, [task, state.name, state.description, state.prompt, state.model, state.thinking, state.deliveryChannel, state.deliveryTarget, onUpdateTask]);
 
   return {
     editing: state.editing,
@@ -89,6 +104,9 @@ export function useTaskEditForm({ task, onUpdateTask }: UseTaskEditFormOptions) 
     editDescription: state.description,
     editPrompt: state.prompt,
     editModel: state.model,
+    editThinking: state.thinking,
+    editDeliveryChannel: state.deliveryChannel,
+    editDeliveryTarget: state.deliveryTarget,
     startEditing,
     cancelEditing,
     saveEdits,

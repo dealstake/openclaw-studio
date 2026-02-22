@@ -17,6 +17,7 @@ const mockTask: StudioTask = {
   schedule: { type: "periodic", intervalMs: 3600000 },
   prompt: "test",
   model: "default",
+  thinking: null,
   deliveryChannel: null,
   deliveryTarget: null,
   enabled: true,
