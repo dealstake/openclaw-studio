@@ -14,6 +14,7 @@ import { formatRelativeTime } from "@/lib/text/time";
 
 import { sectionLabelClass } from "@/components/SectionLabel";
 import { MarkdownViewer } from "@/components/MarkdownViewer";
+import { BaseCard, CardHeader, CardMeta } from "@/components/ui/BaseCard";
 
 export const TranscriptCard = memo(function TranscriptCard({
   transcript,
@@ -26,19 +27,12 @@ export const TranscriptCard = memo(function TranscriptCard({
   const transcriptType = inferTranscriptType(transcript);
 
   return (
-    <div
-      role="button"
-      tabIndex={0}
-      className="group/transcript cursor-pointer border-b border-border/30 bg-transparent p-3 transition-all duration-200 hover:bg-muted/40"
+    <BaseCard
+      variant="flush"
+      isHoverable
       onClick={onClick}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onClick?.();
-        }
-      }}
     >
-      <div className="flex items-center gap-1.5">
+      <CardHeader>
         <Clock className="h-3 w-3 flex-shrink-0 text-muted-foreground/60" />
         <span
           className={`truncate ${sectionLabelClass} text-foreground`}
@@ -54,8 +48,8 @@ export const TranscriptCard = memo(function TranscriptCard({
             Archived
           </span>
         )}
-      </div>
-      <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+      </CardHeader>
+      <CardMeta className="mt-1 flex-wrap text-[11px]">
         {transcript.startedAt && (
           <span>{formatRelativeTime(new Date(transcript.startedAt).getTime())}</span>
         )}
@@ -63,10 +57,10 @@ export const TranscriptCard = memo(function TranscriptCard({
           <span className="max-w-[120px] truncate">{transcript.model.split("/").pop()}</span>
         )}
         <span className="text-muted-foreground/60">{(transcript.size / 1024).toFixed(0)} KB</span>
-      </div>
+      </CardMeta>
       {transcript.preview && (
         <MarkdownViewer content={transcript.preview} className="mt-1.5 line-clamp-2 text-[11px] leading-relaxed text-muted-foreground/80 [&>*]:m-0 [&>*>*]:m-0" />
       )}
-    </div>
+    </BaseCard>
   );
 });

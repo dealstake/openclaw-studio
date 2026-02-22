@@ -93,6 +93,7 @@ export const SessionCard = memo(function SessionCard({
       <div
         role="button"
         tabIndex={0}
+        aria-expanded={isExpanded}
         className="flex cursor-pointer items-start gap-2"
         onClick={(e) => {
           if ((e.target as HTMLElement).closest("[data-action]")) return;

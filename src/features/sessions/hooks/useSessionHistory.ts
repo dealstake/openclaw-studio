@@ -15,17 +15,7 @@ export type SessionHistoryGroup = {
   sessions: SessionHistoryEntry[];
 };
 
-type SessionsListEntry = {
-  key: string;
-  updatedAt?: number | null;
-  displayName?: string;
-  origin?: { label?: string | null; provider?: string | null } | null;
-  messageCount?: number;
-};
-
-type SessionsListResult = {
-  sessions?: SessionsListEntry[];
-};
+import type { SessionsListResult } from "@/features/sessions/lib/types";
 
 function groupByDate(sessions: SessionHistoryEntry[]): SessionHistoryGroup[] {
   const now = new Date();

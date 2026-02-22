@@ -2,133 +2,163 @@ import { describe, it, expect } from "vitest";
 import { transformMessagesToMessageParts } from "@/features/sessions/lib/transformMessages";
 
 describe("transformMessagesToMessageParts", () => {
-  it("transforms plain text messages", () => {
-    const parts = transformMessagesToMessageParts([
-      { role: "user", content: "Hello" },
-      { role: "assistant", content: "Hi there" },
-    ]);
-    expect(parts).toHaveLength(2);
-    expect(parts[0]).toEqual({ type: "text", text: "> Hello" });
-    expect(parts[1]).toEqual({ type: "text", text: "Hi there" });
+  it("returns empty array for empty input", () => {
+    expect(transformMessagesToMessageParts([])).toEqual([]);
   });
 
-  it("strips inbound metadata from user messages", () => {
+  it("transforms plain text user message with metadata stripping", () => {
     const parts = transformMessagesToMessageParts([
-      {
-        role: "user",
-        content: 'Conversation info (untrusted metadata):\n```json\n{"channel":"whatsapp"}\n```\nHello',
-      },
+      { role: "user", content: 'Conversation info (untrusted metadata):\n```json\n{"foo":"bar"}\n```\nHello there' },
     ]);
-    expect(parts[0]).toEqual({ type: "text", text: "> Hello" });
+    expect(parts).toHaveLength(1);
+    expect(parts[0]).toEqual({ type: "text", text: "> Hello there" });
   });
 
-  it("strips timestamp prefix from user messages", () => {
+  it("transforms plain text user message without metadata", () => {
     const parts = transformMessagesToMessageParts([
-      { role: "user", content: "[Mon 2026-02-20 10:05 EST] Hello" },
+      { role: "user", content: "What is 2+2?" },
     ]);
-    expect(parts[0]).toEqual({ type: "text", text: "> Hello" });
+    expect(parts).toEqual([{ type: "text", text: "> What is 2+2?" }]);
   });
 
-  it("parses structured content with thinking blocks", () => {
+  it("transforms plain text assistant message", () => {
+    const parts = transformMessagesToMessageParts([
+      { role: "assistant", content: "The answer is 4." },
+    ]);
+    expect(parts).toEqual([{ type: "text", text: "The answer is 4." }]);
+  });
+
+  it("skips empty assistant content", () => {
+    const parts = transformMessagesToMessageParts([
+      { role: "assistant", content: "" },
+    ]);
+    expect(parts).toEqual([]);
+  });
+
+  it("handles structured content with thinking blocks", () => {
     const parts = transformMessagesToMessageParts([
       {
         role: "assistant",
         content: [
-          { type: "thinking", thinking: "Let me think..." },
-          { type: "text", text: "Here is my answer" },
+          { type: "thinking", thinking: "Let me think about this..." },
+          { type: "text", text: "Here is my answer." },
         ],
       },
     ]);
     expect(parts).toHaveLength(2);
-    expect(parts[0]).toEqual({ type: "reasoning", text: "Let me think..." });
-    expect(parts[1]).toEqual({ type: "text", text: "Here is my answer" });
+    expect(parts[0]).toEqual({ type: "reasoning", text: "Let me think about this..." });
+    expect(parts[1]).toEqual({ type: "text", text: "Here is my answer." });
   });
 
-  it("parses tool_use blocks from assistant messages", () => {
+  it("handles thinking block with text field fallback", () => {
     const parts = transformMessagesToMessageParts([
       {
         role: "assistant",
-        content: [
-          { type: "tool_use", id: "tc1", name: "web_search", input: { query: "test" } },
-          { type: "text", text: "Found results" },
-        ],
+        content: [{ type: "thinking", text: "Fallback thinking" }],
       },
     ]);
-    expect(parts).toHaveLength(2);
-    expect(parts[0]).toEqual({
-      type: "tool-invocation",
-      toolCallId: "tc1",
-      name: "web_search",
-      phase: "complete",
-      args: '{"query":"test"}',
-    });
-    expect(parts[1]).toEqual({ type: "text", text: "Found results" });
+    expect(parts).toEqual([{ type: "reasoning", text: "Fallback thinking" }]);
   });
 
-  it("matches tool results with tool_use blocks", () => {
+  it("handles tool_use and matching tool_result", () => {
     const parts = transformMessagesToMessageParts([
       {
         role: "assistant",
         content: [
-          { type: "tool_use", id: "tc1", name: "exec", input: { command: "ls" } },
+          { type: "tool_use", id: "tool-1", name: "search", input: { query: "test" } },
         ],
       },
       {
         role: "tool",
-        tool_use_id: "tc1",
-        content: "file1.txt\nfile2.txt",
+        tool_use_id: "tool-1",
+        content: "Search results here",
       } as Record<string, unknown>,
     ]);
     expect(parts).toHaveLength(1);
     expect(parts[0]).toMatchObject({
       type: "tool-invocation",
-      toolCallId: "tc1",
-      name: "exec",
+      toolCallId: "tool-1",
+      name: "search",
       phase: "complete",
-      result: "file1.txt\nfile2.txt",
+      result: "Search results here",
     });
   });
 
-  it("handles orphan tool results as text", () => {
+  it("handles orphan tool result as text", () => {
     const parts = transformMessagesToMessageParts([
-      { role: "tool", content: "some result" } as Record<string, unknown>,
+      {
+        role: "tool",
+        tool_use_id: "orphan-id",
+        content: "Orphan result",
+      } as Record<string, unknown>,
     ]);
-    expect(parts).toHaveLength(1);
-    expect(parts[0]).toEqual({ type: "text", text: "some result" });
+    expect(parts).toEqual([{ type: "text", text: "Orphan result" }]);
   });
 
-  it("handles empty messages", () => {
+  it("handles user message with structured content array", () => {
     const parts = transformMessagesToMessageParts([
-      { role: "assistant", content: "" },
-      { role: "user", content: "" },
+      {
+        role: "user",
+        content: [{ type: "text", text: "Hello from array" }],
+      },
     ]);
-    expect(parts).toHaveLength(0);
+    expect(parts).toEqual([{ type: "text", text: "> Hello from array" }]);
   });
 
-  it("handles msg.text fallback", () => {
+  it("uses msg.text as fallback for assistant", () => {
     const parts = transformMessagesToMessageParts([
-      { role: "assistant", text: "fallback text" },
+      { role: "assistant", text: "Fallback text" },
     ]);
-    expect(parts).toHaveLength(1);
-    expect(parts[0]).toEqual({ type: "text", text: "fallback text" });
+    expect(parts).toEqual([{ type: "text", text: "Fallback text" }]);
   });
 
-  it("handles content array with text blocks for user messages", () => {
+  it("handles multiple messages in sequence", () => {
     const parts = transformMessagesToMessageParts([
-      { role: "user", content: [{ type: "text", text: "Hello from array" }] },
+      { role: "user", content: "Hi" },
+      { role: "assistant", content: "Hello!" },
+      { role: "user", content: "Bye" },
+      { role: "assistant", content: "Goodbye!" },
     ]);
-    expect(parts).toHaveLength(1);
-    expect(parts[0]).toEqual({ type: "text", text: "> Hello from array" });
+    expect(parts).toHaveLength(4);
+    expect(parts[0]).toEqual({ type: "text", text: "> Hi" });
+    expect(parts[1]).toEqual({ type: "text", text: "Hello!" });
+    expect(parts[2]).toEqual({ type: "text", text: "> Bye" });
+    expect(parts[3]).toEqual({ type: "text", text: "Goodbye!" });
   });
 
-  it("handles thinking block with text field instead of thinking field", () => {
+  it("skips unknown content block types", () => {
     const parts = transformMessagesToMessageParts([
       {
         role: "assistant",
-        content: [{ type: "thinking", text: "Thinking via text field" }],
+        content: [
+          { type: "unknown_type", data: "foo" },
+          { type: "text", text: "Valid text" },
+        ],
+      },
+    ]);
+    expect(parts).toEqual([{ type: "text", text: "Valid text" }]);
+  });
+
+  it("strips timestamp prefix from user messages", () => {
+    const parts = transformMessagesToMessageParts([
+      { role: "user", content: "[Mon 2026-02-21 3:30 EST] Hello" },
+    ]);
+    expect(parts).toEqual([{ type: "text", text: "> Hello" }]);
+  });
+
+  it("tool_use without id gets synthetic toolCallId", () => {
+    const parts = transformMessagesToMessageParts([
+      {
+        role: "assistant",
+        content: [{ type: "tool_use", name: "exec" }],
       },
     ]);
     expect(parts).toHaveLength(1);
-    expect(parts[0]).toEqual({ type: "reasoning", text: "Thinking via text field" });
+    expect(parts[0]).toMatchObject({
+      type: "tool-invocation",
+      name: "exec",
+      phase: "complete",
+    });
+    expect((parts[0] as { toolCallId: string }).toolCallId).toBe("tool-0");
   });
 });
