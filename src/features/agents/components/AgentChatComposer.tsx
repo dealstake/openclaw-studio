@@ -13,6 +13,8 @@ import {
 import type { GatewayModelChoice } from "@/lib/gateway/models";
 import { AlertCircle, ArrowUp, Paperclip, Square, UploadCloud } from "lucide-react";
 import { ChatAttachmentPreview } from "./ChatAttachmentPreview";
+import { ModelPicker } from "./ModelPicker";
+import { ThinkingToggle } from "./ThinkingToggle";
 import { useFileUpload, type ChatAttachment } from "../hooks/useFileUpload";
 
 export const AgentChatComposer = memo(function AgentChatComposer({
@@ -308,31 +310,10 @@ export const AgentChatComposer = memo(function AgentChatComposer({
           />
 
           {models.length > 0 && (
-            <select
-              className="h-8 rounded-lg border-none bg-transparent px-2 text-xs font-medium text-muted-foreground outline-none transition hover:bg-muted hover:text-foreground focus:ring-0"
-              value={modelValue}
-              onChange={(e) => onModelChange(e.target.value || null)}
-              aria-label="Select model"
-            >
-              {models.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.name ?? m.id}
-                </option>
-              ))}
-            </select>
+            <ModelPicker models={models} value={modelValue} onChange={onModelChange} />
           )}
           {allowThinking && (
-            <select
-              className="h-8 rounded-lg border-none bg-transparent px-2 text-xs font-medium text-muted-foreground outline-none transition hover:bg-muted hover:text-foreground focus:ring-0"
-              value={thinkingLevel}
-              onChange={(e) => onThinkingChange(e.target.value || null)}
-              aria-label="Thinking level"
-            >
-              <option value="off">Thinking: Off</option>
-              <option value="low">Thinking: Low</option>
-              <option value="medium">Thinking: Med</option>
-              <option value="high">Thinking: High</option>
-            </select>
+            <ThinkingToggle value={thinkingLevel} onChange={onThinkingChange} />
           )}
 
           {tokenPct !== null && (
