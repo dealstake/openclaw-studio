@@ -113,11 +113,32 @@ export const buildHistorySyncPatch = ({
     liveThinkingTrace: "",
   });
 
-  // Inject image parts from messages that contain image content
-  for (const message of messages) {
+  // Inject image parts from user messages at the correct position
+  // Images belong after user text parts, so we find the matching user text parts
+  // and insert images right after them
+  let insertIdx = messageParts.length;
+  for (let mi = messages.length - 1; mi >= 0; mi--) {
+    const message = messages[mi];
+    if (!message) continue;
     const images = extractImages(message);
+    if (images.length === 0) continue;
+    const role = typeof message.role === "string" ? message.role : "";
+    // Find the corresponding user text part in messageParts
+    const msgText = extractText(message);
+    if (role === "user" && msgText) {
+      // Find last user text part that matches
+      for (let pi = messageParts.length - 1; pi >= 0; pi--) {
+        const p = messageParts[pi];
+        if (p && p.type === "text" && p.text.trimStart().startsWith(">")) {
+          insertIdx = pi + 1;
+          break;
+        }
+      }
+    }
+    // Insert image parts at the found position
     for (const img of images) {
-      messageParts.push({ type: "image", src: img.src, alt: img.alt });
+      messageParts.splice(insertIdx, 0, { type: "image", src: img.src, alt: img.alt });
+      insertIdx++;
     }
   }
   const patch: Partial<AgentState> = {

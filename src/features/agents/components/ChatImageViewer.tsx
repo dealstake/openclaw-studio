@@ -13,6 +13,9 @@ export const InlineChatImage = memo(function InlineChatImage({
   alt?: string;
 }) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [broken, setBroken] = useState(false);
+
+  if (broken) return null;
 
   return (
     <>
@@ -28,6 +31,7 @@ export const InlineChatImage = memo(function InlineChatImage({
           alt={alt ?? "Attached image"}
           className="max-w-[240px] cursor-zoom-in object-contain sm:max-w-[320px]"
           loading="lazy"
+          onError={() => setBroken(true)}
         />
       </button>
       {lightboxOpen && (
