@@ -22,6 +22,11 @@ export const buildHistoryLines = (messages: ChatHistoryMessage[]): HistoryLinesR
   let lastAssistantAt: number | null = null;
   let lastRole: string | null = null;
   let lastUser: string | null = null;
+  // Track heartbeat turns: when a heartbeat user prompt is detected,
+  // skip ALL subsequent messages (tool calls, assistant responses) until
+  // the next non-heartbeat user message. This prevents tool call blocks
+  // and heartbeat status reports from appearing in the main chat.
+  let inHeartbeatTurn = false;
   for (const message of messages) {
     const role = typeof message.role === "string" ? message.role : "other";
     const extracted = extractText(message);
@@ -37,12 +42,20 @@ export const buildHistoryLines = (messages: ChatHistoryMessage[]): HistoryLinesR
       continue;
     }
     if (role === "user") {
-      if (text && isHeartbeatPrompt(text)) continue;
+      if (text && isHeartbeatPrompt(text)) {
+        inHeartbeatTurn = true;
+        continue;
+      }
+      inHeartbeatTurn = false;
       if (text) {
         lines.push(`> ${text}`);
         lastUser = text;
       }
       lastRole = "user";
+    } else if (inHeartbeatTurn) {
+      // Skip assistant responses, tool calls, and everything else
+      // that's part of a heartbeat turn — route to Activity panel only
+      continue;
     } else if (role === "assistant") {
       const at = extractMessageTimestamp(message);
       if (typeof at === "number") {
