@@ -82,7 +82,7 @@ import { useNotificationEvaluator } from "@/features/notifications/hooks/useNoti
 import { useExecApprovals } from "@/features/exec-approvals/hooks/useExecApprovals";
 import { useSessionUsage } from "@/features/sessions/hooks/useSessionUsage";
 import { fetchTranscriptMessages } from "@/features/sessions/hooks/useTranscripts";
-import { useGatewayStatus } from "@/features/status/hooks/useGatewayStatus";
+import { useGatewayStatus } from "@/lib/gateway/useGatewayStatus";
 const ConfigMutationModals = lazy(() => import("@/features/agents/components/ConfigMutationModals").then(m => ({ default: m.ConfigMutationModals })));
 import { useConfigMutationQueue } from "@/features/agents/hooks/useConfigMutationQueue";
 import { useDraftBatching } from "@/features/agents/hooks/useDraftBatching";

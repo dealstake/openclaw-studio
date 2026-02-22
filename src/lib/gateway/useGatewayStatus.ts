@@ -1,13 +1,18 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { isGatewayDisconnectLikeError } from "@/lib/gateway/GatewayClient";
 
+/**
+ * Hook managing gateway version, uptime, and agent presence state.
+ * Relocated from src/features/status/ — this is gateway infrastructure, not a feature.
+ */
 export const useGatewayStatus = (client: GatewayClient, status: GatewayStatus) => {
   const [gatewayVersion, setGatewayVersion] = useState<string | undefined>();
   const [gatewayUptime, setGatewayUptime] = useState<number | undefined>();
-  const [presenceAgentIds, setPresenceAgentIds] = useState<Set<string>>(new Set());
+  const [presenceAgentIds, setPresenceAgentIds] = useState<string[]>([]);
+  const prevPresenceRef = useRef<string>("");
 
-  const loadGatewayStatus = useCallback(async () => {
+  const loadGatewayStatus = useCallback(() => {
     if (status !== "connected") return;
     try {
       const hello = client.getLastHello();
@@ -27,13 +32,18 @@ export const useGatewayStatus = (client: GatewayClient, status: GatewayStatus) =
       const result = await client.call<{
         presence?: Array<{ agentId?: string; active?: boolean }>;
       }>("status", {});
-      const active = new Set<string>();
+      const activeIds: string[] = [];
       for (const entry of result.presence ?? []) {
         if (entry.active && typeof entry.agentId === "string") {
-          active.add(entry.agentId);
+          activeIds.push(entry.agentId);
         }
       }
-      setPresenceAgentIds(active);
+      activeIds.sort();
+      const key = activeIds.join(",");
+      if (key !== prevPresenceRef.current) {
+        prevPresenceRef.current = key;
+        setPresenceAgentIds(activeIds);
+      }
     } catch (err) {
       if (!isGatewayDisconnectLikeError(err)) {
         console.error("Failed to parse presence.", err);
@@ -42,7 +52,8 @@ export const useGatewayStatus = (client: GatewayClient, status: GatewayStatus) =
   }, [client, status]);
 
   const resetPresence = useCallback(() => {
-    setPresenceAgentIds(new Set());
+    prevPresenceRef.current = "";
+    setPresenceAgentIds([]);
   }, []);
 
   return {
