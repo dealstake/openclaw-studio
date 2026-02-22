@@ -1,5 +1,5 @@
 import React from "react";
-import { CheckCircle2, AlertTriangle, DollarSign, Gauge } from "lucide-react";
+import { CheckCircle2, AlertTriangle, DollarSign, Gauge, X } from "lucide-react";
 import type { Notification, AlertRuleType } from "../lib/types";
 import { formatRelativeTime } from "@/lib/text/time";
 import { BaseCard, CardHeader } from "@/components/ui/BaseCard";
@@ -61,9 +61,7 @@ export const NotificationItem = React.memo(function NotificationItem({
           className="mt-0.5 shrink-0 rounded p-0.5 text-muted-foreground/50 transition hover:bg-muted hover:text-foreground"
           aria-label="Dismiss notification"
         >
-          <svg className="h-3 w-3" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M2 2l8 8M10 2l-8 8" />
-          </svg>
+          <X className="h-3 w-3" />
         </button>
       </CardHeader>
     </BaseCard>

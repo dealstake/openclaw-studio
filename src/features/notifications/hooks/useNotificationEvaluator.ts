@@ -16,9 +16,11 @@ import { sendBrowserNotification } from "../lib/browserNotifications";
 import { isGatewayDisconnectLikeError } from "@/lib/gateway/GatewayClient";
 
 // ---------------------------------------------------------------------------
-// Poll interval for budget / rate-limit checks
+// Timing constants
 // ---------------------------------------------------------------------------
 const POLL_INTERVAL_MS = 60_000;
+/** Window for tracking recent errors (10 minutes). */
+const ERROR_TRACKING_WINDOW_MS = 600_000;
 
 // ---------------------------------------------------------------------------
 // Hook — wire alert evaluators to gateway events + polling
@@ -62,9 +64,9 @@ export function useNotificationEvaluator(
         // Track errors for error-spike rule
         if (payload.state === "error") {
           recentErrorsRef.current.push({ timestamp: now });
-          // Keep only last 10 min of errors
+          // Keep only errors within the tracking window
           recentErrorsRef.current = recentErrorsRef.current.filter(
-            (e) => now - e.timestamp < 600_000,
+            (e) => now - e.timestamp < ERROR_TRACKING_WINDOW_MS,
           );
           for (const rule of currentRules.filter((r) => r.type === "error")) {
             if (shouldCooldown(rule, lastFiredRef.current, now)) continue;

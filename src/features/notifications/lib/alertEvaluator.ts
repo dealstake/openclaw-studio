@@ -1,5 +1,8 @@
 import type { AlertRule, Notification } from "./types";
 
+/** Default error window when rule.cooldownMs is 0 (5 minutes). */
+const DEFAULT_ERROR_WINDOW_MS = 300_000;
+
 // ---------------------------------------------------------------------------
 // Cooldown check — shared by all evaluators
 // ---------------------------------------------------------------------------
@@ -74,7 +77,7 @@ export function evaluateErrorRule(
   recentErrors: { timestamp: number }[],
 ): Notification | null {
   if (!rule.enabled || rule.type !== "error") return null;
-  const windowMs = rule.cooldownMs || 300_000; // default 5 min
+  const windowMs = rule.cooldownMs || DEFAULT_ERROR_WINDOW_MS;
   const now = Date.now();
   const errorsInWindow = recentErrors.filter((e) => now - e.timestamp < windowMs);
   if (errorsInWindow.length < rule.threshold) return null;

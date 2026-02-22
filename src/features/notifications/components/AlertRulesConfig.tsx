@@ -1,5 +1,6 @@
 import React from "react";
 import { ArrowLeft, RotateCcw } from "lucide-react";
+import { formatRuleThreshold } from "../lib/formatRuleThreshold";
 import { SectionLabel } from "@/components/SectionLabel";
 import { PanelIconButton } from "@/components/PanelIconButton";
 import { useAlertRules } from "../hooks/useAlertRules";
@@ -36,13 +37,14 @@ export const AlertRulesConfig = React.memo(function AlertRulesConfig({
               type="button"
               role="switch"
               aria-checked={rule.enabled}
+              aria-label={`${rule.enabled ? "Disable" : "Enable"} ${rule.label}`}
               onClick={() => updateRule(rule.id, { enabled: !rule.enabled })}
-              className={`relative h-5 w-9 shrink-0 rounded-full transition ${
+              className={`relative h-5 w-9 min-h-[44px] min-w-[44px] shrink-0 rounded-full transition ${
                 rule.enabled ? "bg-primary" : "bg-muted-foreground/30"
               }`}
             >
               <span
-                className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${
+                className={`absolute top-0.5 left-0 h-4 w-4 rounded-full bg-white shadow transition-transform ${
                   rule.enabled ? "translate-x-4" : "translate-x-0.5"
                 }`}
               />
@@ -50,10 +52,7 @@ export const AlertRulesConfig = React.memo(function AlertRulesConfig({
             <div className="min-w-0 flex-1">
               <div className="text-xs font-medium text-foreground">{rule.label}</div>
               <div className="text-xs text-muted-foreground">
-                {rule.type === "budget" && `Threshold: ${(rule.threshold / 1000).toFixed(0)}K tokens`}
-                {rule.type === "completion" && "All sub-agent completions"}
-                {rule.type === "error" && `${rule.threshold} errors in window`}
-                {rule.type === "rateLimit" && `${rule.threshold}% of budget`}
+                {formatRuleThreshold(rule)}
               </div>
             </div>
           </div>

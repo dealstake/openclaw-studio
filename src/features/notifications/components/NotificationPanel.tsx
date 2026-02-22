@@ -14,6 +14,7 @@ const TABS: { label: string; value: FilterTab }[] = [
   { label: "Completions", value: "completion" },
   { label: "Errors", value: "error" },
   { label: "Budget", value: "budget" },
+  { label: "Rate Limits", value: "rateLimit" },
 ];
 
 export const NotificationPanel = React.memo(function NotificationPanel() {
