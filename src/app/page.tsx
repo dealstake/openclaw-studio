@@ -168,6 +168,15 @@ const AgentStudioPage = () => {
     setGatewayConfigSnapshot,
     resolveDefaultModelForAgent,
   } = useGatewayModels(client, status);
+  const cronMaxConcurrentRuns = useMemo(() => {
+    const cfg = gatewayConfigSnapshot?.config as Record<string, unknown> | undefined;
+    const cron = cfg?.cron;
+    if (typeof cron === "object" && cron != null) {
+      const val = (cron as Record<string, unknown>).maxConcurrentRuns;
+      return typeof val === "number" ? val : undefined;
+    }
+    return undefined;
+  }, [gatewayConfigSnapshot]);
   const [stopBusyAgentId, setStopBusyAgentId] = useState<string | null>(null);
   /** Increments on cron/session events to trigger event-driven refresh in panels */
   const [cronEventTick, setCronEventTick] = useState(0);
@@ -1697,6 +1706,7 @@ const AgentStudioPage = () => {
                         onDelete={deleteTask}
                         onRefresh={() => { void loadTasks(); }}
                         onNewTask={() => setShowTaskWizard(true)}
+                        maxConcurrentRuns={cronMaxConcurrentRuns}
                       />
                     )}
                     {expandedTab === "brain" && (
@@ -1802,6 +1812,7 @@ const AgentStudioPage = () => {
                           onDelete={deleteTask}
                           onRefresh={() => { void loadTasks(); }}
                           onNewTask={() => setShowTaskWizard(true)}
+                          maxConcurrentRuns={cronMaxConcurrentRuns}
                         />
                     </div>
                   }
