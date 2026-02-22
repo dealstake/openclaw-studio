@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useRef, useState, useEffect, useMemo, type ReactNode } from "react";
+import { memo, useCallback, useRef, useState, useEffect, useMemo, type KeyboardEvent, type ReactNode } from "react";
 import { Maximize2, X } from "lucide-react";
 
 import { PanelIconButton } from "@/components/PanelIconButton";
@@ -75,6 +75,42 @@ export const ContextPanel = memo(function ContextPanel({
     }
   }, [activeTab]);
 
+  // Keyboard navigation for roving tabindex (WAI-ARIA Tabs pattern)
+  const handleTabKeyDown = useCallback(
+    (e: KeyboardEvent<HTMLDivElement>) => {
+      const tabs = CONTEXT_TAB_CONFIG.map((t) => t.value);
+      const currentIndex = tabs.indexOf(activeTab);
+      let nextIndex: number | null = null;
+
+      switch (e.key) {
+        case "ArrowRight":
+          nextIndex = (currentIndex + 1) % tabs.length;
+          break;
+        case "ArrowLeft":
+          nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+          break;
+        case "Home":
+          nextIndex = 0;
+          break;
+        case "End":
+          nextIndex = tabs.length - 1;
+          break;
+        default:
+          return;
+      }
+
+      e.preventDefault();
+      const nextTab = tabs[nextIndex];
+      handleTabClick(nextTab);
+      // Focus the newly active tab button
+      const btn = tabBarRef.current?.querySelector<HTMLElement>(
+        `#${tabButtonId(nextTab)}`
+      );
+      btn?.focus();
+    },
+    [activeTab, handleTabClick]
+  );
+
   // Data-driven content map
   const contentMap = useMemo<Record<ContextTab, ReactNode | undefined>>(() => ({
     projects: projectsContent,
@@ -94,6 +130,8 @@ export const ContextPanel = memo(function ContextPanel({
             ref={tabBarRef}
             className="flex min-w-0 flex-1 items-center gap-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             role="tablist"
+            aria-label="Context panel tabs"
+            onKeyDown={handleTabKeyDown}
           >
             {CONTEXT_TAB_CONFIG.map((tab) => {
               const isActive = activeTab === tab.value;
@@ -104,6 +142,7 @@ export const ContextPanel = memo(function ContextPanel({
                   role="tab"
                   id={tabButtonId(tab.value)}
                   aria-selected={isActive}
+                  tabIndex={isActive ? 0 : -1}
                   aria-controls={tabPanelId(tab.value)}
                   className={`flex-shrink-0 min-w-[44px] px-2.5 pb-2 ${sectionLabelClass} transition-colors focus-ring rounded-md ${
                     isActive

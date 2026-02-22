@@ -73,6 +73,53 @@ describe("ContextPanel", () => {
     expect(screen.getByTestId("close-panel-btn")).toBeInTheDocument();
   });
 
+  it("navigates tabs with ArrowRight key", () => {
+    const onTabChange = vi.fn();
+    renderPanel({ activeTab: "projects", onTabChange });
+    const tablist = screen.getByRole("tablist");
+    fireEvent.keyDown(tablist, { key: "ArrowRight" });
+    expect(onTabChange).toHaveBeenCalledWith("tasks");
+  });
+
+  it("navigates tabs with ArrowLeft key (wraps around)", () => {
+    const onTabChange = vi.fn();
+    renderPanel({ activeTab: "projects", onTabChange });
+    const tablist = screen.getByRole("tablist");
+    fireEvent.keyDown(tablist, { key: "ArrowLeft" });
+    expect(onTabChange).toHaveBeenCalledWith("activity");
+  });
+
+  it("navigates to first tab with Home key", () => {
+    const onTabChange = vi.fn();
+    renderPanel({ activeTab: "brain", onTabChange });
+    const tablist = screen.getByRole("tablist");
+    fireEvent.keyDown(tablist, { key: "Home" });
+    expect(onTabChange).toHaveBeenCalledWith("projects");
+  });
+
+  it("navigates to last tab with End key", () => {
+    const onTabChange = vi.fn();
+    renderPanel({ activeTab: "projects", onTabChange });
+    const tablist = screen.getByRole("tablist");
+    fireEvent.keyDown(tablist, { key: "End" });
+    expect(onTabChange).toHaveBeenCalledWith("activity");
+  });
+
+  it("uses roving tabindex (active=0, inactive=-1)", () => {
+    renderPanel({ activeTab: "tasks" });
+    const tabs = screen.getAllByRole("tab");
+    const tasksTab = tabs.find((t) => t.textContent === "Tasks")!;
+    expect(tasksTab).toHaveAttribute("tabindex", "0");
+    const othersAll = tabs.filter((t) => t.textContent !== "Tasks");
+    othersAll.forEach((t) => expect(t).toHaveAttribute("tabindex", "-1"));
+  });
+
+  it("tablist has aria-label", () => {
+    renderPanel();
+    const tablist = screen.getByRole("tablist");
+    expect(tablist).toHaveAttribute("aria-label", "Context panel tabs");
+  });
+
   it("mounts additional tabs after clicking them", () => {
     const onTabChange = vi.fn();
     const { rerender } = render(
