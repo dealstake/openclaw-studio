@@ -59,8 +59,6 @@ import { useAgentTasks } from "@/features/tasks/hooks/useAgentTasks";
 import { ContextPanel, TAB_OPTIONS } from "@/features/context/components/ContextPanel";
 import type { ContextTab } from "@/features/context/components/ContextPanel";
 
-/** Extended tab type for expanded modal — includes management tabs not shown in the context panel */
-type ExpandableTab = ContextTab | "sessions" | "usage" | "channels" | "cron" | "settings";
 // ContextTabCluster is now integrated into HeaderBar on wide viewports
 import { PanelExpandModal } from "@/components/PanelExpandModal";
 import { ManagementDrawer } from "@/components/ManagementDrawer";
@@ -92,7 +90,6 @@ import { useSessionUsage } from "@/features/sessions/hooks/useSessionUsage";
 import { fetchTranscriptMessages } from "@/features/sessions/hooks/useTranscripts";
 import { useGatewayStatus } from "@/features/status/hooks/useGatewayStatus";
 const ConfigMutationModals = lazy(() => import("@/features/agents/components/ConfigMutationModals").then(m => ({ default: m.ConfigMutationModals })));
-type MobilePane = "chat" | "context";
 import { useConfigMutationQueue } from "@/features/agents/hooks/useConfigMutationQueue";
 import { useDraftBatching } from "@/features/agents/hooks/useDraftBatching";
 import { useVisibilityRefresh } from "@/hooks/useVisibilityRefresh";
@@ -104,9 +101,8 @@ import { useCreateAgent } from "@/features/agents/hooks/useCreateAgent";
 import { useRenameAgent } from "@/features/agents/hooks/useRenameAgent";
 import { useGatewayModels } from "@/features/agents/hooks/useGatewayModels";
 import { useSettingsPanel } from "@/features/agents/hooks/useSettingsPanel";
-import { useBreakpoint, isDesktopOrAbove, isWide, isTabletOrBelow } from "@/hooks/useBreakpoint";
-import { useSwipeDrawer } from "@/hooks/useSwipeDrawer";
-import { useAutoHideHeader } from "@/hooks/useAutoHideHeader";
+import { isWide } from "@/hooks/useBreakpoint";
+import { useAppLayout } from "@/hooks/useAppLayout";
 
 type AgentsListResult = {
   defaultId: string;
@@ -160,6 +156,24 @@ const AgentStudioPage = () => {
   } = useGatewayConnection(settingsCoordinator);
 
   const { state, dispatch, hydrateAgents, setError, setLoading } = useAgentStore();
+  const layout = useAppLayout();
+  const {
+    breakpoint, showSidebarInline, showContextInline, isMobileLayout,
+    mobilePane, setMobilePane,
+    sessionSidebarCollapsed, setSessionSidebarCollapsed,
+    mobileSessionDrawerOpen, setMobileSessionDrawerOpen,
+    contextPanelOpen, setContextPanelOpen,
+    contextMode, setContextMode,
+    contextTab, setContextTab,
+    expandedTab, setExpandedTab,
+    brainFileTab, setBrainFileTab,
+    brainPreviewMode, setBrainPreviewMode,
+    managementView, setManagementView,
+    headerVisible, onHoverZoneEnter, onHoverZoneLeave,
+    handleExpandToggle, clearExpandedTab, switchToChat,
+    handleFilesToggle, handleBackToChat,
+    swipeHandlers,
+  } = layout;
   const [showConnectionPanel, setShowConnectionPanel] = useState(false);
   const [showTaskWizard, setShowTaskWizard] = useState(false);
   const [showAgentWizard, setShowAgentWizard] = useState(false);
@@ -197,103 +211,17 @@ const AgentStudioPage = () => {
     resolveDefaultModelForAgent,
   } = useGatewayModels(client, status);
   const [stopBusyAgentId, setStopBusyAgentId] = useState<string | null>(null);
-  const [mobilePane, setMobilePane] = useState<MobilePane>("chat");
-  const [sessionSidebarCollapsed, setSessionSidebarCollapsed] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return localStorage.getItem("studio:session-sidebar-collapsed") === "true";
-  });
-  const [mobileSessionDrawerOpen, setMobileSessionDrawerOpen] = useState(false);
-  const [contextPanelOpen, setContextPanelOpen] = useState(() => {
-    if (typeof window === "undefined") return true;
-    return localStorage.getItem("studio:context-panel-open") !== "false";
-  });
-  /** "agent" = show ContextPanel (Tasks/Brain/Settings), "files" = show Files */
-  const [contextMode, setContextMode] = useState<"agent" | "files">("agent");
-  const [contextTab, setContextTab] = useState<ContextTab>("projects");
-  const [expandedTab, setExpandedTab] = useState<ExpandableTab | null>(null);
-  // Lifted brain panel state — shared between normal and expanded views
-  const [brainFileTab, setBrainFileTab] = useState<import("@/lib/agents/agentFiles").AgentFileName>("AGENTS.md");
-  const [brainPreviewMode, setBrainPreviewMode] = useState(true);
   /** Increments on cron/session events to trigger event-driven refresh in panels */
   const [cronEventTick, setCronEventTick] = useState(0);
 
-  const handleExpandToggle = useCallback(() => {
-    setExpandedTab((prev) => {
-      if (prev) return null;
-      // Close mobile drawer before opening modal to prevent stacking overlays
-      setMobilePane("chat");
-      return contextTab;
-    });
-  }, [contextTab]);
-
-  // Cmd+Shift+E keyboard shortcut for expand/collapse
-  // Persist session sidebar collapsed state
-  useEffect(() => {
-    localStorage.setItem("studio:session-sidebar-collapsed", String(sessionSidebarCollapsed));
-  }, [sessionSidebarCollapsed]);
-
-  // Persist context panel open/closed state
-  useEffect(() => {
-    localStorage.setItem("studio:context-panel-open", String(contextPanelOpen));
-  }, [contextPanelOpen]);
-
-  // Keyboard shortcuts: Cmd+Shift+E expand, Cmd+\ toggle context panel, Cmd+Shift+P/T/B open specific tabs
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      const mod = e.metaKey || e.ctrlKey;
-      if (mod && e.shiftKey && e.key === "E") {
-        e.preventDefault();
-        setExpandedTab((prev) => (prev ? null : contextTab));
-        return;
-      }
-      if (mod && e.key === "\\") {
-        e.preventDefault();
-        setContextPanelOpen((prev) => !prev);
-        return;
-      }
-      // Cmd+Shift+P/T/B — open specific context panel tabs
-      if (mod && e.shiftKey && (e.key === "P" || e.key === "p")) {
-        e.preventDefault();
-        setContextTab("projects");
-        setContextPanelOpen(true);
-        if (mobilePane !== "context") setMobilePane("context");
-        return;
-      }
-      if (mod && e.shiftKey && (e.key === "T" || e.key === "t")) {
-        e.preventDefault();
-        setContextTab("tasks");
-        setContextPanelOpen(true);
-        if (mobilePane !== "context") setMobilePane("context");
-        return;
-      }
-      if (mod && e.shiftKey && (e.key === "B" || e.key === "b")) {
-        e.preventDefault();
-        setContextTab("brain");
-        setContextPanelOpen(true);
-        if (mobilePane !== "context") setMobilePane("context");
-        return;
-      }
-      if (mod && e.shiftKey && (e.key === "A" || e.key === "a")) {
-        e.preventDefault();
-        setContextTab("activity");
-        setContextPanelOpen(true);
-        if (mobilePane !== "context") setMobilePane("context");
-        return;
-      }
-    };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, [contextTab, mobilePane]);
+  // Layout keyboard shortcuts, persistence, and swipe handled by useAppLayout
   const [viewingSessionKey, setViewingSessionKey] = useState<string | null>(null);
   const [viewingSessionHistory, setViewingSessionHistory] = useState<MessagePart[]>([]);
   const [viewingTrace, setViewingTrace] = useState<{ agentId: string; sessionId: string } | null>(null);
   const [viewingSessionLoading, setViewingSessionLoading] = useState(false);
 
-  // Stable callbacks for memoized children (avoid inline closures)
-  const clearExpandedTab = useCallback(() => setExpandedTab(null), []);
   const clearViewingTrace = useCallback(() => setViewingTrace(null), []);
   const closeTaskWizard = useCallback(() => setShowTaskWizard(false), []);
-  const switchToChat = useCallback(() => setMobilePane("chat"), []);
 
   /** Tracks previous session key per agent to detect session resets */
   const prevSessionKeyByAgentRef = useRef<Map<string, string>>(new Map());
@@ -377,20 +305,13 @@ const AgentStudioPage = () => {
   const focusedAgentId = focusedAgent?.agentId ?? null;
 
   // Command Palette (Cmd+K)
-  /** Management view shown inline in center area (replaces chat). Null = show chat. */
-  const [managementView, setManagementView] = useState<ManagementTab | null>(null);
-
   const handleManagementNav = useCallback((tab: ManagementTab) => {
     if (tab === "settings" && focusedAgent && !settingsAgentId) {
       setSettingsAgentId(focusedAgent.agentId);
     }
     // Toggle: clicking the active tab closes the drawer
     setManagementView((prev) => (prev === tab ? null : tab));
-  }, [focusedAgent, settingsAgentId, setSettingsAgentId]);
-
-  const handleBackToChat = useCallback(() => {
-    setManagementView(null);
-  }, []);
+  }, [focusedAgent, settingsAgentId, setSettingsAgentId, setManagementView]);
 
   const handleCmdNavTab = useCallback((tab: ContextTab | "sessions" | "usage" | "channels" | "cron" | "settings") => {
     const contextTabs = new Set<string>(["projects", "tasks", "brain", "workspace", "activity"]);
@@ -405,8 +326,8 @@ const AgentStudioPage = () => {
       }
       setManagementView(tab as ManagementTab);
     }
-  }, [mobilePane, focusedAgent, settingsAgentId, setSettingsAgentId]);
-  const handleCmdOpenCtx = useCallback(() => setContextPanelOpen(true), []);
+  }, [mobilePane, focusedAgent, settingsAgentId, setSettingsAgentId, setContextTab, setContextPanelOpen, setMobilePane, setManagementView]);
+  const handleCmdOpenCtx = useCallback(() => setContextPanelOpen(true), [setContextPanelOpen]);
   const handleCmdSwitchAgent = useCallback((agentId: string) => {
     flushPendingDraft(focusedAgent?.agentId ?? null);
     dispatch({ type: "selectAgent", agentId });
@@ -609,25 +530,6 @@ const AgentStudioPage = () => {
       void loadAllSessionsRef.current(); // refresh aggregate tokens from list
     }
   }, [focusedAgentId, focusedSessionKey, focusedAgentStatus]);
-
-  // ── Escape key closes mobile drawers ────────────────────────────────────
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        if (mobileSessionDrawerOpen) {
-          e.preventDefault();
-          setMobileSessionDrawerOpen(false);
-          return;
-        }
-        if (mobilePane !== "chat") {
-          e.preventDefault();
-          setMobilePane("chat");
-        }
-      }
-    };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, [mobilePane, mobileSessionDrawerOpen]);
 
   // Aggregate usage: use the focused session's usage as the primary data source
   // (per-session usage loads lazily in SessionsPanel cards)
@@ -1103,7 +1005,7 @@ const AgentStudioPage = () => {
     if (contextTab !== "brain" || contextMode !== "agent") return;
     if (selectedBrainAgentId) return;
     setContextTab("tasks");
-  }, [contextMode, contextTab, selectedBrainAgentId]);
+  }, [contextMode, contextTab, selectedBrainAgentId, setContextTab]);
 
   // Model loading is handled by useGatewayModels hook
 
@@ -1174,17 +1076,6 @@ const AgentStudioPage = () => {
     dispatch({ type: "selectAgent", agentId: nextId });
   }, [dispatch, focusedAgent, state.selectedAgentId]);
 
-  const handleFilesToggle = useCallback(() => {
-    setContextMode((prev) => {
-      if (prev === "files") {
-        setMobilePane("chat");
-        return "agent";
-      }
-      setMobilePane("context");
-      return "files";
-    });
-  }, []);
-
   const handleNewSession = useCallback(
     async (agentId: string) => {
       const agent = agents.find((entry) => entry.agentId === agentId);
@@ -1220,7 +1111,7 @@ const AgentStudioPage = () => {
         });
       }
     },
-    [agents, client, dispatch, historyInFlightRef, setError, setSettingsAgentId, specialUpdateInFlightRef, specialUpdateRef]
+    [agents, client, dispatch, historyInFlightRef, setError, setSettingsAgentId, setMobilePane, specialUpdateInFlightRef, specialUpdateRef]
   );
 
   const handleSend = useCallback(
@@ -1530,54 +1421,6 @@ const AgentStudioPage = () => {
   const connectionPanelVisible = showConnectionPanel;
   const hasAnyAgents = agents.length > 0;
   const showFleetLayout = hasAnyAgents || status === "connected";
-
-  // Responsive breakpoint for progressive layout
-  const breakpoint = useBreakpoint();
-  const showSidebarInline = isDesktopOrAbove(breakpoint); // ≥1024px
-  const showContextInline = isWide(breakpoint) && contextPanelOpen; // ≥1440px + user hasn't closed it
-  // isWide(breakpoint) used for context tab integration into header
-  const isMobileLayout = isTabletOrBelow(breakpoint); // <1024px
-
-  // Auto-hide header on scroll (desktop only)
-  const { isVisible: headerVisible, onHoverZoneEnter, onHoverZoneLeave } = useAutoHideHeader({
-    disabled: isMobileLayout,
-  });
-
-  // Swipe gestures for mobile drawer open/close
-  const swipeHandlers = useSwipeDrawer({
-    onSwipeRight: isMobileLayout
-      ? () => {
-          // Swipe right: open session history (if context drawer isn't open)
-          if (mobilePane === "chat" && !mobileSessionDrawerOpen) {
-            setMobileSessionDrawerOpen(true);
-          }
-          // Swipe right on context drawer: close it
-          if (mobilePane === "context") {
-            setMobilePane("chat");
-          }
-        }
-      : undefined,
-    onSwipeLeft: isMobileLayout
-      ? () => {
-          // Swipe left: open context panel (if session drawer isn't open)
-          if (mobilePane === "chat" && !mobileSessionDrawerOpen) {
-            setMobilePane("context");
-          }
-          // Swipe left on session drawer: close it
-          if (mobileSessionDrawerOpen) {
-            setMobileSessionDrawerOpen(false);
-          }
-        }
-      : undefined,
-    onSwipeDown: isMobileLayout
-      ? () => {
-          // Swipe down on context bottom sheet: dismiss it
-          if (mobilePane === "context") {
-            setMobilePane("chat");
-          }
-        }
-      : undefined,
-  });
 
   const configMutationStatusLine = activeConfigMutation
     ? `Applying config change: ${activeConfigMutation.label}`
