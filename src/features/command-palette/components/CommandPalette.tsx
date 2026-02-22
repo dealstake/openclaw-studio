@@ -2,6 +2,8 @@
 
 import { memo, useEffect } from "react";
 import { Command as Cmdk } from "cmdk";
+import { Search } from "lucide-react";
+import { Z_BACKDROP, Z_MODAL } from "@/lib/styles/z-index";
 import type { CommandAction } from "../lib/types";
 
 interface Props {
@@ -50,12 +52,19 @@ export const CommandPalette = memo(function CommandPalette({
     <>
       {/* Overlay */}
       <div
-        className="fixed inset-0 z-[200] bg-black/50 backdrop-blur-sm animate-in fade-in duration-150"
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in duration-150"
+        style={{ zIndex: Z_BACKDROP }}
         onClick={() => onOpenChange(false)}
         aria-hidden
       />
       {/* Dialog */}
-      <div className="fixed inset-0 z-[201] flex items-start justify-center pt-[20vh] pointer-events-none">
+      <div
+        className="fixed inset-0 flex items-start justify-center pt-16 sm:pt-[20vh] pointer-events-none"
+        style={{ zIndex: Z_MODAL }}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Command Palette"
+      >
         <div className="pointer-events-auto w-full max-w-lg mx-4 animate-in fade-in slide-in-from-top-4 duration-200">
           <Cmdk
             label="Command Palette"
@@ -63,16 +72,7 @@ export const CommandPalette = memo(function CommandPalette({
             className="rounded-lg border border-border bg-card shadow-lg overflow-hidden"
           >
             <div className="flex items-center gap-2 border-b border-border px-3">
-              <svg
-                className="h-4 w-4 shrink-0 text-muted-foreground"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                strokeWidth={2}
-              >
-                <circle cx="11" cy="11" r="8" />
-                <path d="m21 21-4.3-4.3" />
-              </svg>
+              <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
               <Cmdk.Input
                 placeholder="Type a command or search…"
                 className="flex-1 h-12 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
@@ -120,7 +120,7 @@ const CommandItem = memo(function CommandItem({
       value={action.label}
       keywords={action.keywords}
       onSelect={action.onSelect}
-      className="flex items-center gap-3 rounded-lg px-2 py-2 text-sm text-foreground cursor-pointer select-none aria-selected:bg-accent aria-selected:text-accent-foreground transition-all duration-150 hover:bg-muted/30"
+      className="flex items-center gap-3 rounded-lg px-2 py-3 text-sm text-foreground cursor-pointer select-none aria-selected:bg-accent aria-selected:text-accent-foreground transition-all duration-150 hover:bg-muted/30"
     >
       {Icon && <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />}
       <span className="flex-1 truncate">{action.label}</span>

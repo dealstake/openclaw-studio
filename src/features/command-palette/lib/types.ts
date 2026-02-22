@@ -1,4 +1,5 @@
 import type { LucideIcon } from "lucide-react";
+import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import type { ContextTab } from "@/features/context/components/ContextPanel";
 
 /** All navigable tabs — context panel tabs + management tabs (opened in expanded modal) */
@@ -42,7 +43,7 @@ export interface CommandPaletteProps {
   /** Switch to a different agent */
   onSwitchAgent?: (agentId: string) => void;
   /** Gateway client for action commands */
-  client?: { call: (method: string, params?: Record<string, unknown>) => Promise<unknown> } | null;
+  client?: GatewayClient | null;
   /** Callback when project creation is requested */
   onCreateProject?: () => void;
 }

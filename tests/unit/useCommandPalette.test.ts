@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useCommandPalette } from "@/features/command-palette/hooks/useCommandPalette";
 import type { CommandPaletteProps } from "@/features/command-palette/lib/types";
+import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 
 function makeProps(overrides: Partial<CommandPaletteProps> = {}): CommandPaletteProps {
   return {
@@ -47,7 +48,7 @@ describe("useCommandPalette", () => {
   });
 
   it("includes action commands when client is provided", () => {
-    const client = { call: vi.fn().mockResolvedValue({}) };
+    const client = { call: vi.fn().mockResolvedValue({}) } as unknown as GatewayClient;
     const { result } = renderHook(() => useCommandPalette(makeProps({ client })));
     const actionCmds = result.current.actions.filter((a) => a.group === "actions");
     expect(actionCmds.length).toBeGreaterThanOrEqual(2);
@@ -81,7 +82,7 @@ describe("useCommandPalette", () => {
   });
 
   it("selecting restart gateway action calls client.call", () => {
-    const client = { call: vi.fn().mockResolvedValue({}) };
+    const client = { call: vi.fn().mockResolvedValue({}) } as unknown as GatewayClient;
     const { result } = renderHook(() => useCommandPalette(makeProps({ client })));
     const restartAction = result.current.actions.find((a) => a.id === "action-restart-gateway");
     act(() => restartAction!.onSelect());
