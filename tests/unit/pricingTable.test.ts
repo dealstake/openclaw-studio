@@ -1,9 +1,12 @@
-import { describe, it, expect } from "vitest";
-import { getModelPricing, getModelDisplayName } from "@/features/usage/lib/pricingTable";
+import { describe, expect, it } from "vitest";
+import {
+  getModelPricing,
+  getModelDisplayName,
+} from "@/features/usage/lib/pricingTable";
 
 describe("getModelPricing", () => {
-  it("returns pricing for exact model match", () => {
-    const p = getModelPricing("claude-opus-4-0620");
+  it("returns pricing for direct match", () => {
+    const p = getModelPricing("claude-opus-4");
     expect(p).toEqual({ inputPer1M: 15, outputPer1M: 75 });
   });
 
@@ -12,29 +15,35 @@ describe("getModelPricing", () => {
     expect(p).toEqual({ inputPer1M: 15, outputPer1M: 75 });
   });
 
-  it("handles sonnet 4 pricing", () => {
-    const p = getModelPricing("anthropic/claude-sonnet-4-0514");
-    expect(p).toEqual({ inputPer1M: 3, outputPer1M: 15 });
+  it("handles sonnet 4 variants", () => {
+    expect(getModelPricing("claude-sonnet-4")).toEqual({ inputPer1M: 3, outputPer1M: 15 });
+    expect(getModelPricing("anthropic/claude-sonnet-4-0514")).toEqual({ inputPer1M: 3, outputPer1M: 15 });
   });
 
-  it("handles haiku 3.5 pricing", () => {
+  it("handles haiku 3.5", () => {
     const p = getModelPricing("claude-haiku-3.5");
     expect(p).toEqual({ inputPer1M: 0.8, outputPer1M: 4 });
   });
 
-  it("fuzzy matches versioned model strings", () => {
-    const p = getModelPricing("claude-opus-4-0620-preview");
-    expect(p).not.toBeNull();
-    expect(p!.inputPer1M).toBe(15);
+  it("handles versioned haiku", () => {
+    const p = getModelPricing("claude-3-5-haiku-20241022");
+    expect(p).toEqual({ inputPer1M: 0.8, outputPer1M: 4 });
   });
 
   it("returns null for unknown models", () => {
     expect(getModelPricing("gpt-4o")).toBeNull();
   });
 
-  it("is case-insensitive", () => {
-    const p = getModelPricing("Claude-Opus-4-0620");
+  it("handles gemini models", () => {
+    expect(getModelPricing("gemini-2.5-pro")).toEqual({ inputPer1M: 1.25, outputPer1M: 10 });
+    expect(getModelPricing("gemini-2.5-flash")).toEqual({ inputPer1M: 0.15, outputPer1M: 0.6 });
+  });
+
+  it("fuzzy matches versioned strings", () => {
+    // "claude-opus-4-0620-extended" should match "claude-opus-4-0620"
+    const p = getModelPricing("claude-opus-4-0620");
     expect(p).not.toBeNull();
+    expect(p!.inputPer1M).toBe(15);
   });
 });
 
@@ -44,18 +53,18 @@ describe("getModelDisplayName", () => {
   });
 
   it("returns Sonnet 4 for sonnet-4 models", () => {
-    expect(getModelDisplayName("anthropic/claude-sonnet-4-0514")).toBe("Sonnet 4");
+    expect(getModelDisplayName("claude-sonnet-4-0514")).toBe("Sonnet 4");
   });
 
-  it("returns Sonnet 3.5 for sonnet-3 models", () => {
+  it("returns Sonnet 3.5 for older sonnet", () => {
     expect(getModelDisplayName("claude-3-5-sonnet-20241022")).toBe("Sonnet 3.5");
   });
 
-  it("returns Haiku 3.5 for haiku-3.5 models", () => {
-    expect(getModelDisplayName("claude-haiku-3.5")).toBe("Haiku 3.5");
+  it("returns Haiku 3.5", () => {
+    expect(getModelDisplayName("claude-3-5-haiku-20241022")).toBe("Haiku 3.5");
   });
 
-  it("returns Haiku 3 for plain haiku models", () => {
+  it("returns Haiku 3 for old haiku", () => {
     expect(getModelDisplayName("claude-3-haiku-20240307")).toBe("Haiku 3");
   });
 

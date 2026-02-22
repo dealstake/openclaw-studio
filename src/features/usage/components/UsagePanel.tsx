@@ -117,6 +117,13 @@ export const UsagePanel = memo(function UsagePanel({
         )}
       </div>
 
+      {/* Truncation warning */}
+      {totalSessions >= 200 && (
+        <p className="text-xs text-muted-foreground bg-muted/50 rounded-md px-3 py-2">
+          Showing data from 200 most recent sessions. Older sessions are excluded from totals.
+        </p>
+      )}
+
       {/* Cost by model table */}
       {costByModel.size > 0 && (
         <div>

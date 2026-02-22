@@ -27,6 +27,20 @@ const MODEL_PRICING: Record<string, ModelPricing> = {
   "claude-3-5-haiku-20241022": { inputPer1M: 0.8, outputPer1M: 4 },
   // Haiku 3
   "claude-3-haiku-20240307": { inputPer1M: 0.25, outputPer1M: 1.25 },
+  // Gemini models
+  "gemini-2.5-pro": { inputPer1M: 1.25, outputPer1M: 10 },
+  "gemini-2.5-flash": { inputPer1M: 0.15, outputPer1M: 0.6 },
+  "gemini-2.0-flash": { inputPer1M: 0.1, outputPer1M: 0.4 },
+};
+
+/**
+ * Extended thinking token pricing (per 1M tokens).
+ * Thinking tokens are billed at a different rate than regular output.
+ */
+export const THINKING_TOKEN_PRICING: Record<string, number> = {
+  "claude-opus-4": 75, // same as output
+  "claude-sonnet-4": 15, // same as output
+  "claude-sonnet-3.5": 15,
 };
 
 /**
@@ -70,7 +84,7 @@ export function getModelDisplayName(model: string): string {
   if (normalized.includes("opus")) return "Opus 4";
   if (normalized.includes("sonnet-4")) return "Sonnet 4";
   if (normalized.includes("sonnet-3") || normalized.includes("sonnet-3.5") || normalized.includes("3-5-sonnet")) return "Sonnet 3.5";
-  if (normalized.includes("haiku-3.5") || normalized.includes("haiku-3-5")) return "Haiku 3.5";
+  if (normalized.includes("haiku-3.5") || normalized.includes("3-5-haiku") || normalized.includes("haiku-3-5")) return "Haiku 3.5";
   if (normalized.includes("haiku")) return "Haiku 3";
   return normalized;
 }

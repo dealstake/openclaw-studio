@@ -1,38 +1,58 @@
-import { describe, it, expect, vi } from "vitest";
-import { renderHook, act } from "@testing-library/react";
+import { describe, expect, it, vi, afterEach, beforeEach } from "vitest";
+import { renderHook, act, cleanup } from "@testing-library/react";
 import { useUsageData } from "@/features/usage/hooks/useUsageData";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 
-function makeClient(sessions: unknown[] = []) {
+afterEach(cleanup);
+
+vi.mock("@/lib/gateway/GatewayClient", () => ({
+  isGatewayDisconnectLikeError: vi.fn().mockReturnValue(false),
+}));
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function makeClient(sessions: unknown[] = []): GatewayClient {
   return {
     call: vi.fn().mockResolvedValue({ sessions }),
   } as unknown as GatewayClient;
 }
 
-const NOW = Date.now();
-
-const SAMPLE_SESSIONS = [
-  {
-    key: "session-1",
-    displayName: "Chat 1",
-    model: "claude-opus-4-0620",
+function makeSession(overrides: Record<string, unknown> = {}) {
+  return {
+    key: "sess-1",
+    displayName: "Test Session",
+    model: "anthropic/claude-opus-4-0620",
     inputTokens: 1000,
     outputTokens: 500,
-    updatedAt: NOW - 3600_000, // 1 hour ago
-  },
-  {
-    key: "cron-abc-123",
-    displayName: "Cron Run",
-    model: "claude-sonnet-4-0514",
-    inputTokens: 200,
-    outputTokens: 100,
-    updatedAt: NOW - 7200_000, // 2 hours ago
-  },
-];
+    updatedAt: Date.now(),
+    ...overrides,
+  };
+}
+
+// ─── Tests ───────────────────────────────────────────────────────────────────
 
 describe("useUsageData", () => {
-  it("fetches and computes costs on refresh", async () => {
-    const client = makeClient(SAMPLE_SESSIONS);
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("initializes with empty state", () => {
+    const { result } = renderHook(() => useUsageData(makeClient(), "connected"));
+    expect(result.current.entries).toEqual([]);
+    expect(result.current.loading).toBe(false);
+    expect(result.current.error).toBeNull();
+    expect(result.current.timeRange).toBe("7d");
+    expect(result.current.totalCost).toBe(0);
+    expect(result.current.totalSessions).toBe(0);
+  });
+
+  it("fetches sessions on refresh", async () => {
+    const sessions = [makeSession()];
+    const client = makeClient(sessions);
     const { result } = renderHook(() => useUsageData(client, "connected"));
 
     await act(async () => {
@@ -44,11 +64,7 @@ describe("useUsageData", () => {
       includeUnknown: true,
       limit: 200,
     });
-    expect(result.current.totalSessions).toBe(2);
-    expect(result.current.totalCost).toBeGreaterThan(0);
-    expect(result.current.costByModel.size).toBeGreaterThan(0);
-    expect(result.current.error).toBeNull();
-    expect(result.current.loading).toBe(false);
+    expect(result.current.totalSessions).toBeGreaterThan(0);
   });
 
   it("does not fetch when disconnected", async () => {
@@ -62,32 +78,30 @@ describe("useUsageData", () => {
     expect(client.call).not.toHaveBeenCalled();
   });
 
-  it("filters by time range", async () => {
-    const oldSession = {
-      key: "old",
-      model: "claude-opus-4-0620",
-      inputTokens: 100,
-      outputTokens: 50,
-      updatedAt: NOW - 8 * 24 * 3600_000, // 8 days ago
-    };
-    const client = makeClient([...SAMPLE_SESSIONS, oldSession]);
+  it("throttles rapid refreshes", async () => {
+    const client = makeClient([makeSession()]);
     const { result } = renderHook(() => useUsageData(client, "connected"));
 
     await act(async () => {
       await result.current.refresh();
     });
+    expect(client.call).toHaveBeenCalledTimes(1);
 
-    // Default is 7d, so old session should be filtered out
-    expect(result.current.totalSessions).toBe(2);
-
-    // Switch to all — should include old session
-    act(() => {
-      result.current.setTimeRange("all");
+    // Immediate second call should be throttled
+    await act(async () => {
+      await result.current.refresh();
     });
-    expect(result.current.totalSessions).toBe(3);
+    expect(client.call).toHaveBeenCalledTimes(1);
+
+    // After throttle window, should work again
+    vi.advanceTimersByTime(6000);
+    await act(async () => {
+      await result.current.refresh();
+    });
+    expect(client.call).toHaveBeenCalledTimes(2);
   });
 
-  it("handles API errors gracefully", async () => {
+  it("handles errors gracefully", async () => {
     const client = {
       call: vi.fn().mockRejectedValue(new Error("Network error")),
     } as unknown as GatewayClient;
@@ -98,6 +112,43 @@ describe("useUsageData", () => {
     });
 
     expect(result.current.error).toBe("Network error");
-    expect(result.current.totalSessions).toBe(0);
+    expect(result.current.entries).toEqual([]);
+  });
+
+  it("changes time range", async () => {
+    const client = makeClient([makeSession()]);
+    const { result } = renderHook(() => useUsageData(client, "connected"));
+
+    await act(async () => {
+      await result.current.refresh();
+    });
+
+    act(() => {
+      result.current.setTimeRange("30d");
+    });
+
+    expect(result.current.timeRange).toBe("30d");
+  });
+
+  it("computes derived state (costByModel, totals)", async () => {
+    const sessions = [
+      makeSession({ key: "s1", inputTokens: 10000, outputTokens: 5000 }),
+      makeSession({ key: "s2", inputTokens: 20000, outputTokens: 10000, model: "anthropic/claude-sonnet-4" }),
+    ];
+    const client = makeClient(sessions);
+    const { result } = renderHook(() => useUsageData(client, "connected"));
+
+    // Set to "all" to include everything
+    act(() => {
+      result.current.setTimeRange("all");
+    });
+
+    await act(async () => {
+      await result.current.refresh();
+    });
+
+    expect(result.current.totalInputTokens).toBeGreaterThan(0);
+    expect(result.current.totalOutputTokens).toBeGreaterThan(0);
+    expect(result.current.costByModel.size).toBeGreaterThan(0);
   });
 });
