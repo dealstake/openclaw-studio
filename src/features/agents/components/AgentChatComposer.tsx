@@ -254,53 +254,11 @@ export const AgentChatComposer = memo(function AgentChatComposer({
       )}
       {/* Gradient fade above composer */}
       <div className="pointer-events-none h-24 bg-gradient-to-t from-background via-background/80 to-transparent" />
-      {/* Model / Thinking selectors above pill */}
-      <div className="mx-auto mb-2 flex max-w-3xl items-center gap-2 px-1">
-        {models.length > 0 && (
-          <select
-            className="h-10 rounded-full border border-border/60 bg-muted/50 px-4 text-sm font-medium text-foreground outline-none transition hover:bg-muted focus:border-border sm:h-7 sm:px-2.5 sm:text-[11px]"
-            value={modelValue}
-            onChange={(e) => onModelChange(e.target.value || null)}
-            aria-label="Select model"
-          >
-            {models.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.name ?? m.id}
-              </option>
-            ))}
-          </select>
-        )}
-        {allowThinking && (
-          <select
-            className="h-10 rounded-full border border-border/60 bg-muted/50 px-4 text-sm font-medium text-foreground outline-none transition hover:bg-muted focus:border-border sm:h-7 sm:px-2.5 sm:text-[11px]"
-            value={thinkingLevel}
-            onChange={(e) => onThinkingChange(e.target.value || null)}
-            aria-label="Thinking level"
-          >
-            <option value="off">Thinking: Off</option>
-            <option value="low">Thinking: Low</option>
-            <option value="medium">Thinking: Med</option>
-            <option value="high">Thinking: High</option>
-          </select>
-        )}
-        {tokenPct !== null && (
-          <div className="ml-auto flex items-center gap-1.5 opacity-70">
-            <div className="h-1 w-16 overflow-hidden rounded-full bg-muted">
-              <div
-                className={`h-full rounded-full transition-all ${tokenPct >= 80 ? "bg-yellow-500" : "bg-primary/60"}`}
-                style={{ width: `${Math.min(tokenPct, 100)}%` }}
-              />
-            </div>
-            <span className="font-mono text-[10px] text-muted-foreground">{tokenPct}%</span>
-          </div>
-        )}
-      </div>
-
-      {/* Main composer pill */}
-      <div className="mx-auto flex max-w-3xl flex-col gap-2 rounded-2xl border border-border/20 bg-card/80 p-2 shadow-lg backdrop-blur-md focus-within:border-border focus-within:bg-card transition">
+      {/* Main composer — rectangular card with toolbar */}
+      <div className="mx-auto flex max-w-3xl flex-col rounded-xl border border-border/30 bg-card/80 shadow-lg backdrop-blur-md focus-within:border-border/60 focus-within:bg-card transition">
         {/* File error message */}
         {fileError && (
-          <div className="flex items-center gap-1.5 rounded-lg bg-destructive/10 px-2.5 py-1.5 text-xs text-destructive">
+          <div className="flex items-center gap-1.5 rounded-t-xl bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
             <AlertCircle className="h-3.5 w-3.5 shrink-0" />
             <span className="truncate">{fileError}</span>
           </div>
@@ -308,15 +266,33 @@ export const AgentChatComposer = memo(function AgentChatComposer({
 
         {/* Attachment preview row */}
         {hasFiles && (
-          <ChatAttachmentPreview files={files} onRemove={removeFile} />
+          <div className="px-3 pt-2">
+            <ChatAttachmentPreview files={files} onRemove={removeFile} />
+          </div>
         )}
 
-        {/* Input row */}
-        <div className="flex items-end gap-2 w-full">
+        {/* Textarea area */}
+        <div className="flex items-start gap-2 px-3 pt-3 pb-1">
+          <textarea
+            ref={handleRef}
+            rows={1}
+            defaultValue={initialDraft}
+            className="max-h-[200px] flex-1 resize-none bg-transparent py-1 text-sm leading-relaxed text-foreground outline-none placeholder:text-muted-foreground"
+            aria-label="Message to agent"
+            onChange={handleChange}
+            onKeyDown={handleKeyDown}
+            onFocus={handleFocus}
+            onPaste={handlePaste}
+            placeholder={`Message ${agentName}...`}
+          />
+        </div>
+
+        {/* Toolbar row — attach, model, thinking, token gauge, send */}
+        <div className="flex items-center gap-1 border-t border-border/10 px-2 py-1.5">
           {/* Attach button */}
           <button
             type="button"
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground"
             aria-label="Attach file"
             onClick={() => fileInputRef.current?.click()}
           >
@@ -331,40 +307,69 @@ export const AgentChatComposer = memo(function AgentChatComposer({
             onChange={handleFileInputChange}
           />
 
-          <textarea
-            ref={handleRef}
-            rows={1}
-            defaultValue={initialDraft}
-            className="max-h-[80px] flex-1 resize-none bg-transparent px-1 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground sm:max-h-[200px]"
-            aria-label="Message to agent"
-            onChange={handleChange}
-            onKeyDown={handleKeyDown}
-            onFocus={handleFocus}
-            onPaste={handlePaste}
-            placeholder={`Message ${agentName}...`}
-          />
-
-          {running ? (
-            <button
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
-              type="button"
-              aria-label="Stop agent"
-              onClick={onStop}
-              disabled={!canSend || stopBusy}
+          {models.length > 0 && (
+            <select
+              className="h-8 rounded-lg border-none bg-transparent px-2 text-xs font-medium text-muted-foreground outline-none transition hover:bg-muted hover:text-foreground focus:ring-0"
+              value={modelValue}
+              onChange={(e) => onModelChange(e.target.value || null)}
+              aria-label="Select model"
             >
-              <Square className="h-3 w-3 fill-current" />
-            </button>
-          ) : (
-            <button
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
-              type="button"
-              aria-label="Send message"
-              onClick={handleClickSend}
-              disabled={sendDisabled}
-            >
-              <ArrowUp className="h-4 w-4" />
-            </button>
+              {models.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name ?? m.id}
+                </option>
+              ))}
+            </select>
           )}
+          {allowThinking && (
+            <select
+              className="h-8 rounded-lg border-none bg-transparent px-2 text-xs font-medium text-muted-foreground outline-none transition hover:bg-muted hover:text-foreground focus:ring-0"
+              value={thinkingLevel}
+              onChange={(e) => onThinkingChange(e.target.value || null)}
+              aria-label="Thinking level"
+            >
+              <option value="off">Thinking: Off</option>
+              <option value="low">Thinking: Low</option>
+              <option value="medium">Thinking: Med</option>
+              <option value="high">Thinking: High</option>
+            </select>
+          )}
+
+          {tokenPct !== null && (
+            <div className="ml-auto mr-1 flex items-center gap-1.5 opacity-60">
+              <div className="h-1 w-12 overflow-hidden rounded-full bg-muted">
+                <div
+                  className={`h-full rounded-full transition-all ${tokenPct >= 80 ? "bg-yellow-500" : "bg-primary/60"}`}
+                  style={{ width: `${Math.min(tokenPct, 100)}%` }}
+                />
+              </div>
+              <span className="font-mono text-[10px] text-muted-foreground">{tokenPct}%</span>
+            </div>
+          )}
+
+          <div className={`${tokenPct === null ? "ml-auto" : ""}`}>
+            {running ? (
+              <button
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-destructive text-destructive-foreground shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+                type="button"
+                aria-label="Stop agent"
+                onClick={onStop}
+                disabled={!canSend || stopBusy}
+              >
+                <Square className="h-3 w-3 fill-current" />
+              </button>
+            ) : (
+              <button
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+                type="button"
+                aria-label="Send message"
+                onClick={handleClickSend}
+                disabled={sendDisabled}
+              >
+                <ArrowUp className="h-4 w-4" />
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>
