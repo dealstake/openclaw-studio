@@ -1,10 +1,14 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useFileEditor } from "@/hooks/useFileEditor";
 
 describe("useFileEditor", () => {
   beforeEach(() => {
     vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it("initializes with content and clean state", () => {
@@ -96,6 +100,19 @@ describe("useFileEditor", () => {
     act(() => result.current.setDraft("dirty"));
     expect(result.current.confirmDiscardIfDirty()).toBe(false);
     expect(window.confirm).toHaveBeenCalled();
+  });
+
+  it("confirmDiscardIfDirty uses custom onConfirmDiscard callback", async () => {
+    const onConfirmDiscard = vi.fn().mockResolvedValue(true);
+    const confirmSpy = vi.spyOn(window, "confirm");
+    const { result } = renderHook(() =>
+      useFileEditor({ initialContent: "hello", onSave: vi.fn(), onConfirmDiscard })
+    );
+    act(() => result.current.setDraft("dirty"));
+    const ok = await result.current.confirmDiscardIfDirty();
+    expect(ok).toBe(true);
+    expect(onConfirmDiscard).toHaveBeenCalled();
+    expect(confirmSpy).not.toHaveBeenCalled();
   });
 
   it("handleKeyDown triggers save on ⌘S when dirty", async () => {

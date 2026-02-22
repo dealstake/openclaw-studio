@@ -69,6 +69,56 @@ describe("useCopyToClipboard", () => {
     expect(result.current.isCopied).toBe(false);
   });
 
+  it("cleans up timer on unmount (no state update on unmounted component)", async () => {
+    const { result, unmount } = renderHook(() => useCopyToClipboard());
+
+    await act(async () => {
+      result.current.copyToClipboard("hello");
+    });
+    expect(result.current.isCopied).toBe(true);
+
+    // Unmount before timer fires — should not warn about state update
+    unmount();
+
+    // Advancing timers should not throw or warn
+    act(() => {
+      vi.advanceTimersByTime(3000);
+    });
+  });
+
+  it("clears previous timer when copying again before reset", async () => {
+    const { result } = renderHook(() =>
+      useCopyToClipboard({ copiedDuration: 1000 }),
+    );
+
+    await act(async () => {
+      result.current.copyToClipboard("first");
+    });
+    expect(result.current.isCopied).toBe(true);
+
+    // Advance 800ms then copy again — old timer should be cleared
+    act(() => {
+      vi.advanceTimersByTime(800);
+    });
+
+    await act(async () => {
+      result.current.copyToClipboard("second");
+    });
+    expect(result.current.isCopied).toBe(true);
+
+    // After 800ms more (1600ms total), should still be copied (new timer hasn't expired)
+    act(() => {
+      vi.advanceTimersByTime(800);
+    });
+    expect(result.current.isCopied).toBe(true);
+
+    // After full 1000ms from second copy, should reset
+    act(() => {
+      vi.advanceTimersByTime(200);
+    });
+    expect(result.current.isCopied).toBe(false);
+  });
+
   it("does nothing when value is empty", async () => {
     const { result } = renderHook(() => useCopyToClipboard());
 

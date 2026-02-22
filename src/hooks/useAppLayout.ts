@@ -92,56 +92,12 @@ export function useAppLayout() {
     localStorage.setItem("studio:context-panel-open", String(contextPanelOpen));
   }, [contextPanelOpen]);
 
-  // ── Keyboard shortcuts ─────────────────────────────────────────
+  // ── Keyboard shortcuts + Escape (single listener) ───────────────
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const mod = e.metaKey || e.ctrlKey;
-      if (mod && e.shiftKey && e.key === "E") {
-        e.preventDefault();
-        setExpandedTab((prev) => (prev ? null : contextTab));
-        return;
-      }
-      if (mod && e.key === "\\") {
-        e.preventDefault();
-        setContextPanelOpen((prev) => !prev);
-        return;
-      }
-      if (mod && e.shiftKey && (e.key === "P" || e.key === "p")) {
-        e.preventDefault();
-        setContextTab("projects");
-        setContextPanelOpen(true);
-        if (mobilePane !== "context") setMobilePane("context");
-        return;
-      }
-      if (mod && e.shiftKey && (e.key === "T" || e.key === "t")) {
-        e.preventDefault();
-        setContextTab("tasks");
-        setContextPanelOpen(true);
-        if (mobilePane !== "context") setMobilePane("context");
-        return;
-      }
-      if (mod && e.shiftKey && (e.key === "B" || e.key === "b")) {
-        e.preventDefault();
-        setContextTab("brain");
-        setContextPanelOpen(true);
-        if (mobilePane !== "context") setMobilePane("context");
-        return;
-      }
-      if (mod && e.shiftKey && (e.key === "A" || e.key === "a")) {
-        e.preventDefault();
-        setContextTab("activity");
-        setContextPanelOpen(true);
-        if (mobilePane !== "context") setMobilePane("context");
-        return;
-      }
-    };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, [contextTab, mobilePane]);
 
-  // ── Escape key closes drawers ──────────────────────────────────
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
+      // ── Escape: close drawers ──
       if (e.key === "Escape") {
         if (mobileSessionDrawerOpen) {
           e.preventDefault();
@@ -152,11 +108,38 @@ export function useAppLayout() {
           e.preventDefault();
           setMobilePane("chat");
         }
+        return;
+      }
+
+      // ── Mod shortcuts ──
+      if (mod && e.shiftKey && e.key === "E") {
+        e.preventDefault();
+        setExpandedTab((prev) => (prev ? null : contextTab));
+        return;
+      }
+      if (mod && e.key === "\\") {
+        e.preventDefault();
+        setContextPanelOpen((prev) => !prev);
+        return;
+      }
+
+      // Tab shortcuts: Cmd+Shift+{P,T,B,A}
+      const tabShortcuts: Record<string, ContextTab> = {
+        p: "projects", t: "tasks", b: "brain", a: "activity",
+      };
+      if (mod && e.shiftKey) {
+        const tab = tabShortcuts[e.key.toLowerCase()];
+        if (tab) {
+          e.preventDefault();
+          setContextTab(tab);
+          setContextPanelOpen(true);
+          if (mobilePane !== "context") setMobilePane("context");
+        }
       }
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [mobilePane, mobileSessionDrawerOpen]);
+  }, [contextTab, mobilePane, mobileSessionDrawerOpen]);
 
   // ── Swipe gestures (mobile) ────────────────────────────────────
   const swipeHandlers = useSwipeDrawer({

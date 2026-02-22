@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 /**
  * Shared hook for copy-to-clipboard with auto-reset "copied" state.
@@ -13,13 +13,22 @@ export function useCopyToClipboard({
   copiedDuration?: number;
 } = {}) {
   const [isCopied, setIsCopied] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  // Clean up timer on unmount to prevent state update on unmounted component
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
 
   const copyToClipboard = useCallback(
     (value: string) => {
       if (!value) return;
       navigator.clipboard.writeText(value).then(() => {
         setIsCopied(true);
-        setTimeout(() => setIsCopied(false), copiedDuration);
+        if (timerRef.current) clearTimeout(timerRef.current);
+        timerRef.current = setTimeout(() => setIsCopied(false), copiedDuration);
       }).catch((err: unknown) => {
         console.warn("Clipboard write failed:", err);
       });

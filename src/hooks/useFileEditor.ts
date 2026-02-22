@@ -11,6 +11,11 @@ export interface UseFileEditorOptions {
   onSave: (content: string) => Promise<boolean>;
   /** Duration (ms) to show the save-success indicator. Default 2000. */
   successDuration?: number;
+  /**
+   * Custom discard confirmation. Return true to proceed, false to cancel.
+   * Defaults to `window.confirm()` if not provided.
+   */
+  onConfirmDiscard?: () => Promise<boolean> | boolean;
 }
 
 export interface UseFileEditorReturn {
@@ -24,7 +29,7 @@ export interface UseFileEditorReturn {
   /** Save the current draft. */
   handleSave: () => Promise<void>;
   /** Returns true if safe to proceed (not dirty, or user confirmed discard). */
-  confirmDiscardIfDirty: () => boolean;
+  confirmDiscardIfDirty: () => Promise<boolean> | boolean;
   /** Reset draft to given content and clear dirty/error state. */
   reset: (content: string) => void;
   /** Keyboard handler — attach to a container's onKeyDown. Saves on ⌘S when dirty. */
@@ -37,6 +42,7 @@ export function useFileEditor({
   initialContent,
   onSave,
   successDuration = 2000,
+  onConfirmDiscard,
 }: UseFileEditorOptions): UseFileEditorReturn {
   const [draft, setDraftRaw] = useState(initialContent);
   const [dirty, setDirty] = useState(false);
@@ -84,8 +90,12 @@ export function useFileEditor({
     }
   }, [draft, successDuration]);
 
-  const confirmDiscardIfDirty = useCallback((): boolean => {
+  const onConfirmDiscardRef = useRef(onConfirmDiscard);
+  onConfirmDiscardRef.current = onConfirmDiscard;
+
+  const confirmDiscardIfDirty = useCallback((): Promise<boolean> | boolean => {
     if (!dirty) return true;
+    if (onConfirmDiscardRef.current) return onConfirmDiscardRef.current();
     return window.confirm("You have unsaved changes. Discard them?");
   }, [dirty]);
 
