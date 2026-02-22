@@ -30,7 +30,7 @@ describe("task control plane priority route", () => {
 
   it("updates priority via br update", async () => {
     mockedExecFile.mockImplementation(
-      ((_cmd: unknown, _args: unknown, _opts: unknown, cb: Function) => {
+      ((_cmd: unknown, _args: unknown, _opts: unknown, cb: (...args: unknown[]) => void) => {
         cb(null, JSON.stringify([{ id: "bd-1", priority: 1 }]), "");
       }) as never,
     );

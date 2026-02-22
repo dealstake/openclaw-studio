@@ -30,7 +30,7 @@ describe("task control plane show route", () => {
 
   it("returns bead details on success", async () => {
     mockedExecFile.mockImplementation(
-      ((_cmd: unknown, _args: unknown, _opts: unknown, cb: Function) => {
+      ((_cmd: unknown, _args: unknown, _opts: unknown, cb: (...args: unknown[]) => void) => {
         cb(null, JSON.stringify([{ id: "bd-1", title: "Thing" }]), "");
       }) as never,
     );

@@ -30,20 +30,6 @@ const mockedExecFile = vi.mocked(execFile);
 const mockedBuildSnapshot = vi.mocked(buildTaskControlPlaneSnapshot);
 const mockedConsoleError = vi.spyOn(console, "error").mockImplementation(() => {});
 
-/** Helper to make execFile invoke its callback with given stdout. */
-function mockExecFileSuccess(stdout: string) {
-  return (_cmd: unknown, _args: unknown, _opts: unknown, cb: Function) => {
-    cb(null, stdout, "");
-  };
-}
-
-function mockExecFileError(stdout: string, stderr = "") {
-  return (_cmd: unknown, _args: unknown, _opts: unknown, cb: Function) => {
-    const err = Object.assign(new Error("exit 1"), { code: 1 });
-    cb(err, stdout, stderr);
-  };
-}
-
 describe("task control plane route", () => {
   beforeEach(() => {
     process.env = { ...ORIGINAL_ENV };
@@ -67,7 +53,7 @@ describe("task control plane route", () => {
     ];
     let callIndex = 0;
     mockedExecFile.mockImplementation(
-      ((_cmd: unknown, _args: unknown, _opts: unknown, cb: Function) => {
+      ((_cmd: unknown, _args: unknown, _opts: unknown, cb: (...args: unknown[]) => void) => {
         cb(null, responses[callIndex++], "");
       }) as never,
     );
@@ -110,7 +96,7 @@ describe("task control plane route", () => {
     ];
     let callIndex = 0;
     mockedExecFile.mockImplementation(
-      ((_cmd: unknown, _args: unknown, _opts: unknown, cb: Function) => {
+      ((_cmd: unknown, _args: unknown, _opts: unknown, cb: (...args: unknown[]) => void) => {
         cb(null, responses[callIndex++], "");
       }) as never,
     );
@@ -133,7 +119,7 @@ describe("task control plane route", () => {
 
   it("returns 400 for missing beads workspace", async () => {
     mockedExecFile.mockImplementation(
-      ((_cmd: unknown, _args: unknown, _opts: unknown, cb: Function) => {
+      ((_cmd: unknown, _args: unknown, _opts: unknown, cb: (...args: unknown[]) => void) => {
         const err = Object.assign(new Error("exit 1"), { code: 1 });
         cb(err, JSON.stringify({ error: "no beads directory found" }), "");
       }) as never,
@@ -149,7 +135,7 @@ describe("task control plane route", () => {
 
   it("returns 502 for other failures", async () => {
     mockedExecFile.mockImplementation(
-      ((_cmd: unknown, _args: unknown, _opts: unknown, cb: Function) => {
+      ((_cmd: unknown, _args: unknown, _opts: unknown, cb: (...args: unknown[]) => void) => {
         const err = Object.assign(new Error("exit 1"), { code: 1 });
         cb(err, JSON.stringify({ error: "boom" }), "");
       }) as never,
