@@ -1,20 +1,8 @@
 "use client";
 
 import { memo } from "react";
-import { FolderKanban, ListChecks, Brain, FolderOpen, Activity, X } from "lucide-react";
-import type { ContextTab } from "./ContextPanel";
-
-const TAB_ITEMS: Array<{
-  value: ContextTab;
-  label: string;
-  Icon: typeof FolderKanban;
-}> = [
-  { value: "projects", label: "Projects", Icon: FolderKanban },
-  { value: "tasks", label: "Tasks", Icon: ListChecks },
-  { value: "brain", label: "Brain", Icon: Brain },
-  { value: "workspace", label: "Files", Icon: FolderOpen },
-  { value: "activity", label: "Activity", Icon: Activity },
-];
+import { X } from "lucide-react";
+import { CONTEXT_TAB_CONFIG, type ContextTab } from "../lib/tabs";
 
 interface ContextTabClusterProps {
   activeTab: ContextTab;
@@ -40,7 +28,7 @@ export const ContextTabCluster = memo(function ContextTabCluster({
       className="flex items-center gap-0.5 rounded-full bg-background/60 backdrop-blur-md px-1.5 py-1 ring-1 ring-white/[0.06] shadow-lg"
       data-testid="context-tab-cluster"
     >
-      {TAB_ITEMS.map(({ value, label, Icon }) => {
+      {CONTEXT_TAB_CONFIG.map(({ value, label, Icon }) => {
         const isActive = panelOpen && activeTab === value;
         return (
           <button

@@ -2,15 +2,7 @@
 
 import { memo } from "react";
 import { PanelRight } from "lucide-react";
-import type { ContextTab } from "./ContextPanel";
-
-const TAB_ICONS: Array<{ value: ContextTab; label: string; shortLabel: string }> = [
-  { value: "projects", label: "Projects", shortLabel: "P" },
-  { value: "tasks", label: "Tasks", shortLabel: "T" },
-  { value: "brain", label: "Brain", shortLabel: "B" },
-  { value: "workspace", label: "Files", shortLabel: "F" },
-  { value: "activity", label: "Activity", shortLabel: "A" },
-];
+import { CONTEXT_TAB_CONFIG, type ContextTab } from "../lib/tabs";
 
 interface ContextPanelStripProps {
   activeTab: ContextTab;
@@ -37,7 +29,7 @@ export const ContextPanelStrip = memo(function ContextPanelStrip({
         <PanelRight className="h-4 w-4" />
       </button>
       <div className="my-1 h-px w-4 bg-border/40" />
-      {TAB_ICONS.map((tab) => (
+      {CONTEXT_TAB_CONFIG.map((tab) => (
         <button
           key={tab.value}
           type="button"

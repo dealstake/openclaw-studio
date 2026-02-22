@@ -1,12 +1,14 @@
 "use client";
 
-import { memo, useCallback, useRef, useState, useEffect, type ReactNode } from "react";
+import { memo, useCallback, useRef, useState, useEffect, useMemo, type ReactNode } from "react";
 import { Maximize2, X } from "lucide-react";
 
 import { PanelIconButton } from "@/components/PanelIconButton";
 import { sectionLabelClass } from "@/components/SectionLabel";
+import { CONTEXT_TAB_CONFIG, tabPanelId, tabButtonId, type ContextTab } from "../lib/tabs";
 
-export type ContextTab = "projects" | "tasks" | "brain" | "workspace" | "activity";
+// Re-export ContextTab for backwards compatibility
+export type { ContextTab } from "../lib/tabs";
 
 interface ContextPanelProps {
   activeTab: ContextTab;
@@ -23,13 +25,8 @@ interface ContextPanelProps {
   activityContent?: ReactNode;
 }
 
-export const TAB_OPTIONS: Array<{ value: ContextTab; label: string }> = [
-  { value: "projects", label: "Projects" },
-  { value: "tasks", label: "Tasks" },
-  { value: "brain", label: "Brain" },
-  { value: "workspace", label: "Files" },
-  { value: "activity", label: "Activity" },
-];
+/** Exported for backwards compat — prefer CONTEXT_TAB_CONFIG from lib/tabs.ts */
+export const TAB_OPTIONS = CONTEXT_TAB_CONFIG.map(({ value, label }) => ({ value, label }));
 
 export const ContextPanel = memo(function ContextPanel({
   activeTab,
@@ -66,11 +63,11 @@ export const ContextPanel = memo(function ContextPanel({
     [onTabChange]
   );
 
-  const mobileTabBarRef = useRef<HTMLDivElement>(null);
+  const tabBarRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll active tab into view on mobile
   useEffect(() => {
-    const container = mobileTabBarRef.current;
+    const container = tabBarRef.current;
     if (!container) return;
     const activeBtn = container.querySelector<HTMLElement>('[aria-selected="true"]');
     if (activeBtn) {
@@ -78,78 +75,67 @@ export const ContextPanel = memo(function ContextPanel({
     }
   }, [activeTab]);
 
+  // Data-driven content map
+  const contentMap = useMemo<Record<ContextTab, ReactNode | undefined>>(() => ({
+    projects: projectsContent,
+    tasks: tasksContent,
+    brain: brainContent,
+    workspace: workspaceContent,
+    activity: activityContent,
+  }), [projectsContent, tasksContent, brainContent, workspaceContent, activityContent]);
+
   return (
     <div className="flex h-full w-full flex-col overflow-hidden">
-      {/* Tab bar — hidden when external ContextTabCluster provides navigation */}
+      {/* Single tab bar — responsive via CSS, no duplication */}
       {!hideTabBar && (
-      <>
-      {/* Mobile */}
-      <div ref={mobileTabBarRef} className="flex items-center gap-0 overflow-x-auto border-b border-border/20 px-3 pt-2 lg:hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="tablist">
-        {TAB_OPTIONS.map((tab) => {
-          const isActive = activeTab === tab.value;
-          return (
-            <button
-              key={tab.value}
-              type="button"
-              role="tab"
-              aria-selected={isActive}
-              className={`flex-shrink-0 min-w-[44px] px-2.5 pb-2 ${sectionLabelClass} transition-colors focus-ring rounded-md ${
-                isActive
-                  ? "text-foreground font-semibold border-b-2 border-primary"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-              onClick={() => handleTabClick(tab.value)}
-              data-testid={`context-tab-${tab.value}`}
-            >
-              {tab.label}
-            </button>
-          );
-        })}
-        {onExpandToggle && (
-          <PanelIconButton onClick={onExpandToggle} aria-label="Expand panel" data-testid="expand-panel-btn" className="ml-auto flex-shrink-0">
-            <Maximize2 className="h-3.5 w-3.5" />
-          </PanelIconButton>
-        )}
-      </div>
-      {/* Desktop */}
-      <div className="hidden items-center gap-0 border-b border-border/20 px-3 pt-2 lg:flex" role="tablist">
-        {TAB_OPTIONS.map((tab) => {
-          const isActive = activeTab === tab.value;
-          return (
-            <button
-              key={tab.value}
-              type="button"
-              role="tab"
-              aria-selected={isActive}
-              className={`flex-shrink-0 px-2.5 pb-2 ${sectionLabelClass} transition-colors focus-ring rounded-md ${
-                isActive
-                  ? "text-foreground font-semibold border-b-2 border-primary"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-              onClick={() => handleTabClick(tab.value)}
-              data-testid={`context-tab-${tab.value}`}
-            >
-              {tab.label}
-            </button>
-          );
-        })}
-        <div className="ml-auto flex items-center gap-0.5">
-          {onExpandToggle && (
-            <PanelIconButton onClick={onExpandToggle} aria-label="Expand panel" data-testid="expand-panel-btn-desktop">
-              <Maximize2 className="h-3.5 w-3.5" />
-            </PanelIconButton>
-          )}
-          {onClose && (
-            <PanelIconButton onClick={onClose} aria-label="Close panel" data-testid="close-panel-btn">
-              <X className="h-3.5 w-3.5" />
-            </PanelIconButton>
-          )}
+        <div
+          ref={tabBarRef}
+          className="flex items-center gap-0 overflow-x-auto border-b border-border/20 px-3 pt-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          role="tablist"
+        >
+          {CONTEXT_TAB_CONFIG.map((tab) => {
+            const isActive = activeTab === tab.value;
+            return (
+              <button
+                key={tab.value}
+                type="button"
+                role="tab"
+                id={tabButtonId(tab.value)}
+                aria-selected={isActive}
+                aria-controls={tabPanelId(tab.value)}
+                className={`flex-shrink-0 min-w-[44px] px-2.5 pb-2 ${sectionLabelClass} transition-colors focus-ring rounded-md ${
+                  isActive
+                    ? "text-foreground font-semibold border-b-2 border-primary"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+                onClick={() => handleTabClick(tab.value)}
+                data-testid={`context-tab-${tab.value}`}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
+          <div className="ml-auto flex items-center gap-1">
+            {onExpandToggle && (
+              <PanelIconButton onClick={onExpandToggle} aria-label="Expand panel" data-testid="expand-panel-btn" className="flex-shrink-0 hidden lg:flex">
+                <Maximize2 className="h-3.5 w-3.5" />
+              </PanelIconButton>
+            )}
+            {onExpandToggle && (
+              <PanelIconButton onClick={onExpandToggle} aria-label="Expand panel" data-testid="expand-panel-btn-mobile" className="flex-shrink-0 lg:hidden">
+                <Maximize2 className="h-3.5 w-3.5" />
+              </PanelIconButton>
+            )}
+            {onClose && (
+              <PanelIconButton onClick={onClose} aria-label="Close panel" data-testid="close-panel-btn" className="hidden lg:flex">
+                <X className="h-3.5 w-3.5" />
+              </PanelIconButton>
+            )}
+          </div>
         </div>
-      </div>
-      </>
       )}
 
-      {/* Tab content — lazy mount */}
+      {/* Tab content — lazy mount, data-driven */}
       <div className="min-h-0 min-w-0 flex-1 overflow-hidden">
         {expandedTab === activeTab && onExpandToggle ? (
           <div role="tabpanel" className="flex h-full w-full flex-col items-center justify-center gap-2 text-muted-foreground">
@@ -161,30 +147,18 @@ export const ContextPanel = memo(function ContextPanel({
           </div>
         ) : (
           <>
-            {effectiveMountedTabs.has("projects") && (
-              <div role="tabpanel" className={activeTab === "projects" ? "flex h-full w-full flex-col overflow-hidden" : "hidden"}>
-                {projectsContent ?? null}
-              </div>
-            )}
-            {effectiveMountedTabs.has("tasks") && (
-              <div role="tabpanel" className={activeTab === "tasks" ? "flex h-full w-full flex-col overflow-hidden" : "hidden"}>
-                {tasksContent}
-              </div>
-            )}
-            {effectiveMountedTabs.has("brain") && (
-              <div role="tabpanel" className={activeTab === "brain" ? "flex h-full w-full flex-col overflow-hidden" : "hidden"}>
-                {brainContent}
-              </div>
-            )}
-            {effectiveMountedTabs.has("workspace") && (
-              <div role="tabpanel" className={activeTab === "workspace" ? "flex h-full w-full flex-col overflow-hidden" : "hidden"}>
-                {workspaceContent ?? null}
-              </div>
-            )}
-            {effectiveMountedTabs.has("activity") && (
-              <div role="tabpanel" className={activeTab === "activity" ? "flex h-full w-full flex-col overflow-hidden" : "hidden"}>
-                {activityContent ?? null}
-              </div>
+            {CONTEXT_TAB_CONFIG.map(({ value }) =>
+              effectiveMountedTabs.has(value) ? (
+                <div
+                  key={value}
+                  role="tabpanel"
+                  id={tabPanelId(value)}
+                  aria-labelledby={tabButtonId(value)}
+                  className={activeTab === value ? "flex h-full w-full flex-col overflow-hidden" : "hidden"}
+                >
+                  {contentMap[value] ?? null}
+                </div>
+              ) : null
             )}
           </>
         )}
