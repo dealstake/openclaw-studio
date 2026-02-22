@@ -1,15 +1,16 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Plus, MessageSquare, ChevronLeft, ChevronRight, SearchX, Pin } from "lucide-react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { Plus, MessageSquare, ChevronLeft, ChevronRight, SearchX } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { CardSkeleton } from "@/components/ui/CardSkeleton";
 import { SearchInput } from "@/components/SearchInput";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { formatRelativeTime } from "@/lib/text/time";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
-import { useSessionHistory, type SessionHistoryEntry } from "../hooks/useSessionHistory";
+import { useSessionHistory } from "../hooks/useSessionHistory";
 import { sectionLabelClass } from "@/components/SectionLabel";
-import { SessionItemMenu } from "./SessionItemMenu";
-import { highlightMatch } from "../lib/highlightMatch";
+import { SessionItem } from "./SessionItem";
+
+/** Maximum recent sessions shown in collapsed strip. */
+const COLLAPSED_RECENT_COUNT = 3;
 
 type SessionHistorySidebarProps = {
   client: GatewayClient;
@@ -21,147 +22,6 @@ type SessionHistorySidebarProps = {
   collapsed: boolean;
   onToggleCollapse: () => void;
 };
-
-// --- Inline rename input ---
-
-const InlineRenameInput = memo(function InlineRenameInput({
-  initialValue,
-  onSave,
-  onCancel,
-}: {
-  initialValue: string;
-  onSave: (value: string) => void;
-  onCancel: () => void;
-}) {
-  const [value, setValue] = useState(initialValue);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    inputRef.current?.select();
-  }, []);
-
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === "Enter") {
-        const trimmed = value.trim();
-        if (trimmed && trimmed !== initialValue) onSave(trimmed);
-        else onCancel();
-      } else if (e.key === "Escape") {
-        onCancel();
-      }
-    },
-    [value, initialValue, onSave, onCancel],
-  );
-
-  return (
-    <input
-      ref={inputRef}
-      type="text"
-      className="w-full rounded border border-primary/40 bg-card px-1 py-0 text-[13px] font-medium leading-tight text-foreground outline-none ring-1 ring-primary/20"
-      value={value}
-      onChange={(e) => setValue(e.target.value)}
-      onKeyDown={handleKeyDown}
-      onBlur={onCancel}
-    />
-  );
-});
-
-// --- Session item ---
-
-const SessionItem = memo(function SessionItem({
-  session,
-  active,
-  focused,
-  pinned,
-  renaming,
-  searchQuery,
-  onSelect,
-  onRename,
-  onRenameStart,
-  onRenameCancel,
-  onDelete,
-  onTogglePin,
-}: {
-  session: SessionHistoryEntry;
-  active: boolean;
-  focused: boolean;
-  pinned: boolean;
-  renaming: boolean;
-  searchQuery: string;
-  onSelect: (key: string) => void;
-  onRename: (key: string, name: string) => void;
-  onRenameStart: (key: string) => void;
-  onRenameCancel: () => void;
-  onDelete: (key: string) => void;
-  onTogglePin: (key: string) => void;
-}) {
-  const itemRef = useRef<HTMLButtonElement>(null);
-  const handleClick = useCallback(() => onSelect(session.key), [onSelect, session.key]);
-  const handleDoubleClick = useCallback(() => onRenameStart(session.key), [onRenameStart, session.key]);
-  const handleRenameSave = useCallback(
-    (name: string) => onRename(session.key, name),
-    [onRename, session.key],
-  );
-
-  useEffect(() => {
-    if (focused) itemRef.current?.scrollIntoView({ block: "nearest" });
-  }, [focused]);
-
-  return (
-    <button
-      ref={itemRef}
-      type="button"
-      role="option"
-      aria-selected={active}
-      onClick={handleClick}
-      onDoubleClick={handleDoubleClick}
-      className={`group flex w-full items-start gap-2.5 rounded-lg px-2.5 py-2.5 text-left transition-all duration-200 focus-ring min-h-[44px] ${
-        active
-          ? "bg-accent text-accent-foreground"
-          : focused
-            ? "bg-muted/70 text-foreground ring-1 ring-primary/30"
-            : "text-foreground/80 hover:bg-muted hover:translate-x-0.5"
-      }`}
-    >
-      {pinned ? (
-        <Pin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary/70" />
-      ) : (
-        <MessageSquare className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-      )}
-      <div className="min-w-0 flex-1">
-        {renaming ? (
-          <InlineRenameInput
-            initialValue={session.displayName}
-            onSave={handleRenameSave}
-            onCancel={onRenameCancel}
-          />
-        ) : (
-          <p className="truncate text-[13px] font-medium leading-tight">
-            {highlightMatch(session.displayName, searchQuery)}
-          </p>
-        )}
-        <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
-          {formatRelativeTime(session.updatedAt)}
-          {session.messageCount > 0 ? ` · ${session.messageCount} msgs` : ""}
-        </p>
-      </div>
-      {!renaming && (
-        <div className="mt-0.5 shrink-0">
-          <SessionItemMenu
-            sessionKey={session.key}
-            displayName={session.displayName}
-            pinned={pinned}
-            onRename={onRenameStart}
-            onDelete={onDelete}
-            onTogglePin={onTogglePin}
-          />
-        </div>
-      )}
-    </button>
-  );
-});
-
-// --- Sidebar ---
 
 export const SessionHistorySidebar = memo(function SessionHistorySidebar({
   client,
@@ -196,7 +56,7 @@ export const SessionHistorySidebar = memo(function SessionHistorySidebar({
     [groups],
   );
 
-  // Reset focus when search changes — wrap setSearch to also reset focus
+  // Reset focus when search changes
   const handleSearchChange = useCallback(
     (value: string) => {
       setSearch(value);
@@ -271,10 +131,10 @@ export const SessionHistorySidebar = memo(function SessionHistorySidebar({
     void load();
   }, [load]);
 
-  // Recent sessions for collapsed strip (top 3 non-pinned)
+  // Recent sessions for collapsed strip
   const recentForCollapsed = useMemo(() => {
     const all = groups.flatMap((g) => g.sessions);
-    return all.slice(0, 3);
+    return all.slice(0, COLLAPSED_RECENT_COUNT);
   }, [groups]);
 
   if (collapsed) {

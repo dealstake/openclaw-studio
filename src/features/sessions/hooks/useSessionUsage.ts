@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from "react";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { isGatewayDisconnectLikeError } from "@/lib/gateway/GatewayClient";
+import { parseUsageResult, type UsageRpcResult } from "@/features/sessions/lib/usageParser";
 
 export type SessionUsage = {
   inputTokens: number;
@@ -10,36 +11,8 @@ export type SessionUsage = {
   messageCount: number;
 };
 
-type UsageRpcResult = {
-  totals?: {
-    input?: number;
-    output?: number;
-    totalTokens?: number;
-    totalCost?: number;
-  };
-  sessions?: Array<{
-    usage?: {
-      messageCounts?: {
-        total?: number;
-      };
-    };
-  }>;
-};
-
-export function parseUsageResult(result: UsageRpcResult): SessionUsage {
-  const totals = result.totals;
-  const messageCount = (result.sessions ?? []).reduce(
-    (sum, s) => sum + (s?.usage?.messageCounts?.total ?? 0),
-    0
-  );
-  return {
-    inputTokens: totals?.input ?? 0,
-    outputTokens: totals?.output ?? 0,
-    totalCost: totals?.totalCost != null && totals.totalCost > 0 ? totals.totalCost : null,
-    currency: "USD",
-    messageCount,
-  };
-}
+// Re-export for backward compatibility
+export { parseUsageResult } from "@/features/sessions/lib/usageParser";
 
 const USAGE_THROTTLE_MS = 5000; // Minimum 5s between sessions.usage calls
 

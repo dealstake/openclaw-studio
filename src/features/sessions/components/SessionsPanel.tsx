@@ -10,10 +10,10 @@ import {
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import { isGatewayDisconnectLikeError } from "@/lib/gateway/GatewayClient";
 import type { UsageByType } from "@/features/sessions/hooks/useAllSessions";
-import { formatCost, formatTokens } from "@/lib/text/format";
 import { PanelIconButton } from "@/components/PanelIconButton";
 import { sectionLabelClass } from "@/components/SectionLabel";
 import { PanelToolbar } from "@/components/ui/PanelToolbar";
+import { SessionUsageSummary } from "./SessionUsageSummary";
 import { ActiveSessionsTab } from "./ActiveSessionsTab";
 import { HistoryTab } from "./HistoryTab";
 
@@ -220,54 +220,14 @@ export const SessionsPanel = memo(function SessionsPanel({
       </PanelToolbar>
 
       {/* Usage summary (active tab only) */}
-      {tab === "active" && (cumulativeUsage || aggregateUsage || cumulativeUsageLoading || aggregateUsageLoading) ? (
-        <div className="flex flex-col gap-1.5 border-b border-border/40 px-4 py-2.5">
-          {cumulativeUsage && (cumulativeUsage.inputTokens + cumulativeUsage.outputTokens) > 0 ? (
-            <div className="flex flex-col gap-1">
-              <div className="font-mono text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                All Sessions
-              </div>
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
-                <span className="font-semibold text-foreground">
-                  {formatTokens(cumulativeUsage.inputTokens + cumulativeUsage.outputTokens)} tokens
-                </span>
-                {cumulativeUsage.totalCost !== null ? (
-                  <span className="font-semibold text-foreground">{formatCost(cumulativeUsage.totalCost, "USD")}</span>
-                ) : null}
-                {cumulativeUsage.messageCount > 0 ? (
-                  <span className="text-muted-foreground">{cumulativeUsage.messageCount.toLocaleString()} messages</span>
-                ) : null}
-              </div>
-              {usageByType ? (
-                <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground/80">
-                  {usageByType.cron > 0 ? <span>{formatTokens(usageByType.cron)} cron</span> : null}
-                  {usageByType.main > 0 ? <span>{formatTokens(usageByType.main)} main</span> : null}
-                  {usageByType.subagent > 0 ? <span>{formatTokens(usageByType.subagent)} sub-agent</span> : null}
-                  {usageByType.channel > 0 ? <span>{formatTokens(usageByType.channel)} channel</span> : null}
-                  {usageByType.unknown > 0 ? <span>{formatTokens(usageByType.unknown)} other</span> : null}
-                </div>
-              ) : null}
-            </div>
-          ) : cumulativeUsageLoading ? (
-            <div className="h-8 w-48 animate-pulse rounded bg-muted/30" />
-          ) : null}
-          {aggregateUsage ? (
-            <div className="flex flex-col gap-0.5">
-              <div className="font-mono text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                Current Session
-              </div>
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground/80">
-                <span>
-                  {formatTokens(aggregateUsage.inputTokens + aggregateUsage.outputTokens)} tokens
-                </span>
-                {aggregateUsage.totalCost !== null ? (
-                  <span>{formatCost(aggregateUsage.totalCost, "USD")}</span>
-                ) : null}
-                <span>{aggregateUsage.messageCount.toLocaleString()} messages</span>
-              </div>
-            </div>
-          ) : null}
-        </div>
+      {tab === "active" ? (
+        <SessionUsageSummary
+          aggregateUsage={aggregateUsage}
+          aggregateUsageLoading={aggregateUsageLoading}
+          cumulativeUsage={cumulativeUsage}
+          cumulativeUsageLoading={cumulativeUsageLoading}
+          usageByType={usageByType}
+        />
       ) : null}
 
       {/* Active tab */}

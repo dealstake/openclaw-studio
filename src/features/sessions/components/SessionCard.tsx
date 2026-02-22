@@ -9,7 +9,7 @@ import { humanizeSessionKey, humanizeOriginLabel, inferSessionType } from "@/fea
 import { formatTokens, formatCost } from "@/lib/text/format";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import { isGatewayDisconnectLikeError, parseAgentIdFromSessionKey } from "@/lib/gateway/GatewayClient";
-import { parseUsageResult } from "@/features/sessions/hooks/useSessionUsage";
+import { parseUsageResult } from "@/features/sessions/lib/usageParser";
 import { formatRelativeTime } from "@/lib/text/time";
 import { PanelIconButton } from "@/components/PanelIconButton";
 import { sectionLabelClass } from "@/components/SectionLabel";
