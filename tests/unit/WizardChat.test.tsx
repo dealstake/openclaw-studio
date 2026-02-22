@@ -182,9 +182,12 @@ describe("WizardChat", () => {
     expect(textarea).toBeDisabled();
   });
 
-  it("calls cleanup on unmount", () => {
+  it("calls abort then cleanup on unmount", async () => {
     const { unmount } = renderChat();
     unmount();
+    // abort().then(cleanup) is async — flush microtasks
+    await new Promise((r) => setTimeout(r, 0));
+    expect(mockAbort).toHaveBeenCalled();
     expect(mockCleanup).toHaveBeenCalled();
   });
 });
