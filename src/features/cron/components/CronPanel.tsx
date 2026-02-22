@@ -199,12 +199,12 @@ export const CronPanel = memo(function CronPanel({
                 return (
                   <div
                     key={job.id}
-                    className={`rounded-md border bg-card/70 ${
+                    className={`rounded-md border bg-card/70 transition-all duration-150 ${
                       !job.enabled
                         ? "border-border/40 opacity-60"
                         : isRunning
                           ? "border-primary/40"
-                          : "border-border/80"
+                          : "border-border/80 hover:border-border hover:shadow-sm"
                     }`}
                   >
                     <div className="group/cron flex items-start justify-between gap-2 px-3 py-2">

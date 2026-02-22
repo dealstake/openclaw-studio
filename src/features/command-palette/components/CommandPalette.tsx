@@ -120,7 +120,7 @@ const CommandItem = memo(function CommandItem({
       value={action.label}
       keywords={action.keywords}
       onSelect={action.onSelect}
-      className="flex items-center gap-3 rounded-lg px-2 py-2 text-sm text-foreground cursor-pointer select-none aria-selected:bg-accent aria-selected:text-accent-foreground transition-colors"
+      className="flex items-center gap-3 rounded-lg px-2 py-2 text-sm text-foreground cursor-pointer select-none aria-selected:bg-accent aria-selected:text-accent-foreground transition-all duration-150 hover:bg-muted/30"
     >
       {Icon && <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />}
       <span className="flex-1 truncate">{action.label}</span>
