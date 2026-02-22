@@ -1270,6 +1270,18 @@ const AgentStudioPage = () => {
         agentId,
         part: { type: "text", text: `> ${trimmed}` },
       });
+      // Show user-sent image attachments inline immediately
+      if (attachments) {
+        for (const att of attachments) {
+          if (att.mimeType.startsWith("image/")) {
+            dispatch({
+              type: "appendPart",
+              agentId,
+              part: { type: "image", src: `data:${att.mimeType};base64,${att.content}`, alt: att.fileName },
+            });
+          }
+        }
+      }
       try {
         if (!sessionKey) {
           throw new Error("Missing session key for agent.");

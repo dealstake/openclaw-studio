@@ -8,7 +8,7 @@
  * - ui-metadata.ts: UI metadata stripping, heartbeat detection
  */
 
-export { extractText, extractTextCached, extractRawText, stripEnvelope } from "./extract-text";
+export { extractText, extractTextCached, extractRawText, extractImages, stripEnvelope } from "./extract-text";
 export {
   extractThinking,
   extractThinkingCached,

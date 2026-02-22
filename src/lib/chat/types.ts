@@ -38,6 +38,12 @@ export type ToolInvocationPart = {
   completedAt?: number;
 };
 
+export type ImagePart = {
+  type: "image";
+  src: string;
+  alt?: string;
+};
+
 export type StatusPart = {
   type: "status";
   state: string;
@@ -49,6 +55,7 @@ export type MessagePart =
   | TextPart
   | ReasoningPart
   | ToolInvocationPart
+  | ImagePart
   | StatusPart;
 
 // ── Type Guards ────────────────────────────────────────────────────────
@@ -65,6 +72,10 @@ export function isToolInvocationPart(
   part: MessagePart,
 ): part is ToolInvocationPart {
   return part.type === "tool-invocation";
+}
+
+export function isImagePart(part: MessagePart): part is ImagePart {
+  return part.type === "image";
 }
 
 export function isStatusPart(part: MessagePart): part is StatusPart {

@@ -7,6 +7,7 @@ import {
 import {
   extractText,
   extractThinking,
+  extractImages,
   isUiMetadataPrefix,
   stripUiMetadata,
 } from "@/lib/text/message-extract";
@@ -207,6 +208,15 @@ export function handleRuntimeChatEvent(
         type: "updateAgent",
         agentId,
         patch: { lastResult: nextText },
+      });
+    }
+    // Dispatch image parts from messages containing image content
+    const images = extractImages(payload.message);
+    for (const img of images) {
+      deps.dispatch({
+        type: "appendPart",
+        agentId,
+        part: { type: "image", src: img.src, alt: img.alt },
       });
     }
     if (agent?.lastUserMessage && !agent.latestOverride) {

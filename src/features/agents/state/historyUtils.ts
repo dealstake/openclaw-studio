@@ -8,6 +8,7 @@ import {
   extractText,
   extractThinking,
   extractToolLines,
+  extractImages,
   formatThinkingMarkdown,
   isHeartbeatPrompt,
   stripUiMetadata,
@@ -111,6 +112,14 @@ export const buildHistorySyncPatch = ({
     streamText: null,
     liveThinkingTrace: "",
   });
+
+  // Inject image parts from messages that contain image content
+  for (const message of messages) {
+    const images = extractImages(message);
+    for (const img of images) {
+      messageParts.push({ type: "image", src: img.src, alt: img.alt });
+    }
+  }
   const patch: Partial<AgentState> = {
     messageParts,
     lastResult: lastAssistant ?? null,

@@ -124,6 +124,43 @@ export const extractText = (message: unknown): string | null => {
   return null;
 };
 
+/**
+ * Extract image content from a gateway message object.
+ * Handles Claude API format: { type: "image", source: { type: "base64", media_type, data } }
+ * and URL-based images: { type: "image_url", image_url: { url } } (OpenAI format)
+ */
+export const extractImages = (message: unknown): { src: string; alt?: string }[] => {
+  if (!message || typeof message !== "object") return [];
+  const m = message as Record<string, unknown>;
+  const content = m.content;
+  if (!Array.isArray(content)) return [];
+
+  const images: { src: string; alt?: string }[] = [];
+  for (const item of content) {
+    if (!item || typeof item !== "object") continue;
+    const p = item as Record<string, unknown>;
+
+    // Claude API format: { type: "image", source: { type: "base64", media_type, data } }
+    if (p.type === "image" && p.source && typeof p.source === "object") {
+      const source = p.source as Record<string, unknown>;
+      if (source.type === "base64" && typeof source.data === "string" && typeof source.media_type === "string") {
+        images.push({ src: `data:${source.media_type};base64,${source.data}` });
+      } else if (source.type === "url" && typeof source.url === "string") {
+        images.push({ src: source.url });
+      }
+    }
+
+    // OpenAI format: { type: "image_url", image_url: { url } }
+    if (p.type === "image_url" && p.image_url && typeof p.image_url === "object") {
+      const iu = p.image_url as Record<string, unknown>;
+      if (typeof iu.url === "string") {
+        images.push({ src: iu.url });
+      }
+    }
+  }
+  return images;
+};
+
 export const extractTextCached = (message: unknown): string | null => {
   if (!message || typeof message !== "object") return extractText(message);
   const obj = message as object;

@@ -7,8 +7,10 @@ import {
   isTextPart,
   isReasoningPart,
   isToolInvocationPart,
+  isImagePart,
   isStatusPart,
 } from "@/lib/chat/types";
+import { InlineChatImage } from "./ChatImageViewer";
 import { MessageBubble } from "@/components/chat/MessageBubble";
 import { ThinkingBlock } from "@/components/chat/ThinkingBlock";
 import { ToolCallBlock } from "@/components/chat/ToolCallBlock";
@@ -133,6 +135,16 @@ function renderPart(part: MessagePart, index: number) {
         result={part.result}
         startedAt={part.startedAt}
         completedAt={part.completedAt}
+      />
+    );
+  }
+
+  if (isImagePart(part)) {
+    return (
+      <InlineChatImage
+        key={`image-${index}`}
+        src={part.src}
+        alt={part.alt}
       />
     );
   }

@@ -119,6 +119,7 @@ const converters: Record<
   text: textToElements as (part: never) => ElementsPart,
   reasoning: reasoningToElements as (part: never) => ElementsPart,
   "tool-invocation": toolToElements as (part: never) => ElementsPart,
+  image: textToElements as (part: never) => ElementsPart, // Images rendered directly by AgentChatView, not via Elements
   status: statusToElements as (part: never) => ElementsPart,
 };
 
