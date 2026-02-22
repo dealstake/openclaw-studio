@@ -2,15 +2,21 @@ import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act, cleanup } from "@testing-library/react";
 import { useSessionSidebarState } from "@/hooks/useSessionSidebarState";
 
-const localStorageMap = new Map<string, string>();
+const store = new Map<string, string>();
+const mockStorage = {
+  getItem: vi.fn((key: string) => store.get(key) ?? null),
+  setItem: vi.fn((key: string, value: string) => { store.set(key, value); }),
+  removeItem: vi.fn((key: string) => { store.delete(key); }),
+  clear: vi.fn(() => { store.clear(); }),
+  get length() { return store.size; },
+  key: vi.fn((i: number) => Array.from(store.keys())[i] ?? null),
+};
+
 beforeEach(() => {
-  localStorageMap.clear();
-  vi.spyOn(window.localStorage, "getItem").mockImplementation((key) => localStorageMap.get(key) ?? null);
-  vi.spyOn(window.localStorage, "setItem").mockImplementation((key, value) => {
-    localStorageMap.set(key, value);
-  });
+  store.clear();
+  vi.stubGlobal("localStorage", mockStorage);
 });
-afterEach(() => { cleanup(); vi.restoreAllMocks(); });
+afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe("useSessionSidebarState", () => {
   it("returns default state", () => {
@@ -20,7 +26,7 @@ describe("useSessionSidebarState", () => {
   });
 
   it("reads collapsed from localStorage", () => {
-    localStorageMap.set("studio:session-sidebar-collapsed", "true");
+    store.set("studio:session-sidebar-collapsed", "true");
     const { result } = renderHook(() => useSessionSidebarState());
     expect(result.current.sessionSidebarCollapsed).toBe(true);
   });
@@ -28,7 +34,7 @@ describe("useSessionSidebarState", () => {
   it("persists collapsed to localStorage", () => {
     const { result } = renderHook(() => useSessionSidebarState());
     act(() => result.current.setSessionSidebarCollapsed(true));
-    expect(localStorageMap.get("studio:session-sidebar-collapsed")).toBe("true");
+    expect(store.get("studio:session-sidebar-collapsed")).toBe("true");
   });
 
   it("toggles mobile drawer", () => {

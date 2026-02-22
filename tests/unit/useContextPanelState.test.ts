@@ -2,15 +2,21 @@ import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act, cleanup } from "@testing-library/react";
 import { useContextPanelState } from "@/hooks/useContextPanelState";
 
-const localStorageMap = new Map<string, string>();
+const store = new Map<string, string>();
+const mockStorage = {
+  getItem: vi.fn((key: string) => store.get(key) ?? null),
+  setItem: vi.fn((key: string, value: string) => { store.set(key, value); }),
+  removeItem: vi.fn((key: string) => { store.delete(key); }),
+  clear: vi.fn(() => { store.clear(); }),
+  get length() { return store.size; },
+  key: vi.fn((i: number) => Array.from(store.keys())[i] ?? null),
+};
+
 beforeEach(() => {
-  localStorageMap.clear();
-  vi.spyOn(window.localStorage, "getItem").mockImplementation((key) => localStorageMap.get(key) ?? null);
-  vi.spyOn(window.localStorage, "setItem").mockImplementation((key, value) => {
-    localStorageMap.set(key, value);
-  });
+  store.clear();
+  vi.stubGlobal("localStorage", mockStorage);
 });
-afterEach(() => { cleanup(); vi.restoreAllMocks(); });
+afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe("useContextPanelState", () => {
   it("returns default state", () => {
@@ -22,7 +28,7 @@ describe("useContextPanelState", () => {
   });
 
   it("reads contextPanelOpen from localStorage", () => {
-    localStorageMap.set("studio:context-panel-open", "false");
+    store.set("studio:context-panel-open", "false");
     const { result } = renderHook(() => useContextPanelState());
     expect(result.current.contextPanelOpen).toBe(false);
   });
@@ -30,7 +36,7 @@ describe("useContextPanelState", () => {
   it("persists contextPanelOpen to localStorage", () => {
     const { result } = renderHook(() => useContextPanelState());
     act(() => result.current.setContextPanelOpen(false));
-    expect(localStorageMap.get("studio:context-panel-open")).toBe("false");
+    expect(store.get("studio:context-panel-open")).toBe("false");
   });
 
   it("toggles context mode", () => {
