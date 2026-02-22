@@ -23,6 +23,7 @@ function makeNotification(overrides: Partial<Notification> = {}): Notification {
 
 describe("notificationStore", () => {
   beforeEach(() => {
+    localStorage.removeItem("studio:notifications");
     clearAll();
   });
 
@@ -113,5 +114,47 @@ describe("notificationStore", () => {
     addNotification(makeNotification({ id: "a", read: true }));
     addNotification(makeNotification({ id: "b", read: false }));
     expect(getNotificationState().unreadCount).toBe(1);
+  });
+
+  describe("localStorage persistence", () => {
+    it("persists notifications to localStorage on add", () => {
+      addNotification(makeNotification({ id: "p1", title: "Persisted" }));
+      const raw = localStorage.getItem("studio:notifications");
+      expect(raw).toBeTruthy();
+      const parsed = JSON.parse(raw!);
+      expect(parsed.notifications).toHaveLength(1);
+      expect(parsed.notifications[0].id).toBe("p1");
+    });
+
+    it("persists on markRead", () => {
+      addNotification(makeNotification({ id: "p2" }));
+      markRead("p2");
+      const parsed = JSON.parse(localStorage.getItem("studio:notifications")!);
+      expect(parsed.notifications[0].read).toBe(true);
+    });
+
+    it("persists on dismiss", () => {
+      addNotification(makeNotification({ id: "p3" }));
+      addNotification(makeNotification({ id: "p4" }));
+      dismiss("p3");
+      const parsed = JSON.parse(localStorage.getItem("studio:notifications")!);
+      expect(parsed.notifications).toHaveLength(1);
+      expect(parsed.notifications[0].id).toBe("p4");
+    });
+
+    it("persists on markAllRead", () => {
+      addNotification(makeNotification({ id: "p5" }));
+      addNotification(makeNotification({ id: "p6" }));
+      markAllRead();
+      const parsed = JSON.parse(localStorage.getItem("studio:notifications")!);
+      expect(parsed.notifications.every((n: { read: boolean }) => n.read)).toBe(true);
+    });
+
+    it("clears localStorage on clearAll", () => {
+      addNotification(makeNotification({ id: "p7" }));
+      clearAll();
+      const parsed = JSON.parse(localStorage.getItem("studio:notifications")!);
+      expect(parsed.notifications).toHaveLength(0);
+    });
   });
 });

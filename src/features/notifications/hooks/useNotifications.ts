@@ -6,11 +6,39 @@ import type { Notification, NotificationState } from "../lib/types";
 // ---------------------------------------------------------------------------
 
 const MAX_NOTIFICATIONS = 100;
+const STORAGE_KEY = "studio:notifications";
 
-let state: NotificationState = {
-  notifications: [],
-  unreadCount: 0,
-};
+function loadFromStorage(): NotificationState {
+  if (typeof window === "undefined") return { notifications: [], unreadCount: 0 };
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return { notifications: [], unreadCount: 0 };
+    const parsed = JSON.parse(raw) as { notifications?: Notification[] };
+    const notifications = Array.isArray(parsed.notifications)
+      ? parsed.notifications.slice(0, MAX_NOTIFICATIONS)
+      : [];
+    return {
+      notifications,
+      unreadCount: notifications.filter((n) => !n.read).length,
+    };
+  } catch {
+    return { notifications: [], unreadCount: 0 };
+  }
+}
+
+function persistToStorage(s: NotificationState): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ notifications: s.notifications }),
+    );
+  } catch {
+    // Storage full or unavailable — silently ignore
+  }
+}
+
+let state: NotificationState = loadFromStorage();
 
 const listeners = new Set<() => void>();
 
@@ -37,6 +65,7 @@ export function addNotification(n: Notification): void {
     notifications: next,
     unreadCount: next.filter((x) => !x.read).length,
   };
+  persistToStorage(state);
   emit();
 }
 
@@ -48,12 +77,14 @@ export function markRead(id: string): void {
     notifications,
     unreadCount: notifications.filter((x) => !x.read).length,
   };
+  persistToStorage(state);
   emit();
 }
 
 export function markAllRead(): void {
   const notifications = state.notifications.map((n) => ({ ...n, read: true }));
   state = { notifications, unreadCount: 0 };
+  persistToStorage(state);
   emit();
 }
 
@@ -63,11 +94,13 @@ export function dismiss(id: string): void {
     notifications,
     unreadCount: notifications.filter((x) => !x.read).length,
   };
+  persistToStorage(state);
   emit();
 }
 
 export function clearAll(): void {
   state = { notifications: [], unreadCount: 0 };
+  persistToStorage(state);
   emit();
 }
 
