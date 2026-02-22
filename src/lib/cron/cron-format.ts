@@ -30,13 +30,24 @@ export const formatCronHuman = (expr: string): string => {
   }
 };
 
+export const formatStagger = (staggerMs: number): string => {
+  if (staggerMs <= 0) return "";
+  return `±${formatEveryMs(staggerMs)}`;
+};
+
 export const formatCronSchedule = (schedule: CronSchedule) => {
+  const stagger =
+    "staggerMs" in schedule && schedule.staggerMs
+      ? ` ${formatStagger(schedule.staggerMs)}`
+      : "";
+
   if (schedule.kind === "every") {
-    return `Every ${formatEveryMs(schedule.everyMs)}`;
+    return `Every ${formatEveryMs(schedule.everyMs)}${stagger}`;
   }
   if (schedule.kind === "cron") {
     const human = formatCronHuman(schedule.expr);
-    return schedule.tz ? `${human} (${schedule.tz})` : human;
+    const base = schedule.tz ? `${human} (${schedule.tz})` : human;
+    return `${base}${stagger}`;
   }
   const atDate = new Date(schedule.at);
   if (Number.isNaN(atDate.getTime())) return `At: ${schedule.at}`;

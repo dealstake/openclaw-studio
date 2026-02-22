@@ -9,6 +9,7 @@ import type {
   PeriodicSchedule,
   ScheduledSchedule,
 } from "@/features/tasks/types";
+import type { CronSchedule } from "@/lib/cron/types";
 
 // ─── taskScheduleToCronSchedule ──────────────────────────────────────────────
 
@@ -183,6 +184,86 @@ describe("cronScheduleToTaskSchedule", () => {
     expect(result.type).toBe("scheduled");
     if (result.type === "scheduled") {
       expect(result.days).toEqual([]);
+    }
+  });
+});
+
+// ─── staggerMs round-trip ─────────────────────────────────────────────────────
+
+describe("staggerMs round-trip", () => {
+  it("preserves staggerMs through periodic → cron → periodic", () => {
+    const schedule: PeriodicSchedule = {
+      type: "periodic",
+      intervalMs: 3_600_000,
+      staggerMs: 600_000,
+    };
+    const cron = taskScheduleToCronSchedule(schedule);
+    expect(cron.kind).toBe("cron");
+    if (cron.kind === "cron" || cron.kind === "every") {
+      expect(cron.staggerMs).toBe(600_000);
+    }
+    const back = cronScheduleToTaskSchedule(cron, "periodic");
+    expect(back.type).toBe("periodic");
+    if (back.type === "periodic") {
+      expect(back.staggerMs).toBe(600_000);
+    }
+  });
+
+  it("preserves staggerMs through constant → every → constant", () => {
+    const schedule: ConstantSchedule = {
+      type: "constant",
+      intervalMs: 60_000,
+      staggerMs: 10_000,
+    };
+    const cron = taskScheduleToCronSchedule(schedule);
+    expect(cron.kind).toBe("every");
+    if (cron.kind === "every") {
+      expect(cron.staggerMs).toBe(10_000);
+    }
+    const back = cronScheduleToTaskSchedule(cron, "constant");
+    expect(back.type).toBe("constant");
+    if (back.type === "constant") {
+      expect(back.staggerMs).toBe(10_000);
+    }
+  });
+
+  it("omits staggerMs when not set", () => {
+    const schedule: PeriodicSchedule = { type: "periodic", intervalMs: 3_600_000 };
+    const cron = taskScheduleToCronSchedule(schedule);
+    if (cron.kind === "cron" || cron.kind === "every") {
+      expect(cron.staggerMs).toBeUndefined();
+    }
+    const back = cronScheduleToTaskSchedule(cron, "periodic");
+    if (back.type === "periodic") {
+      expect(back.staggerMs).toBeUndefined();
+    }
+  });
+
+  it("omits staggerMs when 0", () => {
+    const schedule: PeriodicSchedule = {
+      type: "periodic",
+      intervalMs: 3_600_000,
+      staggerMs: 0,
+    };
+    const cron = taskScheduleToCronSchedule(schedule);
+    // staggerMs: 0 is falsy, so it should not be passed through
+    if (cron.kind === "cron" || cron.kind === "every") {
+      expect(cron.staggerMs).toBeUndefined();
+    }
+  });
+
+  it("reads staggerMs from cron schedule with interval-style expr", () => {
+    const cron: CronSchedule = {
+      kind: "cron",
+      expr: "*/5 * * * *",
+      tz: "America/New_York",
+      staggerMs: 120_000,
+    };
+    const result = cronScheduleToTaskSchedule(cron, "periodic");
+    expect(result.type).toBe("periodic");
+    if (result.type === "periodic") {
+      expect(result.intervalMs).toBe(300_000);
+      expect(result.staggerMs).toBe(120_000);
     }
   });
 });

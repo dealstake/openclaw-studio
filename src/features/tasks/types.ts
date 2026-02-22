@@ -13,12 +13,16 @@ export type ConstantSchedule = {
   intervalMs: number;
   /** Optional active-hours window */
   activeHours?: { start: string; end: string; timezone: string };
+  /** Random delay added to each fire time (ms). 0 = exact. */
+  staggerMs?: number;
 };
 
 export type PeriodicSchedule = {
   type: "periodic";
   /** Interval in milliseconds (e.g. 900000 = 15 min) */
   intervalMs: number;
+  /** Random delay added to each fire time (ms). 0 = exact. */
+  staggerMs?: number;
 };
 
 export type ScheduledSchedule = {

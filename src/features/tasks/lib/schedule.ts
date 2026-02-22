@@ -15,14 +15,26 @@ import type {
 
 export function taskScheduleToCronSchedule(schedule: TaskSchedule): CronSchedule {
   switch (schedule.type) {
-    case "constant":
+    case "constant": {
       // Constant tasks use raw intervals (short-lived, sub-minute precision).
-      return { kind: "every", everyMs: schedule.intervalMs };
-    case "periodic":
+      const every: CronSchedule = {
+        kind: "every",
+        everyMs: schedule.intervalMs,
+        ...(schedule.staggerMs ? { staggerMs: schedule.staggerMs } : {}),
+      };
+      return every;
+    }
+    case "periodic": {
       // Periodic tasks use clock-aligned cron expressions so they fire at
       // deterministic times (:00, :15, :30, etc.) instead of drifting from
       // an arbitrary anchor timestamp.
-      return intervalMsToCronSchedule(schedule.intervalMs);
+      const base = intervalMsToCronSchedule(schedule.intervalMs);
+      if (schedule.staggerMs) {
+        // Safe: intervalMsToCronSchedule returns "every" | "cron", both have staggerMs
+        return { ...base, staggerMs: schedule.staggerMs } as CronSchedule;
+      }
+      return base;
+    }
     case "scheduled":
       return scheduledToCronExpr(schedule);
   }
@@ -108,12 +120,21 @@ const formatEveryMs = (ms: number): string => {
   return `${ms}ms`;
 };
 
+function formatStaggerSuffix(staggerMs?: number): string {
+  if (!staggerMs || staggerMs <= 0) return "";
+  const ms = staggerMs;
+  if (ms >= 3_600_000 && ms % 3_600_000 === 0) return ` ±${ms / 3_600_000}h`;
+  if (ms >= 60_000 && ms % 60_000 === 0) return ` ±${ms / 60_000}m`;
+  if (ms >= 1_000 && ms % 1_000 === 0) return ` ±${ms / 1_000}s`;
+  return ` ±${ms}ms`;
+}
+
 export function humanReadableSchedule(schedule: TaskSchedule): string {
   switch (schedule.type) {
     case "constant":
-      return `Runs every ${formatEveryMs(schedule.intervalMs)}`;
+      return `Runs every ${formatEveryMs(schedule.intervalMs)}${formatStaggerSuffix(schedule.staggerMs)}`;
     case "periodic":
-      return `Every ${formatEveryMs(schedule.intervalMs)}`;
+      return `Every ${formatEveryMs(schedule.intervalMs)}${formatStaggerSuffix(schedule.staggerMs)}`;
     case "scheduled": {
       // Guard against empty days/times (e.g., from incomplete cron parsing)
       if (schedule.days.length === 0 || schedule.times.length === 0) {
@@ -142,9 +163,13 @@ export function cronScheduleToTaskSchedule(
 ): TaskSchedule {
   if (cron.kind === "every") {
     if (taskType === "constant") {
-      return { type: "constant", intervalMs: cron.everyMs } satisfies ConstantSchedule;
+      const s: ConstantSchedule = { type: "constant", intervalMs: cron.everyMs };
+      if (cron.staggerMs) s.staggerMs = cron.staggerMs;
+      return s;
     }
-    return { type: "periodic", intervalMs: cron.everyMs } satisfies PeriodicSchedule;
+    const s: PeriodicSchedule = { type: "periodic", intervalMs: cron.everyMs };
+    if (cron.staggerMs) s.staggerMs = cron.staggerMs;
+    return s;
   }
   if (cron.kind === "cron") {
     // Detect interval-style cron expressions (e.g., "*/5 * * * *") and map
@@ -152,7 +177,9 @@ export function cronScheduleToTaskSchedule(
     // selections and would crash the scheduled→cron round-trip.
     const intervalMs = cronExprToIntervalMs(cron.expr);
     if (intervalMs !== null) {
-      return { type: "periodic", intervalMs } satisfies PeriodicSchedule;
+      const s: PeriodicSchedule = { type: "periodic", intervalMs };
+      if (cron.staggerMs) s.staggerMs = cron.staggerMs;
+      return s;
     }
     return parseCronExprToScheduled(cron.expr, cron.tz);
   }
