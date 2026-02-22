@@ -191,10 +191,11 @@ export const AgentChatView = memo(function AgentChatView({
         if (group.kind === "user") {
           // User messages — render each text part
           return group.parts.map((part, pi) => (
-            <UserMessage
-              key={`user-${gi}-${pi}`}
-              text={isTextPart(part) ? part.text : ""}
-            />
+            <div key={`user-${gi}-${pi}`} className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <UserMessage
+                text={isTextPart(part) ? part.text : ""}
+              />
+            </div>
           ));
         }
 
@@ -204,7 +205,7 @@ export const AgentChatView = memo(function AgentChatView({
 
         // Assistant group — render all parts + optional turn separator
         return (
-          <div key={`assistant-${gi}`} className="flex flex-col gap-2">
+          <div key={`assistant-${gi}`} className="flex flex-col gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
             {/* Turn separator if previous group was user */}
             {gi > 0 && groups[gi - 1]?.kind === "user" && (
               <div className="my-1 border-t border-border/30" role="separator" />
