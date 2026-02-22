@@ -22,6 +22,8 @@ function makeJob(
     name: "Test Job",
     enabled: true,
     agentId: "alex",
+    sessionTarget: "isolated",
+    wakeMode: null,
     schedule: { kind: "every", everyMs: 60000 },
     payload: { kind: "systemEvent", text: "hello" },
     delivery: null,
@@ -124,11 +126,8 @@ describe("CronPanel", () => {
         state: {
           lastStatus: "error",
           lastRunAtMs: 1000,
-          nextRunAtMs: null,
           runCount: 1,
-          lastDurationMs: null,
           lastError: "fail",
-          runningAtMs: null,
         },
       }),
     ];

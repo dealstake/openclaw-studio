@@ -20,16 +20,19 @@ import {
   runCronJobNow,
   removeCronJob,
   updateCronJob,
+  type CronJobSummary,
 } from "@/lib/cron/types";
 
 const mockClient = { call: vi.fn() } as unknown as GatewayClient;
 
-function makeJob(overrides: Partial<Record<string, unknown>> = {}) {
+function makeJob(overrides: Partial<Record<string, unknown>> = {}): CronJobSummary {
   return {
     id: "job-1",
     name: "Test Job",
     enabled: true,
     agentId: "alex",
+    sessionTarget: "isolated",
+    wakeMode: null,
     schedule: { kind: "every", everyMs: 60000 },
     payload: { kind: "systemEvent", text: "hello" },
     delivery: null,
@@ -44,7 +47,7 @@ function makeJob(overrides: Partial<Record<string, unknown>> = {}) {
     },
     updatedAtMs: Date.now(),
     ...overrides,
-  };
+  } as unknown as CronJobSummary;
 }
 
 describe("useAllCronJobs", () => {
@@ -95,7 +98,7 @@ describe("useAllCronJobs", () => {
   it("runs a job", async () => {
     const job = makeJob();
     vi.mocked(listCronJobs).mockResolvedValue({ jobs: [job] });
-    vi.mocked(runCronJobNow).mockResolvedValue(undefined);
+    vi.mocked(runCronJobNow).mockResolvedValue(undefined as never);
 
     const { result } = renderHook(() =>
       useAllCronJobs(mockClient, "connected"),
@@ -110,7 +113,7 @@ describe("useAllCronJobs", () => {
   it("deletes a job", async () => {
     const job = makeJob();
     vi.mocked(listCronJobs).mockResolvedValue({ jobs: [job] });
-    vi.mocked(removeCronJob).mockResolvedValue(undefined);
+    vi.mocked(removeCronJob).mockResolvedValue(undefined as never);
 
     const { result } = renderHook(() =>
       useAllCronJobs(mockClient, "connected"),
@@ -125,7 +128,7 @@ describe("useAllCronJobs", () => {
   it("toggles enabled state optimistically", async () => {
     const job = makeJob({ enabled: true });
     vi.mocked(listCronJobs).mockResolvedValue({ jobs: [job] });
-    vi.mocked(updateCronJob).mockResolvedValue(undefined);
+    vi.mocked(updateCronJob).mockResolvedValue(undefined as never);
 
     const { result } = renderHook(() =>
       useAllCronJobs(mockClient, "connected"),
