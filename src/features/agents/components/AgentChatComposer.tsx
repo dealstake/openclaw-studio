@@ -290,7 +290,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
         </div>
 
         {/* Toolbar row — attach, model, thinking, token gauge, send */}
-        <div className="flex items-center gap-1 border-t border-border/10 px-2 py-1.5">
+        <div className="flex min-w-0 items-center gap-1 overflow-hidden border-t border-border/10 px-2 py-1.5">
           {/* Attach button */}
           <button
             type="button"

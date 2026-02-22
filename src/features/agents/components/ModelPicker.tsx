@@ -263,13 +263,13 @@ export const ModelPicker = memo(function ModelPicker({
   const triggerButton = (
     <button
       type="button"
-      className="flex h-8 min-h-[44px] items-center gap-1 rounded-lg px-2 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
+      className="flex h-8 min-h-[44px] shrink items-center gap-1 rounded-lg px-2 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
       aria-label="Select model"
       aria-haspopup="listbox"
       aria-expanded={open}
       onClick={mobile ? () => handleOpenChange(true) : undefined}
     >
-      <span className="max-w-[120px] truncate">{selectedName}</span>
+      <span className="max-w-[96px] truncate sm:max-w-[120px]">{selectedName}</span>
       <ChevronDown className="h-3 w-3 shrink-0 opacity-60" />
     </button>
   );
