@@ -10,6 +10,7 @@ import {
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import { isGatewayDisconnectLikeError } from "@/lib/gateway/GatewayClient";
 import type { UsageByType } from "@/features/sessions/hooks/useAllSessions";
+import { useSessionUsageCache } from "@/features/sessions/hooks/useSessionUsageCache";
 import { PanelIconButton } from "@/components/PanelIconButton";
 import { sectionLabelClass } from "@/components/SectionLabel";
 import { PanelToolbar } from "@/components/ui/PanelToolbar";
@@ -88,6 +89,12 @@ export const SessionsPanel = memo(function SessionsPanel({
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(() => {
     return activeSessionKey ? new Set([activeSessionKey]) : new Set();
   });
+
+  const { getUsage, loadUsage, isLoading: isUsageLoading } = useSessionUsageCache(client);
+
+  const handleLoadUsage = useCallback((key: string) => {
+    void loadUsage(key);
+  }, [loadUsage]);
 
   useEffect(() => {
     if (activeSessionKey) {
@@ -244,7 +251,9 @@ export const SessionsPanel = memo(function SessionsPanel({
           onToggleExpanded={toggleExpanded}
           onSessionClick={onSessionClick}
           onViewTrace={onViewTrace}
-          client={client}
+          getUsage={getUsage}
+          isUsageLoading={isUsageLoading}
+          onLoadUsage={handleLoadUsage}
           busyKey={busyKey}
           confirmDeleteKey={confirmDeleteKey}
           onSetConfirmDelete={setConfirmDeleteKey}

@@ -1,6 +1,7 @@
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { Plus, MessageSquare, ChevronLeft, ChevronRight, SearchX } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { ErrorBanner } from "@/components/ErrorBanner";
 import { CardSkeleton } from "@/components/ui/CardSkeleton";
 import { SearchInput } from "@/components/SearchInput";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -36,6 +37,7 @@ export const SessionHistorySidebar = memo(function SessionHistorySidebar({
   const {
     groups,
     loading,
+    error,
     load,
     search,
     setSearch,
@@ -229,6 +231,11 @@ export const SessionHistorySidebar = memo(function SessionHistorySidebar({
         tabIndex={0}
         onKeyDown={handleListKeyDown}
       >
+        {error ? (
+          <div className="px-1.5">
+            <ErrorBanner message={error} onRetry={() => void load()} />
+          </div>
+        ) : null}
         {loading && groups.length === 0 ? (
           <CardSkeleton count={4} variant="compact" className="px-1" />
         ) : groups.length === 0 ? (

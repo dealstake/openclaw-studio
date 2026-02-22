@@ -4,7 +4,7 @@ import { memo } from "react";
 import { MonitorSmartphone } from "lucide-react";
 import { SearchInput } from "@/components/SearchInput";
 import { Skeleton } from "@/components/Skeleton";
-import type { GatewayClient } from "@/lib/gateway/GatewayClient";
+import type { SessionUsage } from "@/features/sessions/hooks/useSessionUsage";
 import type { SessionEntry } from "./SessionsPanel";
 import { SessionCard } from "./SessionCard";
 
@@ -20,7 +20,9 @@ type ActiveSessionsTabProps = {
   onToggleExpanded: (key: string) => void;
   onSessionClick?: (sessionKey: string, agentId: string | null) => void;
   onViewTrace?: (sessionKey: string, agentId: string | null) => void;
-  client: GatewayClient;
+  getUsage: (key: string) => SessionUsage | null;
+  isUsageLoading: (key: string) => boolean;
+  onLoadUsage: (key: string) => void;
   busyKey: string | null;
   confirmDeleteKey: string | null;
   onSetConfirmDelete: (key: string | null) => void;
@@ -40,7 +42,9 @@ export const ActiveSessionsTab = memo(function ActiveSessionsTab({
   onToggleExpanded,
   onSessionClick,
   onViewTrace,
-  client,
+  getUsage,
+  isUsageLoading,
+  onLoadUsage,
   busyKey,
   confirmDeleteKey,
   onSetConfirmDelete,
@@ -91,7 +95,9 @@ export const ActiveSessionsTab = memo(function ActiveSessionsTab({
               isExpanded={expandedKeys.has(session.key)}
               onToggle={() => onToggleExpanded(session.key)}
               onSessionClick={onSessionClick}
-              client={client}
+              usage={getUsage(session.key)}
+              usageLoading={isUsageLoading(session.key)}
+              onLoadUsage={onLoadUsage}
               busyKey={busyKey}
               confirmDeleteKey={confirmDeleteKey}
               onSetConfirmDelete={onSetConfirmDelete}

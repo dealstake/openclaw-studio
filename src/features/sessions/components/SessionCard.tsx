@@ -1,15 +1,13 @@
 "use client";
 
-import { memo, useCallback, useEffect, useState } from "react";
+import { memo, useEffect } from "react";
 import { Archive, ChevronDown, ChevronRight, Clock, GitFork, ListTree, MessageCircle, Radio, Trash2 } from "lucide-react";
 import type { SessionEntry } from "./SessionsPanel";
 import { UsageDetails, UsageSkeleton } from "./UsageDetails";
 import type { SessionUsage } from "@/features/sessions/hooks/useSessionUsage";
 import { humanizeSessionKey, humanizeOriginLabel, inferSessionType } from "@/features/sessions/lib/sessionKeyUtils";
 import { formatTokens, formatCost } from "@/lib/text/format";
-import type { GatewayClient } from "@/lib/gateway/GatewayClient";
-import { isGatewayDisconnectLikeError, parseAgentIdFromSessionKey } from "@/lib/gateway/GatewayClient";
-import { parseUsageResult } from "@/features/sessions/lib/usageParser";
+import { parseAgentIdFromSessionKey } from "@/lib/gateway/GatewayClient";
 import { formatRelativeTime } from "@/lib/text/time";
 import { PanelIconButton } from "@/components/PanelIconButton";
 import { sectionLabelClass } from "@/components/SectionLabel";
@@ -28,7 +26,9 @@ export const SessionCard = memo(function SessionCard({
   isExpanded,
   onToggle,
   onSessionClick,
-  client,
+  usage,
+  usageLoading,
+  onLoadUsage,
   busyKey,
   confirmDeleteKey,
   onSetConfirmDelete,
@@ -41,7 +41,9 @@ export const SessionCard = memo(function SessionCard({
   isExpanded: boolean;
   onToggle: () => void;
   onSessionClick?: (sessionKey: string, agentId: string | null) => void;
-  client: GatewayClient;
+  usage: SessionUsage | null;
+  usageLoading: boolean;
+  onLoadUsage: (key: string) => void;
   busyKey: string | null;
   confirmDeleteKey: string | null;
   onSetConfirmDelete: (key: string | null) => void;
@@ -49,40 +51,17 @@ export const SessionCard = memo(function SessionCard({
   onCompact: (key: string) => void;
   onViewTrace?: (sessionKey: string, agentId: string | null) => void;
 }) {
-  const [usage, setUsage] = useState<SessionUsage | null>(null);
-  const [usageLoading, setUsageLoading] = useState(false);
-  const [usageLoaded, setUsageLoaded] = useState(false);
-
   const agentId = parseAgentIdFromSessionKey(session.key);
   const sessionType = inferSessionType(session.key);
   const typeInfo = SESSION_TYPE_ICON[sessionType];
   const isBusy = busyKey === session.key;
   const isConfirming = confirmDeleteKey === session.key;
 
-  const loadUsage = useCallback(async () => {
-    if (usageLoaded) return;
-    setUsageLoading(true);
-    try {
-      const result = await client.call<{
-        totals?: { input?: number; output?: number; totalTokens?: number; totalCost?: number };
-        sessions?: Array<{ usage?: { messageCounts?: { total?: number } } }>;
-      }>("sessions.usage", { key: session.key });
-      setUsage(parseUsageResult(result));
-      setUsageLoaded(true);
-    } catch (err) {
-      if (!isGatewayDisconnectLikeError(err)) {
-        console.error("Failed to load session usage.", err);
-      }
-    } finally {
-      setUsageLoading(false);
-    }
-  }, [client, session.key, usageLoaded]);
-
   useEffect(() => {
-    if (isExpanded && !usageLoaded) {
-      void loadUsage();
+    if (isExpanded && !usage) {
+      onLoadUsage(session.key);
     }
-  }, [isExpanded, usageLoaded, loadUsage]);
+  }, [isExpanded, usage, onLoadUsage, session.key]);
 
   return (
     <BaseCard
@@ -221,7 +200,7 @@ export const SessionCard = memo(function SessionCard({
         <div className="border-t border-border/40 pt-1 mt-2">
           {usageLoading && !usage ? <UsageSkeleton /> : null}
           {usage ? <UsageDetails usage={usage} /> : null}
-          {!usageLoading && !usage && usageLoaded ? (
+          {!usageLoading && !usage ? (
             <div className="mt-2 text-[11px] text-muted-foreground">No usage data available.</div>
           ) : null}
         </div>
