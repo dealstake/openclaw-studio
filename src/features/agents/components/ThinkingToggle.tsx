@@ -52,7 +52,7 @@ export const ThinkingToggle = memo(function ThinkingToggle({
                   aria-checked={isActive}
                   aria-label={`Thinking: ${level.label}`}
                   className={`flex items-center rounded-md text-[11px] font-medium transition ${
-                    mobile ? "h-9 min-w-[36px] justify-center px-1.5" : "h-7 px-2"
+                    mobile ? "h-9 min-w-[32px] justify-center px-1" : "h-7 px-2"
                   } ${
                     isActive
                       ? "bg-card text-foreground shadow-sm"
