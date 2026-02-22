@@ -57,7 +57,13 @@ export const CardSkeleton = memo(function CardSkeleton({
       aria-label="Loading"
     >
       {Array.from({ length: count }, (_, i) => (
-        <SkeletonCard key={i} variant={variant} />
+        <div
+          key={i}
+          className="animate-in fade-in duration-300"
+          style={{ animationDelay: `${i * 100}ms`, animationFillMode: "backwards" }}
+        >
+          <SkeletonCard variant={variant} />
+        </div>
       ))}
     </div>
   );

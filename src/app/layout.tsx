@@ -52,7 +52,7 @@ export default function RootLayout({
           position="bottom-right"
           toastOptions={{
             className:
-              "!bg-card !border-border !text-foreground !shadow-lg",
+              "!bg-card !border-border !text-foreground !shadow-lg !animate-in !slide-in-from-right-5 !fade-in !duration-300",
           }}
         />
       </body>

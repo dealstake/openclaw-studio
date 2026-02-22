@@ -36,7 +36,7 @@ export const ChatEmptyState = memo(function ChatEmptyState({
   onSend: (message: string) => void;
 }) {
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-8 px-4">
+    <div className="flex h-full flex-col items-center justify-center gap-8 px-4 animate-in fade-in duration-500">
       <div className="flex flex-col items-center gap-3">
         <TridentLogo size={48} className="text-brand-gold/70" />
         <h2 className="text-2xl font-semibold text-foreground">
@@ -44,12 +44,13 @@ export const ChatEmptyState = memo(function ChatEmptyState({
         </h2>
       </div>
       <div className="grid w-full max-w-lg grid-cols-1 gap-3 sm:grid-cols-2">
-        {CHAT_STARTERS.map((s) => (
+        {CHAT_STARTERS.map((s, i) => (
           <button
             key={s.title}
             type="button"
             onClick={() => onSend(s.prompt)}
-            className="group rounded-xl border border-border bg-card/50 px-4 py-4 text-left transition-all hover:border-brand-gold/30 hover:bg-card hover:shadow-sm min-h-[44px]"
+            className="group animate-in fade-in slide-in-from-bottom-2 duration-300 rounded-xl border border-border bg-card/50 px-4 py-4 text-left transition-all hover:border-brand-gold/30 hover:bg-card hover:shadow-sm min-h-[44px]"
+            style={{ animationDelay: `${i * 75}ms`, animationFillMode: "backwards" }}
           >
             <div className="flex items-start gap-3">
               <span className="text-lg leading-none mt-0.5">{s.emoji}</span>

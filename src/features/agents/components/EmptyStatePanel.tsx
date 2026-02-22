@@ -23,7 +23,7 @@ export const EmptyStatePanel = ({
   return (
     <div
       className={cn(
-        "rounded-md border border-border/80 bg-card/70 text-muted-foreground",
+        "animate-in fade-in zoom-in-[0.98] duration-300 rounded-md border border-border/80 bg-card/70 text-muted-foreground",
         fillHeight ? "flex h-full w-full flex-col justify-center" : "",
         className
       )}
