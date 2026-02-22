@@ -66,6 +66,11 @@ export type GatewayBrowserClientOptions = {
 
 const CONNECT_FAILED_CLOSE_CODE = 4008;
 const MAX_PENDING_REQUESTS = 100;
+/**
+ * Default keepalive interval (30 s). Prevents idle-timeout disconnects from
+ * reverse proxies like Cloudflare Tunnel (default ~100 s idle timeout).
+ */
+const KEEPALIVE_INTERVAL_MS = 30_000;
 
 export class GatewayBrowserClient {
   private ws: WebSocket | null = null;
@@ -75,6 +80,7 @@ export class GatewayBrowserClient {
   private connectNonce: string | null = null;
   private connectSent = false;
   private connectTimer: number | null = null;
+  private keepaliveTimer: number | null = null;
   private backoffMs = 800;
   private _connectedAtMs = 0;
 
@@ -87,6 +93,7 @@ export class GatewayBrowserClient {
 
   stop() {
     this.closed = true;
+    this.stopKeepalive();
     this.ws?.close();
     this.ws = null;
     this.flushPending(new Error("gateway client stopped"));
@@ -104,6 +111,7 @@ export class GatewayBrowserClient {
   private connect() {
     if (this.closed) return;
     this._connectedAtMs = 0;
+    this.stopKeepalive();
     this.ws = new WebSocket(this.opts.url);
     this.ws.onopen = () => this.queueConnect();
     this.ws.onmessage = (ev) => this.handleMessage(String(ev.data ?? ""));
@@ -112,6 +120,7 @@ export class GatewayBrowserClient {
       const isSlowConsumer = ev.code === 1008;
       this.ws = null;
       this._connectedAtMs = 0;
+      this.stopKeepalive();
       this.flushPending(new Error(`gateway closed (${ev.code}): ${reason}`));
       this.opts.onClose?.({ code: ev.code, reason });
       this.scheduleReconnect(isSlowConsumer);
@@ -230,6 +239,7 @@ export class GatewayBrowserClient {
         }
         this.backoffMs = 800;
         this._connectedAtMs = Date.now();
+        this.startKeepalive(hello?.policy?.tickIntervalMs);
         this.opts.onHello?.(hello);
       })
       .catch(() => {
@@ -324,5 +334,32 @@ export class GatewayBrowserClient {
     this.connectTimer = window.setTimeout(() => {
       void this.sendConnect();
     }, 750);
+  }
+
+  /**
+   * Start a periodic keepalive ping to prevent idle-timeout disconnects from
+   * reverse proxies (e.g. Cloudflare Tunnel's ~100 s idle timeout).
+   *
+   * Uses the gateway's `tickIntervalMs` policy when available, otherwise falls
+   * back to {@link KEEPALIVE_INTERVAL_MS} (30 s).
+   */
+  private startKeepalive(tickIntervalMs?: number) {
+    this.stopKeepalive();
+    const interval =
+      typeof tickIntervalMs === "number" && tickIntervalMs > 0
+        ? Math.min(tickIntervalMs, KEEPALIVE_INTERVAL_MS)
+        : KEEPALIVE_INTERVAL_MS;
+    this.keepaliveTimer = window.setInterval(() => {
+      if (this.ws?.readyState === WebSocket.OPEN) {
+        this.ws.send(JSON.stringify({ type: "req", id: "ping", method: "ping" }));
+      }
+    }, interval);
+  }
+
+  private stopKeepalive() {
+    if (this.keepaliveTimer !== null) {
+      window.clearInterval(this.keepaliveTimer);
+      this.keepaliveTimer = null;
+    }
   }
 }
