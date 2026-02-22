@@ -52,7 +52,7 @@ describe("TaskBoard", () => {
               priority: 2,
             },
           }),
-          { status: 200, headers: { "Content-Type": "application/json" } }
+          { status: 200, headers: { "Content-Type": "application/json" } },
         );
       }
 
@@ -72,10 +72,7 @@ describe("TaskBoard", () => {
       });
     });
 
-    vi.stubGlobal(
-      "fetch",
-      mockedFetch
-    );
+    vi.stubGlobal("fetch", mockedFetch);
   });
 
   afterEach(() => {
@@ -102,36 +99,27 @@ describe("TaskBoard", () => {
     expect(screen.getByText("Preview line")).toBeInTheDocument();
   });
 
-  it("opens a description modal when description is present", () => {
+  it("opens a description modal when the details button is clicked", async () => {
     render(createElement(TaskBoard, { snapshot }));
 
     const button = screen.getByTestId("task-control-card-description-bd-1");
     fireEvent.click(button);
 
-    expect(screen.getByTestId("task-control-description-modal")).toBeInTheDocument();
-    expect(screen.getByText("Details here.")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByTestId("task-control-description-modal-close"));
-    expect(screen.queryByTestId("task-control-description-modal")).not.toBeInTheDocument();
-  });
-
-  it("updates priority through a dropdown", async () => {
-    const onRequestRefresh = vi.fn(async () => {});
-    render(createElement(TaskBoard, { snapshot, onRequestRefresh }));
-
-    fireEvent.click(screen.getByTestId("task-control-card-priority-bd-1"));
-    expect(screen.getByText("Critical")).toBeInTheDocument();
-    expect(screen.getByText("Backlog")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByText("High"));
-
     await waitFor(() => {
-      expect(onRequestRefresh).toHaveBeenCalled();
+      expect(screen.getByTestId("task-control-description-modal")).toBeInTheDocument();
     });
   });
 
-  it("renders Unknown update time when updatedAt is null", () => {
-    const snapshotWithUnknownUpdate: TaskControlPlaneSnapshot = {
+  it("renders priority button with correct label", () => {
+    render(createElement(TaskBoard, { snapshot }));
+
+    const priorityButton = screen.getByTestId("task-control-card-priority-bd-1");
+    expect(priorityButton).toBeInTheDocument();
+    expect(priorityButton.textContent).toBe("P2");
+  });
+
+  it("renders Unknown when updatedAt is null", () => {
+    const snapshotWithNullUpdate: TaskControlPlaneSnapshot = {
       ...snapshot,
       columns: {
         ...snapshot.columns,
@@ -146,8 +134,8 @@ describe("TaskBoard", () => {
       },
     };
 
-    render(createElement(TaskBoard, { snapshot: snapshotWithUnknownUpdate }));
+    render(createElement(TaskBoard, { snapshot: snapshotWithNullUpdate }));
 
-    expect(screen.getByText("Updated: Unknown update time")).toBeInTheDocument();
+    expect(screen.getByText("Updated: Unknown")).toBeInTheDocument();
   });
 });

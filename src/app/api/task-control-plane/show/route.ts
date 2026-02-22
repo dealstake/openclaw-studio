@@ -28,7 +28,7 @@ export async function GET(request: Request) {
     const id = extractId(request);
     const sshTarget = resolveTaskControlPlaneSshTarget();
     const runner = createTaskControlPlaneBrRunner(sshTarget ? { sshTarget } : undefined);
-    const raw = runner.runBrJson(["show", id]);
+    const raw = await runner.runBrJson(["show", id]);
     const bead = coerceBrSingleRecord(raw, { command: "show", id });
     return NextResponse.json({ bead });
   } catch (err) {

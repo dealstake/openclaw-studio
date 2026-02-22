@@ -27,21 +27,33 @@ type RunBrJsonOptions = {
   env?: Record<string, string>;
 };
 
-const runBrJsonLocal = (command: string[], options?: RunBrJsonOptions): unknown => {
+const runBrJsonLocal = async (command: string[], options?: RunBrJsonOptions): Promise<unknown> => {
   const args = [...command, "--json"];
-  const result = childProcess.spawnSync("br", args, {
-    cwd: options?.cwd,
-    env: { ...process.env, ...(options?.env ?? {}) },
-    encoding: "utf8",
-  });
-  if (result.error) {
-    throw new Error(`Failed to execute br: ${result.error.message}`);
-  }
-  const stdout = result.stdout ?? "";
-  const stderr = result.stderr ?? "";
-  if (result.status !== 0) {
-    const stderrText = stderr.trim();
-    const stdoutText = stdout.trim();
+  const { stdout, stderr, exitCode } = await new Promise<{ stdout: string; stderr: string; exitCode: number }>(
+    (resolve, reject) => {
+      childProcess.execFile(
+        "br",
+        args,
+        {
+          cwd: options?.cwd,
+          env: { ...process.env, ...(options?.env ?? {}) },
+          encoding: "utf8",
+          maxBuffer: 10 * 1024 * 1024,
+        },
+        (error, stdout, stderr) => {
+          if (error && !("code" in error && typeof error.code === "number")) {
+            reject(new Error(`Failed to execute br: ${error.message}`));
+            return;
+          }
+          const code = error && "code" in error && typeof error.code === "number" ? error.code : 0;
+          resolve({ stdout: stdout ?? "", stderr: stderr ?? "", exitCode: code });
+        },
+      );
+    },
+  );
+  const stderrText = stderr.trim();
+  const stdoutText = stdout.trim();
+  if (exitCode !== 0) {
     const message =
       extractJsonErrorMessage(stdout) ??
       extractJsonErrorMessage(stderr) ??
@@ -53,7 +65,7 @@ const runBrJsonLocal = (command: string[], options?: RunBrJsonOptions): unknown 
 
 const quoteShellArg = (value: string) => "'" + value.replaceAll("'", "'\"'\"'") + "'";
 
-const runBrJsonViaSsh = (command: string[], options: { sshTarget: string; cwd: string }) => {
+const runBrJsonViaSsh = async (command: string[], options: { sshTarget: string; cwd: string }): Promise<unknown> => {
   const remote =
     `cd ${quoteShellArg(options.cwd)} && ` +
     `PATH=\"$HOME/.local/bin:$HOME/.cargo/bin:$PATH\" ` +
@@ -123,7 +135,7 @@ export const isBeadsWorkspaceError = (message: string) => {
 export const createTaskControlPlaneBrRunner = (opts?: {
   sshTarget?: string | null;
 }): {
-  runBrJson: (command: string[]) => unknown;
+  runBrJson: (command: string[]) => Promise<unknown>;
   parseScopePath: (value: unknown) => string | null;
 } => {
   const gatewayBeadsDir = resolveGatewayBeadsDir();

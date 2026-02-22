@@ -37,7 +37,7 @@ export async function POST(request: Request) {
     const payload = await extractPayload(request);
     const sshTarget = resolveTaskControlPlaneSshTarget();
     const runner = createTaskControlPlaneBrRunner(sshTarget ? { sshTarget } : undefined);
-    const raw = runner.runBrJson([
+    const raw = await runner.runBrJson([
       "update",
       "--priority",
       String(payload.priority),

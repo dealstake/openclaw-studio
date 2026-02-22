@@ -16,11 +16,13 @@ async function loadTaskControlPlaneRawData(): Promise<{
 }> {
   const sshTarget = resolveTaskControlPlaneSshTarget();
   const runner = createTaskControlPlaneBrRunner(sshTarget ? { sshTarget } : undefined);
-  const scope = runner.runBrJson(["where"]);
-  const openIssues = runner.runBrJson(["list", "--status", "open", "--limit", "0"]);
-  const inProgressIssues = runner.runBrJson(["list", "--status", "in_progress", "--limit", "0"]);
-  const blockedIssues = runner.runBrJson(["blocked", "--limit", "0"]);
-  const doneIssues = runner.runBrJson(["list", "--status", "closed", "--limit", "0"]);
+  const [scope, openIssues, inProgressIssues, blockedIssues, doneIssues] = await Promise.all([
+    runner.runBrJson(["where"]),
+    runner.runBrJson(["list", "--status", "open", "--limit", "0"]),
+    runner.runBrJson(["list", "--status", "in_progress", "--limit", "0"]),
+    runner.runBrJson(["blocked", "--limit", "0"]),
+    runner.runBrJson(["list", "--status", "closed", "--limit", "0"]),
+  ]);
   return {
     scopePath: runner.parseScopePath(scope),
     openIssues,

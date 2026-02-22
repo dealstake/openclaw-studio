@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { spawnSync } from "node:child_process";
+import { execFile } from "node:child_process";
 
 import { POST } from "@/app/api/task-control-plane/priority/route";
 
@@ -11,11 +11,12 @@ vi.mock("node:child_process", async () => {
   return {
     default: actual,
     ...actual,
+    execFile: vi.fn(),
     spawnSync: vi.fn(),
   };
 });
 
-const mockedSpawnSync = vi.mocked(spawnSync);
+const mockedExecFile = vi.mocked(execFile);
 
 describe("task control plane priority route", () => {
   beforeEach(() => {
@@ -24,32 +25,32 @@ describe("task control plane priority route", () => {
     delete process.env.OPENCLAW_TASK_CONTROL_PLANE_GATEWAY_BEADS_DIR;
     delete process.env.OPENCLAW_TASK_CONTROL_PLANE_SSH_TARGET;
     delete process.env.OPENCLAW_TASK_CONTROL_PLANE_SSH_USER;
-    mockedSpawnSync.mockReset();
+    mockedExecFile.mockReset();
   });
 
   it("updates priority via br update", async () => {
-    mockedSpawnSync.mockReturnValue({
-      status: 0,
-      stdout: JSON.stringify([{ id: "bd-1", priority: 1 }]),
-      stderr: "",
-      error: undefined,
-    } as never);
+    mockedExecFile.mockImplementation(
+      ((_cmd: unknown, _args: unknown, _opts: unknown, cb: Function) => {
+        cb(null, JSON.stringify([{ id: "bd-1", priority: 1 }]), "");
+      }) as never,
+    );
 
     const response = await POST(
       new Request("http://example.test/api/task-control-plane/priority", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: "bd-1", priority: 1 }),
-      })
+      }),
     );
     const body = (await response.json()) as { bead: unknown };
 
     expect(response.status).toBe(200);
     expect(body.bead).toMatchObject({ id: "bd-1", priority: 1 });
-    expect(mockedSpawnSync).toHaveBeenCalledWith(
+    expect(mockedExecFile).toHaveBeenCalledWith(
       "br",
       ["update", "--priority", "1", "bd-1", "--json"],
-      expect.objectContaining({ encoding: "utf8" })
+      expect.objectContaining({ encoding: "utf8" }),
+      expect.any(Function),
     );
   });
 
@@ -59,7 +60,7 @@ describe("task control plane priority route", () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: "bd-1", priority: 9 }),
-      })
+      }),
     );
     const body = (await response.json()) as { error: string };
 
@@ -67,4 +68,3 @@ describe("task control plane priority route", () => {
     expect(body.error).toContain("Priority must be between 0 and 4");
   });
 });
-
