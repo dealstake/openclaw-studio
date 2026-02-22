@@ -18,6 +18,8 @@ export type UploadedFile = {
   previewUrl?: string;
   /** error message if encoding failed */
   error?: string;
+  /** encoding progress 0-100 */
+  progress: number;
 };
 
 export type ChatAttachment = {
@@ -72,10 +74,19 @@ function validateFile(file: File): string | null {
   return null;
 }
 
-function readFileAsBase64(file: File): Promise<string> {
+function readFileAsBase64(
+  file: File,
+  onProgress?: (pct: number) => void
+): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
+    reader.onprogress = (e) => {
+      if (e.lengthComputable && onProgress) {
+        onProgress(Math.round((e.loaded / e.total) * 100));
+      }
+    };
     reader.onload = () => {
+      onProgress?.(100);
       const result = reader.result as string;
       // Strip data URL prefix to get raw base64
       const base64 = result.includes(",") ? result.split(",")[1] : result;
@@ -112,6 +123,7 @@ export function useFileUpload() {
         isImage: isImg,
         status: "encoding",
         previewUrl: isImg ? URL.createObjectURL(file) : undefined,
+        progress: 0,
       };
       entries.push(entry);
     }
@@ -128,7 +140,11 @@ export function useFileUpload() {
     const results = await Promise.allSettled(
       entries.map(async (entry) => {
         try {
-          const content = await readFileAsBase64(entry.file);
+          const content = await readFileAsBase64(entry.file, (pct) => {
+            setFiles((prev) =>
+              prev.map((f) => (f.id === entry.id ? { ...f, progress: pct } : f))
+            );
+          });
           return { id: entry.id, content, error: null };
         } catch {
           return { id: entry.id, content: null, error: "Encoding failed" };
@@ -144,9 +160,9 @@ export function useFileUpload() {
         if (!result || result.status !== "fulfilled") return f;
         const { content, error } = result.value;
         if (error || !content) {
-          return { ...f, status: "error" as const, error: error ?? "Unknown error" };
+          return { ...f, status: "error" as const, error: error ?? "Unknown error", progress: 0 };
         }
-        return { ...f, status: "ready" as const, content };
+        return { ...f, status: "ready" as const, content, progress: 100 };
       })
     );
 

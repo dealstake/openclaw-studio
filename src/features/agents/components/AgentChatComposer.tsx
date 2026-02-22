@@ -11,7 +11,7 @@ import {
 } from "react";
 
 import type { GatewayModelChoice } from "@/lib/gateway/models";
-import { ArrowUp, Paperclip, Square, UploadCloud } from "lucide-react";
+import { AlertCircle, ArrowUp, Paperclip, Square, UploadCloud } from "lucide-react";
 import { ChatAttachmentPreview } from "./ChatAttachmentPreview";
 import { useFileUpload, type ChatAttachment } from "../hooks/useFileUpload";
 
@@ -59,8 +59,16 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [isEmpty, setIsEmpty] = useState(!initialDraft.trim());
   const [isDragging, setIsDragging] = useState(false);
+  const [fileError, setFileError] = useState<string | null>(null);
+  const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dragCountRef = useRef(0);
   const { files, addFiles, removeFile, clearFiles, getAttachments, hasFiles, isEncoding, acceptString } = useFileUpload();
+
+  const showFileError = useCallback((msg: string) => {
+    setFileError(msg);
+    if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
+    errorTimerRef.current = setTimeout(() => setFileError(null), 4000);
+  }, []);
 
   const handleRef = useCallback((el: HTMLTextAreaElement | HTMLInputElement | null) => {
     localRef.current = el instanceof HTMLTextAreaElement ? el : null;
@@ -140,10 +148,12 @@ export const AgentChatComposer = memo(function AgentChatComposer({
       }
       if (imageFiles.length > 0) {
         event.preventDefault();
-        void addFiles(imageFiles);
+        void addFiles(imageFiles).then((errs) => {
+          if (errs && errs.length > 0) showFileError(errs[0]);
+        });
       }
     },
-    [addFiles]
+    [addFiles, showFileError]
   );
 
   // ── Drag & drop handlers ──────────────────────────────────────────
@@ -170,29 +180,36 @@ export const AgentChatComposer = memo(function AgentChatComposer({
       setIsDragging(false);
       const droppedFiles = Array.from(e.dataTransfer?.files ?? []);
       if (droppedFiles.length > 0) {
-        void addFiles(droppedFiles);
+        void addFiles(droppedFiles).then((errs) => {
+          if (errs && errs.length > 0) showFileError(errs[0]);
+        });
       }
     },
-    [addFiles]
+    [addFiles, showFileError]
   );
 
   // ── File input handler ─────────────────────────────────────────────
   const handleFileInputChange = useCallback(
     (e: ChangeEvent<HTMLInputElement>) => {
       const selected = Array.from(e.target.files ?? []);
-      if (selected.length > 0) void addFiles(selected);
+      if (selected.length > 0) {
+        void addFiles(selected).then((errs) => {
+          if (errs && errs.length > 0) showFileError(errs[0]);
+        });
+      }
       // Reset input so same file can be selected again
       e.target.value = "";
     },
-    [addFiles]
+    [addFiles, showFileError]
   );
 
-  // Cleanup rAF on unmount
+  // Cleanup rAF + error timer on unmount
   useEffect(() => {
     return () => {
       if (pendingResizeRef.current !== null) {
         cancelAnimationFrame(pendingResizeRef.current);
       }
+      if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
     };
   }, []);
 
@@ -281,6 +298,14 @@ export const AgentChatComposer = memo(function AgentChatComposer({
 
       {/* Main composer pill */}
       <div className="mx-auto flex max-w-3xl flex-col gap-2 rounded-2xl border border-border/20 bg-card/80 p-2 shadow-lg backdrop-blur-md focus-within:border-border focus-within:bg-card transition">
+        {/* File error message */}
+        {fileError && (
+          <div className="flex items-center gap-1.5 rounded-lg bg-destructive/10 px-2.5 py-1.5 text-xs text-destructive">
+            <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">{fileError}</span>
+          </div>
+        )}
+
         {/* Attachment preview row */}
         {hasFiles && (
           <ChatAttachmentPreview files={files} onRemove={removeFile} />
