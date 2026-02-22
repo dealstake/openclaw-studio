@@ -2,7 +2,7 @@
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Plus, RefreshCw, ListChecks, Layers } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { CardSkeleton } from "@/components/ui/CardSkeleton";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
@@ -203,17 +203,19 @@ export const TasksPanel = memo(function TasksPanel({
             </span>
           ) : null}
           {maxConcurrentRuns != null && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="flex items-center gap-1 rounded-full bg-muted/60 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
-                  <Layers className="h-3 w-3" />
-                  {maxConcurrentRuns}
-                </span>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">
-                Max {maxConcurrentRuns} concurrent cron runs
-              </TooltipContent>
-            </Tooltip>
+            <TooltipProvider delayDuration={300}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="flex items-center gap-1 rounded-full bg-muted/60 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+                    <Layers className="h-3 w-3" />
+                    {maxConcurrentRuns}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  Max {maxConcurrentRuns} concurrent cron runs
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           )}
         </div>
         <div className="flex items-center gap-1.5">
