@@ -32,7 +32,11 @@ export type WizardChatProps = {
 
 // ── Component ──────────────────────────────────────────────────────────
 
-/** Counter for stable message keys across renders */
+/**
+ * Module-level counter for stable message keys across renders.
+ * Intentionally persists across mount/unmount cycles — ensures unique keys
+ * even if multiple WizardChat instances mount concurrently.
+ */
 let wizardMsgIdCounter = 0;
 
 export const WizardChat = React.memo(function WizardChat({
@@ -78,10 +82,10 @@ export const WizardChat = React.memo(function WizardChat({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, streamText, thinkingTrace]);
 
-  // Cleanup wizard session on unmount
+  // Cleanup wizard session on unmount — abort streaming first to avoid race
   useEffect(() => {
     return () => {
-      cleanup();
+      abort().then(cleanup);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

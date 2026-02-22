@@ -18,7 +18,7 @@ import {
   type CronRunEntry,
   fetchCronRuns,
 } from "@/lib/cron/types";
-import { formatRelativeTime } from "@/lib/text/time";
+import { formatRelativeTime, formatDurationCompact } from "@/lib/text/time";
 import { PanelIconButton } from "@/components/PanelIconButton";
 import { SectionLabel, sectionLabelClass } from "@/components/SectionLabel";
 import { ErrorBanner } from "@/components/ErrorBanner";
@@ -50,10 +50,7 @@ function formatNextRun(state: CronJobSummary["state"]): string | null {
   return `in ${Math.round(diff / 3_600_000)}h`;
 }
 
-function formatDurationMs(ms: number): string {
-  if (ms < 1000) return `${ms}ms`;
-  return `${(ms / 1000).toFixed(1)}s`;
-}
+// Removed local formatDurationMs — using shared formatDurationCompact from @/lib/text/time
 
 export type CronJobListItemProps = {
   job: CronJobSummary;
@@ -297,7 +294,7 @@ export const CronJobListItem = memo(function CronJobListItem({
                 <span className="font-medium text-foreground/70">
                   Last duration:
                 </span>{" "}
-                {formatDurationMs(job.state.lastDurationMs)}
+                {formatDurationCompact(job.state.lastDurationMs)}
               </div>
             ) : null}
             {job.state.lastError ? (
@@ -357,7 +354,7 @@ export const CronJobListItem = memo(function CronJobListItem({
                     ) : null}
                     {run.durationMs !== undefined ? (
                       <span className="text-xs text-muted-foreground">
-                        {formatDurationMs(run.durationMs)}
+                        {formatDurationCompact(run.durationMs)}
                       </span>
                     ) : null}
                     {run.error ? (

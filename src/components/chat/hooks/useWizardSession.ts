@@ -192,13 +192,18 @@ export function useWizardSession({
         // If session not yet initialized, send system prompt first
         if (!sessionInitRef.current) {
           sessionInitRef.current = true;
-          await client.call("chat.send", {
-            sessionKey,
-            message: `[system] ${systemPrompt}`,
-            deliver: false,
-            idempotencyKey: crypto.randomUUID(),
-          });
-          // Wait for system message to process, then send user message
+          try {
+            await client.call("chat.send", {
+              sessionKey,
+              message: `[system] ${systemPrompt}`,
+              deliver: false,
+              idempotencyKey: crypto.randomUUID(),
+            });
+          } catch (err) {
+            // Reset so next sendMessage retries system prompt
+            sessionInitRef.current = false;
+            throw err;
+          }
         }
 
         // Add user message to local state

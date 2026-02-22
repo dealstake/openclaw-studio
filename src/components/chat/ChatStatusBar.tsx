@@ -80,8 +80,8 @@ export const ChatStatusBar = React.memo(function ChatStatusBar({
 /* ── ElapsedTimer ── */
 
 /**
- * Lightweight elapsed timer that updates via requestAnimationFrame + direct
- * DOM mutation (no React re-renders per tick).
+ * Lightweight elapsed timer that updates via setInterval + direct DOM mutation
+ * (no React re-renders per tick).
  */
 const ElapsedTimer = React.memo(function ElapsedTimer({
   runStartedAt,
