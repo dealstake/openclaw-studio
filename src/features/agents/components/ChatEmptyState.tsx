@@ -1,11 +1,31 @@
 import { memo } from "react";
-import { Sparkles } from "lucide-react";
+import { TridentLogo } from "@/components/brand/TridentLogo";
 
 const CHAT_STARTERS = [
-  { text: "📋 What's on my agenda?", prompt: "What's on my agenda today?" },
-  { text: "🔨 Check project status", prompt: "Check the status of active projects" },
-  { text: "📊 Review recent activity", prompt: "Review recent cron and agent activity" },
-  { text: "🛠️ Help me build something", prompt: "Help me plan and build a new feature" },
+  {
+    emoji: "📋",
+    title: "What's on my agenda?",
+    description: "Check today's tasks, meetings, and priorities",
+    prompt: "What's on my agenda today?",
+  },
+  {
+    emoji: "🔨",
+    title: "Check project status",
+    description: "Review active projects and recent progress",
+    prompt: "Check the status of active projects",
+  },
+  {
+    emoji: "📊",
+    title: "Review recent activity",
+    description: "See cron runs, sub-agent completions, and events",
+    prompt: "Review recent cron and agent activity",
+  },
+  {
+    emoji: "🛠️",
+    title: "Help me build something",
+    description: "Plan and implement a new feature or fix",
+    prompt: "Help me plan and build a new feature",
+  },
 ];
 
 export const ChatEmptyState = memo(function ChatEmptyState({
@@ -16,22 +36,32 @@ export const ChatEmptyState = memo(function ChatEmptyState({
   onSend: (message: string) => void;
 }) {
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-6 px-4">
-      <div className="flex flex-col items-center gap-2">
-        <Sparkles className="h-7 w-7 text-brand-gold/60" />
-        <h2 className="text-lg font-semibold text-foreground">
+    <div className="flex h-full flex-col items-center justify-center gap-8 px-4">
+      <div className="flex flex-col items-center gap-3">
+        <TridentLogo size={48} className="text-brand-gold/70" />
+        <h2 className="text-2xl font-semibold text-foreground">
           What can {agentName} help with?
         </h2>
       </div>
-      <div className="grid w-full max-w-md grid-cols-2 gap-2">
+      <div className="grid w-full max-w-lg grid-cols-1 gap-3 sm:grid-cols-2">
         {CHAT_STARTERS.map((s) => (
           <button
-            key={s.text}
+            key={s.title}
             type="button"
             onClick={() => onSend(s.prompt)}
-            className="rounded-2xl border border-border/50 bg-transparent px-4 py-3.5 text-left text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground min-h-[44px]"
+            className="group rounded-xl border border-border bg-card/50 px-4 py-4 text-left transition-all hover:border-brand-gold/30 hover:bg-card hover:shadow-sm min-h-[44px]"
           >
-            {s.text}
+            <div className="flex items-start gap-3">
+              <span className="text-lg leading-none mt-0.5">{s.emoji}</span>
+              <div className="flex flex-col gap-1">
+                <span className="text-sm font-medium text-foreground">
+                  {s.title}
+                </span>
+                <span className="text-xs text-muted-foreground leading-snug">
+                  {s.description}
+                </span>
+              </div>
+            </div>
           </button>
         ))}
       </div>
