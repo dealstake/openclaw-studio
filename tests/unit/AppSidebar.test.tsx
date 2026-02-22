@@ -17,9 +17,16 @@ vi.mock("@/features/sessions/hooks/useSessionHistory", () => ({
       },
     ],
     loading: false,
+    error: null,
     load: vi.fn(),
     search: "",
     setSearch: vi.fn(),
+    pinnedKeys: new Set<string>(),
+    togglePin: vi.fn(),
+    deleteSession: vi.fn(),
+    renameSession: vi.fn(),
+    totalFiltered: 2,
+    totalCount: 2,
   }),
 }));
 

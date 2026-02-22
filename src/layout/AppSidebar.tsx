@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useRef } from "react";
+import { memo, useCallback, useRef, useEffect, useState } from "react";
 import {
   MessageSquare,
   BarChart3,
@@ -9,60 +9,82 @@ import {
   Settings,
   Plus,
   ChevronLeft,
-  Search,
+  SearchX,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { sectionLabelClass } from "@/components/SectionLabel";
-import { formatRelativeTime } from "@/lib/text/time";
+import { SearchInput } from "@/components/SearchInput";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { ErrorBanner } from "@/components/ErrorBanner";
+import { CardSkeleton } from "@/components/ui/CardSkeleton";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
-import { useSessionHistory, type SessionHistoryEntry } from "@/features/sessions/hooks/useSessionHistory";
-import { useEffect } from "react";
+import { useSessionHistory } from "@/features/sessions/hooks/useSessionHistory";
+import { SessionItem } from "@/features/sessions/components/SessionItem";
 
 /** Management nav items that open in expanded modal */
 export type ManagementTab = "sessions" | "usage" | "channels" | "cron" | "settings";
 
-const NAV_ITEMS: Array<{ value: ManagementTab; label: string; icon: typeof MessageSquare; shortcut?: string }> = [
+const NAV_ITEMS: Array<{ value: ManagementTab; label: string; icon: typeof MessageSquare }> = [
   { value: "sessions", label: "Sessions", icon: MessageSquare },
   { value: "usage", label: "Usage", icon: BarChart3 },
   { value: "channels", label: "Channels", icon: Radio },
   { value: "cron", label: "Cron", icon: Clock },
 ];
 
-const SETTINGS_ITEM = { value: "settings" as ManagementTab, label: "Settings", icon: Settings };
+const ALL_NAV_ITEMS = [...NAV_ITEMS, { value: "settings" as ManagementTab, label: "Settings", icon: Settings }];
 
-/* ─── Session list item ─── */
-const SessionItem = memo(function SessionItem({
-  session,
-  active,
-  onSelect,
-}: {
-  session: SessionHistoryEntry;
-  active: boolean;
-  onSelect: (key: string) => void;
-}) {
-  const handleClick = useCallback(() => onSelect(session.key), [onSelect, session.key]);
+/* ─── Shared nav icon button ─── */
+type NavIconButtonProps = {
+  item: { value: ManagementTab; label: string; icon: typeof MessageSquare };
+  isActive: boolean;
+  size: "sm" | "md";
+  indicatorPosition: "left" | "bottom";
+  tooltipSide: "right" | "bottom";
+  onClick: (tab: ManagementTab) => void;
+  onKeyDown?: (e: React.KeyboardEvent) => void;
+};
+
+const NavIconButton = memo(function NavIconButton({
+  item,
+  isActive,
+  size,
+  indicatorPosition,
+  tooltipSide,
+  onClick,
+  onKeyDown,
+}: NavIconButtonProps) {
+  const Icon = item.icon;
+  const sizeClass = size === "sm" ? "h-7 w-7" : "h-8 w-8";
+  const iconSize = size === "sm" ? "h-3.5 w-3.5" : "h-4 w-4";
+  const indicatorClass =
+    indicatorPosition === "left"
+      ? "before:absolute before:inset-y-1 before:-left-1 before:w-0.5 before:rounded-full before:bg-primary"
+      : "before:absolute before:-bottom-2 before:left-1.5 before:right-1.5 before:h-0.5 before:rounded-full before:bg-primary";
+
   return (
-    <button
-      type="button"
-      onClick={handleClick}
-      className={`group flex w-full items-start gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors ${
-        active
-          ? "bg-accent text-accent-foreground"
-          : "text-foreground/80 hover:bg-muted"
-      }`}
-    >
-      <MessageSquare className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-[13px] font-medium leading-tight" title={session.displayName}>
-          {session.displayName}
-        </p>
-        <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
-          {formatRelativeTime(session.updatedAt)}
-          {session.messageCount > 0 ? ` · ${session.messageCount} msgs` : ""}
-        </p>
-      </div>
-    </button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          data-nav-item
+          onClick={() => onClick(item.value)}
+          onKeyDown={onKeyDown}
+          className={`relative flex ${sizeClass} items-center justify-center rounded-md transition-all duration-150 ${
+            isActive
+              ? `bg-accent text-accent-foreground ${indicatorClass}`
+              : "text-muted-foreground hover:bg-muted hover:text-foreground"
+          }`}
+          aria-label={item.label}
+          aria-current={isActive ? "page" : undefined}
+        >
+          <Icon className={iconSize} />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side={tooltipSide} className="text-xs">
+        {item.label}
+      </TooltipContent>
+    </Tooltip>
   );
 });
 
@@ -92,7 +114,18 @@ export const AppSidebar = memo(function AppSidebar({
   onManagementNav,
   activeManagementTab,
 }: AppSidebarProps) {
-  const { groups, loading, load, search, setSearch } = useSessionHistory(client, status, agentId);
+  const {
+    groups,
+    loading,
+    error,
+    load,
+    search,
+    setSearch,
+    pinnedKeys,
+    togglePin,
+    deleteSession,
+    renameSession,
+  } = useSessionHistory(client, status, agentId);
 
   const loadRef = useRef(load);
   useEffect(() => {
@@ -103,6 +136,23 @@ export const AppSidebar = memo(function AppSidebar({
   }, [agentId, status]);
 
   const navContainerRef = useRef<HTMLDivElement>(null);
+
+  // Inline rename state
+  const [renamingKey, setRenamingKey] = useState<string | null>(null);
+
+  const handleRenameStart = useCallback((key: string) => setRenamingKey(key), []);
+  const handleRenameCancel = useCallback(() => setRenamingKey(null), []);
+  const handleRename = useCallback(
+    (key: string, name: string) => {
+      void renameSession(key, name);
+      setRenamingKey(null);
+    },
+    [renameSession],
+  );
+  const handleDelete = useCallback(
+    (key: string) => void deleteSession(key),
+    [deleteSession],
+  );
 
   /** Arrow-key navigation within sidebar nav items */
   const handleNavKeyDown = useCallback(
@@ -134,36 +184,20 @@ export const AppSidebar = memo(function AppSidebar({
         /* ── Collapsed: icon rail ── */
         <>
           <div className="flex flex-col items-center py-3 shrink-0">
-              <div ref={navContainerRef} role="navigation" aria-label="Management navigation">
-                {NAV_ITEMS.map((item, index) => {
-                  const Icon = item.icon;
-                  const isActive = activeManagementTab === item.value;
-                  return (
-                    <Tooltip key={item.value}>
-                      <TooltipTrigger asChild>
-                        <button
-                          type="button"
-                          data-nav-item
-                          onClick={() => onManagementNav(item.value)}
-                          onKeyDown={(e) => handleNavKeyDown(e, index)}
-                          className={`relative flex h-8 w-8 items-center justify-center rounded-md transition-all duration-150 ${
-                            isActive
-                              ? "bg-accent text-accent-foreground before:absolute before:inset-y-1 before:-left-1 before:w-0.5 before:rounded-full before:bg-primary"
-                              : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                          }`}
-                          aria-label={item.label}
-                          aria-current={isActive ? "page" : undefined}
-                        >
-                          <Icon className="h-4 w-4" />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="right" className="text-xs">
-                        {item.label}
-                      </TooltipContent>
-                    </Tooltip>
-                  );
-                })}
-              </div>
+            <div ref={navContainerRef} role="navigation" aria-label="Management navigation">
+              {NAV_ITEMS.map((item, index) => (
+                <NavIconButton
+                  key={item.value}
+                  item={item}
+                  isActive={activeManagementTab === item.value}
+                  size="md"
+                  indicatorPosition="left"
+                  tooltipSide="right"
+                  onClick={onManagementNav}
+                  onKeyDown={(e) => handleNavKeyDown(e, index)}
+                />
+              ))}
+            </div>
             <div className="my-2 h-px w-5 bg-border/40" />
             <button
               type="button"
@@ -177,26 +211,14 @@ export const AppSidebar = memo(function AppSidebar({
           {/* Settings + theme toggle pinned to bottom */}
           <div className="mt-auto flex flex-col items-center gap-1 pb-3">
             <ThemeToggle />
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    type="button"
-                    onClick={() => onManagementNav(SETTINGS_ITEM.value)}
-                    className={`relative flex h-8 w-8 items-center justify-center rounded-md transition-all duration-150 ${
-                      activeManagementTab === "settings"
-                        ? "bg-accent text-accent-foreground before:absolute before:inset-y-1 before:-left-1 before:w-0.5 before:rounded-full before:bg-primary"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                    }`}
-                    aria-label="Settings"
-                    aria-current={activeManagementTab === "settings" ? "page" : undefined}
-                  >
-                    <Settings className="h-4 w-4" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right" className="text-xs">
-                  Settings
-                </TooltipContent>
-              </Tooltip>
+            <NavIconButton
+              item={ALL_NAV_ITEMS[ALL_NAV_ITEMS.length - 1]}
+              isActive={activeManagementTab === "settings"}
+              size="md"
+              indicatorPosition="left"
+              tooltipSide="right"
+              onClick={onManagementNav}
+            />
           </div>
         </>
       ) : (
@@ -204,34 +226,18 @@ export const AppSidebar = memo(function AppSidebar({
         <>
           {/* Management nav */}
           <div ref={navContainerRef} className="flex items-center gap-1 border-b border-border/20 px-2 py-2 shrink-0" role="navigation" aria-label="Management navigation">
-              {NAV_ITEMS.map((item, index) => {
-                const Icon = item.icon;
-                const isActive = activeManagementTab === item.value;
-                return (
-                  <Tooltip key={item.value}>
-                    <TooltipTrigger asChild>
-                      <button
-                        type="button"
-                        data-nav-item
-                        onClick={() => onManagementNav(item.value)}
-                        onKeyDown={(e) => handleNavKeyDown(e, index)}
-                        className={`relative flex h-7 w-7 items-center justify-center rounded-md transition-all duration-150 ${
-                          isActive
-                            ? "bg-accent text-accent-foreground before:absolute before:-bottom-2 before:left-1.5 before:right-1.5 before:h-0.5 before:rounded-full before:bg-primary"
-                            : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                        }`}
-                        aria-label={item.label}
-                        aria-current={isActive ? "page" : undefined}
-                      >
-                        <Icon className="h-3.5 w-3.5" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="text-xs">
-                      {item.label}
-                    </TooltipContent>
-                  </Tooltip>
-                );
-              })}
+            {NAV_ITEMS.map((item, index) => (
+              <NavIconButton
+                key={item.value}
+                item={item}
+                isActive={activeManagementTab === item.value}
+                size="sm"
+                indicatorPosition="bottom"
+                tooltipSide="bottom"
+                onClick={onManagementNav}
+                onKeyDown={(e) => handleNavKeyDown(e, index)}
+              />
+            ))}
           </div>
 
           {/* Session history header */}
@@ -257,28 +263,29 @@ export const AppSidebar = memo(function AppSidebar({
 
           {/* Search */}
           <div className="px-3 py-2 shrink-0">
-            <div className="flex items-center gap-2 rounded-md border border-border/50 bg-background/40 px-2 py-1.5">
-              <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search sessions…"
-                className="w-full bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground/60 focus:outline-none"
-              />
-            </div>
+            <SearchInput
+              value={search}
+              onChange={setSearch}
+              placeholder="Search sessions…"
+            />
           </div>
 
           {/* Session list */}
           <div className="min-h-0 flex-1 overflow-y-auto px-1.5 pb-2">
+            {error ? (
+              <div className="px-1.5">
+                <ErrorBanner message={error} onRetry={() => void load()} />
+              </div>
+            ) : null}
             {loading && groups.length === 0 ? (
-              <div className="px-2 py-4 text-center text-[12px] text-muted-foreground">
-                Loading sessions…
-              </div>
+              <CardSkeleton count={4} variant="compact" className="px-1" />
             ) : groups.length === 0 ? (
-              <div className="px-2 py-4 text-center text-[12px] text-muted-foreground">
-                {search ? "No matching sessions" : "No sessions yet"}
-              </div>
+              <EmptyState
+                icon={search ? SearchX : MessageSquare}
+                title={search ? "No matching sessions" : "No sessions yet"}
+                description={search ? undefined : "Start chatting to see your history here"}
+                className="py-8"
+              />
             ) : (
               groups.map((group) => (
                 <div key={group.label} className="mb-2">
@@ -291,7 +298,16 @@ export const AppSidebar = memo(function AppSidebar({
                         key={session.key}
                         session={session}
                         active={session.key === activeSessionKey}
+                        focused={false}
+                        pinned={pinnedKeys.has(session.key)}
+                        renaming={renamingKey === session.key}
+                        searchQuery={search}
                         onSelect={onSelectSession}
+                        onRename={handleRename}
+                        onRenameStart={handleRenameStart}
+                        onRenameCancel={handleRenameCancel}
+                        onDelete={handleDelete}
+                        onTogglePin={togglePin}
                       />
                     ))}
                   </div>
@@ -302,27 +318,27 @@ export const AppSidebar = memo(function AppSidebar({
 
           {/* Settings + theme toggle pinned to bottom */}
           <div className="border-t border-border/20 px-2 py-2 shrink-0 flex items-center gap-1">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    type="button"
-                    onClick={() => onManagementNav(SETTINGS_ITEM.value)}
-                    className={`flex min-w-0 flex-1 items-center gap-2.5 rounded-md px-2 py-1.5 text-[13px] transition-all duration-150 ${
-                      activeManagementTab === "settings"
-                        ? "bg-accent text-accent-foreground"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                    }`}
-                    aria-label="Settings"
-                    aria-current={activeManagementTab === "settings" ? "page" : undefined}
-                  >
-                    <Settings className="h-3.5 w-3.5 shrink-0" />
-                    <span>Settings</span>
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right" className="text-xs">
-                  Settings
-                </TooltipContent>
-              </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={() => onManagementNav("settings")}
+                  className={`flex min-w-0 flex-1 items-center gap-2.5 rounded-md px-2 py-1.5 text-[13px] transition-all duration-150 ${
+                    activeManagementTab === "settings"
+                      ? "bg-accent text-accent-foreground"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  }`}
+                  aria-label="Settings"
+                  aria-current={activeManagementTab === "settings" ? "page" : undefined}
+                >
+                  <Settings className="h-3.5 w-3.5 shrink-0" />
+                  <span>Settings</span>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="text-xs">
+                Settings
+              </TooltipContent>
+            </Tooltip>
             <ThemeToggle />
           </div>
         </>
