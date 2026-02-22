@@ -1,18 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import type { ContextTab } from "@/features/context/components/ContextPanel";
 import type { ManagementTab } from "@/layout/AppSidebar";
 import { useBreakpoint, isDesktopOrAbove, isWide, isTabletOrBelow } from "@/hooks/useBreakpoint";
 import { useSwipeDrawer } from "@/hooks/useSwipeDrawer";
 import { useAutoHideHeader } from "@/hooks/useAutoHideHeader";
-import type { AgentFileName } from "@/lib/agents/agentFiles";
+import { useContextPanelState } from "@/hooks/useContextPanelState";
+import { useBrainPanelState } from "@/hooks/useBrainPanelState";
+import { useSessionSidebarState } from "@/hooks/useSessionSidebarState";
 
-/** Mobile pane shown on small viewports */
-export type MobilePane = "chat" | "context";
-
-/** Extended tab type for expanded modal — includes management tabs not shown in the context panel */
-export type ExpandableTab = ContextTab | "sessions" | "usage" | "channels" | "cron" | "settings";
+// Re-export types from sub-hooks for backward compatibility
+export type { MobilePane, ExpandableTab } from "@/hooks/useContextPanelState";
 
 export function useAppLayout() {
   // ── Responsive breakpoint ──────────────────────────────────────
@@ -20,32 +18,15 @@ export function useAppLayout() {
   const showSidebarInline = isDesktopOrAbove(breakpoint); // ≥1024px
   const isMobileLayout = isTabletOrBelow(breakpoint); // <1024px
 
+  // ── Sub-hook state ─────────────────────────────────────────────
+  const contextPanel = useContextPanelState();
+  const brainPanel = useBrainPanelState();
+  const sessionSidebar = useSessionSidebarState();
+
   // ── Mobile pane ────────────────────────────────────────────────
-  const [mobilePane, setMobilePane] = useState<MobilePane>("chat");
+  const [mobilePane, setMobilePane] = useState<"chat" | "context">("chat");
 
-  // ── Session sidebar (desktop) ──────────────────────────────────
-  const [sessionSidebarCollapsed, setSessionSidebarCollapsed] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return localStorage.getItem("studio:session-sidebar-collapsed") === "true";
-  });
-
-  // ── Mobile session drawer ──────────────────────────────────────
-  const [mobileSessionDrawerOpen, setMobileSessionDrawerOpen] = useState(false);
-
-  // ── Context panel ──────────────────────────────────────────────
-  const [contextPanelOpen, setContextPanelOpen] = useState(() => {
-    if (typeof window === "undefined") return true;
-    return localStorage.getItem("studio:context-panel-open") !== "false";
-  });
-  const [contextMode, setContextMode] = useState<"agent" | "files">("agent");
-  const [contextTab, setContextTab] = useState<ContextTab>("projects");
-  const [expandedTab, setExpandedTab] = useState<ExpandableTab | null>(null);
-
-  const showContextInline = isWide(breakpoint) && contextPanelOpen; // ≥1440px + user hasn't closed it
-
-  // ── Lifted brain panel state ───────────────────────────────────
-  const [brainFileTab, setBrainFileTab] = useState<AgentFileName>("AGENTS.md");
-  const [brainPreviewMode, setBrainPreviewMode] = useState(true);
+  const showContextInline = isWide(breakpoint) && contextPanel.contextPanelOpen;
 
   // ── Management view (inline center area) ───────────────────────
   const [managementView, setManagementView] = useState<ManagementTab | null>(null);
@@ -57,19 +38,18 @@ export function useAppLayout() {
 
   // ── Expand toggle ─────────────────────────────────────────────
   const handleExpandToggle = useCallback(() => {
-    setExpandedTab((prev) => {
+    contextPanel.setExpandedTab((prev) => {
       if (prev) return null;
       setMobilePane("chat");
-      return contextTab;
+      return contextPanel.contextTab;
     });
-  }, [contextTab]);
+  }, [contextPanel]);
 
-  const clearExpandedTab = useCallback(() => setExpandedTab(null), []);
   const switchToChat = useCallback(() => setMobilePane("chat"), []);
 
   // ── Files toggle ──────────────────────────────────────────────
   const handleFilesToggle = useCallback(() => {
-    setContextMode((prev) => {
+    contextPanel.setContextMode((prev) => {
       if (prev === "files") {
         setMobilePane("chat");
         return "agent";
@@ -77,20 +57,11 @@ export function useAppLayout() {
       setMobilePane("context");
       return "files";
     });
-  }, []);
+  }, [contextPanel]);
 
   const handleBackToChat = useCallback(() => {
     setManagementView(null);
   }, []);
-
-  // ── Persistence effects ────────────────────────────────────────
-  useEffect(() => {
-    localStorage.setItem("studio:session-sidebar-collapsed", String(sessionSidebarCollapsed));
-  }, [sessionSidebarCollapsed]);
-
-  useEffect(() => {
-    localStorage.setItem("studio:context-panel-open", String(contextPanelOpen));
-  }, [contextPanelOpen]);
 
   // ── Keyboard shortcuts + Escape (single listener) ───────────────
   useEffect(() => {
@@ -99,9 +70,9 @@ export function useAppLayout() {
 
       // ── Escape: close drawers ──
       if (e.key === "Escape") {
-        if (mobileSessionDrawerOpen) {
+        if (sessionSidebar.mobileSessionDrawerOpen) {
           e.preventDefault();
-          setMobileSessionDrawerOpen(false);
+          sessionSidebar.setMobileSessionDrawerOpen(false);
           return;
         }
         if (mobilePane !== "chat") {
@@ -114,39 +85,39 @@ export function useAppLayout() {
       // ── Mod shortcuts ──
       if (mod && e.shiftKey && e.key === "E") {
         e.preventDefault();
-        setExpandedTab((prev) => (prev ? null : contextTab));
+        contextPanel.setExpandedTab((prev) => (prev ? null : contextPanel.contextTab));
         return;
       }
       if (mod && e.key === "\\") {
         e.preventDefault();
-        setContextPanelOpen((prev) => !prev);
+        contextPanel.setContextPanelOpen((prev) => !prev);
         return;
       }
 
       // Tab shortcuts: Cmd+Shift+{P,T,B,A}
-      const tabShortcuts: Record<string, ContextTab> = {
+      const tabShortcuts: Record<string, typeof contextPanel.contextTab> = {
         p: "projects", t: "tasks", b: "brain", a: "activity",
       };
       if (mod && e.shiftKey) {
         const tab = tabShortcuts[e.key.toLowerCase()];
         if (tab) {
           e.preventDefault();
-          setContextTab(tab);
-          setContextPanelOpen(true);
+          contextPanel.setContextTab(tab);
+          contextPanel.setContextPanelOpen(true);
           if (mobilePane !== "context") setMobilePane("context");
         }
       }
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [contextTab, mobilePane, mobileSessionDrawerOpen]);
+  }, [contextPanel, sessionSidebar, mobilePane]);
 
   // ── Swipe gestures (mobile) ────────────────────────────────────
   const swipeHandlers = useSwipeDrawer({
     onSwipeRight: isMobileLayout
       ? () => {
-          if (mobilePane === "chat" && !mobileSessionDrawerOpen) {
-            setMobileSessionDrawerOpen(true);
+          if (mobilePane === "chat" && !sessionSidebar.mobileSessionDrawerOpen) {
+            sessionSidebar.setMobileSessionDrawerOpen(true);
           }
           if (mobilePane === "context") {
             setMobilePane("chat");
@@ -155,11 +126,11 @@ export function useAppLayout() {
       : undefined,
     onSwipeLeft: isMobileLayout
       ? () => {
-          if (mobilePane === "chat" && !mobileSessionDrawerOpen) {
+          if (mobilePane === "chat" && !sessionSidebar.mobileSessionDrawerOpen) {
             setMobilePane("context");
           }
-          if (mobileSessionDrawerOpen) {
-            setMobileSessionDrawerOpen(false);
+          if (sessionSidebar.mobileSessionDrawerOpen) {
+            sessionSidebar.setMobileSessionDrawerOpen(false);
           }
         }
       : undefined,
@@ -183,29 +154,27 @@ export function useAppLayout() {
     mobilePane,
     setMobilePane,
 
-    // Session sidebar
-    sessionSidebarCollapsed,
-    setSessionSidebarCollapsed,
+    // Session sidebar (delegated)
+    sessionSidebarCollapsed: sessionSidebar.sessionSidebarCollapsed,
+    setSessionSidebarCollapsed: sessionSidebar.setSessionSidebarCollapsed,
+    mobileSessionDrawerOpen: sessionSidebar.mobileSessionDrawerOpen,
+    setMobileSessionDrawerOpen: sessionSidebar.setMobileSessionDrawerOpen,
 
-    // Mobile session drawer
-    mobileSessionDrawerOpen,
-    setMobileSessionDrawerOpen,
+    // Context panel (delegated)
+    contextPanelOpen: contextPanel.contextPanelOpen,
+    setContextPanelOpen: contextPanel.setContextPanelOpen,
+    contextMode: contextPanel.contextMode,
+    setContextMode: contextPanel.setContextMode,
+    contextTab: contextPanel.contextTab,
+    setContextTab: contextPanel.setContextTab,
+    expandedTab: contextPanel.expandedTab,
+    setExpandedTab: contextPanel.setExpandedTab,
 
-    // Context panel
-    contextPanelOpen,
-    setContextPanelOpen,
-    contextMode,
-    setContextMode,
-    contextTab,
-    setContextTab,
-    expandedTab,
-    setExpandedTab,
-
-    // Brain panel state
-    brainFileTab,
-    setBrainFileTab,
-    brainPreviewMode,
-    setBrainPreviewMode,
+    // Brain panel state (delegated)
+    brainFileTab: brainPanel.brainFileTab,
+    setBrainFileTab: brainPanel.setBrainFileTab,
+    brainPreviewMode: brainPanel.brainPreviewMode,
+    setBrainPreviewMode: brainPanel.setBrainPreviewMode,
 
     // Management view
     managementView,
@@ -218,7 +187,7 @@ export function useAppLayout() {
 
     // Actions
     handleExpandToggle,
-    clearExpandedTab,
+    clearExpandedTab: contextPanel.clearExpandedTab,
     switchToChat,
     handleFilesToggle,
     handleBackToChat,
