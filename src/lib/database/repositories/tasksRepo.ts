@@ -98,25 +98,27 @@ export function upsert(db: StudioDb, task: StudioTask): void {
     .run();
 }
 
-/** Update specific fields on a task. Returns true if found. */
+/**
+ * Update specific fields on a task. Returns true if found.
+ *
+ * NOTE: `schedule`, `enabled`, `lastRunAt`, `lastRunStatus`, and `runCount`
+ * are NOT persisted here — gateway cron is the single source of truth for
+ * these fields. They are enriched from cron at read time via
+ * `enrichTasksWithCronData()`. Only UI-specific metadata is stored in the DB.
+ */
 export function update(
   db: StudioDb,
   id: string,
-  patch: Partial<Pick<StudioTask, "name" | "description" | "schedule" | "prompt" | "model" | "enabled" | "deliveryChannel" | "deliveryTarget" | "lastRunAt" | "lastRunStatus" | "runCount">>,
+  patch: Partial<Pick<StudioTask, "name" | "description" | "prompt" | "model" | "deliveryChannel" | "deliveryTarget">>,
 ): boolean {
   const set: Record<string, unknown> = { updatedAt: new Date().toISOString() };
 
   if (patch.name !== undefined) set.name = patch.name;
   if (patch.description !== undefined) set.description = patch.description;
-  if (patch.schedule !== undefined) set.scheduleJson = JSON.stringify(patch.schedule);
   if (patch.prompt !== undefined) set.prompt = patch.prompt;
   if (patch.model !== undefined) set.model = patch.model;
-  if (patch.enabled !== undefined) set.enabled = patch.enabled;
   if (patch.deliveryChannel !== undefined) set.deliveryChannel = patch.deliveryChannel;
   if (patch.deliveryTarget !== undefined) set.deliveryTarget = patch.deliveryTarget;
-  if (patch.lastRunAt !== undefined) set.lastRunAt = patch.lastRunAt;
-  if (patch.lastRunStatus !== undefined) set.lastRunStatus = patch.lastRunStatus;
-  if (patch.runCount !== undefined) set.runCount = patch.runCount;
 
   const result = db
     .update(tasks)

@@ -147,9 +147,8 @@ export const useAgentTasks = (
         const task = previousTasks.find((t) => t.id === taskId);
         if (!task) throw new Error("Task not found.");
 
+        // Only update cron — enabled state is cron-owned, enriched at read time
         await updateCronJob(client, task.cronJobId, { enabled });
-        const updated = await patchTaskMetadata(agentId, taskId, { enabled });
-        setTasks((prev) => prev.map((t) => (t.id === taskId ? updated : t)));
         toast.success(enabled ? `Task "${task.name}" resumed` : `Task "${task.name}" paused`);
       } catch (err) {
         // Rollback on failure
@@ -199,15 +198,14 @@ export const useAgentTasks = (
         const task = tasksRef.current.find((t) => t.id === taskId);
         if (!task) throw new Error("Task not found.");
 
-        // 1. Update the gateway cron job schedule
+        // Update gateway cron only — schedule is cron-owned, enriched at read time
         const cronSchedule = taskScheduleToCronSchedule(newSchedule);
         await updateCronJob(client, task.cronJobId, { schedule: cronSchedule });
 
-        // 2. Update Studio metadata
-        const updated = await patchTaskMetadata(agentId, taskId, { schedule: newSchedule });
-
-        // 3. Optimistically update local state
-        setTasks((prev) => prev.map((t) => (t.id === taskId ? updated : t)));
+        // Optimistically update local state (will be confirmed on next enrichment)
+        setTasks((prev) => prev.map((t) =>
+          t.id === taskId ? { ...t, schedule: newSchedule } : t
+        ));
         toast.success(`Schedule updated for "${task.name}"`);
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to update schedule.";
@@ -231,12 +229,9 @@ export const useAgentTasks = (
         const task = tasksRef.current.find((t) => t.id === taskId);
         if (!task) throw new Error("Task not found.");
 
-        // Build a single cron patch with all changed fields
+        // Build a single cron patch for cron-relevant fields (name, prompt, model)
+        // Schedule changes go through updateTaskSchedule(); enabled through toggleTask()
         const cronPatch: Record<string, unknown> = {};
-
-        if (updates.schedule) {
-          cronPatch.schedule = taskScheduleToCronSchedule(updates.schedule);
-        }
 
         if (updates.prompt !== undefined || updates.model !== undefined) {
           const newPrompt = updates.prompt ?? task.prompt;

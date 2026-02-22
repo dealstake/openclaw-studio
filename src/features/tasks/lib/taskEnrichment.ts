@@ -21,6 +21,17 @@ export function buildDelivery(payload: CreateTaskPayload) {
   return { mode: "announce" as const };
 }
 
+/**
+ * Enrich Studio tasks with authoritative data from gateway cron.
+ *
+ * Gateway cron is the single source of truth for:
+ * - schedule (interval, stagger, cron expression)
+ * - enabled state
+ * - runtime state (lastRunAt, lastRunStatus, runCount, nextRunAtMs, etc.)
+ *
+ * Studio DB only stores UI metadata: name, description, prompt, model,
+ * delivery preferences, and type classification.
+ */
 export function enrichTasksWithCronData(
   tasks: StudioTask[],
   cronJobs: CronJobSummary[],

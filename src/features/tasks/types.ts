@@ -87,13 +87,19 @@ export interface CreateTaskPayload {
   deliveryTarget?: string | null;
 }
 
+/**
+ * Payload for updating a task's UI metadata in the Studio DB.
+ *
+ * NOTE: `schedule` and `enabled` are NOT included — they are cron-owned fields.
+ * Schedule changes go directly to gateway cron via `updateCronJob()`.
+ * Enable/disable goes to cron via `updateCronJob()`.
+ * The enrichment layer reads them back from cron at load time.
+ */
 export interface UpdateTaskPayload {
   name?: string;
   description?: string;
-  schedule?: TaskSchedule;
   prompt?: string;
   model?: string;
-  enabled?: boolean;
   deliveryChannel?: string | null;
   deliveryTarget?: string | null;
 }

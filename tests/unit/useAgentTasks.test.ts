@@ -240,8 +240,6 @@ describe("useAgentTasks", () => {
 
   it("toggleTask optimistically updates and confirms on success", async () => {
     const task = makeTask({ enabled: true });
-    const updatedTask = { ...task, enabled: false, updatedAt: "2026-02-20T00:00:00Z" };
-    mockPatchTaskMetadata.mockResolvedValueOnce(updatedTask);
 
     const { result, client } = await renderWithTasks(fetchSpy, [task]);
 
@@ -251,8 +249,9 @@ describe("useAgentTasks", () => {
       await result.current.toggleTask("task-1", false);
     });
 
+    // Only cron is updated — enabled is cron-owned, not persisted to Studio DB
     expect(mockUpdateCronJob).toHaveBeenCalledWith(client, "cron-1", { enabled: false });
-    expect(mockPatchTaskMetadata).toHaveBeenCalledWith("agent-1", "task-1", { enabled: false });
+    expect(mockPatchTaskMetadata).not.toHaveBeenCalled();
     expect(result.current.tasks[0].enabled).toBe(false);
     expect(result.current.busyTaskId).toBeNull();
   });
@@ -372,6 +371,8 @@ describe("useAgentTasks", () => {
     });
 
     expect(mockUpdateCronJob).toHaveBeenCalledWith(client, "cron-1", { name: "[TASK] New Name" });
+    // patchTaskMetadata updates UI metadata only (name, not schedule/enabled)
+    expect(mockPatchTaskMetadata).toHaveBeenCalledWith("agent-1", "task-1", { name: "New Name" });
     expect(result.current.tasks[0].name).toBe("New Name");
   });
 
@@ -393,16 +394,16 @@ describe("useAgentTasks", () => {
         model: "new-model",
       }),
     }));
+    // patchTaskMetadata updates UI metadata only
+    expect(mockPatchTaskMetadata).toHaveBeenCalledWith("agent-1", "task-1", { prompt: "New prompt", model: "new-model" });
     expect(result.current.tasks[0].prompt).toBe("New prompt");
   });
 
   // ─── updateTaskSchedule ──────────────────────────────────────────────────
 
-  it("updateTaskSchedule changes schedule on both cron and metadata", async () => {
+  it("updateTaskSchedule changes schedule on cron only (cron-owned)", async () => {
     const task = makeTask();
     const newSchedule = { type: "periodic" as const, intervalMs: 1_800_000 };
-    const updated = { ...task, schedule: newSchedule, updatedAt: "2026-02-20T00:00:00Z" };
-    mockPatchTaskMetadata.mockResolvedValueOnce(updated);
 
     const { result, client } = await renderWithTasks(fetchSpy, [task]);
 
@@ -421,8 +422,6 @@ describe("useAgentTasks", () => {
 
   it("busyAction is null after toggle completes", async () => {
     const task = makeTask();
-    const updated = { ...task, enabled: false };
-    mockPatchTaskMetadata.mockResolvedValueOnce(updated);
 
     const { result } = await renderWithTasks(fetchSpy, [task]);
 

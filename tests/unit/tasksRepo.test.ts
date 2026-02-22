@@ -78,20 +78,21 @@ describe("tasksRepo", () => {
 
     it("updates specified fields only", () => {
       repo.upsert(db, sampleTask);
-      const found = repo.update(db, "task-001", { name: "Updated", enabled: false });
+      const found = repo.update(db, "task-001", { name: "Updated", description: "New desc" });
       expect(found).toBe(true);
 
       const task = repo.getById(db, "task-001");
       expect(task!.name).toBe("Updated");
-      expect(task!.enabled).toBe(false);
-      expect(task!.description).toBe("A test task"); // unchanged
+      expect(task!.description).toBe("New desc");
+      expect(task!.prompt).toBe("Do the thing"); // unchanged
     });
 
-    it("updates schedule as JSON", () => {
+    it("updates prompt and model (UI metadata only)", () => {
       repo.upsert(db, sampleTask);
-      repo.update(db, "task-001", { schedule: { type: "periodic", intervalMs: 600_000 } });
+      repo.update(db, "task-001", { prompt: "New prompt", model: "new-model" });
       const task = repo.getById(db, "task-001");
-      expect(task!.schedule).toEqual({ type: "periodic", intervalMs: 600_000 });
+      expect(task!.prompt).toBe("New prompt");
+      expect(task!.model).toBe("new-model");
     });
   });
 
