@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { SectionLabel } from "@/components/SectionLabel";
 import { textareaClass } from "@/features/tasks/lib/styles";
@@ -22,6 +22,15 @@ export const TaskPromptSection = memo(function TaskPromptSection({
   onEditPromptChange,
 }: TaskPromptSectionProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
+
+  /** Truncate prompt text when collapsed to avoid putting multi-KB strings in the DOM. */
+  const COLLAPSED_MAX_CHARS = 200;
+  const displayPrompt = useMemo(
+    () => (!expanded && prompt.length > COLLAPSED_MAX_CHARS
+      ? `${prompt.slice(0, COLLAPSED_MAX_CHARS)}…`
+      : prompt),
+    [expanded, prompt],
+  );
 
   return (
     <div className="border-b border-border/40 px-4 py-3">
@@ -53,7 +62,7 @@ export const TaskPromptSection = memo(function TaskPromptSection({
             expanded ? "max-h-40" : "max-h-[2.5rem] line-clamp-2"
           }`}
         >
-          {prompt}
+          {displayPrompt}
         </pre>
       )}
     </div>

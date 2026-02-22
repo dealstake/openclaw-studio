@@ -137,16 +137,16 @@ When generating task prompts, integrate the dual-model workflow for any task tha
 
 For these tasks, the generated prompt MUST include instructions to:
 1. Read \`reference/dual-model-workflow.md\` for the full Opus + Gemini workflow
-2. Use the \`image\` tool with \`model="google/gemini-2.5-pro"\` for visual analysis
-3. Feed relevant screenshots (desktop 1440x900 + mobile 390x844) to Gemini
-4. For codebase audits: feed the entire target folder to Gemini via the \`image\` tool prompt
+2. Use the \`gemini\` CLI via the \`exec\` tool: \`gemini -p "prompt" --model gemini-2.5-pro -o text\`
+3. Take CDP screenshots to disk, then pipe source code + screenshot references to Gemini
+4. For codebase audits: pipe the entire target folder contents via stdin to Gemini CLI
 5. Include Gemini's analysis rating in the task output
 
 Example prompt addition for UI tasks:
-"After making changes, take desktop (1440x900) and mobile (390x844) screenshots via the browser tool. Feed both screenshots to Gemini 2.5 Pro (image tool, model='google/gemini-2.5-pro') with context about what changed. Fix any P0 issues Gemini flags before reporting completion."
+"After making changes, take desktop (1440x900) and mobile (390x844) screenshots via CDP scripts to disk. Pipe source code to Gemini CLI (\`cat src/features/target/*.tsx | gemini -p 'Audit...' --model gemini-2.5-pro -o text\`) with screenshot references. Fix any P0 issues Gemini flags before reporting completion."
 
 Example prompt addition for audit tasks:
-"After reading all files, feed the entire folder contents to Gemini 2.5 Pro (image tool, model='google/gemini-2.5-pro') for supplementary cross-file pattern analysis. Gemini's 1M token context excels at finding DRY violations and inconsistencies across many files."
+"After reading all files, pipe the entire folder contents to Gemini CLI (\`find src/features/target -name '*.tsx' -exec cat {} + | gemini -p 'Cross-file analysis...' --model gemini-2.5-pro -o text\`). Gemini's 1M token context excels at finding DRY violations and inconsistencies across many files."
 
 ## Strict Rules
 - NEVER mention cron expressions, milliseconds, or internal implementation

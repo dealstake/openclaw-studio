@@ -41,6 +41,7 @@ export type CronJobState = {
   lastError?: string;
   lastDurationMs?: number;
   runCount?: number;
+  consecutiveErrors?: number;
 };
 
 export type CronJobSummary = {

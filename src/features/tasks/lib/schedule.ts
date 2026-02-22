@@ -28,32 +28,36 @@ export function taskScheduleToCronSchedule(schedule: TaskSchedule): CronSchedule
   }
 }
 
+/** Default timezone for periodic cron schedules. */
+const DEFAULT_TIMEZONE = "America/New_York";
+
 /**
  * Convert a periodic interval (ms) to a clock-aligned cron expression.
  * Falls back to `kind: "every"` for intervals that don't map cleanly to cron.
  */
-function intervalMsToCronSchedule(ms: number): CronSchedule {
+function intervalMsToCronSchedule(ms: number, tz?: string): CronSchedule {
   const mins = ms / 60_000;
   const hrs = ms / 3_600_000;
+  const timezone = tz ?? DEFAULT_TIMEZONE;
 
   // Daily: 0 0 * * * (must check before multi-hour to avoid "0 */24")
   if (ms === 86_400_000) {
-    return { kind: "cron", expr: "0 0 * * *", tz: "America/New_York" };
+    return { kind: "cron", expr: "0 0 * * *", tz: timezone };
   }
 
   // Sub-hourly: */N * * * *
   if (ms < 3_600_000 && mins > 0 && Number.isInteger(mins) && 60 % mins === 0) {
-    return { kind: "cron", expr: `*/${mins} * * * *`, tz: "America/New_York" };
+    return { kind: "cron", expr: `*/${mins} * * * *`, tz: timezone };
   }
 
   // Exactly 1 hour: 0 * * * *
   if (ms === 3_600_000) {
-    return { kind: "cron", expr: "0 * * * *", tz: "America/New_York" };
+    return { kind: "cron", expr: "0 * * * *", tz: timezone };
   }
 
   // Multi-hour: 0 */N * * *
   if (ms > 3_600_000 && hrs > 0 && Number.isInteger(hrs) && 24 % hrs === 0) {
-    return { kind: "cron", expr: `0 */${hrs} * * *`, tz: "America/New_York" };
+    return { kind: "cron", expr: `0 */${hrs} * * *`, tz: timezone };
   }
 
   // Can't express cleanly — fall back to every

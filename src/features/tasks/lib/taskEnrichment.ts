@@ -50,9 +50,7 @@ export function enrichTasksWithCronData(
       nextRunAtMs: cron.state.nextRunAtMs,
       runningAtMs: cron.state.runningAtMs,
       lastDurationMs: cron.state.lastDurationMs,
-      consecutiveErrors: (cron.state as Record<string, unknown>).consecutiveErrors != null
-        ? Number((cron.state as Record<string, unknown>).consecutiveErrors)
-        : cron.state.lastStatus === "error" ? 1 : 0,
+      consecutiveErrors: cron.state.consecutiveErrors ?? (cron.state.lastStatus === "error" ? 1 : 0),
     };
   });
 
