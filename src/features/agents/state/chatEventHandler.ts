@@ -101,13 +101,17 @@ export function handleRuntimeChatEvent(
   if (!agentId) return;
   const agent = agentsSnapshot.find((entry) => entry.agentId === agentId);
 
-  // Route heartbeat messages to activity store only — no main chat pollution
+  // Route heartbeat messages to activity store only — no main chat pollution.
+  // Track heartbeat mode so tool call events (which lack isHeartbeat flag)
+  // are also suppressed during the heartbeat turn.
   if (payload.isHeartbeat) {
     if (payload.state === "delta") {
+      state.heartbeatActiveAgents.add(agentId);
       state.markActivityThrottled(agentId);
       return;
     }
     if (payload.state === "final") {
+      state.heartbeatActiveAgents.delete(agentId);
       const text = extractText(payload.message) ?? "";
       const isOk = /HEARTBEAT_OK/i.test(text);
       state.clearRunTracking(payload.runId ?? null);
@@ -127,6 +131,13 @@ export function handleRuntimeChatEvent(
       }
       return;
     }
+  }
+
+  // Suppress ALL events (tool calls, etc.) while an agent is in heartbeat mode.
+  // Tool call events during heartbeats don't carry isHeartbeat, so we rely on
+  // the tracked mode set above when an isHeartbeat delta was received.
+  if (state.heartbeatActiveAgents.has(agentId)) {
+    return;
   }
 
   const role = resolveRole(payload.message);

@@ -14,6 +14,11 @@ export class RuntimeTrackingState {
   readonly lastActivityMarkByAgent = new Map<string, number>();
   /** Key: "{agentId}:{runId}:{partType}" or "{agentId}:{runId}:tool:{toolCallId}" */
   readonly partIndexByKey = new Map<string, number>();
+  /**
+   * Agents currently in a heartbeat turn. Tool call events during heartbeats
+   * don't carry isHeartbeat, so we track the mode here to suppress them.
+   */
+  readonly heartbeatActiveAgents = new Set<string>();
 
   private readonly _now: () => number;
   private readonly _deps: GatewayRuntimeEventHandlerDeps;
@@ -81,5 +86,6 @@ export class RuntimeTrackingState {
     this.thinkingDebugBySession.clear();
     this.lastActivityMarkByAgent.clear();
     this.partIndexByKey.clear();
+    this.heartbeatActiveAgents.clear();
   }
 }
