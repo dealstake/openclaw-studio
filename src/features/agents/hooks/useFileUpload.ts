@@ -61,15 +61,14 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
  * Maximum image dimension (longest side) for client-side resizing.
  *
  * Images larger than this are scaled down before base64 encoding, so the
- * gateway stores an already-conformant image and avoids re-resizing it on
- * every model turn. Matches the gateway default for `imageMaxDimensionPx`.
+ * gateway stores an already-conformant image and never re-resizes it on
+ * subsequent model turns.
  *
- * The gateway may apply a stricter limit (e.g. 768 px) — in that case the
- * resize is from 1200 → 768 instead of from 2556 → 768, which is
- * dramatically cheaper (one small step vs. a massive sharp resize + JPEG
- * quality sweep).
+ * MUST match (or be ≤) the gateway's `imageMaxDimensionPx` config (768).
+ * When client sends 1200px and gateway config is 768px, the server still
+ * re-resizes on every turn — observed: 350 redundant resize ops/day.
  */
-const IMAGE_MAX_DIMENSION_PX = 1200;
+const IMAGE_MAX_DIMENSION_PX = 768;
 
 /** JPEG quality for client-side resize output (0-1). */
 const IMAGE_RESIZE_QUALITY = 0.85;
