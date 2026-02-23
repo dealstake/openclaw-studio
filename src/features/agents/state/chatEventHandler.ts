@@ -181,12 +181,28 @@ export function handleRuntimeChatEvent(
     if (Object.keys(patch).length > 0) {
       deps.queueLivePatch(agentId, patch);
     }
+    // Update messageParts for live streaming display (mirrors agentEventHandler)
+    if (typeof nextText === "string" && payload.runId) {
+      const textKey = state.getPartKey(agentId, payload.runId, "text");
+      state.appendOrUpdatePart(agentId, textKey, {
+        type: "text",
+        text: nextText,
+        streaming: true,
+      });
+    }
+    if (nextThinking && payload.runId) {
+      const reasoningKey = state.getPartKey(agentId, payload.runId, "reasoning");
+      state.appendOrUpdatePart(agentId, reasoningKey, {
+        type: "reasoning",
+        text: nextThinking,
+        streaming: true,
+        startedAt: state.partIndexByKey.has(reasoningKey) ? undefined : state.now(),
+      });
+    }
     return;
   }
 
   if (payload.state === "final") {
-    state.clearRunTracking(payload.runId ?? null);
-    deps.clearPendingLivePatch(agentId);
     if (!nextThinking && role === "assistant" && !state.thinkingDebugBySession.has(payload.sessionKey)) {
       state.thinkingDebugBySession.add(payload.sessionKey);
       state.logWarn("No thinking trace extracted from chat event.", {
@@ -203,7 +219,18 @@ export function handleRuntimeChatEvent(
     ) {
       void deps.loadAgentHistory(agentId);
     }
-    if (thinkingText) {
+    // Finalize streaming parts BEFORE clearing run tracking so
+    // appendOrUpdatePart can find existing keyed parts from deltas.
+    if (thinkingText && payload.runId) {
+      const reasoningKey = state.getPartKey(agentId, payload.runId, "reasoning");
+      state.appendOrUpdatePart(agentId, reasoningKey, {
+        type: "reasoning",
+        text: thinkingText,
+        streaming: false,
+        completedAt: state.now(),
+      });
+    } else if (thinkingText) {
+      // No runId — fall back to blind append (rare edge case)
       deps.dispatch({
         type: "appendPart",
         agentId,
@@ -211,17 +238,28 @@ export function handleRuntimeChatEvent(
       });
     }
     if (!isToolRole && typeof nextText === "string") {
-      deps.dispatch({
-        type: "appendPart",
-        agentId,
-        part: { type: "text", text: nextText, streaming: false },
-      });
+      if (payload.runId) {
+        const textKey = state.getPartKey(agentId, payload.runId, "text");
+        state.appendOrUpdatePart(agentId, textKey, {
+          type: "text",
+          text: nextText,
+          streaming: false,
+        });
+      } else {
+        deps.dispatch({
+          type: "appendPart",
+          agentId,
+          part: { type: "text", text: nextText, streaming: false },
+        });
+      }
       deps.dispatch({
         type: "updateAgent",
         agentId,
         patch: { lastResult: nextText },
       });
     }
+    state.clearRunTracking(payload.runId ?? null);
+    deps.clearPendingLivePatch(agentId);
     // Dispatch image parts from messages containing image content
     const images = extractImages(payload.message);
     for (const img of images) {

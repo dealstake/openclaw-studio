@@ -222,11 +222,12 @@ function renderGroupedParts(parts: MessagePart[], groupIndex: number) {
  */
 export const AgentChatView = memo(function AgentChatView({
   parts,
-  streaming: _streaming,
+  streaming,
   className = "",
 }: AgentChatViewProps) {
-  // streaming will be used in Phase 3 for live streaming indicators
-  void _streaming;
+  // Part-level streaming flags drive live rendering; top-level flag reserved
+  // for future global indicators (e.g. pulsing cursor at end of stream).
+  void streaming;
   const groups = useShallowArrayMemo(() => groupParts(parts), parts);
 
   if (parts.length === 0) {
