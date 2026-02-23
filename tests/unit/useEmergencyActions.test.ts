@@ -209,17 +209,13 @@ describe("useEmergencyActions", () => {
       });
 
       const killCalls = mockCall.mock.calls.filter(([method]) => method === "sessions.kill");
-      // zombie-1 (1hr old) and no-activity (no timestamp → treated as zombie) should be killed
-      // active-1 (5min old) should NOT be killed
-      expect(killCalls).toHaveLength(2);
-      const killedKeys = killCalls.map(([, args]) => (args as { sessionKey: string }).sessionKey);
-      expect(killedKeys).toContain("zombie-1");
-      expect(killedKeys).toContain("no-activity");
-      expect(killedKeys).not.toContain("active-1");
+      // zombie-1 (1hr old) killed; active-1 (5min) and no-activity (no timestamp) skipped
+      expect(killCalls).toHaveLength(1);
+      expect(killCalls[0]).toEqual(["sessions.kill", { sessionKey: "zombie-1" }]);
       expect(actionResult).toMatchObject({
         kind: "cleanup-zombies",
         status: "success",
-        affected: 2,
+        affected: 1,
       });
     });
 
