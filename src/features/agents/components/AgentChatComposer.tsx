@@ -322,26 +322,27 @@ export const AgentChatComposer = memo(function AgentChatComposer({
             <ThinkingToggle value={thinkingLevel} onChange={onThinkingChange} />
           )}
 
-          {/* Streaming status — phase + elapsed timer while running */}
-          <StreamingStatus
-            running={running}
-            messageParts={messageParts ?? []}
-            runStartedAt={runStartedAt}
-          />
-
-          {tokenPct !== null && (
-            <div className="ml-auto mr-1 hidden items-center gap-1.5 opacity-60 sm:flex">
-              <div className="h-1 w-12 overflow-hidden rounded-full bg-muted">
-                <div
-                  className={`h-full rounded-full transition-all ${tokenPct >= 80 ? "bg-yellow-500" : "bg-primary/60"}`}
-                  style={{ width: `${Math.min(tokenPct, 100)}%` }}
-                />
+          {/* Right-aligned group: streaming status + token gauge (stacked on sm+) */}
+          <div className="ml-auto mr-1 flex items-center gap-3">
+            <StreamingStatus
+              running={running}
+              messageParts={messageParts ?? []}
+              runStartedAt={runStartedAt}
+            />
+            {tokenPct !== null && (
+              <div className="hidden items-center gap-1.5 opacity-60 sm:flex">
+                <div className="h-1 w-12 overflow-hidden rounded-full bg-muted">
+                  <div
+                    className={`h-full rounded-full transition-all ${tokenPct >= 80 ? "bg-yellow-500" : "bg-primary/60"}`}
+                    style={{ width: `${Math.min(tokenPct, 100)}%` }}
+                  />
+                </div>
+                <span className="font-mono text-[10px] text-muted-foreground">{tokenPct}%</span>
               </div>
-              <span className="font-mono text-[10px] text-muted-foreground">{tokenPct}%</span>
-            </div>
-          )}
+            )}
+          </div>
 
-          <div className={`shrink-0 ${tokenPct === null ? "ml-auto" : ""}`}>
+          <div className="shrink-0">
             {running ? (
               <button
                 className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-destructive text-destructive-foreground shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"

@@ -1,31 +1,28 @@
 "use client";
 
 import { memo, useEffect, useRef, useState } from "react";
-import { Brain, Wrench, MessageSquare, Loader2 } from "lucide-react";
+import { Brain, Loader2, MessageSquare } from "lucide-react";
 import type { MessagePart } from "@/lib/chat/types";
 
-// ── Phase detection from live messageParts ─────────────────────────────
+// ── High-level agent phase (not per-tool) ──────────────────────────────
 
-type AgentPhase = "thinking" | "tool" | "streaming" | "waiting";
+type AgentPhase = "thinking" | "streaming" | "working";
 
 function detectPhase(parts: MessagePart[]): AgentPhase {
-  // Walk backwards — most recent part determines current phase
+  // Walk backwards — most recent streaming part determines phase
   for (let i = parts.length - 1; i >= 0; i--) {
     const part = parts[i];
     if (part.type === "text" && part.streaming) return "streaming";
     if (part.type === "reasoning" && part.streaming) return "thinking";
-    if (part.type === "tool-invocation") {
-      if (part.phase === "pending" || part.phase === "running") return "tool";
-    }
   }
-  return "waiting";
+  // Default: agent is working (thinking, using tools, processing — all opaque)
+  return "working";
 }
 
 const PHASE_CONFIG: Record<AgentPhase, { icon: typeof Brain; label: string }> = {
   thinking: { icon: Brain, label: "Thinking" },
-  tool: { icon: Wrench, label: "Using tool" },
   streaming: { icon: MessageSquare, label: "Streaming" },
-  waiting: { icon: Loader2, label: "Working" },
+  working: { icon: Loader2, label: "Working" },
 };
 
 // ── Elapsed timer (direct DOM mutation, no re-renders per tick) ────────
@@ -71,8 +68,9 @@ export type StreamingStatusProps = {
 };
 
 /**
- * Compact inline status shown in the composer toolbar while the agent is running.
- * Displays: spinner icon • phase label • elapsed time
+ * Compact agent status indicator — shows phase + elapsed timer.
+ * Grouped with the token gauge in the composer toolbar.
+ * Phases: Working (default) → Thinking (reasoning) → Streaming (text output)
  */
 export const StreamingStatus = memo(function StreamingStatus({
   running,
@@ -87,11 +85,11 @@ export const StreamingStatus = memo(function StreamingStatus({
 
   const phase = detectPhase(messageParts);
   const { icon: Icon, label } = PHASE_CONFIG[phase];
-  const isSpinner = phase === "waiting";
+  const isSpinner = phase === "working";
 
   return (
     <div
-      className="flex items-center gap-1.5 text-[11px] text-muted-foreground animate-in fade-in slide-in-from-left-2 duration-200"
+      className="flex items-center gap-1.5 text-[11px] text-muted-foreground/90 animate-in fade-in slide-in-from-right-2 duration-200"
       role="status"
       aria-live="polite"
       aria-label={`Agent is ${label.toLowerCase()}`}
@@ -106,7 +104,7 @@ export const StreamingStatus = memo(function StreamingStatus({
         }
       />
       <span className="hidden sm:inline">{label}</span>
-      <span className="text-muted-foreground/50">•</span>
+      <span className="text-muted-foreground/40">·</span>
       <span className="font-mono text-[10px] text-muted-foreground/70">
         <ElapsedBadge startMs={effectiveStart} />
       </span>
