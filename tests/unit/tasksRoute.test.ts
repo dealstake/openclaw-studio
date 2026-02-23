@@ -91,6 +91,17 @@ describe("GET /api/tasks", () => {
     expect(data.tasks[0].id).toBe("task-1");
   });
 
+  it("auto-imports from tasks.json when DB empty", async () => {
+    mockedListByAgent
+      .mockReturnValueOnce([]) // first call: empty
+      .mockReturnValueOnce([sampleTask as never]); // after import
+    mockedReadTasks.mockReturnValue([sampleTask as never]);
+
+    const res = await GET(makeGetRequest({ agentId: "agent-1" }));
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.tasks).toHaveLength(1);
+  });
 });
 
 describe("POST /api/tasks", () => {
