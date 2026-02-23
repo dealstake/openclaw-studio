@@ -1,16 +1,18 @@
 "use client";
 
 import React from "react";
-import { Brain, Wrench, MessageSquare, Loader2 } from "lucide-react";
+import { Brain, Wrench, MessageSquare, Loader2, AlertTriangle } from "lucide-react";
 import { SectionLabel } from "@/components/SectionLabel";
 
 export type ChatStatusBarProps = {
-  /** Agent state: "idle" | "thinking" | "tool" | "streaming" or custom string */
+  /** Agent state: "idle" | "thinking" | "tool" | "streaming" | "error" or custom string */
   state: string;
   /** Model name to display (e.g. "claude-opus-4-6") */
   model?: string;
   /** Timestamp (ms) when the current run started — drives elapsed timer */
   runStartedAt?: number;
+  /** Error or abort message (shown when state is "error") */
+  errorMessage?: string;
   className?: string;
 };
 
@@ -20,6 +22,7 @@ const STATE_CONFIG: Record<string, { icon: React.ElementType; label: string }> =
   thinking: { icon: Brain, label: "Thinking…" },
   tool: { icon: Wrench, label: "Using tool…" },
   streaming: { icon: MessageSquare, label: "Streaming…" },
+  error: { icon: AlertTriangle, label: "Error" },
 };
 
 /**
@@ -32,32 +35,44 @@ export const ChatStatusBar = React.memo(function ChatStatusBar({
   state,
   model,
   runStartedAt,
+  errorMessage,
   className = "",
 }: ChatStatusBarProps) {
   const { icon: Icon, label } =
     STATE_CONFIG[state] ?? { icon: Loader2, label: state };
 
-  const isActive = state !== "idle";
+  const isActive = state !== "idle" && state !== "error";
+  const isError = state === "error";
 
   return (
     <div
-      className={`flex items-center gap-2 rounded-lg border border-border bg-card/80 px-3 py-1.5 ${className}`}
+      className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 ${
+        isError
+          ? "border-destructive/40 bg-destructive/5"
+          : "border-border bg-card/80"
+      } ${className}`}
     >
       {/* State icon */}
       <Icon
         size={14}
         strokeWidth={1.75}
         className={`shrink-0 ${
-          isActive
-            ? "text-brand-gold animate-pulse"
-            : "text-muted-foreground"
+          isError
+            ? "text-destructive"
+            : isActive
+              ? "text-brand-gold animate-pulse"
+              : "text-muted-foreground"
         }`}
       />
 
-      {/* State label */}
-      <SectionLabel as="span" className={isActive ? "text-foreground" : ""}>
-        {label}
-      </SectionLabel>
+      {/* State label or error message */}
+      {isError && errorMessage ? (
+        <span className="text-xs text-destructive/90">{errorMessage}</span>
+      ) : (
+        <SectionLabel as="span" className={isActive ? "text-foreground" : ""}>
+          {label}
+        </SectionLabel>
+      )}
 
       {/* Elapsed timer — only while active */}
       {isActive && runStartedAt ? (

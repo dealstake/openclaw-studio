@@ -13,6 +13,7 @@ import {
 } from "@/lib/text/message-extract";
 import { findAgentBySessionKey } from "./agentLookup";
 import type { RuntimeTrackingState } from "./runtimeTrackingState";
+import type { MessagePart } from "@/lib/chat/types";
 
 const resolveRole = (message: unknown) =>
   message && typeof message === "object"
@@ -258,10 +259,15 @@ export function handleRuntimeChatEvent(
   if (payload.state === "aborted") {
     state.clearRunTracking(payload.runId ?? null);
     deps.clearPendingLivePatch(agentId);
+    const reason = payload.errorMessage ?? "Run was aborted";
     deps.dispatch({
       type: "appendPart",
       agentId,
-      part: { type: "text", text: "Run aborted.", streaming: false },
+      part: {
+        type: "status",
+        state: "error",
+        errorMessage: `⚠️ ${reason}`,
+      } as MessagePart,
     });
     deps.dispatch({
       type: "updateAgent",
@@ -274,10 +280,15 @@ export function handleRuntimeChatEvent(
   if (payload.state === "error") {
     state.clearRunTracking(payload.runId ?? null);
     deps.clearPendingLivePatch(agentId);
+    const errorText = payload.errorMessage ?? "An error occurred";
     deps.dispatch({
       type: "appendPart",
       agentId,
-      part: { type: "text", text: payload.errorMessage ? `Error: ${payload.errorMessage}` : "Run error.", streaming: false },
+      part: {
+        type: "status",
+        state: "error",
+        errorMessage: `❌ ${errorText}`,
+      } as MessagePart,
     });
     deps.dispatch({
       type: "updateAgent",

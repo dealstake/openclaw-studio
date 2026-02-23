@@ -14,6 +14,7 @@ import { InlineChatImage } from "./ChatImageViewer";
 import { MessageBubble } from "@/components/chat/MessageBubble";
 import { ThinkingBlock } from "@/components/chat/ThinkingBlock";
 import { ToolCallBlock } from "@/components/chat/ToolCallBlock";
+import { ToolCallGroup } from "@/components/chat/ToolCallGroup";
 import { ChatStatusBar } from "@/components/chat/ChatStatusBar";
 import { MessageActions } from "./MessageActions";
 
@@ -154,11 +155,60 @@ function renderPart(part: MessagePart, index: number) {
         state={part.state}
         model={part.model}
         runStartedAt={part.runStartedAt}
+        errorMessage={part.errorMessage}
       />
     );
   }
 
   return null;
+}
+
+// ── Grouped rendering ──────────────────────────────────────────────────
+
+/**
+ * Renders assistant parts, batching consecutive tool invocation parts into
+ * a single ToolCallGroup. Text, reasoning, images, and status parts render
+ * individually; consecutive tool calls collapse into "N tools • Complete • 3.2s".
+ */
+function renderGroupedParts(parts: MessagePart[], groupIndex: number) {
+  const elements: React.ReactNode[] = [];
+  let toolBatch: { part: MessagePart; index: number }[] = [];
+
+  const flushToolBatch = () => {
+    if (toolBatch.length === 0) return;
+    const tools = toolBatch.map(({ part, index }) => {
+      const tp = part as Extract<MessagePart, { type: "tool-invocation" }>;
+      return {
+        key: `tool-${tp.toolCallId}-${index}`,
+        name: tp.name,
+        phase: tp.phase,
+        args: tp.args,
+        result: tp.result,
+        startedAt: tp.startedAt,
+        completedAt: tp.completedAt,
+      };
+    });
+    elements.push(
+      <ToolCallGroup
+        key={`toolgroup-${groupIndex}-${toolBatch[0].index}`}
+        tools={tools}
+      />
+    );
+    toolBatch = [];
+  };
+
+  for (let pi = 0; pi < parts.length; pi++) {
+    const part = parts[pi];
+    if (isToolInvocationPart(part)) {
+      toolBatch.push({ part, index: pi });
+    } else {
+      flushToolBatch();
+      elements.push(renderPart(part, groupIndex * 1000 + pi));
+    }
+  }
+  flushToolBatch();
+
+  return elements;
 }
 
 // ── Main Component ─────────────────────────────────────────────────────
@@ -201,16 +251,14 @@ export const AgentChatView = memo(function AgentChatView({
           return group.parts.map((p, pi) => renderPart(p, gi * 1000 + pi));
         }
 
-        // Assistant group — render all parts + optional turn separator
+        // Assistant group — render parts, grouping consecutive tool calls
         return (
           <div key={`assistant-${gi}`} className="flex flex-col gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
             {/* Turn separator if previous group was user */}
             {gi > 0 && groups[gi - 1]?.kind === "user" && (
               <div className="my-1 border-t border-border/30" role="separator" />
             )}
-            {group.parts.map((part, pi) =>
-              renderPart(part, gi * 1000 + pi)
-            )}
+            {renderGroupedParts(group.parts, gi)}
           </div>
         );
       })}

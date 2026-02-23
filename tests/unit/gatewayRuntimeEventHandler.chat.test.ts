@@ -253,7 +253,7 @@ describe("gateway runtime event handler (chat)", () => {
     });
 
     expect(dispatch).toHaveBeenCalledWith(
-      expect.objectContaining({ type: "appendPart", agentId: "agent-1", part: { type: "text", text: "Run aborted.", streaming: false } })
+      expect.objectContaining({ type: "appendPart", agentId: "agent-1", part: expect.objectContaining({ type: "status", state: "error", errorMessage: expect.stringContaining("Run was aborted") }) })
     );
 
     handler.handleEvent({
@@ -269,7 +269,7 @@ describe("gateway runtime event handler (chat)", () => {
     });
 
     expect(dispatch).toHaveBeenCalledWith(
-      expect.objectContaining({ type: "appendPart", agentId: "agent-1", part: { type: "text", text: "Error: bad", streaming: false } })
+      expect.objectContaining({ type: "appendPart", agentId: "agent-1", part: expect.objectContaining({ type: "status", state: "error", errorMessage: expect.stringContaining("bad") }) })
     );
   });
 });

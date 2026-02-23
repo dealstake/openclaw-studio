@@ -49,6 +49,7 @@ export type StatusPart = {
   state: string;
   model?: string;
   runStartedAt?: number;
+  errorMessage?: string;
 };
 
 export type MessagePart =

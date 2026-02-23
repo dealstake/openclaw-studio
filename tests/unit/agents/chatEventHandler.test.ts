@@ -252,7 +252,7 @@ describe("handleRuntimeChatEvent", () => {
       expect(deps.dispatch).toHaveBeenCalledWith(
         expect.objectContaining({
           type: "appendPart",
-          part: expect.objectContaining({ text: "Run aborted." }),
+          part: expect.objectContaining({ type: "status", state: "error", errorMessage: expect.stringContaining("Run was aborted") }),
         })
       );
       expect(deps.dispatch).toHaveBeenCalledWith(
@@ -279,7 +279,7 @@ describe("handleRuntimeChatEvent", () => {
       expect(deps.dispatch).toHaveBeenCalledWith(
         expect.objectContaining({
           type: "appendPart",
-          part: expect.objectContaining({ text: "Error: Something failed" }),
+          part: expect.objectContaining({ type: "status", state: "error", errorMessage: expect.stringContaining("Something failed") }),
         })
       );
       expect(deps.dispatch).toHaveBeenCalledWith(
@@ -303,7 +303,7 @@ describe("handleRuntimeChatEvent", () => {
       expect(deps.dispatch).toHaveBeenCalledWith(
         expect.objectContaining({
           type: "appendPart",
-          part: expect.objectContaining({ text: "Run error." }),
+          part: expect.objectContaining({ type: "status", state: "error", errorMessage: expect.stringContaining("An error occurred") }),
         })
       );
     });
