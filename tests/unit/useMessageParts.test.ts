@@ -94,7 +94,8 @@ describe("parseMessageParts", () => {
       type: "tool-invocation",
       name: "web_search",
       toolCallId: "call_1",
-      phase: "running",
+      // Unmatched tool calls from history are marked complete
+      phase: "complete",
     });
   });
 
@@ -148,10 +149,10 @@ describe("parseMessageParts", () => {
       liveThinkingTrace: "",
     });
     const types = result.map((p) => p.type);
+    // Tool call + result merge into one part (matched by toolCallId "c1")
     expect(types).toEqual([
       "text",
       "reasoning",
-      "tool-invocation",
       "tool-invocation",
       "text",
     ]);

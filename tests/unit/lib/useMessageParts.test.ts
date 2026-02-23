@@ -55,7 +55,8 @@ describe("parseMessageParts", () => {
         type: "tool-invocation",
         name: "web_search",
         toolCallId: "call_abc",
-        phase: "running",
+        // Unmatched tool calls from history are marked complete (already finished)
+        phase: "complete",
         args: expect.stringContaining("hello"),
       });
     });
@@ -83,7 +84,27 @@ describe("parseMessageParts", () => {
         type: "tool-invocation",
         name: "read_file",
         toolCallId: "",
-        phase: "running",
+        // No toolCallId = can't match a result, so marked complete from history
+        phase: "complete",
+      });
+    });
+
+    it("merges tool result into matching tool call by toolCallId", () => {
+      const parts = parseMessageParts(make({
+        outputLines: [
+          "[[tool]] exec (call_123)\n```json\n{\"cmd\":\"ls\"}\n```",
+          "[[tool-result]] exec (call_123)\nfile1.txt\nfile2.txt",
+        ],
+      }));
+      // Should merge into a single part, not two
+      expect(parts).toHaveLength(1);
+      expect(parts[0]).toMatchObject({
+        type: "tool-invocation",
+        name: "exec",
+        toolCallId: "call_123",
+        phase: "complete",
+        args: expect.stringContaining("ls"),
+        result: expect.stringContaining("file1.txt"),
       });
     });
   });
@@ -185,15 +206,21 @@ describe("parseMessageParts", () => {
         streamText: "and more...",
         liveThinkingTrace: "",
       }));
+      // Tool call + result merge into one part (matched by toolCallId "c1")
       expect(parts.map((p) => p.type)).toEqual([
         "reasoning",
-        "tool-invocation",
         "tool-invocation",
         "text",
         "text",
       ]);
+      // Merged tool part should be complete with result
+      expect(parts[1]).toMatchObject({
+        type: "tool-invocation",
+        phase: "complete",
+        result: expect.stringContaining("Results here"),
+      });
       // Verify stream text is marked streaming
-      expect(parts[4]).toMatchObject({ streaming: true });
+      expect(parts[3]).toMatchObject({ streaming: true });
     });
   });
 });

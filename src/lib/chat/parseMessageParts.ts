@@ -93,6 +93,9 @@ export function parseMessageParts(input: ParseMessagePartsInput): MessagePart[] 
   const { outputLines, streamText, liveThinkingTrace } = input;
   const parts: MessagePart[] = [];
 
+  // Track tool call parts by toolCallId so results can merge into them
+  const pendingToolsByCallId = new Map<string, number>(); // toolCallId → index in parts
+
   // Helper to merge consecutive reasoning parts
   const appendReasoning = (text: string, streaming?: boolean) => {
     const trimmed = text.trim();
@@ -120,9 +123,35 @@ export function parseMessageParts(input: ParseMessagePartsInput): MessagePart[] 
       continue;
     }
 
-    // Tool call or result
+    // Tool call or result — merge results into matching call parts
     if (isToolMarkdown(line)) {
-      parts.push(toolLineToPart(line));
+      const part = toolLineToPart(line);
+      if (part.type === "tool-invocation") {
+        const { toolCallId } = part;
+
+        if (part.phase === "complete" && toolCallId && pendingToolsByCallId.has(toolCallId)) {
+          // Tool result — merge into the existing call part
+          const idx = pendingToolsByCallId.get(toolCallId)!;
+          const existing = parts[idx];
+          if (existing.type === "tool-invocation") {
+            parts[idx] = { ...existing, phase: "complete", result: part.result };
+          }
+          pendingToolsByCallId.delete(toolCallId);
+        } else {
+          // Tool call (or orphan result) — add as new part
+          // No toolCallId = can't match a result, mark complete immediately
+          const effectivePart = !toolCallId && part.phase !== "complete"
+            ? { ...part, phase: "complete" as const }
+            : part;
+          const idx = parts.length;
+          parts.push(effectivePart);
+          if (toolCallId && effectivePart.phase !== "complete") {
+            pendingToolsByCallId.set(toolCallId, idx);
+          }
+        }
+      } else {
+        parts.push(part);
+      }
       continue;
     }
 
@@ -140,6 +169,15 @@ export function parseMessageParts(input: ParseMessagePartsInput): MessagePart[] 
     const normalizedText = normalizeText(line);
     if (normalizedText) {
       parts.push({ type: "text", text: normalizedText });
+    }
+  }
+
+  // Any unmatched tool calls from history are done — mark them complete.
+  // This handles cases where tool result lines are missing or in a different message.
+  for (const idx of pendingToolsByCallId.values()) {
+    const part = parts[idx];
+    if (part?.type === "tool-invocation" && part.phase === "running") {
+      parts[idx] = { ...part, phase: "complete" };
     }
   }
 
