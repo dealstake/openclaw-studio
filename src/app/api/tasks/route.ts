@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     if (!validation.ok) return validation.error;
     const { agentId } = validation;
 
-    return await withSidecarGetFallback("/tasks", { agentId }, () => {
+    const result = await withSidecarGetFallback("/tasks", { agentId }, () => {
       const db = getDb();
       let tasks = tasksRepo.listByAgent(db, agentId);
 
@@ -32,6 +32,11 @@ export async function GET(request: NextRequest) {
 
       return { tasks };
     });
+
+    // Add cache headers — tasks change infrequently and the 3-min poll cycle
+    // handles freshness. This avoids redundant sidecar round-trips on Cloud Run.
+    result.headers.set("Cache-Control", "private, max-age=30, stale-while-revalidate=60");
+    return result;
   } catch (err) {
     return handleApiError(err, "tasks");
   }

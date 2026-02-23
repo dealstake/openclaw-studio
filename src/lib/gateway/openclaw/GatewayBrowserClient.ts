@@ -83,6 +83,8 @@ export class GatewayBrowserClient {
   private keepaliveTimer: number | null = null;
   private backoffMs = 800;
   private _connectedAtMs = 0;
+  /** Timestamp of last received WebSocket message (any direction counts). */
+  private lastActivityAt = 0;
 
   constructor(private opts: GatewayBrowserClientOptions) {}
 
@@ -251,6 +253,8 @@ export class GatewayBrowserClient {
   }
 
   private handleMessage(raw: string) {
+    this.lastActivityAt = Date.now();
+
     let parsed: unknown;
     try {
       parsed = JSON.parse(raw);
@@ -305,6 +309,7 @@ export class GatewayBrowserClient {
     }
     const id = generateUUID();
     const frame = { type: "req", id, method, params };
+    this.lastActivityAt = Date.now();
     const p = new Promise<T>((resolve, reject) => {
       const timer = setTimeout(() => {
         if (this.pending.has(id)) {
@@ -342,6 +347,16 @@ export class GatewayBrowserClient {
    *
    * Uses the gateway's `tickIntervalMs` policy when available, otherwise falls
    * back to {@link KEEPALIVE_INTERVAL_MS} (30 s).
+   *
+   * Pings are only sent when the connection has been idle (no incoming data)
+   * for most of the interval. Active conversations produce enough gateway
+   * events to keep Cloudflare happy without extra pings.
+   *
+   * NOTE: The gateway does not currently recognize a "ping" RPC method and
+   * returns an INVALID_REQUEST error. This is harmless — the error response
+   * still counts as WebSocket traffic that resets Cloudflare's idle timer,
+   * and the client drops the response (no pending promise registered).
+   * A proper gateway-side ping handler would eliminate the error log noise.
    */
   private startKeepalive(tickIntervalMs?: number) {
     this.stopKeepalive();
@@ -350,9 +365,14 @@ export class GatewayBrowserClient {
         ? Math.min(tickIntervalMs, KEEPALIVE_INTERVAL_MS)
         : KEEPALIVE_INTERVAL_MS;
     this.keepaliveTimer = window.setInterval(() => {
-      if (this.ws?.readyState === WebSocket.OPEN) {
-        this.ws.send(JSON.stringify({ type: "req", id: "ping", method: "ping" }));
-      }
+      if (this.ws?.readyState !== WebSocket.OPEN) return;
+      // Skip ping if we received data recently — real traffic already resets
+      // Cloudflare's idle timer, so an extra ping would just be log noise.
+      const idleMs = Date.now() - this.lastActivityAt;
+      if (idleMs < interval * 0.8) return;
+      this.ws.send(
+        JSON.stringify({ type: "req", id: `ka-${generateUUID()}`, method: "ping" }),
+      );
     }, interval);
   }
 

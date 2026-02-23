@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { ProjectEntry } from "../components/ProjectsPanel";
-import { parseProjectFile } from "../lib/parseProject";
+import { parseProjectFile, type ProjectDetails } from "../lib/parseProject";
 import { TOGGLE_MAP } from "../lib/constants";
 import { manageProjectCronJobs } from "../lib/cronJobs";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
@@ -58,11 +58,14 @@ export function useProjects(
         throw new Error(`Failed to fetch projects: ${res.status}`);
       }
       const data = (await res.json()) as {
-        projects: Array<ProjectEntry & { fileContent?: string | null }>;
+        projects: Array<ProjectEntry & { fileContent?: string | null; details?: ProjectDetails }>;
       };
 
       const enrichedProjects = (data.projects ?? []).map((project) => {
         const { fileContent, ...entry } = project;
+        // Prefer pre-parsed details from the API (DB cache hit path).
+        // Fall back to client-side parsing if raw fileContent is provided (legacy).
+        if (entry.details) return entry;
         if (fileContent) {
           const details = parseProjectFile(fileContent);
           return { ...entry, details };

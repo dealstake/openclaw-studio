@@ -3,22 +3,39 @@ import { NextResponse } from "next/server";
 import { readWorkspaceFile } from "@/lib/workspace/resolve";
 import { isSidecarConfigured } from "@/lib/workspace/sidecar";
 import { validateAgentId, handleApiError } from "@/lib/api/helpers";
-import { parseIndex } from "@/features/projects/lib/indexTable";
 import { readIndexContent, readProjectFileContent } from "@/lib/workspace/indexFile";
 import { getDb } from "@/lib/database";
 import * as projectsRepo from "@/lib/database/repositories/projectsRepo";
 import { importFromMarkdown } from "@/lib/database/repositories/projectsRepo";
 import * as projectDetailsRepo from "@/lib/database/repositories/projectDetailsRepo";
+import { parseProjectFile } from "@/features/projects/lib/parseProject";
 
 export const runtime = "nodejs";
 
 /**
+ * Cache TTL for project detail enrichment.
+ *
+ * Local mode: files are on disk, re-reads are cheap — 60 s is fine.
+ * Sidecar mode (Cloud Run): each cache miss triggers an HTTP round-trip
+ * to the Mac Mini through Cloudflare, so we use a longer TTL to avoid
+ * N+1 sidecar calls on every poll.
+ */
+const LOCAL_CACHE_TTL_MS = 60_000;
+const SIDECAR_CACHE_TTL_MS = 300_000;
+
+/**
  * GET /api/workspace/projects?agentId=<id>
  *
- * Returns projects from the database, each enriched with
- * its project file content in a single request (avoids N+1 fetches).
+ * Returns projects from the database, each enriched with parsed details
+ * (continuation context, progress, linked tasks) in a single request.
  *
- * On first call (empty DB), imports from INDEX.md automatically.
+ * Both local and sidecar modes use the same DB-backed flow:
+ *  1. Load project index from SQLite (auto-imports from INDEX.md on first call)
+ *  2. Enrich each project with parsed details from the projectDetails cache
+ *  3. On cache miss, read the project file (local disk or sidecar) and update cache
+ *
+ * This eliminates the previous N+1 sidecar fetch problem where Cloud Run
+ * made 191 individual HTTP requests to the Mac Mini on every page load.
  */
 export async function GET(request: Request) {
   try {
@@ -27,79 +44,71 @@ export async function GET(request: Request) {
     if (!validation.ok) return validation.error;
     const { agentId } = validation;
 
-    // Try DB first (local mode only — sidecar mode falls back to file parsing)
-    if (!isSidecarConfigured()) {
-      const db = getDb();
-      let rows = projectsRepo.listAll(db);
+    const db = getDb();
+    const usingSidecar = isSidecarConfigured();
+    const cacheTtl = usingSidecar ? SIDECAR_CACHE_TTL_MS : LOCAL_CACHE_TTL_MS;
+    let rows = projectsRepo.listAll(db);
 
-      // Auto-import from INDEX.md if DB is empty
-      if (rows.length === 0) {
-        const result = readWorkspaceFile(agentId, "projects/INDEX.md");
-        if (result.content) {
-          importFromMarkdown(db, result.content);
-          rows = projectsRepo.listAll(db);
-        }
+    // Auto-import from INDEX.md if DB is empty
+    if (rows.length === 0) {
+      let indexContent: string | null = null;
+
+      if (usingSidecar) {
+        const result = await readIndexContent(agentId);
+        if (result.error) return result.error;
+        indexContent = result.content;
+      } else {
+        indexContent = readWorkspaceFile(agentId, "projects/INDEX.md").content;
       }
 
-      if (rows.length > 0) {
-        // Enrich with file content, using DB cache when available to avoid N+1 file reads.
-        const now = Date.now();
-        const CACHE_TTL_MS = 60_000;
-
-        const enriched = await Promise.all(
-          rows.map(async (project) => {
-            try {
-              // Check if we have a fresh cached entry
-              const cached = projectDetailsRepo.getByDoc(db, project.doc);
-              if (cached && now - new Date(cached.updatedAt).getTime() < CACHE_TTL_MS) {
-                return { ...project, fileContent: null, details: projectDetailsRepo.toProjectDetails(cached) };
-              }
-
-              // Cache miss or stale — read file and update cache
-              const result = readWorkspaceFile(agentId, `projects/${project.doc}`);
-              const content = result.content ?? null;
-              if (content) {
-                try {
-                  projectDetailsRepo.upsertFromMarkdown(db, project.doc, content);
-                } catch {
-                  // Non-fatal: cache miss is fine, parsing still works inline
-                }
-              }
-              return { ...project, fileContent: content };
-            } catch {
-              return { ...project, fileContent: null };
-            }
-          }),
-        );
-
-        return NextResponse.json({ projects: enriched }, {
-          headers: { "Cache-Control": "private, max-age=30, stale-while-revalidate=60" },
-        });
+      if (indexContent) {
+        importFromMarkdown(db, indexContent);
+        rows = projectsRepo.listAll(db);
       }
     }
 
-    // Sidecar fallback: parse INDEX.md directly (Cloud Run)
-    const { content: indexContent, error: readError } = await readIndexContent(agentId);
-    if (readError) return readError;
-    if (!indexContent) return NextResponse.json({ projects: [] });
+    if (rows.length === 0) {
+      return NextResponse.json({ projects: [] });
+    }
 
-    const parsed = parseIndex(indexContent);
+    // Enrich with parsed project details, using DB cache to avoid redundant file reads.
+    const now = Date.now();
 
-    // Fetch all project file contents in parallel
     const enriched = await Promise.all(
-      parsed.map(async (project) => {
+      rows.map(async (project) => {
         try {
-          const content = await readProjectFileContent(agentId, project.doc);
-          return { ...project, fileContent: content };
+          // Check DB cache first — avoids file I/O (or sidecar HTTP) entirely
+          const cached = projectDetailsRepo.getByDoc(db, project.doc);
+          if (cached && now - new Date(cached.updatedAt).getTime() < cacheTtl) {
+            return { ...project, details: projectDetailsRepo.toProjectDetails(cached) };
+          }
+
+          // Cache miss or stale — read project file via the appropriate backend
+          const content = usingSidecar
+            ? await readProjectFileContent(agentId, project.doc)
+            : readWorkspaceFile(agentId, `projects/${project.doc}`).content ?? null;
+
+          if (content) {
+            // Parse and cache for future requests
+            try {
+              projectDetailsRepo.upsertFromMarkdown(db, project.doc, content);
+            } catch {
+              // Non-fatal: inline parsing still works
+            }
+            return { ...project, details: parseProjectFile(content) };
+          }
+
+          return project;
         } catch {
-          return { ...project, fileContent: null };
+          return project;
         }
       }),
     );
 
-    return NextResponse.json({ projects: enriched }, {
-      headers: { "Cache-Control": "private, max-age=30, stale-while-revalidate=60" },
-    });
+    return NextResponse.json(
+      { projects: enriched },
+      { headers: { "Cache-Control": "private, max-age=30, stale-while-revalidate=60" } },
+    );
   } catch (err) {
     return handleApiError(err, "workspace/projects");
   }
