@@ -50,6 +50,13 @@
       "when": 1771920300000,
       "tag": "0006_database_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1771884107750,
+      "tag": "0007_task_state",
+      "breakpoints": true
     }
   ]
 }

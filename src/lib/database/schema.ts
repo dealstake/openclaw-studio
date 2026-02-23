@@ -91,6 +91,16 @@ export const projectDetails = sqliteTable("project_details", {
     .$defaultFn(() => new Date().toISOString()),
 });
 
+// ─── Task State ──────────────────────────────────────────────────────────────
+
+export const taskState = sqliteTable("task_state", {
+  taskId: text("task_id").primaryKey(),
+  stateJson: text("state_json").notNull().default("{}"),
+  updatedAt: text("updated_at")
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+});
+
 // ─── Type exports ────────────────────────────────────────────────────────────
 
 export type ProjectIndexRow = typeof projectsIndex.$inferSelect;
@@ -101,3 +111,5 @@ export type ActivityEventRow = typeof activityEvents.$inferSelect;
 export type NewActivityEventRow = typeof activityEvents.$inferInsert;
 export type ProjectDetailsRow = typeof projectDetails.$inferSelect;
 export type NewProjectDetailsRow = typeof projectDetails.$inferInsert;
+export type TaskStateRow = typeof taskState.$inferSelect;
+export type NewTaskStateRow = typeof taskState.$inferInsert;
