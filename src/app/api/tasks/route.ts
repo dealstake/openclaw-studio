@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { readTasks, writeTasks, ensureTaskStateDir, removeTaskStateDir } from "@/features/tasks/lib/taskStore";
+import { writeTasks, ensureTaskStateDir, removeTaskStateDir } from "@/features/tasks/lib/taskStore";
 import { handleApiError, validateAgentId } from "@/lib/api/helpers";
 import { withSidecarGetFallback, withSidecarMutateFallback } from "@/lib/api/sidecar-proxy";
 import { getDb } from "@/lib/database";
@@ -19,17 +19,7 @@ export async function GET(request: NextRequest) {
 
     const result = await withSidecarGetFallback("/tasks", { agentId }, () => {
       const db = getDb();
-      let tasks = tasksRepo.listByAgent(db, agentId);
-
-      // Auto-import from tasks.json if DB is empty
-      if (tasks.length === 0) {
-        const fileTasks = readTasks(agentId);
-        if (fileTasks.length > 0) {
-          tasksRepo.importFromArray(db, fileTasks);
-          tasks = tasksRepo.listByAgent(db, agentId);
-        }
-      }
-
+      const tasks = tasksRepo.listByAgent(db, agentId);
       return { tasks };
     });
 

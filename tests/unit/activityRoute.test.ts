@@ -108,27 +108,6 @@ describe("GET /api/activity", () => {
     expect(mockQuery).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ limit: 200 }));
   });
 
-  it("auto-imports from JSONL when DB empty", async () => {
-    mockQuery
-      .mockReturnValueOnce({ events: [], total: 0 })  // first query: empty
-      .mockReturnValueOnce({ events: [{ id: "imported" }], total: 1 }); // after import
-    mockFsPromises.readFile.mockResolvedValue('{"id":"1","timestamp":"2026-01-01","status":"success"}\n');
-
-    const res = await GET(makeGetRequest({ agentId: "alex" }));
-    expect(res.status).toBe(200);
-    expect(mockImportFromJsonl).toHaveBeenCalled();
-    // Second query should be called after import
-    expect(mockQuery).toHaveBeenCalledTimes(2);
-  });
-
-  it("skips auto-import when filters are active", async () => {
-    mockQuery.mockReturnValue({ events: [], total: 0 });
-    const res = await GET(makeGetRequest({ agentId: "alex", type: "cron-completion" }));
-    expect(res.status).toBe(200);
-    expect(mockFsPromises.readFile).not.toHaveBeenCalled();
-    expect(mockImportFromJsonl).not.toHaveBeenCalled();
-  });
-
   it("handles sidecar fallback path", async () => {
     mockIsSidecarConfigured.mockReturnValue(true);
     const jsonl = '{"type":"cron","status":"success","timestamp":"2026-01-02"}\n{"type":"cron","status":"error","timestamp":"2026-01-01"}\n';

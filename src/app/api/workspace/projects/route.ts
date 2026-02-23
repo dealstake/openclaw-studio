@@ -3,10 +3,9 @@ import { NextResponse } from "next/server";
 import { readWorkspaceFile } from "@/lib/workspace/resolve";
 import { isSidecarConfigured } from "@/lib/workspace/sidecar";
 import { validateAgentId, handleApiError } from "@/lib/api/helpers";
-import { readIndexContent, readProjectFileContent } from "@/lib/workspace/indexFile";
+import { readProjectFileContent } from "@/lib/workspace/indexFile";
 import { getDb } from "@/lib/database";
 import * as projectsRepo from "@/lib/database/repositories/projectsRepo";
-import { importFromMarkdown } from "@/lib/database/repositories/projectsRepo";
 import * as projectDetailsRepo from "@/lib/database/repositories/projectDetailsRepo";
 import { parseProjectFile } from "@/features/projects/lib/parseProject";
 
@@ -47,25 +46,7 @@ export async function GET(request: Request) {
     const db = getDb();
     const usingSidecar = isSidecarConfigured();
     const cacheTtl = usingSidecar ? SIDECAR_CACHE_TTL_MS : LOCAL_CACHE_TTL_MS;
-    let rows = projectsRepo.listAll(db);
-
-    // Auto-import from INDEX.md if DB is empty
-    if (rows.length === 0) {
-      let indexContent: string | null = null;
-
-      if (usingSidecar) {
-        const result = await readIndexContent(agentId);
-        if (result.error) return result.error;
-        indexContent = result.content;
-      } else {
-        indexContent = readWorkspaceFile(agentId, "projects/INDEX.md").content;
-      }
-
-      if (indexContent) {
-        importFromMarkdown(db, indexContent);
-        rows = projectsRepo.listAll(db);
-      }
-    }
+    const rows = projectsRepo.listAll(db);
 
     if (rows.length === 0) {
       return NextResponse.json({ projects: [] });
