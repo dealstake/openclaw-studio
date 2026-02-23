@@ -2,12 +2,12 @@ import fs from "node:fs/promises";
 
 import { NextResponse } from "next/server";
 
-import { parseAndFilterJsonlEvents } from "@/lib/activity/parseJsonlEvents";
 import { handleApiError, validateAgentId } from "@/lib/api/helpers";
+import { withSidecarGetFallback } from "@/lib/api/sidecar-proxy";
 import { getDb } from "@/lib/database";
 import * as activityRepo from "@/lib/database/repositories/activityRepo";
 import { resolveWorkspacePath } from "@/lib/workspace/resolve";
-import { isSidecarConfigured, sidecarGet } from "@/lib/workspace/sidecar";
+import { isSidecarConfigured } from "@/lib/workspace/sidecar";
 
 export const runtime = "nodejs";
 
@@ -15,7 +15,8 @@ export const runtime = "nodejs";
  * GET /api/activity?agentId=<id>&limit=50&offset=0&type=<filter>&taskId=<id>&projectSlug=<slug>
  *
  * Read activity events from the database.
- * Falls back to JSONL file parsing via sidecar when running on Cloud Run.
+ * Cloud Run (sidecar mode): proxies to Mac Mini's DB-backed activity endpoint.
+ * Local mode: reads from the pre-populated Mac Mini SQLite directly.
  */
 export async function GET(request: Request) {
   try {
@@ -33,38 +34,30 @@ export async function GET(request: Request) {
     const statusFilter = url.searchParams.get("status")?.trim() || null;
     const includeTranscript = url.searchParams.get("include")?.includes("transcript") ?? false;
 
-    // ─── Sidecar path (Cloud Run) — JSONL file-based ──────────────────
-    if (isSidecarConfigured()) {
-      const resp = await sidecarGet("/file", { agentId, path: "reports/activity.jsonl" });
-      if (!resp.ok) {
-        return NextResponse.json({ events: [], total: 0 });
-      }
-      const data = (await resp.json()) as { content?: string };
-      return NextResponse.json(
-        parseAndFilterJsonlEvents(data.content ?? "", {
-          type: typeFilter,
-          taskId: taskIdFilter,
-          projectSlug: projectSlugFilter,
-          status: statusFilter,
-          limit,
-          offset,
-        }),
-      );
-    }
+    // Build sidecar params — pass all filters so Mac Mini's DB handles them
+    const sidecarParams: Record<string, string> = { agentId };
+    if (limit) sidecarParams.limit = String(limit);
+    if (offset) sidecarParams.offset = String(offset);
+    if (typeFilter) sidecarParams.type = typeFilter;
+    if (taskIdFilter) sidecarParams.taskId = taskIdFilter;
+    if (projectSlugFilter) sidecarParams.projectSlug = projectSlugFilter;
+    if (statusFilter) sidecarParams.status = statusFilter;
+    if (includeTranscript) sidecarParams.include = "transcript";
 
-    // ─── Database path (local) ────────────────────────────────────────
-    const db = getDb();
-    const result = activityRepo.query(db, {
-      type: typeFilter,
-      taskId: taskIdFilter,
-      projectSlug: projectSlugFilter,
-      status: statusFilter,
-      includeTranscript,
-      limit,
-      offset,
+    const result = await withSidecarGetFallback("/activity", sidecarParams, () => {
+      const db = getDb();
+      return activityRepo.query(db, {
+        type: typeFilter,
+        taskId: taskIdFilter,
+        projectSlug: projectSlugFilter,
+        status: statusFilter,
+        includeTranscript,
+        limit,
+        offset,
+      });
     });
 
-    return NextResponse.json(result);
+    return result;
   } catch (err) {
     return handleApiError(err, "activity GET", "Failed to read activity log.");
   }

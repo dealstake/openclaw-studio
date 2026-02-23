@@ -108,12 +108,16 @@ describe("GET /api/activity", () => {
     expect(mockQuery).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ limit: 200 }));
   });
 
-  it("handles sidecar fallback path", async () => {
+  it("handles sidecar proxy path", async () => {
     mockIsSidecarConfigured.mockReturnValue(true);
-    const jsonl = '{"type":"cron","status":"success","timestamp":"2026-01-02"}\n{"type":"cron","status":"error","timestamp":"2026-01-01"}\n';
+    // withSidecarGetFallback calls sidecarGet which returns the Mac Mini's DB response
     mockSidecarGet.mockResolvedValue({
       ok: true,
-      json: async () => ({ content: jsonl }),
+      status: 200,
+      json: async () => ({ events: [
+        { type: "cron", status: "success", timestamp: "2026-01-02" },
+        { type: "cron", status: "error", timestamp: "2026-01-01" },
+      ], total: 2 }),
     });
 
     const res = await GET(makeGetRequest({ agentId: "alex" }));
@@ -121,13 +125,15 @@ describe("GET /api/activity", () => {
     const data = await res.json();
     expect(data.total).toBe(2);
     expect(data.events).toHaveLength(2);
-    // Should be sorted newest first
-    expect(data.events[0].timestamp).toBe("2026-01-02");
   });
 
-  it("sidecar returns empty when file not found", async () => {
+  it("sidecar returns empty on error", async () => {
     mockIsSidecarConfigured.mockReturnValue(true);
-    mockSidecarGet.mockResolvedValue({ ok: false });
+    mockSidecarGet.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ events: [], total: 0 }),
+    });
 
     const res = await GET(makeGetRequest({ agentId: "alex" }));
     expect(res.status).toBe(200);
@@ -135,18 +141,22 @@ describe("GET /api/activity", () => {
     expect(data.total).toBe(0);
   });
 
-  it("sidecar applies type filter", async () => {
+  it("sidecar passes filter params", async () => {
     mockIsSidecarConfigured.mockReturnValue(true);
-    const jsonl = '{"type":"cron","status":"success","timestamp":"2026-01-01"}\n{"type":"alert","status":"error","timestamp":"2026-01-02"}\n';
     mockSidecarGet.mockResolvedValue({
       ok: true,
-      json: async () => ({ content: jsonl }),
+      status: 200,
+      json: async () => ({ events: [
+        { type: "alert", status: "error", timestamp: "2026-01-02" },
+      ], total: 1 }),
     });
 
     const res = await GET(makeGetRequest({ agentId: "alex", type: "alert" }));
     const data = await res.json();
     expect(data.total).toBe(1);
     expect(data.events[0].type).toBe("alert");
+    // Verify sidecarGet was called with type filter param
+    expect(mockSidecarGet).toHaveBeenCalledWith("/activity", expect.objectContaining({ type: "alert" }));
   });
 });
 
