@@ -93,7 +93,6 @@ export default function LoginPage() {
         {/* Email field — disabled by default */}
         <form
           action={methods.email ? ssoUrl : undefined}
-          onSubmit={!methods.email ? (e) => e.preventDefault() : undefined}
           className={`space-y-3 ${!methods.email ? "opacity-50" : ""}`}
           title={!methods.email ? DISABLED_TOOLTIP : undefined}
         >
