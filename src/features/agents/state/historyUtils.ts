@@ -165,6 +165,7 @@ export const buildHistorySyncPatch = ({
   if (!runId && status === "running" && lastRole === "assistant") {
     patch.status = "idle";
     patch.runId = null;
+    patch.runStartedAt = null;
     patch.streamText = null;
     patch.thinkingTrace = null;
   }

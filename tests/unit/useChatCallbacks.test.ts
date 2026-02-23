@@ -46,7 +46,7 @@ function makeAgent(overrides: Partial<AgentState> = {}): AgentState {
     messageParts: [],
     lastResult: null,
     lastDiff: null,
-    runId: null,
+    runId: null, runStartedAt: null,
     streamText: null,
     thinkingTrace: null,
     latestOverride: null,

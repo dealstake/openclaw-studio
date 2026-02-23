@@ -230,6 +230,8 @@ export const AgentChatPanel = memo(function AgentChatPanel({
             tokenLimit={tokenLimit}
             agentName={agent.name}
             allowThinking={models.length > 0}
+            messageParts={agent.messageParts}
+            runStartedAt={agent.runStartedAt}
           />
         )}
       </div>

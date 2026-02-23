@@ -35,6 +35,7 @@ export type AgentState = AgentStoreSeed & {
   lastResult: string | null;
   lastDiff: string | null;
   runId: string | null;
+  runStartedAt: number | null;
   streamText: string | null;
   thinkingTrace: string | null;
   latestOverride: string | null;
@@ -55,6 +56,7 @@ export const buildNewSessionAgentPatch = (agent: AgentState): Partial<AgentState
     sessionKey: agent.sessionKey,
     status: "idle",
     runId: null,
+    runStartedAt: null,
     streamText: null,
     thinkingTrace: null,
     messageParts: [],
@@ -123,6 +125,7 @@ const createRuntimeAgentState = (
     lastResult: sameSessionKey ? (existing?.lastResult ?? null) : null,
     lastDiff: sameSessionKey ? (existing?.lastDiff ?? null) : null,
     runId: sameSessionKey ? (existing?.runId ?? null) : null,
+    runStartedAt: sameSessionKey ? (existing?.runStartedAt ?? null) : null,
     streamText: sameSessionKey ? (existing?.streamText ?? null) : null,
     thinkingTrace: sameSessionKey ? (existing?.thinkingTrace ?? null) : null,
     latestOverride: sameSessionKey ? (existing?.latestOverride ?? null) : null,

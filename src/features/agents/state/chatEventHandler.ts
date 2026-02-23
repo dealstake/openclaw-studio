@@ -120,7 +120,7 @@ export function handleRuntimeChatEvent(
       deps.dispatch({
         type: "updateAgent",
         agentId,
-        patch: { status: "idle", runId: null, streamText: null, thinkingTrace: null },
+        patch: { status: "idle", runId: null, runStartedAt: null, streamText: null, thinkingTrace: null },
       });
       if (deps.onActivityMessage) {
         deps.onActivityMessage(`heartbeat-${payload.runId}`, {
@@ -177,6 +177,10 @@ export function handleRuntimeChatEvent(
     if (typeof nextText === "string") {
       patch.streamText = nextText;
       patch.status = "running";
+    }
+    // Set runStartedAt on the first delta (idle → running transition)
+    if (patch.status === "running" && agent?.status !== "running") {
+      patch.runStartedAt = state.now();
     }
     if (Object.keys(patch).length > 0) {
       deps.queueLivePatch(agentId, patch);
@@ -284,6 +288,7 @@ export function handleRuntimeChatEvent(
       patch: {
         status: "idle",
         runId: null,
+        runStartedAt: null,
         streamText: null,
         thinkingTrace: null,
         ...(typeof assistantCompletionAt === "number"
@@ -310,7 +315,7 @@ export function handleRuntimeChatEvent(
     deps.dispatch({
       type: "updateAgent",
       agentId,
-      patch: { status: "idle", runId: null, streamText: null, thinkingTrace: null },
+      patch: { status: "idle", runId: null, runStartedAt: null, streamText: null, thinkingTrace: null },
     });
     return;
   }
@@ -331,7 +336,7 @@ export function handleRuntimeChatEvent(
     deps.dispatch({
       type: "updateAgent",
       agentId,
-      patch: { status: "error", runId: null, streamText: null, thinkingTrace: null },
+      patch: { status: "error", runId: null, runStartedAt: null, streamText: null, thinkingTrace: null },
     });
   }
 }

@@ -21,7 +21,7 @@ function stateWithParts(count: number): AgentStoreState {
         messageParts: parts,
         lastResult: null,
         lastDiff: null,
-        runId: null,
+        runId: null, runStartedAt: null,
         streamText: null,
         thinkingTrace: null,
         latestOverride: null,

@@ -109,7 +109,7 @@ export function useChatCallbacks({
         dispatch({
           type: "updateAgent",
           agentId,
-          patch: { messageParts: [], streamText: null, thinkingTrace: null, lastResult: null },
+          patch: { messageParts: [], runStartedAt: null, streamText: null, thinkingTrace: null, lastResult: null },
         });
       }
       dispatch({
@@ -179,7 +179,7 @@ export function useChatCallbacks({
         dispatch({
           type: "updateAgent",
           agentId,
-          patch: { status: "error", runId: null, streamText: null, thinkingTrace: null },
+          patch: { status: "error", runId: null, runStartedAt: null, streamText: null, thinkingTrace: null },
         });
         dispatch({
           type: "appendPart",

@@ -342,7 +342,7 @@ describe("runtime event bridge helpers", () => {
       lastAssistantMessageAt: Date.parse("2024-01-01T00:00:00.000Z"),
       historyLoadedAt: 200,
       status: "idle",
-      runId: null,
+      runId: null, runStartedAt: null,
       streamText: null,
       thinkingTrace: null,
     });
@@ -371,7 +371,7 @@ describe("runtime event bridge helpers", () => {
       lastUserMessage: "hello",
       historyLoadedAt: 300,
       status: "idle",
-      runId: null,
+      runId: null, runStartedAt: null,
       streamText: null,
       thinkingTrace: null,
     });

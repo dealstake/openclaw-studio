@@ -134,6 +134,7 @@ export const resolveLifecyclePatch = (input: LifecyclePatchInput): LifecycleTran
       patch: {
         status: "running",
         runId: incomingRunId,
+        runStartedAt: lastActivityAt,
         sessionCreated: true,
         lastActivityAt,
       },
@@ -149,6 +150,7 @@ export const resolveLifecyclePatch = (input: LifecyclePatchInput): LifecycleTran
       patch: {
         status: "error",
         runId: null,
+        runStartedAt: null,
         streamText: null,
         thinkingTrace: null,
         lastActivityAt,
@@ -161,6 +163,7 @@ export const resolveLifecyclePatch = (input: LifecyclePatchInput): LifecycleTran
     patch: {
       status: "idle",
       runId: null,
+      runStartedAt: null,
       streamText: null,
       thinkingTrace: null,
       lastActivityAt,

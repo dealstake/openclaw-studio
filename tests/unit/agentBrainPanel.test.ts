@@ -16,7 +16,7 @@ const createAgent = (agentId: string, name: string, sessionKey: string): AgentSt
   messageParts: [],
   lastResult: null,
   lastDiff: null,
-  runId: null,
+  runId: null, runStartedAt: null,
   streamText: null,
   thinkingTrace: null,
   latestOverride: null,

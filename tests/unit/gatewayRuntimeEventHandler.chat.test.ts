@@ -15,7 +15,7 @@ const createAgent = (overrides?: Partial<AgentState>): AgentState => ({
   messageParts: [],
   lastResult: null,
   lastDiff: null,
-  runId: null,
+  runId: null, runStartedAt: null,
   streamText: null,
   thinkingTrace: null,
   latestOverride: null,
@@ -77,6 +77,7 @@ describe("gateway runtime event handler (chat)", () => {
     expect(queueLivePatch).toHaveBeenCalledWith("agent-1", {
       streamText: "Hello",
       status: "running",
+      runStartedAt: 1000,
     });
   });
 

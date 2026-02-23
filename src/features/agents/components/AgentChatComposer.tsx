@@ -11,10 +11,12 @@ import {
 } from "react";
 
 import type { GatewayModelChoice } from "@/lib/gateway/models";
+import type { MessagePart } from "@/lib/chat/types";
 import { AlertCircle, ArrowUp, Paperclip, Square, UploadCloud } from "lucide-react";
 import { ChatAttachmentPreview } from "./ChatAttachmentPreview";
 import { ModelPicker } from "./ModelPicker";
 import { ThinkingToggle } from "./ThinkingToggle";
+import { StreamingStatus } from "./StreamingStatus";
 import { useFileUpload, type ChatAttachment } from "../hooks/useFileUpload";
 
 export const AgentChatComposer = memo(function AgentChatComposer({
@@ -36,6 +38,8 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   tokenLimit,
   agentName,
   allowThinking,
+  messageParts,
+  runStartedAt,
 }: {
   onDraftChange: (value: string) => void;
   onSend: (message: string, attachments?: ChatAttachment[]) => void;
@@ -55,6 +59,8 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   tokenLimit?: number;
   agentName: string;
   allowThinking: boolean;
+  messageParts?: MessagePart[];
+  runStartedAt?: number | null;
 }) {
   const localRef = useRef<HTMLTextAreaElement | null>(null);
   const pendingResizeRef = useRef<number | null>(null);
@@ -315,6 +321,13 @@ export const AgentChatComposer = memo(function AgentChatComposer({
           {allowThinking && (
             <ThinkingToggle value={thinkingLevel} onChange={onThinkingChange} />
           )}
+
+          {/* Streaming status — phase + elapsed timer while running */}
+          <StreamingStatus
+            running={running}
+            messageParts={messageParts ?? []}
+            runStartedAt={runStartedAt}
+          />
 
           {tokenPct !== null && (
             <div className="ml-auto mr-1 hidden items-center gap-1.5 opacity-60 sm:flex">

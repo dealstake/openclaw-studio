@@ -12,7 +12,7 @@ const makeAgent = (overrides: Partial<AgentState> = {}): AgentState => ({
   name: "Alex",
   sessionKey: "agent:alex:main",
   status: "idle",
-  runId: null,
+  runId: null, runStartedAt: null,
   streamText: null,
   thinkingTrace: null,
   lastResult: null,

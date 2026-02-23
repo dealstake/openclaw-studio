@@ -32,7 +32,7 @@ function makeAgent(overrides: Partial<AgentState> = {}): AgentState {
     historyLoadedAt: null,
   messageParts: [],
     status: "idle",
-    runId: null,
+    runId: null, runStartedAt: null,
     ...overrides,
   } as AgentState;
 }
