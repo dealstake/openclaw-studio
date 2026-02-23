@@ -48,7 +48,7 @@ export default function RootLayout({
       <body className={`${display.variable} ${sans.variable} ${mono.variable} antialiased overflow-x-hidden`}>
         {children}
         <Toaster
-          theme="dark"
+          theme="system"
           position="bottom-right"
           toastOptions={{
             className:
