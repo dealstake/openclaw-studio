@@ -2,7 +2,6 @@
 
 import { memo, useMemo, useState, useCallback, useRef, useEffect } from "react";
 import {
-  FileText,
   FolderGit2,
   FolderKanban,
   Plus,
@@ -145,13 +144,6 @@ export const ProjectsPanel = memo(function ProjectsPanel({
           )}
         </div>
         <div className="flex items-center gap-1.5">
-          <PanelIconButton
-            aria-label="Edit projects index"
-            title="Edit INDEX.md"
-            onClick={() => setEditingProjectDoc("INDEX.md")}
-          >
-            <FileText className="h-3 w-3" />
-          </PanelIconButton>
           <PanelIconButton
             aria-label="New project"
             onClick={() => setShowWizard(true)}

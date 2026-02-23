@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-/** Parse project status emoji from INDEX.md table rows */
+/** Status emoji metadata */
 const STATUS_EMOJI: Record<string, { label: string; color: string }> = {
   "🚧": { label: "Building", color: "text-purple-400" },
   "🌊": { label: "Backlog", color: "text-blue-400" },
@@ -15,7 +15,7 @@ const STATUS_EMOJI: Record<string, { label: string; color: string }> = {
 export type ProjectStatusBadge = { emoji: string; label: string; color: string };
 
 /**
- * Fetch and parse project status badges from INDEX.md.
+ * Fetch project status badges from the DB-backed projects API.
  * Returns a Map keyed by lowercase doc filename.
  */
 export function useProjectStatuses(
@@ -36,31 +36,31 @@ export function useProjectStatuses(
       if (!id) return;
 
       try {
-        const params = new URLSearchParams({ agentId: id, path: "projects/INDEX.md" });
-        const res = await fetch(`/api/workspace/file?${params.toString()}`);
-        const data: { content?: string } | null = res.ok ? await res.json() : null;
-        if (cancelled || !data?.content) {
+        const res = await fetch(
+          `/api/workspace/projects?agentId=${encodeURIComponent(id)}`,
+        );
+        if (!res.ok || cancelled) {
+          if (!cancelled) setStatuses(new Map());
+          return;
+        }
+        const data = (await res.json()) as {
+          projects?: Array<{ doc: string; statusEmoji?: string }>;
+        };
+        if (cancelled || !data.projects) {
           if (!cancelled) setStatuses(new Map());
           return;
         }
         const map = new Map<string, ProjectStatusBadge>();
-        const lines = data.content.split("\n");
-        for (const line of lines) {
-          if (!line.startsWith("|")) continue;
-          const cells = line.split("|").map((c: string) => c.trim());
-          const doc = cells[2]?.trim();
-          const status = cells[3]?.trim();
-          if (!doc || !status || doc === "Doc" || doc === "---") continue;
-          for (const [emoji, meta] of Object.entries(STATUS_EMOJI)) {
-            if (status.includes(emoji)) {
-              map.set(doc.toLowerCase(), { emoji, ...meta });
-              break;
-            }
+        for (const project of data.projects) {
+          const emoji = project.statusEmoji ?? "";
+          const meta = STATUS_EMOJI[emoji];
+          if (meta) {
+            map.set(project.doc.toLowerCase(), { emoji, ...meta });
           }
         }
         if (!cancelled) setStatuses(map);
       } catch {
-        // Silent — INDEX.md may not exist
+        // Silent — projects API may be unavailable
       }
     };
     void load();

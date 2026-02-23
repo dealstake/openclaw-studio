@@ -4,13 +4,10 @@ import {
   writeWorkspaceFile,
   resolveWorkspacePath,
 } from "@/lib/workspace/resolve";
-import { isSidecarConfigured, sidecarGet, sidecarMutate } from "@/lib/workspace/sidecar";
+import { isSidecarConfigured, sidecarMutate } from "@/lib/workspace/sidecar";
 import { validateAgentId, handleApiError } from "@/lib/api/helpers";
-import { updateRowStatus, removeRow } from "@/features/projects/lib/indexTable";
-import { readIndexContent, writeIndexContent } from "@/lib/workspace/indexFile";
 import { getDb } from "@/lib/database";
 import * as projectsRepo from "@/lib/database/repositories/projectsRepo";
-import { generateIndexMarkdown } from "@/lib/database/sync/indexSync";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -27,80 +24,91 @@ function validateRequest(agentId: string, doc: string): NextResponse | null {
   return null;
 }
 
-/**
- * Update a project's status in INDEX.md via sidecar (Cloud Run path).
- * Reads INDEX.md, applies the status change, writes it back.
- */
-async function updateStatusViaSidecar(
-  agentId: string,
-  doc: string,
-  newStatus: string,
-): Promise<NextResponse> {
-  const { content, error: readError } = await readIndexContent(agentId);
-  if (readError) return readError;
-  if (!content) {
-    return NextResponse.json({ error: "INDEX.md not found or empty" }, { status: 404 });
-  }
-
-  const { content: updated, found } = updateRowStatus(content, doc, newStatus);
-  if (!found) {
-    return NextResponse.json({ error: `Project with doc "${doc}" not found in INDEX.md` }, { status: 404 });
-  }
-
-  const writeError = await writeIndexContent(agentId, updated);
-  if (writeError) return writeError;
-
-  return NextResponse.json({ ok: true, doc, status: newStatus });
-}
+// ─── POST — Create a new project ────────────────────────────────────────────
 
 /**
- * Delete (archive) a project via sidecar (Cloud Run path).
- * Removes from INDEX.md and copies the file to projects/archive/.
+ * POST /api/workspace/project
+ * Body: { agentId, name, doc, status, priority, oneLiner, content? }
+ *
+ * Creates a project row in the DB. If `content` is provided, writes the
+ * project .md file as well.
  */
-async function deleteViaSidecar(agentId: string, doc: string): Promise<NextResponse> {
-  const { content, error: readError } = await readIndexContent(agentId);
-  if (readError) return readError;
-  if (!content) {
-    return NextResponse.json({ error: "INDEX.md not found or empty" }, { status: 404 });
-  }
+export async function POST(request: Request) {
+  try {
+    const body = (await request.json()) as {
+      agentId?: string;
+      name?: string;
+      doc?: string;
+      status?: string;
+      priority?: string;
+      oneLiner?: string;
+      content?: string;
+    };
+    const agentId = body.agentId?.trim() ?? "";
+    const doc = body.doc?.trim() ?? "";
+    const name = body.name?.trim() ?? "";
+    const status = body.status?.trim() ?? "📋 Defined";
+    const priority = body.priority?.trim() ?? "🟢 P2";
+    const oneLiner = body.oneLiner?.trim() ?? "";
 
-  const { content: updated, found } = removeRow(content, doc);
-  if (!found) {
-    return NextResponse.json({ error: `Project with doc "${doc}" not found in INDEX.md` }, { status: 404 });
-  }
-
-  const writeError = await writeIndexContent(agentId, updated);
-  if (writeError) return writeError;
-
-  // Move file to archive via sidecar
-  const fileRes = await sidecarGet("/file", { agentId, path: `projects/${doc}` });
-  if (fileRes.ok) {
-    const fileData = (await fileRes.json()) as { content?: string };
-    if (fileData.content) {
-      await sidecarMutate("/file", "PUT", {
-        agentId,
-        path: `projects/archive/${doc}`,
-        content: fileData.content,
-      });
-      await sidecarMutate("/file", "PUT", {
-        agentId,
-        path: `projects/${doc}`,
-        content: `<!-- Archived: moved to projects/archive/${doc} -->\n`,
-      });
+    const validationError = validateRequest(agentId, doc);
+    if (validationError) return validationError;
+    if (!name) {
+      return NextResponse.json({ error: "Missing required field: name" }, { status: 400 });
     }
-  }
 
-  return NextResponse.json({ ok: true, doc, archived: true });
+    // Extract emojis
+    const statusEmoji = status.match(/^(🚧|🔨|📋|🌊|⏸️|✅)/)?.[1] ?? "";
+    const priorityEmoji = priority.match(/^(🔴|🟡|🟢)/)?.[1] ?? "";
+
+    if (isSidecarConfigured()) {
+      // Cloud Run: proxy to sidecar
+      const res = await sidecarMutate("/workspace/project", "POST", {
+        agentId,
+        name,
+        doc,
+        status,
+        priority,
+        oneLiner,
+        content: body.content,
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        return NextResponse.json(
+          { error: data.error || `Sidecar create failed: ${res.status}` },
+          { status: res.status },
+        );
+      }
+      return NextResponse.json({ ok: true, doc });
+    }
+
+    // Local mode: insert into DB
+    const db = getDb();
+    const existing = projectsRepo.getByDoc(db, doc);
+    if (existing) {
+      return NextResponse.json({ error: `Project "${doc}" already exists` }, { status: 409 });
+    }
+
+    projectsRepo.upsert(db, { name, doc, status, statusEmoji, priority, priorityEmoji, oneLiner });
+
+    // Write project file if content provided
+    if (body.content) {
+      writeWorkspaceFile(agentId, `projects/${doc}`, body.content);
+    }
+
+    return NextResponse.json({ ok: true, doc });
+  } catch (err) {
+    return handleApiError(err, "project POST");
+  }
 }
 
-// ─── PATCH ───────────────────────────────────────────────────────────────────
+// ─── PATCH — Update project status ──────────────────────────────────────────
 
 /**
  * PATCH /api/workspace/project
  * Body: { agentId, doc, status }
  *
- * Updates a project's status. Uses DB when available, falls back to file parsing.
- * Always regenerates INDEX.md for agent readability.
+ * Updates a project's status in the DB.
  */
 export async function PATCH(request: Request) {
   try {
@@ -116,20 +124,29 @@ export async function PATCH(request: Request) {
     const validationError = validateRequest(agentId, doc);
     if (validationError) return validationError;
 
-    // Sidecar mode (Cloud Run) — update via INDEX.md text parsing
     if (isSidecarConfigured()) {
-      return updateStatusViaSidecar(agentId, doc, newStatus);
+      // Cloud Run: proxy to sidecar
+      const res = await sidecarMutate("/workspace/project", "PATCH", {
+        agentId,
+        doc,
+        status: newStatus,
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        return NextResponse.json(
+          { error: data.error || `Sidecar update failed: ${res.status}` },
+          { status: res.status },
+        );
+      }
+      return NextResponse.json({ ok: true, doc, status: newStatus });
     }
 
-    // DB mode (local) — SQL update + INDEX.md regeneration
+    // DB mode (local) — SQL update only, no INDEX.md
     const db = getDb();
     const found = projectsRepo.updateStatus(db, doc, newStatus);
     if (!found) {
       return NextResponse.json({ error: `Project with doc "${doc}" not found` }, { status: 404 });
     }
-
-    const markdown = generateIndexMarkdown(db);
-    writeWorkspaceFile(agentId, "projects/INDEX.md", markdown);
 
     return NextResponse.json({ ok: true, doc, status: newStatus });
   } catch (err) {
@@ -137,13 +154,13 @@ export async function PATCH(request: Request) {
   }
 }
 
-// ─── DELETE ──────────────────────────────────────────────────────────────────
+// ─── DELETE — Archive a project ──────────────────────────────────────────────
 
 /**
  * DELETE /api/workspace/project
  * Body: { agentId, doc }
  *
- * Archives a project: removes from DB/INDEX.md and moves the project file
+ * Archives a project: removes from DB and moves the project file
  * to projects/archive/<doc>.
  */
 export async function DELETE(request: Request) {
@@ -160,12 +177,20 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "Invalid doc filename" }, { status: 400 });
     }
 
-    // Sidecar mode (Cloud Run)
     if (isSidecarConfigured()) {
-      return deleteViaSidecar(agentId, doc);
+      // Cloud Run: proxy to sidecar
+      const res = await sidecarMutate("/workspace/project", "DELETE", { agentId, doc });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        return NextResponse.json(
+          { error: data.error || `Sidecar delete failed: ${res.status}` },
+          { status: res.status },
+        );
+      }
+      return NextResponse.json({ ok: true, doc, archived: true });
     }
 
-    // DB mode (local) — transactional delete + archive
+    // DB mode (local)
     const db = getDb();
 
     const existing = projectsRepo.getByDoc(db, doc);
@@ -173,15 +198,9 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: `Project with doc "${doc}" not found` }, { status: 404 });
     }
 
-    db.transaction((tx) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- tx has same query API as db
-      const txDb = tx as any;
-      projectsRepo.remove(txDb, doc);
-      const markdown = generateIndexMarkdown(txDb);
-      writeWorkspaceFile(agentId, "projects/INDEX.md", markdown);
-    });
+    projectsRepo.remove(db, doc);
 
-    // Move file to archive (outside transaction — file ops can't be rolled back)
+    // Move file to archive
     try {
       const { absolute: srcPath } = resolveWorkspacePath(agentId, `projects/${doc}`);
       const { absolute: destPath } = resolveWorkspacePath(agentId, `projects/archive/${doc}`);

@@ -98,7 +98,8 @@ describe("PATCH /api/workspace/project", () => {
     const data = await res.json();
     expect(data.ok).toBe(true);
     expect(data.status).toBe("✅ Done");
-    expect(mockedWrite).toHaveBeenCalled();
+    // DB-only mode: no INDEX.md write
+    expect(mockedWrite).not.toHaveBeenCalled();
   });
 });
 
@@ -134,6 +135,7 @@ describe("DELETE /api/workspace/project", () => {
     const data = await res.json();
     expect(data.ok).toBe(true);
     expect(data.archived).toBe(true);
-    expect(mockedWrite).toHaveBeenCalled();
+    // DB-only mode: no INDEX.md write
+    expect(mockedWrite).not.toHaveBeenCalled();
   });
 });

@@ -12,21 +12,18 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const INDEX_CONTENT = `# Projects Index
+const MOCK_PROJECTS = [
+  { doc: "foo.md", statusEmoji: "🔨" },
+  { doc: "bar.md", statusEmoji: "✅" },
+  { doc: "baz.md", statusEmoji: "📋" },
+  { doc: "qux.md", statusEmoji: "⏸️" },
+  { doc: "backlog.md", statusEmoji: "🌊" },
+];
 
-| Project | Doc | Status | Priority |
-|---------|-----|--------|----------|
-| Foo | foo.md | 🔨 Active | 🔴 P0 |
-| Bar | bar.md | ✅ Done | 🟡 P1 |
-| Baz | baz.md | 📋 Defined | 🟢 P2 |
-| Qux | qux.md | ⏸️ Parked | 🟡 P1 |
-| Backlog | backlog.md | 🌊 Backlog | 🟡 P1 |
-`;
-
-function mockResponse(content: string) {
+function mockProjectsResponse(projects: Array<{ doc: string; statusEmoji: string }>) {
   mockFetch.mockResolvedValueOnce({
     ok: true,
-    json: () => Promise.resolve({ content }),
+    json: () => Promise.resolve({ projects }),
   });
 }
 
@@ -42,8 +39,8 @@ describe("useProjectStatuses", () => {
     expect(result.current.size).toBe(0);
   });
 
-  it("parses all status emojis from INDEX.md", async () => {
-    mockResponse(INDEX_CONTENT);
+  it("parses all status emojis from projects API", async () => {
+    mockProjectsResponse(MOCK_PROJECTS);
     const { result } = renderHook(() => useProjectStatuses("agent1", true));
 
     await waitFor(() => expect(result.current.size).toBe(5));
@@ -76,13 +73,7 @@ describe("useProjectStatuses", () => {
   });
 
   it("keys are lowercase", async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: () =>
-        Promise.resolve({
-          content: "| Proj | MyFile.MD | 🔨 Active | P0 |\n",
-        }),
-    });
+    mockProjectsResponse([{ doc: "MyFile.MD", statusEmoji: "🔨" }]);
     const { result } = renderHook(() => useProjectStatuses("agent1", true));
     await waitFor(() => expect(result.current.size).toBe(1));
     expect(result.current.has("myfile.md")).toBe(true);
@@ -91,7 +82,6 @@ describe("useProjectStatuses", () => {
   it("returns empty map on fetch error", async () => {
     mockFetch.mockRejectedValueOnce(new Error("Network error"));
     const { result } = renderHook(() => useProjectStatuses("agent1", true));
-    // Should stay empty (silent fail)
     await new Promise((r) => setTimeout(r, 50));
     expect(result.current.size).toBe(0);
   });
@@ -103,12 +93,14 @@ describe("useProjectStatuses", () => {
     expect(result.current.size).toBe(0);
   });
 
-  it("skips header/separator rows", async () => {
-    mockResponse(
-      "| Project | Doc | Status | Priority |\n|---|---|---|---|\n| A | a.md | 🔨 Active | P0 |\n"
-    );
+  it("skips projects without recognized status emoji", async () => {
+    mockProjectsResponse([
+      { doc: "a.md", statusEmoji: "🔨" },
+      { doc: "b.md", statusEmoji: "" },
+    ]);
     const { result } = renderHook(() => useProjectStatuses("agent1", true));
     await waitFor(() => expect(result.current.size).toBe(1));
     expect(result.current.has("a.md")).toBe(true);
+    expect(result.current.has("b.md")).toBe(false);
   });
 });

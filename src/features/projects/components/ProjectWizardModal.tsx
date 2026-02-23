@@ -9,7 +9,7 @@ import {
   Sparkles,
   Loader2,
 } from "lucide-react";
-import { appendRow } from "../lib/indexTable";
+// DB is the source of truth — no INDEX.md manipulation needed
 import { sectionLabelClass } from "@/components/SectionLabel";
 import { WizardChat } from "@/components/chat/WizardChat";
 import { createConfigExtractor } from "@/components/chat/wizardConfigExtractor";
@@ -68,26 +68,18 @@ export const ProjectWizardModal = memo(function ProjectWizardModal({
     }
   }, [open]);
 
-  // Fetch existing project names when modal opens
+  // Fetch existing project names when modal opens (from DB via API)
   useEffect(() => {
     if (!open || !agentId) return;
     (async () => {
       try {
         const res = await fetch(
-          `/api/workspace/file?agentId=${encodeURIComponent(agentId)}&path=projects/INDEX.md`,
+          `/api/workspace/projects?agentId=${encodeURIComponent(agentId)}`,
         );
         if (!res.ok) return;
-        const data = (await res.json()) as { content?: string };
-        if (!data.content) return;
-        // Parse project names from table rows
-        const names: string[] = [];
-        for (const line of data.content.split("\n")) {
-          const match = line.match(/^\|\s*([^|]+?)\s*\|/);
-          if (match && match[1] && !match[1].startsWith("Project") && !match[1].startsWith("-")) {
-            names.push(match[1].trim());
-          }
-        }
-        setExistingProjects(names);
+        const data = (await res.json()) as { projects?: Array<{ name: string }> };
+        if (!data.projects) return;
+        setExistingProjects(data.projects.map((p) => p.name));
       } catch {
         // Non-critical — wizard works without existing project list
       }
@@ -129,51 +121,26 @@ export const ProjectWizardModal = memo(function ProjectWizardModal({
         }
       }
 
-      // Write the project file
-      const writeRes = await fetch("/api/workspace/file", {
-        method: "PUT",
+      // Create project via API (writes DB + project file)
+      const createRes = await fetch("/api/workspace/project", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           agentId,
-          path: `projects/${doc}`,
+          name: previewConfig.name.trim(),
+          doc,
+          status: "📋 Defined",
+          priority: previewConfig.priority,
+          oneLiner: previewConfig.description.trim(),
           content: markdown,
         }),
       });
-      if (!writeRes.ok) {
-        const data = await writeRes.json().catch(() => ({}));
+      if (!createRes.ok) {
+        const data = await createRes.json().catch(() => ({}));
         throw new Error(
-          (data as { error?: string }).error || `Write failed: ${writeRes.status}`,
+          (data as { error?: string }).error || `Create failed: ${createRes.status}`,
         );
       }
-
-      // Read INDEX.md
-      const indexRes = await fetch(
-        `/api/workspace/file?agentId=${encodeURIComponent(agentId)}&path=projects/INDEX.md`,
-      );
-      if (!indexRes.ok) throw new Error("Could not read projects/INDEX.md");
-      const indexData = (await indexRes.json()) as { content?: string };
-      if (!indexData.content) throw new Error("projects/INDEX.md is empty");
-
-      // Append row and write back
-      const updatedIndex = appendRow(
-        indexData.content,
-        previewConfig.name.trim(),
-        doc,
-        "📋 Defined",
-        previewConfig.priority,
-        previewConfig.description.trim(),
-      );
-
-      const updateRes = await fetch("/api/workspace/file", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          agentId,
-          path: "projects/INDEX.md",
-          content: updatedIndex,
-        }),
-      });
-      if (!updateRes.ok) throw new Error("Failed to update INDEX.md");
 
       onCreated();
       onClose();
