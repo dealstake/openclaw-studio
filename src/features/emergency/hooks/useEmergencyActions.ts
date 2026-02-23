@@ -127,7 +127,7 @@ export const useEmergencyActions = (client: GatewayClient, gatewayStatus: Gatewa
       const now = Date.now();
       const thirtyMinMs = 30 * 60 * 1000;
       const zombies = (result.sessions ?? []).filter((s) => {
-        if (!s.lastActiveAt) return true;
+        if (!s.lastActiveAt) return false;
         return now - new Date(s.lastActiveAt).getTime() > thirtyMinMs;
       });
 

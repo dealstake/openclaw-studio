@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useState } from "react";
+import { memo, useCallback, useEffect, useState } from "react";
 import { X, PauseCircle, Square, Trash2, Loader2 } from "lucide-react";
 import { EMERGENCY_ACTIONS, type EmergencyActionKind } from "../lib/types";
 import type { ActionResult, ActionStatus } from "../lib/types";
@@ -29,10 +29,20 @@ export const EmergencyPanel = memo(function EmergencyPanel({
 }: EmergencyPanelProps) {
   const [confirmAction, setConfirmAction] = useState<EmergencyActionKind | null>(null);
 
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [open, onClose]);
+
   const handleConfirm = useCallback(async () => {
     if (!confirmAction) return;
+    const action = confirmAction;
     setConfirmAction(null);
-    await onExecute(confirmAction);
+    await onExecute(action);
   }, [confirmAction, onExecute]);
 
   if (!open) return null;
