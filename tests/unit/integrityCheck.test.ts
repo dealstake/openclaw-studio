@@ -46,27 +46,27 @@ describe("integrityCheck", () => {
       '{"id":"e2","timestamp":"2026-01-01T00:00:00Z","type":"cron-completion","taskName":"T","taskId":"t1","status":"success","summary":"ok","meta":{}}',
     );
 
-    const report = checkIntegrity(db, { projects: 2, tasks: 2, activity: 2 });
+    const report = checkIntegrity(db, { tasks: 2, activity: 2 });
     expect(report.projectsDrift.match).toBe(true);
     expect(report.tasksDrift.match).toBe(true);
     expect(report.activityDrift.match).toBe(true);
   });
 
-  it("detects drift when DB has fewer projects than file", () => {
+  it("projects drift always matches (DB is sole SoT)", () => {
     const db = createTestDb();
     projectsRepo.importFromMarkdown(db, SAMPLE_INDEX); // 2 projects
 
-    const report = checkIntegrity(db, { projects: 5, tasks: 0, activity: 0 });
-    expect(report.projectsDrift.match).toBe(false);
+    const report = checkIntegrity(db, { tasks: 0, activity: 0 });
+    expect(report.projectsDrift.match).toBe(true);
     expect(report.projectsDrift.dbCount).toBe(2);
-    expect(report.projectsDrift.fileCount).toBe(5);
+    expect(report.projectsDrift.fileCount).toBe(2); // mirrors dbCount
   });
 
   it("detects drift when DB has fewer tasks than file", () => {
     const db = createTestDb();
     tasksRepo.importFromArray(db, [makeTask("t1")]);
 
-    const report = checkIntegrity(db, { projects: 0, tasks: 3, activity: 0 });
+    const report = checkIntegrity(db, { tasks: 3, activity: 0 });
     expect(report.tasksDrift.match).toBe(false);
     expect(report.tasksDrift.dbCount).toBe(1);
     expect(report.tasksDrift.fileCount).toBe(3);
@@ -80,14 +80,13 @@ describe("integrityCheck", () => {
       '{"id":"e2","timestamp":"2026-01-01T00:00:00Z","type":"cron-completion","taskName":"T","taskId":"t1","status":"success","summary":"ok","meta":{}}',
     );
 
-    // File has 1 line, DB has 2 — DB >= file is a match
-    const report = checkIntegrity(db, { projects: 0, tasks: 0, activity: 1 });
+    const report = checkIntegrity(db, { tasks: 0, activity: 1 });
     expect(report.activityDrift.match).toBe(true);
   });
 
   it("reports all zeros for empty DB", () => {
     const db = createTestDb();
-    const report = checkIntegrity(db, { projects: 0, tasks: 0, activity: 0 });
+    const report = checkIntegrity(db, { tasks: 0, activity: 0 });
     expect(report.projectsDrift.dbCount).toBe(0);
     expect(report.tasksDrift.dbCount).toBe(0);
     expect(report.activityDrift.dbCount).toBe(0);

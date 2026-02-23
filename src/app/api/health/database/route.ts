@@ -154,22 +154,13 @@ export async function GET(request: Request) {
 // ─── File Count Helpers ──────────────────────────────────────────────────────
 
 function getFileCounts(agentId: string): {
-  projects: number;
   tasks: number;
   activity: number;
 } {
-  let projects = 0;
   let taskCount = 0;
   let activity = 0;
 
-  try {
-    const { absolute: indexPath } = resolveWorkspacePath(agentId, "projects/INDEX.md");
-    const content = fs.readFileSync(indexPath, "utf-8");
-    // Count table data rows (lines starting with | that aren't headers/separators)
-    const lines = content.split("\n").filter((l) => l.startsWith("|"));
-    // Subtract header + separator rows
-    projects = Math.max(0, lines.length - 2);
-  } catch { /* file missing */ }
+  // Projects: DB is the sole source of truth (INDEX.md eliminated)
 
   try {
     const { absolute: tasksPath } = resolveWorkspacePath(agentId, "tasks/tasks.json");
@@ -184,5 +175,5 @@ function getFileCounts(agentId: string): {
     activity = content.split("\n").filter((l) => l.trim()).length;
   } catch { /* file missing */ }
 
-  return { projects, tasks: taskCount, activity };
+  return { tasks: taskCount, activity };
 }

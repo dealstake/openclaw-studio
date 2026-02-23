@@ -23,7 +23,7 @@ export interface IntegrityReport {
  */
 export function checkIntegrity(
   db: StudioDb,
-  fileCounts: { projects: number; tasks: number; activity: number },
+  fileCounts: { tasks: number; activity: number },
 ): IntegrityReport {
   const projectsDb = getTableCount(db, "projects_index");
   const tasksDb = getTableCount(db, "tasks");
@@ -32,8 +32,8 @@ export function checkIntegrity(
   return {
     projectsDrift: {
       dbCount: projectsDb,
-      fileCount: fileCounts.projects,
-      match: projectsDb === fileCounts.projects,
+      fileCount: projectsDb, // DB is sole SoT — no file to compare
+      match: true,
     },
     tasksDrift: {
       dbCount: tasksDb,
