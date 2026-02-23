@@ -25,12 +25,25 @@ const PHASE_CONFIG: Record<AgentPhase, { icon: typeof Brain; label: string }> = 
   working: { icon: Loader2, label: "Working" },
 };
 
+// ── Elapsed time formatting ────────────────────────────────────────────
+
+function formatElapsed(startMs: number): string {
+  const elapsed = Math.max(0, Math.floor((Date.now() - startMs) / 1000));
+  const mins = Math.floor(elapsed / 60);
+  const secs = elapsed % 60;
+  return mins > 0
+    ? `${mins}m ${String(secs).padStart(2, "0")}s`
+    : `${secs}s`;
+}
+
 // ── Elapsed timer (direct DOM mutation, no re-renders per tick) ────────
 
 const ElapsedBadge = memo(function ElapsedBadge({
   startMs,
+  phaseLabel,
 }: {
   startMs: number;
+  phaseLabel: string;
 }) {
   const ref = useRef<HTMLSpanElement>(null);
 
@@ -39,21 +52,24 @@ const ElapsedBadge = memo(function ElapsedBadge({
 
     function tick() {
       if (!ref.current) return;
-      const elapsed = Math.max(0, Math.floor((Date.now() - startMs) / 1000));
-      const mins = Math.floor(elapsed / 60);
-      const secs = elapsed % 60;
-      ref.current.textContent =
-        mins > 0
-          ? `${mins}m ${String(secs).padStart(2, "0")}s`
-          : `${secs}s`;
+      const timeStr = formatElapsed(startMs);
+      ref.current.textContent = timeStr;
+      // Update parent aria-label so screen readers get elapsed time
+      ref.current
+        .closest('[role="status"]')
+        ?.setAttribute(
+          "aria-label",
+          `Agent is ${phaseLabel.toLowerCase()}, elapsed time ${timeStr}`
+        );
     }
 
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
-  }, [startMs]);
+  }, [startMs, phaseLabel]);
 
-  return <span ref={ref} className="tabular-nums">0s</span>;
+  // Compute initial time inline to avoid "flash of 0s"
+  return <span ref={ref} className="tabular-nums">{formatElapsed(startMs)}</span>;
 });
 
 // ── Main component ─────────────────────────────────────────────────────
@@ -104,9 +120,9 @@ export const StreamingStatus = memo(function StreamingStatus({
         }
       />
       <span className="hidden sm:inline">{label}</span>
-      <span className="text-muted-foreground/40">·</span>
-      <span className="font-mono text-[10px] text-muted-foreground/70">
-        <ElapsedBadge startMs={effectiveStart} />
+      <span className="text-muted-foreground/60">·</span>
+      <span className="font-mono text-[10px] text-muted-foreground/80">
+        <ElapsedBadge startMs={effectiveStart} phaseLabel={label} />
       </span>
     </div>
   );
