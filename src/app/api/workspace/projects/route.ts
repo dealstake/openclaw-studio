@@ -113,3 +113,4 @@ export async function GET(request: Request) {
     return handleApiError(err, "workspace/projects");
   }
 }
+// Workspace cleanup: 2026-02-23 — trigger fresh project cache
