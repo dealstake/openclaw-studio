@@ -32,13 +32,15 @@ export const useCronAnalytics = (
         }))
       );
 
-      // Fetch cron sessions for token join
+      // Fetch sessions for token join — filter by kind client-side since the
+      // sessions.list RPC does not support a `kinds` parameter.
       const sessionsResult = await client.call<SessionsListResult>(
         "sessions.list",
-        { kinds: ["cron"], limit: 200 }
+        { limit: 200 }
       );
       const sessionTokenMap = new Map<number, number>();
       for (const s of sessionsResult.sessions ?? []) {
+        if (s.kind !== "cron") continue;
         if (s.updatedAt && s.totalTokens) {
           sessionTokenMap.set(s.updatedAt, s.totalTokens);
         }

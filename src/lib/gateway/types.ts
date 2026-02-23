@@ -67,6 +67,7 @@ export type AgentsListResult = {
 /** Single entry from `sessions.list` RPC. */
 export type SessionsListEntry = {
   key: string;
+  kind?: string;
   updatedAt?: number | null;
   displayName?: string;
   origin?: { label?: string | null; provider?: string | null } | null;

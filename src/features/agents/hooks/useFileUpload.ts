@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -38,6 +38,14 @@ const IMAGE_TYPES = new Set([
   "image/svg+xml",
 ]);
 
+/** Raster types eligible for client-side resize. SVG and GIF are excluded
+ *  (SVGs are resolution-independent; GIFs may be animated). */
+const RESIZABLE_IMAGE_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+]);
+
 const ACCEPTED_TYPES = new Set([
   ...IMAGE_TYPES,
   "application/pdf",
@@ -48,6 +56,23 @@ const ACCEPTED_TYPES = new Set([
 ]);
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
+/**
+ * Maximum image dimension (longest side) for client-side resizing.
+ *
+ * Images larger than this are scaled down before base64 encoding, so the
+ * gateway stores an already-conformant image and avoids re-resizing it on
+ * every model turn. Matches the gateway default for `imageMaxDimensionPx`.
+ *
+ * The gateway may apply a stricter limit (e.g. 768 px) — in that case the
+ * resize is from 1200 → 768 instead of from 2556 → 768, which is
+ * dramatically cheaper (one small step vs. a massive sharp resize + JPEG
+ * quality sweep).
+ */
+const IMAGE_MAX_DIMENSION_PX = 1200;
+
+/** JPEG quality for client-side resize output (0-1). */
+const IMAGE_RESIZE_QUALITY = 0.85;
 
 const ACCEPT_STRING =
   "image/jpeg,image/png,image/gif,image/webp,image/svg+xml,.pdf,.txt,.md,.csv,.json";
@@ -97,11 +122,104 @@ function readFileAsBase64(
   });
 }
 
+/**
+ * Resize a raster image to fit within {@link IMAGE_MAX_DIMENSION_PX} using
+ * an OffscreenCanvas (or regular Canvas as fallback). Returns the resized
+ * base64 and the output MIME type. If the image already fits, returns the
+ * original base64 unchanged.
+ *
+ * This prevents the gateway from re-resizing the same oversized image on
+ * every model turn (752 redundant resize ops observed in one day).
+ */
+async function resizeImageIfNeeded(
+  base64: string,
+  mimeType: string,
+): Promise<{ base64: string; mimeType: string }> {
+  if (!RESIZABLE_IMAGE_TYPES.has(mimeType)) return { base64, mimeType };
+
+  // Decode to an ImageBitmap to read natural dimensions without painting to DOM
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  const blob = new Blob([bytes], { type: mimeType });
+
+  let bmp: ImageBitmap;
+  try {
+    bmp = await createImageBitmap(blob);
+  } catch {
+    // If we can't decode the image, return it unchanged — the gateway
+    // will handle it (or error gracefully).
+    return { base64, mimeType };
+  }
+
+  const { width, height } = bmp;
+  const maxSide = Math.max(width, height);
+
+  if (maxSide <= IMAGE_MAX_DIMENSION_PX) {
+    bmp.close();
+    return { base64, mimeType };
+  }
+
+  // Scale down proportionally
+  const scale = IMAGE_MAX_DIMENSION_PX / maxSide;
+  const newWidth = Math.round(width * scale);
+  const newHeight = Math.round(height * scale);
+
+  // Use OffscreenCanvas when available (Web Workers friendly, no DOM needed)
+  let canvas: OffscreenCanvas | HTMLCanvasElement;
+  if (typeof OffscreenCanvas !== "undefined") {
+    canvas = new OffscreenCanvas(newWidth, newHeight);
+  } else {
+    canvas = document.createElement("canvas");
+    canvas.width = newWidth;
+    canvas.height = newHeight;
+  }
+
+  const ctx = canvas.getContext("2d") as
+    | OffscreenCanvasRenderingContext2D
+    | CanvasRenderingContext2D
+    | null;
+  if (!ctx) {
+    bmp.close();
+    return { base64, mimeType };
+  }
+
+  ctx.drawImage(bmp, 0, 0, newWidth, newHeight);
+  bmp.close();
+
+  // Export as JPEG — the gateway's resize pipeline also outputs JPEG,
+  // so this keeps the format consistent and avoids double-conversion.
+  const outputMime = "image/jpeg";
+  let outputBlob: Blob;
+  if (canvas instanceof OffscreenCanvas) {
+    outputBlob = await canvas.convertToBlob({ type: outputMime, quality: IMAGE_RESIZE_QUALITY });
+  } else {
+    outputBlob = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob(
+        (b) => (b ? resolve(b) : reject(new Error("Canvas toBlob failed"))),
+        outputMime,
+        IMAGE_RESIZE_QUALITY,
+      );
+    });
+  }
+
+  const outputBase64 = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      resolve(dataUrl.includes(",") ? dataUrl.split(",")[1] : dataUrl);
+    };
+    reader.onerror = () => reject(new Error("Failed to encode resized image"));
+    reader.readAsDataURL(outputBlob);
+  });
+
+  return { base64: outputBase64, mimeType: outputMime };
+}
+
 // ── Hook ───────────────────────────────────────────────────────────────
 
 export function useFileUpload() {
   const [files, setFiles] = useState<UploadedFile[]>([]);
-  const encodingRef = useRef(false);
 
   const addFiles = useCallback(async (newFiles: File[]) => {
     const entries: UploadedFile[] = [];
@@ -132,22 +250,29 @@ export function useFileUpload() {
 
     setFiles((prev) => [...prev, ...entries]);
 
-    // Encode all files in parallel
-    if (!encodingRef.current) {
-      encodingRef.current = true;
-    }
-
     const results = await Promise.allSettled(
       entries.map(async (entry) => {
         try {
-          const content = await readFileAsBase64(entry.file, (pct) => {
+          const raw = await readFileAsBase64(entry.file, (pct) => {
             setFiles((prev) =>
               prev.map((f) => (f.id === entry.id ? { ...f, progress: pct } : f))
             );
           });
-          return { id: entry.id, content, error: null };
+
+          // Resize oversized images client-side so the gateway stores them
+          // at the target dimensions. This avoids the gateway re-resizing
+          // the same image on every subsequent model turn.
+          let content = raw;
+          let mimeType = entry.mimeType;
+          if (entry.isImage && RESIZABLE_IMAGE_TYPES.has(entry.mimeType)) {
+            const resized = await resizeImageIfNeeded(raw, entry.mimeType);
+            content = resized.base64;
+            mimeType = resized.mimeType;
+          }
+
+          return { id: entry.id, content, mimeType, error: null };
         } catch {
-          return { id: entry.id, content: null, error: "Encoding failed" };
+          return { id: entry.id, content: null, mimeType: entry.mimeType, error: "Encoding failed" };
         }
       })
     );
@@ -158,15 +283,14 @@ export function useFileUpload() {
           (r) => r.status === "fulfilled" && r.value.id === f.id
         );
         if (!result || result.status !== "fulfilled") return f;
-        const { content, error } = result.value;
+        const { content, mimeType, error } = result.value;
         if (error || !content) {
           return { ...f, status: "error" as const, error: error ?? "Unknown error", progress: 0 };
         }
-        return { ...f, status: "ready" as const, content, progress: 100 };
+        return { ...f, status: "ready" as const, content, mimeType, progress: 100 };
       })
     );
 
-    encodingRef.current = false;
     return errors;
   }, []);
 
