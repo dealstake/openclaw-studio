@@ -77,6 +77,9 @@ import { TraceViewer } from "@/features/sessions/components/TraceViewer";
 import { useChannelsStatus } from "@/features/channels/hooks/useChannelsStatus";
 import { useAllSessions } from "@/features/sessions/hooks/useAllSessions";
 import { useAllCronJobs } from "@/features/cron/hooks/useAllCronJobs";
+import { EmergencyFab } from "@/features/emergency/components/EmergencyFab";
+import { EmergencyPanel } from "@/features/emergency/components/EmergencyPanel";
+import { useEmergencyActions } from "@/features/emergency/hooks/useEmergencyActions";
 import type { CronJobSummary } from "@/lib/cron/types";
 import { useNotificationEvaluator } from "@/features/notifications/hooks/useNotificationEvaluator";
 import { useExecApprovals } from "@/features/exec-approvals/hooks/useExecApprovals";
@@ -238,6 +241,9 @@ const AgentStudioPage = () => {
     allCronRunBusyJobId, allCronDeleteBusyJobId,
     loadAllCronJobs, handleAllCronRunJob, handleAllCronDeleteJob, allCronToggleBusyJobId, handleAllCronToggleEnabled,
   } = useAllCronJobs(client, status);
+
+  const [emergencyOpen, setEmergencyOpen] = useState(false);
+  const emergency = useEmergencyActions(client, status);
 
   useNotificationEvaluator(client, status);
 
@@ -1903,6 +1909,14 @@ const AgentStudioPage = () => {
         agents={agents}
         onCancelDelete={() => setDeleteConfirmAgentId(null)}
         onConfirmDelete={(agentId) => { setDeleteConfirmAgentId(null); void handleConfirmDeleteAgent(agentId); }}
+      />
+      <EmergencyFab onClick={() => setEmergencyOpen(true)} />
+      <EmergencyPanel
+        open={emergencyOpen}
+        onClose={() => setEmergencyOpen(false)}
+        actionStatus={emergency.status}
+        lastResult={emergency.lastResult}
+        onExecute={emergency.executeAction}
       />
     </div>
     </Suspense>
