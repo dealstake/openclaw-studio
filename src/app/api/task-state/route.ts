@@ -28,9 +28,20 @@ export async function GET(req: NextRequest) {
   }
 
   const row = rows[0];
+  let state: unknown;
+  try {
+    state = JSON.parse(row.stateJson);
+  } catch {
+    console.error(`[task-state] Failed to parse stateJson for ${row.taskId}`);
+    return NextResponse.json(
+      { error: "Failed to parse stored state data" },
+      { status: 500 },
+    );
+  }
+
   return NextResponse.json({
     taskId: row.taskId,
-    state: JSON.parse(row.stateJson),
+    state,
     updatedAt: row.updatedAt,
   });
 }
@@ -51,8 +62,22 @@ export async function PUT(req: NextRequest) {
     );
   }
 
+  if (typeof state !== "object" || state === null || Array.isArray(state)) {
+    return NextResponse.json(
+      { error: "state must be a JSON object" },
+      { status: 400 },
+    );
+  }
+
   const db = getDb();
   const stateJson = JSON.stringify(state);
+
+  if (stateJson.length > 100 * 1024) {
+    return NextResponse.json(
+      { error: "state payload exceeds 100KB limit" },
+      { status: 413 },
+    );
+  }
   const now = new Date().toISOString();
 
   db.insert(taskState)
