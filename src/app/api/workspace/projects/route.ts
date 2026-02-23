@@ -3,9 +3,10 @@ import { NextResponse } from "next/server";
 import { readWorkspaceFile } from "@/lib/workspace/resolve";
 import { isSidecarConfigured } from "@/lib/workspace/sidecar";
 import { validateAgentId, handleApiError } from "@/lib/api/helpers";
-import { readProjectFileContent } from "@/lib/workspace/indexFile";
+import { readIndexContent, readProjectFileContent } from "@/lib/workspace/indexFile";
 import { getDb } from "@/lib/database";
 import * as projectsRepo from "@/lib/database/repositories/projectsRepo";
+import { importFromMarkdown } from "@/lib/database/repositories/projectsRepo";
 import * as projectDetailsRepo from "@/lib/database/repositories/projectDetailsRepo";
 import { parseProjectFile } from "@/features/projects/lib/parseProject";
 
@@ -46,7 +47,17 @@ export async function GET(request: Request) {
     const db = getDb();
     const usingSidecar = isSidecarConfigured();
     const cacheTtl = usingSidecar ? SIDECAR_CACHE_TTL_MS : LOCAL_CACHE_TTL_MS;
-    const rows = projectsRepo.listAll(db);
+    let rows = projectsRepo.listAll(db);
+
+    // Sidecar (Cloud Run) uses ephemeral DB — auto-import from INDEX.md if empty.
+    // Local mode relies on the pre-populated Mac Mini DB (no fallback needed).
+    if (rows.length === 0 && usingSidecar) {
+      const result = await readIndexContent(agentId);
+      if (!result.error && result.content) {
+        importFromMarkdown(db, result.content);
+        rows = projectsRepo.listAll(db);
+      }
+    }
 
     if (rows.length === 0) {
       return NextResponse.json({ projects: [] });
