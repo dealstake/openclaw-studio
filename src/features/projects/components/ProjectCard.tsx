@@ -234,6 +234,7 @@ export const ProjectCard = memo(function ProjectCard({
                 type="button"
                 className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition"
                 onClick={(e) => { e.stopPropagation(); setPhasesExpanded((v) => !v); }}
+                aria-expanded={phasesExpanded}
               >
                 {phasesExpanded ? (
                   <ChevronDown className="h-3 w-3" />
@@ -288,6 +289,7 @@ export const ProjectCard = memo(function ProjectCard({
                 type="button"
                 className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition"
                 onClick={(e) => { e.stopPropagation(); setTasksExpanded((v) => !v); }}
+                aria-expanded={tasksExpanded}
               >
                 {tasksExpanded ? (
                   <ChevronDown className="h-3 w-3" />
