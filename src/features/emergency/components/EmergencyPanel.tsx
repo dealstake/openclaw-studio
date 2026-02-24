@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { X, PauseCircle, Square, Trash2, Loader2, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { EMERGENCY_ACTIONS, type EmergencyActionKind } from "../lib/types";
@@ -56,6 +56,24 @@ export const EmergencyPanel = memo(function EmergencyPanel({
     }
   }, [onRestoreCron]);
 
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  // Focus panel on open + handle Escape
+  useEffect(() => {
+    if (!open) return;
+    const el = panelRef.current;
+    if (el) el.focus();
+
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        onClose();
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [open, onClose]);
+
   if (!open) return null;
 
   const confirmConfig = confirmAction
@@ -68,15 +86,17 @@ export const EmergencyPanel = memo(function EmergencyPanel({
       <div
         className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm"
         onClick={onClose}
-        onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}
         role="presentation"
       />
 
       {/* Panel */}
       <div
+        ref={panelRef}
         role="dialog"
         aria-label="Emergency Controls"
-        className="fixed right-0 top-0 z-[61] flex h-full w-full max-w-sm flex-col border-l border-navy-800 bg-navy-950 shadow-2xl"
+        aria-modal="true"
+        tabIndex={-1}
+        className="fixed right-0 top-0 z-[61] flex h-full w-full max-w-sm flex-col border-l border-navy-800 bg-navy-950 shadow-2xl focus:outline-none"
       >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-navy-800 px-4 py-3">
