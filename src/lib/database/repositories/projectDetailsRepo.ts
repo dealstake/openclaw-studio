@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { projectDetails, type ProjectDetailsRow } from "../schema";
+import { projectDetails, projectPlanItems, type ProjectDetailsRow } from "../schema";
 import type { StudioDb } from "../index";
 import { parseProjectFile, type ProjectDetails } from "@/features/projects/lib/parseProject";
 
@@ -27,25 +27,11 @@ export function upsertFromMarkdown(
   const now = new Date().toISOString();
   const mtime = fileMtimeMs ?? null;
 
-  db.insert(projectDetails)
-    .values({
-      doc,
-      lastWorkedOn: parsed.continuation.lastWorkedOn ?? null,
-      nextStep: parsed.continuation.nextStep ?? null,
-      blockedBy: parsed.continuation.blockedBy ?? null,
-      contextNeeded: parsed.continuation.contextNeeded ?? null,
-      progressCompleted: parsed.progress.completed,
-      progressTotal: parsed.progress.total,
-      progressPercent: parsed.progress.percent,
-      associatedTasksJson: parsed.associatedTasks.length > 0
-        ? JSON.stringify(parsed.associatedTasks)
-        : null,
-      fileMtimeMs: mtime,
-      updatedAt: now,
-    })
-    .onConflictDoUpdate({
-      target: projectDetails.doc,
-      set: {
+  // Transactionally upsert details + replace plan items
+  db.transaction((tx) => {
+    tx.insert(projectDetails)
+      .values({
+        doc,
         lastWorkedOn: parsed.continuation.lastWorkedOn ?? null,
         nextStep: parsed.continuation.nextStep ?? null,
         blockedBy: parsed.continuation.blockedBy ?? null,
@@ -58,9 +44,43 @@ export function upsertFromMarkdown(
           : null,
         fileMtimeMs: mtime,
         updatedAt: now,
-      },
-    })
-    .run();
+      })
+      .onConflictDoUpdate({
+        target: projectDetails.doc,
+        set: {
+          lastWorkedOn: parsed.continuation.lastWorkedOn ?? null,
+          nextStep: parsed.continuation.nextStep ?? null,
+          blockedBy: parsed.continuation.blockedBy ?? null,
+          contextNeeded: parsed.continuation.contextNeeded ?? null,
+          progressCompleted: parsed.progress.completed,
+          progressTotal: parsed.progress.total,
+          progressPercent: parsed.progress.percent,
+          associatedTasksJson: parsed.associatedTasks.length > 0
+            ? JSON.stringify(parsed.associatedTasks)
+            : null,
+          fileMtimeMs: mtime,
+          updatedAt: now,
+        },
+      })
+      .run();
+
+    // Delete-all-then-insert pattern for plan items
+    tx.delete(projectPlanItems)
+      .where(eq(projectPlanItems.doc, doc))
+      .run();
+
+    for (const item of parsed.planItems) {
+      tx.insert(projectPlanItems)
+        .values({
+          doc,
+          phaseName: item.phaseName,
+          taskDescription: item.taskDescription,
+          isCompleted: item.isCompleted,
+          sortOrder: item.sortOrder,
+        })
+        .run();
+    }
+  });
 
   return parsed;
 }
@@ -75,8 +95,21 @@ export function remove(db: StudioDb, doc: string): boolean {
   return result.changes > 0;
 }
 
+/** Get plan items for a project doc. */
+export function getPlanItems(db: StudioDb, doc: string) {
+  return db
+    .select()
+    .from(projectPlanItems)
+    .where(eq(projectPlanItems.doc, doc))
+    .orderBy(projectPlanItems.sortOrder)
+    .all();
+}
+
 /** Convert a DB row back to the ProjectDetails shape used by the API. */
-export function toProjectDetails(row: ProjectDetailsRow): ProjectDetails {
+export function toProjectDetails(
+  row: ProjectDetailsRow,
+  planItemRows?: { phaseName: string; taskDescription: string; isCompleted: boolean | null; sortOrder: number }[],
+): ProjectDetails {
   return {
     continuation: {
       lastWorkedOn: row.lastWorkedOn ?? undefined,
@@ -92,5 +125,11 @@ export function toProjectDetails(row: ProjectDetailsRow): ProjectDetails {
     associatedTasks: row.associatedTasksJson
       ? JSON.parse(row.associatedTasksJson)
       : [],
+    planItems: (planItemRows ?? []).map((item) => ({
+      phaseName: item.phaseName,
+      taskDescription: item.taskDescription,
+      isCompleted: item.isCompleted ?? false,
+      sortOrder: item.sortOrder,
+    })),
   };
 }

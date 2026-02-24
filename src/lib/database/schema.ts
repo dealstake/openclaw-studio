@@ -92,6 +92,21 @@ export const projectDetails = sqliteTable("project_details", {
     .$defaultFn(() => new Date().toISOString()),
 });
 
+// ─── Project Plan Items (structured phase/task breakdown) ────────────────────
+
+export const projectPlanItems = sqliteTable("project_plan_items", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  doc: text("doc")
+    .notNull()
+    .references(() => projectsIndex.doc, { onDelete: "cascade" }),
+  phaseName: text("phase_name").notNull(),
+  taskDescription: text("task_description").notNull(),
+  isCompleted: integer("is_completed", { mode: "boolean" })
+    .notNull()
+    .default(false),
+  sortOrder: integer("sort_order").notNull().default(0),
+});
+
 // ─── Task State ──────────────────────────────────────────────────────────────
 
 export const taskState = sqliteTable("task_state", {
@@ -114,3 +129,5 @@ export type ProjectDetailsRow = typeof projectDetails.$inferSelect;
 export type NewProjectDetailsRow = typeof projectDetails.$inferInsert;
 export type TaskStateRow = typeof taskState.$inferSelect;
 export type NewTaskStateRow = typeof taskState.$inferInsert;
+export type ProjectPlanItemRow = typeof projectPlanItems.$inferSelect;
+export type NewProjectPlanItemRow = typeof projectPlanItems.$inferInsert;

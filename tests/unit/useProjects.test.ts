@@ -344,6 +344,7 @@ describe("useProjects", () => {
         statusEmoji: "🔨",
         details: {
           associatedTasks: [{ name: "task-1", cronJobId: "cron-1", autoManage: true }],
+          planItems: [],
           continuation: {},
           progress: { completed: 0, total: 0, percent: 0 },
         },
@@ -381,6 +382,7 @@ describe("useProjects", () => {
         status: "⏸️ Parked",
         details: {
           associatedTasks: [{ name: "task-1", cronJobId: "cron-1", autoManage: true }],
+          planItems: [],
           continuation: {},
           progress: { completed: 0, total: 0, percent: 0 },
         },

@@ -64,6 +64,13 @@
       "when": 1771974074085,
       "tag": "0008_fat_sauron",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1771975882287,
+      "tag": "0009_hot_betty_ross",
+      "breakpoints": true
     }
   ]
 }

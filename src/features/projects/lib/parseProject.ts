@@ -4,6 +4,13 @@ export interface AssociatedTask {
   autoManage: boolean;
 }
 
+export interface PlanItem {
+  phaseName: string;
+  taskDescription: string;
+  isCompleted: boolean;
+  sortOrder: number;
+}
+
 export interface ProjectDetails {
   continuation: {
     lastWorkedOn?: string;
@@ -17,6 +24,7 @@ export interface ProjectDetails {
     percent: number;
   };
   associatedTasks: AssociatedTask[];
+  planItems: PlanItem[];
 }
 
 export function parseProjectFile(markdown: string): ProjectDetails {
@@ -24,6 +32,7 @@ export function parseProjectFile(markdown: string): ProjectDetails {
     continuation: {},
     progress: { completed: 0, total: 0, percent: 0 },
     associatedTasks: [],
+    planItems: [],
   };
 
   // Parse Continuation Context
@@ -80,6 +89,30 @@ export function parseProjectFile(markdown: string): ProjectDetails {
     total,
     percent: total > 0 ? Math.round((completed / total) * 100) : 0,
   };
+
+  // Parse structured plan items (per-phase, per-task)
+  if (implSection) {
+    let currentPhase = "Ungrouped";
+    let sortOrder = 0;
+    for (const line of implSection.split("\n")) {
+      // Detect phase headings: ### Phase 1: Name or ### Name
+      const phaseMatch = line.match(/^###\s+(.+)/);
+      if (phaseMatch) {
+        currentPhase = phaseMatch[1].trim();
+        continue;
+      }
+      // Detect checkboxes
+      const checkMatch = line.match(/^[-*]\s+\[([ xX])\]\s+(.+)/);
+      if (checkMatch) {
+        details.planItems.push({
+          phaseName: currentPhase,
+          taskDescription: checkMatch[2].trim(),
+          isCompleted: checkMatch[1].toLowerCase() === "x",
+          sortOrder: sortOrder++,
+        });
+      }
+    }
+  }
 
   // Parse Associated Tasks section
   const tasksMatch = markdown.match(
