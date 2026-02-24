@@ -38,7 +38,7 @@ export const useAgentTasks = (
   busyTaskIdRef.current = busyTaskId;
 
   const loadTasks = useCallback(async () => {
-    if (!agentId || status !== "connected" || loadingRef.current) return;
+    if (!agentId || status !== "connected" || loadingRef.current || busyTaskIdRef.current) return;
     loadingRef.current = true;
     setLoading(true);
     try {
