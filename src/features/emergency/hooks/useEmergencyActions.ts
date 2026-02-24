@@ -172,8 +172,21 @@ export const useEmergencyActions = (client: GatewayClient, gatewayStatus: Gatewa
     [pauseAllCron, stopActiveSessions, cleanupZombies]
   );
 
+  const restoreCron = useCallback(async () => {
+    if (gatewayStatus !== "connected") return;
+    for (const id of state.pausedJobIds) {
+      try {
+        await updateCronJob(client, id, { enabled: true });
+      } catch {
+        // Continue with remaining jobs
+      }
+    }
+    setState((prev) => ({ ...prev, pausedJobIds: [] }));
+  }, [client, gatewayStatus, state.pausedJobIds]);
+
   return {
     ...state,
     executeAction,
+    restoreCron,
   };
 };

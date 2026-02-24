@@ -1916,7 +1916,9 @@ const AgentStudioPage = () => {
         onClose={() => setEmergencyOpen(false)}
         actionStatus={emergency.status}
         lastResult={emergency.lastResult}
+        pausedJobIds={emergency.pausedJobIds}
         onExecute={emergency.executeAction}
+        onRestoreCron={emergency.restoreCron}
       />
     </div>
     </Suspense>
