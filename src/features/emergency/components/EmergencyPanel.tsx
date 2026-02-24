@@ -57,6 +57,39 @@ export const EmergencyPanel = memo(function EmergencyPanel({
   }, [onRestoreCron]);
 
   const panelRef = useRef<HTMLDivElement>(null);
+  const touchStartX = useRef<number | null>(null);
+  const touchDeltaX = useRef(0);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchDeltaX.current = 0;
+  }, []);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    const delta = e.touches[0].clientX - touchStartX.current;
+    touchDeltaX.current = Math.max(0, delta);
+    const el = panelRef.current;
+    if (el) {
+      el.style.transform = `translateX(${touchDeltaX.current}px)`;
+      el.style.transition = "none";
+    }
+  }, []);
+
+  const handleTouchEnd = useCallback(() => {
+    const el = panelRef.current;
+    if (el) {
+      el.style.transition = "transform 200ms ease-out";
+      if (touchDeltaX.current > 100) {
+        el.style.transform = "translateX(100%)";
+        setTimeout(onClose, 200);
+      } else {
+        el.style.transform = "translateX(0)";
+      }
+    }
+    touchStartX.current = null;
+    touchDeltaX.current = 0;
+  }, [onClose]);
 
   // Focus panel on open + handle Escape
   useEffect(() => {
@@ -96,6 +129,9 @@ export const EmergencyPanel = memo(function EmergencyPanel({
         aria-label="Emergency Controls"
         aria-modal="true"
         tabIndex={-1}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
         className="fixed right-0 top-0 z-[61] flex h-full w-full max-w-sm flex-col border-l border-navy-800 bg-navy-950 shadow-2xl focus:outline-none"
       >
         {/* Header */}
