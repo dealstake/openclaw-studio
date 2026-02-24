@@ -244,21 +244,20 @@ describe("database", () => {
   });
 
   describe("re-import idempotency (stale data)", () => {
-    it("projects importFromMarkdown upserts without duplicates", async () => {
+    it("projects upsert is idempotent — no duplicates", async () => {
       const db = createTestDb();
-      const { importFromMarkdown } = await import("@/lib/database/repositories/projectsRepo");
+      const { upsert, listAll } = await import("@/lib/database/repositories/projectsRepo");
 
-      const markdown = `| Project | Doc | Status | Priority | One-liner |
-|---------|-----|--------|----------|-----------|
-| Test A | a.md | 🔨 Active | 🟡 P1 | First project |
-| Test B | b.md | ✅ Done | 🟢 P2 | Second project |`;
+      const rows = [
+        { name: "Test A", doc: "a.md", status: "🔨 Active", statusEmoji: "🔨", priority: "🟡 P1", priorityEmoji: "🟡", oneLiner: "First project" },
+        { name: "Test B", doc: "b.md", status: "✅ Done", statusEmoji: "✅", priority: "🟢 P2", priorityEmoji: "🟢", oneLiner: "Second project" },
+      ];
 
-      // Import twice — should not duplicate
-      importFromMarkdown(db, markdown);
-      importFromMarkdown(db, markdown);
+      // Upsert twice — should not duplicate
+      for (const r of rows) upsert(db, r);
+      for (const r of rows) upsert(db, r);
 
-      const rows = db.select().from(projectsIndex).all();
-      expect(rows).toHaveLength(2);
+      expect(listAll(db)).toHaveLength(2);
     });
 
     it("activity importFromJsonl skips duplicates via onConflictDoNothing", async () => {

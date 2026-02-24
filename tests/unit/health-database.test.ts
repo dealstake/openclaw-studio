@@ -92,11 +92,7 @@ describe("health-database", () => {
 
     it("populated DB has non-zero rows", () => {
       const db = createTestDb();
-      const indexMd = `| Project | Doc | Status | Priority | One-liner |
-|---------|-----|--------|----------|-----------|
-| Test | test.md | 🔨 Active | 🔴 P0 | A test |
-`;
-      projectsRepo.importFromMarkdown(db, indexMd);
+      projectsRepo.upsert(db, { name: "Test", doc: "test.md", status: "🔨 Active", statusEmoji: "🔨", priority: "🔴 P0", priorityEmoji: "🔴", oneLiner: "A test" });
       tasksRepo.importFromArray(db, [makeTask("t1")]);
       activityRepo.insert(db, {
         id: "e1",
@@ -141,11 +137,7 @@ describe("health-database", () => {
 
     it("fully populated DB = ok", () => {
       const db = createTestDb();
-      const indexMd = `| Project | Doc | Status | Priority | One-liner |
-|---------|-----|--------|----------|-----------|
-| Test | test.md | 🔨 Active | 🔴 P0 | A test |
-`;
-      projectsRepo.importFromMarkdown(db, indexMd);
+      projectsRepo.upsert(db, { name: "Test", doc: "test.md", status: "🔨 Active", statusEmoji: "🔨", priority: "🔴 P0", priorityEmoji: "🔴", oneLiner: "A test" });
       tasksRepo.importFromArray(db, [makeTask("t1")]);
       activityRepo.insert(db, {
         id: "e1",

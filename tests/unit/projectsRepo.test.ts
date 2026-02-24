@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { createTestDb } from "@/lib/database";
 import type { StudioDb } from "@/lib/database";
 import * as repo from "@/lib/database/repositories/projectsRepo";
-import { generateIndexMarkdown } from "@/lib/database/sync/indexSync";
 
 describe("projectsRepo", () => {
   let db: StudioDb;
@@ -95,65 +94,5 @@ describe("projectsRepo", () => {
       expect(repo.remove(db, "test-project.md")).toBe(true);
       expect(repo.listAll(db)).toHaveLength(0);
     });
-  });
-
-  describe("importFromMarkdown", () => {
-    it("imports rows from INDEX.md format", () => {
-      const markdown = `# Projects Index
-
-| Project | Doc | Status | Priority | One-liner |
-|---------|-----|--------|----------|-----------|
-| Alpha | alpha.md | 🔨 Active | 🟡 P1 | First project |
-| Beta | beta.md | ✅ Done | 🟢 P2 | Second project |
-| Gamma | gamma.md | 🚧 In Progress | 🔴 P0 | Third project |
-`;
-      repo.importFromMarkdown(db, markdown);
-      const rows = repo.listAll(db);
-      expect(rows).toHaveLength(3);
-      // Sorted: 🚧 (0), 🔨 (1), ✅ (5)
-      expect(rows[0].doc).toBe("gamma.md");
-      expect(rows[1].doc).toBe("alpha.md");
-      expect(rows[2].doc).toBe("beta.md");
-    });
-
-    it("is idempotent — re-import updates, does not duplicate", () => {
-      const markdown = `| Project | Doc | Status | Priority | One-liner |
-|---------|-----|--------|----------|-----------|
-| Alpha | alpha.md | 🔨 Active | 🟡 P1 | First |`;
-      repo.importFromMarkdown(db, markdown);
-      repo.importFromMarkdown(db, markdown);
-      expect(repo.listAll(db)).toHaveLength(1);
-    });
-  });
-});
-
-describe("indexSync", () => {
-  let db: StudioDb;
-
-  beforeEach(() => {
-    db = createTestDb();
-  });
-
-  it("generates valid INDEX.md from DB rows", () => {
-    repo.upsert(db, {
-      name: "Alpha",
-      doc: "alpha.md",
-      status: "🔨 Active",
-      statusEmoji: "🔨",
-      priority: "🟡 P1",
-      priorityEmoji: "🟡",
-      oneLiner: "First project",
-    });
-
-    const md = generateIndexMarkdown(db);
-    expect(md).toContain("| Alpha | alpha.md | 🔨 Active | 🟡 P1 | First project |");
-    expect(md).toContain("## Status Key");
-    expect(md).toContain("## Priority Key");
-  });
-
-  it("generates empty table when DB is empty", () => {
-    const md = generateIndexMarkdown(db);
-    expect(md).toContain("| Project | Doc | Status | Priority | One-liner |");
-    expect(md).toContain("## Status Key");
   });
 });

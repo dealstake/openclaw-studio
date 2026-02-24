@@ -6,11 +6,10 @@ import * as tasksRepo from "@/lib/database/repositories/tasksRepo";
 import * as activityRepo from "@/lib/database/repositories/activityRepo";
 import type { StudioTask } from "@/features/tasks/types";
 
-const SAMPLE_INDEX = `| Project | Doc | Status | Priority | One-liner |
-|---------|-----|--------|----------|-----------|
-| Proj A | proj-a.md | 🔨 Active | 🔴 P0 | Description A |
-| Proj B | proj-b.md | ✅ Done | 🟡 P1 | Description B |
-`;
+function seedProjects(db: Parameters<typeof projectsRepo.upsert>[0]) {
+  projectsRepo.upsert(db, { name: "Proj A", doc: "proj-a.md", status: "🔨 Active", statusEmoji: "🔨", priority: "🔴 P0", priorityEmoji: "🔴", oneLiner: "Description A" });
+  projectsRepo.upsert(db, { name: "Proj B", doc: "proj-b.md", status: "✅ Done", statusEmoji: "✅", priority: "🟡 P1", priorityEmoji: "🟡", oneLiner: "Description B" });
+}
 
 function makeTask(id: string): StudioTask {
   return {
@@ -38,7 +37,7 @@ function makeTask(id: string): StudioTask {
 describe("integrityCheck", () => {
   it("reports match when DB counts equal file counts", () => {
     const db = createTestDb();
-    projectsRepo.importFromMarkdown(db, SAMPLE_INDEX);
+    seedProjects(db);
     tasksRepo.importFromArray(db, [makeTask("t1"), makeTask("t2")]);
     activityRepo.importFromJsonl(
       db,
@@ -54,7 +53,7 @@ describe("integrityCheck", () => {
 
   it("projects drift always matches (DB is sole SoT)", () => {
     const db = createTestDb();
-    projectsRepo.importFromMarkdown(db, SAMPLE_INDEX); // 2 projects
+    seedProjects(db); // 2 projects
 
     const report = checkIntegrity(db, { tasks: 0, activity: 0 });
     expect(report.projectsDrift.match).toBe(true);

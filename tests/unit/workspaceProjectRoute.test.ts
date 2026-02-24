@@ -69,7 +69,7 @@ describe("PATCH /api/workspace/project", () => {
     mockedWrite.mockReturnValue({ ...writeResult });
     // Seed DB with test data
     const db = getDb();
-    projectsRepo.importFromMarkdown(db, INDEX_CONTENT);
+    projectsRepo.upsert(db, { name: "My Project", doc: "my-project.md", status: "🔨 Active", statusEmoji: "🔨", priority: "🟡 P1", priorityEmoji: "🟡", oneLiner: "A test project" }); projectsRepo.upsert(db, { name: "Other", doc: "other.md", status: "✅ Done", statusEmoji: "✅", priority: "🟢 P2", priorityEmoji: "🟢", oneLiner: "Another" });
   });
 
   it("rejects missing agentId", async () => {
@@ -111,7 +111,7 @@ describe("DELETE /api/workspace/project", () => {
     mockedWrite.mockReturnValue({ ...writeResult });
     // Seed DB with test data
     const db = getDb();
-    projectsRepo.importFromMarkdown(db, INDEX_CONTENT);
+    projectsRepo.upsert(db, { name: "My Project", doc: "my-project.md", status: "🔨 Active", statusEmoji: "🔨", priority: "🟡 P1", priorityEmoji: "🟡", oneLiner: "A test project" }); projectsRepo.upsert(db, { name: "Other", doc: "other.md", status: "✅ Done", statusEmoji: "✅", priority: "🟢 P2", priorityEmoji: "🟢", oneLiner: "Another" });
   });
 
   it("rejects missing doc", async () => {

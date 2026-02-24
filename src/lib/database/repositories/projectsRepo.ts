@@ -1,7 +1,6 @@
 import { eq, asc, and, sql } from "drizzle-orm";
 import { projectsIndex, type ProjectIndexRow as FullProjectIndexRow } from "../schema";
 import { STATUS_ORDER } from "@/features/projects/lib/constants";
-import { parseIndex, type ProjectIndexRow as ParsedRow } from "@/features/projects/lib/indexTable";
 import type { StudioDb } from "../index";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -130,44 +129,4 @@ export function remove(db: StudioDb, doc: string): boolean {
     .run();
 
   return result.changes > 0;
-}
-
-/** Import projects from INDEX.md markdown content into the database. Idempotent (upserts). */
-export function importFromMarkdown(db: StudioDb, indexContent: string): void {
-  const parsed: ParsedRow[] = parseIndex(indexContent);
-
-  // Wrap in transaction for performance (one implicit transaction vs N)
-  db.transaction((tx) => {
-    // We need the raw StudioDb for upsert, but transaction gives us a tx object.
-    // Since upsert uses db directly, we batch via the underlying connection.
-    for (const row of parsed) {
-      tx.insert(projectsIndex)
-        .values({
-          name: row.name,
-          doc: row.doc,
-          status: row.status,
-          statusEmoji: row.statusEmoji,
-          priority: row.priority,
-          priorityEmoji: row.priorityEmoji,
-          oneLiner: row.oneLiner,
-          sortOrder: STATUS_ORDER[row.statusEmoji] ?? 99,
-          updatedAt: new Date().toISOString(),
-        })
-        .onConflictDoUpdate({
-          target: projectsIndex.doc,
-          set: {
-            name: row.name,
-            status: row.status,
-            statusEmoji: row.statusEmoji,
-            priority: row.priority,
-            priorityEmoji: row.priorityEmoji,
-            oneLiner: row.oneLiner,
-            sortOrder: STATUS_ORDER[row.statusEmoji] ?? 99,
-            version: sql`${projectsIndex.version} + 1`,
-            updatedAt: new Date().toISOString(),
-          },
-        })
-        .run();
-    }
-  });
 }
