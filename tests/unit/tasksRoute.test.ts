@@ -1,12 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/features/tasks/lib/taskStore", () => ({
-  readTasks: vi.fn(),
-  writeTasks: vi.fn(),
-  ensureTaskStateDir: vi.fn(),
-  removeTaskStateDir: vi.fn(),
-}));
-
 vi.mock("@/lib/workspace/sidecar", () => ({
   isSidecarConfigured: vi.fn(() => false),
   sidecarGet: vi.fn(),
@@ -28,12 +21,9 @@ vi.mock("@/lib/database/repositories/tasksRepo", () => ({
 }));
 
 import { GET, POST, PATCH, DELETE } from "@/app/api/tasks/route";
-import { readTasks, writeTasks } from "@/features/tasks/lib/taskStore";
 import * as tasksRepo from "@/lib/database/repositories/tasksRepo";
 import type { NextRequest } from "next/server";
 
-const mockedReadTasks = vi.mocked(readTasks);
-const mockedWriteTasks = vi.mocked(writeTasks);
 const mockedListByAgent = vi.mocked(tasksRepo.listByAgent);
 const mockedGetById = vi.mocked(tasksRepo.getById);
 const mockedUpdate = vi.mocked(tasksRepo.update);
@@ -91,16 +81,12 @@ describe("GET /api/tasks", () => {
     expect(data.tasks[0].id).toBe("task-1");
   });
 
-  it("auto-imports from tasks.json when DB empty", async () => {
-    mockedListByAgent
-      .mockReturnValueOnce([]) // first call: empty
-      .mockReturnValueOnce([sampleTask as never]); // after import
-    mockedReadTasks.mockReturnValue([sampleTask as never]);
-
+  it("returns empty array when DB has no tasks", async () => {
+    mockedListByAgent.mockReturnValue([]);
     const res = await GET(makeGetRequest({ agentId: "agent-1" }));
     expect(res.status).toBe(200);
     const data = await res.json();
-    expect(data.tasks).toHaveLength(1);
+    expect(data.tasks).toHaveLength(0);
   });
 });
 
@@ -120,12 +106,12 @@ describe("POST /api/tasks", () => {
     expect(res.status).toBe(400);
   });
 
-  it("creates a task and syncs to file", async () => {
+  it("creates a task in DB only", async () => {
     const res = await POST(makeJsonRequest("POST", { task: sampleTask }));
     expect(res.status).toBe(200);
     const data = await res.json();
     expect(data.task.id).toBe("task-1");
-    expect(mockedWriteTasks).toHaveBeenCalled();
+    expect(tasksRepo.upsert).toHaveBeenCalled();
   });
 });
 
@@ -153,7 +139,6 @@ describe("PATCH /api/tasks", () => {
     expect(res.status).toBe(200);
     const data = await res.json();
     expect(data.task.name).toBe("Updated");
-    expect(mockedWriteTasks).toHaveBeenCalled();
   });
 });
 
@@ -168,11 +153,11 @@ describe("DELETE /api/tasks", () => {
     expect(res.status).toBe(400);
   });
 
-  it("deletes a task and syncs", async () => {
+  it("deletes a task from DB", async () => {
     const res = await DELETE(makeJsonRequest("DELETE", { agentId: "agent-1", taskId: "task-1" }));
     expect(res.status).toBe(200);
     const data = await res.json();
     expect(data.ok).toBe(true);
-    expect(mockedWriteTasks).toHaveBeenCalledWith("agent-1", []);
+    expect(tasksRepo.remove).toHaveBeenCalledWith("__test_db__", "task-1");
   });
 });

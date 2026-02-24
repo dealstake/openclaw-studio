@@ -163,11 +163,10 @@ function getFileCounts(agentId: string): {
   // Projects: DB is the sole source of truth (INDEX.md eliminated)
 
   try {
-    const { absolute: tasksPath } = resolveWorkspacePath(agentId, "tasks/tasks.json");
-    const content = fs.readFileSync(tasksPath, "utf-8");
-    const arr = JSON.parse(content);
-    taskCount = Array.isArray(arr) ? arr.length : 0;
-  } catch { /* file missing */ }
+    const db = getDb();
+    const result = db.get<{ count: number }>(sql`SELECT COUNT(*) as count FROM tasks WHERE agent_id = ${agentId}`);
+    taskCount = result?.count ?? 0;
+  } catch { /* table missing */ }
 
   try {
     const { absolute: activityPath } = resolveWorkspacePath(agentId, "reports/activity.jsonl");

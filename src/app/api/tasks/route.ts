@@ -1,6 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { readTasks, writeTasks, ensureTaskStateDir, removeTaskStateDir } from "@/features/tasks/lib/taskStore";
 import { handleApiError, validateAgentId } from "@/lib/api/helpers";
 import { withSidecarGetFallback, withSidecarMutateFallback } from "@/lib/api/sidecar-proxy";
 import { getDb } from "@/lib/database";
@@ -19,18 +18,7 @@ export async function GET(request: NextRequest) {
 
     const result = await withSidecarGetFallback("/tasks", { agentId }, () => {
       const db = getDb();
-      let tasks = tasksRepo.listByAgent(db, agentId);
-
-      // Sidecar (Cloud Run) uses ephemeral DB — auto-import from tasks.json if empty.
-      // Local mode relies on the pre-populated Mac Mini DB (no fallback needed).
-      if (tasks.length === 0) {
-        const fileTasks = readTasks(agentId);
-        if (fileTasks.length > 0) {
-          tasksRepo.importFromArray(db, fileTasks);
-          tasks = tasksRepo.listByAgent(db, agentId);
-        }
-      }
-
+      const tasks = tasksRepo.listByAgent(db, agentId);
       return { tasks };
     });
 
@@ -59,12 +47,6 @@ export async function POST(request: NextRequest) {
     return await withSidecarMutateFallback("/tasks", "POST", { task }, () => {
       const db = getDb();
       tasksRepo.upsert(db, task);
-      ensureTaskStateDir(task.agentId, task.id);
-
-      // Sync to tasks.json for backward compat with cron agent reads
-      const allTasks = tasksRepo.listByAgent(db, task.agentId);
-      writeTasks(task.agentId, allTasks);
-
       return { task };
     });
   } catch (err) {
@@ -97,11 +79,6 @@ export async function PATCH(request: NextRequest) {
       }
 
       const updated = tasksRepo.getById(db, taskId);
-
-      // Sync to tasks.json
-      const allTasks = tasksRepo.listByAgent(db, agentId);
-      writeTasks(agentId, allTasks);
-
       return { task: updated };
     });
   } catch (err) {
@@ -125,12 +102,6 @@ export async function DELETE(request: NextRequest) {
     return await withSidecarMutateFallback("/tasks", "DELETE", { agentId, taskId }, () => {
       const db = getDb();
       tasksRepo.remove(db, taskId);
-      removeTaskStateDir(agentId, taskId);
-
-      // Sync to tasks.json
-      const allTasks = tasksRepo.listByAgent(db, agentId);
-      writeTasks(agentId, allTasks);
-
       return { ok: true };
     });
   } catch (err) {
