@@ -31,14 +31,14 @@ export const TASK_TEMPLATES: TaskTemplate[] = [
       prompt: `[TASK:{taskId}] Monitor the inbox for urgent emails.
 
 State Management:
-1. Read your previous state from tasks/{taskId}/state.json
+1. Read your previous state: scripts/project-db.sh state-get {taskId}
 2. Check for new emails since your last check
 3. Flag emails containing keywords: "urgent", "ASAP", "deadline", "funding", "approval needed"
 4. Flag emails from VIP contacts or with large dollar amounts
-5. Write updated state back to tasks/{taskId}/state.json
+5. Write updated state: scripts/project-db.sh state-set {taskId} '<json>'
 6. ONLY report NEW emails since your last check
 
-If state.json doesn't exist, this is your first run — create it and report what you find.
+If state-get returns empty/null, this is your first run — initialize state and report what you find.
 If nothing new, respond briefly: "No new urgent emails."`,
       model: "anthropic/claude-haiku-3.5",
     }),
@@ -91,7 +91,7 @@ Lead with the most important/actionable items.`,
       prompt: `[TASK:{taskId}] Check for new MCA applications and qualify leads.
 
 State Management:
-1. Read previous state from tasks/{taskId}/state.json
+1. Read previous state: scripts/project-db.sh state-get {taskId}
 2. Check for new applications since last run
 3. For each new application, assess:
    - Business type and age
@@ -99,7 +99,7 @@ State Management:
    - Requested amount vs qualifying range
    - Risk indicators
 4. Categorize as: Hot Lead, Warm Lead, Cold Lead, or Needs Review
-5. Update state file with processed application IDs
+5. Write updated state: scripts/project-db.sh state-set {taskId} '<json>'
 6. Only report NEW applications
 
 Output: Concise list of new leads with qualification status and recommended next steps.`,
@@ -122,11 +122,11 @@ Output: Concise list of new leads with qualification status and recommended next
       prompt: `[TASK:{taskId}] Monitor competitor landscape for changes.
 
 State Management:
-1. Read previous state from tasks/{taskId}/state.json
+1. Read previous state: scripts/project-db.sh state-get {taskId}
 2. Check for changes in competitor pricing, terms, or offerings
 3. Monitor industry news and regulatory changes
 4. Compare against last-known state
-5. Update state file
+5. Write updated state: scripts/project-db.sh state-set {taskId} '<json>'
 6. Only report CHANGES since last check
 
 Focus on: pricing changes, new products/services, market positioning shifts, regulatory updates.
@@ -183,11 +183,11 @@ Include specific numbers and comparisons to the previous week where possible.`,
       prompt: `[TASK:{taskId}] Update the deal pipeline tracking data.
 
 State Management:
-1. Read previous state from tasks/{taskId}/state.json
+1. Read previous state: scripts/project-db.sh state-get {taskId}
 2. Check all active deals for status changes
 3. Update pipeline stages, amounts, and probability scores
 4. Flag any deals that have been stagnant for too long
-5. Write updated state back
+5. Write updated state: scripts/project-db.sh state-set {taskId} '<json>'
 6. Report only changes since last run
 
 Focus on: stage transitions, amount changes, new notes or activity, approaching deadlines.`,

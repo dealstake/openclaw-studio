@@ -73,7 +73,7 @@ describe("buildSystemPrompt", () => {
   it("includes prompt generation rules about state management", () => {
     const prompt = buildSystemPrompt("periodic", ["alex"]);
     expect(prompt).toContain("[TASK:{taskId}]");
-    expect(prompt).toContain("state.json");
+    expect(prompt).toContain("state-get");
   });
 
   it("includes strict rules", () => {

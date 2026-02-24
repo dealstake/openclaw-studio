@@ -123,7 +123,7 @@ The \`prompt\` field is the most important part — it's the instruction the age
 - Clear, specific, and actionable
 - Prefixed with \`[TASK:{taskId}]\` (literal placeholder — will be replaced)
 - For constant/periodic tasks, ALWAYS include state management:
-  "Read your previous state from tasks/{taskId}/state.json. Compare current results against last-known state. Write updated state back to tasks/{taskId}/state.json. ONLY report NEW findings since your last check."
+  "Read your previous state via: scripts/project-db.sh state-get {taskId}. Compare current results against last-known state. Write updated state via: scripts/project-db.sh state-set {taskId} '<json>'. ONLY report NEW findings since your last check."
 - For scheduled tasks, focus on thorough output since they run less often
 
 ## Dual-Model Workflow (Opus + Gemini 2.5 Pro)
