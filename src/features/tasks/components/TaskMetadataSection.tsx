@@ -102,9 +102,6 @@ export const TaskMetadataSection = memo(function TaskMetadataSection({
                     ? {
                         type: "constant",
                         intervalMs: ms,
-                        ...(sched.activeHours
-                          ? { activeHours: sched.activeHours }
-                          : {}),
                         ...(sched.staggerMs
                           ? { staggerMs: sched.staggerMs }
                           : {}),

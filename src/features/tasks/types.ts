@@ -11,8 +11,6 @@ export type ConstantSchedule = {
   type: "constant";
   /** Interval in milliseconds (e.g. 60000 = 1 min) */
   intervalMs: number;
-  /** Optional active-hours window */
-  activeHours?: { start: string; end: string; timezone: string };
   /** Random delay added to each fire time (ms). 0 = exact. */
   staggerMs?: number;
 };
