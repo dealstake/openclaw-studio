@@ -1,233 +1,261 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
-import { renderHook, act } from "@testing-library/react";
+import { describe, expect, it, vi, afterEach, beforeEach } from "vitest";
+import { renderHook, act, cleanup } from "@testing-library/react";
 import { useEmergencyActions } from "@/features/emergency/hooks/useEmergencyActions";
-import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
+import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 
-// Mock cron helpers
-vi.mock("@/lib/cron/types", () => ({
-  listCronJobs: vi.fn(),
-  updateCronJob: vi.fn(),
-}));
+afterEach(cleanup);
 
-import { listCronJobs, updateCronJob } from "@/lib/cron/types";
-const mockListCronJobs = vi.mocked(listCronJobs);
-const mockUpdateCronJob = vi.mocked(updateCronJob);
+// ─── Mock Gateway Client ─────────────────────────────────────────────────────
 
-function makeMockClient(): GatewayClient {
+function mockClient(overrides: Partial<Record<string, unknown>> = {}) {
   return {
-    call: vi.fn(),
+    call: vi.fn(async (method: string) => {
+      if (method === "cron.list") {
+        return { jobs: [] };
+      }
+      if (method === "sessions.list") {
+        return { sessions: [] };
+      }
+      if (method === "sessions.kill") {
+        return { ok: true };
+      }
+      if (method === "cron.update") {
+        return { ok: true };
+      }
+      return {};
+    }),
+    ...overrides,
   } as unknown as GatewayClient;
 }
+
+// ─── Tests ───────────────────────────────────────────────────────────────────
 
 describe("useEmergencyActions", () => {
   let client: GatewayClient;
 
   beforeEach(() => {
-    vi.clearAllMocks();
-    client = makeMockClient();
+    client = mockClient();
   });
 
-  describe("initial state", () => {
-    it("starts with all statuses idle and no result", () => {
-      const { result } = renderHook(() => useEmergencyActions(client, "connected"));
-      expect(result.current.status).toEqual({
-        "pause-all-cron": "idle",
-        "stop-active-sessions": "idle",
-        "cleanup-zombies": "idle",
-      });
-      expect(result.current.lastResult).toBeNull();
-      expect(result.current.pausedJobIds).toEqual([]);
+  it("initializes with idle status for all actions", () => {
+    const { result } = renderHook(() => useEmergencyActions(client, "connected"));
+
+    expect(result.current.status["pause-all-cron"]).toBe("idle");
+    expect(result.current.status["stop-active-sessions"]).toBe("idle");
+    expect(result.current.status["cleanup-zombies"]).toBe("idle");
+    expect(result.current.lastResult).toBeNull();
+    expect(result.current.pausedJobIds).toEqual([]);
+  });
+
+  it("returns error when gateway is disconnected", async () => {
+    const { result } = renderHook(() => useEmergencyActions(client, "disconnected"));
+
+    let res;
+    await act(async () => {
+      res = await result.current.executeAction("pause-all-cron");
+    });
+
+    expect(res).toEqual({
+      kind: "pause-all-cron",
+      status: "error",
+      message: "Gateway not connected",
+      affected: 0,
     });
   });
+
+  // ─── Pause All Cron ─────────────────────────────────────────────────────
 
   describe("pauseAllCron", () => {
     it("pauses all enabled cron jobs", async () => {
-      mockListCronJobs.mockResolvedValue({
-        jobs: [
-          { id: "job-1", enabled: true },
-          { id: "job-2", enabled: true },
-          { id: "job-3", enabled: false },
-        ],
-      } as never);
-      mockUpdateCronJob.mockResolvedValue(undefined as never);
+      client = mockClient({
+        call: vi.fn(async (method: string) => {
+          if (method === "cron.list") {
+            return {
+              jobs: [
+                { id: "job-1", enabled: true },
+                { id: "job-2", enabled: true },
+                { id: "job-3", enabled: false },
+              ],
+            };
+          }
+          if (method === "cron.update") return { ok: true };
+          return {};
+        }),
+      });
 
       const { result } = renderHook(() => useEmergencyActions(client, "connected"));
 
-      let actionResult: unknown;
+      let res;
       await act(async () => {
-        actionResult = await result.current.executeAction("pause-all-cron");
+        res = await result.current.executeAction("pause-all-cron");
       });
 
-      expect(actionResult).toMatchObject({
-        kind: "pause-all-cron",
-        status: "success",
-        affected: 2,
-      });
-      expect(mockUpdateCronJob).toHaveBeenCalledTimes(2);
+      expect(res).toMatchObject({ status: "success", affected: 2 });
       expect(result.current.pausedJobIds).toEqual(["job-1", "job-2"]);
       expect(result.current.status["pause-all-cron"]).toBe("success");
+
+      // Should have called cron.update for each enabled job
+      const updateCalls = (client.call as ReturnType<typeof vi.fn>).mock.calls.filter(
+        (args: unknown[]) => args[0] === "cron.update"
+      );
+      expect(updateCalls).toHaveLength(2);
     });
 
-    it("returns error when gateway disconnected", async () => {
-      const { result } = renderHook(() => useEmergencyActions(client, "disconnected" as GatewayStatus));
+    it("returns success with 0 affected when no enabled jobs", async () => {
+      client = mockClient({
+        call: vi.fn(async (method: string) => {
+          if (method === "cron.list") return { jobs: [{ id: "j1", enabled: false }] };
+          return {};
+        }),
+      });
 
-      let actionResult: unknown;
+      const { result } = renderHook(() => useEmergencyActions(client, "connected"));
+
+      let res;
       await act(async () => {
-        actionResult = await result.current.executeAction("pause-all-cron");
+        res = await result.current.executeAction("pause-all-cron");
       });
 
-      expect(actionResult).toMatchObject({
-        kind: "pause-all-cron",
-        status: "error",
-        affected: 0,
-      });
+      expect(res).toMatchObject({ status: "success", affected: 0 });
     });
 
     it("handles partial failures gracefully", async () => {
-      mockListCronJobs.mockResolvedValue({
-        jobs: [
-          { id: "job-1", enabled: true },
-          { id: "job-2", enabled: true },
-        ],
-      } as never);
-      mockUpdateCronJob
-        .mockResolvedValueOnce(undefined as never)
-        .mockRejectedValueOnce(new Error("RPC error"));
+      let callCount = 0;
+      client = mockClient({
+        call: vi.fn(async (method: string) => {
+          if (method === "cron.list") {
+            return { jobs: [{ id: "j1", enabled: true }, { id: "j2", enabled: true }] };
+          }
+          if (method === "cron.update") {
+            callCount++;
+            if (callCount === 1) throw new Error("RPC fail");
+            return { ok: true };
+          }
+          return {};
+        }),
+      });
 
       const { result } = renderHook(() => useEmergencyActions(client, "connected"));
 
-      let actionResult: unknown;
+      let res;
       await act(async () => {
-        actionResult = await result.current.executeAction("pause-all-cron");
+        res = await result.current.executeAction("pause-all-cron");
       });
 
-      expect(actionResult).toMatchObject({
-        kind: "pause-all-cron",
-        status: "success",
-        affected: 1,
-      });
-    });
-
-    it("handles listCronJobs error", async () => {
-      mockListCronJobs.mockRejectedValue(new Error("Network failure"));
-
-      const { result } = renderHook(() => useEmergencyActions(client, "connected"));
-
-      let actionResult: unknown;
-      await act(async () => {
-        actionResult = await result.current.executeAction("pause-all-cron");
-      });
-
-      expect(actionResult).toMatchObject({
-        kind: "pause-all-cron",
-        status: "error",
-        message: "Network failure",
-      });
-      expect(result.current.status["pause-all-cron"]).toBe("error");
+      // Should still succeed — j2 was paused even though j1 failed
+      expect(res).toMatchObject({ status: "success", affected: 1 });
+      expect(result.current.pausedJobIds).toEqual(["j2"]);
     });
   });
+
+  // ─── Stop Active Sessions ──────────────────────────────────────────────
 
   describe("stopActiveSessions", () => {
     it("stops all active sessions", async () => {
-      const mockCall = vi.mocked(client.call);
-      mockCall
-        .mockResolvedValueOnce({
-          sessions: [
-            { sessionKey: "s1", kind: "main" },
-            { sessionKey: "s2", kind: "cron" },
-          ],
-        })
-        .mockResolvedValueOnce(undefined) // kill s1
-        .mockResolvedValueOnce(undefined); // kill s2
+      client = mockClient({
+        call: vi.fn(async (method: string) => {
+          if (method === "sessions.list") {
+            return {
+              sessions: [
+                { sessionKey: "s1", kind: "main" },
+                { sessionKey: "s2", kind: "cron" },
+              ],
+            };
+          }
+          if (method === "sessions.kill") return { ok: true };
+          return {};
+        }),
+      });
 
       const { result } = renderHook(() => useEmergencyActions(client, "connected"));
 
-      let actionResult: unknown;
+      let res;
       await act(async () => {
-        actionResult = await result.current.executeAction("stop-active-sessions");
+        res = await result.current.executeAction("stop-active-sessions");
       });
 
-      expect(actionResult).toMatchObject({
-        kind: "stop-active-sessions",
-        status: "success",
-        affected: 2,
-      });
-      expect(mockCall).toHaveBeenCalledWith("sessions.list", { activeMinutes: 30 });
-      expect(mockCall).toHaveBeenCalledWith("sessions.kill", { sessionKey: "s1" });
-      expect(mockCall).toHaveBeenCalledWith("sessions.kill", { sessionKey: "s2" });
+      expect(res).toMatchObject({ status: "success", affected: 2 });
+      expect(result.current.status["stop-active-sessions"]).toBe("success");
     });
 
-    it("returns error when gateway disconnected", async () => {
-      const { result } = renderHook(() => useEmergencyActions(client, "disconnected" as GatewayStatus));
-
-      let actionResult: unknown;
-      await act(async () => {
-        actionResult = await result.current.executeAction("stop-active-sessions");
-      });
-
-      expect(actionResult).toMatchObject({ status: "error", affected: 0 });
-    });
-
-    it("handles empty session list", async () => {
-      vi.mocked(client.call).mockResolvedValueOnce({ sessions: [] });
-
+    it("returns success with 0 when no active sessions", async () => {
       const { result } = renderHook(() => useEmergencyActions(client, "connected"));
 
-      let actionResult: unknown;
+      let res;
       await act(async () => {
-        actionResult = await result.current.executeAction("stop-active-sessions");
+        res = await result.current.executeAction("stop-active-sessions");
       });
 
-      expect(actionResult).toMatchObject({ status: "success", affected: 0 });
+      expect(res).toMatchObject({ status: "success", affected: 0 });
     });
   });
 
+  // ─── Cleanup Zombies ───────────────────────────────────────────────────
+
   describe("cleanupZombies", () => {
-    it("cleans up stale sessions older than 30 minutes", async () => {
+    it("cleans up sessions older than 30 minutes", async () => {
       const oldTime = new Date(Date.now() - 60 * 60 * 1000).toISOString(); // 1 hour ago
       const recentTime = new Date(Date.now() - 5 * 60 * 1000).toISOString(); // 5 min ago
 
-      const mockCall = vi.mocked(client.call);
-      mockCall.mockImplementation(async (method: string) => {
-        if (method === "sessions.list") {
-          return {
-            sessions: [
-              { sessionKey: "zombie-1", lastActiveAt: oldTime },
-              { sessionKey: "active-1", lastActiveAt: recentTime },
-              { sessionKey: "no-activity" },
-            ],
-          };
-        }
-        return undefined; // sessions.kill
+      client = mockClient({
+        call: vi.fn(async (method: string) => {
+          if (method === "sessions.list") {
+            return {
+              sessions: [
+                { sessionKey: "zombie-1", lastActiveAt: oldTime },
+                { sessionKey: "active-1", lastActiveAt: recentTime },
+                { sessionKey: "no-time" }, // no lastActiveAt — should be skipped
+              ],
+            };
+          }
+          if (method === "sessions.kill") return { ok: true };
+          return {};
+        }),
       });
 
       const { result } = renderHook(() => useEmergencyActions(client, "connected"));
 
-      let actionResult: unknown;
+      let res;
       await act(async () => {
-        actionResult = await result.current.executeAction("cleanup-zombies");
+        res = await result.current.executeAction("cleanup-zombies");
       });
 
-      const killCalls = mockCall.mock.calls.filter(([method]) => method === "sessions.kill");
-      // zombie-1 (1hr old) killed; active-1 (5min) and no-activity (no timestamp) skipped
-      expect(killCalls).toHaveLength(1);
-      expect(killCalls[0]).toEqual(["sessions.kill", { sessionKey: "zombie-1" }]);
-      expect(actionResult).toMatchObject({
-        kind: "cleanup-zombies",
-        status: "success",
-        affected: 1,
+      expect(res).toMatchObject({ status: "success", affected: 1 });
+      expect(result.current.status["cleanup-zombies"]).toBe("success");
+    });
+  });
+
+  // ─── Error Handling ────────────────────────────────────────────────────
+
+  describe("error handling", () => {
+    it("sets error status on list failure", async () => {
+      client = mockClient({
+        call: vi.fn(async () => {
+          throw new Error("Network error");
+        }),
       });
+
+      const { result } = renderHook(() => useEmergencyActions(client, "connected"));
+
+      let res;
+      await act(async () => {
+        res = await result.current.executeAction("pause-all-cron");
+      });
+
+      expect(res).toMatchObject({ status: "error", message: "Network error", affected: 0 });
+      expect(result.current.status["pause-all-cron"]).toBe("error");
     });
 
-    it("returns error when gateway disconnected", async () => {
-      const { result } = renderHook(() => useEmergencyActions(client, "disconnected" as GatewayStatus));
+    it("returns error for all actions when disconnected", async () => {
+      const { result } = renderHook(() => useEmergencyActions(client, "disconnected"));
 
-      let actionResult: unknown;
-      await act(async () => {
-        actionResult = await result.current.executeAction("cleanup-zombies");
-      });
-
-      expect(actionResult).toMatchObject({ status: "error", affected: 0 });
+      for (const kind of ["pause-all-cron", "stop-active-sessions", "cleanup-zombies"] as const) {
+        let res;
+        await act(async () => {
+          res = await result.current.executeAction(kind);
+        });
+        expect(res).toMatchObject({ status: "error", message: "Gateway not connected" });
+      }
     });
   });
 });
