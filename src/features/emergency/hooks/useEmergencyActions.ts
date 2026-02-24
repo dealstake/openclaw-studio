@@ -66,7 +66,7 @@ export const useEmergencyActions = (client: GatewayClient, gatewayStatus: Gatewa
           affected: pausedIds.length,
         },
       }));
-      return { kind: "pause-all-cron", status: "success", message: `Paused ${pausedIds.length} cron jobs`, affected: pausedIds.length };
+      return { kind: "pause-all-cron", status: "success", message: `Paused ${pausedIds.length} cron job${pausedIds.length === 1 ? "" : "s"}`, affected: pausedIds.length };
     } catch (err) {
       if (isGatewayDisconnectLikeError(err)) throw err;
       const msg = err instanceof Error ? err.message : "Failed to pause cron jobs";
@@ -174,14 +174,24 @@ export const useEmergencyActions = (client: GatewayClient, gatewayStatus: Gatewa
 
   const restoreCron = useCallback(async () => {
     if (gatewayStatus !== "connected") return;
+    const restored: string[] = [];
+    const failed: string[] = [];
     for (const id of state.pausedJobIds) {
       try {
         await updateCronJob(client, id, { enabled: true });
+        restored.push(id);
       } catch {
-        // Continue with remaining jobs
+        failed.push(id);
       }
     }
-    setState((prev) => ({ ...prev, pausedJobIds: [] }));
+    // Only remove successfully restored IDs; keep failed ones for retry
+    setState((prev) => ({
+      ...prev,
+      pausedJobIds: prev.pausedJobIds.filter((id) => !restored.includes(id)),
+    }));
+    if (failed.length > 0) {
+      throw new Error(`Restored ${restored.length}, failed ${failed.length}`);
+    }
   }, [client, gatewayStatus, state.pausedJobIds]);
 
   return {

@@ -50,9 +50,9 @@ export const EmergencyConfirmDialog = memo(function EmergencyConfirmDialog({
     <AlertDialog.Root open={open} onOpenChange={handleOpenChange}>
       <AlertDialog.Portal>
         <AlertDialog.Overlay className={MODAL_OVERLAY_CLASSES} />
-        <AlertDialog.Content className="fixed left-1/2 top-1/2 z-[100] w-[90vw] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg border border-red-800/50 bg-card p-6 shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95">
+        <AlertDialog.Content className={`fixed left-1/2 top-1/2 z-[100] w-[90vw] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg border ${destructive ? "border-red-800/50" : "border-amber-800/50"} bg-card p-6 shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95`}>
           <div className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-red-400 shrink-0" />
+            <AlertTriangle className={`h-5 w-5 shrink-0 ${destructive ? "text-red-400" : "text-amber-400"}`} />
             <AlertDialog.Title className="text-base font-semibold text-foreground">
               {title}
             </AlertDialog.Title>
@@ -63,7 +63,7 @@ export const EmergencyConfirmDialog = memo(function EmergencyConfirmDialog({
 
           <div className="mt-4">
             <label htmlFor="emergency-confirm-input" className="block text-xs text-muted-foreground mb-1.5">
-              Type <span className="font-mono font-bold text-red-400">{confirmWord}</span> to confirm
+              Type <span className={`font-mono font-bold ${destructive ? "text-red-400" : "text-amber-400"}`}>{confirmWord}</span> to confirm
             </label>
             <input
               id="emergency-confirm-input"
@@ -76,7 +76,7 @@ export const EmergencyConfirmDialog = memo(function EmergencyConfirmDialog({
                 if (e.key === "Enter" && matches) handleConfirm();
               }}
               placeholder={confirmWord}
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm font-mono text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-red-500/50"
+              className={`w-full rounded-md border border-border bg-background px-3 py-2 text-sm font-mono text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 ${destructive ? "focus:ring-red-500/50" : "focus:ring-amber-500/50"}`}
             />
           </div>
 
