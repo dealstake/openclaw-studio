@@ -1,4 +1,4 @@
-import { memo, useState, useCallback } from "react";
+import { memo, useState, useCallback, useMemo } from "react";
 import {
   Archive,
   ChevronDown,
@@ -6,6 +6,7 @@ import {
   ClipboardList,
   LinkIcon,
   Check,
+  Layers,
 } from "lucide-react";
 import * as Popover from "@radix-ui/react-popover";
 import { STATUS_CONFIG, CYCLE_STATUSES, QUEUED_CONFIG, PRIORITY_DOT } from "../lib/constants";
@@ -35,6 +36,7 @@ export const ProjectCard = memo(function ProjectCard({
   queuePosition,
 }: ProjectCardProps) {
   const [tasksExpanded, setTasksExpanded] = useState(false);
+  const [phasesExpanded, setPhasesExpanded] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
   const [pendingDone, setPendingDone] = useState(false);
 
@@ -47,6 +49,28 @@ export const ProjectCard = memo(function ProjectCard({
   const priorityDot = PRIORITY_DOT[project.priorityEmoji];
 
   const details = project.details;
+
+  /** Group plan items by phase for per-phase progress display */
+  const phaseGroups = useMemo(() => {
+    const items = details?.planItems ?? [];
+    if (items.length === 0) return [];
+    const map = new Map<string, { completed: number; total: number }>();
+    for (const item of items) {
+      let group = map.get(item.phaseName);
+      if (!group) {
+        group = { completed: 0, total: 0 };
+        map.set(item.phaseName, group);
+      }
+      group.total++;
+      if (item.isCompleted) group.completed++;
+    }
+    return Array.from(map.entries()).map(([name, counts]) => ({
+      name,
+      ...counts,
+      percent: counts.total > 0 ? Math.round((counts.completed / counts.total) * 100) : 0,
+    }));
+  }, [details?.planItems]);
+
   const isBlocked = details?.continuation?.blockedBy &&
     details.continuation.blockedBy.toLowerCase() !== "nothing" &&
     details.continuation.blockedBy.toLowerCase() !== "none";
@@ -201,6 +225,46 @@ export const ProjectCard = memo(function ProjectCard({
                   ? `${details.progress.completed}/${details.progress.total}`
                   : "—"}
               </span>
+            </div>
+          )}
+
+          {!isDone && phaseGroups.length > 0 && (
+            <div className="pt-0.5">
+              <button
+                type="button"
+                className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition"
+                onClick={(e) => { e.stopPropagation(); setPhasesExpanded((v) => !v); }}
+              >
+                {phasesExpanded ? (
+                  <ChevronDown className="h-3 w-3" />
+                ) : (
+                  <ChevronRight className="h-3 w-3" />
+                )}
+                <Layers className="h-2.5 w-2.5" />
+                <span className="font-semibold">
+                  {phaseGroups.length} Phase{phaseGroups.length > 1 ? "s" : ""}
+                </span>
+              </button>
+              {phasesExpanded && (
+                <div className="mt-1 ml-4 space-y-1">
+                  {phaseGroups.map((phase) => (
+                    <div key={phase.name} className="flex items-center gap-2">
+                      <span className={`text-[10px] min-w-0 flex-1 truncate ${phase.percent === 100 ? "text-emerald-400 line-through" : "text-muted-foreground"}`} title={phase.name}>
+                        {phase.name}
+                      </span>
+                      <div className="h-1 w-16 shrink-0 rounded-full bg-border overflow-hidden">
+                        <div
+                          className={`h-full transition-all duration-500 ${phase.percent === 100 ? "bg-emerald-500/60" : "bg-primary/60"}`}
+                          style={{ width: `${phase.percent}%` }}
+                        />
+                      </div>
+                      <span className="font-mono text-[9px] text-muted-foreground shrink-0">
+                        {phase.completed}/{phase.total}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
