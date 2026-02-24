@@ -1,10 +1,11 @@
 "use client";
 
 import { memo, useCallback, useState } from "react";
-import { X, PauseCircle, Square, Trash2, Loader2 } from "lucide-react";
+import { X, PauseCircle, Square, Trash2, Loader2, RotateCcw } from "lucide-react";
+import { toast } from "sonner";
 import { EMERGENCY_ACTIONS, type EmergencyActionKind } from "../lib/types";
 import type { ActionResult, ActionStatus } from "../lib/types";
-import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { EmergencyConfirmDialog } from "./EmergencyConfirmDialog";
 
 const ACTION_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   "pause-circle": PauseCircle,
@@ -17,7 +18,9 @@ interface EmergencyPanelProps {
   onClose: () => void;
   actionStatus: Record<EmergencyActionKind, ActionStatus>;
   lastResult: ActionResult | null;
+  pausedJobIds: string[];
   onExecute: (kind: EmergencyActionKind) => Promise<ActionResult>;
+  onRestoreCron?: () => Promise<void>;
 }
 
 export const EmergencyPanel = memo(function EmergencyPanel({
@@ -25,15 +28,33 @@ export const EmergencyPanel = memo(function EmergencyPanel({
   onClose,
   actionStatus,
   lastResult,
+  pausedJobIds,
   onExecute,
+  onRestoreCron,
 }: EmergencyPanelProps) {
   const [confirmAction, setConfirmAction] = useState<EmergencyActionKind | null>(null);
 
   const handleConfirm = useCallback(async () => {
     if (!confirmAction) return;
+    const action = confirmAction;
     setConfirmAction(null);
-    await onExecute(confirmAction);
+    const result = await onExecute(action);
+    if (result.status === "success") {
+      toast.success(result.message);
+    } else {
+      toast.error(result.message);
+    }
   }, [confirmAction, onExecute]);
+
+  const handleRestore = useCallback(async () => {
+    if (!onRestoreCron) return;
+    try {
+      await onRestoreCron();
+      toast.success("Restored previously paused cron jobs");
+    } catch {
+      toast.error("Failed to restore cron jobs");
+    }
+  }, [onRestoreCron]);
 
   if (!open) return null;
 
@@ -47,7 +68,8 @@ export const EmergencyPanel = memo(function EmergencyPanel({
       <div
         className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm"
         onClick={onClose}
-        aria-hidden
+        onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}
+        role="presentation"
       />
 
       {/* Panel */}
@@ -106,6 +128,24 @@ export const EmergencyPanel = memo(function EmergencyPanel({
               </button>
             );
           })}
+
+          {/* Restore paused cron jobs */}
+          {pausedJobIds.length > 0 && onRestoreCron && (
+            <button
+              onClick={handleRestore}
+              className="flex w-full items-start gap-3 rounded-lg border border-green-800/50 bg-green-950/30 p-3 text-left transition-colors hover:bg-green-950/50"
+            >
+              <div className="mt-0.5 text-green-400">
+                <RotateCcw className="h-5 w-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="font-medium text-navy-100">Restore Paused Cron</div>
+                <div className="text-sm text-navy-400 mt-0.5">
+                  Re-enable {pausedJobIds.length} previously paused job{pausedJobIds.length === 1 ? "" : "s"}
+                </div>
+              </div>
+            </button>
+          )}
         </div>
 
         {/* Last result */}
@@ -122,14 +162,14 @@ export const EmergencyPanel = memo(function EmergencyPanel({
 
       {/* Confirm dialog */}
       {confirmConfig && (
-        <ConfirmDialog
+        <EmergencyConfirmDialog
           open={!!confirmAction}
-          onOpenChange={(open) => {
-            if (!open) setConfirmAction(null);
+          onOpenChange={(isOpen) => {
+            if (!isOpen) setConfirmAction(null);
           }}
           title={`${confirmConfig.label}?`}
           description={confirmConfig.description}
-          confirmLabel={confirmConfig.confirmText}
+          confirmWord={confirmConfig.confirmText}
           destructive={confirmConfig.destructive}
           onConfirm={handleConfirm}
         />
