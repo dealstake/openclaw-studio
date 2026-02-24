@@ -20,6 +20,7 @@ const mockUpdateCronJob = vi.fn().mockResolvedValue(undefined);
 const mockRunCronJobNow = vi.fn().mockResolvedValue({ ok: true });
 const mockRemoveCronJob = vi.fn().mockResolvedValue(undefined);
 const mockAddCronJob = vi.fn().mockResolvedValue({ ok: true, jobId: "cron-new" });
+const mockListCronJobs = vi.fn().mockResolvedValue({ jobs: [] });
 
 vi.mock("@/lib/cron/types", async (importOriginal) => {
   const orig = await importOriginal<typeof import("@/lib/cron/types")>();
@@ -29,6 +30,7 @@ vi.mock("@/lib/cron/types", async (importOriginal) => {
     runCronJobNow: (...args: unknown[]) => mockRunCronJobNow(...args),
     removeCronJob: (...args: unknown[]) => mockRemoveCronJob(...args),
     addCronJob: (...args: unknown[]) => mockAddCronJob(...args),
+    listCronJobs: (...args: unknown[]) => mockListCronJobs(...args),
   };
 });
 
@@ -108,10 +110,11 @@ async function renderWithTasks(
     ok: true,
     json: async () => ({ tasks }),
   } as Response);
+  mockListCronJobs.mockResolvedValueOnce({ jobs: cronJobs });
 
   const client = makeClient();
   const hook = renderHook(() =>
-    useAgentTasks(client, "connected", "agent-1", cronJobs)
+    useAgentTasks(client, "connected", "agent-1")
   );
 
   await act(async () => {
@@ -132,6 +135,8 @@ describe("useAgentTasks", () => {
     mockRunCronJobNow.mockClear();
     mockRemoveCronJob.mockClear();
     mockAddCronJob.mockClear();
+    mockListCronJobs.mockClear();
+    mockListCronJobs.mockResolvedValue({ jobs: [] });
     mockPatchTaskMetadata.mockClear();
     mockDeleteTaskMetadata.mockClear();
     mockSaveTaskMetadata.mockClear();
@@ -146,7 +151,7 @@ describe("useAgentTasks", () => {
   it("initializes with empty state", () => {
     const client = makeClient();
     const { result } = renderHook(() =>
-      useAgentTasks(client, "connected", "agent-1", [])
+      useAgentTasks(client, "connected", "agent-1")
     );
     expect(result.current.tasks).toEqual([]);
     expect(result.current.loading).toBe(false);
@@ -161,9 +166,10 @@ describe("useAgentTasks", () => {
       ok: true,
       json: async () => ({ tasks: [task] }),
     } as Response);
+    mockListCronJobs.mockResolvedValueOnce({ jobs: [cronJob] });
 
     const { result } = renderHook(() =>
-      useAgentTasks(makeClient(), "connected", "agent-1", [cronJob])
+      useAgentTasks(makeClient(), "connected", "agent-1")
     );
 
     await act(async () => {
@@ -182,9 +188,10 @@ describe("useAgentTasks", () => {
       ok: true,
       json: async () => ({ tasks: [] }),
     } as Response);
+    mockListCronJobs.mockResolvedValueOnce({ jobs: [orphanCron] });
 
     const { result } = renderHook(() =>
-      useAgentTasks(makeClient(), "connected", "agent-1", [orphanCron])
+      useAgentTasks(makeClient(), "connected", "agent-1")
     );
 
     await act(async () => {
@@ -201,9 +208,10 @@ describe("useAgentTasks", () => {
       ok: false,
       json: async () => ({ error: "Server error" }),
     } as Response);
+    mockListCronJobs.mockResolvedValueOnce({ jobs: [] });
 
     const { result } = renderHook(() =>
-      useAgentTasks(makeClient(), "connected", "agent-1", [])
+      useAgentTasks(makeClient(), "connected", "agent-1")
     );
 
     await act(async () => {
@@ -215,7 +223,7 @@ describe("useAgentTasks", () => {
 
   it("loadTasks does nothing when disconnected", async () => {
     const { result } = renderHook(() =>
-      useAgentTasks(makeClient(), "disconnected", "agent-1", [])
+      useAgentTasks(makeClient(), "disconnected", "agent-1")
     );
 
     await act(async () => {
@@ -227,7 +235,7 @@ describe("useAgentTasks", () => {
 
   it("loadTasks does nothing when agentId is null", async () => {
     const { result } = renderHook(() =>
-      useAgentTasks(makeClient(), "connected", null, [])
+      useAgentTasks(makeClient(), "connected", null)
     );
 
     await act(async () => {

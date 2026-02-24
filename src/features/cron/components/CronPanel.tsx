@@ -49,13 +49,20 @@ export const CronPanel = memo(function CronPanel({
   const [deleteConfirmJob, setDeleteConfirmJob] =
     useState<CronJobSummary | null>(null);
 
-  const enabledCount = useMemo(
-    () => cronJobs.filter((j) => j.enabled).length,
+  // Filter out [TASK]-prefixed jobs — managed exclusively via Tasks panel
+  const filteredJobs = useMemo(
+    () => cronJobs.filter((j) => !j.name.startsWith("[TASK]")),
     [cronJobs],
   );
+  const taskJobCount = cronJobs.length - filteredJobs.length;
+
+  const enabledCount = useMemo(
+    () => filteredJobs.filter((j) => j.enabled).length,
+    [filteredJobs],
+  );
   const errorCount = useMemo(
-    () => cronJobs.filter((j) => j.state.lastStatus === "error").length,
-    [cronJobs],
+    () => filteredJobs.filter((j) => j.state.lastStatus === "error").length,
+    [filteredJobs],
   );
 
   return (
@@ -94,10 +101,10 @@ export const CronPanel = memo(function CronPanel({
           <SectionLabel>Cron jobs</SectionLabel>
         </PanelToolbar>
 
-        {cronJobs.length > 0 ? (
+        {(filteredJobs.length > 0 || taskJobCount > 0) ? (
           <div className="flex items-center gap-3 border-b border-border/30 px-4 py-1.5 text-[10px] text-muted-foreground">
             <span>
-              {cronJobs.length} job{cronJobs.length !== 1 ? "s" : ""}
+              {filteredJobs.length} job{filteredJobs.length !== 1 ? "s" : ""}
             </span>
             <span className="text-border">·</span>
             <span>{enabledCount} enabled</span>
@@ -105,6 +112,12 @@ export const CronPanel = memo(function CronPanel({
               <>
                 <span className="text-border">·</span>
                 <span className="text-destructive">{errorCount} errored</span>
+              </>
+            ) : null}
+            {taskJobCount > 0 ? (
+              <>
+                <span className="text-border">·</span>
+                <span>{taskJobCount} in Tasks</span>
               </>
             ) : null}
           </div>
@@ -119,21 +132,23 @@ export const CronPanel = memo(function CronPanel({
             />
           ) : null}
 
-          {loading && cronJobs.length === 0 ? (
+          {loading && filteredJobs.length === 0 ? (
             <CardSkeleton count={3} variant="card" />
           ) : null}
 
-          {!loading && !error && cronJobs.length === 0 ? (
+          {!loading && !error && filteredJobs.length === 0 ? (
             <EmptyState
               icon={Clock}
               title="No cron jobs"
-              description="Schedule recurring tasks for your agent"
+              description={taskJobCount > 0
+                ? `${taskJobCount} task job${taskJobCount !== 1 ? "s" : ""} managed in the Tasks panel`
+                : "Schedule recurring tasks for your agent"}
             />
           ) : null}
 
-          {cronJobs.length > 0 ? (
+          {filteredJobs.length > 0 ? (
             <div className="flex flex-col gap-2 animate-in fade-in duration-300">
-              {cronJobs.map((job, idx) => (
+              {filteredJobs.map((job, idx) => (
                 <CronJobListItem
                   key={job.id}
                   job={job}

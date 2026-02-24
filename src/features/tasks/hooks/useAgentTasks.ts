@@ -4,10 +4,10 @@ import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { isGatewayDisconnectLikeError } from "@/lib/gateway/GatewayClient";
 import {
   addCronJob,
+  listCronJobs,
   removeCronJob,
   runCronJobNow,
   updateCronJob,
-  type CronJobSummary,
 } from "@/lib/cron/types";
 import type {
   CreateTaskPayload,
@@ -24,7 +24,6 @@ export const useAgentTasks = (
   client: GatewayClient,
   status: GatewayStatus,
   agentId: string | null,
-  cronJobs: CronJobSummary[]
 ) => {
   const [tasks, setTasks] = useState<StudioTask[]>([]);
   const [loading, setLoading] = useState(false);
@@ -33,9 +32,6 @@ export const useAgentTasks = (
   const [busyAction, setBusyAction] = useState<"toggle" | "run" | "delete" | "update" | null>(null);
 
   const loadingRef = useRef(false);
-  // Stabilize references to prevent dependency cascades
-  const cronJobsRef = useRef(cronJobs);
-  cronJobsRef.current = cronJobs;
   const tasksRef = useRef(tasks);
   tasksRef.current = tasks;
   const busyTaskIdRef = useRef(busyTaskId);
@@ -46,8 +42,12 @@ export const useAgentTasks = (
     loadingRef.current = true;
     setLoading(true);
     try {
-      const raw = await fetchTasks(agentId);
-      const enriched = enrichTasksWithCronData(raw, cronJobsRef.current, agentId);
+      // Single-pass: fetch DB metadata + gateway cron jobs in parallel, then enrich
+      const [raw, cronResult] = await Promise.all([
+        fetchTasks(agentId),
+        listCronJobs(client, { includeDisabled: true }),
+      ]);
+      const enriched = enrichTasksWithCronData(raw, cronResult.jobs, agentId);
       setTasks(enriched);
       setError(null);
     } catch (err) {
@@ -60,7 +60,7 @@ export const useAgentTasks = (
       loadingRef.current = false;
       setLoading(false);
     }
-  }, [agentId, status]);
+  }, [agentId, status, client]);
 
   const createTask = useCallback(
     async (payload: CreateTaskPayload) => {

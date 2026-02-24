@@ -352,7 +352,7 @@ const AgentStudioPage = () => {
     updateTaskSchedule,
     runTask,
     deleteTask,
-  } = useAgentTasks(client, status, focusedAgentId, allCronJobs);
+  } = useAgentTasks(client, status, focusedAgentId);
   loadTasksRef.current = loadTasks;
 
   // Capture transcripts from completed cron/subagent sessions
