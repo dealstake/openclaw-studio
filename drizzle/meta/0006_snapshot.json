@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "0005_activity_enrichment",
+  "id": "0006_database_indexes",
   "prevId": "0005_activity_enrichment",
   "tables": {
     "activity_events": {

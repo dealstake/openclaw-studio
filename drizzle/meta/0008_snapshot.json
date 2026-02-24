@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "f994ee75-4f83-4d40-bf8a-ac7578538dd0",
-  "prevId": "0006_database_indexes",
+  "id": "0491d57e-d64a-43d9-a4c7-f79979c70bcc",
+  "prevId": "f994ee75-4f83-4d40-bf8a-ac7578538dd0",
   "tables": {
     "activity_events": {
       "name": "activity_events",
@@ -200,6 +200,13 @@
         "associated_tasks_json": {
           "name": "associated_tasks_json",
           "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "file_mtime_ms": {
+          "name": "file_mtime_ms",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false

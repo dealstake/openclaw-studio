@@ -21,9 +21,11 @@ export function upsertFromMarkdown(
   db: StudioDb,
   doc: string,
   markdown: string,
+  fileMtimeMs?: number,
 ): ProjectDetails {
   const parsed = parseProjectFile(markdown);
   const now = new Date().toISOString();
+  const mtime = fileMtimeMs ?? null;
 
   db.insert(projectDetails)
     .values({
@@ -38,6 +40,7 @@ export function upsertFromMarkdown(
       associatedTasksJson: parsed.associatedTasks.length > 0
         ? JSON.stringify(parsed.associatedTasks)
         : null,
+      fileMtimeMs: mtime,
       updatedAt: now,
     })
     .onConflictDoUpdate({
@@ -53,6 +56,7 @@ export function upsertFromMarkdown(
         associatedTasksJson: parsed.associatedTasks.length > 0
           ? JSON.stringify(parsed.associatedTasks)
           : null,
+        fileMtimeMs: mtime,
         updatedAt: now,
       },
     })

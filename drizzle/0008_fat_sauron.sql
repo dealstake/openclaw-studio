@@ -1,0 +1,1 @@
+ALTER TABLE `project_details` ADD `file_mtime_ms` integer;

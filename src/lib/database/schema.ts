@@ -86,6 +86,7 @@ export const projectDetails = sqliteTable("project_details", {
   progressTotal: integer("progress_total").notNull().default(0),
   progressPercent: integer("progress_percent").notNull().default(0),
   associatedTasksJson: text("associated_tasks_json"),
+  fileMtimeMs: integer("file_mtime_ms"),
   updatedAt: text("updated_at")
     .notNull()
     .$defaultFn(() => new Date().toISOString()),

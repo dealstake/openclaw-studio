@@ -1,15 +1,13 @@
-import { readWorkspaceFile } from "@/lib/workspace/resolve";
+import { readWorkspaceFile, resolveWorkspacePath } from "@/lib/workspace/resolve";
 import { withSidecarGetFallback } from "@/lib/api/sidecar-proxy";
 import { validateAgentId, handleApiError } from "@/lib/api/helpers";
 import { getDb } from "@/lib/database";
 import * as projectsRepo from "@/lib/database/repositories/projectsRepo";
 import * as projectDetailsRepo from "@/lib/database/repositories/projectDetailsRepo";
 import { parseProjectFile } from "@/features/projects/lib/parseProject";
+import fs from "fs";
 
 export const runtime = "nodejs";
-
-/** Cache TTL for project detail enrichment (local mode only). */
-const LOCAL_CACHE_TTL_MS = 60_000;
 
 /**
  * GET /api/workspace/projects?agentId=<id>
@@ -38,25 +36,42 @@ export async function GET(request: Request) {
           return { projects: [] };
         }
 
-        // Enrich with parsed project details, using DB cache to avoid redundant file reads.
-        const now = Date.now();
-
+        // Enrich with parsed project details, using mtime-based cache invalidation.
+        // Only re-reads files when they've been modified since the last cache write.
         const enriched = await Promise.all(
           rows.map(async (project) => {
             try {
+              // Check file mtime on disk
+              let fileMtimeMs: number | null = null;
+              try {
+                const { absolute: filePath } = resolveWorkspacePath(agentId, `projects/${project.doc}`);
+                const stat = fs.statSync(filePath);
+                fileMtimeMs = Math.floor(stat.mtimeMs);
+              } catch {
+                // File doesn't exist — use cached data if available
+              }
+
               const cached = projectDetailsRepo.getByDoc(db, project.doc);
-              if (cached && now - new Date(cached.updatedAt).getTime() < LOCAL_CACHE_TTL_MS) {
+
+              // If cached mtime matches file mtime, serve from cache (zero file reads)
+              if (cached && fileMtimeMs !== null && cached.fileMtimeMs === fileMtimeMs) {
                 return { ...project, details: projectDetailsRepo.toProjectDetails(cached) };
               }
 
+              // File is newer or no cache — re-read and re-parse
               const content = readWorkspaceFile(agentId, `projects/${project.doc}`).content ?? null;
               if (content) {
                 try {
-                  projectDetailsRepo.upsertFromMarkdown(db, project.doc, content);
+                  projectDetailsRepo.upsertFromMarkdown(db, project.doc, content, fileMtimeMs ?? undefined);
                 } catch {
                   // Non-fatal: inline parsing still works
                 }
                 return { ...project, details: parseProjectFile(content) };
+              }
+
+              // No file but have cache — return stale cache
+              if (cached) {
+                return { ...project, details: projectDetailsRepo.toProjectDetails(cached) };
               }
 
               return project;
