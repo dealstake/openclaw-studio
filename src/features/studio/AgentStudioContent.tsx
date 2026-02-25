@@ -216,9 +216,13 @@ export const AgentStudioPage = () => {
   useNotificationEvaluator(client, status);
 
   // Keep load-function refs current (avoids stale closures)
+  // eslint-disable-next-line react-hooks/refs
   loadAllCronJobsRef.current = loadAllCronJobs;
+  // eslint-disable-next-line react-hooks/refs
   allCronJobsRef.current = allCronJobs;
+  // eslint-disable-next-line react-hooks/refs
   loadAllSessionsRef.current = loadAllSessions;
+  // eslint-disable-next-line react-hooks/refs
   loadChannelsStatusRef.current = loadChannelsStatus;
   // loadCumulativeUsageRef removed — sessions.usage aggregate eliminated (P0 perf fix)
 
@@ -318,10 +322,12 @@ export const AgentStudioPage = () => {
     runTask,
     deleteTask,
   } = useAgentTasks(client, status, focusedAgentId);
+  // eslint-disable-next-line react-hooks/refs
   loadTasksRef.current = loadTasks;
 
   // Capture transcripts from completed cron/subagent sessions
   const focusedAgentRef = useRef(focusedAgent);
+  // eslint-disable-next-line react-hooks/refs
   focusedAgentRef.current = focusedAgent;
   const focusedAgentRunning = focusedAgent?.status === "running";
   const selectedBrainAgentId = useMemo(() => {
@@ -354,6 +360,7 @@ export const AgentStudioPage = () => {
     bumpHeartbeatTick,
   } = useSpecialUpdates({ client, dispatch, agents, stateRef });
 
+  // eslint-disable-next-line react-hooks/refs
   refreshHeartbeatLatestUpdateRef.current = refreshHeartbeatLatestUpdate;
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars -- kept for Phase 6 (FleetSidebar removal)
@@ -538,11 +545,13 @@ export const AgentStudioPage = () => {
     focusedAgentRunning,
   });
 
+  // eslint-disable-next-line react-hooks/refs
   loadAgentHistoryRef.current = loadAgentHistory;
 
   // Update stateRef synchronously during render (not in useEffect) so that
   // WebSocket event handlers reading stateRef.current always see the latest
   // dispatched state, not the state from the previous render cycle.
+  // eslint-disable-next-line react-hooks/refs
   stateRef.current = state;
 
   // agentsLoadedOnce reset, focus preferences, settings coordinator handled by useStudioDataSync

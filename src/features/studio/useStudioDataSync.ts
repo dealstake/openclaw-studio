@@ -193,7 +193,9 @@ export function useStudioDataSync(params: UseStudioDataSyncParams): UseStudioDat
   }, [client, status, setAgentContextWindow]);
 
   // Keep refs current
+  // eslint-disable-next-line react-hooks/refs
   loadSessionUsageRef.current = loadSessionUsage;
+  // eslint-disable-next-line react-hooks/refs
   refreshContextWindowRef.current = refreshContextWindow;
 
   // ── Load session usage for the focused agent ──
@@ -300,6 +302,7 @@ export function useStudioDataSync(params: UseStudioDataSyncParams): UseStudioDat
     }
   }, [client, dispatch, stateRef]);
 
+  // eslint-disable-next-line react-hooks/refs
   loadSummarySnapshotRef.current = loadSummarySnapshot;
 
   useEffect(() => {
