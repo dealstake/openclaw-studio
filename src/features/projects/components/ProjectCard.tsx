@@ -90,12 +90,7 @@ export const ProjectCard = memo(function ProjectCard({
     <BaseCard
       variant="flush"
       isHoverable
-      className="cursor-pointer"
-      role="button"
-      tabIndex={0}
-      onClick={onOpenFile}
-      onKeyDown={handleKeyDown}
-      aria-label={`Open ${project.name} project file`}
+      className="group/card"
     >
       {/* Header Row: Clickable Status Badge + Priority + Name + Task Badge */}
       <CardHeader>
@@ -182,7 +177,15 @@ export const ProjectCard = memo(function ProjectCard({
           />
         )}
         <h3 className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground" title={project.name}>
-          {project.name}
+          <button
+            type="button"
+            className="w-full truncate text-left hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary rounded-sm cursor-pointer"
+            onClick={onOpenFile}
+            onKeyDown={handleKeyDown}
+            aria-label={`Open ${project.name} project file`}
+          >
+            {project.name}
+          </button>
         </h3>
         {linkedTasks.length > 0 && (
           <span
@@ -196,7 +199,7 @@ export const ProjectCard = memo(function ProjectCard({
       </CardHeader>
 
       {/* Description */}
-      <MarkdownViewer content={project.oneLiner} className="mt-1 text-xs leading-relaxed text-muted-foreground/80 line-clamp-2 [&>*]:m-0 [&>*>*]:m-0" />
+      <MarkdownViewer content={project.oneLiner} className="mt-1 text-xs leading-relaxed text-muted-foreground line-clamp-2 [&>*]:m-0 [&>*>*]:m-0" />
 
       <ConfirmDialog
         open={pendingDone}
@@ -214,7 +217,14 @@ export const ProjectCard = memo(function ProjectCard({
         <div className="mt-1 space-y-0.5 border-t border-border/40 pt-1">
           {!isDone && (
             <div className="flex items-center gap-2">
-              <div className="h-1.5 flex-1 rounded-full bg-border overflow-hidden">
+              <div
+                className="h-1.5 flex-1 rounded-full bg-border overflow-hidden"
+                role="progressbar"
+                aria-valuenow={details.progress.percent}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label={`Project progress: ${details.progress.completed} of ${details.progress.total} tasks`}
+              >
                 {details.progress.total > 0 && (
                   <div
                     className="h-full bg-primary/60 transition-all duration-500"
@@ -222,7 +232,7 @@ export const ProjectCard = memo(function ProjectCard({
                   />
                 )}
               </div>
-              <span className="font-mono text-[10px] text-muted-foreground">
+              <span className="font-mono text-[11px] text-muted-foreground">
                 {details.progress.total > 0
                   ? `${details.progress.completed}/${details.progress.total}`
                   : "—"}
@@ -234,9 +244,10 @@ export const ProjectCard = memo(function ProjectCard({
             <div className="pt-0.5">
               <button
                 type="button"
-                className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition"
+                className="flex items-center gap-1 py-2 text-[11px] text-muted-foreground hover:text-foreground transition min-h-[44px]"
                 onClick={(e) => { e.stopPropagation(); setPhasesExpanded((v) => !v); }}
                 aria-expanded={phasesExpanded}
+                aria-controls={`phases-${project.doc}`}
               >
                 {phasesExpanded ? (
                   <ChevronDown className="h-3 w-3" />
@@ -249,10 +260,10 @@ export const ProjectCard = memo(function ProjectCard({
                 </span>
               </button>
               {phasesExpanded && (
-                <div className="mt-1 ml-4 space-y-1">
+                <div id={`phases-${project.doc}`} className="mt-1 ml-4 space-y-1">
                   {phaseGroups.map((phase) => (
                     <div key={phase.name} className="flex items-center gap-2">
-                      <span className={`text-[10px] min-w-0 flex-1 truncate ${phase.percent === 100 ? "text-emerald-400 line-through" : "text-muted-foreground"}`} title={phase.name}>
+                      <span className={`text-[11px] min-w-0 flex-1 truncate ${phase.percent === 100 ? "text-emerald-400 line-through" : "text-muted-foreground"}`} title={phase.name}>
                         {phase.name}
                       </span>
                       <div className="h-1 w-16 shrink-0 rounded-full bg-border overflow-hidden">
@@ -261,7 +272,7 @@ export const ProjectCard = memo(function ProjectCard({
                           style={{ width: `${phase.percent}%` }}
                         />
                       </div>
-                      <span className="font-mono text-[9px] text-muted-foreground shrink-0">
+                      <span className="font-mono text-[11px] text-muted-foreground shrink-0">
                         {phase.completed}/{phase.total}
                       </span>
                     </div>
@@ -289,9 +300,10 @@ export const ProjectCard = memo(function ProjectCard({
             <div className="pt-0.5">
               <button
                 type="button"
-                className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition"
+                className="flex items-center gap-1 py-2 text-[11px] text-muted-foreground hover:text-foreground transition min-h-[44px]"
                 onClick={(e) => { e.stopPropagation(); setTasksExpanded((v) => !v); }}
                 aria-expanded={tasksExpanded}
+                aria-controls={`tasks-${project.doc}`}
               >
                 {tasksExpanded ? (
                   <ChevronDown className="h-3 w-3" />
@@ -304,7 +316,7 @@ export const ProjectCard = memo(function ProjectCard({
                 </span>
               </button>
               {tasksExpanded && (
-                <div className="mt-1 ml-4 space-y-1">
+                <div id={`tasks-${project.doc}`} className="mt-1 ml-4 space-y-1">
                   {linkedTasks.map((task) => (
                     <LinkedTaskRow key={task.cronJobId} task={task} isProjectParked={project.statusEmoji === "⏸️"} />
                   ))}
@@ -317,9 +329,10 @@ export const ProjectCard = memo(function ProjectCard({
             <div className="pt-0.5">
               <button
                 type="button"
-                className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition"
+                className="flex items-center gap-1 py-2 text-[11px] text-muted-foreground hover:text-foreground transition min-h-[44px]"
                 onClick={(e) => { e.stopPropagation(); setHistoryExpanded((v) => !v); }}
                 aria-expanded={historyExpanded}
+                aria-controls={`history-${project.doc}`}
               >
                 {historyExpanded ? (
                   <ChevronDown className="h-3 w-3" />
@@ -332,10 +345,10 @@ export const ProjectCard = memo(function ProjectCard({
                 </span>
               </button>
               {historyExpanded && (
-                <div className="mt-1 ml-4 space-y-1.5">
+                <div id={`history-${project.doc}`} className="mt-1 ml-4 space-y-1.5">
                   {details.history.map((entry, i) => (
-                    <div key={i} className="flex items-start gap-2 text-[10px]">
-                      <span className="shrink-0 font-mono text-muted-foreground/60">{entry.entryDate}</span>
+                    <div key={i} className="flex items-start gap-2 text-[11px]">
+                      <span className="shrink-0 font-mono text-muted-foreground">{entry.entryDate}</span>
                       <span className="text-muted-foreground leading-snug">{entry.entryText}</span>
                     </div>
                   ))}
