@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
+import { useGateway } from "@/lib/gateway/GatewayProvider";
 import { useEmergencyActions } from "./hooks/useEmergencyActions";
 import { useEmergencyShortcut } from "./hooks/useEmergencyShortcut";
 import type { ActionResult, ActionStatus, EmergencyActionKind } from "./lib/types";
@@ -32,17 +32,17 @@ export function useEmergency(): EmergencyContextValue {
   return ctx;
 }
 
-interface EmergencyProviderProps {
-  client: GatewayClient;
-  gatewayStatus: GatewayStatus;
-  children: ReactNode;
-}
-
+/**
+ * Provides emergency action state to the component tree.
+ * Reads gateway client/status from GatewayProvider context —
+ * no props needed.
+ */
 export const EmergencyProvider = memo(function EmergencyProvider({
-  client,
-  gatewayStatus,
   children,
-}: EmergencyProviderProps) {
+}: {
+  children: ReactNode;
+}) {
+  const { client, status: gatewayStatus } = useGateway();
   const [open, setOpen] = useState(false);
   const toggle = useCallback(() => setOpen((p) => !p), []);
   const emergency = useEmergencyActions(client, gatewayStatus);

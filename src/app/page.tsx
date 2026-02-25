@@ -18,7 +18,7 @@ import { GatewayStatusBanner } from "@/components/GatewayStatusBanner";
 import { Users } from "lucide-react";
 import { sectionLabelClass } from "@/components/SectionLabel";
 // buildAgentInstruction moved to useChatCallbacks
-import { useGatewayConnection } from "@/lib/gateway/useGatewayConnection";
+import { GatewayProvider, useGateway } from "@/lib/gateway/GatewayProvider";
 import {
   type GatewayModelPolicySnapshot,
 } from "@/lib/gateway/models";
@@ -37,7 +37,7 @@ import {
 } from "@/features/agents/state/runtimeEventBridge";
 import type { AgentStoreSeed } from "@/features/agents/state/store";
 import { createGatewayRuntimeEventHandler } from "@/features/agents/state/gatewayRuntimeEventHandler";
-import { createStudioSettingsCoordinator } from "@/lib/studio/coordinator";
+// settingsCoordinator accessed via useGateway() context
 import { resolveAgentAvatarSeed, resolveFocusedPreference } from "@/lib/studio/settings";
 // applySessionSettingMutation moved to useChatCallbacks
 import {
@@ -106,7 +106,6 @@ import { useAppLayout } from "@/hooks/useAppLayout";
 import { useWorkspaceHealth } from "@/features/workspace/hooks/useWorkspaceHealth";
 
 const AgentStudioPage = () => {
-  const [settingsCoordinator] = useState(() => createStudioSettingsCoordinator());
   const {
     client,
     status,
@@ -117,7 +116,8 @@ const AgentStudioPage = () => {
     disconnect,
     setGatewayUrl,
     setToken,
-  } = useGatewayConnection(settingsCoordinator);
+    settingsCoordinator,
+  } = useGateway();
 
   const { state, dispatch, hydrateAgents, setError, setLoading } = useAgentStore();
   const layout = useAppLayout();
@@ -1434,7 +1434,7 @@ const AgentStudioPage = () => {
   }
 
   return (
-    <EmergencyProvider client={client} gatewayStatus={status}>
+    <EmergencyProvider>
     <Suspense fallback={null}>
     <div className="relative w-screen overflow-hidden bg-background" style={{ minHeight: '100svh' }}>
       {state.loading ? (
@@ -1976,8 +1976,10 @@ const AgentStudioPage = () => {
 
 export default function Home() {
   return (
-    <AgentStoreProvider>
-      <AgentStudioPage />
-    </AgentStoreProvider>
+    <GatewayProvider>
+      <AgentStoreProvider>
+        <AgentStudioPage />
+      </AgentStoreProvider>
+    </GatewayProvider>
   );
 }
