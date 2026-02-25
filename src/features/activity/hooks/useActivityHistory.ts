@@ -30,8 +30,10 @@ export function useActivityHistory(): UseActivityHistoryResult {
   const offsetRef = useRef(0);
   const loadingRef = useRef(false);
 
+  const abortRef = useRef<AbortController | null>(null);
+
   const fetchPage = useCallback(
-    async (offset: number, append: boolean) => {
+    async (offset: number, append: boolean, signal?: AbortSignal) => {
       if (loadingRef.current || !selectedAgentId) return;
       loadingRef.current = true;
       setLoading(true);
@@ -42,7 +44,7 @@ export function useActivityHistory(): UseActivityHistoryResult {
           limit: String(PAGE_SIZE),
           offset: String(offset),
         });
-        const resp = await fetch(`/api/activity?${params}`);
+        const resp = await fetch(`/api/activity?${params}`, { signal });
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         const data = (await resp.json()) as {
           events: ActivityEvent[];
@@ -52,6 +54,7 @@ export function useActivityHistory(): UseActivityHistoryResult {
         setTotal(data.total);
         offsetRef.current = offset + data.events.length;
       } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") return;
         setError(err instanceof Error ? err.message : "Failed to load history");
       } finally {
         loadingRef.current = false;
@@ -61,10 +64,14 @@ export function useActivityHistory(): UseActivityHistoryResult {
     [selectedAgentId],
   );
 
-  // Initial load
+  // Initial load — abort in-flight requests when selectedAgentId changes
   useEffect(() => {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
     offsetRef.current = 0;
-    fetchPage(0, false);
+    fetchPage(0, false, controller.signal);
+    return () => controller.abort();
   }, [fetchPage]);
 
   const loadMore = useCallback(() => {
