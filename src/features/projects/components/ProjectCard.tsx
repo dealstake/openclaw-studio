@@ -98,7 +98,7 @@ export const ProjectCard = memo(function ProjectCard({
           <Popover.Trigger asChild>
             <button
               type="button"
-              className={`inline-flex items-center gap-1 rounded border px-2.5 py-1.5 min-h-[32px] font-mono text-[10px] font-semibold uppercase tracking-[0.12em] transition hover:brightness-125 ${statusColors}`}
+              className={`inline-flex items-center gap-1 rounded border px-2.5 py-1.5 min-h-[32px] font-mono text-xs font-semibold uppercase tracking-[0.12em] transition hover:brightness-125 ${statusColors}`}
               onClick={(e) => { e.stopPropagation(); }}
               aria-label={`Change status (current: ${statusLabel})`}
             >
@@ -124,7 +124,7 @@ export const ProjectCard = memo(function ProjectCard({
                   <button
                     key={emoji}
                     type="button"
-                    className={`flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-[11px] transition ${
+                    className={`flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs transition ${
                       isCurrent
                         ? "bg-muted/50 text-foreground"
                         : "text-muted-foreground hover:bg-muted/30 hover:text-foreground"
@@ -142,7 +142,7 @@ export const ProjectCard = memo(function ProjectCard({
                     }}
                   >
                     <Icon className={`h-3 w-3 shrink-0 ${cfg.colors.split(" ").pop() ?? ""}`} />
-                    <span className="flex-1 font-mono text-[10px] font-semibold uppercase tracking-[0.1em]">
+                    <span className="flex-1 font-mono text-xs font-semibold uppercase tracking-[0.1em]">
                       {label}
                     </span>
                     {wouldQueue && (
@@ -155,14 +155,14 @@ export const ProjectCard = memo(function ProjectCard({
               <div className="my-1 border-t border-border/40" />
               <button
                 type="button"
-                className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-[11px] text-red-400 transition hover:bg-red-500/10"
+                className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs text-red-400 transition hover:bg-red-500/10"
                 onClick={() => {
                   setStatusOpen(false);
                   onArchive();
                 }}
               >
                 <Archive className="h-3 w-3 shrink-0" />
-                <span className="flex-1 font-mono text-[10px] font-semibold uppercase tracking-[0.1em]">
+                <span className="flex-1 font-mono text-xs font-semibold uppercase tracking-[0.1em]">
                   Archive
                 </span>
               </button>
@@ -189,7 +189,7 @@ export const ProjectCard = memo(function ProjectCard({
         </h3>
         {linkedTasks.length > 0 && (
           <span
-            className="inline-flex shrink-0 items-center gap-0.5 rounded-full border border-border/60 bg-muted/40 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground"
+            className="inline-flex shrink-0 items-center gap-0.5 rounded-full border border-border/60 bg-muted/40 px-1.5 py-0.5 font-mono text-xs text-muted-foreground"
             title={`${linkedTasks.length} linked task${linkedTasks.length > 1 ? "s" : ""}`}
           >
             <LinkIcon className="h-2.5 w-2.5" />
@@ -232,7 +232,7 @@ export const ProjectCard = memo(function ProjectCard({
                   />
                 )}
               </div>
-              <span className="font-mono text-[11px] text-muted-foreground">
+              <span className="font-mono text-xs text-muted-foreground">
                 {details.progress.total > 0
                   ? `${details.progress.completed}/${details.progress.total}`
                   : "—"}
@@ -244,7 +244,7 @@ export const ProjectCard = memo(function ProjectCard({
             <div className="pt-0.5">
               <button
                 type="button"
-                className="flex items-center gap-1 py-2 text-[11px] text-muted-foreground hover:text-foreground transition min-h-[44px]"
+                className="flex items-center gap-1 py-2 text-xs text-muted-foreground hover:text-foreground transition min-h-[44px]"
                 onClick={(e) => { e.stopPropagation(); setPhasesExpanded((v) => !v); }}
                 aria-expanded={phasesExpanded}
                 aria-controls={`phases-${project.doc}`}
@@ -263,7 +263,7 @@ export const ProjectCard = memo(function ProjectCard({
                 <div id={`phases-${project.doc}`} className="mt-1 ml-4 space-y-1">
                   {phaseGroups.map((phase) => (
                     <div key={phase.name} className="flex items-center gap-2">
-                      <span className={`text-[11px] min-w-0 flex-1 truncate ${phase.percent === 100 ? "text-emerald-400 line-through" : "text-muted-foreground"}`} title={phase.name}>
+                      <span className={`text-xs min-w-0 flex-1 truncate ${phase.percent === 100 ? "text-emerald-400 line-through" : "text-muted-foreground"}`} title={phase.name}>
                         {phase.name}
                       </span>
                       <div className="h-1 w-16 shrink-0 rounded-full bg-border overflow-hidden">
@@ -272,7 +272,7 @@ export const ProjectCard = memo(function ProjectCard({
                           style={{ width: `${phase.percent}%` }}
                         />
                       </div>
-                      <span className="font-mono text-[11px] text-muted-foreground shrink-0">
+                      <span className="font-mono text-xs text-muted-foreground shrink-0">
                         {phase.completed}/{phase.total}
                       </span>
                     </div>
@@ -300,7 +300,7 @@ export const ProjectCard = memo(function ProjectCard({
             <div className="pt-0.5">
               <button
                 type="button"
-                className="flex items-center gap-1 py-2 text-[11px] text-muted-foreground hover:text-foreground transition min-h-[44px]"
+                className="flex items-center gap-1 py-2 text-xs text-muted-foreground hover:text-foreground transition min-h-[44px]"
                 onClick={(e) => { e.stopPropagation(); setTasksExpanded((v) => !v); }}
                 aria-expanded={tasksExpanded}
                 aria-controls={`tasks-${project.doc}`}
@@ -329,7 +329,7 @@ export const ProjectCard = memo(function ProjectCard({
             <div className="pt-0.5">
               <button
                 type="button"
-                className="flex items-center gap-1 py-2 text-[11px] text-muted-foreground hover:text-foreground transition min-h-[44px]"
+                className="flex items-center gap-1 py-2 text-xs text-muted-foreground hover:text-foreground transition min-h-[44px]"
                 onClick={(e) => { e.stopPropagation(); setHistoryExpanded((v) => !v); }}
                 aria-expanded={historyExpanded}
                 aria-controls={`history-${project.doc}`}
@@ -347,7 +347,7 @@ export const ProjectCard = memo(function ProjectCard({
               {historyExpanded && (
                 <div id={`history-${project.doc}`} className="mt-1 ml-4 space-y-1.5">
                   {details.history.map((entry, i) => (
-                    <div key={i} className="flex items-start gap-2 text-[11px]">
+                    <div key={i} className="flex items-start gap-2 text-xs">
                       <span className="shrink-0 font-mono text-muted-foreground">{entry.entryDate}</span>
                       <span className="text-muted-foreground leading-snug">{entry.entryText}</span>
                     </div>

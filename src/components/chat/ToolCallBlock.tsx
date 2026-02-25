@@ -126,14 +126,14 @@ export const ToolCallBlock = React.memo(function ToolCallBlock({
         <span className="text-xs font-medium text-foreground/80">{name}</span>
 
         {/* Phase indicator */}
-        <span className="flex items-center gap-1 text-[10px]">
+        <span className="flex items-center gap-1 text-xs">
           <Icon size={14} strokeWidth={1.75} className={config.iconClass} />
           <span className="text-muted-foreground/60">{config.label}</span>
         </span>
 
         {/* Duration */}
         {durationLabel ? (
-          <span className="font-mono text-[10px] tabular-nums text-muted-foreground/50">
+          <span className="font-mono text-xs tabular-nums text-muted-foreground/50">
             {durationLabel}
           </span>
         ) : null}
@@ -145,10 +145,10 @@ export const ToolCallBlock = React.memo(function ToolCallBlock({
             {/* Arguments */}
             {args && (
               <div>
-                <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/50">
+                <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground/50">
                   Args
                 </span>
-                <pre className="mt-0.5 overflow-x-auto whitespace-pre-wrap break-all text-[11px] text-muted-foreground/80">
+                <pre className="mt-0.5 overflow-x-auto whitespace-pre-wrap break-all text-xs text-muted-foreground/80">
                   {formatArgs(args)}
                 </pre>
               </div>
@@ -159,7 +159,7 @@ export const ToolCallBlock = React.memo(function ToolCallBlock({
               <ErrorBanner message={result} />
             ) : result ? (
               <div>
-                <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/50">
+                <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground/50">
                   Result
                 </span>
                 <MarkdownViewer

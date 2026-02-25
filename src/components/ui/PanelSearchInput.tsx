@@ -40,7 +40,7 @@ export const PanelSearchInput = React.memo(function PanelSearchInput({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         aria-label={ariaLabel ?? placeholder}
-        className="h-7 w-full rounded-md border border-border/50 bg-muted/30 pl-7 pr-7 font-mono text-[10px] text-foreground placeholder:text-muted-foreground/60 focus:border-primary/40 focus:outline-none focus:ring-1 focus:ring-primary/20"
+        className="h-7 w-full rounded-md border border-border/50 bg-muted/30 pl-7 pr-7 font-mono text-xs text-foreground placeholder:text-muted-foreground/60 focus:border-primary/40 focus:outline-none focus:ring-1 focus:ring-primary/20"
       />
       {value && (
         <button

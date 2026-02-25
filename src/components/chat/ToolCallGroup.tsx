@@ -105,19 +105,19 @@ export const ToolCallGroup = React.memo(function ToolCallGroup({
         </span>
 
         {/* Names summary */}
-        <span className="hidden md:inline truncate text-[10px] text-muted-foreground/50 max-w-[200px]">
+        <span className="hidden md:inline truncate text-xs text-muted-foreground/50 max-w-[200px]">
           ({namesSummary})
         </span>
 
         {/* Phase indicator */}
-        <span className="flex items-center gap-1 text-[10px]">
+        <span className="flex items-center gap-1 text-xs">
           <StatusIcon size={14} strokeWidth={1.75} className={statusClass} />
           <span className="text-muted-foreground/60">{statusLabel}</span>
         </span>
 
         {/* Duration */}
         {durationLabel ? (
-          <span className="font-mono text-[10px] tabular-nums text-muted-foreground/50">
+          <span className="font-mono text-xs tabular-nums text-muted-foreground/50">
             {durationLabel}
           </span>
         ) : null}

@@ -78,7 +78,7 @@ export const CommandPalette = memo(function CommandPalette({
                 className="flex-1 h-12 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
                 autoFocus
               />
-              <kbd className="hidden sm:inline-flex items-center gap-0.5 rounded border border-border bg-muted/50 px-1.5 py-0.5 text-[10px] text-muted-foreground font-mono">
+              <kbd className="hidden sm:inline-flex items-center gap-0.5 rounded border border-border bg-muted/50 px-1.5 py-0.5 text-xs text-muted-foreground font-mono">
                 ESC
               </kbd>
             </div>
@@ -125,7 +125,7 @@ const CommandItem = memo(function CommandItem({
       {Icon && <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />}
       <span className="flex-1 truncate">{action.label}</span>
       {action.shortcut && (
-        <kbd className="hidden sm:inline-flex items-center gap-0.5 rounded border border-border bg-muted/50 px-1.5 py-0.5 text-[10px] text-muted-foreground font-mono">
+        <kbd className="hidden sm:inline-flex items-center gap-0.5 rounded border border-border bg-muted/50 px-1.5 py-0.5 text-xs text-muted-foreground font-mono">
           {action.shortcut}
         </kbd>
       )}
