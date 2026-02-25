@@ -67,6 +67,7 @@ describe("ProjectCard inline markdown", () => {
       },
       associatedTasks: [],
       planItems: [],
+      history: [],
     },
   };
 

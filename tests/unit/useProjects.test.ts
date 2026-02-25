@@ -345,6 +345,7 @@ describe("useProjects", () => {
         details: {
           associatedTasks: [{ name: "task-1", cronJobId: "cron-1", autoManage: true }],
           planItems: [],
+          history: [],
           continuation: {},
           progress: { completed: 0, total: 0, percent: 0 },
         },
@@ -383,6 +384,7 @@ describe("useProjects", () => {
         details: {
           associatedTasks: [{ name: "task-1", cronJobId: "cron-1", autoManage: true }],
           planItems: [],
+          history: [],
           continuation: {},
           progress: { completed: 0, total: 0, percent: 0 },
         },

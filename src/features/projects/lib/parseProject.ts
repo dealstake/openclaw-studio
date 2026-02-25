@@ -11,6 +11,12 @@ export interface PlanItem {
   sortOrder: number;
 }
 
+export interface HistoryEntry {
+  entryDate: string;
+  entryText: string;
+  sortOrder: number;
+}
+
 export interface ProjectDetails {
   continuation: {
     lastWorkedOn?: string;
@@ -25,6 +31,7 @@ export interface ProjectDetails {
   };
   associatedTasks: AssociatedTask[];
   planItems: PlanItem[];
+  history: HistoryEntry[];
 }
 
 export function parseProjectFile(markdown: string): ProjectDetails {
@@ -33,6 +40,7 @@ export function parseProjectFile(markdown: string): ProjectDetails {
     progress: { completed: 0, total: 0, percent: 0 },
     associatedTasks: [],
     planItems: [],
+    history: [],
   };
 
   // Parse Continuation Context
@@ -138,6 +146,26 @@ export function parseProjectFile(markdown: string): ProjectDetails {
           name: name.trim(),
           cronJobId: cronJobId.trim(),
           autoManage: autoManage.trim().toLowerCase() === "yes",
+        });
+      }
+    }
+  }
+
+  // Parse History section
+  const historyMatch = markdown.match(
+    /## History([\s\S]*?)(?:\n## (?!#)|$)/
+  );
+  if (historyMatch) {
+    const historyBody = historyMatch[1];
+    let sortOrder = 0;
+    for (const line of historyBody.split("\n")) {
+      // Match: - 2026-02-24: Description text
+      const entryMatch = line.match(/^[-*]\s+(\d{4}-\d{2}-\d{2}):\s+(.+)/);
+      if (entryMatch) {
+        details.history.push({
+          entryDate: entryMatch[1],
+          entryText: entryMatch[2].trim(),
+          sortOrder: sortOrder++,
         });
       }
     }

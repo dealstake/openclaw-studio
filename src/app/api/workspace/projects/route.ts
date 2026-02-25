@@ -56,7 +56,8 @@ export async function GET(request: Request) {
               // If cached mtime matches file mtime, serve from cache (zero file reads)
               if (cached && fileMtimeMs !== null && cached.fileMtimeMs === fileMtimeMs) {
                 const planItems = projectDetailsRepo.getPlanItems(db, project.doc);
-                return { ...project, details: projectDetailsRepo.toProjectDetails(cached, planItems) };
+                const historyEntries = projectDetailsRepo.getHistory(db, project.doc);
+                return { ...project, details: projectDetailsRepo.toProjectDetails(cached, planItems, historyEntries) };
               }
 
               // File is newer or no cache — re-read and re-parse
@@ -73,7 +74,8 @@ export async function GET(request: Request) {
               // No file but have cache — return stale cache
               if (cached) {
                 const planItems = projectDetailsRepo.getPlanItems(db, project.doc);
-                return { ...project, details: projectDetailsRepo.toProjectDetails(cached, planItems) };
+                const historyEntries = projectDetailsRepo.getHistory(db, project.doc);
+                return { ...project, details: projectDetailsRepo.toProjectDetails(cached, planItems, historyEntries) };
               }
 
               return project;

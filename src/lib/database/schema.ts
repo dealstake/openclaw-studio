@@ -107,6 +107,18 @@ export const projectPlanItems = sqliteTable("project_plan_items", {
   sortOrder: integer("sort_order").notNull().default(0),
 });
 
+// ─── Project History ─────────────────────────────────────────────────────────
+
+export const projectHistory = sqliteTable("project_history", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  doc: text("doc")
+    .notNull()
+    .references(() => projectsIndex.doc, { onDelete: "cascade" }),
+  entryDate: text("entry_date").notNull(),
+  entryText: text("entry_text").notNull(),
+  sortOrder: integer("sort_order").notNull().default(0),
+});
+
 // ─── Task State ──────────────────────────────────────────────────────────────
 
 export const taskState = sqliteTable("task_state", {
@@ -131,3 +143,5 @@ export type TaskStateRow = typeof taskState.$inferSelect;
 export type NewTaskStateRow = typeof taskState.$inferInsert;
 export type ProjectPlanItemRow = typeof projectPlanItems.$inferSelect;
 export type NewProjectPlanItemRow = typeof projectPlanItems.$inferInsert;
+export type ProjectHistoryRow = typeof projectHistory.$inferSelect;
+export type NewProjectHistoryRow = typeof projectHistory.$inferInsert;

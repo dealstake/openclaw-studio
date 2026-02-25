@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { projectDetails, projectPlanItems, type ProjectDetailsRow } from "../schema";
+import { projectDetails, projectPlanItems, projectHistory, type ProjectDetailsRow } from "../schema";
 import type { StudioDb } from "../index";
 import { parseProjectFile, type ProjectDetails } from "@/features/projects/lib/parseProject";
 
@@ -80,6 +80,22 @@ export function upsertFromMarkdown(
         })
         .run();
     }
+
+    // Delete-all-then-insert pattern for history entries
+    tx.delete(projectHistory)
+      .where(eq(projectHistory.doc, doc))
+      .run();
+
+    for (const entry of parsed.history) {
+      tx.insert(projectHistory)
+        .values({
+          doc,
+          entryDate: entry.entryDate,
+          entryText: entry.entryText,
+          sortOrder: entry.sortOrder,
+        })
+        .run();
+    }
   });
 
   return parsed;
@@ -105,10 +121,21 @@ export function getPlanItems(db: StudioDb, doc: string) {
     .all();
 }
 
+/** Get history entries for a project doc. */
+export function getHistory(db: StudioDb, doc: string) {
+  return db
+    .select()
+    .from(projectHistory)
+    .where(eq(projectHistory.doc, doc))
+    .orderBy(projectHistory.sortOrder)
+    .all();
+}
+
 /** Convert a DB row back to the ProjectDetails shape used by the API. */
 export function toProjectDetails(
   row: ProjectDetailsRow,
   planItemRows?: { phaseName: string; taskDescription: string; isCompleted: boolean | null; sortOrder: number }[],
+  historyRows?: { entryDate: string; entryText: string; sortOrder: number }[],
 ): ProjectDetails {
   return {
     continuation: {
@@ -130,6 +157,11 @@ export function toProjectDetails(
       taskDescription: item.taskDescription,
       isCompleted: item.isCompleted ?? false,
       sortOrder: item.sortOrder,
+    })),
+    history: (historyRows ?? []).map((entry) => ({
+      entryDate: entry.entryDate,
+      entryText: entry.entryText,
+      sortOrder: entry.sortOrder,
     })),
   };
 }
