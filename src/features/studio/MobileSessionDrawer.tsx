@@ -47,15 +47,16 @@ export const MobileSessionDrawer = memo(function MobileSessionDrawer({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50" onClick={onClose}>
+    <div className="fixed inset-0 z-50" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="mobile-drawer-title">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
       <div
         className="absolute inset-y-0 left-0 w-[280px] animate-in slide-in-from-left duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] bg-[var(--surface-elevated)] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
+        <h2 id="mobile-drawer-title" className="sr-only">Main Menu</h2>
         {/* Agent list for mobile */}
         {breadcrumbAgents.length > 1 && (
-          <div className="border-b border-border/40 px-3 py-2.5">
+          <div className="border-b border-border/40 px-3 py-3">
             <p className={`${sectionLabelClass} mb-1.5 px-0.5 text-[10px]`}>Agents</p>
             <div className="flex flex-col gap-0.5">
               {breadcrumbAgents.map((agent) => (
