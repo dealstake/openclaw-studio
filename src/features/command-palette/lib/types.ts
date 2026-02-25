@@ -3,7 +3,7 @@ import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import type { ContextTab } from "@/features/context/components/ContextPanel";
 
 /** All navigable tabs — context panel tabs + management tabs (opened in expanded modal) */
-export type NavTab = ContextTab | "sessions" | "usage" | "channels" | "cron" | "settings";
+export type NavTab = ContextTab | "sessions" | "usage" | "channels" | "settings";
 
 export interface CommandAction {
   /** Unique identifier */

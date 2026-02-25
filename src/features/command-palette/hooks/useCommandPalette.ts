@@ -9,7 +9,7 @@ import {
   History,
   BarChart3,
   Radio,
-  Clock,
+
   Settings,
   Bot,
   RotateCcw,
@@ -35,7 +35,7 @@ const TAB_COMMANDS: Array<{
   { tab: "sessions", label: "Go to Sessions", icon: History, keywords: ["session", "history", "transcript"] },
   { tab: "usage", label: "Go to Usage", icon: BarChart3, keywords: ["usage", "cost", "tokens", "spend"] },
   { tab: "channels", label: "Go to Channels", icon: Radio, keywords: ["channel", "whatsapp", "telegram", "discord"] },
-  { tab: "cron", label: "Go to Cron Jobs", icon: Clock, keywords: ["cron", "schedule", "timer"] },
+
   { tab: "settings", label: "Go to Settings", icon: Settings, keywords: ["settings", "config", "configuration"] },
 ];
 
@@ -109,12 +109,12 @@ function createGatewayActions(
       },
     },
     {
-      id: "action-run-cron",
-      label: "Run Cron Job…",
+      id: "action-run-task",
+      label: "Run Task…",
       icon: Play,
       group: "actions" as const,
-      keywords: ["run", "cron", "trigger", "execute", "job"],
-      onSelect: () => navigateAndClose(ctx, "cron", "Go to Cron Jobs"),
+      keywords: ["run", "cron", "trigger", "execute", "job", "task"],
+      onSelect: () => navigateAndClose(ctx, "tasks", "Go to Tasks"),
     },
   ];
 }

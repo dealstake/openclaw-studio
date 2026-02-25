@@ -24,7 +24,7 @@ describe("useCommandPalette", () => {
   it("returns navigation commands for all tabs", () => {
     const { result } = renderHook(() => useCommandPalette(makeProps()));
     const navActions = result.current.actions.filter((a) => a.group === "navigation");
-    expect(navActions.length).toBe(9);
+    expect(navActions.length).toBe(8);
     expect(navActions.map((a) => a.id)).toContain("nav-projects");
     expect(navActions.map((a) => a.id)).toContain("nav-sessions");
   });
@@ -53,7 +53,7 @@ describe("useCommandPalette", () => {
     const actionCmds = result.current.actions.filter((a) => a.group === "actions");
     expect(actionCmds.length).toBeGreaterThanOrEqual(2);
     expect(actionCmds.map((a) => a.id)).toContain("action-restart-gateway");
-    expect(actionCmds.map((a) => a.id)).toContain("action-run-cron");
+    expect(actionCmds.map((a) => a.id)).toContain("action-run-task");
   });
 
   it("excludes action commands when client is null", () => {

@@ -3,7 +3,6 @@
 import { createContext, useContext, useMemo, type ReactNode } from "react";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import type { ChannelsStatusSnapshot } from "@/lib/gateway/channels";
-import type { CronJobSummary } from "@/lib/cron/types";
 import type { AgentState } from "@/features/agents/state/store";
 import type { UsageByType } from "@/features/sessions/hooks/useAllSessions";
 
@@ -43,17 +42,6 @@ export interface ManagementPanelContextValue {
   channelsLoading: boolean;
   channelsError: string | null;
   onRefreshChannels: () => void;
-  // Cron
-  allCronJobs: CronJobSummary[];
-  allCronLoading: boolean;
-  allCronError: string | null;
-  allCronRunBusyJobId: string | null;
-  allCronDeleteBusyJobId: string | null;
-  allCronToggleBusyJobId: string | null;
-  onRunJob: (jobId: string) => void;
-  onDeleteJob: (jobId: string) => void;
-  onToggleEnabled: (jobId: string) => void;
-  onRefreshCron: () => void;
   // Settings
   settingsAgent: AgentState | null;
   onCloseSettings: () => void;
@@ -87,9 +75,6 @@ export function ManagementPanelProvider({ children, ...value }: ManagementPanelP
     value.cumulativeUsage, value.cumulativeUsageLoading,
     value.usageByType, value.onViewTrace, value.onTranscriptClick,
     value.channelsSnapshot, value.channelsLoading, value.channelsError, value.onRefreshChannels,
-    value.allCronJobs, value.allCronLoading, value.allCronError,
-    value.allCronRunBusyJobId, value.allCronDeleteBusyJobId, value.allCronToggleBusyJobId,
-    value.onRunJob, value.onDeleteJob, value.onToggleEnabled, value.onRefreshCron,
     value.settingsAgent, value.onCloseSettings, value.onRenameAgent,
     value.onNewSession, value.onDeleteAgent, value.onToolCallingToggle,
     value.onThinkingTracesToggle, value.onNavigateToTasks,

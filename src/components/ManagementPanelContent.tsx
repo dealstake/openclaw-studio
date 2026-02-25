@@ -11,11 +11,6 @@ const SessionsPanel = lazy(() =>
     default: m.SessionsPanel,
   }))
 );
-const CronPanel = lazy(() =>
-  import("@/features/cron/components/CronPanel").then((m) => ({
-    default: m.CronPanel,
-  }))
-);
 const UsagePanel = lazy(() =>
   import("@/features/usage/components/UsagePanel").then((m) => ({
     default: m.UsagePanel,
@@ -82,23 +77,6 @@ export const ManagementPanelContent = memo(function ManagementPanelContent({
             error={ctx.channelsError}
             onRefresh={ctx.onRefreshChannels}
             hideHeader
-          />
-        </PanelErrorBoundary>
-      )}
-      {tab === "cron" && (
-        <PanelErrorBoundary name="Cron">
-          <CronPanel
-            client={ctx.client}
-            cronJobs={ctx.allCronJobs}
-            loading={ctx.allCronLoading}
-            error={ctx.allCronError}
-            runBusyJobId={ctx.allCronRunBusyJobId}
-            deleteBusyJobId={ctx.allCronDeleteBusyJobId}
-            toggleBusyJobId={ctx.allCronToggleBusyJobId}
-            onRunJob={ctx.onRunJob}
-            onDeleteJob={ctx.onDeleteJob}
-            onToggleEnabled={ctx.onToggleEnabled}
-            onRefresh={ctx.onRefreshCron}
           />
         </PanelErrorBoundary>
       )}
