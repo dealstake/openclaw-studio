@@ -1,6 +1,7 @@
 "use client";
 
 import { lazy, memo, Suspense } from "react";
+import { PanelErrorBoundary } from "@/components/PanelErrorBoundary";
 import type { ManagementTab } from "@/layout/AppSidebar";
 import { ChannelsPanel } from "@/features/channels/components/ChannelsPanel";
 import type { ChannelsStatusSnapshot } from "@/lib/gateway/channels";
@@ -134,63 +135,75 @@ export const ManagementPanelContent = memo(function ManagementPanelContent({
   return (
     <Suspense fallback={null}>
       {tab === "sessions" && (
-        <SessionsPanel
-          client={client}
-          agentId={focusedAgentId}
-          sessions={allSessions}
-          loading={allSessionsLoading}
-          error={allSessionsError}
-          onRefresh={onRefreshSessions}
-          activeSessionKey={activeSessionKey}
-          aggregateUsage={aggregateUsage}
-          aggregateUsageLoading={aggregateUsageLoading}
-          cumulativeUsage={cumulativeUsage}
-          cumulativeUsageLoading={cumulativeUsageLoading}
-          usageByType={usageByType}
-          onViewTrace={onViewTrace}
-          onTranscriptClick={onTranscriptClick}
-        />
+        <PanelErrorBoundary name="Sessions">
+          <SessionsPanel
+            client={client}
+            agentId={focusedAgentId}
+            sessions={allSessions}
+            loading={allSessionsLoading}
+            error={allSessionsError}
+            onRefresh={onRefreshSessions}
+            activeSessionKey={activeSessionKey}
+            aggregateUsage={aggregateUsage}
+            aggregateUsageLoading={aggregateUsageLoading}
+            cumulativeUsage={cumulativeUsage}
+            cumulativeUsageLoading={cumulativeUsageLoading}
+            usageByType={usageByType}
+            onViewTrace={onViewTrace}
+            onTranscriptClick={onTranscriptClick}
+          />
+        </PanelErrorBoundary>
       )}
-      {tab === "usage" && <UsagePanel client={client} status={status} />}
+      {tab === "usage" && (
+        <PanelErrorBoundary name="Usage">
+          <UsagePanel client={client} status={status} />
+        </PanelErrorBoundary>
+      )}
       {tab === "channels" && (
-        <ChannelsPanel
-          snapshot={channelsSnapshot}
-          loading={channelsLoading}
-          error={channelsError}
-          onRefresh={onRefreshChannels}
-          hideHeader
-        />
+        <PanelErrorBoundary name="Channels">
+          <ChannelsPanel
+            snapshot={channelsSnapshot}
+            loading={channelsLoading}
+            error={channelsError}
+            onRefresh={onRefreshChannels}
+            hideHeader
+          />
+        </PanelErrorBoundary>
       )}
       {tab === "cron" && (
-        <CronPanel
-          client={client}
-          cronJobs={allCronJobs}
-          loading={allCronLoading}
-          error={allCronError}
-          runBusyJobId={allCronRunBusyJobId}
-          deleteBusyJobId={allCronDeleteBusyJobId}
-          toggleBusyJobId={allCronToggleBusyJobId}
-          onRunJob={onRunJob}
-          onDeleteJob={onDeleteJob}
-          onToggleEnabled={onToggleEnabled}
-          onRefresh={onRefreshCron}
-        />
+        <PanelErrorBoundary name="Cron">
+          <CronPanel
+            client={client}
+            cronJobs={allCronJobs}
+            loading={allCronLoading}
+            error={allCronError}
+            runBusyJobId={allCronRunBusyJobId}
+            deleteBusyJobId={allCronDeleteBusyJobId}
+            toggleBusyJobId={allCronToggleBusyJobId}
+            onRunJob={onRunJob}
+            onDeleteJob={onDeleteJob}
+            onToggleEnabled={onToggleEnabled}
+            onRefresh={onRefreshCron}
+          />
+        </PanelErrorBoundary>
       )}
       {tab === "settings" && settingsAgent && (
-        <AgentSettingsPanel
-          key={settingsAgent.agentId}
-          agent={settingsAgent}
-          client={client}
-          status={status}
-          onClose={onCloseSettings}
-          onRename={onRenameAgent}
-          onNewSession={onNewSession}
-          onDelete={onDeleteAgent}
-          canDelete={settingsAgent.agentId !== RESERVED_MAIN_AGENT_ID}
-          onToolCallingToggle={onToolCallingToggle}
-          onThinkingTracesToggle={onThinkingTracesToggle}
-          onNavigateToTasks={onNavigateToTasks}
-        />
+        <PanelErrorBoundary name="Settings">
+          <AgentSettingsPanel
+            key={settingsAgent.agentId}
+            agent={settingsAgent}
+            client={client}
+            status={status}
+            onClose={onCloseSettings}
+            onRename={onRenameAgent}
+            onNewSession={onNewSession}
+            onDelete={onDeleteAgent}
+            canDelete={settingsAgent.agentId !== RESERVED_MAIN_AGENT_ID}
+            onToolCallingToggle={onToolCallingToggle}
+            onThinkingTracesToggle={onThinkingTracesToggle}
+            onNavigateToTasks={onNavigateToTasks}
+          />
+        </PanelErrorBoundary>
       )}
     </Suspense>
   );

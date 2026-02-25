@@ -57,6 +57,7 @@ import { ContextPanel, TAB_OPTIONS } from "@/features/context/components/Context
 import type { ContextTab } from "@/features/context/components/ContextPanel";
 
 // ContextTabCluster is now integrated into HeaderBar on wide viewports
+import { PanelErrorBoundary } from "@/components/PanelErrorBoundary";
 import { PanelExpandModal } from "@/components/PanelExpandModal";
 import { ManagementPanelContent } from "@/components/ManagementPanelContent";
 import { ManagementDrawer } from "@/components/ManagementDrawer";
@@ -1732,49 +1733,59 @@ const AgentStudioPage = () => {
                 <ExpandedContext.Provider value={true}>
                   <div className="flex h-full w-full flex-col overflow-y-auto">
                     {expandedTab === "projects" && (
-                      <ProjectsPanel agentId={focusedAgent?.agentId ?? null} client={client} isTabActive eventTick={cronEventTick} requestCreateProject={createProjectTick} />
+                      <PanelErrorBoundary name="Projects">
+                        <ProjectsPanel agentId={focusedAgent?.agentId ?? null} client={client} isTabActive eventTick={cronEventTick} requestCreateProject={createProjectTick} />
+                      </PanelErrorBoundary>
                     )}
                     {expandedTab === "tasks" && (
-                      <TasksPanel
-                        isSelected
-                        client={client}
-                        tasks={agentTasks}
-                        loading={tasksLoading}
-                        error={tasksError}
-                        busyTaskId={busyTaskId}
-                        busyAction={busyAction}
-                        onToggle={toggleTask}
-                        onUpdateTask={updateTask}
-                        onUpdateSchedule={updateTaskSchedule}
-                        onRun={runTask}
-                        onDelete={deleteTask}
-                        onRefresh={() => { void loadTasks(); }}
-                        onNewTask={() => setShowTaskWizard(true)}
-                        maxConcurrentRuns={cronMaxConcurrentRuns}
-                      />
+                      <PanelErrorBoundary name="Tasks">
+                        <TasksPanel
+                          isSelected
+                          client={client}
+                          tasks={agentTasks}
+                          loading={tasksLoading}
+                          error={tasksError}
+                          busyTaskId={busyTaskId}
+                          busyAction={busyAction}
+                          onToggle={toggleTask}
+                          onUpdateTask={updateTask}
+                          onUpdateSchedule={updateTaskSchedule}
+                          onRun={runTask}
+                          onDelete={deleteTask}
+                          onRefresh={() => { void loadTasks(); }}
+                          onNewTask={() => setShowTaskWizard(true)}
+                          maxConcurrentRuns={cronMaxConcurrentRuns}
+                        />
+                      </PanelErrorBoundary>
                     )}
                     {expandedTab === "brain" && (
-                      <AgentBrainPanel
-                        client={client}
-                        agents={agents}
-                        selectedAgentId={selectedBrainAgentId}
-                        onClose={clearExpandedTab}
-                        activeTab={brainFileTab}
-                        onTabChange={setBrainFileTab}
-                        previewMode={brainPreviewMode}
-                        onPreviewModeChange={setBrainPreviewMode}
-                      />
+                      <PanelErrorBoundary name="Brain">
+                        <AgentBrainPanel
+                          client={client}
+                          agents={agents}
+                          selectedAgentId={selectedBrainAgentId}
+                          onClose={clearExpandedTab}
+                          activeTab={brainFileTab}
+                          onTabChange={setBrainFileTab}
+                          previewMode={brainPreviewMode}
+                          onPreviewModeChange={setBrainPreviewMode}
+                        />
+                      </PanelErrorBoundary>
                     )}
                     {expandedTab === "workspace" && (
-                      <WorkspaceExplorerPanel
-                        client={client}
-                        agentId={focusedAgent?.agentId ?? null}
-                        isTabActive
-                        eventTick={cronEventTick}
-                      />
+                      <PanelErrorBoundary name="Workspace">
+                        <WorkspaceExplorerPanel
+                          client={client}
+                          agentId={focusedAgent?.agentId ?? null}
+                          isTabActive
+                          eventTick={cronEventTick}
+                        />
+                      </PanelErrorBoundary>
                     )}
                     {expandedTab === "activity" && (
-                      <ActivityPanel />
+                      <PanelErrorBoundary name="Activity">
+                        <ActivityPanel />
+                      </PanelErrorBoundary>
                     )}
                     <ManagementPanelContent
                       tab={expandedTab === "sessions" || expandedTab === "usage" || expandedTab === "channels" || expandedTab === "cron" || expandedTab === "settings" ? expandedTab : null}
@@ -1829,18 +1840,21 @@ const AgentStudioPage = () => {
                   onTabChange={setContextTab}
                   hideTabBar={isWide(breakpoint)}
                   projectsContent={
-                    <div className="flex h-full w-full flex-col overflow-y-auto">
-                      <ProjectsPanel
-                        agentId={focusedAgent?.agentId ?? null}
-                        client={client}
-                        isTabActive={contextTab === "projects"}
-                        eventTick={cronEventTick}
-                        requestCreateProject={createProjectTick}
-                      />
-                    </div>
+                    <PanelErrorBoundary name="Projects">
+                      <div className="flex h-full w-full flex-col overflow-y-auto">
+                        <ProjectsPanel
+                          agentId={focusedAgent?.agentId ?? null}
+                          client={client}
+                          isTabActive={contextTab === "projects"}
+                          eventTick={cronEventTick}
+                          requestCreateProject={createProjectTick}
+                        />
+                      </div>
+                    </PanelErrorBoundary>
                   }
                   tasksContent={
-                    <div className="flex h-full w-full flex-col overflow-y-auto">
+                    <PanelErrorBoundary name="Tasks">
+                      <div className="flex h-full w-full flex-col overflow-y-auto">
                         <TasksPanel
                           isSelected
                           client={client}
@@ -1858,33 +1872,42 @@ const AgentStudioPage = () => {
                           onNewTask={() => setShowTaskWizard(true)}
                           maxConcurrentRuns={cronMaxConcurrentRuns}
                         />
-                    </div>
+                      </div>
+                    </PanelErrorBoundary>
                   }
                   brainContent={
-                    <AgentBrainPanel
-                      client={client}
-                      agents={agents}
-                      selectedAgentId={selectedBrainAgentId}
-                      activeTab={brainFileTab}
-                      onTabChange={setBrainFileTab}
-                      previewMode={brainPreviewMode}
-                      onPreviewModeChange={setBrainPreviewMode}
-                      onClose={() => {
-                        setContextMode("agent");
-                        setMobilePane("chat");
-                      }}
-                    />
+                    <PanelErrorBoundary name="Brain">
+                      <AgentBrainPanel
+                        client={client}
+                        agents={agents}
+                        selectedAgentId={selectedBrainAgentId}
+                        activeTab={brainFileTab}
+                        onTabChange={setBrainFileTab}
+                        previewMode={brainPreviewMode}
+                        onPreviewModeChange={setBrainPreviewMode}
+                        onClose={() => {
+                          setContextMode("agent");
+                          setMobilePane("chat");
+                        }}
+                      />
+                    </PanelErrorBoundary>
                   }
                   workspaceContent={
-                    <WorkspaceExplorerPanel
-                      key={focusedAgent?.agentId ?? "none"}
-                      agentId={focusedAgent?.agentId ?? null}
-                      client={client}
-                      isTabActive={contextTab === "workspace"}
-                      eventTick={cronEventTick}
-                    />
+                    <PanelErrorBoundary name="Workspace">
+                      <WorkspaceExplorerPanel
+                        key={focusedAgent?.agentId ?? "none"}
+                        agentId={focusedAgent?.agentId ?? null}
+                        client={client}
+                        isTabActive={contextTab === "workspace"}
+                        eventTick={cronEventTick}
+                      />
+                    </PanelErrorBoundary>
                   }
-                  activityContent={<ActivityPanel />}
+                  activityContent={
+                    <PanelErrorBoundary name="Activity">
+                      <ActivityPanel />
+                    </PanelErrorBoundary>
+                  }
                 />
               )}
             </div>
