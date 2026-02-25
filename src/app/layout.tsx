@@ -1,8 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import { Bebas_Neue, IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
+import { Toaster } from "sonner";
 import "./globals.css";
 
 export const viewport: Viewport = {
+  viewportFit: "cover",
   interactiveWidget: "resizes-content",
 };
 
@@ -44,8 +46,16 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${display.variable} ${sans.variable} ${mono.variable} antialiased`}>
+      <body className={`${display.variable} ${sans.variable} ${mono.variable} antialiased overflow-x-hidden`}>
         {children}
+        <Toaster
+          theme="system"
+          position="bottom-right"
+          toastOptions={{
+            className:
+              "!bg-card !border-border !text-foreground !shadow-lg !animate-in !slide-in-from-right-5 !fade-in !duration-300",
+          }}
+        />
       </body>
     </html>
   );

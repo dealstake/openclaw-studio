@@ -42,3 +42,35 @@ const ensureLocalStorage = () => {
 };
 
 ensureLocalStorage();
+
+// Mock window.matchMedia for jsdom (used by useBreakpoint)
+if (typeof window !== "undefined" && typeof window.matchMedia !== "function") {
+  Object.defineProperty(window, "matchMedia", {
+    writable: true,
+    configurable: true,
+    value: (query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+    }),
+  });
+}
+
+// Mock ResizeObserver for jsdom (used by chat auto-scroll)
+if (typeof globalThis.ResizeObserver === "undefined") {
+  globalThis.ResizeObserver = class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  } as unknown as typeof globalThis.ResizeObserver;
+}
+
+// Mock Element.scrollTo for jsdom (used by smooth scroll)
+if (typeof Element.prototype.scrollTo === "undefined") {
+  Element.prototype.scrollTo = function () {} as unknown as typeof Element.prototype.scrollTo;
+}

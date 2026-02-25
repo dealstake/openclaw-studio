@@ -27,10 +27,7 @@ export type StudioSettingsPatch = {
 
 const SETTINGS_VERSION = 1 as const;
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  Boolean(value && typeof value === "object");
-
-const coerceString = (value: unknown) => (typeof value === "string" ? value.trim() : "");
+import { isRecord, coerceStringOrEmpty as coerceString } from "@/lib/type-guards";
 
 const normalizeGatewayKey = (value: unknown) => {
   const key = coerceString(value);

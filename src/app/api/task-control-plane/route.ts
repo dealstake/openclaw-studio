@@ -1,10 +1,7 @@
 import { NextResponse } from "next/server";
 
-import {
-  BEADS_WORKSPACE_NOT_INITIALIZED_ERROR_MESSAGE,
-  createTaskControlPlaneBrRunner,
-  isBeadsWorkspaceError,
-} from "@/lib/task-control-plane/br-runner";
+import { createTaskControlPlaneBrRunner } from "@/lib/task-control-plane/br-runner";
+import { handleBeadsError } from "@/lib/api/beads-error";
 import { buildTaskControlPlaneSnapshot } from "@/lib/task-control-plane/read-model";
 import { resolveTaskControlPlaneSshTarget } from "@/lib/task-control-plane/ssh-target";
 
@@ -19,11 +16,13 @@ async function loadTaskControlPlaneRawData(): Promise<{
 }> {
   const sshTarget = resolveTaskControlPlaneSshTarget();
   const runner = createTaskControlPlaneBrRunner(sshTarget ? { sshTarget } : undefined);
-  const scope = runner.runBrJson(["where"]);
-  const openIssues = runner.runBrJson(["list", "--status", "open", "--limit", "0"]);
-  const inProgressIssues = runner.runBrJson(["list", "--status", "in_progress", "--limit", "0"]);
-  const blockedIssues = runner.runBrJson(["blocked", "--limit", "0"]);
-  const doneIssues = runner.runBrJson(["list", "--status", "closed", "--limit", "0"]);
+  const [scope, openIssues, inProgressIssues, blockedIssues, doneIssues] = await Promise.all([
+    runner.runBrJson(["where"]),
+    runner.runBrJson(["list", "--status", "open", "--limit", "0"]),
+    runner.runBrJson(["list", "--status", "in_progress", "--limit", "0"]),
+    runner.runBrJson(["blocked", "--limit", "0"]),
+    runner.runBrJson(["list", "--status", "closed", "--limit", "0"]),
+  ]);
   return {
     scopePath: runner.parseScopePath(scope),
     openIssues,
@@ -39,17 +38,6 @@ export async function GET() {
     const snapshot = buildTaskControlPlaneSnapshot(raw);
     return NextResponse.json({ snapshot });
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "Failed to load task control plane data.";
-    console.error(message);
-    if (isBeadsWorkspaceError(message)) {
-      return NextResponse.json(
-        {
-          error: BEADS_WORKSPACE_NOT_INITIALIZED_ERROR_MESSAGE,
-        },
-        { status: 400 }
-      );
-    }
-    return NextResponse.json({ error: message }, { status: 502 });
+    return handleBeadsError(err);
   }
 }

@@ -1,5 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { readTasks, writeTasks, ensureTaskStateDir, removeTaskStateDir } from "@/features/tasks/lib/taskStore";
+
+import { handleApiError, validateAgentId } from "@/lib/api/helpers";
+import { withSidecarGetFallback, withSidecarMutateFallback } from "@/lib/api/sidecar-proxy";
+import { getDb } from "@/lib/database";
+import * as tasksRepo from "@/lib/database/repositories/tasksRepo";
 import type { StudioTask, UpdateTaskPayload } from "@/features/tasks/types";
 
 export const runtime = "nodejs";
@@ -8,16 +12,22 @@ export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   try {
-    const agentId = request.nextUrl.searchParams.get("agentId")?.trim();
-    if (!agentId) {
-      return NextResponse.json({ error: "agentId query parameter is required." }, { status: 400 });
-    }
-    const tasks = readTasks(agentId);
-    return NextResponse.json({ tasks });
+    const validation = validateAgentId(request.nextUrl.searchParams.get("agentId"));
+    if (!validation.ok) return validation.error;
+    const { agentId } = validation;
+
+    const result = await withSidecarGetFallback("/tasks", { agentId }, () => {
+      const db = getDb();
+      const tasks = tasksRepo.listByAgent(db, agentId);
+      return { tasks };
+    });
+
+    // Add cache headers — tasks change infrequently and the 3-min poll cycle
+    // handles freshness. This avoids redundant sidecar round-trips on Cloud Run.
+    result.headers.set("Cache-Control", "private, max-age=30, stale-while-revalidate=60");
+    return result;
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Failed to read tasks.";
-    console.error("[tasks] GET error:", message);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return handleApiError(err, "tasks");
   }
 }
 
@@ -34,16 +44,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "task.id and task.agentId are required." }, { status: 400 });
     }
 
-    const tasks = readTasks(task.agentId);
-    tasks.push(task);
-    writeTasks(task.agentId, tasks);
-    ensureTaskStateDir(task.agentId, task.id);
-
-    return NextResponse.json({ task });
+    return await withSidecarMutateFallback("/tasks", "POST", { task }, () => {
+      const db = getDb();
+      tasksRepo.upsert(db, task);
+      return { task };
+    });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Failed to create task.";
-    console.error("[tasks] POST error:", message);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return handleApiError(err, "tasks");
   }
 }
 
@@ -64,22 +71,18 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "agentId, taskId, and patch are required." }, { status: 400 });
     }
 
-    const tasks = readTasks(agentId);
-    const idx = tasks.findIndex((t) => t.id === taskId);
-    if (idx === -1) {
-      return NextResponse.json({ error: "Task not found." }, { status: 404 });
-    }
+    return await withSidecarMutateFallback("/tasks", "PATCH", { agentId, taskId, patch }, () => {
+      const db = getDb();
+      const found = tasksRepo.update(db, taskId, patch);
+      if (!found) {
+        throw new Error("Task not found.");
+      }
 
-    const now = new Date().toISOString();
-    const updated: StudioTask = { ...tasks[idx], ...patch, updatedAt: now };
-    tasks[idx] = updated;
-    writeTasks(agentId, tasks);
-
-    return NextResponse.json({ task: updated });
+      const updated = tasksRepo.getById(db, taskId);
+      return { task: updated };
+    });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Failed to update task.";
-    console.error("[tasks] PATCH error:", message);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return handleApiError(err, "tasks");
   }
 }
 
@@ -96,15 +99,12 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "agentId and taskId are required." }, { status: 400 });
     }
 
-    const tasks = readTasks(agentId);
-    const filtered = tasks.filter((t) => t.id !== taskId);
-    writeTasks(agentId, filtered);
-    removeTaskStateDir(agentId, taskId);
-
-    return NextResponse.json({ ok: true });
+    return await withSidecarMutateFallback("/tasks", "DELETE", { agentId, taskId }, () => {
+      const db = getDb();
+      tasksRepo.remove(db, taskId);
+      return { ok: true };
+    });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Failed to delete task.";
-    console.error("[tasks] DELETE error:", message);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return handleApiError(err, "tasks");
   }
 }

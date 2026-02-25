@@ -1,39 +1,8 @@
 import { describe, expect, it } from "vitest";
+import { parseUsageResult } from "@/features/sessions/hooks/useSessionUsage";
 
-// Test the data transformation logic used in useSessionUsage
+// Test the exported parseUsageResult transformation logic
 describe("parseUsageResult", () => {
-  // Inline the parseUsageResult logic to test it
-  type UsageRpcResult = {
-    totals?: {
-      input?: number;
-      output?: number;
-      totalTokens?: number;
-      totalCost?: number;
-    };
-    sessions?: Array<{
-      usage?: {
-        messageCounts?: {
-          total?: number;
-        };
-      };
-    }>;
-  };
-
-  function parseUsageResult(result: UsageRpcResult) {
-    const totals = result.totals;
-    const messageCount = (result.sessions ?? []).reduce(
-      (sum, s) => sum + (s?.usage?.messageCounts?.total ?? 0),
-      0,
-    );
-    return {
-      inputTokens: totals?.input ?? 0,
-      outputTokens: totals?.output ?? 0,
-      totalCost: totals?.totalCost != null && totals.totalCost > 0 ? totals.totalCost : null,
-      currency: "USD",
-      messageCount,
-    };
-  }
-
   it("parses empty result", () => {
     const result = parseUsageResult({});
     expect(result).toEqual({
@@ -90,8 +59,6 @@ describe("parseUsageResult", () => {
 
 describe("sessions.list params", () => {
   it("should request high limit to cover all sessions", () => {
-    // The useAllSessions hook should request limit: 2000
-    // This is a structural test verifying our fix
     const params = {
       includeGlobal: true,
       includeUnknown: true,
@@ -100,14 +67,6 @@ describe("sessions.list params", () => {
     expect(params.limit).toBeGreaterThanOrEqual(2000);
     expect(params.includeGlobal).toBe(true);
     expect(params.includeUnknown).toBe(true);
-  });
-});
-
-describe("cumulative usage params", () => {
-  it("should request high limit for cumulative usage", () => {
-    // The useCumulativeUsage hook should request limit: 5000
-    const params = { limit: 5000 };
-    expect(params.limit).toBeGreaterThanOrEqual(5000);
   });
 });
 

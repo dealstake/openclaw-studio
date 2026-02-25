@@ -8,6 +8,7 @@ import {
   useReducer,
   type ReactNode,
 } from "react";
+import type { MessagePart } from "@/lib/chat/types";
 
 export type AgentStatus = "idle" | "running" | "error";
 export type FocusFilter = "all" | "needs-attention" | "running" | "idle";
@@ -30,10 +31,11 @@ export type AgentState = AgentStoreSeed & {
   sessionCreated: boolean;
   awaitingUserInput: boolean;
   hasUnseenActivity: boolean;
-  outputLines: string[];
+  messageParts: MessagePart[];
   lastResult: string | null;
   lastDiff: string | null;
   runId: string | null;
+  runStartedAt: number | null;
   streamText: string | null;
   thinkingTrace: string | null;
   latestOverride: string | null;
@@ -54,9 +56,10 @@ export const buildNewSessionAgentPatch = (agent: AgentState): Partial<AgentState
     sessionKey: agent.sessionKey,
     status: "idle",
     runId: null,
+    runStartedAt: null,
     streamText: null,
     thinkingTrace: null,
-    outputLines: [],
+    messageParts: [],
     lastResult: null,
     lastDiff: null,
     latestOverride: null,
@@ -81,14 +84,20 @@ export type AgentStoreState = {
   error: string | null;
 };
 
-type Action =
+export type Action =
   | { type: "hydrateAgents"; agents: AgentStoreSeed[] }
   | { type: "setError"; error: string | null }
   | { type: "setLoading"; loading: boolean }
   | { type: "updateAgent"; agentId: string; patch: Partial<AgentState> }
-  | { type: "appendOutput"; agentId: string; line: string }
+  | { type: "appendPart"; agentId: string; part: MessagePart }
+  | { type: "updatePart"; agentId: string; index: number; patch: Partial<MessagePart> }
   | { type: "markActivity"; agentId: string; at?: number }
   | { type: "selectAgent"; agentId: string | null };
+
+/** Maximum message parts per agent before oldest are trimmed. */
+export const MAX_PARTS = 500;
+/** Number of oldest parts to remove when MAX_PARTS is exceeded. */
+const TRIM_COUNT = 100;
 
 const initialState: AgentStoreState = {
   agents: [],
@@ -112,10 +121,11 @@ const createRuntimeAgentState = (
     sessionCreated: sameSessionKey ? (existing?.sessionCreated ?? false) : false,
     awaitingUserInput: sameSessionKey ? (existing?.awaitingUserInput ?? false) : false,
     hasUnseenActivity: sameSessionKey ? (existing?.hasUnseenActivity ?? false) : false,
-    outputLines: sameSessionKey ? (existing?.outputLines ?? []) : [],
+    messageParts: sameSessionKey ? (existing?.messageParts ?? []) : [],
     lastResult: sameSessionKey ? (existing?.lastResult ?? null) : null,
     lastDiff: sameSessionKey ? (existing?.lastDiff ?? null) : null,
     runId: sameSessionKey ? (existing?.runId ?? null) : null,
+    runStartedAt: sameSessionKey ? (existing?.runStartedAt ?? null) : null,
     streamText: sameSessionKey ? (existing?.streamText ?? null) : null,
     thinkingTrace: sameSessionKey ? (existing?.thinkingTrace ?? null) : null,
     latestOverride: sameSessionKey ? (existing?.latestOverride ?? null) : null,
@@ -164,14 +174,34 @@ const reducer = (state: AgentStoreState, action: Action): AgentStoreState => {
             : agent
         ),
       };
-    case "appendOutput":
+    case "appendPart":
       return {
         ...state,
-        agents: state.agents.map((agent) =>
-          agent.agentId === action.agentId
-            ? { ...agent, outputLines: [...agent.outputLines, action.line] }
-            : agent
-        ),
+        agents: state.agents.map((agent) => {
+          if (agent.agentId !== action.agentId) return agent;
+          let parts = agent.messageParts;
+          if (parts.length >= MAX_PARTS) {
+            // Trim oldest parts, insert a marker so UI can indicate trimmed history
+            const trimmed = parts.slice(TRIM_COUNT);
+            const marker: MessagePart = { type: "text", text: "⋯ Earlier messages trimmed" };
+            parts = [marker, ...trimmed];
+          }
+          return { ...agent, messageParts: [...parts, action.part] };
+        }),
+      };
+    case "updatePart":
+      return {
+        ...state,
+        agents: state.agents.map((agent) => {
+          if (agent.agentId !== action.agentId) return agent;
+          const { index, patch } = action;
+          if (index < 0 || index >= agent.messageParts.length) return agent;
+          // Mutate in-place and return same array ref — avoids O(n) copy per streaming delta.
+          // React detects the change via the new agent object spread.
+          const updated = { ...agent.messageParts[index], ...patch } as MessagePart;
+          agent.messageParts[index] = updated;
+          return { ...agent, messageParts: agent.messageParts };
+        }),
       };
     case "markActivity": {
       const at = action.at ?? Date.now();

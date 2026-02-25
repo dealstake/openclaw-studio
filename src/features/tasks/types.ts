@@ -11,14 +11,16 @@ export type ConstantSchedule = {
   type: "constant";
   /** Interval in milliseconds (e.g. 60000 = 1 min) */
   intervalMs: number;
-  /** Optional active-hours window */
-  activeHours?: { start: string; end: string; timezone: string };
+  /** Random delay added to each fire time (ms). 0 = exact. */
+  staggerMs?: number;
 };
 
 export type PeriodicSchedule = {
   type: "periodic";
   /** Interval in milliseconds (e.g. 900000 = 15 min) */
   intervalMs: number;
+  /** Random delay added to each fire time (ms). 0 = exact. */
+  staggerMs?: number;
 };
 
 export type ScheduledSchedule = {
@@ -51,6 +53,8 @@ export interface StudioTask {
   // Execution
   prompt: string;
   model: string;
+  /** Thinking level for the model (e.g. "low", "medium", "high") */
+  thinking: string | null;
   deliveryChannel: string | null;
   deliveryTarget: string | null;
 
@@ -61,6 +65,12 @@ export interface StudioTask {
   lastRunAt: string | null;
   lastRunStatus: "success" | "error" | null;
   runCount: number;
+
+  // Runtime state (enriched from cron, not persisted)
+  nextRunAtMs?: number;
+  runningAtMs?: number;
+  lastDurationMs?: number;
+  consecutiveErrors?: number;
 }
 
 // ─── API payloads ────────────────────────────────────────────────────────────
@@ -73,17 +83,25 @@ export interface CreateTaskPayload {
   schedule: TaskSchedule;
   prompt: string;
   model: string;
+  thinking?: string | null;
   deliveryChannel?: string | null;
   deliveryTarget?: string | null;
 }
 
+/**
+ * Payload for updating a task's UI metadata in the Studio DB.
+ *
+ * NOTE: `schedule` and `enabled` are NOT included — they are cron-owned fields.
+ * Schedule changes go directly to gateway cron via `updateCronJob()`.
+ * Enable/disable goes to cron via `updateCronJob()`.
+ * The enrichment layer reads them back from cron at load time.
+ */
 export interface UpdateTaskPayload {
   name?: string;
   description?: string;
-  schedule?: TaskSchedule;
   prompt?: string;
   model?: string;
-  enabled?: boolean;
+  thinking?: string | null;
   deliveryChannel?: string | null;
   deliveryTarget?: string | null;
 }
@@ -103,9 +121,37 @@ export interface WizardTaskConfig {
   schedule: TaskSchedule;
   prompt: string;
   model: string;
+  thinking?: string | null;
   agentId: string;
   deliveryChannel?: string | null;
 }
+
+// ─── Thinking level options ───────────────────────────────────────────────────
+
+export const THINKING_OPTIONS = [
+  { label: "Off", value: "" },
+  { label: "Low", value: "low" },
+  { label: "Medium", value: "medium" },
+  { label: "High", value: "high" },
+] as const;
+
+// ─── Delivery mode options ───────────────────────────────────────────────────
+
+export const DELIVERY_MODE_OPTIONS = [
+  { label: "Announce", value: "announce" },
+  { label: "None", value: "none" },
+] as const;
+
+// ─── Stagger options ─────────────────────────────────────────────────────────
+
+export const STAGGER_OPTIONS = [
+  { label: "Exact", ms: 0 },
+  { label: "±1 min", ms: 60_000 },
+  { label: "±5 min", ms: 300_000 },
+  { label: "±10 min", ms: 600_000 },
+  { label: "±20 min", ms: 1_200_000 },
+  { label: "±30 min", ms: 1_800_000 },
+] as const;
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -116,6 +162,8 @@ export const CONSTANT_INTERVAL_OPTIONS = [
 ] as const;
 
 export const PERIODIC_INTERVAL_OPTIONS = [
+  { label: "Every 5 min", ms: 300_000 },
+  { label: "Every 10 min", ms: 600_000 },
   { label: "Every 15 min", ms: 900_000 },
   { label: "Every 30 min", ms: 1_800_000 },
   { label: "Every 1 hour", ms: 3_600_000 },
@@ -125,11 +173,3 @@ export const PERIODIC_INTERVAL_OPTIONS = [
   { label: "Every 12 hours", ms: 43_200_000 },
   { label: "Every 24 hours", ms: 86_400_000 },
 ] as const;
-
-export const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
-
-export const DEFAULT_MODEL_FOR_TYPE: Record<TaskType, string> = {
-  constant: "anthropic/claude-haiku-3.5",
-  periodic: "anthropic/claude-sonnet-4-6",
-  scheduled: "anthropic/claude-opus-4-6",
-};

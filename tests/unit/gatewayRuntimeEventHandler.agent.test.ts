@@ -12,10 +12,10 @@ const createAgent = (overrides?: Partial<AgentState>): AgentState => ({
   sessionCreated: true,
   awaitingUserInput: false,
   hasUnseenActivity: false,
-  outputLines: [],
+  messageParts: [],
   lastResult: null,
   lastDiff: null,
-  runId: null,
+  runId: null, runStartedAt: null,
   streamText: null,
   thinkingTrace: null,
   latestOverride: null,
@@ -186,12 +186,13 @@ describe("gateway runtime event handler (agent)", () => {
     handler.handleEvent(toolEvent);
     handler.handleEvent(toolEvent);
 
-    const toolLines = actions
-      .filter((a) => a.type === "appendOutput")
-      .map((a) => a.line ?? "")
-      .filter((line) => line.startsWith("[[tool]]"));
-    expect(toolLines.length).toBe(1);
-    expect(toolLines[0]).toContain("myTool");
+    const toolParts = actions
+      .filter((a) => a.type === "appendPart" && (a as Record<string, unknown>).part)
+      .map((a) => (a as Record<string, unknown>).part as Record<string, unknown>)
+      .filter((p) => p.type === "tool-invocation");
+    // Second dispatch should update the existing part (updatePart), not create a new one
+    expect(toolParts.length).toBe(1);
+    expect(toolParts[0]!.name).toBe("myTool");
   });
 
   it("applies lifecycle transitions and appends final stream text when no chat events", () => {
@@ -249,7 +250,7 @@ describe("gateway runtime event handler (agent)", () => {
       },
     } as EventFrame);
 
-    expect(actions.some((a) => a.type === "appendOutput" && a.line === "final text")).toBe(true);
+    // appendOutput removed — final text goes to lastResult via updateAgent
     expect(
       actions.some((a) => {
         if (a.type !== "updateAgent") return false;

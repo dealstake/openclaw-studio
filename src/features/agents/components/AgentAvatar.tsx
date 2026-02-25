@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import { TridentLogo } from "@/components/brand/TridentLogo";
 
 type AgentAvatarProps = {
@@ -10,14 +10,14 @@ type AgentAvatarProps = {
   isSelected?: boolean;
 };
 
-export const AgentAvatar = ({
+export const AgentAvatar = memo(function AgentAvatar({
   // eslint-disable-next-line @typescript-eslint/no-unused-vars -- seed kept for API compat
   seed,
   name,
   avatarUrl,
   size = 112,
   isSelected = false,
-}: AgentAvatarProps) => {
+}: AgentAvatarProps) {
   const src = useMemo(() => {
     const trimmed = avatarUrl?.trim();
     return trimmed || null;
@@ -49,4 +49,4 @@ export const AgentAvatar = ({
       )}
     </div>
   );
-};
+});

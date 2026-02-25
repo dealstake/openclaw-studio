@@ -37,7 +37,7 @@ describe("TASK_TEMPLATES", () => {
     for (const template of TASK_TEMPLATES) {
       const payload = template.build("test-agent");
       if (payload.type === "constant" || payload.type === "periodic") {
-        expect(payload.prompt).toContain("state.json");
+        expect(payload.prompt).toContain("state-get");
       }
     }
   });

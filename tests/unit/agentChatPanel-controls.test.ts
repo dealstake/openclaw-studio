@@ -1,10 +1,10 @@
 import { createElement } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import type { AgentState } from "@/features/agents/state/store";
 import { AgentChatPanel } from "@/features/agents/components/AgentChatPanel";
 import type { GatewayModelChoice } from "@/lib/gateway/models";
-import { formatThinkingMarkdown } from "@/lib/text/message-extract";
+import type { MessagePart } from "@/lib/chat/types";
 
 const createAgent = (): AgentState => ({
   agentId: "agent-1",
@@ -14,10 +14,10 @@ const createAgent = (): AgentState => ({
   sessionCreated: true,
   awaitingUserInput: false,
   hasUnseenActivity: false,
-  outputLines: [],
+  messageParts: [],
   lastResult: null,
   lastDiff: null,
-  runId: null,
+  runId: null, runStartedAt: null,
   streamText: null,
   thinkingTrace: null,
   latestOverride: null,
@@ -47,123 +47,20 @@ describe("AgentChatPanel controls", () => {
     cleanup();
   });
 
-  it("renders_runtime_controls_in_agent_header_and_no_inline_name_editor", () => {
-    render(
-      createElement(AgentChatPanel, {
-        agent: createAgent(),
-        isSelected: true,
-        canSend: true,
-        models,
-        stopBusy: false,
-        onOpenSettings: vi.fn(),
-        onModelChange: vi.fn(),
-        onThinkingChange: vi.fn(),
-        onDraftChange: vi.fn(),
-        onSend: vi.fn(),
-        onStopRun: vi.fn(),
-        onAvatarShuffle: vi.fn(),
-      })
-    );
-
-    expect(screen.getByText("Model")).toBeInTheDocument();
-    expect(screen.getByText("Thinking")).toBeInTheDocument();
-    expect(screen.queryByDisplayValue("Agent One")).not.toBeInTheDocument();
-    expect(screen.getByTestId("agent-settings-toggle")).toBeInTheDocument();
-    expect(screen.getByLabelText("Open agent settings")).toBeInTheDocument();
-    expect(screen.queryByText("Inspect")).not.toBeInTheDocument();
-  });
-
-  it("invokes_on_model_change_when_model_select_changes", () => {
-    const onModelChange = vi.fn();
-    render(
-      createElement(AgentChatPanel, {
-        agent: createAgent(),
-        isSelected: true,
-        canSend: true,
-        models,
-        stopBusy: false,
-        onOpenSettings: vi.fn(),
-        onModelChange,
-        onThinkingChange: vi.fn(),
-        onDraftChange: vi.fn(),
-        onSend: vi.fn(),
-        onStopRun: vi.fn(),
-        onAvatarShuffle: vi.fn(),
-      })
-    );
-
-    fireEvent.change(screen.getByLabelText("Model"), {
-      target: { value: "openai/gpt-5-mini" },
-    });
-    expect(onModelChange).toHaveBeenCalledWith("openai/gpt-5-mini");
-  });
-
-  it("invokes_on_thinking_change_when_thinking_select_changes", () => {
-    const onThinkingChange = vi.fn();
-    render(
-      createElement(AgentChatPanel, {
-        agent: createAgent(),
-        isSelected: true,
-        canSend: true,
-        models,
-        stopBusy: false,
-        onOpenSettings: vi.fn(),
-        onModelChange: vi.fn(),
-        onThinkingChange,
-        onDraftChange: vi.fn(),
-        onSend: vi.fn(),
-        onStopRun: vi.fn(),
-        onAvatarShuffle: vi.fn(),
-      })
-    );
-
-    fireEvent.change(screen.getByLabelText("Thinking"), {
-      target: { value: "high" },
-    });
-    expect(onThinkingChange).toHaveBeenCalledWith("high");
-  });
-
-  it("invokes_on_open_settings_when_control_clicked", () => {
-    const onOpenSettings = vi.fn();
-
-    render(
-      createElement(AgentChatPanel, {
-        agent: createAgent(),
-        isSelected: true,
-        canSend: true,
-        models,
-        stopBusy: false,
-        onOpenSettings,
-        onModelChange: vi.fn(),
-        onThinkingChange: vi.fn(),
-        onDraftChange: vi.fn(),
-        onSend: vi.fn(),
-        onStopRun: vi.fn(),
-        onAvatarShuffle: vi.fn(),
-      })
-    );
-
-    fireEvent.click(screen.getByTestId("agent-settings-toggle"));
-    expect(onOpenSettings).toHaveBeenCalledTimes(1);
-  });
-
   it("shows_stop_button_while_running_and_invokes_stop_handler", () => {
     const onStopRun = vi.fn();
 
     render(
       createElement(AgentChatPanel, {
         agent: { ...createAgent(), status: "running" },
-        isSelected: true,
         canSend: true,
         models,
         stopBusy: false,
-        onOpenSettings: vi.fn(),
         onModelChange: vi.fn(),
         onThinkingChange: vi.fn(),
         onDraftChange: vi.fn(),
         onSend: vi.fn(),
         onStopRun,
-        onAvatarShuffle: vi.fn(),
       })
     );
 
@@ -171,126 +68,116 @@ describe("AgentChatPanel controls", () => {
     expect(onStopRun).toHaveBeenCalledTimes(1);
   });
 
-  it("shows_typing_indicator_while_running_before_stream_text", () => {
+  it("renders_streaming_reasoning_part_as_thinking_block", () => {
+    const parts: MessagePart[] = [
+      { type: "text", text: "> test" },
+      { type: "reasoning", text: "thinking now", streaming: true, startedAt: Date.now() },
+    ];
     render(
       createElement(AgentChatPanel, {
-        agent: { ...createAgent(), status: "running", outputLines: ["> test"] },
-        isSelected: true,
+        agent: { ...createAgent(), status: "running", messageParts: parts },
         canSend: true,
         models,
         stopBusy: false,
-        onOpenSettings: vi.fn(),
         onModelChange: vi.fn(),
         onThinkingChange: vi.fn(),
         onDraftChange: vi.fn(),
         onSend: vi.fn(),
         onStopRun: vi.fn(),
-        onAvatarShuffle: vi.fn(),
       })
     );
 
-    expect(screen.getByTestId("agent-typing-indicator")).toBeInTheDocument();
-    expect(within(screen.getByTestId("agent-typing-indicator")).getByText("Thinking")).toBeInTheDocument();
+    // ThinkingBlock renders reasoning text
+    expect(screen.getByText("thinking now")).toBeInTheDocument();
   });
 
-  it("hides_typing_indicator_after_stream_starts", () => {
+  it("renders_completed_reasoning_part_as_thinking_block", () => {
+    const parts: MessagePart[] = [
+      { type: "text", text: "> test" },
+      { type: "reasoning", text: "thinking now", streaming: false, startedAt: Date.now() - 5000, completedAt: Date.now() },
+      { type: "text", text: "final response" },
+    ];
     render(
       createElement(AgentChatPanel, {
-        agent: {
-          ...createAgent(),
-          status: "running",
-          outputLines: ["> test"],
-          streamText: "working on it",
-        },
-        isSelected: true,
+        agent: { ...createAgent(), status: "running", messageParts: parts },
         canSend: true,
         models,
         stopBusy: false,
-        onOpenSettings: vi.fn(),
         onModelChange: vi.fn(),
         onThinkingChange: vi.fn(),
         onDraftChange: vi.fn(),
         onSend: vi.fn(),
         onStopRun: vi.fn(),
-        onAvatarShuffle: vi.fn(),
       })
     );
 
-    expect(screen.queryByTestId("agent-typing-indicator")).not.toBeInTheDocument();
+    // Final response renders
+    expect(screen.getByText("final response")).toBeInTheDocument();
+    // ThinkingBlock renders with "Thought" label (collapsed by default)
+    expect(screen.getByText("Thought")).toBeInTheDocument();
   });
 
-  it("hides_typing_indicator_when_thinking_trace_has_started", () => {
+  it("renders_tool_invocation_parts", () => {
+    const parts: MessagePart[] = [
+      { type: "text", text: "> test" },
+      { type: "tool-invocation", toolCallId: "tc1", name: "web_search", phase: "complete", args: JSON.stringify({ query: "test" }), result: "found it", startedAt: Date.now() - 1000, completedAt: Date.now() },
+    ];
     render(
       createElement(AgentChatPanel, {
-        agent: {
-          ...createAgent(),
-          status: "running",
-          outputLines: ["> test", formatThinkingMarkdown("thinking now")],
-        },
-        isSelected: true,
+        agent: { ...createAgent(), status: "running", messageParts: parts },
         canSend: true,
         models,
         stopBusy: false,
-        onOpenSettings: vi.fn(),
         onModelChange: vi.fn(),
         onThinkingChange: vi.fn(),
         onDraftChange: vi.fn(),
         onSend: vi.fn(),
         onStopRun: vi.fn(),
-        onAvatarShuffle: vi.fn(),
       })
     );
 
-    expect(screen.queryByTestId("agent-typing-indicator")).not.toBeInTheDocument();
+    // ToolCallBlock renders tool name in trigger
+    expect(screen.getByText("web_search")).toBeInTheDocument();
   });
 
-  it("auto_expands_thinking_panel_while_run_is_active", () => {
+  it("renders_status_part_as_chat_status_bar", () => {
+    const parts: MessagePart[] = [
+      { type: "text", text: "> test" },
+      { type: "status", state: "complete", model: "claude-opus-4" },
+    ];
     render(
       createElement(AgentChatPanel, {
-        agent: {
-          ...createAgent(),
-          status: "running",
-          outputLines: ["> test", formatThinkingMarkdown("thinking now")],
-        },
-        isSelected: true,
+        agent: { ...createAgent(), messageParts: parts },
         canSend: true,
         models,
         stopBusy: false,
-        onOpenSettings: vi.fn(),
         onModelChange: vi.fn(),
         onThinkingChange: vi.fn(),
         onDraftChange: vi.fn(),
         onSend: vi.fn(),
         onStopRun: vi.fn(),
-        onAvatarShuffle: vi.fn(),
       })
     );
 
-    expect(screen.getByText("thinking now").closest("details")).toHaveAttribute("open");
+    // ChatStatusBar shows the model name
+    expect(screen.getByText("claude-opus-4")).toBeInTheDocument();
   });
 
-  it("closes_thinking_panel_when_final_message_is_present", () => {
+  it("renders_empty_state_when_no_message_parts", () => {
     render(
       createElement(AgentChatPanel, {
-        agent: {
-          ...createAgent(),
-          status: "running",
-          outputLines: ["> test", formatThinkingMarkdown("thinking now"), "final response"],
-        },
-        isSelected: true,
+        agent: createAgent(),
         canSend: true,
         models,
         stopBusy: false,
-        onOpenSettings: vi.fn(),
         onModelChange: vi.fn(),
         onThinkingChange: vi.fn(),
         onDraftChange: vi.fn(),
         onSend: vi.fn(),
         onStopRun: vi.fn(),
-        onAvatarShuffle: vi.fn(),
       })
     );
 
-    expect(screen.getByText("thinking now").closest("details")).not.toHaveAttribute("open");
+    expect(screen.getByText(/What can Agent One help with/)).toBeInTheDocument();
   });
 });

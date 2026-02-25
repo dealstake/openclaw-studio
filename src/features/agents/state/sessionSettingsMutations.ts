@@ -3,6 +3,7 @@ import {
   type GatewayClient,
   type GatewaySessionsPatchResult,
 } from "@/lib/gateway/GatewayClient";
+import type { MessagePart } from "@/lib/chat/types";
 
 type SessionSettingField = "model" | "thinkingLevel";
 
@@ -22,9 +23,9 @@ type SessionSettingsDispatchAction =
       };
     }
   | {
-      type: "appendOutput";
+      type: "appendPart";
       agentId: string;
-      line: string;
+      part: MessagePart;
     };
 
 type SessionSettingsDispatch = (action: SessionSettingsDispatchAction) => void;
@@ -93,9 +94,9 @@ export const applySessionSettingMutation = async ({
   } catch (err) {
     const msg = err instanceof Error ? err.message : buildFallbackError(field);
     dispatch({
-      type: "appendOutput",
+      type: "appendPart",
       agentId,
-      line: `${buildErrorPrefix(field)}: ${msg}`,
+      part: { type: "text", text: `${buildErrorPrefix(field)}: ${msg}` },
     });
   }
 };

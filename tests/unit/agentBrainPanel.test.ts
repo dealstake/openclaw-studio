@@ -13,10 +13,10 @@ const createAgent = (agentId: string, name: string, sessionKey: string): AgentSt
   sessionCreated: true,
   awaitingUserInput: false,
   hasUnseenActivity: false,
-  outputLines: [],
+  messageParts: [],
   lastResult: null,
   lastDiff: null,
-  runId: null,
+  runId: null, runStartedAt: null,
   streamText: null,
   thinkingTrace: null,
   latestOverride: null,
@@ -97,7 +97,7 @@ describe("AgentBrainPanel", () => {
       })
     );
 
-    expect(screen.getByRole("button", { name: "AGENTS" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "AGENTS" })).toBeInTheDocument();
 
     await waitFor(() => {
       expect(screen.getByText("alpha agents")).toBeInTheDocument();

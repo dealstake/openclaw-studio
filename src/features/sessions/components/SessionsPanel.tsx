@@ -1,11 +1,22 @@
 "use client";
 
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
-import { Archive, ChevronDown, ChevronRight, RefreshCw, Trash2 } from "lucide-react";
-import { EmptyStatePanel } from "@/features/agents/components/EmptyStatePanel";
+import { RefreshCw } from "lucide-react";
+import { useTranscripts, useTranscriptSearch } from "@/features/sessions/hooks/useTranscripts";
+import {
+  inferTranscriptType,
+  type TranscriptType,
+} from "@/features/sessions/lib/transcriptUtils";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
-import { isGatewayDisconnectLikeError, parseAgentIdFromSessionKey } from "@/lib/gateway/GatewayClient";
-import { formatRelativeTime } from "@/lib/text/time";
+import { isGatewayDisconnectLikeError } from "@/lib/gateway/GatewayClient";
+import type { UsageByType } from "@/features/sessions/hooks/useAllSessions";
+import { useSessionUsageCache } from "@/features/sessions/hooks/useSessionUsageCache";
+import { PanelIconButton } from "@/components/PanelIconButton";
+import { sectionLabelClass } from "@/components/SectionLabel";
+import { PanelToolbar } from "@/components/ui/PanelToolbar";
+import { SessionUsageSummary } from "./SessionUsageSummary";
+import { ActiveSessionsTab } from "./ActiveSessionsTab";
+import { HistoryTab } from "./HistoryTab";
 
 export type SessionEntry = {
   key: string;
@@ -14,391 +25,64 @@ export type SessionEntry = {
   origin?: { label?: string | null } | null;
 };
 
-type SessionUsageData = {
-  inputTokens: number;
-  outputTokens: number;
-  totalCost: number | null;
-  currency: string;
-  messageCount: number;
-};
-
 type SessionsPanelProps = {
   client: GatewayClient;
+  agentId: string | null;
   sessions: SessionEntry[];
   loading: boolean;
   error: string | null;
   onRefresh: () => void;
   onSessionClick?: (sessionKey: string, agentId: string | null) => void;
+  onViewTrace?: (sessionKey: string, agentId: string | null) => void;
   activeSessionKey?: string | null;
   aggregateUsage?: { inputTokens: number; outputTokens: number; totalCost: number | null; messageCount: number } | null;
   aggregateUsageLoading?: boolean;
   cumulativeUsage?: { inputTokens: number; outputTokens: number; totalCost: number | null; messageCount: number } | null;
   cumulativeUsageLoading?: boolean;
+  usageByType?: UsageByType | null;
+  onTranscriptClick?: (sessionId: string, agentId: string) => void;
 };
-
-const CHANNEL_TYPE_LABELS: Record<string, string> = {
-  webchat: "Webchat",
-  telegram: "Telegram",
-  discord: "Discord",
-  whatsapp: "WhatsApp",
-  signal: "Signal",
-  googlechat: "Google Chat",
-  slack: "Slack",
-  imessage: "iMessage",
-};
-
-function humanizeSessionKey(key: string): string {
-  const parts = key.split(":");
-  if (parts.length < 3) return humanizeFallbackKey(key);
-  const type = parts[2];
-  const rest = parts.slice(3).join(":");
-
-  switch (type) {
-    case "main":
-      return "Main Session";
-    case "subagent":
-      return `Sub-agent ${rest.slice(0, 6)}`;
-    case "cron":
-      return `Cron ${rest.slice(0, 6)}`;
-    default: {
-      const channelLabel = CHANNEL_TYPE_LABELS[type.toLowerCase()];
-      if (channelLabel) {
-        const subtype = parts[3];
-        if (subtype === "group") return `${channelLabel} Group`;
-        if (subtype === "dm") return `${channelLabel} DM`;
-        return channelLabel;
-      }
-      return humanizeFallbackKey(key);
-    }
-  }
-}
-
-function humanizeFallbackKey(key: string): string {
-  const gatewayAgentRe = /^([A-Za-z]+):G-AGENT-([A-Za-z0-9]+)-(.+)$/i;
-  const match = key.match(gatewayAgentRe);
-  if (match) {
-    const channel = CHANNEL_TYPE_LABELS[match[1].toLowerCase()] ?? match[1];
-    const agentName = match[2].charAt(0).toUpperCase() + match[2].slice(1).toLowerCase();
-    const suffix = match[3].toLowerCase();
-    if (suffix === "main") return `${channel} · ${agentName}`;
-    if (suffix.startsWith("subagent")) return `${channel} · ${agentName} Sub-agent`;
-    return `${channel} · ${agentName} (${suffix.slice(0, 8)})`;
-  }
-
-  const gatewayChannelRe = /^([A-Za-z]+):G-(SPACES|USERS|GROUPS|DMS)-(.+)$/i;
-  const chanMatch = key.match(gatewayChannelRe);
-  if (chanMatch) {
-    const channel = CHANNEL_TYPE_LABELS[chanMatch[1].toLowerCase()] ?? chanMatch[1];
-    const scope = chanMatch[2].toLowerCase();
-    const id = chanMatch[3].slice(0, 8);
-    if (scope === "spaces") return `${channel} Space ${id}`;
-    if (scope === "users") return `${channel} DM ${id}`;
-    if (scope === "groups") return `${channel} Group ${id}`;
-    return `${channel} ${scope} ${id}`;
-  }
-
-  if (/^cron:\s*/i.test(key)) {
-    return key.replace(/^cron:\s*/i, "Cron: ");
-  }
-
-  return key
-    .replace(/^(webchat|telegram|discord|whatsapp|signal|googlechat|slack|imessage):/i, (_, ch: string) => {
-      const label = CHANNEL_TYPE_LABELS[ch.toLowerCase()];
-      return label ? `${label}: ` : `${ch}: `;
-    })
-    .replace(/^G-/i, "");
-}
-
-function humanizeOriginLabel(label: string): string {
-  const lower = label.toLowerCase();
-  for (const [key, name] of Object.entries(CHANNEL_TYPE_LABELS)) {
-    if (lower.startsWith(key)) return name;
-  }
-  return label;
-}
-
-function formatCost(cost: number, currency: string): string {
-  if (cost < 0.01) {
-    return `<$0.01`;
-  }
-  return new Intl.NumberFormat(undefined, {
-    style: "currency",
-    currency: currency || "USD",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(cost);
-}
-
-function formatTokens(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return n.toLocaleString();
-}
-
-/* ─── Usage detail grid (shown inside expanded card) ─── */
-function UsageDetails({ usage }: { usage: SessionUsageData }) {
-  return (
-    <div className="mt-2 grid grid-cols-2 gap-1.5">
-      <div className="rounded border border-border/50 bg-muted/30 px-2 py-1">
-        <div className="font-mono text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-          Input
-        </div>
-        <div className="text-[11px] font-semibold text-foreground">
-          {formatTokens(usage.inputTokens)}
-        </div>
-      </div>
-      <div className="rounded border border-border/50 bg-muted/30 px-2 py-1">
-        <div className="font-mono text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-          Output
-        </div>
-        <div className="text-[11px] font-semibold text-foreground">
-          {formatTokens(usage.outputTokens)}
-        </div>
-      </div>
-      <div className="rounded border border-border/50 bg-muted/30 px-2 py-1">
-        <div className="font-mono text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-          Cost
-        </div>
-        <div className="text-[11px] font-semibold text-foreground">
-          {usage.totalCost !== null ? formatCost(usage.totalCost, usage.currency) : "—"}
-        </div>
-      </div>
-      <div className="rounded border border-border/50 bg-muted/30 px-2 py-1">
-        <div className="font-mono text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-          Messages
-        </div>
-        <div className="text-[11px] font-semibold text-foreground">
-          {usage.messageCount.toLocaleString()}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ─── Skeleton for loading usage ─── */
-function UsageSkeleton() {
-  return (
-    <div className="mt-2 grid grid-cols-2 gap-1.5">
-      {[0, 1, 2, 3].map((i) => (
-        <div key={i} className="h-[38px] animate-pulse rounded border border-border/50 bg-muted/20" />
-      ))}
-    </div>
-  );
-}
-
-/* ─── Single session card ─── */
-const SessionCard = memo(function SessionCard({
-  session,
-  isActive,
-  isExpanded,
-  onToggle,
-  onSessionClick,
-  client,
-  busyKey,
-  confirmDeleteKey,
-  onSetConfirmDelete,
-  onDelete,
-  onCompact,
-}: {
-  session: SessionEntry;
-  isActive: boolean;
-  isExpanded: boolean;
-  onToggle: () => void;
-  onSessionClick?: (sessionKey: string, agentId: string | null) => void;
-  client: GatewayClient;
-  busyKey: string | null;
-  confirmDeleteKey: string | null;
-  onSetConfirmDelete: (key: string | null) => void;
-  onDelete: (key: string) => void;
-  onCompact: (key: string) => void;
-}) {
-  const [usage, setUsage] = useState<SessionUsageData | null>(null);
-  const [usageLoading, setUsageLoading] = useState(false);
-  const [usageLoaded, setUsageLoaded] = useState(false);
-
-  const agentId = parseAgentIdFromSessionKey(session.key);
-  const isBusy = busyKey === session.key;
-  const isConfirming = confirmDeleteKey === session.key;
-
-  // Load usage when expanded (lazy)
-  const loadUsage = useCallback(async () => {
-    if (usageLoaded) return;
-    setUsageLoading(true);
-    try {
-      const result = await client.call<{
-        totals?: { input?: number; output?: number; totalCost?: number };
-        sessions?: Array<{ usage?: { messageCounts?: { total?: number } } }>;
-      }>("sessions.usage", { key: session.key });
-      const totals = result.totals;
-      const firstSession = result.sessions?.[0];
-      setUsage({
-        inputTokens: totals?.input ?? 0,
-        outputTokens: totals?.output ?? 0,
-        totalCost: totals?.totalCost != null && totals.totalCost > 0 ? totals.totalCost : null,
-        currency: "USD",
-        messageCount: firstSession?.usage?.messageCounts?.total ?? 0,
-      });
-      setUsageLoaded(true);
-    } catch (err) {
-      if (!isGatewayDisconnectLikeError(err)) {
-        console.error("Failed to load session usage.", err);
-      }
-    } finally {
-      setUsageLoading(false);
-    }
-  }, [client, session.key, usageLoaded]);
-
-  useEffect(() => {
-    if (isExpanded && !usageLoaded) {
-      void loadUsage();
-    }
-  }, [isExpanded, usageLoaded, loadUsage]);
-
-  return (
-    <div
-      className={`group/session rounded-md border transition-all duration-200 ${
-        isActive
-          ? "border-primary/40 bg-card/90 shadow-sm"
-          : "border-border/80 bg-card/70 hover:border-border hover:bg-muted/55"
-      }`}
-    >
-      {/* Header row */}
-      <div
-        role="button"
-        tabIndex={0}
-        className="flex cursor-pointer items-start gap-2 p-3"
-        onClick={(e) => {
-          // If clicking action buttons, don't toggle
-          if ((e.target as HTMLElement).closest("[data-action]")) return;
-          onToggle();
-        }}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            onToggle();
-          }
-        }}
-      >
-        {/* Expand chevron */}
-        <div className="mt-0.5 flex-shrink-0 text-muted-foreground">
-          {isExpanded ? (
-            <ChevronDown className="h-3.5 w-3.5" />
-          ) : (
-            <ChevronRight className="h-3.5 w-3.5" />
-          )}
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5">
-            {isActive && (
-              <span className="inline-block h-1.5 w-1.5 flex-shrink-0 rounded-full bg-emerald-500" />
-            )}
-            <span className="truncate font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-foreground">
-              {humanizeSessionKey(session.displayName ?? session.key)}
-            </span>
-          </div>
-          <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-            {agentId ? <span>Agent: {agentId}</span> : null}
-            <span>{formatRelativeTime(session.updatedAt)}</span>
-            {session.origin?.label ? (
-              <span className="max-w-[140px] truncate rounded border border-border/70 bg-muted px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                {humanizeOriginLabel(session.origin.label)}
-              </span>
-            ) : null}
-          </div>
-        </div>
-
-        {/* Action buttons */}
-        {!isConfirming && (
-          <div
-            data-action="true"
-            className="flex items-center gap-1 opacity-0 transition group-focus-within/session:opacity-100 group-hover/session:opacity-100"
-          >
-            {onSessionClick && (
-              <button
-                className="flex h-7 items-center rounded-md border border-border/80 bg-card/70 px-2 font-mono text-[9px] font-semibold uppercase tracking-[0.1em] text-muted-foreground transition hover:border-border hover:bg-muted/65"
-                type="button"
-                onClick={() => onSessionClick(session.key, agentId)}
-              >
-                View
-              </button>
-            )}
-            <button
-              className="flex h-7 w-7 items-center justify-center rounded-md border border-border/80 bg-card/70 text-muted-foreground transition hover:border-border hover:bg-muted/65 disabled:cursor-not-allowed disabled:opacity-60"
-              type="button"
-              aria-label={`Compact session ${session.key}`}
-              onClick={() => onCompact(session.key)}
-              disabled={isBusy}
-            >
-              <Archive className="h-3.5 w-3.5" />
-            </button>
-            <button
-              className="flex h-7 w-7 items-center justify-center rounded-md border border-destructive/40 bg-transparent text-destructive transition hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-60"
-              type="button"
-              aria-label={`Delete session ${session.key}`}
-              onClick={() => onSetConfirmDelete(session.key)}
-              disabled={isBusy}
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Confirm delete */}
-      {isConfirming && (
-        <div className="flex items-center gap-2 px-3 pb-3" data-action="true">
-          <span className="text-[11px] text-muted-foreground">Are you sure?</span>
-          <button
-            className="rounded-md border border-destructive/50 bg-transparent px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-destructive transition hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-60"
-            type="button"
-            onClick={() => onDelete(session.key)}
-            disabled={isBusy}
-          >
-            {isBusy ? "Deleting…" : "Confirm"}
-          </button>
-          <button
-            className="rounded-md border border-border/80 bg-card/70 px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground transition hover:border-border hover:bg-muted/65"
-            type="button"
-            onClick={() => onSetConfirmDelete(null)}
-            disabled={isBusy}
-          >
-            Cancel
-          </button>
-        </div>
-      )}
-
-      {/* Expanded content with usage */}
-      <div
-        className={`overflow-hidden transition-all duration-200 ${
-          isExpanded ? "max-h-[200px] opacity-100" : "max-h-0 opacity-0"
-        }`}
-      >
-        <div className="border-t border-border/40 px-3 pb-3 pt-1">
-          {usageLoading && !usage ? <UsageSkeleton /> : null}
-          {usage ? <UsageDetails usage={usage} /> : null}
-          {!usageLoading && !usage && usageLoaded ? (
-            <div className="mt-2 text-[11px] text-muted-foreground">No usage data available.</div>
-          ) : null}
-        </div>
-      </div>
-    </div>
-  );
-});
 
 export const SessionsPanel = memo(function SessionsPanel({
   client,
+  agentId,
   sessions,
   loading,
   error,
   onRefresh,
   onSessionClick,
+  onViewTrace,
   activeSessionKey = null,
   aggregateUsage = null,
   aggregateUsageLoading = false,
   cumulativeUsage = null,
   cumulativeUsageLoading = false,
+  usageByType = null,
+  onTranscriptClick,
 }: SessionsPanelProps) {
+  const {
+    transcripts,
+    loading: transcriptsLoading,
+    loadingMore: transcriptsLoadingMore,
+    error: transcriptsError,
+    hasMore: transcriptsHasMore,
+    loadMore: transcriptsLoadMore,
+    refresh: transcriptsRefresh,
+  } = useTranscripts(agentId);
+
+  const {
+    query: searchQuery,
+    setQuery: setSearchQuery,
+    results: searchResults,
+    searching: searchLoading,
+    error: searchError,
+    clearSearch,
+  } = useTranscriptSearch(agentId);
+
+  const [tab, setTab] = useState<"active" | "history">("active");
+  const [activeSearch, setActiveSearch] = useState("");
+  const [transcriptFilter, setTranscriptFilter] = useState<TranscriptType | "all">("all");
+  const [transcriptSortNewest, setTranscriptSortNewest] = useState(true);
   const [confirmDeleteKey, setConfirmDeleteKey] = useState<string | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -406,7 +90,12 @@ export const SessionsPanel = memo(function SessionsPanel({
     return activeSessionKey ? new Set([activeSessionKey]) : new Set();
   });
 
-  // Keep active session expanded when it changes
+  const { getUsage, loadUsage, isLoading: isUsageLoading } = useSessionUsageCache(client);
+
+  const handleLoadUsage = useCallback((key: string) => {
+    void loadUsage(key);
+  }, [loadUsage]);
+
   useEffect(() => {
     if (activeSessionKey) {
       setExpandedKeys((prev) => {
@@ -418,19 +107,33 @@ export const SessionsPanel = memo(function SessionsPanel({
     }
   }, [activeSessionKey]);
 
-  const sorted = useMemo(
-    () => [...sessions].sort((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0)),
-    [sessions]
-  );
+  const filteredSorted = useMemo(() => {
+    const sorted = [...sessions].sort((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0));
+    if (!activeSearch.trim()) return sorted;
+    const q = activeSearch.toLowerCase();
+    return sorted.filter((s) => {
+      const name = (s.displayName ?? s.key).toLowerCase();
+      return name.includes(q);
+    });
+  }, [sessions, activeSearch]);
+
+  const filteredTranscripts = useMemo(() => {
+    let list = transcripts;
+    if (transcriptFilter !== "all") {
+      list = list.filter((t) => inferTranscriptType(t) === transcriptFilter);
+    }
+    return [...list].sort((a, b) => {
+      const aTime = a.startedAt ? new Date(a.startedAt).getTime() : 0;
+      const bTime = b.startedAt ? new Date(b.startedAt).getTime() : 0;
+      return transcriptSortNewest ? bTime - aTime : aTime - bTime;
+    });
+  }, [transcripts, transcriptFilter, transcriptSortNewest]);
 
   const toggleExpanded = useCallback((key: string) => {
     setExpandedKeys((prev) => {
       const next = new Set(prev);
-      if (next.has(key)) {
-        next.delete(key);
-      } else {
-        next.add(key);
-      }
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
       return next;
     });
   }, []);
@@ -474,102 +177,114 @@ export const SessionsPanel = memo(function SessionsPanel({
     [client, onRefresh]
   );
 
+  const handleDeleteVoid = useCallback((key: string) => { void handleDelete(key); }, [handleDelete]);
+  const handleCompactVoid = useCallback((key: string) => { void handleCompact(key); }, [handleCompact]);
+  const handleToggleSort = useCallback(() => setTranscriptSortNewest((prev) => !prev), []);
+
   return (
     <div className="flex h-full w-full min-w-0 flex-col overflow-hidden">
-      <div className="flex items-center justify-between border-b border-border/40 px-4 py-3">
-        <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-          Sessions
+      {/* Tab header */}
+      <PanelToolbar
+        actions={
+          <PanelIconButton
+            aria-label={tab === "active" ? "Refresh sessions" : "Refresh history"}
+            onClick={tab === "active" ? onRefresh : () => transcriptsRefresh()}
+            disabled={tab === "active" ? loading : transcriptsLoading}
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${(tab === "active" ? loading : transcriptsLoading) ? "animate-spin" : ""}`} />
+          </PanelIconButton>
+        }
+      >
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            className={`rounded-md px-2 py-1 ${sectionLabelClass} transition ${
+              tab === "active"
+                ? "bg-muted text-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+            onClick={() => setTab("active")}
+          >
+            Active
+          </button>
+          <button
+            type="button"
+            className={`rounded-md px-2 py-1 ${sectionLabelClass} transition ${
+              tab === "history"
+                ? "bg-muted text-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+            onClick={() => {
+              setTab("history");
+              if (transcripts.length === 0 && !transcriptsLoading) {
+                transcriptsRefresh();
+              }
+            }}
+          >
+            History
+          </button>
         </div>
-        <button
-          className="flex h-7 w-7 items-center justify-center rounded-md border border-border/80 bg-card/70 text-muted-foreground transition hover:border-border hover:bg-muted/65 disabled:cursor-not-allowed disabled:opacity-60"
-          type="button"
-          aria-label="Refresh sessions"
-          onClick={onRefresh}
-          disabled={loading}
-        >
-          <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-        </button>
-      </div>
+      </PanelToolbar>
 
-      {/* Usage summary */}
-      {(cumulativeUsage || aggregateUsage || cumulativeUsageLoading || aggregateUsageLoading) ? (
-        <div className="flex flex-col gap-1.5 border-b border-border/40 px-4 py-2.5">
-          {cumulativeUsage && (cumulativeUsage.inputTokens + cumulativeUsage.outputTokens) > 0 ? (
-            <div className="flex flex-col gap-1">
-              <div className="font-mono text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                All Sessions
-              </div>
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
-                <span className="font-semibold text-foreground">
-                  {formatTokens(cumulativeUsage.inputTokens + cumulativeUsage.outputTokens)} tokens
-                </span>
-                {cumulativeUsage.totalCost !== null ? (
-                  <span className="font-semibold text-foreground">{formatCost(cumulativeUsage.totalCost, "USD")}</span>
-                ) : null}
-                <span className="text-muted-foreground">{cumulativeUsage.messageCount.toLocaleString()} messages</span>
-              </div>
-            </div>
-          ) : cumulativeUsageLoading ? (
-            <div className="h-8 w-48 animate-pulse rounded bg-muted/30" />
-          ) : null}
-          {aggregateUsage ? (
-            <div className="flex flex-col gap-0.5">
-              <div className="font-mono text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                Current Session
-              </div>
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-muted-foreground/80">
-                <span>
-                  {formatTokens(aggregateUsage.inputTokens + aggregateUsage.outputTokens)} tokens
-                </span>
-                {aggregateUsage.totalCost !== null ? (
-                  <span>{formatCost(aggregateUsage.totalCost, "USD")}</span>
-                ) : null}
-                <span>{aggregateUsage.messageCount.toLocaleString()} messages</span>
-              </div>
-            </div>
-          ) : null}
-        </div>
+      {/* Usage summary (active tab only) */}
+      {tab === "active" ? (
+        <SessionUsageSummary
+          aggregateUsage={aggregateUsage}
+          aggregateUsageLoading={aggregateUsageLoading}
+          cumulativeUsage={cumulativeUsage}
+          cumulativeUsageLoading={cumulativeUsageLoading}
+          usageByType={usageByType}
+        />
       ) : null}
 
-      <div className="min-h-0 flex-1 overflow-y-auto p-4">
-        {error || actionError ? (
-          <div className="mb-3 rounded-md border border-destructive bg-destructive px-3 py-2 text-xs text-destructive-foreground">
-            {error ?? actionError}
-          </div>
-        ) : null}
+      {/* Active tab */}
+      <div className={tab === "active" ? "flex min-h-0 flex-1 flex-col" : "hidden"}>
+        <ActiveSessionsTab
+          sessions={filteredSorted}
+          loading={loading}
+          error={error}
+          actionError={actionError}
+          activeSearch={activeSearch}
+          onActiveSearchChange={setActiveSearch}
+          activeSessionKey={activeSessionKey}
+          expandedKeys={expandedKeys}
+          onToggleExpanded={toggleExpanded}
+          onSessionClick={onSessionClick}
+          onViewTrace={onViewTrace}
+          getUsage={getUsage}
+          isUsageLoading={isUsageLoading}
+          onLoadUsage={handleLoadUsage}
+          busyKey={busyKey}
+          confirmDeleteKey={confirmDeleteKey}
+          onSetConfirmDelete={setConfirmDeleteKey}
+          onDelete={handleDeleteVoid}
+          onCompact={handleCompactVoid}
+        />
+      </div>
 
-        {loading && sessions.length === 0 ? (
-          <div className="flex flex-col gap-2">
-            {[0, 1, 2].map((i) => (
-              <div key={i} className="h-[72px] animate-pulse rounded-md border border-border/50 bg-muted/20" />
-            ))}
-          </div>
-        ) : null}
-
-        {!loading && !error && sorted.length === 0 ? (
-          <EmptyStatePanel title="No sessions found." compact className="p-3 text-xs" />
-        ) : null}
-
-        {sorted.length > 0 ? (
-          <div className="flex flex-col gap-2">
-            {sorted.map((session) => (
-              <SessionCard
-                key={session.key}
-                session={session}
-                isActive={session.key === activeSessionKey}
-                isExpanded={expandedKeys.has(session.key)}
-                onToggle={() => toggleExpanded(session.key)}
-                onSessionClick={onSessionClick}
-                client={client}
-                busyKey={busyKey}
-                confirmDeleteKey={confirmDeleteKey}
-                onSetConfirmDelete={setConfirmDeleteKey}
-                onDelete={(key) => { void handleDelete(key); }}
-                onCompact={(key) => { void handleCompact(key); }}
-              />
-            ))}
-          </div>
-        ) : null}
+      {/* History tab */}
+      <div className={tab === "history" ? "flex min-h-0 flex-1 flex-col overflow-hidden" : "hidden"}>
+        <HistoryTab
+          agentId={agentId}
+          searchQuery={searchQuery}
+          onSearchQueryChange={setSearchQuery}
+          onClearSearch={clearSearch}
+          searchResults={searchResults}
+          searchLoading={searchLoading}
+          searchError={searchError}
+          transcripts={transcripts}
+          filteredTranscripts={filteredTranscripts}
+          transcriptsLoading={transcriptsLoading}
+          transcriptsLoadingMore={transcriptsLoadingMore}
+          transcriptsError={transcriptsError}
+          transcriptsHasMore={transcriptsHasMore}
+          onLoadMore={transcriptsLoadMore}
+          transcriptFilter={transcriptFilter}
+          onTranscriptFilterChange={setTranscriptFilter}
+          transcriptSortNewest={transcriptSortNewest}
+          onToggleSort={handleToggleSort}
+          onTranscriptClick={onTranscriptClick}
+        />
       </div>
     </div>
   );

@@ -27,6 +27,6 @@ test("loads focused studio empty state", async ({ page }) => {
 
   await page.goto("/");
 
-  await expect(page.getByTestId("fleet-sidebar")).toBeVisible();
+  await expect(page.getByTestId("agent-breadcrumb-trigger")).toBeVisible();
   await expect(page.getByTestId("focused-agent-panel")).toBeVisible();
 });

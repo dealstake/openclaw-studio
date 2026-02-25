@@ -4,6 +4,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import type { AgentState } from "@/features/agents/state/store";
 import { AgentChatPanel } from "@/features/agents/components/AgentChatPanel";
 import type { GatewayModelChoice } from "@/lib/gateway/models";
+import type { MessagePart } from "@/lib/chat/types";
 
 const createAgent = (): AgentState => ({
   agentId: "agent-1",
@@ -13,10 +14,10 @@ const createAgent = (): AgentState => ({
   sessionCreated: true,
   awaitingUserInput: false,
   hasUnseenActivity: false,
-  outputLines: [],
+  messageParts: [],
   lastResult: null,
   lastDiff: null,
-  runId: null,
+  runId: null, runStartedAt: null,
   streamText: null,
   thinkingTrace: null,
   latestOverride: null,
@@ -46,22 +47,30 @@ describe("AgentChatPanel scrolling", () => {
 
   it("shows jump-to-latest when unpinned and new output arrives, and jumps on click", async () => {
     (Element.prototype as unknown as { scrollIntoView: unknown }).scrollIntoView = vi.fn();
+    Element.prototype.scrollTo = vi.fn() as unknown as typeof Element.prototype.scrollTo;
 
     const agent = createAgent();
+    const parts1: MessagePart[] = [
+      { type: "text", text: "> hello" },
+      { type: "text", text: "first answer" },
+    ];
+    const parts2: MessagePart[] = [
+      { type: "text", text: "> hello" },
+      { type: "text", text: "first answer" },
+      { type: "text", text: "second answer" },
+    ];
+
     const { rerender } = render(
       createElement(AgentChatPanel, {
-        agent: { ...agent, outputLines: ["> hello", "first answer"] },
-        isSelected: true,
+        agent: { ...agent, messageParts: parts1 },
         canSend: true,
         models,
         stopBusy: false,
-        onOpenSettings: vi.fn(),
         onModelChange: vi.fn(),
         onThinkingChange: vi.fn(),
         onDraftChange: vi.fn(),
         onSend: vi.fn(),
         onStopRun: vi.fn(),
-        onAvatarShuffle: vi.fn(),
       })
     );
 
@@ -74,18 +83,15 @@ describe("AgentChatPanel scrolling", () => {
 
     rerender(
       createElement(AgentChatPanel, {
-        agent: { ...agent, outputLines: ["> hello", "first answer", "second answer"] },
-        isSelected: true,
+        agent: { ...agent, messageParts: parts2 },
         canSend: true,
         models,
         stopBusy: false,
-        onOpenSettings: vi.fn(),
         onModelChange: vi.fn(),
         onThinkingChange: vi.fn(),
         onDraftChange: vi.fn(),
         onSend: vi.fn(),
         onStopRun: vi.fn(),
-        onAvatarShuffle: vi.fn(),
       })
     );
 
@@ -95,10 +101,6 @@ describe("AgentChatPanel scrolling", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Jump to latest" }));
 
-    expect(
-      (Element.prototype as unknown as { scrollIntoView: ReturnType<typeof vi.fn> })
-        .scrollIntoView
-    ).toHaveBeenCalled();
+    expect(Element.prototype.scrollTo).toHaveBeenCalled();
   });
 });
-

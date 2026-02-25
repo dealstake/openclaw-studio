@@ -1,4 +1,21 @@
-import { getPublicKeyAsync, signAsync, utils } from "@noble/ed25519";
+/**
+ * WebSocket transport for the OpenClaw gateway.
+ *
+ * UUID generation, device auth, and device identity logic have been
+ * extracted into sibling modules (uuid.ts, device-auth.ts, device-identity.ts).
+ */
+
+import { generateUUID } from "./uuid";
+import {
+  buildDeviceAuthPayload,
+  loadDeviceAuthToken,
+  storeDeviceAuthToken,
+  clearDeviceAuthToken,
+} from "./device-auth";
+import {
+  loadOrCreateDeviceIdentity,
+  signDevicePayload,
+} from "./device-identity";
 
 const GATEWAY_CLIENT_NAMES = {
   CONTROL_UI: "openclaw-control-ui",
@@ -8,309 +25,10 @@ const GATEWAY_CLIENT_MODES = {
   WEBCHAT: "webchat",
 } as const;
 
-type CryptoLike = {
-  randomUUID?: (() => string) | undefined;
-  getRandomValues?: ((array: Uint8Array) => Uint8Array) | undefined;
-};
+// Re-export shared frame types (consolidated from near-duplicate definitions)
+export type { EventFrame as GatewayEventFrame, ResFrame as GatewayResponseFrame } from "../types";
 
-let warnedWeakCrypto = false;
-
-function uuidFromBytes(bytes: Uint8Array): string {
-  bytes[6] = (bytes[6] & 0x0f) | 0x40; // version 4
-  bytes[8] = (bytes[8] & 0x3f) | 0x80; // variant 1
-
-  let hex = "";
-  for (let i = 0; i < bytes.length; i++) {
-    hex += bytes[i]!.toString(16).padStart(2, "0");
-  }
-
-  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(
-    16,
-    20
-  )}-${hex.slice(20)}`;
-}
-
-function weakRandomBytes(): Uint8Array {
-  const bytes = new Uint8Array(16);
-  const now = Date.now();
-  for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);
-  bytes[0] ^= now & 0xff;
-  bytes[1] ^= (now >>> 8) & 0xff;
-  bytes[2] ^= (now >>> 16) & 0xff;
-  bytes[3] ^= (now >>> 24) & 0xff;
-  return bytes;
-}
-
-function warnWeakCryptoOnce() {
-  if (warnedWeakCrypto) return;
-  warnedWeakCrypto = true;
-  console.warn("[uuid] crypto API missing; falling back to weak randomness");
-}
-
-function generateUUID(cryptoLike: CryptoLike | null = globalThis.crypto): string {
-  if (cryptoLike && typeof cryptoLike.randomUUID === "function") return cryptoLike.randomUUID();
-
-  if (cryptoLike && typeof cryptoLike.getRandomValues === "function") {
-    const bytes = new Uint8Array(16);
-    cryptoLike.getRandomValues(bytes);
-    return uuidFromBytes(bytes);
-  }
-
-  warnWeakCryptoOnce();
-  return uuidFromBytes(weakRandomBytes());
-}
-
-type DeviceAuthPayloadParams = {
-  deviceId: string;
-  clientId: string;
-  clientMode: string;
-  role: string;
-  scopes: string[];
-  signedAtMs: number;
-  token?: string | null;
-  nonce?: string | null;
-  version?: "v1" | "v2";
-};
-
-function buildDeviceAuthPayload(params: DeviceAuthPayloadParams): string {
-  const version = params.version ?? (params.nonce ? "v2" : "v1");
-  const scopes = params.scopes.join(",");
-  const token = params.token ?? "";
-  const base = [
-    version,
-    params.deviceId,
-    params.clientId,
-    params.clientMode,
-    params.role,
-    scopes,
-    String(params.signedAtMs),
-    token,
-  ];
-  if (version === "v2") {
-    base.push(params.nonce ?? "");
-  }
-  return base.join("|");
-}
-
-type DeviceAuthEntry = {
-  token: string;
-  role: string;
-  scopes: string[];
-  updatedAtMs: number;
-};
-
-type DeviceAuthStore = {
-  version: 1;
-  deviceId: string;
-  tokens: Record<string, DeviceAuthEntry>;
-};
-
-const DEVICE_AUTH_STORAGE_KEY = "openclaw.device.auth.v1";
-
-function normalizeRole(role: string): string {
-  return role.trim();
-}
-
-function normalizeScopes(scopes: string[] | undefined): string[] {
-  if (!Array.isArray(scopes)) return [];
-  const out = new Set<string>();
-  for (const scope of scopes) {
-    const trimmed = scope.trim();
-    if (trimmed) out.add(trimmed);
-  }
-  return [...out].sort();
-}
-
-function readDeviceAuthStore(): DeviceAuthStore | null {
-  try {
-    const raw = window.localStorage.getItem(DEVICE_AUTH_STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as DeviceAuthStore;
-    if (!parsed || parsed.version !== 1) return null;
-    if (!parsed.deviceId || typeof parsed.deviceId !== "string") return null;
-    if (!parsed.tokens || typeof parsed.tokens !== "object") return null;
-    return parsed;
-  } catch {
-    return null;
-  }
-}
-
-function writeDeviceAuthStore(store: DeviceAuthStore) {
-  try {
-    window.localStorage.setItem(DEVICE_AUTH_STORAGE_KEY, JSON.stringify(store));
-  } catch {
-    // best-effort
-  }
-}
-
-function loadDeviceAuthToken(params: { deviceId: string; role: string }): DeviceAuthEntry | null {
-  const store = readDeviceAuthStore();
-  if (!store || store.deviceId !== params.deviceId) return null;
-  const role = normalizeRole(params.role);
-  const entry = store.tokens[role];
-  if (!entry || typeof entry.token !== "string") return null;
-  return entry;
-}
-
-function storeDeviceAuthToken(params: {
-  deviceId: string;
-  role: string;
-  token: string;
-  scopes?: string[];
-}): DeviceAuthEntry {
-  const role = normalizeRole(params.role);
-  const next: DeviceAuthStore = {
-    version: 1,
-    deviceId: params.deviceId,
-    tokens: {},
-  };
-  const existing = readDeviceAuthStore();
-  if (existing && existing.deviceId === params.deviceId) {
-    next.tokens = { ...existing.tokens };
-  }
-  const entry: DeviceAuthEntry = {
-    token: params.token,
-    role,
-    scopes: normalizeScopes(params.scopes),
-    updatedAtMs: Date.now(),
-  };
-  next.tokens[role] = entry;
-  writeDeviceAuthStore(next);
-  return entry;
-}
-
-function clearDeviceAuthToken(params: { deviceId: string; role: string }) {
-  const store = readDeviceAuthStore();
-  if (!store || store.deviceId !== params.deviceId) return;
-  const role = normalizeRole(params.role);
-  if (!store.tokens[role]) return;
-  const next = { ...store, tokens: { ...store.tokens } };
-  delete next.tokens[role];
-  writeDeviceAuthStore(next);
-}
-
-type StoredIdentity = {
-  version: 1;
-  deviceId: string;
-  publicKey: string;
-  privateKey: string;
-  createdAtMs: number;
-};
-
-type DeviceIdentity = {
-  deviceId: string;
-  publicKey: string;
-  privateKey: string;
-};
-
-const DEVICE_IDENTITY_STORAGE_KEY = "openclaw-device-identity-v1";
-
-function base64UrlEncode(bytes: Uint8Array): string {
-  let binary = "";
-  for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/g, "");
-}
-
-function base64UrlDecode(input: string): Uint8Array {
-  const normalized = input.replaceAll("-", "+").replaceAll("_", "/");
-  const padded = normalized + "=".repeat((4 - (normalized.length % 4)) % 4);
-  const binary = atob(padded);
-  const out = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i += 1) out[i] = binary.charCodeAt(i);
-  return out;
-}
-
-function bytesToHex(bytes: Uint8Array): string {
-  return Array.from(bytes)
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
-
-async function fingerprintPublicKey(publicKey: Uint8Array): Promise<string> {
-  const hash = await crypto.subtle.digest("SHA-256", new Uint8Array(publicKey));
-  return bytesToHex(new Uint8Array(hash));
-}
-
-async function generateIdentity(): Promise<DeviceIdentity> {
-  const privateKey = utils.randomSecretKey();
-  const publicKey = await getPublicKeyAsync(privateKey);
-  const deviceId = await fingerprintPublicKey(publicKey);
-  return {
-    deviceId,
-    publicKey: base64UrlEncode(publicKey),
-    privateKey: base64UrlEncode(privateKey),
-  };
-}
-
-async function loadOrCreateDeviceIdentity(): Promise<DeviceIdentity> {
-  try {
-    const raw = localStorage.getItem(DEVICE_IDENTITY_STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw) as StoredIdentity;
-      if (
-        parsed?.version === 1 &&
-        typeof parsed.deviceId === "string" &&
-        typeof parsed.publicKey === "string" &&
-        typeof parsed.privateKey === "string"
-      ) {
-        const derivedId = await fingerprintPublicKey(base64UrlDecode(parsed.publicKey));
-        if (derivedId !== parsed.deviceId) {
-          const updated: StoredIdentity = {
-            ...parsed,
-            deviceId: derivedId,
-          };
-          localStorage.setItem(DEVICE_IDENTITY_STORAGE_KEY, JSON.stringify(updated));
-          return {
-            deviceId: derivedId,
-            publicKey: parsed.publicKey,
-            privateKey: parsed.privateKey,
-          };
-        }
-        return {
-          deviceId: parsed.deviceId,
-          publicKey: parsed.publicKey,
-          privateKey: parsed.privateKey,
-        };
-      }
-    }
-  } catch {
-    // fall through to regenerate
-  }
-
-  const identity = await generateIdentity();
-  const stored: StoredIdentity = {
-    version: 1,
-    deviceId: identity.deviceId,
-    publicKey: identity.publicKey,
-    privateKey: identity.privateKey,
-    createdAtMs: Date.now(),
-  };
-  localStorage.setItem(DEVICE_IDENTITY_STORAGE_KEY, JSON.stringify(stored));
-  return identity;
-}
-
-async function signDevicePayload(privateKeyBase64Url: string, payload: string) {
-  const key = base64UrlDecode(privateKeyBase64Url);
-  const data = new TextEncoder().encode(payload);
-  const sig = await signAsync(data, key);
-  return base64UrlEncode(sig);
-}
-
-export type GatewayEventFrame = {
-  type: "event";
-  event: string;
-  payload?: unknown;
-  seq?: number;
-  stateVersion?: { presence: number; health: number };
-};
-
-export type GatewayResponseFrame = {
-  type: "res";
-  id: string;
-  ok: boolean;
-  payload?: unknown;
-  error?: { code: string; message: string; details?: unknown };
-};
+import type { EventFrame as GatewayEventFrame, ResFrame as GatewayResponseFrame } from "../types";
 
 export type GatewayHelloOk = {
   type: "hello-ok";
@@ -347,6 +65,12 @@ export type GatewayBrowserClientOptions = {
 };
 
 const CONNECT_FAILED_CLOSE_CODE = 4008;
+const MAX_PENDING_REQUESTS = 100;
+/**
+ * Default keepalive interval (30 s). Prevents idle-timeout disconnects from
+ * reverse proxies like Cloudflare Tunnel (default ~100 s idle timeout).
+ */
+const KEEPALIVE_INTERVAL_MS = 30_000;
 
 export class GatewayBrowserClient {
   private ws: WebSocket | null = null;
@@ -356,7 +80,11 @@ export class GatewayBrowserClient {
   private connectNonce: string | null = null;
   private connectSent = false;
   private connectTimer: number | null = null;
+  private keepaliveTimer: number | null = null;
   private backoffMs = 800;
+  private _connectedAtMs = 0;
+  /** Timestamp of last received WebSocket message (any direction counts). */
+  private lastActivityAt = 0;
 
   constructor(private opts: GatewayBrowserClientOptions) {}
 
@@ -367,6 +95,7 @@ export class GatewayBrowserClient {
 
   stop() {
     this.closed = true;
+    this.stopKeepalive();
     this.ws?.close();
     this.ws = null;
     this.flushPending(new Error("gateway client stopped"));
@@ -376,26 +105,37 @@ export class GatewayBrowserClient {
     return this.ws?.readyState === WebSocket.OPEN;
   }
 
+  /** Milliseconds since the current connection was established (0 if not connected). */
+  get connectedForMs(): number {
+    return this._connectedAtMs > 0 ? Date.now() - this._connectedAtMs : 0;
+  }
+
   private connect() {
     if (this.closed) return;
+    this._connectedAtMs = 0;
+    this.stopKeepalive();
     this.ws = new WebSocket(this.opts.url);
     this.ws.onopen = () => this.queueConnect();
     this.ws.onmessage = (ev) => this.handleMessage(String(ev.data ?? ""));
     this.ws.onclose = (ev) => {
       const reason = String(ev.reason ?? "");
+      const isSlowConsumer = ev.code === 1008;
       this.ws = null;
+      this._connectedAtMs = 0;
+      this.stopKeepalive();
       this.flushPending(new Error(`gateway closed (${ev.code}): ${reason}`));
       this.opts.onClose?.({ code: ev.code, reason });
-      this.scheduleReconnect();
+      this.scheduleReconnect(isSlowConsumer);
     };
     this.ws.onerror = () => {
       // ignored; close handler will fire
     };
   }
 
-  private scheduleReconnect() {
+  private scheduleReconnect(isSlowConsumer = false) {
     if (this.closed) return;
-    const delay = this.backoffMs;
+    // Use longer initial backoff for slow consumer disconnects to avoid reconnect storms
+    const delay = isSlowConsumer ? Math.max(this.backoffMs, 5_000) : this.backoffMs;
     this.backoffMs = Math.min(this.backoffMs * 1.7, 15_000);
     window.setTimeout(() => this.connect(), delay);
   }
@@ -500,6 +240,8 @@ export class GatewayBrowserClient {
           });
         }
         this.backoffMs = 800;
+        this._connectedAtMs = Date.now();
+        this.startKeepalive(hello?.policy?.tickIntervalMs);
         this.opts.onHello?.(hello);
       })
       .catch(() => {
@@ -511,6 +253,8 @@ export class GatewayBrowserClient {
   }
 
   private handleMessage(raw: string) {
+    this.lastActivityAt = Date.now();
+
     let parsed: unknown;
     try {
       parsed = JSON.parse(raw);
@@ -560,10 +304,29 @@ export class GatewayBrowserClient {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
       return Promise.reject(new Error("gateway not connected"));
     }
+    if (this.pending.size >= MAX_PENDING_REQUESTS) {
+      return Promise.reject(new Error("too many pending gateway requests"));
+    }
     const id = generateUUID();
     const frame = { type: "req", id, method, params };
+    this.lastActivityAt = Date.now();
     const p = new Promise<T>((resolve, reject) => {
-      this.pending.set(id, { resolve: (v) => resolve(v as T), reject });
+      const timer = setTimeout(() => {
+        if (this.pending.has(id)) {
+          this.pending.delete(id);
+          reject(new Error("gateway request timed out"));
+        }
+      }, 30_000); // 30s timeout
+      this.pending.set(id, {
+        resolve: (v) => {
+          clearTimeout(timer);
+          resolve(v as T);
+        },
+        reject: (err) => {
+          clearTimeout(timer);
+          reject(err);
+        },
+      });
     });
     this.ws.send(JSON.stringify(frame));
     return p;
@@ -576,5 +339,47 @@ export class GatewayBrowserClient {
     this.connectTimer = window.setTimeout(() => {
       void this.sendConnect();
     }, 750);
+  }
+
+  /**
+   * Start a periodic keepalive ping to prevent idle-timeout disconnects from
+   * reverse proxies (e.g. Cloudflare Tunnel's ~100 s idle timeout).
+   *
+   * Uses the gateway's `tickIntervalMs` policy when available, otherwise falls
+   * back to {@link KEEPALIVE_INTERVAL_MS} (30 s).
+   *
+   * Pings are only sent when the connection has been idle (no incoming data)
+   * for most of the interval. Active conversations produce enough gateway
+   * events to keep Cloudflare happy without extra pings.
+   *
+   * NOTE: The gateway does not currently recognize a "ping" RPC method and
+   * returns an INVALID_REQUEST error. This is harmless — the error response
+   * still counts as WebSocket traffic that resets Cloudflare's idle timer,
+   * and the client drops the response (no pending promise registered).
+   * A proper gateway-side ping handler would eliminate the error log noise.
+   */
+  private startKeepalive(tickIntervalMs?: number) {
+    this.stopKeepalive();
+    const interval =
+      typeof tickIntervalMs === "number" && tickIntervalMs > 0
+        ? Math.min(tickIntervalMs, KEEPALIVE_INTERVAL_MS)
+        : KEEPALIVE_INTERVAL_MS;
+    this.keepaliveTimer = window.setInterval(() => {
+      if (this.ws?.readyState !== WebSocket.OPEN) return;
+      // Skip ping if we received data recently — real traffic already resets
+      // Cloudflare's idle timer, so an extra ping would just be log noise.
+      const idleMs = Date.now() - this.lastActivityAt;
+      if (idleMs < interval * 0.8) return;
+      this.ws.send(
+        JSON.stringify({ type: "req", id: `ka-${generateUUID()}`, method: "ping" }),
+      );
+    }, interval);
+  }
+
+  private stopKeepalive() {
+    if (this.keepaliveTimer !== null) {
+      window.clearInterval(this.keepaliveTimer);
+      this.keepaliveTimer = null;
+    }
   }
 }

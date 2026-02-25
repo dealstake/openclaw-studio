@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { uploadFile } from "@/lib/google/drive";
+import { handleApiError } from "@/lib/api/helpers";
 
 export const runtime = "nodejs";
 
@@ -33,8 +34,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ file: result });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Upload failed.";
-    console.error("[artifacts/upload]", message);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return handleApiError(err, "artifacts/upload POST", "Upload failed.");
   }
 }

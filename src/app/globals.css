@@ -3,6 +3,20 @@
 @import "../../node_modules/react-mentions-ts/styles/tailwind.css";
 @import "./styles/markdown.css";
 
+/*
+ * Border Radius System
+ *   rounded-md  — cards, panels, badges, inline elements
+ *   rounded-lg  — modals, dialogs, overlays, large containers
+ *   rounded-full — avatars, pills, circular buttons
+ *   Avoid: rounded-xl, rounded-sm, bare rounded- (no modifier)
+ *
+ * Shadow Hierarchy
+ *   shadow-xs  — subtle depth (inline elements)
+ *   shadow-sm  — cards, raised surfaces
+ *   shadow-lg  — modals, dialogs, overlays, popovers
+ *   Avoid: shadow-xl, shadow-2xl outside modals
+ */
+
 @custom-variant dark (&:is(.dark *));
 
 /* ============================================================
@@ -40,7 +54,8 @@
   --border: oklch(0.845 0.012 232 / 0.62);
   --input: oklch(0.965 0.005 230);
   --ring: oklch(0.76 0.14 85);
-  --chart-1: oklch(0.58 0.07 220);
+  --primary-text: oklch(0.52 0.14 85);
+  --chart-1: oklch(0.50 0.07 220);
   --chart-2: oklch(0.66 0.08 170);
   --chart-3: oklch(0.62 0.07 250);
   --chart-4: oklch(0.71 0.06 205);
@@ -68,6 +83,18 @@
   --tracking-normal: 0.005em;
   --panel: oklch(0.998 0.002 230 / 0.83);
   --panel-border: oklch(0.80 0.012 232 / 0.44);
+  --surface-elevated: oklch(0.96 0.01 250);
+
+  /* Z-index depth scale — Chat as Canvas Architecture
+   * See src/lib/styles/z-index.ts for named constants */
+  --z-canvas: 0;
+  --z-content: 10;
+  --z-overlay: 20;
+  --z-header: 30;
+  --z-backdrop: 40;
+  --z-float: 50;
+  --z-modal: 100;
+  --z-popover: 200;
 }
 
 .dark {
@@ -90,6 +117,7 @@
   --border: oklch(0.44 0.014 252 / 0.66);
   --input: oklch(0.20 0.016 250);
   --ring: oklch(0.76 0.14 85);
+  --primary-text: oklch(0.72 0.13 85);
   --chart-1: oklch(0.69 0.09 218);
   --chart-2: oklch(0.7 0.08 170);
   --chart-3: oklch(0.68 0.08 255);
@@ -105,6 +133,7 @@
   --sidebar-ring: oklch(0.72 0.13 85);
   --panel: oklch(0.19 0.018 250 / 0.75);
   --panel-border: oklch(0.35 0.02 250 / 0.53);
+  --surface-elevated: oklch(0.17 0.018 250);
   --shadow-color: oklch(0.06 0.015 250);
   --shadow-opacity: 0.45;
 }
@@ -118,6 +147,7 @@
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-text: var(--primary-text);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
@@ -167,6 +197,31 @@
   --shadow-lg: 0 24px 60px -26px color-mix(in oklch, var(--shadow-color) 58%, transparent);
   --shadow-xl: 0 36px 90px -38px color-mix(in oklch, var(--shadow-color) 66%, transparent);
   --shadow-2xl: 0 44px 120px -45px color-mix(in oklch, var(--shadow-color) 78%, transparent);
+}
+
+@utility focus-ring {
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--background), 0 0 0 4px oklch(from var(--ring) l c h / 0.5);
+  }
+}
+
+/* Standardize Lucide icon stroke weight globally (1.75 vs default 2)
+ * for a cleaner, more refined look matching Linear/Vercel conventions */
+:where(.lucide) {
+  stroke-width: 1.75;
+}
+
+@utility clickable {
+  cursor: pointer;
+  user-select: none;
+}
+
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 @layer base {
@@ -222,12 +277,16 @@ summary,
 
 * {
   scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+*:hover {
   scrollbar-color: color-mix(in oklch, var(--foreground) 18%, var(--border)) transparent;
 }
 
 *::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 6px;
+  height: 6px;
 }
 
 *::-webkit-scrollbar-track {
@@ -235,9 +294,13 @@ summary,
 }
 
 *::-webkit-scrollbar-thumb {
-  background: color-mix(in oklch, var(--foreground) 18%, var(--border));
+  background: transparent;
   border-radius: 999px;
-  border: 2px solid transparent;
+}
+
+*:hover > ::-webkit-scrollbar-thumb,
+*::-webkit-scrollbar-thumb:active {
+  background: color-mix(in oklch, var(--foreground) 18%, var(--border));
 }
 
 *::-webkit-scrollbar-thumb:hover {
@@ -256,25 +319,11 @@ textarea::-webkit-scrollbar {
 textarea:hover::-webkit-scrollbar,
 textarea:focus-visible::-webkit-scrollbar,
 textarea:focus::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 6px;
+  height: 6px;
 }
 
-.glass-panel {
-  border: 1px solid var(--panel-border);
-  background:
-    linear-gradient(
-      145deg,
-      color-mix(in oklch, var(--panel) 96%, transparent) 0%,
-      color-mix(in oklch, var(--panel) 91%, var(--primary) 4%) 45%,
-      color-mix(in oklch, var(--panel) 93%, var(--accent) 2%) 100%
-    );
-  backdrop-filter: blur(14px) saturate(1.03);
-  border-radius: var(--radius);
-  box-shadow:
-    inset 0 1px 0 color-mix(in oklch, white 65%, transparent),
-    0 14px 34px -22px color-mix(in oklch, var(--shadow-color) 48%, transparent);
-}
+/* glass-panel removed — borderless panel integration */
 
 .fade-up {
   animation: fadeUp 540ms cubic-bezier(0.2, 0.74, 0.2, 1) both;
@@ -384,7 +433,7 @@ button:not(:disabled):active,
 [role="button"]:not(:disabled):active,
 summary:active {
   transform: scale(0.97);
-  transition: transform 80ms ease-out;
+  transition: transform 150ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 /* 2. Thinking indicator shimmer glow */
@@ -403,10 +452,10 @@ summary:active {
   animation: thinkingShimmer 2.4s ease-in-out infinite;
 }
 
-/* 3. Smooth scroll for chat transcript */
-[role="log"] {
-  scroll-behavior: smooth;
-}
+/* 3. Chat transcript scroll — NO scroll-behavior:smooth here!
+ * Smooth scrolling on long conversations (40K+ pixels) makes auto-scroll
+ * take seconds to reach the bottom, making mobile unusable on refresh.
+ * Smooth scrolling is applied programmatically only for "Jump to latest" clicks. */
 
 /* ============================================================
  * Mobile viewport fixes
@@ -433,9 +482,15 @@ summary:active {
   }
 }
 
-/* Ensure smooth touch scrolling on all scroll containers */
+/* Touch scrolling: enable native momentum + prevent scroll chain leaking */
 .overflow-auto,
 .overflow-y-auto {
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
+}
+
+/* Vertical-only scroll containers: tell browser to handle pan-y natively.
+ * This eliminates touch delay and ensures momentum is fully interruptible. */
+.overflow-y-auto {
+  touch-action: pan-y;
 }

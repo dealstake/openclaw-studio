@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { SectionLabel } from "@/components/SectionLabel";
 
 type EmptyStatePanelProps = {
   title: string;
@@ -22,15 +23,15 @@ export const EmptyStatePanel = ({
   return (
     <div
       className={cn(
-        "rounded-md border border-border/80 bg-card/70 text-muted-foreground",
+        "animate-in fade-in zoom-in-[0.98] duration-300 rounded-md border border-border/80 bg-card/70 text-muted-foreground",
         fillHeight ? "flex h-full w-full flex-col justify-center" : "",
         className
       )}
     >
       {label ? (
-        <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+        <SectionLabel as="p">
           {label}
-        </p>
+        </SectionLabel>
       ) : null}
       <p
         className={cn(

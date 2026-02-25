@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { ReactNode, ButtonHTMLAttributes } from "react";
 
 /**
@@ -12,23 +13,27 @@ type HeaderIconButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   "data-testid"?: string;
 };
 
-export function HeaderIconButton({
+export const HeaderIconButton = memo(function HeaderIconButton({
   children,
   active = false,
   className = "",
+  title,
+  "aria-label": ariaLabel,
   ...rest
 }: HeaderIconButtonProps) {
   return (
     <button
       type="button"
-      className={`inline-flex h-10 w-10 items-center justify-center rounded-md border shadow-sm transition ${
+      className={`inline-flex h-11 w-11 items-center justify-center rounded-md border shadow-sm transition focus-ring ${
         active
           ? "border-border bg-muted text-foreground"
           : "border-input/90 bg-background/75 text-foreground hover:border-ring hover:bg-card"
       } disabled:cursor-not-allowed disabled:opacity-40 ${className}`}
+      title={title ?? ariaLabel}
+      aria-label={ariaLabel}
       {...rest}
     >
       {children}
     </button>
   );
-}
+});

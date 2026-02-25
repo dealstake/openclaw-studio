@@ -1,27 +1,11 @@
 "use client";
 
 import { memo, useCallback, useState } from "react";
-import { Loader2, Zap, Clock, Calendar } from "lucide-react";
-import type { CreateTaskPayload, TaskType } from "@/features/tasks/types";
+import { Loader2 } from "lucide-react";
+import type { CreateTaskPayload } from "@/features/tasks/types";
 import { TASK_TEMPLATES, type TaskTemplate } from "@/features/tasks/lib/templates";
 import { humanReadableSchedule } from "@/features/tasks/lib/schedule";
-
-// ─── Type badge ──────────────────────────────────────────────────────────────
-
-const TYPE_BADGE: Record<TaskType, { icon: typeof Zap; className: string }> = {
-  constant: {
-    icon: Zap,
-    className: "border-amber-500/30 bg-amber-500/10 text-amber-400",
-  },
-  periodic: {
-    icon: Clock,
-    className: "border-blue-500/30 bg-blue-500/10 text-blue-400",
-  },
-  scheduled: {
-    icon: Calendar,
-    className: "border-violet-500/30 bg-violet-500/10 text-violet-400",
-  },
-};
+import { TYPE_CONFIG } from "@/features/tasks/lib/taskTypeConfig";
 
 // ─── Props ───────────────────────────────────────────────────────────────────
 
@@ -76,7 +60,7 @@ export const TaskTemplatesSheet = memo(function TaskTemplatesSheet({
             </h3>
             <div className="flex flex-col gap-2">
               {templates.map((template) => {
-                const badge = TYPE_BADGE[template.type];
+                const badge = TYPE_CONFIG[template.type];
                 const BadgeIcon = badge.icon;
                 const payload = template.build(defaultAgent);
                 const scheduleLabel = humanReadableSchedule(payload.schedule);
@@ -87,7 +71,7 @@ export const TaskTemplatesSheet = memo(function TaskTemplatesSheet({
                     key={template.id}
                     type="button"
                     disabled={busyId !== null}
-                    className="flex items-start gap-3 rounded-xl border border-border/80 bg-card/70 p-3 text-left transition hover:border-border hover:bg-muted/30 hover:border-primary/50 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="flex items-start gap-3 rounded-lg border border-border/80 bg-card/70 p-3 text-left transition hover:border-border hover:bg-muted/30 hover:border-primary/50 disabled:cursor-not-allowed disabled:opacity-60"
                     onClick={() => void handleUse(template)}
                   >
                     <span className="mt-0.5 text-lg">{template.icon}</span>
@@ -106,7 +90,7 @@ export const TaskTemplatesSheet = memo(function TaskTemplatesSheet({
                       <p className="mt-0.5 text-[11px] text-muted-foreground">
                         {template.description}
                       </p>
-                      <p className="mt-1 text-[10px] text-muted-foreground/70">
+                      <p className="mt-1 text-xs text-muted-foreground/70">
                         {scheduleLabel}
                       </p>
                     </div>

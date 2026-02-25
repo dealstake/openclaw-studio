@@ -2,558 +2,83 @@ import {
   memo,
   useCallback,
   useEffect,
-  useMemo,
   useRef,
-  useState,
-  type ChangeEvent,
-  type KeyboardEvent,
-  type MutableRefObject,
 } from "react";
 
-function useRecentlyCompacted(lastCompactedAt: number | null | undefined): boolean {
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    if (!lastCompactedAt) return;
-    const elapsed = Date.now() - lastCompactedAt;
-    if (elapsed >= 60000) return;
-    // Use a microtask to avoid synchronous setState in effect
-    void Promise.resolve().then(() => setVisible(true));
-    const timer = window.setTimeout(() => setVisible(false), 60000 - elapsed);
-    return () => window.clearTimeout(timer);
-  }, [lastCompactedAt]);
-
-  return visible;
-}
 import type { AgentState as AgentRecord } from "@/features/agents/state/store";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import { Archive, ArrowLeft, ArrowUp, ChevronDown, ChevronRight, ChevronUp, RefreshCw, Settings, Shuffle, SquarePen } from "lucide-react";
+import type { MessagePart } from "@/lib/chat/types";
+import { AlertTriangle, ArrowLeft, RefreshCw, X, Zap } from "lucide-react";
 import type { GatewayModelChoice } from "@/lib/gateway/models";
-import { isToolMarkdown, isTraceMarkdown } from "@/lib/text/message-extract";
-import { isNearBottom } from "@/lib/dom";
-import { AgentAvatar } from "./AgentAvatar";
-import {
-  buildFinalAgentChatItems,
-  normalizeAssistantDisplayText,
-  summarizeToolLabel,
-  type AgentChatItem,
-} from "./chatItems";
+import type { GatewayStatus } from "@/lib/gateway/GatewayClient";
+import type { ChatAttachment } from "../hooks/useFileUpload";
+import { AgentChatView } from "./AgentChatView";
 import { EmptyStatePanel } from "./EmptyStatePanel";
-import { TokenProgressBar } from "@/components/TokenProgressBar";
+import { AgentChatTranscript } from "./AgentChatTranscript";
+import { AgentChatComposer } from "./AgentChatComposer";
 
 type AgentChatPanelProps = {
   agent: AgentRecord;
-  isSelected: boolean;
   canSend: boolean;
   models: GatewayModelChoice[];
   stopBusy: boolean;
-  onOpenSettings: () => void;
   onModelChange: (value: string | null) => void;
   onThinkingChange: (value: string | null) => void;
   onDraftChange: (value: string) => void;
-  onSend: (message: string) => void;
+  onSend: (message: string, attachments?: ChatAttachment[]) => void;
   onStopRun: () => void;
-  onAvatarShuffle: () => void;
   tokenUsed?: number;
   tokenLimit?: number;
   onNewSession?: () => void;
-  onCompact?: () => void;
-  isCompacting?: boolean;
-  lastCompactedAt?: number | null;
   viewingSessionKey?: string | null;
-  viewingSessionHistory?: string[];
+  viewingSessionHistory?: MessagePart[];
   viewingSessionLoading?: boolean;
   onExitSessionView?: () => void;
+  /** True when the agent's session key changed (session reset detected) */
+  sessionContinued?: boolean;
+  onDismissContinuationBanner?: () => void;
+  /** Current gateway connection status for offline indicator */
+  gatewayStatus?: GatewayStatus;
+  /** Number of messages queued for offline delivery */
+  queueLength?: number;
 };
-
-const AgentChatFinalItems = memo(function AgentChatFinalItems({
-  agentId,
-  name,
-  avatarSeed,
-  avatarUrl,
-  chatItems,
-  autoExpandThinking,
-  lastThinkingItemIndex,
-}: {
-  agentId: string;
-  name: string;
-  avatarSeed: string;
-  avatarUrl: string | null;
-  chatItems: AgentChatItem[];
-  autoExpandThinking: boolean;
-  lastThinkingItemIndex: number;
-}) {
-  return (
-    <>
-      {chatItems.map((item, index) => {
-        if (item.kind === "thinking") {
-          return (
-            <details
-              key={`chat-${agentId}-thinking-${index}`}
-              className="rounded-md border border-border/70 bg-muted/55 text-[11px] text-muted-foreground"
-              open={autoExpandThinking && index === lastThinkingItemIndex}
-            >
-              <summary className="flex cursor-pointer list-none items-center gap-2 px-2 py-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.11em] [&::-webkit-details-marker]:hidden">
-                <AgentAvatar seed={avatarSeed} name={name} avatarUrl={avatarUrl} size={22} />
-                <ChevronRight className="h-3 w-3 shrink-0 transition-transform duration-200 [[open]>&]:rotate-90" />
-                <span>Thinking</span>
-              </summary>
-              <div className="agent-markdown leading-relaxed px-2 pb-2 text-foreground">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{item.text}</ReactMarkdown>
-              </div>
-            </details>
-          );
-        }
-        if (item.kind === "user") {
-          return (
-            <div
-              key={`chat-${agentId}-user-${index}`}
-              className="rounded-md border border-border/70 bg-muted/70 px-3 py-2 text-foreground"
-            >
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{`> ${item.text}`}</ReactMarkdown>
-            </div>
-          );
-        }
-        if (item.kind === "tool") {
-          const { summaryText, body } = summarizeToolLabel(item.text);
-          return (
-            <details
-              key={`chat-${agentId}-tool-${index}`}
-              className="rounded-md border border-border/70 bg-muted/55 px-2 py-1 text-[11px] text-muted-foreground"
-            >
-              <summary className="cursor-pointer select-none font-mono text-[10px] font-semibold uppercase tracking-[0.11em]">
-                {summaryText}
-              </summary>
-              {body ? (
-                <div className="agent-markdown leading-relaxed mt-1 text-foreground">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{body}</ReactMarkdown>
-                </div>
-              ) : null}
-            </details>
-          );
-        }
-        return (
-          <div
-            key={`chat-${agentId}-assistant-${index}`}
-            className="agent-markdown leading-relaxed min-w-0 overflow-hidden px-0.5"
-          >
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{item.text}</ReactMarkdown>
-          </div>
-        );
-      })}
-    </>
-  );
-});
-
-const AgentChatTranscript = memo(function AgentChatTranscript({
-  agentId,
-  name,
-  avatarSeed,
-  avatarUrl,
-  status,
-  chatItems,
-  autoExpandThinking,
-  lastThinkingItemIndex,
-  liveThinkingText,
-  liveAssistantText,
-  showTypingIndicator,
-  outputLineCount,
-  liveAssistantCharCount,
-  liveThinkingCharCount,
-  scrollToBottomNextOutputRef,
-}: {
-  agentId: string;
-  name: string;
-  avatarSeed: string;
-  avatarUrl: string | null;
-  status: AgentRecord["status"];
-  chatItems: AgentChatItem[];
-  autoExpandThinking: boolean;
-  lastThinkingItemIndex: number;
-  liveThinkingText: string;
-  liveAssistantText: string;
-  showTypingIndicator: boolean;
-  outputLineCount: number;
-  liveAssistantCharCount: number;
-  liveThinkingCharCount: number;
-  scrollToBottomNextOutputRef: MutableRefObject<boolean>;
-}) {
-  const chatRef = useRef<HTMLDivElement | null>(null);
-  const chatBottomRef = useRef<HTMLDivElement | null>(null);
-  const scrollFrameRef = useRef<number | null>(null);
-  const pinnedRef = useRef(true);
-  const initialScrollDone = useRef(false);
-  const [isPinned, setIsPinned] = useState(true);
-
-  const scrollChatToBottom = useCallback(() => {
-    if (!chatRef.current) return;
-    if (chatBottomRef.current) {
-      chatBottomRef.current.scrollIntoView({ block: "end" });
-      return;
-    }
-    chatRef.current.scrollTop = chatRef.current.scrollHeight;
-  }, []);
-
-  const setPinned = useCallback((nextPinned: boolean) => {
-    if (pinnedRef.current === nextPinned) return;
-    pinnedRef.current = nextPinned;
-    setIsPinned(nextPinned);
-  }, []);
-
-  const updatePinnedFromScroll = useCallback(() => {
-    const el = chatRef.current;
-    if (!el) return;
-    setPinned(
-      isNearBottom(
-        {
-          scrollTop: el.scrollTop,
-          scrollHeight: el.scrollHeight,
-          clientHeight: el.clientHeight,
-        },
-        150
-      )
-    );
-  }, [setPinned]);
-
-  const scheduleScrollToBottom = useCallback(() => {
-    if (scrollFrameRef.current !== null) return;
-    scrollFrameRef.current = requestAnimationFrame(() => {
-      scrollFrameRef.current = null;
-      scrollChatToBottom();
-    });
-  }, [scrollChatToBottom]);
-
-  useEffect(() => {
-    updatePinnedFromScroll();
-  }, [updatePinnedFromScroll]);
-
-  // Force scroll to bottom on initial content load and when switching agents
-  useEffect(() => {
-    if (outputLineCount > 0 && !initialScrollDone.current) {
-      initialScrollDone.current = true;
-      // Use double rAF to ensure DOM has fully rendered content
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          scrollChatToBottom();
-        });
-      });
-    }
-    if (outputLineCount === 0) {
-      initialScrollDone.current = false;
-    }
-  }, [outputLineCount, scrollChatToBottom]);
-
-  const showJumpToLatest =
-    !isPinned && (outputLineCount > 0 || liveAssistantCharCount > 0 || liveThinkingCharCount > 0);
-
-  useEffect(() => {
-    const shouldForceScroll = scrollToBottomNextOutputRef.current;
-    if (shouldForceScroll) {
-      scrollToBottomNextOutputRef.current = false;
-      // Double-rAF to ensure DOM has painted the new message
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          scrollChatToBottom();
-        });
-      });
-      return;
-    }
-
-    if (pinnedRef.current) {
-      scheduleScrollToBottom();
-      return;
-    }
-  }, [
-    liveAssistantCharCount,
-    liveThinkingCharCount,
-    outputLineCount,
-    scheduleScrollToBottom,
-    scrollChatToBottom,
-    scrollToBottomNextOutputRef,
-  ]);
-
-  useEffect(() => {
-    return () => {
-      if (scrollFrameRef.current !== null) {
-        cancelAnimationFrame(scrollFrameRef.current);
-        scrollFrameRef.current = null;
-      }
-    };
-  }, []);
-
-  return (
-    <div className="relative flex-1 overflow-hidden rounded-md border border-border/80 bg-card/75">
-      <div
-        ref={chatRef}
-        data-testid="agent-chat-scroll"
-        role="log"
-        aria-label="Chat messages"
-        aria-live="polite"
-        className="h-full overflow-y-auto overflow-x-hidden p-3 pb-24 sm:p-4 sm:pb-24"
-        onScroll={() => updatePinnedFromScroll()}
-        onWheel={(event) => {
-          event.stopPropagation();
-        }}
-        onWheelCapture={(event) => {
-          event.stopPropagation();
-        }}
-      >
-        <div className="flex w-full min-w-0 flex-col gap-3 px-4 text-xs text-foreground sm:px-8 lg:px-16">
-          {chatItems.length === 0 ? (
-            <EmptyStatePanel title="No messages yet." compact className="p-3 text-xs" />
-          ) : (
-            <>
-              <AgentChatFinalItems
-                agentId={agentId}
-                name={name}
-                avatarSeed={avatarSeed}
-                avatarUrl={avatarUrl}
-                chatItems={chatItems}
-                autoExpandThinking={autoExpandThinking}
-                lastThinkingItemIndex={lastThinkingItemIndex}
-              />
-              {liveThinkingText ? (
-                <details
-                  className={`rounded-md border border-border/70 bg-muted/55 text-[11px] text-muted-foreground${status === "running" ? " thinking-active" : ""}`}
-                  open={status === "running" && autoExpandThinking}
-                >
-                  <summary className="flex cursor-pointer list-none items-center gap-2 px-2 py-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.11em] [&::-webkit-details-marker]:hidden">
-                    <AgentAvatar seed={avatarSeed} name={name} avatarUrl={avatarUrl} size={22} />
-                    <ChevronRight className="h-3 w-3 shrink-0 transition-transform duration-200 [[open]>&]:rotate-90" />
-                    <span>Thinking</span>
-                    {status === "running" ? (
-                      <span className="typing-dots" aria-hidden="true">
-                        <span />
-                        <span />
-                        <span />
-                      </span>
-                    ) : null}
-                  </summary>
-                  <div className="px-2 pb-2 text-foreground">
-                    <div className="whitespace-pre-wrap break-words">{liveThinkingText}</div>
-                  </div>
-                </details>
-              ) : null}
-              {liveAssistantText ? (
-                <div className="agent-markdown leading-relaxed min-w-0 overflow-hidden px-0.5 opacity-85">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{liveAssistantText}</ReactMarkdown>
-                </div>
-              ) : null}
-              {showTypingIndicator ? (
-                <div
-                  className="thinking-active flex items-center gap-2 rounded-md border border-border/70 bg-muted/55 px-2 py-1.5 text-[11px] text-muted-foreground"
-                  role="status"
-                  aria-live="polite"
-                  data-testid="agent-typing-indicator"
-                >
-                  <AgentAvatar seed={avatarSeed} name={name} avatarUrl={avatarUrl} size={22} />
-                  <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.11em]">
-                    Thinking
-                  </span>
-                  <span className="typing-dots" aria-hidden="true">
-                    <span />
-                    <span />
-                    <span />
-                  </span>
-                </div>
-              ) : null}
-              <div ref={chatBottomRef} />
-            </>
-          )}
-        </div>
-      </div>
-
-      {showJumpToLatest ? (
-        <button
-          type="button"
-          className="absolute bottom-3 left-1/2 z-10 max-w-[calc(100%-2rem)] -translate-x-1/2 rounded-md border border-border/80 bg-card/95 px-3 py-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-foreground shadow-sm transition hover:bg-muted/70"
-          onClick={() => {
-            setPinned(true);
-            scrollChatToBottom();
-          }}
-          aria-label="Jump to latest"
-        >
-          Jump to latest
-        </button>
-      ) : null}
-    </div>
-  );
-});
-
-const AgentChatComposer = memo(function AgentChatComposer({
-  onDraftChange,
-  onSend,
-  onStop,
-  onResize,
-  canSend,
-  stopBusy,
-  running,
-  inputRef,
-  initialDraft,
-}: {
-  onDraftChange: (value: string) => void;
-  onSend: (message: string) => void;
-  onStop: () => void;
-  onResize: () => void;
-  canSend: boolean;
-  stopBusy: boolean;
-  running: boolean;
-  inputRef: (el: HTMLTextAreaElement | HTMLInputElement | null) => void;
-  initialDraft: string;
-}) {
-  const localRef = useRef<HTMLTextAreaElement | null>(null);
-  const pendingResizeRef = useRef<number | null>(null);
-  const [isEmpty, setIsEmpty] = useState(!initialDraft.trim());
-
-  const handleRef = useCallback((el: HTMLTextAreaElement | HTMLInputElement | null) => {
-    localRef.current = el instanceof HTMLTextAreaElement ? el : null;
-    inputRef(el);
-  }, [inputRef]);
-
-  const handleFocus = useCallback(() => {
-    const el = localRef.current;
-    if (el) {
-      requestAnimationFrame(() => {
-        el.scrollIntoView({ block: "nearest" });
-      });
-    }
-  }, []);
-
-  const handleChange = useCallback(
-    (event: ChangeEvent<HTMLTextAreaElement>) => {
-      const value = event.target.value;
-      setIsEmpty(!value.trim());
-      onDraftChange(value);
-      if (pendingResizeRef.current !== null) {
-        cancelAnimationFrame(pendingResizeRef.current);
-      }
-      pendingResizeRef.current = requestAnimationFrame(() => {
-        pendingResizeRef.current = null;
-        onResize();
-      });
-    },
-    [onDraftChange, onResize]
-  );
-
-  const clearAfterSend = useCallback(() => {
-    const el = localRef.current;
-    if (el) {
-      el.value = "";
-      el.style.height = "auto";
-    }
-    setIsEmpty(true);
-    onDraftChange("");
-  }, [onDraftChange]);
-
-  const handleKeyDown = useCallback(
-    (event: KeyboardEvent<HTMLTextAreaElement>) => {
-      if (event.key !== "Enter" || event.shiftKey) return;
-      if (event.defaultPrevented) return;
-      event.preventDefault();
-      const value = localRef.current?.value ?? "";
-      const trimmed = value.trim();
-      if (trimmed) {
-        onSend(trimmed);
-        clearAfterSend();
-      }
-    },
-    [onSend, clearAfterSend]
-  );
-
-  const handleClickSend = useCallback(() => {
-    const value = localRef.current?.value ?? "";
-    const trimmed = value.trim();
-    if (trimmed) {
-      onSend(trimmed);
-      clearAfterSend();
-    }
-  }, [onSend, clearAfterSend]);
-
-  // Cleanup rAF on unmount
-  useEffect(() => {
-    return () => {
-      if (pendingResizeRef.current !== null) {
-        cancelAnimationFrame(pendingResizeRef.current);
-      }
-    };
-  }, []);
-
-  const sendDisabled = !canSend || running || isEmpty;
-
-  return (
-    <div className="fixed inset-x-0 bottom-0 z-20 px-3 pb-3 backdrop-blur-md sm:absolute sm:inset-x-0 sm:bottom-0 sm:z-20 sm:px-4 sm:pb-6 sm:pt-4">
-      <div className="mx-1 flex items-end gap-2 rounded-xl border border-border/80 bg-card/90 p-2 shadow-lg sm:mx-4 sm:rounded-2xl sm:border-border sm:bg-card sm:p-3 sm:shadow-xl lg:mx-12">
-        <textarea
-          ref={handleRef}
-          rows={1}
-          defaultValue={initialDraft}
-          className="max-h-[80px] flex-1 resize-none bg-transparent px-2 py-1 text-base text-foreground outline-none placeholder:text-muted-foreground/50 transition sm:max-h-[200px] sm:text-sm"
-          aria-label="Message to agent"
-          onChange={handleChange}
-          onKeyDown={handleKeyDown}
-          onFocus={handleFocus}
-          placeholder="Type a message..."
-        />
-        {running ? (
-          <button
-            className="flex h-8 min-w-[32px] items-center justify-center rounded-lg border border-border/80 bg-card/50 text-foreground shadow-sm transition hover:bg-muted/70 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none sm:h-9 sm:px-3"
-            type="button"
-            aria-label="Stop agent"
-            onClick={onStop}
-            disabled={!canSend || stopBusy}
-          >
-            <span className="sr-only">Stop</span>
-            <div className="h-2.5 w-2.5 rounded-[1px] bg-foreground" />
-          </button>
-        ) : null}
-        <button
-          className="flex h-8 items-center justify-center rounded-lg bg-primary px-3 text-primary-foreground shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50 sm:h-9"
-          type="button"
-          aria-label="Send message"
-          onClick={handleClickSend}
-          disabled={sendDisabled}
-        >
-          <ArrowUp className="h-4 w-4" />
-        </button>
-      </div>
-    </div>
-  );
-});
 
 export const AgentChatPanel = memo(function AgentChatPanel({
   agent,
-  isSelected,
   canSend,
   models,
   stopBusy,
-  onOpenSettings,
   onModelChange,
   onThinkingChange,
   onDraftChange,
   onSend,
   onStopRun,
-  onAvatarShuffle,
   tokenUsed,
   tokenLimit,
-  onNewSession,
-  onCompact,
-  isCompacting = false,
-  lastCompactedAt = null,
   viewingSessionKey,
   viewingSessionHistory = [],
   viewingSessionLoading = false,
   onExitSessionView,
+  sessionContinued = false,
+  onDismissContinuationBanner,
+  gatewayStatus,
+  queueLength = 0,
 }: AgentChatPanelProps) {
-  const recentlyCompacted = useRecentlyCompacted(lastCompactedAt);
   const draftRef = useRef<HTMLTextAreaElement | null>(null);
   const scrollToBottomNextOutputRef = useRef(false);
   const plainDraftRef = useRef(agent.draft);
-  const [mobileHeaderExpanded, setMobileHeaderExpanded] = useState(false);
 
-  const toggleMobileHeader = useCallback(() => {
-    setMobileHeaderExpanded((prev) => !prev);
-  }, []);
+  // Escape key exits transcript viewer
+  useEffect(() => {
+    if (!viewingSessionKey || !onExitSessionView) return;
+    const handler = (e: globalThis.KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onExitSessionView();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [viewingSessionKey, onExitSessionView]);
 
   const resizeDraft = useCallback(() => {
     const el = draftRef.current;
@@ -571,123 +96,16 @@ export const AgentChatPanel = memo(function AgentChatPanel({
   }, []);
 
   const handleSend = useCallback(
-    (message: string) => {
+    (message: string, attachments?: ChatAttachment[]) => {
       if (!canSend || agent.status === "running") return;
       const trimmed = message.trim();
-      if (!trimmed) return;
+      if (!trimmed && (!attachments || attachments.length === 0)) return;
       scrollToBottomNextOutputRef.current = true;
-      onSend(trimmed);
+      onSend(trimmed || "(attached files)", attachments);
     },
     [agent.status, canSend, onSend]
   );
 
-  const statusColor =
-    agent.status === "running"
-      ? "border border-primary/30 bg-primary/15 text-foreground"
-      : agent.status === "error"
-        ? "border border-destructive/35 bg-destructive/12 text-destructive"
-        : "border border-border/70 bg-muted text-muted-foreground";
-  const statusLabel =
-    agent.status === "running"
-      ? "Running"
-      : agent.status === "error"
-        ? "Error"
-        : "Idle";
-
-  const chatItems = useMemo(
-    () =>
-      buildFinalAgentChatItems({
-        outputLines: agent.outputLines,
-        showThinkingTraces: agent.showThinkingTraces,
-        toolCallingEnabled: agent.toolCallingEnabled,
-      }),
-    [agent.outputLines, agent.showThinkingTraces, agent.toolCallingEnabled]
-  );
-  const liveAssistantText = agent.streamText ? normalizeAssistantDisplayText(agent.streamText) : "";
-  const liveThinkingText =
-    agent.showThinkingTraces && agent.thinkingTrace ? agent.thinkingTrace.trim() : "";
-  const hasLiveAssistantText = Boolean(liveAssistantText.trim());
-  const hasVisibleLiveThinking = Boolean(liveThinkingText.trim());
-  const latestUserOutputIndex = useMemo(() => {
-    let latestUserIndex = -1;
-    for (let index = agent.outputLines.length - 1; index >= 0; index -= 1) {
-      const line = agent.outputLines[index]?.trim();
-      if (!line) continue;
-      if (line.startsWith(">")) {
-        latestUserIndex = index;
-        break;
-      }
-    }
-    return latestUserIndex;
-  }, [agent.outputLines]);
-  const hasSavedThinkingSinceLatestUser = useMemo(() => {
-    if (!agent.showThinkingTraces || latestUserOutputIndex < 0) return false;
-    for (
-      let index = latestUserOutputIndex + 1;
-      index < agent.outputLines.length;
-      index += 1
-    ) {
-      if (isTraceMarkdown(agent.outputLines[index] ?? "")) {
-        return true;
-      }
-    }
-    return false;
-  }, [agent.outputLines, agent.showThinkingTraces, latestUserOutputIndex]);
-  const hasSavedAssistantSinceLatestUser = useMemo(() => {
-    if (latestUserOutputIndex < 0) return false;
-    for (
-      let index = latestUserOutputIndex + 1;
-      index < agent.outputLines.length;
-      index += 1
-    ) {
-      const line = agent.outputLines[index]?.trim() ?? "";
-      if (!line) continue;
-      if (line.startsWith(">")) continue;
-      if (isTraceMarkdown(line)) continue;
-      if (isToolMarkdown(line)) continue;
-      return true;
-    }
-    return false;
-  }, [agent.outputLines, latestUserOutputIndex]);
-  const lastThinkingItemIndex = useMemo(() => {
-    for (let index = chatItems.length - 1; index >= 0; index -= 1) {
-      if (chatItems[index]?.kind === "thinking") {
-        return index;
-      }
-    }
-    return -1;
-  }, [chatItems]);
-  const autoExpandThinking =
-    agent.status === "running" &&
-    !hasSavedAssistantSinceLatestUser &&
-    (lastThinkingItemIndex >= 0 || hasVisibleLiveThinking);
-  const showTypingIndicator =
-    agent.status === "running" &&
-    !hasLiveAssistantText &&
-    !hasVisibleLiveThinking &&
-    !hasSavedThinkingSinceLatestUser;
-
-  const modelOptions = useMemo(
-    () =>
-      models.map((entry) => ({
-        value: `${entry.provider}/${entry.id}`,
-        label:
-          entry.name === `${entry.provider}/${entry.id}`
-            ? entry.name
-            : `${entry.name} (${entry.provider}/${entry.id})`,
-        reasoning: entry.reasoning,
-      })),
-    [models]
-  );
-  const modelValue = agent.model ?? "";
-  const modelOptionsWithFallback =
-    modelValue && !modelOptions.some((option) => option.value === modelValue)
-      ? [{ value: modelValue, label: modelValue, reasoning: undefined }, ...modelOptions]
-      : modelOptions;
-  const selectedModel = modelOptionsWithFallback.find((option) => option.value === modelValue);
-  const allowThinking = selectedModel?.reasoning !== false;
-
-  const avatarSeed = agent.avatarSeed ?? agent.agentId;
   const running = agent.status === "running";
 
   const handleComposerDraftChange = useCallback(
@@ -699,207 +117,65 @@ export const AgentChatPanel = memo(function AgentChatPanel({
   );
 
   const handleComposerSend = useCallback(
-    (message: string) => {
-      handleSend(message);
+    (message: string, attachments?: ChatAttachment[]) => {
+      handleSend(message, attachments);
     },
     [handleSend]
   );
 
   return (
     <div data-agent-panel className="group fade-up relative flex h-full w-full min-w-0 flex-col overflow-hidden">
-      <div className="px-3 pt-3 sm:px-4 sm:pt-4">
-        <div className="flex items-start gap-4">
-          <div className="flex min-w-0 flex-1 items-start gap-3">
-            <div className="group/avatar relative">
-              <div className="hidden sm:block">
-                <AgentAvatar
-                  seed={avatarSeed}
-                  name={agent.name}
-                  avatarUrl={agent.avatarUrl ?? null}
-                  size={96}
-                  isSelected={isSelected}
-                />
-              </div>
-              <div className="sm:hidden">
-                <AgentAvatar
-                  seed={avatarSeed}
-                  name={agent.name}
-                  avatarUrl={agent.avatarUrl ?? null}
-                  size={48}
-                  isSelected={isSelected}
-                />
-              </div>
-              <button
-                className="nodrag pointer-events-none absolute bottom-1 right-1 hidden h-7 w-7 items-center justify-center rounded-full border border-border/80 bg-card/90 text-muted-foreground opacity-0 shadow-sm transition group-focus-within/avatar:pointer-events-auto group-focus-within/avatar:opacity-100 group-hover/avatar:pointer-events-auto group-hover/avatar:opacity-100 hover:border-border hover:bg-muted/65 sm:flex"
-                type="button"
-                aria-label="Shuffle avatar"
-                data-testid="agent-avatar-shuffle"
-                onClick={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  onAvatarShuffle();
-                }}
-              >
-                <Shuffle className="h-3.5 w-3.5" />
-              </button>
-            </div>
-
-            <div className="min-w-0 flex-1">
-              <div className="flex min-w-0 items-center gap-2">
-                <div className="min-w-0 truncate text-xs font-semibold uppercase tracking-[0.16em] text-foreground sm:text-sm">
-                  {agent.name}
-                </div>
-                {onNewSession ? (
-                  <button
-                    className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-input/90 bg-background/75 text-foreground shadow-sm transition hover:border-ring hover:bg-card disabled:cursor-not-allowed disabled:opacity-60"
-                    type="button"
-                    data-testid="agent-new-session"
-                    aria-label="New session"
-                    title="New session"
-                    onClick={onNewSession}
-                    disabled={running}
-                  >
-                    <SquarePen className="h-3.5 w-3.5" />
-                  </button>
-                ) : null}
-                <button
-                  className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-input/90 bg-background/75 text-foreground shadow-sm transition hover:border-ring hover:bg-card"
-                  type="button"
-                  data-testid="agent-settings-toggle"
-                  aria-label="Open agent settings"
-                  title="Agent settings"
-                  onClick={onOpenSettings}
-                >
-                  <Settings className="h-3.5 w-3.5" />
-                </button>
-                <span aria-hidden className="shrink-0 text-[11px] text-muted-foreground/80">
-                  •
-                </span>
-                <span
-                  className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.14em] ${statusColor}`}
-                >
-                  {statusLabel}
-                </span>
-              </div>
-
-              {/* Mobile: toggle button for model/thinking/token */}
-              <button
-                type="button"
-                className="mt-1.5 flex items-center gap-1 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground transition hover:text-foreground sm:hidden"
-                onClick={toggleMobileHeader}
-                aria-expanded={mobileHeaderExpanded}
-                aria-controls="mobile-model-settings"
-                aria-label={mobileHeaderExpanded ? "Collapse model settings" : "Expand model settings"}
-              >
-                {mobileHeaderExpanded ? (
-                  <ChevronUp className="h-3 w-3" />
-                ) : (
-                  <ChevronDown className="h-3 w-3" />
-                )}
-                <span>{selectedModel ? selectedModel.label.split(" (")[0] : "Settings"}</span>
-                {typeof tokenUsed === "number" && tokenLimit ? (
-                  <span className="ml-1 text-muted-foreground/60">
-                    · {Math.round((tokenUsed / tokenLimit) * 100)}%
-                  </span>
-                ) : null}
-              </button>
-
-              {/* Desktop: always visible; Mobile: only when expanded */}
-              <div id="mobile-model-settings" className={`${mobileHeaderExpanded ? "block" : "hidden"} sm:block`}>
-                <div className="mt-2 grid max-w-md gap-2 sm:grid-cols-[minmax(0,1fr)_128px]">
-                  <label className="flex min-w-0 flex-col gap-1 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                    <span>Model</span>
-                    <select
-                      className="h-8 w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap rounded-md border border-border bg-card/75 px-2 text-[11px] font-semibold text-foreground"
-                      aria-label="Model"
-                      value={modelValue}
-                      onChange={(event) => {
-                        const value = event.target.value.trim();
-                        onModelChange(value ? value : null);
-                      }}
-                    >
-                      {modelOptionsWithFallback.length === 0 ? (
-                        <option value="">No models found</option>
-                      ) : null}
-                      {modelOptionsWithFallback.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  {allowThinking ? (
-                    <label className="flex flex-col gap-1 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                      <span>Thinking</span>
-                      <select
-                        className="h-8 rounded-md border border-border bg-card/75 px-2 text-[11px] font-semibold text-foreground"
-                        aria-label="Thinking"
-                        value={agent.thinkingLevel ?? ""}
-                        onChange={(event) => {
-                          const value = event.target.value.trim();
-                          onThinkingChange(value ? value : null);
-                        }}
-                      >
-                        <option value="">Default</option>
-                        <option value="off">Off</option>
-                        <option value="minimal">Minimal</option>
-                        <option value="low">Low</option>
-                        <option value="medium">Medium</option>
-                        <option value="high">High</option>
-                        <option value="xhigh">XHigh</option>
-                      </select>
-                    </label>
-                  ) : (
-                    <div />
-                  )}
-                </div>
-                {typeof tokenUsed === "number" && tokenLimit ? (
-                  <div className="mt-2 flex w-full max-w-lg items-center gap-2">
-                    <div className="min-w-0 flex-1">
-                      <TokenProgressBar used={tokenUsed} limit={tokenLimit} />
-                    </div>
-                    {onCompact ? (
-                      <button
-                        type="button"
-                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border/80 bg-card/70 text-muted-foreground transition hover:border-border hover:bg-muted/65 disabled:cursor-not-allowed disabled:opacity-60"
-                        aria-label="Compact context & save to memory"
-                        title="Compact context & save to memory"
-                        onClick={onCompact}
-                        disabled={isCompacting}
-                      >
-                        <Archive className={`h-3.5 w-3.5 ${isCompacting ? "animate-spin" : ""}`} />
-                      </button>
-                    ) : null}
-                    {recentlyCompacted ? (
-                      <span className="shrink-0 font-mono text-[9px] text-emerald-500 animate-pulse">
-                        ✓ Compacted
-                      </span>
-                    ) : null}
-                  </div>
-                ) : null}
-              </div>
-            </div>
-          </div>
+      {/* Context warning banner — slim pill at 80%+ utilization */}
+      {typeof tokenUsed === "number" && tokenLimit && tokenLimit > 0 && tokenUsed / tokenLimit >= 0.8 && (
+        <div className="mx-auto mt-2 flex w-full max-w-3xl items-center gap-2 rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-3 py-1.5 text-xs sm:px-6">
+          <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-yellow-500" />
+          <span className="text-yellow-200/90">
+            Approaching context limit
+          </span>
+          <span className="ml-auto shrink-0 font-mono text-[10px] text-yellow-500/80">
+            {Math.round((tokenUsed / tokenLimit) * 100)}%
+          </span>
         </div>
-      </div>
+      )}
 
-      <div className="mt-3 flex min-h-0 flex-1 flex-col gap-3 px-3 pb-24 sm:px-4 sm:pb-24">
+      {/* Session continuation banner — slim pill */}
+      {sessionContinued && (
+        <div className="mx-auto mt-2 flex w-full max-w-3xl items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs sm:px-6">
+          <Zap className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
+          <span className="text-emerald-200/90">
+            Continuing from previous session
+          </span>
+          {onDismissContinuationBanner && (
+            <button
+              type="button"
+              className="ml-auto flex h-5 w-5 shrink-0 items-center justify-center rounded text-emerald-400/60 transition hover:text-emerald-300"
+              aria-label="Dismiss continuation banner"
+              onClick={onDismissContinuationBanner}
+            >
+              <X className="h-3 w-3" />
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Chat area — fills remaining space, relative for floating composer */}
+      <div className="relative flex min-h-0 flex-1 flex-col">
         {viewingSessionKey ? (
-          <div className="relative flex flex-1 flex-col overflow-hidden rounded-md border border-border/80 bg-card/75">
-            <div className="flex items-center gap-2 border-b border-border/60 px-3 py-2">
+          <div className="relative flex flex-1 flex-col overflow-hidden">
+            <div className="flex items-center gap-2 border-b border-border/50 px-3 py-2">
               <button
                 type="button"
-                className="flex items-center gap-1.5 rounded-md px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground transition hover:bg-muted/50 hover:text-foreground"
+                className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-muted-foreground transition hover:bg-muted/50 hover:text-foreground"
                 onClick={onExitSessionView}
               >
                 <ArrowLeft className="h-3 w-3" />
                 Back to live session
               </button>
-              <span className="truncate font-mono text-[9px] text-muted-foreground">
+              <span className="truncate font-mono text-[10px] text-muted-foreground">
                 {viewingSessionKey}
               </span>
             </div>
-            <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4">
+            <div className="flex-1 overflow-y-auto overflow-x-hidden py-3 sm:py-4">
               {viewingSessionLoading ? (
                 <div className="flex items-center justify-center py-12">
                   <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground" />
@@ -910,59 +186,63 @@ export const AgentChatPanel = memo(function AgentChatPanel({
               ) : viewingSessionHistory.length === 0 ? (
                 <EmptyStatePanel title="No messages in this session." compact className="p-3 text-xs" />
               ) : (
-                <div className="flex min-w-0 flex-col gap-3 text-xs text-foreground">
-                  {viewingSessionHistory.map((line, i) =>
-                    line.startsWith("> ") ? (
-                      <div
-                        key={`hist-${i}`}
-                        className="rounded-md border border-border/70 bg-muted/70 px-3 py-2 text-foreground"
-                      >
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{line}</ReactMarkdown>
-                      </div>
-                    ) : (
-                      <div
-                        key={`hist-${i}`}
-                        className="agent-markdown min-w-0 overflow-hidden rounded-md border border-transparent px-0.5"
-                      >
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{line}</ReactMarkdown>
-                      </div>
-                    )
-                  )}
+                <div className="mx-auto flex w-full min-w-0 max-w-3xl flex-col gap-4 px-4 text-sm text-foreground sm:px-8 md:px-12">
+                  <AgentChatView
+                    parts={viewingSessionHistory}
+                    streaming={false}
+                  />
                 </div>
               )}
             </div>
           </div>
         ) : (
-        <AgentChatTranscript
-          agentId={agent.agentId}
-          name={agent.name}
-          avatarSeed={avatarSeed}
-          avatarUrl={agent.avatarUrl ?? null}
-          status={agent.status}
-          chatItems={chatItems}
-          autoExpandThinking={autoExpandThinking}
-          lastThinkingItemIndex={lastThinkingItemIndex}
-          liveThinkingText={liveThinkingText}
-          liveAssistantText={liveAssistantText}
-          showTypingIndicator={showTypingIndicator}
-          outputLineCount={agent.outputLines.length}
-          liveAssistantCharCount={agent.streamText?.length ?? 0}
-          liveThinkingCharCount={agent.thinkingTrace?.length ?? 0}
-          scrollToBottomNextOutputRef={scrollToBottomNextOutputRef}
-        />
+          <AgentChatTranscript
+            messageParts={agent.messageParts}
+            streaming={running}
+            scrollToBottomNextOutputRef={scrollToBottomNextOutputRef}
+            agentName={agent.name}
+            onSendStarter={handleComposerSend}
+          />
         )}
 
-        <AgentChatComposer
-          inputRef={handleDraftRef}
-          initialDraft={agent.draft}
-          onDraftChange={handleComposerDraftChange}
-          onSend={handleComposerSend}
-          onStop={onStopRun}
-          onResize={resizeDraft}
-          canSend={canSend}
-          stopBusy={stopBusy}
-          running={running}
-        />
+        {/* Floating composer — absolutely positioned with gradient fade */}
+        {!viewingSessionKey && (
+          <AgentChatComposer
+            inputRef={handleDraftRef}
+            initialDraft={agent.draft}
+            onDraftChange={handleComposerDraftChange}
+            onSend={handleComposerSend}
+            onStop={onStopRun}
+            onResize={resizeDraft}
+            canSend={canSend}
+            stopBusy={stopBusy}
+            running={running}
+            models={models}
+            modelValue={
+              // agent.model may include provider prefix (e.g. "anthropic/claude-opus-4-6")
+              // but select option values are just the model id (e.g. "claude-opus-4-6").
+              // Strip the provider prefix so the select matches correctly.
+              (() => {
+                const raw = agent.model ?? "";
+                const stripped = raw.includes("/") ? raw.split("/").slice(1).join("/") : raw;
+                // If the stripped value matches a known model id, use it; otherwise fall back to first model
+                const match = models.find((m) => m.id === stripped);
+                return match ? match.id : models[0]?.id ?? "";
+              })()
+            }
+            onModelChange={onModelChange}
+            thinkingLevel={agent.thinkingLevel ?? "off"}
+            onThinkingChange={onThinkingChange}
+            tokenUsed={tokenUsed}
+            tokenLimit={tokenLimit}
+            agentName={agent.name}
+            allowThinking={models.length > 0}
+            messageParts={agent.messageParts}
+            runStartedAt={agent.runStartedAt}
+            gatewayStatus={gatewayStatus}
+            queueLength={queueLength}
+          />
+        )}
       </div>
     </div>
   );

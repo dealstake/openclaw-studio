@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { listFiles, type DriveFile, type ListFilesResult } from "@/lib/google/drive";
+import { handleApiError } from "@/lib/api/helpers";
 
 export const runtime = "nodejs";
 
@@ -47,8 +48,6 @@ export async function GET(request: Request) {
     const files = await fetchDriveFiles();
     return NextResponse.json({ files, count: files.length });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Failed to load artifacts.";
-    console.error("[artifacts]", message);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return handleApiError(err, "artifacts GET", "Failed to load artifacts.");
   }
 }

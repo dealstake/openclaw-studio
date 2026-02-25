@@ -15,12 +15,12 @@ export function BrandMark({ size = "md", className }: BrandMarkProps) {
   const v = variants[size];
   return (
     <div className={`flex items-center ${v.gap} ${className ?? ""}`}>
-      <TridentLogo size={v.logo} className="shrink-0 text-primary" />
+      <TridentLogo size={v.logo} className="shrink-0 text-primary-text" />
       <div className="min-w-0 overflow-hidden leading-none">
-        <span className={`console-title whitespace-nowrap text-primary ${v.main} tracking-wide hidden sm:inline`}>
+        <span className={`console-title whitespace-nowrap text-foreground ${v.main} tracking-wide hidden sm:inline`}>
           TRIDENT FUNDING SOLUTIONS
         </span>
-        <span className={`console-title whitespace-nowrap text-primary ${v.main} tracking-wide sm:hidden`}>
+        <span className={`console-title whitespace-nowrap text-foreground ${v.main} tracking-wide sm:hidden`}>
           TRIDENT
         </span>
       </div>

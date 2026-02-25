@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useEffect, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import {
   X,
   ArrowLeft,
@@ -12,12 +12,16 @@ import {
 } from "lucide-react";
 import type { TaskType, CreateTaskPayload } from "@/features/tasks/types";
 import { useTaskWizard } from "@/features/tasks/hooks/useTaskWizard";
-import { WizardRuntimeProvider } from "./WizardRuntimeProvider";
-import { WizardThread } from "@/components/assistant-ui/wizard-thread";
-import { AgentCreationWizard } from "./AgentCreationWizard";
+import { WizardChat } from "@/components/chat/WizardChat";
+import { createConfigExtractor } from "@/components/chat/wizardConfigExtractor";
+import { buildSystemPrompt } from "@/features/tasks/lib/wizard-prompts";
+import { WIZARD_STARTERS } from "@/features/tasks/lib/wizardStarters";
+import { AgentWizardModal } from "@/features/agents/components/AgentWizardModal";
 import { TaskTemplatesSheet } from "./TaskTemplatesSheet";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
+import { SectionLabel } from "@/components/SectionLabel";
+import { PanelIconButton } from "@/components/PanelIconButton";
+import type { WizardTaskConfig } from "@/features/tasks/types";
 
 // ─── Type selector cards ─────────────────────────────────────────────────────
 
@@ -59,7 +63,8 @@ const TYPE_CARDS: Array<{
 interface TaskWizardModalProps {
   open: boolean;
   agents: string[];
-  creating: boolean;
+  /** @deprecated WizardChat handles creating state internally */
+  creating?: boolean;
   client: GatewayClient;
   onClose: () => void;
   onCreateTask: (payload: CreateTaskPayload) => Promise<void>;
@@ -71,14 +76,24 @@ interface TaskWizardModalProps {
 export const TaskWizardModal = memo(function TaskWizardModal({
   open,
   agents,
-  creating,
+  creating: _creating = false,
   client,
   onClose,
   onCreateTask,
   onAgentCreated,
 }: TaskWizardModalProps) {
   const wizard = useTaskWizard();
-  const [confirmBusy, setConfirmBusy] = useState(false);
+  const taskConfigExtractor = useMemo(
+    () => createConfigExtractor("task"),
+    [],
+  );
+  const handleConfigExtracted = useCallback(
+    (config: unknown) => {
+      wizard.setTaskConfig(config as WizardTaskConfig);
+    },
+    [wizard],
+  );
+  void _creating; // Kept for interface compat; WizardChat handles its own state
   const [showAgentCreation, setShowAgentCreation] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
   const [localAgents, setLocalAgents] = useState<string[]>(agents);
@@ -115,23 +130,6 @@ export const TaskWizardModal = memo(function TaskWizardModal({
       document.body.style.overflow = prev;
     };
   }, [open]);
-
-  const handleConfirm = useCallback(async () => {
-    const payload = wizard.confirm();
-    if (!payload) return;
-    setConfirmBusy(true);
-    try {
-      await onCreateTask(payload);
-      wizard.reset();
-      onClose();
-    } catch {
-      setConfirmBusy(false);
-    }
-  }, [wizard, onCreateTask, onClose]);
-
-  const handleAdjust = useCallback(() => {
-    // No-op: user can type in the composer to adjust
-  }, []);
 
   const handleClose = useCallback(() => {
     wizard.reset();
@@ -177,7 +175,7 @@ export const TaskWizardModal = memo(function TaskWizardModal({
   return (
     <div
       data-state={visible ? "open" : "closed"}
-      className="fixed inset-0 z-[100] flex items-end justify-center bg-background/70 backdrop-blur-sm transition-opacity duration-300 ease-out data-[state=closed]:opacity-0 sm:items-center"
+      className="fixed inset-0 z-[var(--z-modal)] flex items-end justify-center bg-background/70 backdrop-blur-sm transition-opacity duration-300 ease-out data-[state=closed]:opacity-0 sm:items-center"
       role="dialog"
       aria-modal="true"
       aria-label="Task Creation Wizard"
@@ -186,14 +184,12 @@ export const TaskWizardModal = memo(function TaskWizardModal({
       }}
     >
       {/* Mobile: full-height sheet from bottom; Desktop: centered card */}
-      <div data-state={visible ? "open" : "closed"} className="flex h-full w-full flex-col overflow-hidden bg-card shadow-2xl transition-all duration-300 ease-out data-[state=closed]:translate-y-full data-[state=closed]:opacity-0 sm:data-[state=closed]:scale-95 sm:data-[state=closed]:translate-y-0 sm:h-[min(85vh,680px)] sm:max-w-lg sm:rounded-xl sm:border sm:border-border">
+      <div data-state={visible ? "open" : "closed"} className="flex h-full w-full flex-col overflow-hidden bg-card shadow-lg transition-all duration-300 ease-out data-[state=closed]:translate-y-full data-[state=closed]:opacity-0 sm:data-[state=closed]:scale-95 sm:data-[state=closed]:translate-y-0 sm:h-[min(85vh,680px)] sm:max-w-lg sm:rounded-lg sm:border sm:border-border">
         {/* Modal header */}
         <div className="flex shrink-0 items-center justify-between border-b border-border/40 px-4 py-3">
           <div className="flex items-center gap-2">
             {wizard.step !== "type-select" || showTemplates || showAgentCreation ? (
-              <button
-                type="button"
-                className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted/65"
+              <PanelIconButton
                 onClick={
                   showTemplates
                     ? () => setShowTemplates(false)
@@ -203,12 +199,12 @@ export const TaskWizardModal = memo(function TaskWizardModal({
                 }
                 aria-label="Go back"
               >
-                <ArrowLeft className="h-4 w-4" />
-              </button>
+                <ArrowLeft className="h-3.5 w-3.5" />
+              </PanelIconButton>
             ) : null}
             <div className="flex items-center gap-1.5">
-              <Sparkles className="h-4 w-4 text-primary" />
-              <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+              <Sparkles className="h-4 w-4 text-primary-text" />
+              <SectionLabel as="span">
                 {showTemplates
                   ? "Templates"
                   : showAgentCreation
@@ -218,17 +214,15 @@ export const TaskWizardModal = memo(function TaskWizardModal({
                       : wizard.step === "chat"
                         ? "Task Wizard"
                         : "Task Created"}
-              </span>
+              </SectionLabel>
             </div>
           </div>
-          <button
-            type="button"
-            className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted/65"
+          <PanelIconButton
             onClick={handleClose}
             aria-label="Close wizard"
           >
-            <X className="h-4 w-4" />
-          </button>
+            <X className="h-3.5 w-3.5" />
+          </PanelIconButton>
         </div>
 
         {/* Step content */}
@@ -252,20 +246,15 @@ export const TaskWizardModal = memo(function TaskWizardModal({
           {wizard.step === "chat" &&
             wizard.taskType &&
             !showAgentCreation && (
-              <TooltipProvider>
-                <WizardRuntimeProvider
-                  taskType={wizard.taskType}
-                  agents={localAgents}
-                >
-                  <WizardThread
-                    taskType={wizard.taskType}
-                    onTaskConfig={wizard.setTaskConfig}
-                    onConfirm={handleConfirm}
-                    onAdjust={handleAdjust}
-                    confirmBusy={confirmBusy || creating}
-                  />
-                </WizardRuntimeProvider>
-              </TooltipProvider>
+              <WizardChat
+                client={client}
+                agentId={localAgents[0] ?? "main"}
+                wizardType="task"
+                systemPrompt={buildSystemPrompt(wizard.taskType, localAgents)}
+                starters={WIZARD_STARTERS[wizard.taskType]}
+                configExtractor={taskConfigExtractor}
+                onConfigExtracted={handleConfigExtracted}
+              />
             )}
           {wizard.step === "confirm" && !showAgentCreation && (
             <div className="h-full overflow-y-auto">
@@ -273,13 +262,12 @@ export const TaskWizardModal = memo(function TaskWizardModal({
             </div>
           )}
           {showAgentCreation && (
-            <div className="h-full overflow-y-auto">
-              <AgentCreationWizard
-                client={client}
-                onCreated={handleAgentCreated}
-                onCancel={handleCancelAgentCreation}
-              />
-            </div>
+            <AgentWizardModal
+              open={showAgentCreation}
+              client={client}
+              onCreated={handleAgentCreated}
+              onClose={handleCancelAgentCreation}
+            />
           )}
         </div>
         {/* Create agent button — shown during chat step */}
@@ -287,7 +275,7 @@ export const TaskWizardModal = memo(function TaskWizardModal({
           <div className="flex shrink-0 items-center justify-between border-t border-border/30 px-4 py-3 pb-safe">
             <button
               type="button"
-              className="flex items-center gap-2 text-[11px] font-medium text-muted-foreground transition hover:text-primary"
+              className="flex items-center gap-2 text-[11px] font-medium text-muted-foreground transition hover:text-primary-text"
               onClick={handleShowAgentCreation}
             >
               <Sparkles className="h-3.5 w-3.5" />
@@ -328,7 +316,7 @@ const TypeSelectStep = memo(function TypeSelectStep({
             <button
               key={card.type}
               type="button"
-              className={`flex items-start gap-4 rounded-xl border bg-card/70 p-5 text-left transition ${card.color}`}
+              className={`flex items-start gap-4 rounded-lg border bg-card/70 p-5 text-left transition ${card.color}`}
               onClick={() => onSelect(card.type)}
             >
               <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted/50">

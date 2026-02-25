@@ -12,6 +12,7 @@ import {
   parseAgentIdFromSessionKey,
 } from "@/lib/gateway/GatewayClient";
 import { extractText, isHeartbeatPrompt, stripUiMetadata } from "@/lib/text/message-extract";
+import type { SessionsListResult } from "@/lib/gateway/types";
 
 type ChatHistoryMessage = Record<string, unknown>;
 type ChatHistoryResult = {
@@ -20,25 +21,11 @@ type ChatHistoryResult = {
   messages: ChatHistoryMessage[];
   thinkingLevel?: string;
 };
-type SessionsListEntry = {
-  key: string;
-  updatedAt?: number | null;
-  displayName?: string;
-  origin?: { label?: string | null; provider?: string | null } | null;
-  thinkingLevel?: string;
-  modelProvider?: string;
-  model?: string;
-  totalTokens?: number | null;
-  contextTokens?: number | null;
-};
-type SessionsListResult = {
-  sessions?: SessionsListEntry[];
-};
 
 const SPECIAL_UPDATE_HEARTBEAT_RE = /\bheartbeat\b/i;
 const SPECIAL_UPDATE_CRON_RE = /\bcron\b/i;
 
-export const resolveSpecialUpdateKind = (message: string) => {
+const resolveSpecialUpdateKind = (message: string) => {
   const lowered = message.toLowerCase();
   const heartbeatIndex = lowered.search(SPECIAL_UPDATE_HEARTBEAT_RE);
   const cronIndex = lowered.search(SPECIAL_UPDATE_CRON_RE);
@@ -183,19 +170,40 @@ export function useSpecialUpdates(params: {
     }
   }, [stateRef, updateSpecialLatestUpdate]);
 
-  // Track agent special updates
+  // Track agent special updates using ref-based comparison to avoid
+  // O(n) string allocation per render from fingerprint concatenation.
+  const prevAgentSnapshotRef = useRef<Map<string, string>>(new Map());
+
   useEffect(() => {
+    let changed = false;
+    const nextSnapshot = new Map<string, string>();
     for (const agent of agents) {
       const lastMessage = agent.lastUserMessage?.trim() ?? "";
       const kind = resolveSpecialUpdateKind(lastMessage);
+      const marker = kind === "heartbeat" ? `${lastMessage}:${heartbeatTick}` : lastMessage;
+      nextSnapshot.set(agent.agentId, marker);
+      if (prevAgentSnapshotRef.current.get(agent.agentId) !== marker) {
+        changed = true;
+      }
+    }
+    // Also detect removed agents
+    if (nextSnapshot.size !== prevAgentSnapshotRef.current.size) {
+      changed = true;
+    }
+    if (!changed) return;
+    prevAgentSnapshotRef.current = nextSnapshot;
+
+    for (const agent of agents) {
+      const lastMessage = agent.lastUserMessage?.trim() ?? "";
       const key = agent.agentId;
+      const kind = resolveSpecialUpdateKind(lastMessage);
       const marker = kind === "heartbeat" ? `${lastMessage}:${heartbeatTick}` : lastMessage;
       const previous = specialUpdateRef.current.get(key);
       if (previous === marker) continue;
       specialUpdateRef.current.set(key, marker);
       void updateSpecialLatestUpdate(agent.agentId, agent, lastMessage);
     }
-  }, [agents, heartbeatTick, updateSpecialLatestUpdate]);
+  }, [agents, heartbeatTick, specialUpdateRef, updateSpecialLatestUpdate]);
 
   return {
     heartbeatTick,

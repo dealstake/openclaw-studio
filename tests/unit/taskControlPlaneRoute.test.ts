@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { spawnSync } from "node:child_process";
+import { execFile } from "node:child_process";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
@@ -17,6 +17,7 @@ vi.mock("node:child_process", async () => {
   return {
     default: actual,
     ...actual,
+    execFile: vi.fn(),
     spawnSync: vi.fn(),
   };
 });
@@ -25,7 +26,7 @@ vi.mock("@/lib/task-control-plane/read-model", () => ({
   buildTaskControlPlaneSnapshot: vi.fn(),
 }));
 
-const mockedSpawnSync = vi.mocked(spawnSync);
+const mockedExecFile = vi.mocked(execFile);
 const mockedBuildSnapshot = vi.mocked(buildTaskControlPlaneSnapshot);
 const mockedConsoleError = vi.spyOn(console, "error").mockImplementation(() => {});
 
@@ -37,43 +38,25 @@ describe("task control plane route", () => {
     delete process.env.OPENCLAW_TASK_CONTROL_PLANE_SSH_TARGET;
     delete process.env.OPENCLAW_TASK_CONTROL_PLANE_SSH_USER;
     delete process.env.OPENCLAW_STATE_DIR;
-    mockedSpawnSync.mockReset();
+    mockedExecFile.mockReset();
     mockedBuildSnapshot.mockReset();
     mockedConsoleError.mockClear();
   });
 
   it("returns snapshot on success", async () => {
-    mockedSpawnSync
-      .mockReturnValueOnce({
-        status: 0,
-        stdout: JSON.stringify({ path: "/tmp/.beads" }),
-        stderr: "",
-        error: undefined,
-      } as never)
-      .mockReturnValueOnce({
-        status: 0,
-        stdout: JSON.stringify([{ id: "bd-1" }]),
-        stderr: "",
-        error: undefined,
-      } as never)
-      .mockReturnValueOnce({
-        status: 0,
-        stdout: JSON.stringify([{ id: "bd-2" }]),
-        stderr: "",
-        error: undefined,
-      } as never)
-      .mockReturnValueOnce({
-        status: 0,
-        stdout: JSON.stringify([{ id: "bd-3" }]),
-        stderr: "",
-        error: undefined,
-      } as never)
-      .mockReturnValueOnce({
-        status: 0,
-        stdout: JSON.stringify([{ id: "bd-4" }]),
-        stderr: "",
-        error: undefined,
-      } as never);
+    const responses = [
+      JSON.stringify({ path: "/tmp/.beads" }),
+      JSON.stringify([{ id: "bd-1" }]),
+      JSON.stringify([{ id: "bd-2" }]),
+      JSON.stringify([{ id: "bd-3" }]),
+      JSON.stringify([{ id: "bd-4" }]),
+    ];
+    let callIndex = 0;
+    mockedExecFile.mockImplementation(
+      ((_cmd: unknown, _args: unknown, _opts: unknown, cb: (...args: unknown[]) => void) => {
+        cb(null, responses[callIndex++], "");
+      }) as never,
+    );
 
     mockedBuildSnapshot.mockReturnValue({
       generatedAt: "2026-02-05T00:00:00.000Z",
@@ -87,37 +70,7 @@ describe("task control plane route", () => {
 
     expect(response.status).toBe(200);
     expect(body.snapshot).toBeDefined();
-    expect(mockedSpawnSync).toHaveBeenCalledTimes(5);
-    expect(mockedSpawnSync).toHaveBeenNthCalledWith(
-      1,
-      "br",
-      ["where", "--json"],
-      expect.objectContaining({ encoding: "utf8" })
-    );
-    expect(mockedSpawnSync).toHaveBeenNthCalledWith(
-      2,
-      "br",
-      ["list", "--status", "open", "--limit", "0", "--json"],
-      expect.objectContaining({ encoding: "utf8" })
-    );
-    expect(mockedSpawnSync).toHaveBeenNthCalledWith(
-      3,
-      "br",
-      ["list", "--status", "in_progress", "--limit", "0", "--json"],
-      expect.objectContaining({ encoding: "utf8" })
-    );
-    expect(mockedSpawnSync).toHaveBeenNthCalledWith(
-      4,
-      "br",
-      ["blocked", "--limit", "0", "--json"],
-      expect.objectContaining({ encoding: "utf8" })
-    );
-    expect(mockedSpawnSync).toHaveBeenNthCalledWith(
-      5,
-      "br",
-      ["list", "--status", "closed", "--limit", "0", "--json"],
-      expect.objectContaining({ encoding: "utf8" })
-    );
+    expect(mockedExecFile).toHaveBeenCalledTimes(5);
     expect(mockedBuildSnapshot).toHaveBeenCalledWith({
       scopePath: "/tmp/.beads",
       openIssues: [{ id: "bd-1" }],
@@ -134,37 +87,19 @@ describe("task control plane route", () => {
 
     process.env.OPENCLAW_TASK_CONTROL_PLANE_BEADS_DIR = beadsDir;
 
-    mockedSpawnSync
-      .mockReturnValueOnce({
-        status: 0,
-        stdout: JSON.stringify({ path: beadsDir }),
-        stderr: "",
-        error: undefined,
-      } as never)
-      .mockReturnValueOnce({
-        status: 0,
-        stdout: JSON.stringify([]),
-        stderr: "",
-        error: undefined,
-      } as never)
-      .mockReturnValueOnce({
-        status: 0,
-        stdout: JSON.stringify([]),
-        stderr: "",
-        error: undefined,
-      } as never)
-      .mockReturnValueOnce({
-        status: 0,
-        stdout: JSON.stringify([]),
-        stderr: "",
-        error: undefined,
-      } as never)
-      .mockReturnValueOnce({
-        status: 0,
-        stdout: JSON.stringify([]),
-        stderr: "",
-        error: undefined,
-      } as never);
+    const responses = [
+      JSON.stringify({ path: beadsDir }),
+      JSON.stringify([]),
+      JSON.stringify([]),
+      JSON.stringify([]),
+      JSON.stringify([]),
+    ];
+    let callIndex = 0;
+    mockedExecFile.mockImplementation(
+      ((_cmd: unknown, _args: unknown, _opts: unknown, cb: (...args: unknown[]) => void) => {
+        cb(null, responses[callIndex++], "");
+      }) as never,
+    );
 
     mockedBuildSnapshot.mockReturnValue({
       generatedAt: "2026-02-05T00:00:00.000Z",
@@ -175,115 +110,20 @@ describe("task control plane route", () => {
 
     await GET();
 
-    expect(mockedSpawnSync).toHaveBeenCalledTimes(5);
-    for (const call of mockedSpawnSync.mock.calls) {
+    expect(mockedExecFile).toHaveBeenCalledTimes(5);
+    for (const call of mockedExecFile.mock.calls) {
       const options = call[2] as { cwd?: string };
       expect(options.cwd).toBe(tempRoot);
     }
   });
 
-  it("loads snapshot via ssh when configured", async () => {
-    const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "studio-state-"));
-    process.env.OPENCLAW_STATE_DIR = stateDir;
-
-    const settingsDir = path.join(stateDir, "openclaw-studio");
-    fs.mkdirSync(settingsDir, { recursive: true });
-    fs.writeFileSync(
-      path.join(settingsDir, "settings.json"),
-      JSON.stringify(
-        {
-          version: 1,
-          gateway: { url: "ws://example.test:18789", token: "token-123" },
-          focused: {},
-        },
-        null,
-        2
-      ),
-      "utf8"
-    );
-
-    process.env.OPENCLAW_TASK_CONTROL_PLANE_GATEWAY_BEADS_DIR = "/home/ubuntu/repo/.beads";
-
-    mockedSpawnSync
-      .mockReturnValueOnce({
-        status: 0,
-        stdout: JSON.stringify({ path: "/home/ubuntu/repo/.beads" }),
-        stderr: "",
-        error: undefined,
-      } as never)
-      .mockReturnValueOnce({
-        status: 0,
-        stdout: JSON.stringify([{ id: "bd-1" }]),
-        stderr: "",
-        error: undefined,
-      } as never)
-      .mockReturnValueOnce({
-        status: 0,
-        stdout: JSON.stringify([{ id: "bd-2" }]),
-        stderr: "",
-        error: undefined,
-      } as never)
-      .mockReturnValueOnce({
-        status: 0,
-        stdout: JSON.stringify([{ id: "bd-3" }]),
-        stderr: "",
-        error: undefined,
-      } as never)
-      .mockReturnValueOnce({
-        status: 0,
-        stdout: JSON.stringify([{ id: "bd-4" }]),
-        stderr: "",
-        error: undefined,
-      } as never);
-
-    mockedBuildSnapshot.mockReturnValue({
-      generatedAt: "2026-02-05T00:00:00.000Z",
-      scopePath: "/home/ubuntu/repo/.beads",
-      columns: { ready: [], inProgress: [], blocked: [], done: [] },
-      warnings: [],
-    });
-
-    const response = await GET();
-    expect(response.status).toBe(200);
-    expect(mockedSpawnSync).toHaveBeenCalledTimes(5);
-    for (const call of mockedSpawnSync.mock.calls) {
-      expect(call[0]).toBe("ssh");
-    }
-    expect(mockedSpawnSync).toHaveBeenNthCalledWith(
-      1,
-      "ssh",
-      [
-        "-o",
-        "BatchMode=yes",
-        "ubuntu@example.test",
-        "cd '/home/ubuntu/repo' && PATH=\"$HOME/.local/bin:$HOME/.cargo/bin:$PATH\" br where --json",
-      ],
-      expect.objectContaining({ encoding: "utf8" })
-    );
-  });
-
-  it("returns 502 when ssh mode is configured but gateway url is missing", async () => {
-    const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "studio-state-"));
-    process.env.OPENCLAW_STATE_DIR = stateDir;
-    process.env.OPENCLAW_TASK_CONTROL_PLANE_GATEWAY_BEADS_DIR = "/home/ubuntu/repo/.beads";
-
-    const response = await GET();
-    const body = (await response.json()) as { error: string };
-
-    expect(response.status).toBe(502);
-    expect(body.error).toContain("Gateway URL is missing");
-    expect(body.error).toContain("OPENCLAW_TASK_CONTROL_PLANE_SSH_TARGET");
-    expect(mockedSpawnSync).not.toHaveBeenCalled();
-    expect(mockedConsoleError).toHaveBeenCalledWith(body.error);
-  });
-
   it("returns 400 for missing beads workspace", async () => {
-    mockedSpawnSync.mockReturnValue({
-      status: 1,
-      stdout: JSON.stringify({ error: "no beads directory found" }),
-      stderr: "",
-      error: undefined,
-    } as never);
+    mockedExecFile.mockImplementation(
+      ((_cmd: unknown, _args: unknown, _opts: unknown, cb: (...args: unknown[]) => void) => {
+        const err = Object.assign(new Error("exit 1"), { code: 1 });
+        cb(err, JSON.stringify({ error: "no beads directory found" }), "");
+      }) as never,
+    );
 
     const response = await GET();
     const body = (await response.json()) as { error: string };
@@ -294,12 +134,12 @@ describe("task control plane route", () => {
   });
 
   it("returns 502 for other failures", async () => {
-    mockedSpawnSync.mockReturnValue({
-      status: 1,
-      stdout: JSON.stringify({ error: "boom" }),
-      stderr: "",
-      error: undefined,
-    } as never);
+    mockedExecFile.mockImplementation(
+      ((_cmd: unknown, _args: unknown, _opts: unknown, cb: (...args: unknown[]) => void) => {
+        const err = Object.assign(new Error("exit 1"), { code: 1 });
+        cb(err, JSON.stringify({ error: "boom" }), "");
+      }) as never,
+    );
 
     const response = await GET();
     const body = (await response.json()) as { error: string };

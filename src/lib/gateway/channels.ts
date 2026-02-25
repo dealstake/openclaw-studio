@@ -11,7 +11,7 @@ export type ChannelsStatusSnapshot = {
   channelMeta?: Array<{ id: string; label: string }>;
 };
 
-export const CHANNEL_LABELS: Record<string, string> = {
+const CHANNEL_LABELS: Record<string, string> = {
   whatsapp: "WhatsApp",
   telegram: "Telegram",
   discord: "Discord",
@@ -32,6 +32,24 @@ export function resolveChannelLabel(snapshot: ChannelsStatusSnapshot | null, key
 }
 
 export type ChannelHealth = "connected" | "running" | "configured" | "error" | "off";
+
+/** Shared dot color classes for channel health indicators. */
+export const HEALTH_DOT_COLORS: Record<ChannelHealth, string> = {
+  connected: "bg-primary",
+  running: "bg-accent",
+  configured: "bg-amber-500",
+  error: "bg-destructive",
+  off: "bg-muted-foreground/30",
+};
+
+/** Pill-variant dot colors (slightly different opacity for configured). */
+export const HEALTH_PILL_DOT_COLORS: Record<ChannelHealth, string> = {
+  connected: "bg-primary",
+  running: "bg-accent",
+  configured: "bg-muted-foreground/50",
+  error: "bg-destructive",
+  off: "bg-muted-foreground/30",
+};
 
 export function resolveChannelHealth(entry: ChannelStatusEntry | undefined): ChannelHealth {
   if (!entry) return "off";

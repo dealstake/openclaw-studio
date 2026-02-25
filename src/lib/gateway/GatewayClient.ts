@@ -1,55 +1,18 @@
-"use client";
-
-import { useCallback, useEffect, useRef, useState } from "react";
 import {
   GatewayBrowserClient,
   type GatewayHelloOk,
 } from "./openclaw/GatewayBrowserClient";
-import type { StudioSettings, StudioSettingsPatch } from "@/lib/studio/settings";
 
-export type ReqFrame = {
-  type: "req";
-  id: string;
-  method: string;
-  params: unknown;
-};
+export type {
+  ReqFrame,
+  ResFrame,
+  EventFrame,
+  GatewayFrame,
+  GatewayStateVersion,
+} from "./types";
+export { parseGatewayFrame } from "./types";
 
-export type ResFrame = {
-  type: "res";
-  id: string;
-  ok: boolean;
-  payload?: unknown;
-  error?: {
-    code: string;
-    message: string;
-    details?: unknown;
-    retryable?: boolean;
-    retryAfterMs?: number;
-  };
-};
-
-export type GatewayStateVersion = {
-  presence: number;
-  health: number;
-};
-
-export type EventFrame = {
-  type: "event";
-  event: string;
-  payload?: unknown;
-  seq?: number;
-  stateVersion?: GatewayStateVersion;
-};
-
-export type GatewayFrame = ReqFrame | ResFrame | EventFrame;
-
-export const parseGatewayFrame = (raw: string): GatewayFrame | null => {
-  try {
-    return JSON.parse(raw) as GatewayFrame;
-  } catch {
-    return null;
-  }
-};
+import type { EventFrame } from "./types";
 
 export const buildAgentMainSessionKey = (agentId: string, mainKey: string) => {
   const trimmedAgent = agentId.trim();
@@ -67,15 +30,6 @@ export const isSameSessionKey = (a: string, b: string) => {
   const right = b.trim();
   return left.length > 0 && left === right;
 };
-
-const DEFAULT_GATEWAY_URL =
-  process.env.NEXT_PUBLIC_GATEWAY_URL ?? "ws://127.0.0.1:18789";
-
-// NOTE: NEXT_PUBLIC_GATEWAY_TOKEN is visible in the client bundle. This is
-// acceptable because the app is behind Cloudflare Access — only authenticated
-// users can reach the page, so the token is not exposed to the public internet.
-const DEFAULT_GATEWAY_TOKEN =
-  process.env.NEXT_PUBLIC_GATEWAY_TOKEN ?? "";
 
 type StatusHandler = (status: GatewayStatus) => void;
 
@@ -223,6 +177,11 @@ export class GatewayClient {
     return this.lastHello;
   }
 
+  /** Milliseconds since the current connection was established (0 if not connected). */
+  get connectedForMs(): number {
+    return this.client?.connectedForMs ?? 0;
+  }
+
   private updateStatus(status: GatewayStatus) {
     this.status = status;
     this.statusHandlers.forEach((handler) => handler(status));
@@ -301,157 +260,4 @@ export const syncGatewaySessionSettings = async ({
     payload.thinkingLevel = thinkingLevel ?? null;
   }
   return await client.call<GatewaySessionsPatchResult>("sessions.patch", payload);
-};
-
-const formatGatewayError = (error: unknown) => {
-  if (error instanceof GatewayResponseError) {
-    return `Gateway error (${error.code}): ${error.message}`;
-  }
-  if (error instanceof Error) {
-    return error.message;
-  }
-  return "Unknown gateway error.";
-};
-
-export type GatewayConnectionState = {
-  client: GatewayClient;
-  status: GatewayStatus;
-  gatewayUrl: string;
-  token: string;
-  error: string | null;
-  connect: () => Promise<void>;
-  disconnect: () => void;
-  setGatewayUrl: (value: string) => void;
-  setToken: (value: string) => void;
-  clearError: () => void;
-};
-
-type StudioSettingsCoordinatorLike = {
-  loadSettings: () => Promise<StudioSettings | null>;
-  schedulePatch: (patch: StudioSettingsPatch, debounceMs?: number) => void;
-  flushPending: () => Promise<void>;
-};
-
-export const useGatewayConnection = (
-  settingsCoordinator: StudioSettingsCoordinatorLike
-): GatewayConnectionState => {
-  const [client] = useState(() => new GatewayClient());
-  const didAutoConnect = useRef(false);
-  const loadedGatewaySettings = useRef<{ gatewayUrl: string; token: string } | null>(null);
-
-  const [gatewayUrl, setGatewayUrl] = useState(DEFAULT_GATEWAY_URL);
-  const [token, setToken] = useState(DEFAULT_GATEWAY_TOKEN);
-  const [status, setStatus] = useState<GatewayStatus>("disconnected");
-  const [error, setError] = useState<string | null>(null);
-  const [settingsLoaded, setSettingsLoaded] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    const loadSettings = async () => {
-      try {
-        const settings = await settingsCoordinator.loadSettings();
-        const gateway = settings?.gateway ?? null;
-        if (cancelled) return;
-        const nextGatewayUrl = gateway?.url?.trim() ? gateway.url : DEFAULT_GATEWAY_URL;
-        const nextToken = typeof gateway?.token === "string" ? gateway.token : DEFAULT_GATEWAY_TOKEN;
-        loadedGatewaySettings.current = {
-          gatewayUrl: nextGatewayUrl.trim(),
-          token: nextToken,
-        };
-        setGatewayUrl(nextGatewayUrl);
-        setToken(nextToken);
-      } catch {
-        if (!cancelled) {
-          setError("Failed to load gateway settings.");
-        }
-      } finally {
-        if (!cancelled) {
-          if (!loadedGatewaySettings.current) {
-            loadedGatewaySettings.current = {
-              gatewayUrl: DEFAULT_GATEWAY_URL.trim(),
-              token: "",
-            };
-          }
-          setSettingsLoaded(true);
-        }
-      }
-    };
-    void loadSettings();
-    return () => {
-      cancelled = true;
-    };
-  }, [settingsCoordinator]);
-
-  useEffect(() => {
-    return client.onStatus((nextStatus) => {
-      setStatus(nextStatus);
-      if (nextStatus !== "connecting") {
-        setError(null);
-      }
-    });
-  }, [client]);
-
-  useEffect(() => {
-    return () => {
-      client.disconnect();
-    };
-  }, [client]);
-
-  const connect = useCallback(async () => {
-    setError(null);
-    try {
-      await client.connect({ gatewayUrl, token });
-    } catch (err) {
-      setError(formatGatewayError(err));
-    }
-  }, [client, gatewayUrl, token]);
-
-  useEffect(() => {
-    if (didAutoConnect.current) return;
-    if (!settingsLoaded) return;
-    if (!gatewayUrl.trim()) return;
-    didAutoConnect.current = true;
-    void connect();
-  }, [connect, gatewayUrl, settingsLoaded]);
-
-  useEffect(() => {
-    if (!settingsLoaded) return;
-    const baseline = loadedGatewaySettings.current;
-    if (!baseline) return;
-    const nextGatewayUrl = gatewayUrl.trim();
-    if (nextGatewayUrl === baseline.gatewayUrl && token === baseline.token) {
-      return;
-    }
-    settingsCoordinator.schedulePatch(
-      {
-        gateway: {
-          url: nextGatewayUrl,
-          token,
-        },
-      },
-      400
-    );
-  }, [gatewayUrl, settingsCoordinator, settingsLoaded, token]);
-
-  const disconnect = useCallback(() => {
-    setError(null);
-    client.disconnect();
-  }, [client]);
-
-  const clearError = useCallback(() => {
-    setError(null);
-  }, []);
-
-  return {
-    client,
-    status,
-    gatewayUrl,
-    token,
-    error,
-    connect,
-    disconnect,
-    setGatewayUrl,
-    setToken,
-    clearError,
-  };
 };

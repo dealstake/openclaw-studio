@@ -71,9 +71,9 @@ describe("cron formatting", () => {
   });
 
   it("formats_cron_schedule_with_optional_tz", () => {
-    expect(formatCronSchedule({ kind: "cron", expr: "0 0 * * *" })).toBe("Cron: 0 0 * * *");
+    expect(formatCronSchedule({ kind: "cron", expr: "0 0 * * *" })).toBe("At 12:00 AM");
     expect(formatCronSchedule({ kind: "cron", expr: "0 0 * * *", tz: "UTC" })).toBe(
-      "Cron: 0 0 * * * (UTC)"
+      "At 12:00 AM (UTC)"
     );
   });
 

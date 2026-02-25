@@ -1,4 +1,7 @@
+import { memo } from "react";
 import type { GatewayStatus } from "@/lib/gateway/GatewayClient";
+
+import { sectionLabelClass } from "@/components/SectionLabel";
 
 type ConnectionPanelProps = {
   gatewayUrl: string;
@@ -27,7 +30,7 @@ const statusStyles: Record<GatewayStatus, { label: string; className: string }> 
     },
   };
 
-export const ConnectionPanel = ({
+export const ConnectionPanel = memo(function ConnectionPanel({
   gatewayUrl,
   token,
   status,
@@ -36,7 +39,7 @@ export const ConnectionPanel = ({
   onTokenChange,
   onConnect,
   onDisconnect,
-}: ConnectionPanelProps) => {
+}: ConnectionPanelProps) {
   const statusConfig = statusStyles[status];
   const isConnected = status === "connected";
   const isConnecting = status === "connecting";
@@ -45,7 +48,7 @@ export const ConnectionPanel = ({
     <div className="fade-up-delay flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-3">
         <span
-          className={`inline-flex items-center rounded-md px-3 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.15em] ${statusConfig.className}`}
+          className={`inline-flex items-center rounded-md px-3 py-1 ${sectionLabelClass} ${statusConfig.className}`}
         >
           {statusConfig.label}
         </span>
@@ -59,7 +62,7 @@ export const ConnectionPanel = ({
         </button>
       </div>
       <div className="grid gap-3 lg:grid-cols-[1.4fr_1fr]">
-        <label className="flex flex-col gap-1 font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
+        <label className={`flex flex-col gap-1 ${sectionLabelClass} text-muted-foreground`}>
           Gateway URL
           <input
             className="h-10 rounded-md border border-input bg-background/75 px-4 font-sans text-sm text-foreground outline-none transition focus:border-ring"
@@ -70,7 +73,7 @@ export const ConnectionPanel = ({
             spellCheck={false}
           />
         </label>
-        <label className="flex flex-col gap-1 font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
+        <label className={`flex flex-col gap-1 ${sectionLabelClass} text-muted-foreground`}>
           Token
           <input
             className="h-10 rounded-md border border-input bg-background/75 px-4 font-sans text-sm text-foreground outline-none transition focus:border-ring"
@@ -89,4 +92,4 @@ export const ConnectionPanel = ({
       ) : null}
     </div>
   );
-};
+});

@@ -12,10 +12,10 @@ const createAgent = (overrides?: Partial<AgentState>): AgentState => ({
   sessionCreated: true,
   awaitingUserInput: false,
   hasUnseenActivity: false,
-  outputLines: [],
+  messageParts: [],
   lastResult: null,
   lastDiff: null,
-  runId: null,
+  runId: null, runStartedAt: null,
   streamText: null,
   thinkingTrace: null,
   latestOverride: null,
@@ -77,6 +77,7 @@ describe("gateway runtime event handler (chat)", () => {
     expect(queueLivePatch).toHaveBeenCalledWith("agent-1", {
       streamText: "Hello",
       status: "running",
+      runStartedAt: 1000,
     });
   });
 
@@ -160,9 +161,11 @@ describe("gateway runtime event handler (chat)", () => {
       },
     });
 
-    expect(dispatched.some((entry) => entry.type === "appendOutput" && entry.line === "Done")).toBe(
-      true
-    );
+    expect(dispatched.some((entry) => {
+      if (entry.type !== "appendPart") return false;
+      const part = (entry as Record<string, unknown>).part as Record<string, unknown>;
+      return part.type === "text" && part.text === "Done";
+    })).toBe(true);
     expect(
       dispatched.some((entry) => {
         if (entry.type !== "updateAgent") return false;
@@ -183,7 +186,7 @@ describe("gateway runtime event handler (chat)", () => {
   });
 
   it("requests agent history load when final assistant has no thinking trace and no prior trace output", () => {
-    const agents = [createAgent({ outputLines: [] })];
+    const agents = [createAgent({})];
     const loadAgentHistory = vi.fn(async () => {});
     const handler = createGatewayRuntimeEventHandler({
       getStatus: () => "connected",
@@ -251,7 +254,7 @@ describe("gateway runtime event handler (chat)", () => {
     });
 
     expect(dispatch).toHaveBeenCalledWith(
-      expect.objectContaining({ type: "appendOutput", agentId: "agent-1", line: "Run aborted." })
+      expect.objectContaining({ type: "appendPart", agentId: "agent-1", part: expect.objectContaining({ type: "status", state: "error", errorMessage: expect.stringContaining("Run was aborted") }) })
     );
 
     handler.handleEvent({
@@ -267,7 +270,7 @@ describe("gateway runtime event handler (chat)", () => {
     });
 
     expect(dispatch).toHaveBeenCalledWith(
-      expect.objectContaining({ type: "appendOutput", agentId: "agent-1", line: "Error: bad" })
+      expect.objectContaining({ type: "appendPart", agentId: "agent-1", part: expect.objectContaining({ type: "status", state: "error", errorMessage: expect.stringContaining("bad") }) })
     );
   });
 });

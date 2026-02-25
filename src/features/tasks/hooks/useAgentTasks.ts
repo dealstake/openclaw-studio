@@ -1,12 +1,13 @@
 import { useCallback, useRef, useState } from "react";
+import { toast } from "sonner";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { isGatewayDisconnectLikeError } from "@/lib/gateway/GatewayClient";
 import {
   addCronJob,
+  listCronJobs,
   removeCronJob,
   runCronJobNow,
   updateCronJob,
-  type CronJobSummary,
 } from "@/lib/cron/types";
 import type {
   CreateTaskPayload,
@@ -14,106 +15,8 @@ import type {
   UpdateTaskPayload,
 } from "@/features/tasks/types";
 import { taskScheduleToCronSchedule } from "@/features/tasks/lib/schedule";
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function generateTaskId(): string {
-  return `task-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-}
-
-function buildCronPayloadMessage(taskId: string, prompt: string): string {
-  return `[TASK:${taskId}] ${prompt}`;
-}
-
-function buildDelivery(payload: CreateTaskPayload) {
-  if (payload.deliveryChannel) {
-    return {
-      mode: "announce" as const,
-      channel: payload.deliveryChannel,
-      ...(payload.deliveryTarget ? { to: payload.deliveryTarget } : {}),
-    };
-  }
-  return { mode: "announce" as const };
-}
-
-// ─── Metadata API helpers ────────────────────────────────────────────────────
-
-async function fetchTasks(agentId: string): Promise<StudioTask[]> {
-  const res = await fetch(`/api/tasks?agentId=${encodeURIComponent(agentId)}`);
-  if (!res.ok) {
-    const data = (await res.json().catch(() => ({}))) as { error?: string };
-    throw new Error(data.error ?? "Failed to fetch tasks.");
-  }
-  const data = (await res.json()) as { tasks: StudioTask[] };
-  return data.tasks ?? [];
-}
-
-async function saveTaskMetadata(task: StudioTask): Promise<void> {
-  const res = await fetch("/api/tasks", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ task }),
-  });
-  if (!res.ok) {
-    const data = (await res.json().catch(() => ({}))) as { error?: string };
-    throw new Error(data.error ?? "Failed to save task.");
-  }
-}
-
-async function patchTaskMetadata(
-  agentId: string,
-  taskId: string,
-  patch: UpdateTaskPayload
-): Promise<StudioTask> {
-  const res = await fetch("/api/tasks", {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ agentId, taskId, patch }),
-  });
-  if (!res.ok) {
-    const data = (await res.json().catch(() => ({}))) as { error?: string };
-    throw new Error(data.error ?? "Failed to update task.");
-  }
-  const data = (await res.json()) as { task: StudioTask };
-  return data.task;
-}
-
-async function deleteTaskMetadata(agentId: string, taskId: string): Promise<void> {
-  const res = await fetch("/api/tasks", {
-    method: "DELETE",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ agentId, taskId }),
-  });
-  if (!res.ok) {
-    const data = (await res.json().catch(() => ({}))) as { error?: string };
-    throw new Error(data.error ?? "Failed to delete task.");
-  }
-}
-
-// ─── Enrich tasks with live cron state ───────────────────────────────────────
-
-function enrichTasksWithCronData(
-  tasks: StudioTask[],
-  cronJobs: CronJobSummary[]
-): StudioTask[] {
-  const cronMap = new Map(cronJobs.map((j) => [j.id, j]));
-  return tasks.map((task) => {
-    const cron = cronMap.get(task.cronJobId);
-    if (!cron) return task;
-    return {
-      ...task,
-      enabled: cron.enabled,
-      lastRunAt: cron.state.lastRunAtMs
-        ? new Date(cron.state.lastRunAtMs).toISOString()
-        : task.lastRunAt,
-      lastRunStatus: cron.state.lastStatus === "ok"
-        ? "success"
-        : cron.state.lastStatus === "error"
-          ? "error"
-          : task.lastRunStatus,
-    };
-  });
-}
+import { fetchTasks, saveTaskMetadata, patchTaskMetadata, deleteTaskMetadata } from "@/features/tasks/lib/taskApi";
+import { generateTaskId, buildCronPayloadMessage, buildDelivery, enrichTasksWithCronData } from "@/features/tasks/lib/taskEnrichment";
 
 // ─── Hook ────────────────────────────────────────────────────────────────────
 
@@ -121,34 +24,43 @@ export const useAgentTasks = (
   client: GatewayClient,
   status: GatewayStatus,
   agentId: string | null,
-  cronJobs: CronJobSummary[]
 ) => {
   const [tasks, setTasks] = useState<StudioTask[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busyTaskId, setBusyTaskId] = useState<string | null>(null);
+  const [busyAction, setBusyAction] = useState<"toggle" | "run" | "delete" | "update" | null>(null);
 
   const loadingRef = useRef(false);
+  const tasksRef = useRef(tasks);
+  tasksRef.current = tasks;
+  const busyTaskIdRef = useRef(busyTaskId);
+  busyTaskIdRef.current = busyTaskId;
 
   const loadTasks = useCallback(async () => {
-    if (!agentId || status !== "connected" || loadingRef.current) return;
+    if (!agentId || status !== "connected" || loadingRef.current || busyTaskIdRef.current) return;
     loadingRef.current = true;
     setLoading(true);
     try {
-      const raw = await fetchTasks(agentId);
-      const enriched = enrichTasksWithCronData(raw, cronJobs);
+      // Single-pass: fetch DB metadata + gateway cron jobs in parallel, then enrich
+      const [raw, cronResult] = await Promise.all([
+        fetchTasks(agentId),
+        listCronJobs(client, { includeDisabled: true }),
+      ]);
+      const enriched = enrichTasksWithCronData(raw, cronResult.jobs, agentId);
       setTasks(enriched);
       setError(null);
     } catch (err) {
       if (!isGatewayDisconnectLikeError(err)) {
-        const message = err instanceof Error ? err.message : "Failed to load tasks.";
+        const message =
+          err instanceof Error ? err.message : "Failed to load tasks.";
         setError(message);
       }
     } finally {
       loadingRef.current = false;
       setLoading(false);
     }
-  }, [agentId, status, cronJobs]);
+  }, [agentId, status, client]);
 
   const createTask = useCallback(
     async (payload: CreateTaskPayload) => {
@@ -160,6 +72,9 @@ export const useAgentTasks = (
       const now = new Date().toISOString();
 
       try {
+        // Replace {taskId} placeholders in prompt (used by templates)
+        const resolvedPrompt = payload.prompt.replaceAll("{taskId}", taskId);
+
         // 1. Create cron job
         const cronSchedule = taskScheduleToCronSchedule(payload.schedule);
         const result = await addCronJob(client, {
@@ -168,8 +83,9 @@ export const useAgentTasks = (
           sessionTarget: "isolated",
           payload: {
             kind: "agentTurn",
-            message: buildCronPayloadMessage(taskId, payload.prompt),
+            message: buildCronPayloadMessage(taskId, resolvedPrompt),
             model: payload.model,
+            ...(payload.thinking ? { thinking: payload.thinking } : {}),
           },
           agentId: payload.agentId,
           enabled: true,
@@ -190,8 +106,9 @@ export const useAgentTasks = (
           description: payload.description,
           type: payload.type,
           schedule: payload.schedule,
-          prompt: payload.prompt,
+          prompt: resolvedPrompt,
           model: payload.model,
+          thinking: payload.thinking ?? null,
           deliveryChannel: payload.deliveryChannel ?? null,
           deliveryTarget: payload.deliveryTarget ?? null,
           enabled: true,
@@ -202,11 +119,26 @@ export const useAgentTasks = (
           runCount: 0,
         };
 
-        await saveTaskMetadata(task);
+        try {
+          await saveTaskMetadata(task);
+        } catch (dbErr) {
+          // Cron job was created but DB write failed — clean up orphaned cron job
+          console.warn("Task metadata save failed, removing orphaned cron job", result.jobId, dbErr);
+          try {
+            await removeCronJob(client, result.jobId);
+          } catch {
+            // If cleanup also fails, warn — orphan cron job exists
+            console.error("Failed to remove orphaned cron job:", result.jobId);
+            toast.error(`Task created in gateway but metadata save failed. Orphaned cron job: ${result.jobId}`);
+          }
+          throw dbErr;
+        }
         setTasks((prev) => [task, ...prev]);
+        toast.success(`Task "${payload.name}" created`);
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to create task.";
         setError(message);
+        toast.error(message);
         throw err;
       }
     },
@@ -215,66 +147,180 @@ export const useAgentTasks = (
 
   const toggleTask = useCallback(
     async (taskId: string, enabled: boolean) => {
-      if (!agentId || busyTaskId) return;
+      if (!agentId || busyTaskIdRef.current) return;
       setBusyTaskId(taskId);
+      setBusyAction("toggle");
       setError(null);
+
+      // Optimistic update — flip immediately, rollback on error
+      const previousTasks = tasksRef.current;
+      setTasks((prev) =>
+        prev.map((t) => (t.id === taskId ? { ...t, enabled } : t))
+      );
+
       try {
-        const task = tasks.find((t) => t.id === taskId);
+        const task = previousTasks.find((t) => t.id === taskId);
         if (!task) throw new Error("Task not found.");
 
+        // Only update cron — enabled state is cron-owned, enriched at read time
         await updateCronJob(client, task.cronJobId, { enabled });
-        const updated = await patchTaskMetadata(agentId, taskId, { enabled });
-        setTasks((prev) => prev.map((t) => (t.id === taskId ? updated : t)));
+        toast.success(enabled ? `Task "${task.name}" resumed` : `Task "${task.name}" paused`);
       } catch (err) {
+        // Rollback on failure
+        setTasks(previousTasks);
         const message = err instanceof Error ? err.message : "Failed to toggle task.";
         setError(message);
+        toast.error(message);
       } finally {
         setBusyTaskId(null);
+        setBusyAction(null);
       }
     },
-    [agentId, client, tasks, busyTaskId]
+    [agentId, client]
   );
 
   const runTask = useCallback(
     async (taskId: string) => {
-      if (!agentId || busyTaskId) return;
+      if (!agentId || busyTaskIdRef.current) return;
       setBusyTaskId(taskId);
+      setBusyAction("run");
       setError(null);
       try {
-        const task = tasks.find((t) => t.id === taskId);
+        const task = tasksRef.current.find((t) => t.id === taskId);
         if (!task) throw new Error("Task not found.");
 
         await runCronJobNow(client, task.cronJobId);
+        toast.success(`Task "${task.name}" triggered`);
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to run task.";
         setError(message);
+        toast.error(message);
       } finally {
         setBusyTaskId(null);
+        setBusyAction(null);
       }
     },
-    [agentId, client, tasks, busyTaskId]
+    [agentId, client]
+  );
+
+  const updateTaskSchedule = useCallback(
+    async (taskId: string, newSchedule: import("@/features/tasks/types").TaskSchedule) => {
+      if (!agentId || busyTaskIdRef.current) return;
+      setBusyTaskId(taskId);
+      setBusyAction("update");
+      setError(null);
+      try {
+        const task = tasksRef.current.find((t) => t.id === taskId);
+        if (!task) throw new Error("Task not found.");
+
+        // Update gateway cron only — schedule is cron-owned, enriched at read time
+        const cronSchedule = taskScheduleToCronSchedule(newSchedule);
+        await updateCronJob(client, task.cronJobId, { schedule: cronSchedule });
+
+        // Optimistically update local state (will be confirmed on next enrichment)
+        setTasks((prev) => prev.map((t) =>
+          t.id === taskId ? { ...t, schedule: newSchedule } : t
+        ));
+        toast.success(`Schedule updated for "${task.name}"`);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Failed to update schedule.";
+        setError(message);
+        toast.error(message);
+      } finally {
+        setBusyTaskId(null);
+        setBusyAction(null);
+      }
+    },
+    [agentId, client]
+  );
+
+  const updateTask = useCallback(
+    async (taskId: string, updates: UpdateTaskPayload) => {
+      if (!agentId || busyTaskIdRef.current) return;
+      setBusyTaskId(taskId);
+      setBusyAction("update");
+      setError(null);
+      try {
+        const task = tasksRef.current.find((t) => t.id === taskId);
+        if (!task) throw new Error("Task not found.");
+
+        // Build a single cron patch for cron-relevant fields (name, prompt, model)
+        // Schedule changes go through updateTaskSchedule(); enabled through toggleTask()
+        const cronPatch: Record<string, unknown> = {};
+
+        if (updates.prompt !== undefined || updates.model !== undefined || updates.thinking !== undefined) {
+          const newPrompt = updates.prompt ?? task.prompt;
+          const newModel = updates.model ?? task.model;
+          const newThinking = updates.thinking !== undefined ? updates.thinking : task.thinking;
+          cronPatch.payload = {
+            kind: "agentTurn",
+            message: buildCronPayloadMessage(task.id, newPrompt),
+            model: newModel,
+            ...(newThinking ? { thinking: newThinking } : {}),
+          };
+        }
+
+        // Delivery changes go to cron
+        if (updates.deliveryChannel !== undefined || updates.deliveryTarget !== undefined) {
+          const channel = updates.deliveryChannel !== undefined ? updates.deliveryChannel : task.deliveryChannel;
+          const to = updates.deliveryTarget !== undefined ? updates.deliveryTarget : task.deliveryTarget;
+          cronPatch.delivery = {
+            mode: channel ? "announce" : "none",
+            ...(channel ? { channel } : {}),
+            ...(to ? { to } : {}),
+          };
+        }
+
+        if (updates.name !== undefined) {
+          cronPatch.name = `[TASK] ${updates.name}`;
+        }
+
+        // Single RPC call instead of up to 3 sequential calls
+        if (Object.keys(cronPatch).length > 0) {
+          await updateCronJob(client, task.cronJobId, cronPatch);
+        }
+
+        // Update Studio metadata
+        const updated = await patchTaskMetadata(agentId, taskId, updates);
+        setTasks((prev) => prev.map((t) => (t.id === taskId ? updated : t)));
+        toast.success(`Task "${updated.name}" updated`);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Failed to update task.";
+        setError(message);
+        toast.error(message);
+      } finally {
+        setBusyTaskId(null);
+        setBusyAction(null);
+      }
+    },
+    [agentId, client]
   );
 
   const deleteTask = useCallback(
     async (taskId: string) => {
-      if (!agentId || busyTaskId) return;
+      if (!agentId || busyTaskIdRef.current) return;
       setBusyTaskId(taskId);
+      setBusyAction("delete");
       setError(null);
       try {
-        const task = tasks.find((t) => t.id === taskId);
+        const task = tasksRef.current.find((t) => t.id === taskId);
         if (!task) throw new Error("Task not found.");
 
         await removeCronJob(client, task.cronJobId);
         await deleteTaskMetadata(agentId, taskId);
+        const taskName = task.name;
         setTasks((prev) => prev.filter((t) => t.id !== taskId));
+        toast.success(`Task "${taskName}" deleted`);
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to delete task.";
         setError(message);
+        toast.error(message);
       } finally {
         setBusyTaskId(null);
+        setBusyAction(null);
       }
     },
-    [agentId, client, tasks, busyTaskId]
+    [agentId, client]
   );
 
   return {
@@ -282,9 +328,12 @@ export const useAgentTasks = (
     loading,
     error,
     busyTaskId,
+    busyAction,
     loadTasks,
     createTask,
     toggleTask,
+    updateTask,
+    updateTaskSchedule,
     runTask,
     deleteTask,
   };

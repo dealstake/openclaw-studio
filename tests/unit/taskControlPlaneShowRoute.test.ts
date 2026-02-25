@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { spawnSync } from "node:child_process";
+import { execFile } from "node:child_process";
 
 import { GET } from "@/app/api/task-control-plane/show/route";
 
@@ -11,11 +11,12 @@ vi.mock("node:child_process", async () => {
   return {
     default: actual,
     ...actual,
+    execFile: vi.fn(),
     spawnSync: vi.fn(),
   };
 });
 
-const mockedSpawnSync = vi.mocked(spawnSync);
+const mockedExecFile = vi.mocked(execFile);
 
 describe("task control plane show route", () => {
   beforeEach(() => {
@@ -24,28 +25,28 @@ describe("task control plane show route", () => {
     delete process.env.OPENCLAW_TASK_CONTROL_PLANE_GATEWAY_BEADS_DIR;
     delete process.env.OPENCLAW_TASK_CONTROL_PLANE_SSH_TARGET;
     delete process.env.OPENCLAW_TASK_CONTROL_PLANE_SSH_USER;
-    mockedSpawnSync.mockReset();
+    mockedExecFile.mockReset();
   });
 
   it("returns bead details on success", async () => {
-    mockedSpawnSync.mockReturnValue({
-      status: 0,
-      stdout: JSON.stringify([{ id: "bd-1", title: "Thing" }]),
-      stderr: "",
-      error: undefined,
-    } as never);
+    mockedExecFile.mockImplementation(
+      ((_cmd: unknown, _args: unknown, _opts: unknown, cb: (...args: unknown[]) => void) => {
+        cb(null, JSON.stringify([{ id: "bd-1", title: "Thing" }]), "");
+      }) as never,
+    );
 
     const response = await GET(
-      new Request("http://example.test/api/task-control-plane/show?id=bd-1")
+      new Request("http://example.test/api/task-control-plane/show?id=bd-1"),
     );
     const body = (await response.json()) as { bead: unknown };
 
     expect(response.status).toBe(200);
     expect(body.bead).toMatchObject({ id: "bd-1", title: "Thing" });
-    expect(mockedSpawnSync).toHaveBeenCalledWith(
+    expect(mockedExecFile).toHaveBeenCalledWith(
       "br",
       ["show", "bd-1", "--json"],
-      expect.objectContaining({ encoding: "utf8" })
+      expect.objectContaining({ encoding: "utf8" }),
+      expect.any(Function),
     );
   });
 
@@ -57,4 +58,3 @@ describe("task control plane show route", () => {
     expect(body.error).toContain("Missing required query parameter");
   });
 });
-
