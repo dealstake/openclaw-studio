@@ -378,7 +378,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
           <div className="shrink-0">
             {running ? (
               <button
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-destructive text-destructive-foreground shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-destructive text-destructive-foreground shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
                 type="button"
                 aria-label="Stop agent"
                 onClick={onStop}
@@ -388,7 +388,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
               </button>
             ) : (
               <button
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
                 type="button"
                 aria-label="Send message"
                 onClick={handleClickSend}
