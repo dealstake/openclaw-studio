@@ -10,13 +10,10 @@ import {
   Trash2,
 } from "lucide-react";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
-import { isGatewayDisconnectLikeError } from "@/lib/gateway/GatewayClient";
 import {
   formatCronPayload,
   formatCronSchedule,
   type CronJobSummary,
-  type CronRunEntry,
-  fetchCronRuns,
 } from "@/lib/cron/types";
 import { formatRelativeTime, formatDurationCompact } from "@/lib/text/time";
 import { PanelIconButton } from "@/components/PanelIconButton";
@@ -27,6 +24,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useCronRuns } from "@/features/cron/hooks/useCronRuns";
 
 const STATUS_PILL_CLASS: Record<string, string> = {
   ok: "border-emerald-500/30 bg-emerald-500/15 text-emerald-400",
@@ -76,41 +74,17 @@ export const CronJobListItem = memo(function CronJobListItem({
   animationDelay,
 }: CronJobListItemProps) {
   const [expanded, setExpanded] = useState(false);
-  const [runs, setRuns] = useState<CronRunEntry[]>([]);
-  const [runsLoading, setRunsLoading] = useState(false);
-  const [runsError, setRunsError] = useState<string | null>(null);
-
-  const loadRuns = useCallback(
-    async (jobId: string) => {
-      setRunsLoading(true);
-      setRunsError(null);
-      try {
-        const entries = await fetchCronRuns(client, jobId, 10);
-        setRuns(entries);
-      } catch (err) {
-        if (!isGatewayDisconnectLikeError(err)) {
-          const message =
-            err instanceof Error ? err.message : "Failed to load run history.";
-          setRunsError(message);
-        }
-        setRuns([]);
-      } finally {
-        setRunsLoading(false);
-      }
-    },
-    [client],
-  );
+  const { runs, loading: runsLoading, error: runsError, load: loadRuns, reset: resetRuns } = useCronRuns(client, job.id);
 
   const toggleExpanded = useCallback(() => {
     if (expanded) {
       setExpanded(false);
-      setRuns([]);
-      setRunsError(null);
+      resetRuns();
     } else {
       setExpanded(true);
-      void loadRuns(job.id);
+      void loadRuns();
     }
-  }, [expanded, loadRuns, job.id]);
+  }, [expanded, loadRuns, resetRuns]);
 
   const busy = runBusy || deleteBusy || toggleBusy;
   const lastStatusClass =
@@ -323,7 +297,7 @@ export const CronJobListItem = memo(function CronJobListItem({
             <ErrorBanner
               className="mt-2"
               message={runsError}
-              onRetry={() => void loadRuns(job.id)}
+              onRetry={() => void loadRuns()}
             />
           ) : null}
           {!runsLoading && !runsError && runs.length === 0 ? (

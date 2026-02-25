@@ -24,13 +24,20 @@ export const useCronAnalytics = (
     try {
       const enabledJobs = cronJobs.filter((j) => j.enabled);
 
-      // Fetch runs for all enabled jobs in parallel
-      const runsResults = await Promise.all(
-        enabledJobs.map(async (job) => ({
-          job,
-          runs: await fetchCronRuns(client, job.id, 50),
-        }))
-      );
+      // Fetch runs for all enabled jobs with concurrency limit of 3
+      // to avoid overwhelming the gateway with simultaneous RPC calls
+      const runsResults: { job: CronJobSummary; runs: Awaited<ReturnType<typeof fetchCronRuns>> }[] = [];
+      const CONCURRENCY = 3;
+      for (let i = 0; i < enabledJobs.length; i += CONCURRENCY) {
+        const batch = enabledJobs.slice(i, i + CONCURRENCY);
+        const batchResults = await Promise.all(
+          batch.map(async (job) => ({
+            job,
+            runs: await fetchCronRuns(client, job.id, 50),
+          }))
+        );
+        runsResults.push(...batchResults);
+      }
 
       // Fetch sessions for token join — filter by kind client-side since the
       // sessions.list RPC does not support a `kinds` parameter.
