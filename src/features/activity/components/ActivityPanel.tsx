@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useMemo, useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import { Activity, Radio, History } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { sectionLabelClass } from "@/components/SectionLabel";
@@ -47,10 +47,35 @@ export const ActivityPanel = memo(function ActivityPanel() {
     [timeline],
   );
 
+  const handleTabKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      const tabs = Array.from(
+        e.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]'),
+      );
+      const activeIndex = tabs.findIndex(
+        (tab) => tab.getAttribute("aria-selected") === "true",
+      );
+
+      let nextIndex = -1;
+      if (e.key === "ArrowRight") {
+        nextIndex = (activeIndex + 1) % tabs.length;
+      } else if (e.key === "ArrowLeft") {
+        nextIndex = (activeIndex - 1 + tabs.length) % tabs.length;
+      }
+
+      if (nextIndex !== -1) {
+        e.preventDefault();
+        tabs[nextIndex].focus();
+        setActiveTab(tabs[nextIndex].id.includes("live") ? "live" : "history");
+      }
+    },
+    [setActiveTab],
+  );
+
   return (
     <div className="flex h-full w-full flex-col overflow-hidden">
       {/* Tab bar */}
-      <div role="tablist" aria-label="Activity view" className="flex items-center gap-0 border-b border-border/20 px-3 pt-1.5">
+      <div role="tablist" aria-label="Activity view" onKeyDown={handleTabKeyDown} className="flex items-center gap-0 border-b border-border/20 px-3 pt-1.5">
         <button
           type="button"
           role="tab"

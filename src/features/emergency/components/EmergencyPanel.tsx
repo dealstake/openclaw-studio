@@ -95,7 +95,7 @@ export const EmergencyPanel = memo(function EmergencyPanel({
     touchDeltaX.current = 0;
   }, [onClose]);
 
-  // Focus panel on open + handle Escape
+  // Focus panel on open + handle Escape + focus trap
   useEffect(() => {
     if (!open) return;
     const el = panelRef.current;
@@ -105,6 +105,28 @@ export const EmergencyPanel = memo(function EmergencyPanel({
       if (e.key === "Escape") {
         e.stopPropagation();
         onClose();
+      }
+
+      // Focus trap — keep Tab cycling within the panel
+      if (e.key === "Tab" && el) {
+        const focusableElements = el.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        );
+        if (focusableElements.length === 0) return;
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === firstElement) {
+            lastElement.focus();
+            e.preventDefault();
+          }
+        } else {
+          if (document.activeElement === lastElement) {
+            firstElement.focus();
+            e.preventDefault();
+          }
+        }
       }
     }
     window.addEventListener("keydown", onKeyDown);
@@ -211,6 +233,8 @@ export const EmergencyPanel = memo(function EmergencyPanel({
         {/* Last result */}
         {lastResult && (
           <div
+            role="status"
+            aria-live="polite"
             className={`border-t border-navy-800 px-4 py-3 text-sm ${
               lastResult.status === "success" ? "text-green-400" : "text-red-400"
             }`}

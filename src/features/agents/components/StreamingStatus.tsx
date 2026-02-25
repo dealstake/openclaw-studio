@@ -40,10 +40,8 @@ function formatElapsed(startMs: number): string {
 
 const ElapsedBadge = memo(function ElapsedBadge({
   startMs,
-  phaseLabel,
 }: {
   startMs: number;
-  phaseLabel: string;
 }) {
   const ref = useRef<HTMLSpanElement>(null);
 
@@ -52,21 +50,13 @@ const ElapsedBadge = memo(function ElapsedBadge({
 
     function tick() {
       if (!ref.current) return;
-      const timeStr = formatElapsed(startMs);
-      ref.current.textContent = timeStr;
-      // Update parent aria-label so screen readers get elapsed time
-      ref.current
-        .closest('[role="status"]')
-        ?.setAttribute(
-          "aria-label",
-          `Agent is ${phaseLabel.toLowerCase()}, elapsed time ${timeStr}`
-        );
+      ref.current.textContent = formatElapsed(startMs);
     }
 
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
-  }, [startMs, phaseLabel]);
+  }, [startMs]);
 
   // Compute initial time inline to avoid "flash of 0s"
   return <span ref={ref} className="tabular-nums">{formatElapsed(startMs)}</span>;
@@ -108,21 +98,23 @@ export const StreamingStatus = memo(function StreamingStatus({
       className="flex items-center gap-1.5 text-[11px] text-muted-foreground/90 animate-in fade-in slide-in-from-right-2 duration-200"
       role="status"
       aria-live="polite"
-      aria-label={`Agent is ${label.toLowerCase()}`}
     >
+      {/* Screen-reader-only context for the live region */}
+      <span className="sr-only">Agent is {label.toLowerCase()}, elapsed time:</span>
       <Icon
         size={12}
         strokeWidth={1.75}
+        aria-hidden="true"
         className={
           isSpinner
             ? "shrink-0 animate-spin text-muted-foreground"
             : "shrink-0 animate-pulse text-brand-gold"
         }
       />
-      <span className="hidden sm:inline">{label}</span>
-      <span className="text-muted-foreground/60">·</span>
+      <span className="hidden sm:inline" aria-hidden="true">{label}</span>
+      <span className="text-muted-foreground/60" aria-hidden="true">·</span>
       <span className="font-mono text-[10px] text-muted-foreground/80">
-        <ElapsedBadge startMs={effectiveStart} phaseLabel={label} />
+        <ElapsedBadge startMs={effectiveStart} />
       </span>
     </div>
   );
