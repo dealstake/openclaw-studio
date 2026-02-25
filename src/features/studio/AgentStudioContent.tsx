@@ -24,20 +24,13 @@ import {
   type FocusFilter,
   useAgentStore,
 } from "@/features/agents/state/store";
-import {
-  buildSummarySnapshotPatches,
-  type SummaryPreviewSnapshot,
-  type SummaryStatusSnapshot,
-} from "@/features/agents/state/runtimeEventBridge";
+// buildSummarySnapshotPatches, SummaryPreviewSnapshot, SummaryStatusSnapshot moved to useStudioDataSync
 import { createGatewayRuntimeEventHandler } from "@/features/agents/state/gatewayRuntimeEventHandler";
 // settingsCoordinator accessed via useGateway() context
-import { resolveFocusedPreference } from "@/lib/studio/settings";
+// resolveFocusedPreference moved to useStudioDataSync
 // applySessionSettingMutation moved to useChatCallbacks
-import {
-  isSameSessionKey,
-  isGatewayDisconnectLikeError,
-} from "@/lib/gateway/GatewayClient";
-import type { SessionsListResult } from "@/lib/gateway/types";
+// isSameSessionKey, isGatewayDisconnectLikeError moved to useStudioDataSync
+// SessionsListResult moved to useStudioDataSync
 import { ArtifactsPanel } from "@/features/artifacts/components/ArtifactsPanel";
 import { TasksPanel } from "@/features/tasks/components/TasksPanel";
 import { ProjectsPanel } from "@/features/projects/components/ProjectsPanel";
@@ -74,7 +67,7 @@ import { useGatewayStatus } from "@/lib/gateway/useGatewayStatus";
 const ConfigMutationModals = lazy(() => import("@/features/agents/components/ConfigMutationModals").then(m => ({ default: m.ConfigMutationModals })));
 import { useConfigMutationQueue } from "@/features/agents/hooks/useConfigMutationQueue";
 import { useDraftBatching } from "@/features/agents/hooks/useDraftBatching";
-import { useVisibilityRefresh } from "@/hooks/useVisibilityRefresh";
+// useVisibilityRefresh moved to useStudioDataSync
 import { useLivePatchBatching } from "@/features/agents/hooks/useLivePatchBatching";
 import { useSpecialUpdates } from "@/features/agents/hooks/useSpecialUpdates";
 import { useAgentHistorySync } from "@/features/agents/hooks/useAgentHistorySync";
@@ -91,6 +84,7 @@ import { isWide } from "@/hooks/useBreakpoint";
 import { useAppLayout } from "@/hooks/useAppLayout";
 import { useWorkspaceHealth } from "@/features/workspace/hooks/useWorkspaceHealth";
 import { useLoadAgents } from "@/features/studio/useLoadAgents";
+import { useStudioDataSync } from "@/features/studio/useStudioDataSync";
 
 export const AgentStudioPage = () => {
   const {
@@ -146,13 +140,11 @@ export const AgentStudioPage = () => {
   const loadAllSessionsRef = useRef<() => Promise<any>>(() => Promise.resolve());
   const loadChannelsStatusRef = useRef<() => Promise<void>>(() => Promise.resolve());
   // loadCumulativeUsageRef removed — sessions.usage aggregate eliminated (P0 perf fix)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const loadSummarySnapshotRef = useRef<() => Promise<any>>(() => Promise.resolve());
+  // loadSummarySnapshotRef + refreshContextWindowRef provided by useStudioDataSync
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const loadAgentHistoryRef = useRef<(agentId: string) => Promise<any>>(() => Promise.resolve());
   const refreshHeartbeatLatestUpdateRef = useRef<() => void>(() => {});
   const loadSessionUsageRef = useRef<(key: string) => Promise<void>>(() => Promise.resolve());
-  const refreshContextWindowRef = useRef<(agentId: string, sessionKey: string) => Promise<void>>(() => Promise.resolve());
   const {
     gatewayModels,
     gatewayModelsError,
@@ -176,10 +168,6 @@ export const AgentStudioPage = () => {
   // Layout keyboard shortcuts, persistence, and swipe handled by useAppLayout
   const closeTaskWizard = useCallback(() => setShowTaskWizard(false), []);
 
-  /** Tracks previous session key per agent to detect session resets */
-  const prevSessionKeyByAgentRef = useRef<Map<string, string>>(new Map());
-  /** Agent IDs that just had a session reset (key changed) — auto-clears after 60s */
-  const [sessionContinuedAgents, setSessionContinuedAgents] = useState<Set<string>>(new Set());
   /** Context window utilization per agent — totalTokens = last turn's prompt size, contextTokens = model limit */
   const [agentContextWindow, setAgentContextWindow] = useState<Map<string, { totalTokens: number; contextTokens: number }>>(new Map());
   const runtimeEventHandlerRef = useRef<ReturnType<typeof createGatewayRuntimeEventHandler> | null>(
@@ -378,111 +366,8 @@ export const AgentStudioPage = () => {
     [flushPendingDraft, focusedAgent]
   );
 
-  // ── Load additional data on connect ─────────────────────────────
-  useEffect(() => {
-    if (status !== "connected") {
-      resetChannelsStatus();
-      resetExecApprovals();
-      resetPresence();
-      resetSessionUsage();
-      return;
-    }
-    void loadGatewayStatus();
-    void parsePresenceFromStatus();
-    // Note: loadAllSessions, loadAllCronJobs, loadChannelsStatus are called
-    // from the agent-load effect below (with mutation guards) to avoid duplicates.
-  }, [loadGatewayStatus, parsePresenceFromStatus, resetChannelsStatus, resetExecApprovals, resetPresence, resetSessionUsage, status]);
-
-  // ── Refresh context window utilization from sessions.list ──────────────
-  const refreshContextWindow = useCallback(async (agentId: string, sessionKey: string) => {
-    if (status !== "connected") return;
-    try {
-      const result = await client.call<SessionsListResult>("sessions.list", {
-        agentId,
-        includeGlobal: false,
-        includeUnknown: false,
-        search: sessionKey,
-        limit: 4,
-      });
-      const entries = Array.isArray(result.sessions) ? result.sessions : [];
-      const match = entries.find((e) => isSameSessionKey(e.key ?? "", sessionKey));
-      if (match && typeof match.totalTokens === "number" && match.totalTokens > 0) {
-        const ct = typeof match.contextTokens === "number" ? match.contextTokens : 0;
-        // Detect stale token counts: when totalTokens == contextTokens (maxed out)
-        // but actual usage (inputTokens + outputTokens) is much smaller, the session
-        // was reset but the gateway didn't clear the counters. Skip stale data.
-        const actualUsage = (typeof match.inputTokens === "number" ? match.inputTokens : 0)
-          + (typeof match.outputTokens === "number" ? match.outputTokens : 0);
-        const looksStale = ct > 0 && match.totalTokens >= ct && actualUsage < ct * 0.5;
-        if (!looksStale) {
-          setAgentContextWindow((prev) => {
-            const next = new Map(prev);
-            next.set(agentId, {
-              totalTokens: match.totalTokens!,
-              contextTokens: ct,
-            });
-            return next;
-          });
-        }
-      }
-    } catch {
-      // Silently ignore — progress bar will use fallback
-    }
-  }, [client, status]);
-
-  // Keep refs current for session usage and context window
-  loadSessionUsageRef.current = loadSessionUsage;
-  refreshContextWindowRef.current = refreshContextWindow;
-
-  // ── Load session usage for the focused agent (primitive deps to avoid cascade) ──
-  const focusedSessionKey = focusedAgent?.sessionKey ?? null;
-  const focusedAgentStatus = focusedAgent?.status ?? null;
-
-  useEffect(() => {
-    if (!focusedSessionKey || !focusedAgentId) {
-      resetSessionUsage();
-      return;
-    }
-    void loadSessionUsageRef.current(focusedSessionKey);
-    void refreshContextWindowRef.current(focusedAgentId, focusedSessionKey);
-  }, [focusedAgentId, focusedSessionKey, resetSessionUsage]);
-
-  // Detect session key changes (session resets) to show continuation banner
-  useEffect(() => {
-    if (!focusedAgentId || !focusedSessionKey) return;
-    const prevKey = prevSessionKeyByAgentRef.current.get(focusedAgentId);
-    prevSessionKeyByAgentRef.current.set(focusedAgentId, focusedSessionKey);
-    // Only trigger if we had a previous key and it changed (not first load)
-    if (prevKey && prevKey !== focusedSessionKey) {
-      setSessionContinuedAgents((prev) => {
-        const next = new Set(prev);
-        next.add(focusedAgentId);
-        return next;
-      });
-      // Auto-dismiss after 60s
-      const timer = window.setTimeout(() => {
-        setSessionContinuedAgents((prev) => {
-          const next = new Set(prev);
-          next.delete(focusedAgentId);
-          return next;
-        });
-      }, 60_000);
-      return () => window.clearTimeout(timer);
-    }
-  }, [focusedAgentId, focusedSessionKey]);
-
-  // Reload usage when turn completes (running → idle). No polling — event-driven only.
-  const prevStatusRef = useRef<string | undefined>(undefined);
-  useEffect(() => {
-    if (!focusedSessionKey || !focusedAgentId) return;
-    const prev = prevStatusRef.current;
-    prevStatusRef.current = focusedAgentStatus ?? undefined;
-    if (prev === "running" && focusedAgentStatus === "idle") {
-      void loadSessionUsageRef.current(focusedSessionKey);
-      void refreshContextWindowRef.current(focusedAgentId, focusedSessionKey);
-      void loadAllSessionsRef.current(); // refresh aggregate tokens from list
-    }
-  }, [focusedAgentId, focusedSessionKey, focusedAgentStatus]);
+  // Connect/disconnect resets, context window refresh, session usage loading,
+  // session key change detection, and turn-complete reloads handled by useStudioDataSync
 
   // Aggregate usage: use the focused session's usage as the primary data source
   // (per-session usage loads lazily in SessionsPanel cards)
@@ -497,27 +382,7 @@ export const AgentStudioPage = () => {
   }, [sessionUsage]);
   const aggregateUsageLoading = sessionUsageLoading;
 
-  useEffect(() => {
-    const selector = 'link[data-agent-favicon="true"]';
-    const existing = document.querySelector(selector) as HTMLLinkElement | null;
-    if (!faviconHref) {
-      existing?.remove();
-      return;
-    }
-    if (existing) {
-      if (existing.href !== faviconHref) {
-        existing.href = faviconHref;
-      }
-      return;
-    }
-    const link = document.createElement("link");
-    link.rel = "icon";
-    link.type = "image/svg+xml";
-    link.href = faviconHref;
-    link.setAttribute("data-agent-favicon", "true");
-    document.head.appendChild(link);
-  }, [faviconHref]);
-
+  // Favicon effect handled by useStudioDataSync
   // resolveAgentName + resolveAgentAvatarUrl extracted to useLoadAgents
 
   const { loadAgents, agentsLoadedOnce, setAgentsLoadedOnce } = useLoadAgents({
@@ -529,6 +394,55 @@ export const AgentStudioPage = () => {
     setGatewayConfigSnapshot,
     resolveDefaultModelForAgent,
     setAgentContextWindow,
+  });
+
+  const {
+    refreshContextWindow,
+    refreshContextWindowRef,
+    loadSummarySnapshot,
+    loadSummarySnapshotRef,
+    sessionContinuedAgents,
+    setSessionContinuedAgents,
+  } = useStudioDataSync({
+    client,
+    status,
+    dispatch,
+    stateRef,
+    agents,
+    selectedAgentId: state.selectedAgentId,
+    focusedAgentId,
+    focusedSessionKey: focusedAgent?.sessionKey ?? null,
+    focusedAgentStatus: focusedAgent?.status ?? null,
+    hasRunningAgents,
+    selectedBrainAgentId,
+    loadAllSessionsRef,
+    loadSessionUsageRef,
+    loadGatewayStatus,
+    parsePresenceFromStatus,
+    resetChannelsStatus,
+    resetExecApprovals,
+    resetPresence,
+    resetSessionUsage,
+    loadSessionUsage,
+    setAgentContextWindow,
+    loadAgents,
+    agentsLoadedOnce,
+    setAgentsLoadedOnce,
+    setLoading,
+    settingsCoordinator,
+    settingsAgentId,
+    setSettingsAgentId,
+    gatewayUrl,
+    focusFilter,
+    setFocusFilter,
+    focusFilterTouchedRef,
+    focusedPreferencesLoaded,
+    setFocusedPreferencesLoaded,
+    expandedTab,
+    managementView,
+    contextTab,
+    contextMode,
+    setContextTab,
   });
 
   // Break circular dependency: lifecycle hooks need enqueueConfigMutation,
@@ -631,70 +545,7 @@ export const AgentStudioPage = () => {
   // dispatched state, not the state from the previous render cycle.
   stateRef.current = state;
 
-  useEffect(() => {
-    if (status === "connected") return;
-    setAgentsLoadedOnce(false);
-  }, [gatewayUrl, status, setAgentsLoadedOnce]);
-
-  useEffect(() => {
-    let cancelled = false;
-    const key = gatewayUrl.trim();
-    if (!key) {
-      setFocusedPreferencesLoaded(true);
-      return;
-    }
-    setFocusedPreferencesLoaded(false);
-    focusFilterTouchedRef.current = false;
-    const loadFocusedPreferences = async () => {
-      try {
-        const settings = await settingsCoordinator.loadSettings();
-        if (cancelled || !settings) {
-          return;
-        }
-        if (focusFilterTouchedRef.current) {
-          return;
-        }
-        const preference = resolveFocusedPreference(settings, key);
-        if (preference) {
-          setFocusFilter(preference.filter);
-          return;
-        }
-        setFocusFilter("all");
-      } catch (err) {
-        console.error("Failed to load focused preference.", err);
-      } finally {
-        if (!cancelled) {
-          setFocusedPreferencesLoaded(true);
-        }
-      }
-    };
-    void loadFocusedPreferences();
-    return () => {
-      cancelled = true;
-    };
-  }, [gatewayUrl, settingsCoordinator]);
-
-  useEffect(() => {
-    return () => {
-      void settingsCoordinator.flushPending();
-    };
-  }, [settingsCoordinator]);
-
-  useEffect(() => {
-    const key = gatewayUrl.trim();
-    if (!focusedPreferencesLoaded || !key) return;
-    settingsCoordinator.schedulePatch(
-      {
-        focused: {
-          [key]: {
-            mode: "focused",
-            filter: focusFilter,
-          },
-        },
-      },
-      300
-    );
-  }, [focusFilter, focusedPreferencesLoaded, gatewayUrl, settingsCoordinator]);
+  // agentsLoadedOnce reset, focus preferences, settings coordinator handled by useStudioDataSync
 
   useEffect(() => {
     if (status !== "connected" || !focusedPreferencesLoaded) return;
@@ -722,93 +573,11 @@ export const AgentStudioPage = () => {
     status,
   ]);
 
-  useEffect(() => {
-    if (status === "disconnected") {
-      setLoading(false);
-    }
-  }, [setLoading, status]);
-
-  // When the selected agent changes, update settings to follow if settings is active
-  useEffect(() => {
-    if (!state.selectedAgentId) return;
-    if ((expandedTab === "settings" || managementView === "settings") && state.selectedAgentId !== settingsAgentId) {
-      setSettingsAgentId(state.selectedAgentId);
-    } else if (settingsAgentId && state.selectedAgentId !== settingsAgentId) {
-      setSettingsAgentId(null);
-    }
-  }, [expandedTab, managementView, settingsAgentId, setSettingsAgentId, state.selectedAgentId]);
-
+  // Disconnect loading reset, settings agent follow, brain tab auto-close handled by useStudioDataSync
   // Settings agent reset + cron/heartbeat loading handled by useSettingsPanel hook
-
-  // Auto-close brain tab in context panel if no agents
-  useEffect(() => {
-    if (contextTab !== "brain" || contextMode !== "agent") return;
-    if (selectedBrainAgentId) return;
-    setContextTab("tasks");
-  }, [contextMode, contextTab, selectedBrainAgentId, setContextTab]);
-
   // Model loading is handled by useGatewayModels hook
 
-  const loadSummarySnapshot = useCallback(async () => {
-    const activeAgents = stateRef.current.agents.filter((agent) => agent.sessionCreated);
-    const sessionKeys = Array.from(
-      new Set(
-        activeAgents
-          .map((agent) => agent.sessionKey)
-          .filter((key): key is string => typeof key === "string" && key.trim().length > 0)
-      )
-    ).slice(0, 64);
-    if (sessionKeys.length === 0) return;
-    try {
-      const [statusSummary, previewResult] = await Promise.all([
-        client.call<SummaryStatusSnapshot>("status", {}),
-        client.call<SummaryPreviewSnapshot>("sessions.preview", {
-          keys: sessionKeys,
-          limit: 8,
-          maxChars: 240,
-        }),
-      ]);
-      for (const entry of buildSummarySnapshotPatches({
-        agents: activeAgents,
-        statusSummary,
-        previewResult,
-      })) {
-        dispatch({
-          type: "updateAgent",
-          agentId: entry.agentId,
-          patch: entry.patch,
-        });
-      }
-    } catch (err) {
-      if (!isGatewayDisconnectLikeError(err)) {
-        console.error("Failed to load summary snapshot.", err);
-      }
-    }
-  }, [client, dispatch]);
-
-  loadSummarySnapshotRef.current = loadSummarySnapshot;
-
-  useEffect(() => {
-    if (status !== "connected") return;
-    void loadSummarySnapshotRef.current();
-  }, [status]);
-
-  // Poll summary every 30s when any agent is running.
-  // Pauses when tab is hidden via useVisibilityRefresh.
-  useVisibilityRefresh(
-    () => void loadSummarySnapshotRef.current(),
-    {
-      pollMs: 30_000,
-      enabled: status === "connected" && hasRunningAgents,
-      debounceMs: 2_000,
-    },
-  );
-
-  useEffect(() => {
-    if (!state.selectedAgentId) return;
-    if (agents.some((agent) => agent.agentId === state.selectedAgentId)) return;
-    dispatch({ type: "selectAgent", agentId: null });
-  }, [agents, dispatch, state.selectedAgentId]);
+  // loadSummarySnapshot, summary polling, and agent selection sync handled by useStudioDataSync
 
   useEffect(() => {
     const nextId = focusedAgent?.agentId ?? null;
