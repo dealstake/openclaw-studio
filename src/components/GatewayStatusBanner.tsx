@@ -46,7 +46,7 @@ export const GatewayStatusBanner = memo(function GatewayStatusBanner({
       {isConnecting ? (
         <>
           <Loader2 className="h-4 w-4 animate-spin text-amber-500" aria-hidden />
-          <span className="text-amber-600 dark:text-amber-400">
+          <span className="text-amber-700 dark:text-amber-400">
             Connecting to gateway…
           </span>
         </>
@@ -60,7 +60,7 @@ export const GatewayStatusBanner = memo(function GatewayStatusBanner({
             <button
               type="button"
               onClick={onReconnect}
-              className="ml-2 rounded-md border border-input bg-background px-3 py-1 text-xs font-semibold transition hover:bg-muted"
+              className="ml-2 rounded-md border border-input bg-background px-4 py-2 text-sm font-semibold transition hover:bg-muted"
             >
               Reconnect
             </button>
