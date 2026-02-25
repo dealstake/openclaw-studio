@@ -19,11 +19,11 @@ function makeMockClient(): GatewayClient {
 
 describe("useOfflineQueue", () => {
   let client: GatewayClient;
-  let sendFn: ReturnType<typeof vi.fn>;
+  let sendFn: ReturnType<typeof vi.fn<(agentId: string, sessionKey: string, message: string, attachments?: { mimeType: string; fileName: string; content: string }[]) => Promise<void>>>;
 
   beforeEach(() => {
     client = makeMockClient();
-    sendFn = vi.fn().mockResolvedValue(undefined);
+    sendFn = vi.fn<(agentId: string, sessionKey: string, message: string, attachments?: { mimeType: string; fileName: string; content: string }[]) => Promise<void>>().mockResolvedValue(undefined);
     vi.useFakeTimers();
   });
 
