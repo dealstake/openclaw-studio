@@ -45,11 +45,11 @@ export const PanelSearchInput = React.memo(function PanelSearchInput({
       {value && (
         <button
           type="button"
-          className="absolute right-0 top-1/2 -translate-y-1/2 flex h-7 w-7 items-center justify-center text-muted-foreground/60 transition-colors hover:text-foreground"
+          className="absolute right-0.5 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground/60 transition-colors hover:text-foreground"
           onClick={handleClear}
           aria-label="Clear search"
         >
-          <X className="h-3 w-3" />
+          <X className="h-4 w-4" />
         </button>
       )}
     </div>

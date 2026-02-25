@@ -333,7 +333,7 @@ export const HeaderBar = memo(function HeaderBar({
               <button
                 type="button"
                 onClick={onContextClose}
-                className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
                 aria-label="Close panel"
                 title="Close panel (⌘\)"
               >
