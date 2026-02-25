@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 
 import { readGatewayAgentFile, writeGatewayAgentFile } from "@/lib/gateway/agentFiles";
 import {
@@ -122,8 +123,16 @@ export const useAgentFilesEditor = (params: {
     async (nextTab: AgentFileName) => {
       if (nextTab === agentFileTab) return;
       if (agentFilesDirty && !agentFilesSaving) {
-        const saved = await saveAgentFiles();
-        if (!saved) return;
+        try {
+          const saved = await saveAgentFiles();
+          if (!saved) {
+            toast.error("Save failed — fix errors before switching files.");
+            return;
+          }
+        } catch {
+          toast.error("Save failed — fix errors before switching files.");
+          return;
+        }
       }
       setAgentFileTab(nextTab);
     },
