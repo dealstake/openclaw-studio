@@ -52,7 +52,7 @@ export const ManagementDrawer = React.memo(function ManagementDrawer({
               {title}
             </Dialog.Title>
             <Dialog.Close asChild>
-              <PanelIconButton aria-label="Close panel">
+              <PanelIconButton aria-label="Close panel" className="min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0">
                 <X className="h-3.5 w-3.5" />
               </PanelIconButton>
             </Dialog.Close>
