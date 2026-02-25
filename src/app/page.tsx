@@ -102,6 +102,7 @@ import { useSettingsPanel } from "@/features/agents/hooks/useSettingsPanel";
 import { useChatCallbacks } from "@/features/agents/hooks/useChatCallbacks";
 import { isWide } from "@/hooks/useBreakpoint";
 import { useAppLayout } from "@/hooks/useAppLayout";
+import { useWorkspaceHealth } from "@/features/workspace/hooks/useWorkspaceHealth";
 
 const AgentStudioPage = () => {
   const [settingsCoordinator] = useState(() => createStudioSettingsCoordinator());
@@ -223,6 +224,8 @@ const AgentStudioPage = () => {
     gatewayVersion, gatewayUptime,
     loadGatewayStatus, parsePresenceFromStatus, resetPresence,
   } = useGatewayStatus(client, status);
+
+  const { health: sidecarHealth, error: sidecarError } = useWorkspaceHealth();
 
   const {
     sessionUsage, sessionUsageLoading,
@@ -1470,6 +1473,8 @@ const AgentStudioPage = () => {
             onCreateAgent={() => setShowAgentWizard(true)}
             gatewayVersion={gatewayVersion}
             gatewayUptime={gatewayUptime}
+            sidecarHealth={sidecarHealth}
+            sidecarError={sidecarError}
             showContextTabs={isWide(breakpoint)}
             contextTab={contextTab}
             contextPanelOpen={contextPanelOpen}

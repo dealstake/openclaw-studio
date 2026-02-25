@@ -2,6 +2,7 @@ import { memo, useEffect, useState, useRef } from "react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { HeaderIconButton } from "@/components/HeaderIconButton";
 import type { GatewayStatus } from "@/lib/gateway/GatewayClient";
+import type { WorkspaceHealthStatus } from "@/features/workspace/hooks/useWorkspaceHealth";
 import { BrandMark } from "@/components/brand/BrandMark";
 import { LogoutButton } from "@/components/brand/LogoutButton";
 import { NotificationBell } from "@/features/notifications/components/NotificationBell";
@@ -39,6 +40,8 @@ type HeaderBarProps = {
   onCreateAgent?: () => void;
   gatewayVersion?: string;
   gatewayUptime?: number;
+  sidecarHealth?: WorkspaceHealthStatus | null;
+  sidecarError?: string | null;
   /** New props for overflow menu actions */
   onNewSession?: () => void;
   onOpenSettings?: () => void;
@@ -83,23 +86,47 @@ function ConnectionDot({
   status,
   gatewayVersion,
   gatewayUptime,
+  sidecarHealth,
+  sidecarError,
 }: {
   status: GatewayStatus;
   gatewayVersion?: string;
   gatewayUptime?: number;
+  sidecarHealth?: WorkspaceHealthStatus | null;
+  sidecarError?: string | null;
 }) {
   const uptimeStr = gatewayUptime ? formatUptime(gatewayUptime) : undefined;
+
+  // Determine sidecar status line
+  let sidecarLine: string | null = null;
+  if (sidecarHealth) {
+    if (!sidecarHealth.configured) {
+      sidecarLine = null; // No sidecar configured — don't show anything
+    } else if (sidecarHealth.healthy) {
+      sidecarLine = `Sidecar: OK (${sidecarHealth.mode})`;
+    } else {
+      sidecarLine = `Sidecar: unhealthy${sidecarError ? ` — ${sidecarError}` : ""}`;
+    }
+  }
+
+  // If sidecar is configured but unhealthy, override dot to amber
+  const effectiveStatus =
+    sidecarHealth?.configured && !sidecarHealth.healthy && status === "connected"
+      ? "connecting" // amber dot
+      : status;
+
   const title = [
     connectionLabel[status],
     gatewayVersion ? `v${gatewayVersion}` : null,
     uptimeStr ? `up ${uptimeStr}` : null,
+    sidecarLine,
   ]
     .filter(Boolean)
     .join(" · ");
 
   return (
     <span
-      className={`hidden sm:inline-block h-2 w-2 shrink-0 rounded-full ${connectionDotClass[status]}`}
+      className={`hidden sm:inline-block h-2 w-2 shrink-0 rounded-full ${connectionDotClass[effectiveStatus]}`}
       title={title}
       data-testid="gateway-status-dot"
     />
@@ -241,6 +268,8 @@ export const HeaderBar = memo(function HeaderBar({
   onCreateAgent,
   gatewayVersion,
   gatewayUptime,
+  sidecarHealth,
+  sidecarError,
   onNewSession,
   onOpenSettings,
   showContextTabs,
@@ -286,6 +315,8 @@ export const HeaderBar = memo(function HeaderBar({
           status={status}
           gatewayVersion={gatewayVersion}
           gatewayUptime={gatewayUptime}
+          sidecarHealth={sidecarHealth}
+          sidecarError={sidecarError}
         />
       </div>
 
