@@ -24,6 +24,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { BaseCard } from "@/components/ui/BaseCard";
 import { useCronRuns } from "@/features/cron/hooks/useCronRuns";
 
 const STATUS_PILL_CLASS: Record<string, string> = {
@@ -97,14 +98,16 @@ export const CronJobListItem = memo(function CronJobListItem({
   const payloadText = formatCronPayload(job.payload);
 
   return (
-    <div
+    <BaseCard
+      variant="compact"
+      isHoverable={job.enabled && !isRunning}
       style={{ animationDelay: `${animationDelay}ms` }}
-      className={`animate-in fade-in slide-in-from-bottom-1 duration-200 fill-mode-both rounded-md border bg-card/70 transition-all ${
+      className={`animate-in fade-in slide-in-from-bottom-1 duration-200 fill-mode-both ${
         !job.enabled
-          ? "border-border/40 opacity-60"
+          ? "opacity-60"
           : isRunning
-            ? "border-primary/40"
-            : "border-border/80 hover:border-border hover:shadow-sm"
+            ? "border-primary/40 ring-1 ring-primary/20"
+            : ""
       }`}
     >
       <div className="group/cron flex items-start justify-between gap-2 px-3 py-2">
@@ -345,6 +348,6 @@ export const CronJobListItem = memo(function CronJobListItem({
           ) : null}
         </div>
       ) : null}
-    </div>
+    </BaseCard>
   );
 });
