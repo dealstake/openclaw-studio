@@ -32,7 +32,7 @@ export const LiveActivityFeed = memo(function LiveActivityFeed({
   }, [timeline, virtualizer]);
 
   return (
-    <div ref={parentRef} className="min-h-0 flex-1 overflow-y-auto">
+    <div ref={parentRef} role="log" aria-live="polite" className="min-h-0 flex-1 overflow-y-auto">
       <div
         className="relative w-full"
         style={{ height: `${virtualizer.getTotalSize()}px` }}

@@ -83,7 +83,7 @@ export const ActivityPanel = memo(function ActivityPanel() {
           aria-selected={activeTab === "live"}
           aria-controls="activity-tabpanel-live"
           onClick={() => setActiveTab("live")}
-          className={`flex items-center gap-1.5 px-2.5 pb-2 ${sectionLabelClass} transition-colors focus-ring rounded-md ${
+          className={`flex h-11 items-center gap-1.5 px-3 pb-2 ${sectionLabelClass} transition-colors focus-ring rounded-md ${
             activeTab === "live"
               ? "text-foreground font-semibold border-b-2 border-primary"
               : "text-muted-foreground hover:text-foreground"
@@ -104,7 +104,7 @@ export const ActivityPanel = memo(function ActivityPanel() {
           aria-selected={activeTab === "history"}
           aria-controls="activity-tabpanel-history"
           onClick={() => setActiveTab("history")}
-          className={`flex items-center gap-1.5 px-2.5 pb-2 ${sectionLabelClass} transition-colors focus-ring rounded-md ${
+          className={`flex h-11 items-center gap-1.5 px-3 pb-2 ${sectionLabelClass} transition-colors focus-ring rounded-md ${
             activeTab === "history"
               ? "text-foreground font-semibold border-b-2 border-primary"
               : "text-muted-foreground hover:text-foreground"

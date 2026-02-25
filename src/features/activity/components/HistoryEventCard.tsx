@@ -40,7 +40,7 @@ export const HistoryEventCard = memo(function HistoryEventCard({
                 type="button"
                 onClick={() => setExpanded((v) => !v)}
                 aria-label={expanded ? "Show less" : "Show more"}
-                className="ml-auto flex items-center gap-0.5 rounded-md px-1 py-0.5 text-muted-foreground/50 transition-colors hover:bg-muted/60 hover:text-muted-foreground"
+                className="ml-auto flex items-center gap-0.5 rounded-md px-1 py-0.5 text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
               >
                 <ChevronRight
                   size={12}
