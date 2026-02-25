@@ -31,12 +31,12 @@ export const STATUS_ORDER: Record<string, number> = {
 };
 
 export const STATUS_CONFIG: Record<string, StatusConfig> = {
-  "🚧": { label: "Building", icon: Loader2, colors: "border-purple-500/30 bg-purple-500/10 text-purple-400" },
-  "🔨": { label: "Active", icon: Hammer, colors: "border-amber-500/30 bg-amber-500/10 text-amber-400" },
-  "📋": { label: "Defined", icon: ClipboardList, colors: "border-blue-500/30 bg-blue-500/10 text-blue-400" },
-  "🌊": { label: "Backlog", icon: Inbox, colors: "border-cyan-500/30 bg-cyan-500/10 text-cyan-400" },
-  "⏸️": { label: "Parked", icon: PauseCircle, colors: "border-zinc-500/30 bg-zinc-500/10 text-zinc-400" },
-  "✅": { label: "Done", icon: CheckCircle2, colors: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400" },
+  "🚧": { label: "Building", icon: Loader2, colors: "border-purple-500/30 bg-purple-500/10 text-purple-300" },
+  "🔨": { label: "Active", icon: Hammer, colors: "border-amber-500/30 bg-amber-500/10 text-amber-300" },
+  "📋": { label: "Defined", icon: ClipboardList, colors: "border-blue-500/30 bg-blue-500/10 text-blue-300" },
+  "🌊": { label: "Backlog", icon: Inbox, colors: "border-cyan-500/30 bg-cyan-500/10 text-cyan-300" },
+  "⏸️": { label: "Parked", icon: PauseCircle, colors: "border-zinc-500/30 bg-zinc-500/10 text-zinc-300" },
+  "✅": { label: "Done", icon: CheckCircle2, colors: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300" },
 };
 
 /** All status keys for filter UI (in display order) */
@@ -62,7 +62,7 @@ export const CYCLE_STATUSES: Array<{ emoji: string; label: string }> = [
 export const QUEUED_CONFIG: StatusConfig = {
   label: "Queued",
   icon: ListOrdered,
-  colors: "border-orange-500/30 bg-orange-500/10 text-orange-400",
+  colors: "border-orange-500/30 bg-orange-500/10 text-orange-300",
 };
 
 // ─── Priority ────────────────────────────────────────────────────────────────
@@ -76,9 +76,9 @@ export const PRIORITY_DOT: Record<string, string> = {
 // ─── Priority Colors (full-label keyed — for preview cards and badges) ───────
 
 export const PRIORITY_COLORS: Record<string, string> = {
-  "🔴 P0": "bg-red-500/20 text-red-400",
-  "🟡 P1": "bg-yellow-500/20 text-yellow-400",
-  "🟢 P2": "bg-green-500/20 text-green-400",
+  "🔴 P0": "bg-red-500/20 text-red-300",
+  "🟡 P1": "bg-yellow-500/20 text-yellow-300",
+  "🟢 P2": "bg-green-500/20 text-green-300",
 };
 
 /** Full-label priority dot colors (for preview cards) */

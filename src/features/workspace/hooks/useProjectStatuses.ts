@@ -4,10 +4,10 @@ import { useEffect, useState } from "react";
 
 /** Status emoji metadata */
 const STATUS_EMOJI: Record<string, { label: string; color: string }> = {
-  "🚧": { label: "Building", color: "text-purple-400" },
-  "🌊": { label: "Backlog", color: "text-blue-400" },
-  "📋": { label: "Defined", color: "text-amber-400" },
-  "🔨": { label: "Active", color: "text-green-400" },
+  "🚧": { label: "Building", color: "text-purple-300" },
+  "🌊": { label: "Backlog", color: "text-blue-300" },
+  "📋": { label: "Defined", color: "text-amber-300" },
+  "🔨": { label: "Active", color: "text-green-300" },
   "⏸️": { label: "Parked", color: "text-muted-foreground" },
   "✅": { label: "Done", color: "text-emerald-500" },
 };

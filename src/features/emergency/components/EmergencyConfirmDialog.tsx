@@ -50,7 +50,7 @@ export const EmergencyConfirmDialog = memo(function EmergencyConfirmDialog({
     <AlertDialog.Root open={open} onOpenChange={handleOpenChange}>
       <AlertDialog.Portal>
         <AlertDialog.Overlay className={MODAL_OVERLAY_CLASSES} />
-        <AlertDialog.Content className={`fixed left-1/2 top-1/2 z-[100] w-[90vw] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg border ${destructive ? "border-red-800/50" : "border-amber-800/50"} bg-card p-6 shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95`}>
+        <AlertDialog.Content className={`fixed left-1/2 top-1/2 z-[var(--z-modal)] w-[90vw] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg border ${destructive ? "border-red-800/50" : "border-amber-800/50"} bg-card p-6 shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95`}>
           <div className="flex items-center gap-2">
             <AlertTriangle className={`h-5 w-5 shrink-0 ${destructive ? "text-red-400" : "text-amber-400"}`} />
             <AlertDialog.Title className="text-base font-semibold text-foreground">

@@ -83,14 +83,14 @@ const ImageLightbox = memo(function ImageLightbox({
 
   return (
     <div
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm animate-in fade-in"
+      className="fixed inset-0 z-[var(--z-popover)] flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm animate-in fade-in"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-label="Image viewer"
     >
       {/* Controls */}
-      <div className="absolute right-4 top-4 flex gap-2 z-[201]">
+      <div className="absolute right-4 top-4 flex gap-2 z-[calc(var(--z-popover)+1)]">
         <button
           type="button"
           onClick={(e) => {

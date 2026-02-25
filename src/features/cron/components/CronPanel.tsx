@@ -142,7 +142,7 @@ export const CronPanel = memo(function CronPanel({
               title="No cron jobs"
               description={taskJobCount > 0
                 ? `${taskJobCount} task job${taskJobCount !== 1 ? "s" : ""} managed in the Tasks panel`
-                : "Schedule recurring tasks for your agent"}
+                : "Create jobs via the CLI to schedule recurring tasks for your agent"}
             />
           ) : null}
 

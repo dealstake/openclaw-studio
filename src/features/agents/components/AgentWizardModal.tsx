@@ -213,7 +213,7 @@ export const AgentWizardModal = React.memo(function AgentWizardModal({
   return (
     <div
       data-state={visible ? "open" : "closed"}
-      className="fixed inset-0 z-[100] flex items-end justify-center bg-background/70 backdrop-blur-sm transition-opacity duration-300 ease-out data-[state=closed]:opacity-0 sm:items-center"
+      className="fixed inset-0 z-[var(--z-modal)] flex items-end justify-center bg-background/70 backdrop-blur-sm transition-opacity duration-300 ease-out data-[state=closed]:opacity-0 sm:items-center"
       role="dialog"
       aria-modal="true"
       aria-label="Agent Creation Wizard"

@@ -9,11 +9,11 @@ import { Zap, Search, Microscope, Eye, HeartPulse, Bot, Activity } from "lucide-
 /** Lucide icon for a task name. Returns icon component + optional color class. */
 export function taskIcon(taskName: string): { icon: LucideIcon; className: string } {
   const lower = taskName.toLowerCase();
-  if (lower.includes("continuation")) return { icon: Zap, className: "text-amber-400" };
+  if (lower.includes("continuation")) return { icon: Zap, className: "text-amber-300" };
   if (lower.includes("auditor") || lower.includes("audit")) return { icon: Search, className: "text-blue-400" };
   if (lower.includes("research")) return { icon: Microscope, className: "text-purple-400" };
-  if (lower.includes("visual qa") || lower.includes("visual-qa")) return { icon: Eye, className: "text-emerald-400" };
-  if (lower.includes("health") || lower.includes("gateway")) return { icon: HeartPulse, className: "text-red-400" };
+  if (lower.includes("visual qa") || lower.includes("visual-qa")) return { icon: Eye, className: "text-emerald-300" };
+  if (lower.includes("health") || lower.includes("gateway")) return { icon: HeartPulse, className: "text-red-300" };
   if (lower.includes("heartbeat")) return { icon: Activity, className: "text-cyan-400" };
   return { icon: Bot, className: "text-muted-foreground" };
 }
@@ -40,9 +40,9 @@ export const STATUS_COLORS: Record<string, string> = {
 
 /** Status pill config for history events */
 export const STATUS_PILL: Record<string, { bg: string; label: string }> = {
-  success: { bg: "bg-emerald-500/15 text-emerald-400", label: "Success" },
-  error: { bg: "bg-red-500/15 text-red-400", label: "Error" },
-  partial: { bg: "bg-amber-500/15 text-amber-400", label: "Partial" },
+  success: { bg: "bg-emerald-500/15 text-emerald-300", label: "Success" },
+  error: { bg: "bg-red-500/15 text-red-300", label: "Error" },
+  partial: { bg: "bg-amber-500/15 text-amber-300", label: "Partial" },
 };
 
 /** Format a timestamp as HH:MM */

@@ -16,7 +16,7 @@ type RestartBlockingModalProps = {
 const RestartBlockingModal: FC<RestartBlockingModalProps> = memo(
   ({ title, entityName, statusLine, testId, ariaLabel }) => (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-background/70 backdrop-blur-sm"
+      className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center bg-background/70 backdrop-blur-sm"
       data-testid={testId}
       role="dialog"
       aria-modal="true"
