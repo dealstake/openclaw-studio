@@ -5,7 +5,6 @@ import {
   MessageSquare,
   BarChart3,
   Radio,
-  Clock,
   Settings,
   Plus,
   ChevronLeft,
@@ -19,13 +18,12 @@ import { useSessionHistory } from "@/features/sessions/hooks/useSessionHistory";
 import { SessionList } from "@/features/sessions/components/SessionList";
 
 /** Management nav items that open in expanded modal */
-export type ManagementTab = "sessions" | "usage" | "channels" | "cron" | "settings";
+export type ManagementTab = "sessions" | "usage" | "channels" | "settings";
 
 const NAV_ITEMS: Array<{ value: ManagementTab; label: string; icon: typeof MessageSquare }> = [
   { value: "sessions", label: "Sessions", icon: MessageSquare },
   { value: "usage", label: "Usage", icon: BarChart3 },
   { value: "channels", label: "Channels", icon: Radio },
-  { value: "cron", label: "Cron", icon: Clock },
 ];
 
 const ALL_NAV_ITEMS = [...NAV_ITEMS, { value: "settings" as ManagementTab, label: "Settings", icon: Settings }];

@@ -42,9 +42,7 @@ import { ActivityPanel } from "@/features/activity/components/ActivityPanel";
 import { TraceViewer } from "@/features/sessions/components/TraceViewer";
 import { useChannelsStatus } from "@/features/channels/hooks/useChannelsStatus";
 import { useAllSessions } from "@/features/sessions/hooks/useAllSessions";
-import { useAllCronJobs } from "@/features/cron/hooks/useAllCronJobs";
 import { EmergencyProvider } from "@/features/emergency/EmergencyProvider";
-import type { CronJobSummary } from "@/lib/cron/types";
 import { useNotificationEvaluator } from "@/features/notifications/hooks/useNotificationEvaluator";
 import { useSessionUsage } from "@/features/sessions/hooks/useSessionUsage";
 import { useGatewayStatus } from "@/lib/gateway/useGatewayStatus";
@@ -117,10 +115,9 @@ export const AgentStudioPage = () => {
   // cause event handler teardown/recreation loops and RPC call storms.
   // Initialized with no-ops; updated after their hooks define them below.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const loadAllCronJobsRef = useRef<() => Promise<any>>(() => Promise.resolve());
-  const allCronJobsRef = useRef<CronJobSummary[]>([]);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const loadTasksRef = useRef<() => Promise<any>>(() => Promise.resolve());
+  /** Resolve a cron job ID to its display name via enriched tasks data. */
+  const cronJobNameResolverRef = useRef<(cronJobId: string) => string | undefined>(() => undefined);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const loadAllSessionsRef = useRef<() => Promise<any>>(() => Promise.resolve());
   const loadChannelsStatusRef = useRef<() => Promise<void>>(() => Promise.resolve());
@@ -190,21 +187,11 @@ export const AgentStudioPage = () => {
     aggregateUsageFromList, usageByType, loadAllSessions,
   } = useAllSessions(client, status);
 
-  const {
-    allCronJobs, allCronLoading, allCronError,
-    allCronRunBusyJobId, allCronDeleteBusyJobId,
-    loadAllCronJobs, handleAllCronRunJob, handleAllCronDeleteJob, allCronToggleBusyJobId, handleAllCronToggleEnabled,
-  } = useAllCronJobs(client, status);
-
   // Emergency state moved to EmergencyProvider
 
   useNotificationEvaluator(client, status);
 
   // Keep load-function refs current (avoids stale closures)
-  // eslint-disable-next-line react-hooks/refs
-  loadAllCronJobsRef.current = loadAllCronJobs;
-  // eslint-disable-next-line react-hooks/refs
-  allCronJobsRef.current = allCronJobs;
   // eslint-disable-next-line react-hooks/refs
   loadAllSessionsRef.current = loadAllSessions;
   // eslint-disable-next-line react-hooks/refs
@@ -243,7 +230,7 @@ export const AgentStudioPage = () => {
     setManagementView((prev) => (prev === tab ? null : tab));
   }, [focusedAgent, settingsAgentId, setSettingsAgentId, setManagementView]);
 
-  const handleCmdNavTab = useCallback((tab: ContextTab | "sessions" | "usage" | "channels" | "cron" | "settings") => {
+  const handleCmdNavTab = useCallback((tab: ContextTab | "sessions" | "usage" | "channels" | "settings") => {
     const contextTabs = new Set<string>(["projects", "tasks", "brain", "workspace", "activity"]);
     if (contextTabs.has(tab)) {
       setContextTab(tab as ContextTab);
@@ -310,6 +297,9 @@ export const AgentStudioPage = () => {
   } = useAgentTasks(client, status, focusedAgentId);
   // eslint-disable-next-line react-hooks/refs
   loadTasksRef.current = loadTasks;
+  // eslint-disable-next-line react-hooks/refs
+  cronJobNameResolverRef.current = (cronJobId: string) =>
+    agentTasks.find((t) => t.cronJobId === cronJobId)?.name;
 
   // Capture transcripts from completed cron/subagent sessions
   const focusedAgentRef = useRef(focusedAgent);
@@ -549,7 +539,6 @@ export const AgentStudioPage = () => {
     const deferTimer = window.setTimeout(() => {
       void loadChannelsStatusRef.current();
       void loadAllSessionsRef.current();
-      void loadAllCronJobsRef.current();
       void loadTasksRef.current();
     }, client.connectedForMs < 3_000 ? 2_000 : 0);
     return () => window.clearTimeout(deferTimer);
@@ -620,8 +609,8 @@ export const AgentStudioPage = () => {
     refreshHeartbeatLatestUpdateRef,
     loadChannelsStatusRef,
     loadAllSessionsRef,
-    loadAllCronJobsRef,
-    allCronJobsRef,
+    loadTasksRef,
+    cronJobNameResolverRef,
     bumpHeartbeatTick,
     updateSpecialLatestUpdate,
     setExecApprovalQueue,
@@ -742,16 +731,6 @@ export const AgentStudioPage = () => {
     channelsLoading,
     channelsError,
     onRefreshChannels: () => { void loadChannelsStatus(); },
-    allCronJobs,
-    allCronLoading,
-    allCronError,
-    allCronRunBusyJobId,
-    allCronDeleteBusyJobId,
-    allCronToggleBusyJobId,
-    onRunJob: (jobId: string) => { void handleAllCronRunJob(jobId); },
-    onDeleteJob: (jobId: string) => { void handleAllCronDeleteJob(jobId); },
-    onToggleEnabled: (jobId: string) => { void handleAllCronToggleEnabled(jobId); },
-    onRefreshCron: () => { void loadAllCronJobs(); },
     settingsAgent: settingsAgent ?? null,
     onCloseSettings: handleBackToChat,
     onRenameAgent: (name: string) => settingsAgent ? handleRenameAgent(settingsAgent.agentId, name) : Promise.resolve(false),
@@ -766,9 +745,6 @@ export const AgentStudioPage = () => {
     loadAllSessions, focusedAgent?.sessionKey, aggregateUsage, aggregateUsageLoading,
     aggregateUsageFromList, usageByType, handleViewTrace, handleDrawerTranscriptClick,
     channelsSnapshot, channelsLoading, channelsError, loadChannelsStatus,
-    allCronJobs, allCronLoading, allCronError, allCronRunBusyJobId,
-    allCronDeleteBusyJobId, allCronToggleBusyJobId,
-    handleAllCronRunJob, handleAllCronDeleteJob, handleAllCronToggleEnabled, loadAllCronJobs,
     settingsAgent, handleBackToChat, handleRenameAgent, handleNewSession,
     handleDeleteAgent, handleToolCallingToggle, handleThinkingTracesToggle, setContextTab,
   ]);

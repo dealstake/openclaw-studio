@@ -56,16 +56,6 @@ function defaultContext(overrides: Partial<ManagementPanelContextValue> = {}): M
     channelsLoading: false,
     channelsError: null,
     onRefreshChannels: vi.fn(),
-    allCronJobs: [],
-    allCronLoading: false,
-    allCronError: null,
-    allCronRunBusyJobId: null,
-    allCronDeleteBusyJobId: null,
-    allCronToggleBusyJobId: null,
-    onRunJob: vi.fn(),
-    onDeleteJob: vi.fn(),
-    onToggleEnabled: vi.fn(),
-    onRefreshCron: vi.fn(),
     settingsAgent: null,
     onCloseSettings: vi.fn(),
     onRenameAgent: vi.fn().mockResolvedValue(true),
@@ -107,11 +97,6 @@ describe("ManagementPanelContent", () => {
   it("renders ChannelsPanel when tab is channels", async () => {
     renderWithProvider({ tab: "channels" });
     expect(await screen.findByTestId("channels-panel")).toBeInTheDocument();
-  });
-
-  it("renders CronPanel when tab is cron", async () => {
-    renderWithProvider({ tab: "cron" });
-    expect(await screen.findByTestId("cron-panel")).toBeInTheDocument();
   });
 
   it("renders AgentSettingsPanel when tab is settings and agent provided", async () => {

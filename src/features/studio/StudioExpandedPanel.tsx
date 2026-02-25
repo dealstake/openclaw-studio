@@ -149,7 +149,7 @@ export const StudioExpandedPanel = memo(function StudioExpandedPanel({
             </PanelErrorBoundary>
           )}
           <ManagementPanelContent
-            tab={expandedTab === "sessions" || expandedTab === "usage" || expandedTab === "channels" || expandedTab === "cron" || expandedTab === "settings" ? expandedTab : null}
+            tab={expandedTab === "sessions" || expandedTab === "usage" || expandedTab === "channels" || expandedTab === "settings" ? expandedTab : null}
             onCloseSettings={onClose}
             onTranscriptClick={onTranscriptClick}
           />

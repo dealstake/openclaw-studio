@@ -94,7 +94,6 @@ describe("AppSidebar", () => {
       expect(screen.getAllByLabelText("Sessions").length).toBeGreaterThanOrEqual(1);
       expect(screen.getByLabelText("Usage")).toBeInTheDocument();
       expect(screen.getByLabelText("Channels")).toBeInTheDocument();
-      expect(screen.getByLabelText("Cron")).toBeInTheDocument();
     });
 
     it("calls onManagementNav when nav item clicked", () => {
@@ -150,7 +149,6 @@ describe("AppSidebar", () => {
       expect(screen.getAllByLabelText("Sessions").length).toBeGreaterThanOrEqual(1);
       expect(screen.getByLabelText("Usage")).toBeInTheDocument();
       expect(screen.getByLabelText("Channels")).toBeInTheDocument();
-      expect(screen.getByLabelText("Cron")).toBeInTheDocument();
     });
 
     it("highlights active management tab", () => {
