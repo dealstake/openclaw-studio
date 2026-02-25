@@ -2,8 +2,6 @@
 
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AgentChatPanel } from "@/features/agents/components/AgentChatPanel";
-import type { MessagePart } from "@/lib/chat/types";
-import { transformMessagesToMessageParts } from "@/features/sessions/lib/transformMessages";
 import {
   AgentBrainPanel,
 } from "@/features/agents/components/AgentInspectPanels";
@@ -43,7 +41,6 @@ import {
   buildAgentMainSessionKey,
   isSameSessionKey,
   isGatewayDisconnectLikeError,
-  type EventFrame,
 } from "@/lib/gateway/GatewayClient";
 import type { AgentsListResult, SessionsListEntry, SessionsListResult } from "@/lib/gateway/types";
 import { ArtifactsPanel } from "@/features/artifacts/components/ArtifactsPanel";
@@ -62,18 +59,12 @@ import { ManagementPanelContent } from "@/components/ManagementPanelContent";
 import { ManagementDrawer } from "@/components/ManagementDrawer";
 import { ManagementPanelProvider } from "@/components/management/ManagementPanelContext";
 import { ExpandedContext } from "@/features/context/lib/expandedContext";
-import {
-  parseExecApprovalRequested,
-  parseExecApprovalResolved,
-  pruneExpired,
-} from "@/features/exec-approvals/types";
 import { useExecApprovalContext } from "@/features/exec-approvals/ExecApprovalProvider";
 // SessionsPanel, CronPanel, UsagePanel, ChannelsPanel, AgentSettingsPanel moved to ManagementPanelContent
 import { CommandPalette } from "@/features/command-palette/components/CommandPalette";
 import { useCommandPalette } from "@/features/command-palette/hooks/useCommandPalette";
 import { WorkspaceExplorerPanel } from "@/features/workspace/components/WorkspaceExplorerPanel";
 import { ActivityPanel } from "@/features/activity/components/ActivityPanel";
-import { appendActivityParts, finalizeActivityMessage } from "@/features/activity/hooks/useActivityMessageStore";
 // Heartbeat entries now routed exclusively via onActivityMessage to useActivityMessageStore
 import { TraceViewer } from "@/features/sessions/components/TraceViewer";
 import { useChannelsStatus } from "@/features/channels/hooks/useChannelsStatus";
@@ -84,7 +75,6 @@ import { EmergencyOverlay } from "@/features/emergency/components/EmergencyOverl
 import type { CronJobSummary } from "@/lib/cron/types";
 import { useNotificationEvaluator } from "@/features/notifications/hooks/useNotificationEvaluator";
 import { useSessionUsage } from "@/features/sessions/hooks/useSessionUsage";
-import { fetchTranscriptMessages } from "@/features/sessions/hooks/useTranscripts";
 import { useGatewayStatus } from "@/lib/gateway/useGatewayStatus";
 const ConfigMutationModals = lazy(() => import("@/features/agents/components/ConfigMutationModals").then(m => ({ default: m.ConfigMutationModals })));
 import { useConfigMutationQueue } from "@/features/agents/hooks/useConfigMutationQueue";
@@ -98,6 +88,8 @@ import { useCreateAgent } from "@/features/agents/hooks/useCreateAgent";
 import { useRenameAgent } from "@/features/agents/hooks/useRenameAgent";
 import { useOfflineQueue } from "@/lib/gateway/useOfflineQueue";
 import { useGatewayModels } from "@/features/agents/hooks/useGatewayModels";
+import { useRuntimeEventSubscription } from "@/features/studio/useRuntimeEventSubscription";
+import { useStudioChatCallbacks } from "@/features/studio/useStudioChatCallbacks";
 import { useSettingsPanel } from "@/features/agents/hooks/useSettingsPanel";
 import { useChatCallbacks } from "@/features/agents/hooks/useChatCallbacks";
 import { isWide } from "@/hooks/useBreakpoint";
@@ -187,12 +179,6 @@ export const AgentStudioPage = () => {
   const [cronEventTick, setCronEventTick] = useState(0);
 
   // Layout keyboard shortcuts, persistence, and swipe handled by useAppLayout
-  const [viewingSessionKey, setViewingSessionKey] = useState<string | null>(null);
-  const [viewingSessionHistory, setViewingSessionHistory] = useState<MessagePart[]>([]);
-  const [viewingTrace, setViewingTrace] = useState<{ agentId: string; sessionId: string } | null>(null);
-  const [viewingSessionLoading, setViewingSessionLoading] = useState(false);
-
-  const clearViewingTrace = useCallback(() => setViewingTrace(null), []);
   const closeTaskWizard = useCallback(() => setShowTaskWizard(false), []);
 
   /** Tracks previous session key per agent to detect session resets */
@@ -1080,109 +1066,28 @@ export const AgentStudioPage = () => {
 
   const { isOffline, queueLength, enqueue } = useOfflineQueue(client, status, handleSend);
 
-  useEffect(() => {
-    const handler = createGatewayRuntimeEventHandler({
-      getStatus: () => status,
-      getAgents: () => stateRef.current.agents,
-      dispatch,
-      queueLivePatch,
-      clearPendingLivePatch,
-      loadSummarySnapshot: () => loadSummarySnapshotRef.current(),
-      loadAgentHistory: (agentId: string) => loadAgentHistoryRef.current(agentId),
-      refreshHeartbeatLatestUpdate: () => refreshHeartbeatLatestUpdateRef.current(),
-      bumpHeartbeatTick,
-      setTimeout: (fn, delayMs) => window.setTimeout(fn, delayMs),
-      clearTimeout: (id) => window.clearTimeout(id),
-      isDisconnectLikeError: isGatewayDisconnectLikeError,
-      logWarn: (message, meta) => console.warn(message, meta),
-      updateSpecialLatestUpdate: (agentId, agent, message) => {
-        void updateSpecialLatestUpdate(agentId, agent, message);
-      },
-      onExecApprovalRequested: (payload) => {
-        const parsed = parseExecApprovalRequested(payload);
-        if (parsed) {
-          setExecApprovalQueue((prev) => pruneExpired([...prev, parsed]));
-        }
-      },
-      onExecApprovalResolved: (payload) => {
-        const parsed = parseExecApprovalResolved(payload);
-        if (parsed) {
-          setExecApprovalQueue((prev) => prev.filter((r) => r.id !== parsed.id));
-        }
-      },
-      onChannelsUpdate: () => {
-        void loadChannelsStatusRef.current();
-      },
-      onSessionsUpdate: () => {
-        void loadAllSessionsRef.current();
-      },
-      onCronUpdate: () => {
-        void loadAllCronJobsRef.current();
-        setCronEventTick((prev) => prev + 1);
-      },
-      // Heartbeats routed via onActivityMessage below — no separate store needed
-      onSystemEvent: () => {
-        // System events now routed via onActivityMessage to useActivityMessageStore
-      },
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      onSubAgentLifecycle: (_sessionKey: string, _phase: string) => {
-        // Sub-agent lifecycle tracking — available for future use
-      },
-      onActivityMessage: (sourceKey, data) => {
-        // Resolve task name from cron job ID for display
-        let sourceName = data.sourceName;
-        if (!sourceName) {
-          const cronMatch = sourceKey.match(/:cron:([^:]+)/);
-          if (cronMatch) {
-            const job = allCronJobsRef.current.find((j) => j.id === cronMatch[1]);
-            if (job) sourceName = job.name;
-          }
-          if (!sourceName) sourceName = data.sourceType === "heartbeat" ? "Heartbeat" : "Agent Run";
-        }
-        if (data.status === "streaming") {
-          // Accumulate parts for streaming messages
-          appendActivityParts(sourceKey, data.parts, {
-            sourceName,
-            sourceType: data.sourceType,
-            status: "streaming",
-          });
-        } else if (data.status === "complete" || data.status === "error") {
-          // For final/error: append any remaining parts then finalize
-          if (data.parts.length > 0) {
-            appendActivityParts(sourceKey, data.parts, {
-              sourceName,
-              sourceType: data.sourceType,
-            });
-          }
-          finalizeActivityMessage(sourceKey, data.status);
-        }
-      },
-    });
-    runtimeEventHandlerRef.current = handler;
-    const unsubscribe = client.onEvent((event: EventFrame) => handler.handleEvent(event));
-    return () => {
-      runtimeEventHandlerRef.current = null;
-      handler.dispose();
-      unsubscribe();
-      if (sessionsUpdateTimerRef.current) {
-        clearTimeout(sessionsUpdateTimerRef.current);
-        sessionsUpdateTimerRef.current = null;
-      }
-      if (cronUpdateTimerRef.current) {
-        clearTimeout(cronUpdateTimerRef.current);
-        cronUpdateTimerRef.current = null;
-      }
-    };
-  }, [
-    bumpHeartbeatTick,
-    clearPendingLivePatch,
+  useRuntimeEventSubscription({
     client,
-    dispatch,
-    queueLivePatch,
-    setExecApprovalQueue,
     status,
+    dispatch,
+    stateRef,
+    queueLivePatch,
+    clearPendingLivePatch,
+    runtimeEventHandlerRef,
+    sessionsUpdateTimerRef,
+    cronUpdateTimerRef,
+    loadSummarySnapshotRef,
+    loadAgentHistoryRef,
+    refreshHeartbeatLatestUpdateRef,
+    loadChannelsStatusRef,
+    loadAllSessionsRef,
+    loadAllCronJobsRef,
+    allCronJobsRef,
+    bumpHeartbeatTick,
     updateSpecialLatestUpdate,
-  ]);
+    setExecApprovalQueue,
+    setCronEventTick,
+  });
 
   const connectionPanelVisible = showConnectionPanel;
   const hasAnyAgents = agents.length > 0;
@@ -1233,123 +1138,45 @@ export const AgentStudioPage = () => {
           : "Gateway restart in progress"
       : null;
 
-  // ── Stable callbacks for AgentChatPanel (avoid inline arrows that defeat memo) ──
-  const stableChatOnModelChange = useCallback((value: string | null) => {
-    const fa = focusedAgentRef.current;
-    if (fa) handleModelChange(fa.agentId, fa.sessionKey, value);
-  }, [handleModelChange]);
-
-  const stableChatOnThinkingChange = useCallback((value: string | null) => {
-    const fa = focusedAgentRef.current;
-    if (fa) handleThinkingChange(fa.agentId, fa.sessionKey, value);
-  }, [handleThinkingChange]);
-
-  const stableChatOnDraftChange = useCallback((value: string) => {
-    const fa = focusedAgentRef.current;
-    if (fa) handleDraftChange(fa.agentId, value);
-  }, [handleDraftChange]);
-
-  const stableChatOnSend = useCallback((message: string, attachments?: { mimeType: string; fileName: string; content: string }[]) => {
-    const fa = focusedAgentRef.current;
-    if (!fa) return;
-    setViewingSessionKey(null);
-    if (isOffline) {
-      enqueue(fa.agentId, fa.sessionKey, message, attachments);
-      // Show the message in the chat as pending
-      dispatch({
-        type: "appendPart",
-        agentId: fa.agentId,
-        part: { type: "text", text: `> ${message.trim()}` },
-      });
-      dispatch({
-        type: "appendPart",
-        agentId: fa.agentId,
-        part: { type: "text", text: "⏳ *Message queued — will send when reconnected*" },
-      });
-    } else {
-      handleSend(fa.agentId, fa.sessionKey, message, attachments);
-    }
-  }, [handleSend, isOffline, enqueue, dispatch]);
-
-  const stableChatOnStopRun = useCallback(() => {
-    const fa = focusedAgentRef.current;
-    if (fa) handleStopRun(fa.agentId, fa.sessionKey);
-  }, [handleStopRun]);
-
-  const stableChatOnNewSession = useCallback(() => {
-    const fa = focusedAgentRef.current;
-    if (fa) handleNewSession(fa.agentId);
-  }, [handleNewSession]);
-
-  const stableChatOnExitSessionView = useCallback(() => {
-    setViewingSessionKey(null);
-  }, []);
-
-  const handleViewTrace = useCallback((sessionKey: string, agentId: string | null) => {
-    if (!agentId) return;
-    // SessionKey format: "agent:<agentId>:<sessionId>" — extract sessionId
-    const prefix = `agent:${agentId}:`;
-    const sessionId = sessionKey.startsWith(prefix) ? sessionKey.slice(prefix.length) : sessionKey;
-    setViewingTrace({ agentId, sessionId });
-  }, []);
-
-  const stableChatOnDismissContinuation = useCallback(() => {
-    const fa = focusedAgentRef.current;
-    if (fa) {
-      setSessionContinuedAgents((prev) => {
-        const next = new Set(prev);
-        next.delete(fa.agentId);
-        return next;
-      });
-    }
-  }, []);
-
-  const stableChatTokenUsed = useMemo(() => {
-    if (!focusedAgent) return undefined;
-    const cw = agentContextWindow.get(focusedAgent.agentId);
-    if (cw && cw.totalTokens > 0) return cw.totalTokens;
-    return sessionUsage ? sessionUsage.inputTokens + sessionUsage.outputTokens : undefined;
-  }, [focusedAgent, agentContextWindow, sessionUsage]);
-
-  // Shared transcript click handler — used by both ManagementDrawer and PanelExpandModal
-  const handleTranscriptClick = useCallback(
-    (sessionId: string, agentId: string | null, dismissFn?: () => void) => {
-      dismissFn?.();
-      const effectiveAgentId = agentId || focusedAgent?.agentId || "";
-      if (!effectiveAgentId) return;
-      setViewingSessionKey(sessionId);
-      setViewingSessionLoading(true);
-      setViewingSessionHistory([]);
-      setMobilePane("chat");
-      fetchTranscriptMessages(effectiveAgentId, sessionId, 0, 200)
-        .then((result) => {
-          setViewingSessionHistory(transformMessagesToMessageParts(result.messages));
-        })
-        .catch((err) => {
-          console.error("Failed to load transcript:", err);
-          setViewingSessionHistory([{
-            type: "text",
-            text: `Failed to load transcript: ${err instanceof Error ? err.message : "Unknown error"}`,
-          }]);
-        })
-        .finally(() => setViewingSessionLoading(false));
-    },
-    [focusedAgent?.agentId, setMobilePane],
-  );
-
-  const handleDrawerTranscriptClick = useCallback(
-    (sessionId: string, agentId: string | null) => {
-      handleTranscriptClick(sessionId, agentId, () => setManagementView(null));
-    },
-    [handleTranscriptClick, setManagementView],
-  );
-
-  const handleExpandedTranscriptClick = useCallback(
-    (sessionId: string, agentId: string | null) => {
-      handleTranscriptClick(sessionId, agentId, clearExpandedTab);
-    },
-    [handleTranscriptClick, clearExpandedTab],
-  );
+  // ── Stable callbacks extracted to useStudioChatCallbacks ──
+  const {
+    viewingSessionKey,
+    setViewingSessionKey,
+    viewingSessionHistory,
+    viewingTrace,
+    viewingSessionLoading,
+    clearViewingTrace,
+    stableChatOnModelChange,
+    stableChatOnThinkingChange,
+    stableChatOnDraftChange,
+    stableChatOnSend,
+    stableChatOnStopRun,
+    stableChatOnNewSession,
+    stableChatOnExitSessionView,
+    stableChatOnDismissContinuation,
+    stableChatTokenUsed,
+    handleViewTrace,
+    handleDrawerTranscriptClick,
+    handleExpandedTranscriptClick,
+  } = useStudioChatCallbacks({
+    focusedAgentRef,
+    focusedAgent,
+    handleModelChange,
+    handleThinkingChange,
+    handleDraftChange,
+    handleSend,
+    handleStopRun,
+    handleNewSession,
+    isOffline,
+    enqueue,
+    dispatch,
+    agentContextWindow,
+    sessionUsage,
+    setMobilePane,
+    setManagementView,
+    clearExpandedTab,
+    setSessionContinuedAgents,
+  });
 
   // Shared management panel props — used by both ManagementDrawer and PanelExpandModal
   const managementPanelProps = useMemo(() => ({

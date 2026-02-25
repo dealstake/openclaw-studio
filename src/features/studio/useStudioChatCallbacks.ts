@@ -1,0 +1,198 @@
+/**
+ * useStudioChatCallbacks — stable memoized callbacks for AgentChatPanel
+ * and transcript/trace viewing handlers.
+ *
+ * Extracted from AgentStudioContent to reduce component size.
+ */
+import { useCallback, useMemo, useState, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
+import type { MessagePart } from "@/lib/chat/types";
+import { transformMessagesToMessageParts } from "@/features/sessions/lib/transformMessages";
+import { fetchTranscriptMessages } from "@/features/sessions/hooks/useTranscripts";
+import type { Action as AgentStoreAction, AgentState as AgentEntry } from "@/features/agents/state/store";
+import type { ManagementTab } from "@/layout/AppSidebar";
+
+export interface StudioChatCallbacksParams {
+  focusedAgentRef: MutableRefObject<AgentEntry | null>;
+  focusedAgent: AgentEntry | null;
+  handleModelChange: (agentId: string, sessionKey: string, value: string | null) => void;
+  handleThinkingChange: (agentId: string, sessionKey: string, value: string | null) => void;
+  handleDraftChange: (agentId: string, value: string) => void;
+  handleSend: (agentId: string, sessionKey: string, message: string, attachments?: { mimeType: string; fileName: string; content: string }[]) => void;
+  handleStopRun: (agentId: string, sessionKey: string) => void;
+  handleNewSession: (agentId: string) => void;
+  isOffline: boolean;
+  enqueue: (agentId: string, sessionKey: string, message: string, attachments?: { mimeType: string; fileName: string; content: string }[]) => void;
+  dispatch: (action: AgentStoreAction) => void;
+  agentContextWindow: Map<string, { totalTokens: number; contextTokens: number }>;
+  sessionUsage: { inputTokens: number; outputTokens: number } | null;
+  setMobilePane: Dispatch<SetStateAction<"chat" | "context">>;
+  setManagementView: Dispatch<SetStateAction<ManagementTab | null>>;
+  clearExpandedTab: () => void;
+  setSessionContinuedAgents: Dispatch<SetStateAction<Set<string>>>;
+}
+
+export function useStudioChatCallbacks({
+  focusedAgentRef,
+  focusedAgent,
+  handleModelChange,
+  handleThinkingChange,
+  handleDraftChange,
+  handleSend,
+  handleStopRun,
+  handleNewSession,
+  isOffline,
+  enqueue,
+  dispatch,
+  agentContextWindow,
+  sessionUsage,
+  setMobilePane,
+  setManagementView,
+  clearExpandedTab,
+  setSessionContinuedAgents,
+}: StudioChatCallbacksParams) {
+  const [viewingSessionKey, setViewingSessionKey] = useState<string | null>(null);
+  const [viewingSessionHistory, setViewingSessionHistory] = useState<MessagePart[]>([]);
+  const [viewingTrace, setViewingTrace] = useState<{ agentId: string; sessionId: string } | null>(null);
+  const [viewingSessionLoading, setViewingSessionLoading] = useState(false);
+
+  const clearViewingTrace = useCallback(() => setViewingTrace(null), []);
+
+  const stableChatOnModelChange = useCallback((value: string | null) => {
+    const fa = focusedAgentRef.current;
+    if (fa) handleModelChange(fa.agentId, fa.sessionKey, value);
+  }, [handleModelChange, focusedAgentRef]);
+
+  const stableChatOnThinkingChange = useCallback((value: string | null) => {
+    const fa = focusedAgentRef.current;
+    if (fa) handleThinkingChange(fa.agentId, fa.sessionKey, value);
+  }, [handleThinkingChange, focusedAgentRef]);
+
+  const stableChatOnDraftChange = useCallback((value: string) => {
+    const fa = focusedAgentRef.current;
+    if (fa) handleDraftChange(fa.agentId, value);
+  }, [handleDraftChange, focusedAgentRef]);
+
+  const stableChatOnSend = useCallback((message: string, attachments?: { mimeType: string; fileName: string; content: string }[]) => {
+    const fa = focusedAgentRef.current;
+    if (!fa) return;
+    setViewingSessionKey(null);
+    if (isOffline) {
+      enqueue(fa.agentId, fa.sessionKey, message, attachments);
+      dispatch({
+        type: "appendPart",
+        agentId: fa.agentId,
+        part: { type: "text", text: `> ${message.trim()}` },
+      });
+      dispatch({
+        type: "appendPart",
+        agentId: fa.agentId,
+        part: { type: "text", text: "⏳ *Message queued — will send when reconnected*" },
+      });
+    } else {
+      handleSend(fa.agentId, fa.sessionKey, message, attachments);
+    }
+  }, [handleSend, isOffline, enqueue, dispatch, focusedAgentRef]);
+
+  const stableChatOnStopRun = useCallback(() => {
+    const fa = focusedAgentRef.current;
+    if (fa) handleStopRun(fa.agentId, fa.sessionKey);
+  }, [handleStopRun, focusedAgentRef]);
+
+  const stableChatOnNewSession = useCallback(() => {
+    const fa = focusedAgentRef.current;
+    if (fa) handleNewSession(fa.agentId);
+  }, [handleNewSession, focusedAgentRef]);
+
+  const stableChatOnExitSessionView = useCallback(() => {
+    setViewingSessionKey(null);
+  }, []);
+
+  const handleViewTrace = useCallback((sessionKey: string, agentId: string | null) => {
+    if (!agentId) return;
+    const prefix = `agent:${agentId}:`;
+    const sessionId = sessionKey.startsWith(prefix) ? sessionKey.slice(prefix.length) : sessionKey;
+    setViewingTrace({ agentId, sessionId });
+  }, []);
+
+  const stableChatOnDismissContinuation = useCallback(() => {
+    const fa = focusedAgentRef.current;
+    if (fa) {
+      setSessionContinuedAgents((prev) => {
+        const next = new Set(prev);
+        next.delete(fa.agentId);
+        return next;
+      });
+    }
+  }, [focusedAgentRef, setSessionContinuedAgents]);
+
+  const stableChatTokenUsed = useMemo(() => {
+    if (!focusedAgent) return undefined;
+    const cw = agentContextWindow.get(focusedAgent.agentId);
+    if (cw && cw.totalTokens > 0) return cw.totalTokens;
+    return sessionUsage ? sessionUsage.inputTokens + sessionUsage.outputTokens : undefined;
+  }, [focusedAgent, agentContextWindow, sessionUsage]);
+
+  // Shared transcript click handler
+  const handleTranscriptClick = useCallback(
+    (sessionId: string, agentId: string | null, dismissFn?: () => void) => {
+      dismissFn?.();
+      const effectiveAgentId = agentId || focusedAgent?.agentId || "";
+      if (!effectiveAgentId) return;
+      setViewingSessionKey(sessionId);
+      setViewingSessionLoading(true);
+      setViewingSessionHistory([]);
+      setMobilePane("chat");
+      fetchTranscriptMessages(effectiveAgentId, sessionId, 0, 200)
+        .then((result) => {
+          setViewingSessionHistory(transformMessagesToMessageParts(result.messages));
+        })
+        .catch((err) => {
+          console.error("Failed to load transcript:", err);
+          setViewingSessionHistory([{
+            type: "text",
+            text: `Failed to load transcript: ${err instanceof Error ? err.message : "Unknown error"}`,
+          }]);
+        })
+        .finally(() => setViewingSessionLoading(false));
+    },
+    [focusedAgent?.agentId, setMobilePane],
+  );
+
+  const handleDrawerTranscriptClick = useCallback(
+    (sessionId: string, agentId: string | null) => {
+      handleTranscriptClick(sessionId, agentId, () => setManagementView(null));
+    },
+    [handleTranscriptClick, setManagementView],
+  );
+
+  const handleExpandedTranscriptClick = useCallback(
+    (sessionId: string, agentId: string | null) => {
+      handleTranscriptClick(sessionId, agentId, clearExpandedTab);
+    },
+    [handleTranscriptClick, clearExpandedTab],
+  );
+
+  return {
+    // Viewing state
+    viewingSessionKey,
+    setViewingSessionKey,
+    viewingSessionHistory,
+    viewingTrace,
+    viewingSessionLoading,
+    clearViewingTrace,
+    // Stable chat callbacks
+    stableChatOnModelChange,
+    stableChatOnThinkingChange,
+    stableChatOnDraftChange,
+    stableChatOnSend,
+    stableChatOnStopRun,
+    stableChatOnNewSession,
+    stableChatOnExitSessionView,
+    stableChatOnDismissContinuation,
+    stableChatTokenUsed,
+    // Trace/transcript handlers
+    handleViewTrace,
+    handleDrawerTranscriptClick,
+    handleExpandedTranscriptClick,
+  };
+}
