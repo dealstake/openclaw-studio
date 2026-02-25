@@ -72,7 +72,7 @@ const CONTEXT_TAB_ITEMS: Array<{
 
 const connectionDotClass: Record<GatewayStatus, string> = {
   connected: "bg-emerald-500",
-  connecting: "bg-amber-400 animate-pulse",
+  connecting: "bg-amber-600 animate-pulse",
   disconnected: "bg-muted-foreground/40",
 };
 
@@ -88,12 +88,14 @@ function ConnectionDot({
   gatewayUptime,
   sidecarHealth,
   sidecarError,
+  onClick,
 }: {
   status: GatewayStatus;
   gatewayVersion?: string;
   gatewayUptime?: number;
   sidecarHealth?: WorkspaceHealthStatus | null;
   sidecarError?: string | null;
+  onClick?: () => void;
 }) {
   const uptimeStr = gatewayUptime ? formatUptime(gatewayUptime) : undefined;
 
@@ -115,7 +117,7 @@ function ConnectionDot({
       ? "connecting" // amber dot
       : status;
 
-  const title = [
+  const label = [
     connectionLabel[status],
     gatewayVersion ? `v${gatewayVersion}` : null,
     uptimeStr ? `up ${uptimeStr}` : null,
@@ -125,11 +127,18 @@ function ConnectionDot({
     .join(" · ");
 
   return (
-    <span
-      className={`hidden sm:inline-block h-2 w-2 shrink-0 rounded-full ${connectionDotClass[effectiveStatus]}`}
-      title={title}
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-muted/60"
+      aria-label={label}
+      title={label}
       data-testid="gateway-status-dot"
-    />
+    >
+      <span
+        className={`inline-block h-2 w-2 shrink-0 rounded-full ${connectionDotClass[effectiveStatus]}`}
+      />
+    </button>
   );
 }
 
@@ -317,6 +326,7 @@ export const HeaderBar = memo(function HeaderBar({
           gatewayUptime={gatewayUptime}
           sidecarHealth={sidecarHealth}
           sidecarError={sidecarError}
+          onClick={onConnectionSettings}
         />
       </div>
 
