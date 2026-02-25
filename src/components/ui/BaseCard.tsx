@@ -6,9 +6,9 @@ import { cn } from "@/lib/utils";
 // ─── Variants ────────────────────────────────────────────────────────────────
 
 const variantClasses = {
-  default: "rounded-lg border border-border/60 bg-card/40 p-4",
-  compact: "rounded-lg border border-border/60 bg-card/40 p-3",
-  flush: "rounded-none border-x-0 border-t-0 border-b border-border/30 bg-transparent p-3",
+  default: "rounded-lg border border-border/30 bg-card/40 p-4",
+  compact: "rounded-lg border border-border/30 bg-card/40 p-3",
+  flush: "rounded-none border-x-0 border-t-0 border-b border-border/20 bg-transparent p-3",
 } as const;
 
 export type BaseCardVariant = keyof typeof variantClasses;

@@ -19,8 +19,10 @@ import {
   ListChecks,
   Brain,
   Activity,
+  ShieldAlert,
   X,
 } from "lucide-react";
+import { useEmergencyOptional } from "@/features/emergency/EmergencyProvider";
 import { getCfIdentity, type CfIdentity } from "@/lib/cloudflare-auth";
 import { formatUptime } from "@/lib/text/time";
 import { AgentBreadcrumb, type BreadcrumbAgent } from "./AgentBreadcrumb";
@@ -289,6 +291,7 @@ export const HeaderBar = memo(function HeaderBar({
 }: HeaderBarProps) {
   const [identity, setIdentity] = useState<CfIdentity | null>(null);
   const { unreadCount } = useNotificationStore();
+  const emergency = useEmergencyOptional();
 
   useEffect(() => {
     let cancelled = false;
@@ -328,6 +331,16 @@ export const HeaderBar = memo(function HeaderBar({
           sidecarError={sidecarError}
           onClick={onConnectionSettings}
         />
+        {emergency && (
+          <HeaderIconButton
+            onClick={emergency.toggle}
+            aria-label="Emergency controls"
+            title="Emergency controls"
+            data-testid="emergency-toggle"
+          >
+            <ShieldAlert className="h-4 w-4 text-red-500" />
+          </HeaderIconButton>
+        )}
       </div>
 
       {/* Center section — breadcrumb, centered on all viewports */}

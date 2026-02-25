@@ -32,6 +32,11 @@ export function useEmergency(): EmergencyContextValue {
   return ctx;
 }
 
+/** Safe variant that returns null when outside EmergencyProvider (for HeaderBar tests). */
+export function useEmergencyOptional(): EmergencyContextValue | null {
+  return useContext(EmergencyContext);
+}
+
 /**
  * Provides emergency action state to the component tree.
  * Reads gateway client/status from GatewayProvider context —

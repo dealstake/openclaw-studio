@@ -13,7 +13,8 @@ import {
 import type { GatewayModelChoice } from "@/lib/gateway/models";
 import type { MessagePart } from "@/lib/chat/types";
 import type { GatewayStatus } from "@/lib/gateway/GatewayClient";
-import { AlertCircle, ArrowUp, Paperclip, Square, UploadCloud, WifiOff } from "lucide-react";
+import { AlertCircle, ArrowUp, Paperclip, Settings2, Square, UploadCloud, WifiOff } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ChatAttachmentPreview } from "./ChatAttachmentPreview";
 import { ModelPicker } from "./ModelPicker";
 import { ThinkingToggle } from "./ThinkingToggle";
@@ -332,11 +333,26 @@ export const AgentChatComposer = memo(function AgentChatComposer({
             onChange={handleFileInputChange}
           />
 
-          {models.length > 0 && (
-            <ModelPicker models={models} value={modelValue} onChange={onModelChange} />
-          )}
-          {allowThinking && (
-            <ThinkingToggle value={thinkingLevel} onChange={onThinkingChange} />
+          {(models.length > 0 || allowThinking) && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                  aria-label="Model & thinking settings"
+                >
+                  <Settings2 className="h-4 w-4" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="start" className="w-auto min-w-[200px] space-y-2 p-2" side="top">
+                {models.length > 0 && (
+                  <ModelPicker models={models} value={modelValue} onChange={onModelChange} />
+                )}
+                {allowThinking && (
+                  <ThinkingToggle value={thinkingLevel} onChange={onThinkingChange} />
+                )}
+              </PopoverContent>
+            </Popover>
           )}
 
           {/* Right-aligned group: streaming status + token gauge (stacked on sm+) */}

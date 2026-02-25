@@ -2,12 +2,11 @@
 
 import { memo } from "react";
 import { useEmergency } from "../EmergencyProvider";
-import { EmergencyFab } from "./EmergencyFab";
 import { EmergencyPanel } from "./EmergencyPanel";
 
 /**
  * Self-contained emergency overlay that reads all state from EmergencyProvider context.
- * Renders the FAB + Panel without any props from the parent page.
+ * Renders only the Panel — the trigger button now lives in HeaderBar.
  */
 export const EmergencyOverlay = memo(function EmergencyOverlay() {
   const {
@@ -21,17 +20,14 @@ export const EmergencyOverlay = memo(function EmergencyOverlay() {
   } = useEmergency();
 
   return (
-    <>
-      <EmergencyFab onClick={() => setOpen(true)} />
-      <EmergencyPanel
-        open={open}
-        onClose={() => setOpen(false)}
-        actionStatus={status}
-        lastResult={lastResult}
-        pausedJobIds={pausedJobIds}
-        onExecute={executeAction}
-        onRestoreCron={restoreCron}
-      />
-    </>
+    <EmergencyPanel
+      open={open}
+      onClose={() => setOpen(false)}
+      actionStatus={status}
+      lastResult={lastResult}
+      pausedJobIds={pausedJobIds}
+      onExecute={executeAction}
+      onRestoreCron={restoreCron}
+    />
   );
 });
