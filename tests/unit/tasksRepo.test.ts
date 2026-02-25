@@ -15,6 +15,7 @@ describe("tasksRepo", () => {
     id: "task-001",
     cronJobId: "cron-uuid-1",
     agentId: "alex",
+    managementStatus: "managed",
     name: "Test Task",
     description: "A test task",
     type: "periodic",

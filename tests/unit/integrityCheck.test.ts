@@ -16,6 +16,7 @@ function makeTask(id: string): StudioTask {
     id,
     cronJobId: "",
     agentId: "alex",
+    managementStatus: "managed",
     name: `Task ${id}`,
     description: "",
     type: "periodic",

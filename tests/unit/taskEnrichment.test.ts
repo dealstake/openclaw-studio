@@ -70,6 +70,7 @@ function makeTask(overrides: Partial<StudioTask> = {}): StudioTask {
     id: "t1",
     cronJobId: "cron-1",
     agentId: "agent-1",
+    managementStatus: "managed",
     name: "Test Task",
     description: "",
     type: "periodic",
@@ -95,6 +96,7 @@ function makeCronJob(overrides: Partial<CronJobSummary> = {}): CronJobSummary {
     name: "Test",
     enabled: true,
     agentId: "agent-1",
+    managementStatus: "managed",
     schedule: { kind: "every", everyMs: 3600000 },
     payload: { kind: "agentTurn", message: "test" },
     sessionTarget: "isolated",
@@ -133,10 +135,11 @@ describe("enrichTasksWithCronData", () => {
     expect(result[0].lastRunStatus).toBe("error");
   });
 
-  it("passes through tasks with no matching cron job", () => {
+  it("marks tasks with no matching cron job as orphan", () => {
     const tasks = [makeTask({ cronJobId: "nonexistent" })];
     const result = enrichTasksWithCronData(tasks, [], "agent-1");
-    expect(result).toEqual(tasks);
+    expect(result).toHaveLength(1);
+    expect(result[0].managementStatus).toBe("orphan");
   });
 
   it("synthesizes orphan cron jobs as unmanaged tasks", () => {
@@ -211,6 +214,7 @@ describe("enrichTasksWithCronData", () => {
     ];
 
     const result = enrichTasksWithCronData([], cronJobs, "agent-1");
-    expect(result[0].name).toBe("[UNMANAGED] Unknown Task");
+    expect(result[0].name).toBe("Unknown Task");
+    expect(result[0].managementStatus).toBe("unmanaged");
   });
 });

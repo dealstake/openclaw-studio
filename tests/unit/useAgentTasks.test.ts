@@ -65,6 +65,7 @@ function makeTask(overrides: Partial<StudioTask> = {}): StudioTask {
     id: "task-1",
     cronJobId: "cron-1",
     agentId: "agent-1",
+    managementStatus: "managed",
     name: "Test Task",
     description: "",
     type: "periodic",
@@ -90,6 +91,7 @@ function makeCronJob(overrides: Partial<CronJobSummary> = {}): CronJobSummary {
     name: "[TASK] Test Task",
     enabled: true,
     agentId: "agent-1",
+    managementStatus: "managed",
     schedule: { kind: "every", everyMs: 3_600_000 },
     payload: { kind: "agentTurn", message: "Do something", model: "default" },
     sessionTarget: "isolated",
@@ -199,7 +201,7 @@ describe("useAgentTasks", () => {
     });
 
     expect(result.current.tasks).toHaveLength(1);
-    expect(result.current.tasks[0].name).toContain("UNMANAGED");
+    expect(result.current.tasks[0].managementStatus).toBe("unmanaged");
     expect(result.current.tasks[0].cronJobId).toBe("cron-orphan");
   });
 

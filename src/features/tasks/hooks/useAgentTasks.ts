@@ -102,6 +102,7 @@ export const useAgentTasks = (
           id: taskId,
           cronJobId: result.jobId,
           agentId: payload.agentId,
+          managementStatus: "managed",
           name: payload.name,
           description: payload.description,
           type: payload.type,
@@ -282,7 +283,7 @@ export const useAgentTasks = (
 
         // Update Studio metadata
         const updated = await patchTaskMetadata(agentId, taskId, updates);
-        setTasks((prev) => prev.map((t) => (t.id === taskId ? updated : t)));
+        setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...updated, managementStatus: t.managementStatus } : t)));
         toast.success(`Task "${updated.name}" updated`);
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to update task.";

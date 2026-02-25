@@ -20,6 +20,7 @@ function makeTask(id: string): StudioTask {
     id,
     cronJobId: `cron-${id}`,
     agentId: "alex",
+    managementStatus: "managed",
     name: `Task ${id}`,
     description: "",
     type: "periodic",

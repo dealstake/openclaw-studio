@@ -12,6 +12,7 @@ function makeTask(overrides: Partial<StudioTask> = {}): StudioTask {
     id: "task-1",
     cronJobId: "cron-1",
     agentId: "agent-1",
+    managementStatus: "managed",
     name: "Test Task",
     description: "A description",
     type: "periodic",

@@ -10,6 +10,7 @@ function rowToTask(row: typeof tasks.$inferSelect): StudioTask {
     id: row.id,
     cronJobId: row.cronJobId ?? "",
     agentId: row.agentId,
+    managementStatus: "managed", // Default; enrichment layer may override
     name: row.name,
     description: row.description,
     type: row.type as StudioTask["type"],
