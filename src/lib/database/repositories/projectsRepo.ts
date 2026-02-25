@@ -1,4 +1,4 @@
-import { eq, asc, and, sql } from "drizzle-orm";
+import { eq, asc, desc, and, sql } from "drizzle-orm";
 import { projectsIndex, type ProjectIndexRow as FullProjectIndexRow } from "../schema";
 import { STATUS_ORDER } from "@/features/projects/lib/constants";
 import type { StudioDb } from "../index";
@@ -27,7 +27,13 @@ export function listAll(db: StudioDb): ProjectIndexRow[] {
       sortOrder: projectsIndex.sortOrder,
     })
     .from(projectsIndex)
-    .orderBy(asc(projectsIndex.sortOrder), asc(projectsIndex.name))
+    .orderBy(
+      asc(projectsIndex.sortOrder),
+      asc(projectsIndex.priority),
+      // Done projects: most recently completed at bottom (ascending updatedAt within Done group)
+      asc(projectsIndex.updatedAt),
+      asc(projectsIndex.name),
+    )
     .all();
 
   return rows;
