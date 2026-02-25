@@ -64,11 +64,14 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
  * gateway stores an already-conformant image and never re-resizes it on
  * subsequent model turns.
  *
- * MUST match (or be ≤) the gateway's `imageMaxDimensionPx` config (768).
- * When client sends 1200px and gateway config is 768px, the server still
- * re-resizes on every turn — observed: 350 redundant resize ops/day.
+ * Sourced from `NEXT_PUBLIC_IMAGE_MAX_DIMENSION_PX` env var to stay in sync
+ * with the gateway's `imageMaxDimensionPx` config. Falls back to 768 (the
+ * gateway default). When the client value exceeds the gateway value, the
+ * server re-resizes on every turn — wasteful.
  */
-const IMAGE_MAX_DIMENSION_PX = 768;
+const IMAGE_MAX_DIMENSION_PX = Number(
+  process.env.NEXT_PUBLIC_IMAGE_MAX_DIMENSION_PX ?? 768
+);
 
 /** JPEG quality for client-side resize output (0-1). */
 const IMAGE_RESIZE_QUALITY = 0.85;

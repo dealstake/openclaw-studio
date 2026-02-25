@@ -15,6 +15,8 @@ import { findAgentBySessionKey } from "./agentLookup";
 import type { RuntimeTrackingState } from "./runtimeTrackingState";
 import type { MessagePart } from "@/lib/chat/types";
 
+// ── Helpers ────────────────────────────────────────────────────────────
+
 const resolveRole = (message: unknown) =>
   message && typeof message === "object"
     ? (message as Record<string, unknown>).role
@@ -52,6 +54,315 @@ const summarizeThinkingMessage = (message: unknown) => {
   return summary;
 };
 
+// ── Sub-handlers ───────────────────────────────────────────────────────
+
+/**
+ * Route cron/subagent chat events to the activity feed.
+ * Returns true if the event was consumed (no further processing needed).
+ */
+function handleActivityFeedRouting(
+  payload: ChatEventPayload,
+  state: RuntimeTrackingState
+): boolean {
+  const isCron = payload.sessionKey!.includes(":cron:");
+  const isSubAgent = payload.sessionKey!.includes(":subagent:");
+  if (!isCron && !isSubAgent) return false;
+
+  const deps = state.deps;
+  const text = extractText(payload.message);
+  if (deps.onActivityMessage) {
+    const thinking = extractThinking(payload.message);
+    const parts: MessagePart[] = [];
+    if (thinking) {
+      parts.push({ type: "reasoning", text: thinking, streaming: payload.state === "delta" });
+    }
+    const cleanedText = text ? stripUiMetadata(text) : null;
+    if (cleanedText) {
+      parts.push({ type: "text", text: cleanedText, streaming: payload.state === "delta" });
+    }
+    if (parts.length > 0) {
+      const sourceType = isCron ? "cron" as const : "subagent" as const;
+      const status = payload.state === "error" ? "error" as const
+        : payload.state === "final" ? "complete" as const
+        : "streaming" as const;
+      deps.onActivityMessage(payload.sessionKey!, {
+        sourceName: "",
+        sourceType,
+        parts,
+        status,
+      });
+    }
+  }
+  return true; // consumed — no agent matched, so stop processing
+}
+
+/**
+ * Handle heartbeat events. Returns true if the event was consumed.
+ */
+function handleHeartbeatEvent(
+  payload: ChatEventPayload,
+  agentId: string,
+  state: RuntimeTrackingState
+): boolean {
+  if (!payload.isHeartbeat) return false;
+
+  const deps = state.deps;
+
+  if (payload.state === "delta") {
+    state.heartbeatActiveAgents.add(agentId);
+    state.markActivityThrottled(agentId);
+    return true;
+  }
+
+  if (payload.state === "final") {
+    state.heartbeatActiveAgents.delete(agentId);
+    const text = extractText(payload.message) ?? "";
+    const isOk = /HEARTBEAT_OK/i.test(text);
+    state.clearRunTracking(payload.runId ?? null);
+    deps.clearPendingLivePatch(agentId);
+    deps.dispatch({
+      type: "updateAgent",
+      agentId,
+      patch: { status: "idle", runId: null, runStartedAt: null, streamText: null, thinkingTrace: null },
+    });
+    if (deps.onActivityMessage) {
+      deps.onActivityMessage(`heartbeat-${payload.runId}`, {
+        sourceName: "Heartbeat",
+        sourceType: "heartbeat",
+        parts: [{ type: "text", text, streaming: false }],
+        status: isOk ? "complete" : "error",
+      });
+    }
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Handle streaming delta events for an agent.
+ */
+function handleDeltaEvent(
+  payload: ChatEventPayload,
+  agentId: string,
+  agent: AgentState | undefined,
+  state: RuntimeTrackingState
+): void {
+  const deps = state.deps;
+  const nextTextRaw = extractText(payload.message);
+  const nextText = nextTextRaw ? stripUiMetadata(nextTextRaw) : null;
+  const nextThinking = extractThinking(payload.message ?? payload);
+
+  if (typeof nextTextRaw === "string" && isUiMetadataPrefix(nextTextRaw.trim())) {
+    return;
+  }
+
+  const patch: Partial<AgentState> = {};
+  if (nextThinking) {
+    patch.thinkingTrace = nextThinking;
+    patch.status = "running";
+  }
+  if (typeof nextText === "string") {
+    patch.streamText = nextText;
+    patch.status = "running";
+  }
+  if (patch.status === "running" && agent?.status !== "running") {
+    patch.runStartedAt = state.now();
+  }
+  if (Object.keys(patch).length > 0) {
+    deps.queueLivePatch(agentId, patch);
+  }
+
+  // Update messageParts for live streaming display
+  if (typeof nextText === "string" && payload.runId) {
+    const textKey = state.getPartKey(agentId, payload.runId, "text");
+    state.appendOrUpdatePart(agentId, textKey, {
+      type: "text",
+      text: nextText,
+      streaming: true,
+    });
+  }
+  if (nextThinking && payload.runId) {
+    const reasoningKey = state.getPartKey(agentId, payload.runId, "reasoning");
+    state.appendOrUpdatePart(agentId, reasoningKey, {
+      type: "reasoning",
+      text: nextThinking,
+      streaming: true,
+      startedAt: state.partIndexByKey.has(reasoningKey) ? undefined : state.now(),
+    });
+  }
+}
+
+/**
+ * Handle final (completed) events for an agent.
+ */
+function handleFinalEvent(
+  payload: ChatEventPayload,
+  agentId: string,
+  agent: AgentState | undefined,
+  role: unknown,
+  state: RuntimeTrackingState
+): void {
+  const deps = state.deps;
+  const nextTextRaw = extractText(payload.message);
+  const nextText = nextTextRaw ? stripUiMetadata(nextTextRaw) : null;
+  const nextThinking = extractThinking(payload.message ?? payload);
+  const isToolRole = role === "tool" || role === "toolResult";
+
+  if (!nextThinking && role === "assistant" && !state.thinkingDebugBySession.has(payload.sessionKey!)) {
+    state.thinkingDebugBySession.add(payload.sessionKey!);
+    state.logWarn("No thinking trace extracted from chat event.", {
+      sessionKey: payload.sessionKey,
+      message: summarizeThinkingMessage(payload.message ?? payload),
+    });
+  }
+
+  const thinkingText = nextThinking ?? agent?.thinkingTrace ?? null;
+  if (
+    !thinkingText &&
+    role === "assistant" &&
+    agent &&
+    !agent.messageParts.some((p) => p.type === "reasoning")
+  ) {
+    void deps.loadAgentHistory(agentId);
+  }
+
+  // Finalize streaming parts BEFORE clearing run tracking
+  if (thinkingText && payload.runId) {
+    const reasoningKey = state.getPartKey(agentId, payload.runId, "reasoning");
+    state.appendOrUpdatePart(agentId, reasoningKey, {
+      type: "reasoning",
+      text: thinkingText,
+      streaming: false,
+      completedAt: state.now(),
+    });
+  } else if (thinkingText) {
+    deps.dispatch({
+      type: "appendPart",
+      agentId,
+      part: { type: "reasoning", text: thinkingText, streaming: false, completedAt: state.now() },
+    });
+  }
+
+  if (!isToolRole && typeof nextText === "string") {
+    if (payload.runId) {
+      const textKey = state.getPartKey(agentId, payload.runId, "text");
+      state.appendOrUpdatePart(agentId, textKey, {
+        type: "text",
+        text: nextText,
+        streaming: false,
+      });
+    } else {
+      deps.dispatch({
+        type: "appendPart",
+        agentId,
+        part: { type: "text", text: nextText, streaming: false },
+      });
+    }
+    deps.dispatch({
+      type: "updateAgent",
+      agentId,
+      patch: { lastResult: nextText },
+    });
+  }
+
+  state.clearRunTracking(payload.runId ?? null);
+  deps.clearPendingLivePatch(agentId);
+
+  // Dispatch image parts
+  const images = extractImages(payload.message);
+  for (const img of images) {
+    deps.dispatch({
+      type: "appendPart",
+      agentId,
+      part: { type: "image", src: img.src, alt: img.alt },
+    });
+  }
+
+  if (agent?.lastUserMessage && !agent.latestOverride) {
+    void deps.updateSpecialLatestUpdate(agentId, agent, agent.lastUserMessage);
+  }
+
+  const assistantCompletionAt = resolveAssistantCompletionTimestamp({
+    role,
+    state: payload.state,
+    message: payload.message,
+    now: state.now(),
+  });
+  deps.dispatch({
+    type: "updateAgent",
+    agentId,
+    patch: {
+      status: "idle",
+      runId: null,
+      runStartedAt: null,
+      streamText: null,
+      thinkingTrace: null,
+      ...(typeof assistantCompletionAt === "number"
+        ? { lastAssistantMessageAt: assistantCompletionAt }
+        : {}),
+    },
+  });
+}
+
+/**
+ * Handle aborted events for an agent.
+ */
+function handleAbortedEvent(
+  payload: ChatEventPayload,
+  agentId: string,
+  state: RuntimeTrackingState
+): void {
+  const deps = state.deps;
+  state.clearRunTracking(payload.runId ?? null);
+  deps.clearPendingLivePatch(agentId);
+  const reason = payload.errorMessage ?? "Run was aborted";
+  deps.dispatch({
+    type: "appendPart",
+    agentId,
+    part: {
+      type: "status",
+      state: "error",
+      errorMessage: `⚠️ ${reason}`,
+    } as MessagePart,
+  });
+  deps.dispatch({
+    type: "updateAgent",
+    agentId,
+    patch: { status: "idle", runId: null, runStartedAt: null, streamText: null, thinkingTrace: null },
+  });
+}
+
+/**
+ * Handle error events for an agent.
+ */
+function handleErrorEvent(
+  payload: ChatEventPayload,
+  agentId: string,
+  state: RuntimeTrackingState
+): void {
+  const deps = state.deps;
+  state.clearRunTracking(payload.runId ?? null);
+  deps.clearPendingLivePatch(agentId);
+  const errorText = payload.errorMessage ?? "An error occurred";
+  deps.dispatch({
+    type: "appendPart",
+    agentId,
+    part: {
+      type: "status",
+      state: "error",
+      errorMessage: `❌ ${errorText}`,
+    } as MessagePart,
+  });
+  deps.dispatch({
+    type: "updateAgent",
+    agentId,
+    patch: { status: "error", runId: null, runStartedAt: null, streamText: null, thinkingTrace: null },
+  });
+}
+
+// ── Main handler ───────────────────────────────────────────────────────
+
 export function handleRuntimeChatEvent(
   payload: ChatEventPayload,
   state: RuntimeTrackingState
@@ -66,277 +377,49 @@ export function handleRuntimeChatEvent(
   const agentsSnapshot = deps.getAgents();
   const agentId = findAgentBySessionKey(agentsSnapshot, payload.sessionKey);
 
-  // Route cron/subagent chat events to activity feed
+  // Route cron/subagent events to activity feed
   if (!agentId) {
-    const isCron = payload.sessionKey.includes(":cron:");
-    const isSubAgent = payload.sessionKey.includes(":subagent:");
-    if (isCron || isSubAgent) {
-      const text = extractText(payload.message);
-      // Full message content to activity message store
-      if (deps.onActivityMessage) {
-        const thinking = extractThinking(payload.message);
-        const parts: import("@/lib/chat/types").MessagePart[] = [];
-        if (thinking) {
-          parts.push({ type: "reasoning", text: thinking, streaming: payload.state === "delta" });
-        }
-        const cleanedText = text ? stripUiMetadata(text) : null;
-        if (cleanedText) {
-          parts.push({ type: "text", text: cleanedText, streaming: payload.state === "delta" });
-        }
-        if (parts.length > 0) {
-          const sourceType = isCron ? "cron" as const : "subagent" as const;
-          const status = payload.state === "error" ? "error" as const
-            : payload.state === "final" ? "complete" as const
-            : "streaming" as const;
-          deps.onActivityMessage(payload.sessionKey, {
-            sourceName: "",
-            sourceType,
-            parts,
-            status,
-          });
-        }
-      }
-    }
-  }
-
-  if (!agentId) return;
-  const agent = agentsSnapshot.find((entry) => entry.agentId === agentId);
-
-  // Route heartbeat messages to activity store only — no main chat pollution.
-  // Track heartbeat mode so tool call events (which lack isHeartbeat flag)
-  // are also suppressed during the heartbeat turn.
-  if (payload.isHeartbeat) {
-    if (payload.state === "delta") {
-      state.heartbeatActiveAgents.add(agentId);
-      state.markActivityThrottled(agentId);
-      return;
-    }
-    if (payload.state === "final") {
-      state.heartbeatActiveAgents.delete(agentId);
-      const text = extractText(payload.message) ?? "";
-      const isOk = /HEARTBEAT_OK/i.test(text);
-      state.clearRunTracking(payload.runId ?? null);
-      deps.clearPendingLivePatch(agentId);
-      deps.dispatch({
-        type: "updateAgent",
-        agentId,
-        patch: { status: "idle", runId: null, runStartedAt: null, streamText: null, thinkingTrace: null },
-      });
-      if (deps.onActivityMessage) {
-        deps.onActivityMessage(`heartbeat-${payload.runId}`, {
-          sourceName: "Heartbeat",
-          sourceType: "heartbeat",
-          parts: [{ type: "text", text, streaming: false }],
-          status: isOk ? "complete" : "error",
-        });
-      }
-      return;
-    }
-  }
-
-  // Suppress ALL events (tool calls, etc.) while an agent is in heartbeat mode.
-  // Tool call events during heartbeats don't carry isHeartbeat, so we rely on
-  // the tracked mode set above when an isHeartbeat delta was received.
-  if (state.heartbeatActiveAgents.has(agentId)) {
+    handleActivityFeedRouting(payload, state);
     return;
   }
 
+  const agent = agentsSnapshot.find((entry) => entry.agentId === agentId);
+
+  // Handle heartbeat events
+  if (handleHeartbeatEvent(payload, agentId, state)) return;
+
+  // Suppress events while agent is in heartbeat mode
+  if (state.heartbeatActiveAgents.has(agentId)) return;
+
+  // Update chat summary
   const role = resolveRole(payload.message);
   const summaryPatch = getChatSummaryPatch(payload, state.now());
   if (summaryPatch) {
     deps.dispatch({
       type: "updateAgent",
       agentId,
-      patch: {
-        ...summaryPatch,
-        sessionCreated: true,
-      },
+      patch: { ...summaryPatch, sessionCreated: true },
     });
   }
 
-  if (role === "user" || role === "system") {
-    return;
-  }
+  // Skip user/system messages
+  if (role === "user" || role === "system") return;
 
   state.markActivityThrottled(agentId);
 
-  const nextTextRaw = extractText(payload.message);
-  const nextText = nextTextRaw ? stripUiMetadata(nextTextRaw) : null;
-  const nextThinking = extractThinking(payload.message ?? payload);
-  const isToolRole = role === "tool" || role === "toolResult";
-
-  if (payload.state === "delta") {
-    if (typeof nextTextRaw === "string" && isUiMetadataPrefix(nextTextRaw.trim())) {
-      return;
-    }
-    const patch: Partial<AgentState> = {};
-    if (nextThinking) {
-      patch.thinkingTrace = nextThinking;
-      patch.status = "running";
-    }
-    if (typeof nextText === "string") {
-      patch.streamText = nextText;
-      patch.status = "running";
-    }
-    // Set runStartedAt on the first delta (idle → running transition)
-    if (patch.status === "running" && agent?.status !== "running") {
-      patch.runStartedAt = state.now();
-    }
-    if (Object.keys(patch).length > 0) {
-      deps.queueLivePatch(agentId, patch);
-    }
-    // Update messageParts for live streaming display (mirrors agentEventHandler)
-    if (typeof nextText === "string" && payload.runId) {
-      const textKey = state.getPartKey(agentId, payload.runId, "text");
-      state.appendOrUpdatePart(agentId, textKey, {
-        type: "text",
-        text: nextText,
-        streaming: true,
-      });
-    }
-    if (nextThinking && payload.runId) {
-      const reasoningKey = state.getPartKey(agentId, payload.runId, "reasoning");
-      state.appendOrUpdatePart(agentId, reasoningKey, {
-        type: "reasoning",
-        text: nextThinking,
-        streaming: true,
-        startedAt: state.partIndexByKey.has(reasoningKey) ? undefined : state.now(),
-      });
-    }
-    return;
-  }
-
-  if (payload.state === "final") {
-    if (!nextThinking && role === "assistant" && !state.thinkingDebugBySession.has(payload.sessionKey)) {
-      state.thinkingDebugBySession.add(payload.sessionKey);
-      state.logWarn("No thinking trace extracted from chat event.", {
-        sessionKey: payload.sessionKey,
-        message: summarizeThinkingMessage(payload.message ?? payload),
-      });
-    }
-    const thinkingText = nextThinking ?? agent?.thinkingTrace ?? null;
-    if (
-      !thinkingText &&
-      role === "assistant" &&
-      agent &&
-      !agent.messageParts.some((p) => p.type === "reasoning")
-    ) {
-      void deps.loadAgentHistory(agentId);
-    }
-    // Finalize streaming parts BEFORE clearing run tracking so
-    // appendOrUpdatePart can find existing keyed parts from deltas.
-    if (thinkingText && payload.runId) {
-      const reasoningKey = state.getPartKey(agentId, payload.runId, "reasoning");
-      state.appendOrUpdatePart(agentId, reasoningKey, {
-        type: "reasoning",
-        text: thinkingText,
-        streaming: false,
-        completedAt: state.now(),
-      });
-    } else if (thinkingText) {
-      // No runId — fall back to blind append (rare edge case)
-      deps.dispatch({
-        type: "appendPart",
-        agentId,
-        part: { type: "reasoning", text: thinkingText, streaming: false, completedAt: state.now() },
-      });
-    }
-    if (!isToolRole && typeof nextText === "string") {
-      if (payload.runId) {
-        const textKey = state.getPartKey(agentId, payload.runId, "text");
-        state.appendOrUpdatePart(agentId, textKey, {
-          type: "text",
-          text: nextText,
-          streaming: false,
-        });
-      } else {
-        deps.dispatch({
-          type: "appendPart",
-          agentId,
-          part: { type: "text", text: nextText, streaming: false },
-        });
-      }
-      deps.dispatch({
-        type: "updateAgent",
-        agentId,
-        patch: { lastResult: nextText },
-      });
-    }
-    state.clearRunTracking(payload.runId ?? null);
-    deps.clearPendingLivePatch(agentId);
-    // Dispatch image parts from messages containing image content
-    const images = extractImages(payload.message);
-    for (const img of images) {
-      deps.dispatch({
-        type: "appendPart",
-        agentId,
-        part: { type: "image", src: img.src, alt: img.alt },
-      });
-    }
-    if (agent?.lastUserMessage && !agent.latestOverride) {
-      void deps.updateSpecialLatestUpdate(agentId, agent, agent.lastUserMessage);
-    }
-    const assistantCompletionAt = resolveAssistantCompletionTimestamp({
-      role,
-      state: payload.state,
-      message: payload.message,
-      now: state.now(),
-    });
-    deps.dispatch({
-      type: "updateAgent",
-      agentId,
-      patch: {
-        status: "idle",
-        runId: null,
-        runStartedAt: null,
-        streamText: null,
-        thinkingTrace: null,
-        ...(typeof assistantCompletionAt === "number"
-          ? { lastAssistantMessageAt: assistantCompletionAt }
-          : {}),
-      },
-    });
-    return;
-  }
-
-  if (payload.state === "aborted") {
-    state.clearRunTracking(payload.runId ?? null);
-    deps.clearPendingLivePatch(agentId);
-    const reason = payload.errorMessage ?? "Run was aborted";
-    deps.dispatch({
-      type: "appendPart",
-      agentId,
-      part: {
-        type: "status",
-        state: "error",
-        errorMessage: `⚠️ ${reason}`,
-      } as MessagePart,
-    });
-    deps.dispatch({
-      type: "updateAgent",
-      agentId,
-      patch: { status: "idle", runId: null, runStartedAt: null, streamText: null, thinkingTrace: null },
-    });
-    return;
-  }
-
-  if (payload.state === "error") {
-    state.clearRunTracking(payload.runId ?? null);
-    deps.clearPendingLivePatch(agentId);
-    const errorText = payload.errorMessage ?? "An error occurred";
-    deps.dispatch({
-      type: "appendPart",
-      agentId,
-      part: {
-        type: "status",
-        state: "error",
-        errorMessage: `❌ ${errorText}`,
-      } as MessagePart,
-    });
-    deps.dispatch({
-      type: "updateAgent",
-      agentId,
-      patch: { status: "error", runId: null, runStartedAt: null, streamText: null, thinkingTrace: null },
-    });
+  // Dispatch to state-specific sub-handler
+  switch (payload.state) {
+    case "delta":
+      handleDeltaEvent(payload, agentId, agent, state);
+      break;
+    case "final":
+      handleFinalEvent(payload, agentId, agent, role, state);
+      break;
+    case "aborted":
+      handleAbortedEvent(payload, agentId, state);
+      break;
+    case "error":
+      handleErrorEvent(payload, agentId, state);
+      break;
   }
 }
