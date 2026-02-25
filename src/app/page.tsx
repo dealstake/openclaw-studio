@@ -14,6 +14,7 @@ import { HeaderBar } from "@/features/agents/components/HeaderBar";
 import { ConnectionPanel } from "@/features/agents/components/ConnectionPanel";
 import { EmptyStatePanel } from "@/features/agents/components/EmptyStatePanel";
 import { BrandMark } from "@/components/brand/BrandMark";
+import { GatewayStatusBanner } from "@/components/GatewayStatusBanner";
 import { Users } from "lucide-react";
 import { sectionLabelClass } from "@/components/SectionLabel";
 // buildAgentInstruction moved to useChatCallbacks
@@ -1520,6 +1521,16 @@ const AgentStudioPage = () => {
             <div className="rounded-md border border-border/80 bg-card/80 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.11em] text-muted-foreground">
               {configMutationStatusLine}
             </div>
+          </div>
+        ) : null}
+
+        {/* ── Gateway connection banner: shown when disconnected ──── */}
+        {status !== "connected" && !connectionPanelVisible ? (
+          <div className="fixed inset-x-0 top-12 z-30">
+            <GatewayStatusBanner
+              status={status}
+              onReconnect={() => void connect()}
+            />
           </div>
         ) : null}
 
