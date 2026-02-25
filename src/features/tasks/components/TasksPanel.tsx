@@ -1,6 +1,7 @@
 "use client";
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import { Plus, RefreshCw, ListChecks, Layers } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -180,6 +181,24 @@ export const TasksPanel = memo(function TasksPanel({
       target.scrollIntoView({ block: "nearest" });
     }
   }, [focusIndex]);
+
+  // ─── Automated orphan detection ──────────────────────────────────────────
+  const orphanCount = useMemo(
+    () => tasks.filter((t) => t.managementStatus === "orphan").length,
+    [tasks],
+  );
+  const orphanToastShown = useRef(false);
+  useEffect(() => {
+    if (orphanCount > 0 && !orphanToastShown.current && !loading) {
+      orphanToastShown.current = true;
+      toast.warning(
+        `${orphanCount} orphaned task${orphanCount > 1 ? "s" : ""} detected — metadata exists but cron job is missing. Use the "Orphan" filter to review.`,
+        { duration: 8000 },
+      );
+    }
+    // Reset when orphans are resolved so toast fires again if new orphans appear
+    if (orphanCount === 0) orphanToastShown.current = false;
+  }, [orphanCount, loading]);
 
   if (!isSelected) return null;
 
