@@ -1,0 +1,303 @@
+"use client";
+
+import { useCallback, useRef, useState } from "react";
+import { useGateway } from "@/lib/gateway/GatewayProvider";
+import type { GatewayModelPolicySnapshot } from "@/lib/gateway/models";
+import {
+  buildSummarySnapshotPatches,
+  type SummaryPreviewSnapshot,
+  type SummarySnapshotAgent,
+  type SummaryStatusSnapshot,
+} from "@/features/agents/state/runtimeEventBridge";
+import type { AgentStoreSeed, Action as AgentStoreAction } from "@/features/agents/state/store";
+import {
+  buildAgentMainSessionKey,
+  isSameSessionKey,
+  isGatewayDisconnectLikeError,
+} from "@/lib/gateway/GatewayClient";
+import type { AgentsListResult, SessionsListEntry, SessionsListResult } from "@/lib/gateway/types";
+import { resolveAgentAvatarSeed } from "@/lib/studio/settings";
+
+interface UseLoadAgentsParams {
+  dispatch: React.Dispatch<AgentStoreAction>;
+  hydrateAgents: (seeds: AgentStoreSeed[]) => void;
+  setError: (msg: string | null) => void;
+  setLoading: (v: boolean) => void;
+  gatewayConfigSnapshot: GatewayModelPolicySnapshot | null;
+  setGatewayConfigSnapshot: (s: GatewayModelPolicySnapshot) => void;
+  resolveDefaultModelForAgent: (agentId: string, snapshot: GatewayModelPolicySnapshot | null) => string | null;
+  setAgentContextWindow: React.Dispatch<React.SetStateAction<Map<string, { totalTokens: number; contextTokens: number }>>>;
+}
+
+/**
+ * Resolves an agent's display name from the agents.list result.
+ * Prefers explicit `name`, then `identity.name`, then falls back to `id`.
+ */
+export function resolveAgentName(agent: AgentsListResult["agents"][number]): string {
+  const fromList = typeof agent.name === "string" ? agent.name.trim() : "";
+  if (fromList) return fromList;
+  const fromIdentity =
+    typeof agent.identity?.name === "string" ? agent.identity.name.trim() : "";
+  if (fromIdentity) return fromIdentity;
+  return agent.id;
+}
+
+/**
+ * Extracts a valid avatar URL from the agent's identity block.
+ * Returns null if no valid URL is found.
+ */
+export function resolveAgentAvatarUrl(agent: AgentsListResult["agents"][number]): string | null {
+  const candidate = agent.identity?.avatarUrl ?? agent.identity?.avatar ?? null;
+  if (typeof candidate !== "string") return null;
+  const trimmed = candidate.trim();
+  if (!trimmed) return null;
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return trimmed;
+  if (trimmed.startsWith("data:image/")) return trimmed;
+  return null;
+}
+
+/**
+ * Encapsulates the `loadAgents` callback and `agentsLoadedOnce` state.
+ *
+ * This is the single largest function in the studio (~280 lines). It:
+ * 1. Fetches gateway config (if not cached)
+ * 2. Loads studio settings for avatar preferences
+ * 3. Lists agents from the gateway
+ * 4. Resolves main session key per agent
+ * 5. Hydrates the agent store
+ * 6. Captures context window utilization
+ * 7. Loads initial summary snapshot (status + preview)
+ * 8. Auto-selects the most recently active agent
+ */
+export function useLoadAgents(params: UseLoadAgentsParams) {
+  const {
+    dispatch,
+    hydrateAgents,
+    setError,
+    setLoading,
+    gatewayConfigSnapshot,
+    setGatewayConfigSnapshot,
+    resolveDefaultModelForAgent,
+    setAgentContextWindow,
+  } = params;
+
+  const {
+    client,
+    status,
+    gatewayUrl,
+    settingsCoordinator,
+  } = useGateway();
+
+  const [agentsLoadedOnce, setAgentsLoadedOnce] = useState(false);
+  const gatewayConfigSnapshotRef = useRef(gatewayConfigSnapshot);
+  gatewayConfigSnapshotRef.current = gatewayConfigSnapshot;
+
+  const loadAgents = useCallback(async () => {
+    if (status !== "connected") return;
+    setLoading(true);
+    try {
+      let configSnapshot = gatewayConfigSnapshotRef.current;
+      if (!configSnapshot) {
+        try {
+          configSnapshot = await client.call<GatewayModelPolicySnapshot>("config.get", {});
+          setGatewayConfigSnapshot(configSnapshot);
+          gatewayConfigSnapshotRef.current = configSnapshot;
+        } catch (err) {
+          if (!isGatewayDisconnectLikeError(err)) {
+            console.error("Failed to load gateway config while loading agents.", err);
+          }
+        }
+      }
+      const gatewayKey = gatewayUrl.trim();
+      let settings: Awaited<ReturnType<typeof settingsCoordinator.loadSettings>> | null = null;
+      if (gatewayKey) {
+        try {
+          settings = await settingsCoordinator.loadSettings();
+        } catch (err) {
+          console.error("Failed to load studio settings while loading agents.", err);
+        }
+      }
+      const agentsResult = await client.call<AgentsListResult>("agents.list", {});
+      const mainKey = agentsResult.mainKey?.trim() || "main";
+
+      // Filter out phantom agents injected by the gateway's mainKey fallback.
+      const configuredAgentIds = new Set(
+        (configSnapshot?.config?.agents?.list ?? [])
+          .map((entry: { id?: string }) => entry?.id?.trim()?.toLowerCase())
+          .filter(Boolean)
+      );
+      const realAgents =
+        configuredAgentIds.size > 0
+          ? agentsResult.agents.filter(
+              (agent) =>
+                configuredAgentIds.has(agent.id?.toLowerCase()) ||
+                agent.id === agentsResult.defaultId
+            )
+          : agentsResult.agents;
+
+      const mainSessionKeyByAgent = new Map<string, SessionsListEntry | null>();
+      await Promise.all(
+        realAgents.map(async (agent) => {
+          try {
+            const expectedMainKey = buildAgentMainSessionKey(agent.id, mainKey);
+            const sessions = await client.call<SessionsListResult>("sessions.list", {
+              agentId: agent.id,
+              includeGlobal: false,
+              includeUnknown: false,
+              search: expectedMainKey,
+              limit: 4,
+            });
+            const entries = Array.isArray(sessions.sessions) ? sessions.sessions : [];
+            const mainEntry =
+              entries.find((entry) => isSameSessionKey(entry.key ?? "", expectedMainKey)) ?? null;
+            mainSessionKeyByAgent.set(agent.id, mainEntry);
+          } catch (err) {
+            if (!isGatewayDisconnectLikeError(err)) {
+              console.error("Failed to list sessions while resolving agent session.", err);
+            }
+            mainSessionKeyByAgent.set(agent.id, null);
+          }
+        })
+      );
+      const seeds: AgentStoreSeed[] = realAgents.map((agent) => {
+        const persistedSeed =
+          settings && gatewayKey ? resolveAgentAvatarSeed(settings, gatewayKey, agent.id) : null;
+        const avatarSeed = persistedSeed ?? agent.id;
+        const avatarUrl = resolveAgentAvatarUrl(agent);
+        const name = resolveAgentName(agent);
+        const mainSession = mainSessionKeyByAgent.get(agent.id) ?? null;
+        const modelProvider =
+          typeof mainSession?.modelProvider === "string" ? mainSession.modelProvider.trim() : "";
+        const modelId = typeof mainSession?.model === "string" ? mainSession.model.trim() : "";
+        const model =
+          modelProvider && modelId
+            ? `${modelProvider}/${modelId}`
+            : resolveDefaultModelForAgent(agent.id, configSnapshot);
+        const thinkingLevel =
+          typeof mainSession?.thinkingLevel === "string" ? mainSession.thinkingLevel : null;
+        return {
+          agentId: agent.id,
+          name,
+          sessionKey: buildAgentMainSessionKey(agent.id, mainKey),
+          avatarSeed,
+          avatarUrl,
+          model,
+          thinkingLevel,
+        };
+      });
+      hydrateAgents(seeds);
+      // Capture context window utilization from sessions.list
+      const cwMap = new Map<string, { totalTokens: number; contextTokens: number }>();
+      for (const seed of seeds) {
+        const mainSession = mainSessionKeyByAgent.get(seed.agentId) ?? null;
+        if (!mainSession) continue;
+        dispatch({
+          type: "updateAgent",
+          agentId: seed.agentId,
+          patch: { sessionCreated: true, sessionSettingsSynced: true },
+        });
+        if (typeof mainSession.totalTokens === "number" && mainSession.totalTokens > 0) {
+          const ct = typeof mainSession.contextTokens === "number" ? mainSession.contextTokens : 0;
+          const actualUsage = (typeof mainSession.inputTokens === "number" ? mainSession.inputTokens : 0)
+            + (typeof mainSession.outputTokens === "number" ? mainSession.outputTokens : 0);
+          const looksStale = ct > 0 && mainSession.totalTokens >= ct && actualUsage < ct * 0.5;
+          if (!looksStale) {
+            cwMap.set(seed.agentId, {
+              totalTokens: mainSession.totalTokens,
+              contextTokens: ct,
+            });
+          }
+        }
+      }
+      if (cwMap.size > 0) setAgentContextWindow(cwMap);
+
+      try {
+        const activeAgents: SummarySnapshotAgent[] = [];
+        for (const seed of seeds) {
+          const mainSession = mainSessionKeyByAgent.get(seed.agentId) ?? null;
+          if (!mainSession) continue;
+          activeAgents.push({
+            agentId: seed.agentId,
+            sessionKey: seed.sessionKey,
+            status: "idle",
+          });
+        }
+        const sessionKeys = Array.from(
+          new Set(
+            activeAgents
+              .map((agent) => agent.sessionKey)
+              .filter((key): key is string => typeof key === "string" && key.trim().length > 0)
+          )
+        ).slice(0, 64);
+        if (sessionKeys.length > 0) {
+          const [statusSummary, previewResult] = await Promise.all([
+            client.call<SummaryStatusSnapshot>("status", {}),
+            client.call<SummaryPreviewSnapshot>("sessions.preview", {
+              keys: sessionKeys,
+              limit: 8,
+              maxChars: 240,
+            }),
+          ]);
+          const patches = buildSummarySnapshotPatches({
+            agents: activeAgents,
+            statusSummary,
+            previewResult,
+          });
+          const assistantAtByAgentId = new Map<string, number>();
+          for (const entry of patches) {
+            if (typeof entry.patch.lastAssistantMessageAt === "number") {
+              assistantAtByAgentId.set(entry.agentId, entry.patch.lastAssistantMessageAt);
+            }
+          }
+          for (const entry of patches) {
+            dispatch({
+              type: "updateAgent",
+              agentId: entry.agentId,
+              patch: entry.patch,
+            });
+          }
+
+          let bestAgentId: string | null = seeds[0]?.agentId ?? null;
+          let bestTs = bestAgentId ? (assistantAtByAgentId.get(bestAgentId) ?? 0) : 0;
+          for (const seed of seeds) {
+            const ts = assistantAtByAgentId.get(seed.agentId) ?? 0;
+            if (ts <= bestTs) continue;
+            bestTs = ts;
+            bestAgentId = seed.agentId;
+          }
+          if (bestAgentId) {
+            dispatch({ type: "selectAgent", agentId: bestAgentId });
+          }
+        }
+      } catch (err) {
+        if (!isGatewayDisconnectLikeError(err)) {
+          console.error("Failed to load initial summary snapshot.", err);
+        }
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to load agents.";
+      setError(message);
+    } finally {
+      setLoading(false);
+      setAgentsLoadedOnce(true);
+    }
+  }, [
+    client,
+    dispatch,
+    hydrateAgents,
+    resolveDefaultModelForAgent,
+    setError,
+    setLoading,
+    setAgentContextWindow,
+    setGatewayConfigSnapshot,
+    gatewayUrl,
+    settingsCoordinator,
+    status,
+  ]);
+
+  return {
+    loadAgents,
+    agentsLoadedOnce,
+    setAgentsLoadedOnce,
+  };
+}
