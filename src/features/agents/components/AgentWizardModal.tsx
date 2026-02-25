@@ -62,12 +62,25 @@ export const AgentWizardModal = React.memo(function AgentWizardModal({
     let cancelled = false;
     (async () => {
       try {
-        const result = (await client.call("agents.list", {})) as {
-          agents?: Array<{ id: string; name?: string }>;
-        };
-        if (!cancelled && result?.agents) {
+        const result: unknown = await client.call("agents.list", {});
+        if (
+          !cancelled &&
+          result != null &&
+          typeof result === "object" &&
+          "agents" in result &&
+          Array.isArray((result as Record<string, unknown>).agents)
+        ) {
+          const agents = (result as Record<string, unknown>).agents as unknown[];
           setExistingAgents(
-            result.agents.map((a) => ({ id: a.id, name: a.name ?? a.id })),
+            agents
+              .filter(
+                (a): a is { id: string; name?: string } =>
+                  a != null &&
+                  typeof a === "object" &&
+                  "id" in a &&
+                  typeof (a as Record<string, unknown>).id === "string",
+              )
+              .map((a) => ({ id: a.id, name: a.name ?? a.id })),
           );
         }
       } catch {

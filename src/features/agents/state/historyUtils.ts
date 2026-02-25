@@ -126,23 +126,26 @@ export const buildHistorySyncPatch = ({
     liveThinkingTrace: "",
   });
 
-  // Inject image parts from user messages at the correct position
-  // Images belong after user text parts, so we find the matching user text parts
-  // and insert images right after them
-  let insertIdx = messageParts.length;
+  // Inject image parts from user messages at the correct position.
+  // Images belong after the user text part that matches their source message.
+  // We match by comparing the stripped message text to the quoted line content.
   for (let mi = messages.length - 1; mi >= 0; mi--) {
     const message = messages[mi];
     if (!message) continue;
     const images = extractImages(message);
     if (images.length === 0) continue;
     const role = typeof message.role === "string" ? message.role : "";
-    // Find the corresponding user text part in messageParts
-    const msgText = extractText(message);
-    if (role === "user" && msgText) {
-      // Find last user text part that matches
-      for (let pi = messageParts.length - 1; pi >= 0; pi--) {
-        const p = messageParts[pi];
-        if (p && p.type === "text" && p.text.trimStart().startsWith(">")) {
+    if (role !== "user") continue;
+    const msgText = stripUiMetadata(extractText(message)?.trim() ?? "");
+    if (!msgText) continue;
+
+    // Find the exact matching quoted user text part: "> <msgText>"
+    let insertIdx = messageParts.length; // fallback: append at end
+    for (let pi = messageParts.length - 1; pi >= 0; pi--) {
+      const p = messageParts[pi];
+      if (p && p.type === "text") {
+        const quoted = p.text.trimStart();
+        if (quoted.startsWith("> ") && quoted.slice(2).trim() === msgText) {
           insertIdx = pi + 1;
           break;
         }
