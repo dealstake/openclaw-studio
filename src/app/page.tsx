@@ -62,12 +62,12 @@ import { PanelExpandModal } from "@/components/PanelExpandModal";
 import { ManagementPanelContent } from "@/components/ManagementPanelContent";
 import { ManagementDrawer } from "@/components/ManagementDrawer";
 import { ExpandedContext } from "@/features/context/lib/expandedContext";
-import { ExecApprovalOverlay } from "@/features/exec-approvals/components/ExecApprovalOverlay";
 import {
   parseExecApprovalRequested,
   parseExecApprovalResolved,
   pruneExpired,
 } from "@/features/exec-approvals/types";
+import { ExecApprovalProvider, useExecApprovalContext } from "@/features/exec-approvals/ExecApprovalProvider";
 // SessionsPanel, CronPanel, UsagePanel, ChannelsPanel, AgentSettingsPanel moved to ManagementPanelContent
 import { CommandPalette } from "@/features/command-palette/components/CommandPalette";
 import { useCommandPalette } from "@/features/command-palette/hooks/useCommandPalette";
@@ -83,7 +83,6 @@ import { EmergencyProvider } from "@/features/emergency/EmergencyProvider";
 import { EmergencyOverlay } from "@/features/emergency/components/EmergencyOverlay";
 import type { CronJobSummary } from "@/lib/cron/types";
 import { useNotificationEvaluator } from "@/features/notifications/hooks/useNotificationEvaluator";
-import { useExecApprovals } from "@/features/exec-approvals/hooks/useExecApprovals";
 import { useSessionUsage } from "@/features/sessions/hooks/useSessionUsage";
 import { fetchTranscriptMessages } from "@/features/sessions/hooks/useTranscripts";
 import { useGatewayStatus } from "@/lib/gateway/useGatewayStatus";
@@ -209,12 +208,11 @@ const AgentStudioPage = () => {
     null
   );
 
-  // Extracted hooks
+  // Exec-approval state from provider
   const {
-    execApprovalQueue, setExecApprovalQueue,
-    execApprovalBusy, execApprovalError,
-    handleExecApprovalDecision, resetExecApprovals,
-  } = useExecApprovals(client);
+    setQueue: setExecApprovalQueue,
+    reset: resetExecApprovals,
+  } = useExecApprovalContext();
 
   const {
     channelsSnapshot, channelsLoading, channelsError,
@@ -1435,6 +1433,7 @@ const AgentStudioPage = () => {
 
   return (
     <EmergencyProvider>
+    <ExecApprovalProvider>
     <Suspense fallback={null}>
     <div className="relative w-screen overflow-hidden bg-background" style={{ minHeight: '100svh' }}>
       {state.loading ? (
@@ -1921,16 +1920,7 @@ const AgentStudioPage = () => {
           </div>
 	        )}
 	      </div>
-      {execApprovalQueue.length > 0 ? (
-        <ExecApprovalOverlay
-          queue={execApprovalQueue}
-          busy={execApprovalBusy}
-          error={execApprovalError}
-          onDecision={(id, decision) => {
-            void handleExecApprovalDecision(id, decision);
-          }}
-        />
-      ) : null}
+      {/* ExecApprovalOverlay is now rendered by ExecApprovalProvider */}
       <AgentWizardModal
         open={showAgentWizard}
         client={client}
@@ -1970,6 +1960,7 @@ const AgentStudioPage = () => {
       <EmergencyOverlay />
     </div>
     </Suspense>
+    </ExecApprovalProvider>
     </EmergencyProvider>
   );
 };
