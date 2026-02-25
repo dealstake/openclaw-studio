@@ -174,10 +174,19 @@ export function useSpecialUpdates(params: {
   // O(n) string allocation per render from fingerprint concatenation.
   const prevAgentSnapshotRef = useRef<Map<string, string>>(new Map());
 
+  // Derive a primitive dep: concatenation of agentId + lastUserMessage for
+  // each agent. This avoids re-running the effect on every reducer action
+  // (which always returns a new `agents` array), limiting it to actual
+  // lastUserMessage changes. Uses stateRef for agent data inside the effect.
+  const agentMessageFingerprint = agents
+    .map((a) => `${a.agentId}:${a.lastUserMessage ?? ""}`)
+    .join("|");
+
   useEffect(() => {
+    const currentAgents = stateRef.current.agents;
     let changed = false;
     const nextSnapshot = new Map<string, string>();
-    for (const agent of agents) {
+    for (const agent of currentAgents) {
       const lastMessage = agent.lastUserMessage?.trim() ?? "";
       const kind = resolveSpecialUpdateKind(lastMessage);
       const marker = kind === "heartbeat" ? `${lastMessage}:${heartbeatTick}` : lastMessage;
@@ -193,7 +202,7 @@ export function useSpecialUpdates(params: {
     if (!changed) return;
     prevAgentSnapshotRef.current = nextSnapshot;
 
-    for (const agent of agents) {
+    for (const agent of currentAgents) {
       const lastMessage = agent.lastUserMessage?.trim() ?? "";
       const key = agent.agentId;
       const kind = resolveSpecialUpdateKind(lastMessage);
@@ -203,7 +212,7 @@ export function useSpecialUpdates(params: {
       specialUpdateRef.current.set(key, marker);
       void updateSpecialLatestUpdate(agent.agentId, agent, lastMessage);
     }
-  }, [agents, heartbeatTick, specialUpdateRef, updateSpecialLatestUpdate]);
+  }, [agentMessageFingerprint, heartbeatTick, stateRef, specialUpdateRef, updateSpecialLatestUpdate]);
 
   return {
     heartbeatTick,
