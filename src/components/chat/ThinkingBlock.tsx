@@ -69,13 +69,13 @@ export const ThinkingBlock = React.memo(function ThinkingBlock({
         />
 
         {/* Label */}
-        <span className="text-xs text-muted-foreground/60">
+        <span className="text-xs text-muted-foreground/65">
           {streaming ? "Thinking…" : "Thought"}
         </span>
 
         {/* Duration */}
         {durationLabel ? (
-          <span className="font-mono text-[10px] tabular-nums text-muted-foreground/40">
+          <span className="font-mono text-[10px] tabular-nums text-muted-foreground/70">
             {durationLabel}
           </span>
         ) : null}
