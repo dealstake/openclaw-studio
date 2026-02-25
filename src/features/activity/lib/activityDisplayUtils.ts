@@ -53,17 +53,19 @@ export function formatTime(timestamp: number): string {
   });
 }
 
-/** Format an ISO timestamp string as relative time (e.g. "5m ago", "2d ago", "Feb 12") */
+const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto", style: "narrow" });
+
+/** Format an ISO timestamp string as relative time (e.g. "5 min. ago", "2 days ago", "Feb 12") */
 export function formatHistoryTime(ts: string): string {
   const d = new Date(ts);
   const now = new Date();
   const diffMs = now.getTime() - d.getTime();
   const diffMin = Math.floor(diffMs / 60000);
   if (diffMin < 1) return "just now";
-  if (diffMin < 60) return `${diffMin}m ago`;
+  if (diffMin < 60) return rtf.format(-diffMin, "minute");
   const diffHr = Math.floor(diffMin / 60);
-  if (diffHr < 24) return `${diffHr}h ago`;
+  if (diffHr < 24) return rtf.format(-diffHr, "hour");
   const diffDay = Math.floor(diffHr / 24);
-  if (diffDay < 7) return `${diffDay}d ago`;
+  if (diffDay < 7) return rtf.format(-diffDay, "day");
   return d.toLocaleDateString([], { month: "short", day: "numeric" });
 }

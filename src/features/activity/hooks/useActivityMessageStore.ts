@@ -40,6 +40,24 @@ function emit() {
   for (const fn of listeners) fn();
 }
 
+// --- Internal helpers (DRY: shared by upsert + append) ---
+
+/** Replace entry at index with merged data, returning new array. */
+function replaceAt(idx: number, patch: Partial<ActivityMessage>): ActivityMessage[] {
+  const existing = messages[idx];
+  return [
+    ...messages.slice(0, idx),
+    { ...existing, ...patch },
+    ...messages.slice(idx + 1),
+  ];
+}
+
+/** Create a new entry with defaults, append it, and apply FIFO eviction. */
+function createAndAppend(entry: ActivityMessage): ActivityMessage[] {
+  const next = [...messages, entry];
+  return next.length > MAX_ENTRIES ? next.slice(next.length - MAX_ENTRIES) : next;
+}
+
 // --- Public API ---
 
 /** Append or update a message by sourceKey. */
@@ -49,14 +67,9 @@ export function upsertActivityMessage(
 ): void {
   const idx = messages.findIndex((m) => m.sourceKey === sourceKey);
   if (idx >= 0) {
-    const existing = messages[idx];
-    messages = [
-      ...messages.slice(0, idx),
-      { ...existing, ...patch },
-      ...messages.slice(idx + 1),
-    ];
+    messages = replaceAt(idx, patch);
   } else {
-    const entry: ActivityMessage = {
+    messages = createAndAppend({
       sourceName: "",
       sourceType: "system",
       parts: [],
@@ -64,12 +77,7 @@ export function upsertActivityMessage(
       status: "streaming",
       ...patch,
       sourceKey,
-    };
-    messages = [...messages, entry];
-  }
-  // FIFO eviction
-  if (messages.length > MAX_ENTRIES) {
-    messages = messages.slice(messages.length - MAX_ENTRIES);
+    });
   }
   emit();
 }
@@ -82,29 +90,19 @@ export function appendActivityParts(
 ): void {
   const idx = messages.findIndex((m) => m.sourceKey === sourceKey);
   if (idx >= 0) {
-    const existing = messages[idx];
-    messages = [
-      ...messages.slice(0, idx),
-      {
-        ...existing,
-        ...meta,
-        parts: [...existing.parts, ...parts],
-      },
-      ...messages.slice(idx + 1),
-    ];
+    messages = replaceAt(idx, {
+      ...meta,
+      parts: [...messages[idx].parts, ...parts],
+    });
   } else {
-    const entry: ActivityMessage = {
+    messages = createAndAppend({
       sourceName: meta?.sourceName ?? "",
       sourceType: meta?.sourceType ?? "system",
       timestamp: meta?.timestamp ?? Date.now(),
       status: meta?.status ?? "streaming",
       sourceKey,
       parts,
-    };
-    messages = [...messages, entry];
-    if (messages.length > MAX_ENTRIES) {
-      messages = messages.slice(messages.length - MAX_ENTRIES);
-    }
+    });
   }
   emit();
 }

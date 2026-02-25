@@ -1,6 +1,7 @@
 "use client";
 
 import { memo, useMemo } from "react";
+import { AlertTriangle, RefreshCw } from "lucide-react";
 import { SectionLabel } from "@/components/SectionLabel";
 import { Skeleton } from "@/components/Skeleton";
 import { formatDuration } from "@/lib/text/time";
@@ -11,9 +12,13 @@ const compactNumber = new Intl.NumberFormat("en", { notation: "compact" });
 export const CronAnalyticsSummary = memo(function CronAnalyticsSummary({
   jobStats,
   loading,
+  error,
+  onRetry,
 }: {
   jobStats: JobStats[];
   loading: boolean;
+  error?: string | null;
+  onRetry?: () => void;
 }) {
   const stats = useMemo(() => {
     const totalRuns = jobStats.reduce((s, j) => s + j.totalRuns, 0);
@@ -29,6 +34,28 @@ export const CronAnalyticsSummary = memo(function CronAnalyticsSummary({
 
     return { totalRuns, totalTokens, successRate: weightedSuccess, avgDuration: weightedDuration };
   }, [jobStats]);
+
+  if (error && jobStats.length === 0) {
+    return (
+      <div className="space-y-2 p-3">
+        <SectionLabel>Overview</SectionLabel>
+        <div className="flex items-center gap-2 rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <span className="flex-1">{error}</span>
+          {onRetry && (
+            <button
+              onClick={onRetry}
+              className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-red-300 hover:bg-red-500/20 transition-colors"
+              aria-label="Retry loading analytics"
+            >
+              <RefreshCw className="h-3 w-3" />
+              Retry
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   if (loading && jobStats.length === 0) {
     return (
