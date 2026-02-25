@@ -7,6 +7,7 @@ import {
   LinkIcon,
   Check,
   Layers,
+  History,
 } from "lucide-react";
 import * as Popover from "@radix-ui/react-popover";
 import { STATUS_CONFIG, CYCLE_STATUSES, QUEUED_CONFIG, PRIORITY_DOT } from "../lib/constants";
@@ -37,6 +38,7 @@ export const ProjectCard = memo(function ProjectCard({
 }: ProjectCardProps) {
   const [tasksExpanded, setTasksExpanded] = useState(false);
   const [phasesExpanded, setPhasesExpanded] = useState(false);
+  const [historyExpanded, setHistoryExpanded] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
   const [pendingDone, setPendingDone] = useState(false);
 
@@ -305,6 +307,37 @@ export const ProjectCard = memo(function ProjectCard({
                 <div className="mt-1 ml-4 space-y-1">
                   {linkedTasks.map((task) => (
                     <LinkedTaskRow key={task.cronJobId} task={task} isProjectParked={project.statusEmoji === "⏸️"} />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {details.history && details.history.length > 0 && (
+            <div className="pt-0.5">
+              <button
+                type="button"
+                className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition"
+                onClick={(e) => { e.stopPropagation(); setHistoryExpanded((v) => !v); }}
+                aria-expanded={historyExpanded}
+              >
+                {historyExpanded ? (
+                  <ChevronDown className="h-3 w-3" />
+                ) : (
+                  <ChevronRight className="h-3 w-3" />
+                )}
+                <History className="h-2.5 w-2.5" />
+                <span className="font-semibold">
+                  History ({details.history.length})
+                </span>
+              </button>
+              {historyExpanded && (
+                <div className="mt-1 ml-4 space-y-1.5">
+                  {details.history.map((entry, i) => (
+                    <div key={i} className="flex items-start gap-2 text-[10px]">
+                      <span className="shrink-0 font-mono text-muted-foreground/60">{entry.entryDate}</span>
+                      <span className="text-muted-foreground leading-snug">{entry.entryText}</span>
+                    </div>
                   ))}
                 </div>
               )}
