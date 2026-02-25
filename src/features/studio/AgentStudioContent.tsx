@@ -1,11 +1,10 @@
 "use client";
 
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AgentChatPanel } from "@/features/agents/components/AgentChatPanel";
 import {
   AgentBrainPanel,
 } from "@/features/agents/components/AgentInspectPanels";
-import { SessionHistorySidebar } from "@/features/sessions/components/SessionHistorySidebar";
 import { AppSidebar, type ManagementTab } from "@/layout/AppSidebar";
 import type { BreadcrumbAgent } from "@/features/agents/components/AgentBreadcrumb";
 import { HeaderBar } from "@/features/agents/components/HeaderBar";
@@ -14,42 +13,28 @@ import { EmptyStatePanel } from "@/features/agents/components/EmptyStatePanel";
 import { BrandMark } from "@/components/brand/BrandMark";
 import { GatewayStatusBanner } from "@/components/GatewayStatusBanner";
 import { Users } from "lucide-react";
-import { sectionLabelClass } from "@/components/SectionLabel";
-// buildAgentInstruction moved to useChatCallbacks
 import { useGateway } from "@/lib/gateway/GatewayProvider";
-// GatewayModelPolicySnapshot import moved to useLoadAgents
 import {
   getFilteredAgents,
   getSelectedAgent,
   type FocusFilter,
   useAgentStore,
 } from "@/features/agents/state/store";
-// buildSummarySnapshotPatches, SummaryPreviewSnapshot, SummaryStatusSnapshot moved to useStudioDataSync
 import { createGatewayRuntimeEventHandler } from "@/features/agents/state/gatewayRuntimeEventHandler";
 // settingsCoordinator accessed via useGateway() context
-// resolveFocusedPreference moved to useStudioDataSync
-// applySessionSettingMutation moved to useChatCallbacks
-// isSameSessionKey, isGatewayDisconnectLikeError moved to useStudioDataSync
-// SessionsListResult moved to useStudioDataSync
 import { ArtifactsPanel } from "@/features/artifacts/components/ArtifactsPanel";
 import { TasksPanel } from "@/features/tasks/components/TasksPanel";
 import { ProjectsPanel } from "@/features/projects/components/ProjectsPanel";
-const TaskWizardModal = lazy(() => import("@/features/tasks/components/TaskWizardModal").then(m => ({ default: m.TaskWizardModal })));
-const AgentWizardModal = lazy(() => import("@/features/agents/components/AgentWizardModal").then(m => ({ default: m.AgentWizardModal })));
 import { useAgentTasks } from "@/features/tasks/hooks/useAgentTasks";
-import { ContextPanel, TAB_OPTIONS } from "@/features/context/components/ContextPanel";
+import { ContextPanel } from "@/features/context/components/ContextPanel";
 import type { ContextTab } from "@/features/context/components/ContextPanel";
 
 // ContextTabCluster is now integrated into HeaderBar on wide viewports
 import { PanelErrorBoundary } from "@/components/PanelErrorBoundary";
-import { PanelExpandModal } from "@/components/PanelExpandModal";
 import { ManagementPanelContent } from "@/components/ManagementPanelContent";
 import { ManagementDrawer } from "@/components/ManagementDrawer";
 import { ManagementPanelProvider } from "@/components/management/ManagementPanelContext";
-import { ExpandedContext } from "@/features/context/lib/expandedContext";
 import { useExecApprovalContext } from "@/features/exec-approvals/ExecApprovalProvider";
-// SessionsPanel, CronPanel, UsagePanel, ChannelsPanel, AgentSettingsPanel moved to ManagementPanelContent
-import { CommandPalette } from "@/features/command-palette/components/CommandPalette";
 import { useCommandPalette } from "@/features/command-palette/hooks/useCommandPalette";
 import { WorkspaceExplorerPanel } from "@/features/workspace/components/WorkspaceExplorerPanel";
 import { ActivityPanel } from "@/features/activity/components/ActivityPanel";
@@ -59,15 +44,12 @@ import { useChannelsStatus } from "@/features/channels/hooks/useChannelsStatus";
 import { useAllSessions } from "@/features/sessions/hooks/useAllSessions";
 import { useAllCronJobs } from "@/features/cron/hooks/useAllCronJobs";
 import { EmergencyProvider } from "@/features/emergency/EmergencyProvider";
-import { EmergencyOverlay } from "@/features/emergency/components/EmergencyOverlay";
 import type { CronJobSummary } from "@/lib/cron/types";
 import { useNotificationEvaluator } from "@/features/notifications/hooks/useNotificationEvaluator";
 import { useSessionUsage } from "@/features/sessions/hooks/useSessionUsage";
 import { useGatewayStatus } from "@/lib/gateway/useGatewayStatus";
-const ConfigMutationModals = lazy(() => import("@/features/agents/components/ConfigMutationModals").then(m => ({ default: m.ConfigMutationModals })));
 import { useConfigMutationQueue } from "@/features/agents/hooks/useConfigMutationQueue";
 import { useDraftBatching } from "@/features/agents/hooks/useDraftBatching";
-// useVisibilityRefresh moved to useStudioDataSync
 import { useLivePatchBatching } from "@/features/agents/hooks/useLivePatchBatching";
 import { useSpecialUpdates } from "@/features/agents/hooks/useSpecialUpdates";
 import { useAgentHistorySync } from "@/features/agents/hooks/useAgentHistorySync";
@@ -78,6 +60,9 @@ import { useOfflineQueue } from "@/lib/gateway/useOfflineQueue";
 import { useGatewayModels } from "@/features/agents/hooks/useGatewayModels";
 import { useRuntimeEventSubscription } from "@/features/studio/useRuntimeEventSubscription";
 import { useStudioChatCallbacks } from "@/features/studio/useStudioChatCallbacks";
+import { MobileSessionDrawer } from "@/features/studio/MobileSessionDrawer";
+import { StudioExpandedPanel } from "@/features/studio/StudioExpandedPanel";
+import { StudioModals } from "@/features/studio/StudioModals";
 import { useSettingsPanel } from "@/features/agents/hooks/useSettingsPanel";
 import { useChatCallbacks } from "@/features/agents/hooks/useChatCallbacks";
 import { isWide } from "@/hooks/useBreakpoint";
@@ -344,7 +329,6 @@ export const AgentStudioPage = () => {
     [gatewayModels]
   );
 
-  const faviconHref = "/branding/trident.svg";
   const errorMessage = state.error ?? gatewayModelsError;
   const runningAgentCount = useMemo(
     () => agents.filter((agent) => agent.status === "running").length,
@@ -404,9 +388,6 @@ export const AgentStudioPage = () => {
   });
 
   const {
-    refreshContextWindow,
-    refreshContextWindowRef,
-    loadSummarySnapshot,
     loadSummarySnapshotRef,
     sessionContinuedAgents,
     setSessionContinuedAgents,
@@ -942,92 +923,24 @@ export const AgentStudioPage = () => {
               />
             ) : null}
             {/* Mobile session history overlay drawer — includes management nav + session history */}
-            {mobileSessionDrawerOpen && !showSidebarInline ? (
-              <div
-                className="fixed inset-0 z-50"
-                onClick={() => setMobileSessionDrawerOpen(false)}
-              >
-                <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
-                <div
-                  className="absolute inset-y-0 left-0 w-[280px] animate-in slide-in-from-left duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] bg-[var(--surface-elevated)] flex flex-col"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {/* Agent list for mobile */}
-                  {breadcrumbAgents.length > 1 && (
-                    <div className="border-b border-border/40 px-3 py-2.5">
-                      <p className={`${sectionLabelClass} mb-1.5 px-0.5 text-[10px]`}>Agents</p>
-                      <div className="flex flex-col gap-0.5">
-                        {breadcrumbAgents.map((agent) => (
-                          <button
-                            key={agent.agentId}
-                            type="button"
-                            onClick={() => {
-                              flushPendingDraft(focusedAgent?.agentId ?? null);
-                              dispatch({ type: "selectAgent", agentId: agent.agentId });
-                              setMobileSessionDrawerOpen(false);
-                            }}
-                            className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2.5 text-left text-[13px] font-medium transition-colors min-h-[44px] ${
-                              agent.agentId === focusedAgentId
-                                ? "bg-accent text-accent-foreground"
-                                : "text-foreground/80 hover:bg-muted"
-                            }`}
-                          >
-                            <span className={`inline-block h-2 w-2 rounded-full shrink-0 ${
-                              agent.status === "running" ? "bg-emerald-400" : "bg-muted-foreground/30"
-                            }`} />
-                            {agent.name}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {/* Management nav items for mobile */}
-                  <div className="flex flex-col gap-0.5 border-b border-border/40 px-3 py-3">
-                    {([
-                      { value: "sessions" as ManagementTab, label: "Sessions" },
-                      { value: "usage" as ManagementTab, label: "Usage" },
-                      { value: "channels" as ManagementTab, label: "Channels" },
-                      { value: "cron" as ManagementTab, label: "Cron" },
-                      { value: "settings" as ManagementTab, label: "Settings" },
-                    ]).map((item) => (
-                      <button
-                        key={item.value}
-                        type="button"
-                        onClick={() => {
-                          handleManagementNav(item.value);
-                          setMobileSessionDrawerOpen(false);
-                        }}
-                        className={`flex w-full items-center rounded-lg px-3 py-2.5 text-left text-[13px] font-medium transition-colors min-h-[44px] ${
-                          managementView === item.value
-                            ? "bg-accent text-accent-foreground"
-                            : "text-foreground/80 hover:bg-muted"
-                        }`}
-                      >
-                        {item.label}
-                      </button>
-                    ))}
-                  </div>
-                  {/* Session history */}
-                  <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-                    <SessionHistorySidebar
-                      client={client}
-                      status={status}
-                      agentId={focusedAgentId}
-                      activeSessionKey={viewingSessionKey ?? (focusedAgent ? `${focusedAgent.agentId}:main` : null)}
-                      onSelectSession={(key) => {
-                        setViewingSessionKey(key === `${focusedAgentId}:main` ? null : key);
-                        setMobileSessionDrawerOpen(false);
-                      }}
-                      onNewSession={() => {
-                        stableChatOnNewSession();
-                        setMobileSessionDrawerOpen(false);
-                      }}
-                      collapsed={false}
-                      onToggleCollapse={() => setMobileSessionDrawerOpen(false)}
-                    />
-                  </div>
-                </div>
-              </div>
+            {!showSidebarInline ? (
+              <MobileSessionDrawer
+                open={mobileSessionDrawerOpen}
+                onClose={() => setMobileSessionDrawerOpen(false)}
+                breadcrumbAgents={breadcrumbAgents}
+                focusedAgentId={focusedAgentId}
+                managementView={managementView}
+                onManagementNav={handleManagementNav}
+                onSelectAgent={(agentId) => {
+                  flushPendingDraft(focusedAgent?.agentId ?? null);
+                  dispatch({ type: "selectAgent", agentId });
+                }}
+                client={client}
+                status={status}
+                viewingSessionKey={viewingSessionKey}
+                onSelectSession={setViewingSessionKey}
+                onNewSession={stableChatOnNewSession}
+              />
             ) : null}
             {/* App sidebar — desktop only, collapsible: floating overlay */}
             <div className={`${showSidebarInline ? "fixed inset-y-0 left-0 top-12 z-20 flex" : "hidden"}`}>
@@ -1102,78 +1015,34 @@ export const AgentStudioPage = () => {
               )}
             </div>
             {/* Expanded panel modal */}
-            {expandedTab && (
-              <PanelExpandModal
-                open
-                onOpenChange={clearExpandedTab}
-                title={TAB_OPTIONS.find((t) => t.value === expandedTab)?.label ?? ({ sessions: "Sessions", usage: "Usage", channels: "Channels", cron: "Cron", settings: "Settings" } as Record<string, string>)[expandedTab] ?? ""}
-              >
-                <ExpandedContext.Provider value={true}>
-                  <div className="flex h-full w-full flex-col overflow-y-auto">
-                    {expandedTab === "projects" && (
-                      <PanelErrorBoundary name="Projects">
-                        <ProjectsPanel agentId={focusedAgent?.agentId ?? null} client={client} isTabActive eventTick={cronEventTick} requestCreateProject={createProjectTick} />
-                      </PanelErrorBoundary>
-                    )}
-                    {expandedTab === "tasks" && (
-                      <PanelErrorBoundary name="Tasks">
-                        <TasksPanel
-                          isSelected
-                          client={client}
-                          tasks={agentTasks}
-                          loading={tasksLoading}
-                          error={tasksError}
-                          busyTaskId={busyTaskId}
-                          busyAction={busyAction}
-                          onToggle={toggleTask}
-                          onUpdateTask={updateTask}
-                          onUpdateSchedule={updateTaskSchedule}
-                          onRun={runTask}
-                          onDelete={deleteTask}
-                          onRefresh={() => { void loadTasks(); }}
-                          onNewTask={() => setShowTaskWizard(true)}
-                          maxConcurrentRuns={cronMaxConcurrentRuns}
-                        />
-                      </PanelErrorBoundary>
-                    )}
-                    {expandedTab === "brain" && (
-                      <PanelErrorBoundary name="Brain">
-                        <AgentBrainPanel
-                          client={client}
-                          agents={agents}
-                          selectedAgentId={selectedBrainAgentId}
-                          onClose={clearExpandedTab}
-                          activeTab={brainFileTab}
-                          onTabChange={setBrainFileTab}
-                          previewMode={brainPreviewMode}
-                          onPreviewModeChange={setBrainPreviewMode}
-                        />
-                      </PanelErrorBoundary>
-                    )}
-                    {expandedTab === "workspace" && (
-                      <PanelErrorBoundary name="Workspace">
-                        <WorkspaceExplorerPanel
-                          client={client}
-                          agentId={focusedAgent?.agentId ?? null}
-                          isTabActive
-                          eventTick={cronEventTick}
-                        />
-                      </PanelErrorBoundary>
-                    )}
-                    {expandedTab === "activity" && (
-                      <PanelErrorBoundary name="Activity">
-                        <ActivityPanel />
-                      </PanelErrorBoundary>
-                    )}
-                    <ManagementPanelContent
-                      tab={expandedTab === "sessions" || expandedTab === "usage" || expandedTab === "channels" || expandedTab === "cron" || expandedTab === "settings" ? expandedTab : null}
-                      onCloseSettings={clearExpandedTab}
-                      onTranscriptClick={handleExpandedTranscriptClick}
-                    />
-                  </div>
-                </ExpandedContext.Provider>
-              </PanelExpandModal>
-            )}
+            <StudioExpandedPanel
+              expandedTab={expandedTab}
+              onClose={clearExpandedTab}
+              focusedAgentId={focusedAgent?.agentId ?? null}
+              client={client}
+              cronEventTick={cronEventTick}
+              createProjectTick={createProjectTick}
+              agentTasks={agentTasks}
+              tasksLoading={tasksLoading}
+              tasksError={tasksError}
+              busyTaskId={busyTaskId}
+              busyAction={busyAction}
+              onToggleTask={toggleTask}
+              onUpdateTask={updateTask}
+              onUpdateTaskSchedule={updateTaskSchedule}
+              onRunTask={runTask}
+              onDeleteTask={deleteTask}
+              onRefreshTasks={() => { void loadTasks(); }}
+              onNewTask={() => setShowTaskWizard(true)}
+              cronMaxConcurrentRuns={cronMaxConcurrentRuns}
+              agents={agents}
+              selectedBrainAgentId={selectedBrainAgentId}
+              brainFileTab={brainFileTab}
+              onBrainFileTabChange={setBrainFileTab}
+              brainPreviewMode={brainPreviewMode}
+              onBrainPreviewModeChange={setBrainPreviewMode}
+              onTranscriptClick={handleExpandedTranscriptClick}
+            />
             {/* Trace Viewer overlay */}
             {viewingTrace && (
               <div className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
@@ -1303,31 +1172,22 @@ export const AgentStudioPage = () => {
 	        )}
 	      </div>
       {/* ExecApprovalOverlay is now rendered by ExecApprovalProvider */}
-      <AgentWizardModal
-        open={showAgentWizard}
-        client={client}
-        onCreated={(agentId) => {
+      <StudioModals
+        showAgentWizard={showAgentWizard}
+        onCloseAgentWizard={() => setShowAgentWizard(false)}
+        onAgentCreated={(agentId) => {
           setShowAgentWizard(false);
           void loadAgents();
           dispatch({ type: "selectAgent", agentId });
         }}
-        onClose={() => setShowAgentWizard(false)}
-      />
-      <TaskWizardModal
-        open={showTaskWizard}
-        agents={agents.map((a) => a.agentId)}
-        creating={busyTaskId !== null}
         client={client}
-        onClose={closeTaskWizard}
+        showTaskWizard={showTaskWizard}
+        onCloseTaskWizard={closeTaskWizard}
         onCreateTask={createTask}
-        onAgentCreated={() => void loadAgents()}
-      />
-      <CommandPalette
-        open={commandPalette.open}
-        onOpenChange={commandPalette.setOpen}
-        actions={commandPalette.actions}
-      />
-      <ConfigMutationModals
+        onTaskAgentCreated={() => void loadAgents()}
+        agents={agents}
+        busyTaskId={busyTaskId}
+        commandPalette={commandPalette}
         createAgentBlock={createAgentBlock}
         createBlockStatusLine={createBlockStatusLine}
         renameAgentBlock={renameAgentBlock}
@@ -1335,11 +1195,9 @@ export const AgentStudioPage = () => {
         deleteAgentBlock={deleteAgentBlock}
         deleteBlockStatusLine={deleteBlockStatusLine}
         deleteConfirmAgentId={deleteConfirmAgentId}
-        agents={agents}
         onCancelDelete={() => setDeleteConfirmAgentId(null)}
         onConfirmDelete={(agentId) => { setDeleteConfirmAgentId(null); void handleConfirmDeleteAgent(agentId); }}
       />
-      <EmergencyOverlay />
     </div>
     </Suspense>
     </ManagementPanelProvider>
