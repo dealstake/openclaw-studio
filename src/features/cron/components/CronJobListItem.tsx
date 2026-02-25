@@ -126,6 +126,8 @@ export const CronJobListItem = memo(function CronJobListItem({
                 className={`inline-block h-1.5 w-1.5 shrink-0 rounded-full ${
                   isRunning ? "bg-primary animate-pulse" : statusDotClass
                 }`}
+                role="status"
+                aria-label={isRunning ? "Running" : `Status: ${job.state.lastStatus ?? "idle"}`}
               />
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -182,14 +184,14 @@ export const CronJobListItem = memo(function CronJobListItem({
                 </span>
               ) : null}
               {nextRun ? (
-                <span className="text-xs text-muted-foreground/70">
+                <span className="text-xs text-muted-foreground">
                   Next: {nextRun}
                 </span>
               ) : null}
             </div>
           </div>
         </button>
-        <div className="flex shrink-0 items-center gap-1">
+        <div className="flex shrink-0 items-center gap-2">
           {onToggleEnabled ? (
             <Tooltip>
               <TooltipTrigger asChild>
