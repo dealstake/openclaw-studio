@@ -315,7 +315,7 @@ export const HeaderBar = memo(function HeaderBar({
                 key={value}
                 type="button"
                 onClick={() => onContextTabClick?.(value)}
-                className={`flex h-7 w-7 items-center justify-center rounded-full transition-colors ${
+                className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
                   isActive
                     ? "bg-accent text-accent-foreground"
                     : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"

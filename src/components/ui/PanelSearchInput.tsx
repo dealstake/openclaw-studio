@@ -45,7 +45,7 @@ export const PanelSearchInput = React.memo(function PanelSearchInput({
       {value && (
         <button
           type="button"
-          className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground/60 transition-colors hover:text-foreground"
+          className="absolute right-0 top-1/2 -translate-y-1/2 flex h-7 w-7 items-center justify-center text-muted-foreground/60 transition-colors hover:text-foreground"
           onClick={handleClear}
           aria-label="Clear search"
         >
