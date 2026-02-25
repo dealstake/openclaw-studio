@@ -52,9 +52,9 @@ export const TaskDetailHeader = memo(function TaskDetailHeader({
             autoFocus
           />
         ) : (
-          <div className="mt-0.5 truncate font-mono text-sm font-semibold text-foreground">
+          <h2 className="mt-0.5 truncate font-mono text-sm font-semibold text-foreground">
             {taskName}
-          </div>
+          </h2>
         )}
       </div>
       <div className="flex items-center gap-1.5">
