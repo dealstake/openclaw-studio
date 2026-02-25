@@ -53,7 +53,7 @@ export function formatTime(timestamp: number): string {
   });
 }
 
-const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto", style: "narrow" });
+const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: "auto", style: "narrow" });
 
 /** Format an ISO timestamp string as relative time (e.g. "5 min. ago", "2 days ago", "Feb 12") */
 export function formatHistoryTime(ts: string): string {
