@@ -8,6 +8,8 @@ import {
   type RestoreAgentStateResult,
   type TrashAgentStateResult,
 } from "../operations/deleteAgentTransaction";
+
+const AGENT_STATE_API = "/api/gateway/agent-state";
 import { fetchJson } from "@/lib/http";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import { useRestartAwaitEffect } from "./useRestartAwaitEffect";
@@ -71,7 +73,7 @@ export function useDeleteAgent(params: UseDeleteAgentParams) {
               {
                 trashAgentState: async (agentId) => {
                   const { result } = await fetchJson<{ result: TrashAgentStateResult }>(
-                    "/api/gateway/agent-state",
+                    AGENT_STATE_API,
                     {
                       method: "POST",
                       headers: { "content-type": "application/json" },
@@ -82,7 +84,7 @@ export function useDeleteAgent(params: UseDeleteAgentParams) {
                 },
                 restoreAgentState: async (agentId, trashDir) => {
                   const { result } = await fetchJson<{ result: RestoreAgentStateResult }>(
-                    "/api/gateway/agent-state",
+                    AGENT_STATE_API,
                     {
                       method: "PUT",
                       headers: { "content-type": "application/json" },

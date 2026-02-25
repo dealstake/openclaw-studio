@@ -17,6 +17,28 @@ import {
 import { findAgentByRunId, findAgentBySessionKey } from "./agentLookup";
 import type { RuntimeTrackingState } from "./runtimeTrackingState";
 
+// ── Activity feed helpers ──────────────────────────────────────────────
+
+type ActivitySourceType = "cron" | "subagent";
+
+function resolveActivitySource(sessionKey: string): ActivitySourceType | null {
+  if (sessionKey.includes(":cron:")) return "cron";
+  if (sessionKey.includes(":subagent:")) return "subagent";
+  return null;
+}
+
+function dispatchActivityMessage(
+  deps: { onActivityMessage?: RuntimeTrackingState["deps"]["onActivityMessage"] },
+  sessionKey: string,
+  sourceType: ActivitySourceType,
+  parts: import("@/lib/chat/types").MessagePart[],
+  status: "streaming" | "complete" | "error"
+): void {
+  deps.onActivityMessage?.(sessionKey, { sourceName: "", sourceType, parts, status });
+}
+
+// ── Parsing helpers ───────────────────────────────────────────────────
+
 const extractReasoningBody = (value: string): string | null => {
   const trimmed = value.trim();
   if (!trimmed) return null;
@@ -69,9 +91,8 @@ export function handleRuntimeAgentEvent(
     }
     // Route cron/subagent agent events to activity message store
     if (deps.onActivityMessage && payload.sessionKey) {
-      const isCron = payload.sessionKey.includes(":cron:");
-      const isSubAgent = payload.sessionKey.includes(":subagent:");
-      if (isCron || isSubAgent) {
+      const sourceType = resolveActivitySource(payload.sessionKey);
+      if (sourceType) {
         const pData = payload.data && typeof payload.data === "object" ? (payload.data as Record<string, unknown>) : null;
         const stream = typeof payload.stream === "string" ? payload.stream : "";
         if (stream === "tool") {
@@ -81,45 +102,23 @@ export function handleRuntimeAgentEvent(
             const toolCallId = typeof pData?.toolCallId === "string" ? pData.toolCallId : "";
             const args = pData?.arguments ?? pData?.args ?? pData?.input ?? null;
             const result = toolPhase === "result" ? pData?.result : undefined;
-            const sourceType = isCron ? "cron" as const : "subagent" as const;
-            deps.onActivityMessage(payload.sessionKey, {
-              sourceName: "",
-              sourceType,
-              parts: [{
-                type: "tool-invocation",
-                toolCallId: toolCallId || `${payload.runId}-${toolName}`,
-                name: toolName,
-                phase: toolPhase === "result" ? "complete" : "running",
-                args: args ? (typeof args === "string" ? args : JSON.stringify(args)) : undefined,
-                result: result != null ? (typeof result === "string" ? result : JSON.stringify(result)) : undefined,
-              }],
-              status: "streaming",
-            });
+            dispatchActivityMessage(deps, payload.sessionKey, sourceType, [{
+              type: "tool-invocation",
+              toolCallId: toolCallId || `${payload.runId}-${toolName}`,
+              name: toolName,
+              phase: toolPhase === "result" ? "complete" : "running",
+              args: args ? (typeof args === "string" ? args : JSON.stringify(args)) : undefined,
+              result: result != null ? (typeof result === "string" ? result : JSON.stringify(result)) : undefined,
+            }], "streaming");
           }
         } else if (stream === "lifecycle") {
           const phase = typeof pData?.phase === "string" ? pData.phase : "";
-          const sourceType = isCron ? "cron" as const : "subagent" as const;
           if (phase === "start") {
-            deps.onActivityMessage(payload.sessionKey, {
-              sourceName: "",
-              sourceType,
-              parts: [{ type: "status", state: "running" }],
-              status: "streaming",
-            });
+            dispatchActivityMessage(deps, payload.sessionKey, sourceType, [{ type: "status", state: "running" }], "streaming");
           } else if (phase === "end") {
-            deps.onActivityMessage(payload.sessionKey, {
-              sourceName: "",
-              sourceType,
-              parts: [{ type: "status", state: "complete" }],
-              status: "complete",
-            });
+            dispatchActivityMessage(deps, payload.sessionKey, sourceType, [{ type: "status", state: "complete" }], "complete");
           } else if (phase === "error") {
-            deps.onActivityMessage(payload.sessionKey, {
-              sourceName: "",
-              sourceType,
-              parts: [{ type: "status", state: "error" }],
-              status: "error",
-            });
+            dispatchActivityMessage(deps, payload.sessionKey, sourceType, [{ type: "status", state: "error" }], "error");
           }
         }
       }

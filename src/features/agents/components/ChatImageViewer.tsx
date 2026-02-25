@@ -15,7 +15,13 @@ export const InlineChatImage = memo(function InlineChatImage({
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [broken, setBroken] = useState(false);
 
-  if (broken) return null;
+  if (broken) {
+    return (
+      <div className="mt-2 flex h-16 max-w-[240px] items-center justify-center rounded-lg border border-border/50 bg-muted/50 px-3 text-xs text-muted-foreground">
+        Image failed to load
+      </div>
+    );
+  }
 
   return (
     <>

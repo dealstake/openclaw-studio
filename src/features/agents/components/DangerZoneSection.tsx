@@ -55,14 +55,14 @@ export const DangerZoneSection = memo(function DangerZoneSection({
             Type{" "}
             <span className="font-mono font-semibold text-foreground">{agentId}</span>{" "}
             to confirm:
+            <input
+              className="mt-1 block h-8 w-full rounded-md border border-destructive/50 bg-card/75 px-3 text-xs font-mono text-foreground outline-none focus:border-destructive"
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              placeholder={agentId}
+              autoFocus
+            />
           </label>
-          <input
-            className="h-8 w-full rounded-md border border-destructive/50 bg-card/75 px-3 text-xs font-mono text-foreground outline-none focus:border-destructive"
-            value={deleteConfirmText}
-            onChange={(e) => setDeleteConfirmText(e.target.value)}
-            placeholder={agentId}
-            autoFocus
-          />
           <div className="flex gap-2">
             <button
               className={`flex-1 rounded-md border border-border bg-transparent px-3 py-2 ${sectionLabelClass} text-foreground transition hover:bg-muted`}

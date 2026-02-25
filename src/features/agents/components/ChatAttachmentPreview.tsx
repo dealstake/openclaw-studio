@@ -93,7 +93,7 @@ export const ChatAttachmentPreview = memo(function ChatAttachmentPreview({
   if (files.length === 0) return null;
 
   return (
-    <div className="flex w-full snap-x snap-mandatory gap-2 overflow-x-auto px-1 pt-1 pb-2 sm:flex-wrap sm:overflow-visible sm:pb-0 [scrollbar-width:none]">
+    <div role="group" aria-label="File attachments" className="flex w-full snap-x snap-mandatory gap-2 overflow-x-auto px-1 pt-1 pb-2 sm:flex-wrap sm:overflow-visible sm:pb-0 [scrollbar-width:none]">
       {files.map((file) => (
         <AttachmentThumbnail key={file.id} file={file} onRemove={onRemove} />
       ))}
