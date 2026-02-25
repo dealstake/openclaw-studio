@@ -75,7 +75,7 @@ export const ActivityPanel = memo(function ActivityPanel() {
   return (
     <div className="flex h-full w-full flex-col overflow-hidden">
       {/* Tab bar */}
-      <div role="tablist" aria-label="Activity view" onKeyDown={handleTabKeyDown} className="flex items-center gap-0 border-b border-border/20 px-3 pt-1.5">
+      <div role="tablist" aria-label="Activity view" onKeyDown={handleTabKeyDown} className="flex items-center gap-1 border-b border-border/20 px-3 py-1.5">
         <button
           type="button"
           role="tab"
@@ -83,9 +83,9 @@ export const ActivityPanel = memo(function ActivityPanel() {
           aria-selected={activeTab === "live"}
           aria-controls="activity-tabpanel-live"
           onClick={() => setActiveTab("live")}
-          className={`flex items-center gap-1.5 px-3 py-2.5 ${sectionLabelClass} transition-colors focus-ring rounded-t-md ${
+          className={`flex items-center gap-1.5 rounded-md px-2 py-1 ${sectionLabelClass} transition-colors focus-ring ${
             activeTab === "live"
-              ? "text-foreground font-semibold border-b-2 border-primary"
+              ? "bg-muted text-foreground"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
@@ -104,9 +104,9 @@ export const ActivityPanel = memo(function ActivityPanel() {
           aria-selected={activeTab === "history"}
           aria-controls="activity-tabpanel-history"
           onClick={() => setActiveTab("history")}
-          className={`flex items-center gap-1.5 px-3 py-2.5 ${sectionLabelClass} transition-colors focus-ring rounded-t-md ${
+          className={`flex items-center gap-1.5 rounded-md px-2 py-1 ${sectionLabelClass} transition-colors focus-ring ${
             activeTab === "history"
-              ? "text-foreground font-semibold border-b-2 border-primary"
+              ? "bg-muted text-foreground"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >

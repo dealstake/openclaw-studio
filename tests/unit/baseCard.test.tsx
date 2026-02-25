@@ -20,7 +20,7 @@ describe("BaseCard", () => {
 
   it("applies selected state", () => {
     const { container } = render(<BaseCard isSelected>S</BaseCard>);
-    expect(container.firstChild).toHaveClass("ring-2");
+    expect(container.firstChild).toHaveClass("ring-1");
   });
 
   it("applies hover classes when hoverable", () => {

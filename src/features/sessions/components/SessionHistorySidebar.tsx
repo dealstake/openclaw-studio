@@ -71,7 +71,7 @@ export const SessionHistorySidebar = memo(function SessionHistorySidebar({
 
   if (collapsed) {
     return (
-      <div className="flex h-full w-10 flex-col items-center bg-background/60 backdrop-blur-xl border-r border-border/30 py-3 gap-2 transition-all duration-200">
+      <div className="flex h-full w-10 flex-col items-center bg-background/60 backdrop-blur-xl border-r border-border/20 py-3 gap-2 transition-all duration-200">
         <button
           type="button"
           onClick={onToggleCollapse}
@@ -117,7 +117,7 @@ export const SessionHistorySidebar = memo(function SessionHistorySidebar({
   }
 
   return (
-    <div className="flex h-full w-[240px] flex-col bg-background/60 backdrop-blur-xl border-r border-border/30">
+    <div className="flex h-full w-[240px] flex-col bg-background/60 backdrop-blur-xl border-r border-border/20">
       {/* Header */}
       <div className="flex items-center gap-2 px-3 py-2.5">
         <button
