@@ -40,7 +40,7 @@ export const HistoryEventCard = memo(function HistoryEventCard({
                 type="button"
                 onClick={() => setExpanded((v) => !v)}
                 aria-label={expanded ? "Show less" : "Show more"}
-                className="ml-auto flex items-center gap-0.5 rounded-md px-1 py-0.5 text-muted-foreground/50 transition-colors hover:bg-muted/60 hover:text-muted-foreground"
+                className="ml-auto flex items-center gap-0.5 rounded-md p-2 -m-1 text-muted-foreground/50 transition-colors hover:bg-muted/60 hover:text-muted-foreground"
               >
                 <ChevronRight
                   size={12}
@@ -52,7 +52,7 @@ export const HistoryEventCard = memo(function HistoryEventCard({
           </div>
 
           {(event.projectName || event.meta?.phase) && (
-            <p className="mt-0.5 text-[10px] text-muted-foreground/60">
+            <p className="mt-0.5 text-[10px] text-muted-foreground/80">
               {event.projectName}
               {event.projectName && event.meta?.phase ? " · " : ""}
               {event.meta?.phase}
@@ -74,7 +74,7 @@ export const HistoryEventCard = memo(function HistoryEventCard({
                 />
               )}
               {(event.meta?.filesChanged || event.meta?.testsCount || event.meta?.durationMs) && (
-                <div className="flex flex-wrap gap-2 text-[10px] text-muted-foreground/60">
+                <div className="flex flex-wrap gap-2 text-[10px] text-muted-foreground/80">
                   {event.meta.filesChanged != null && (
                     <span>{event.meta.filesChanged} files</span>
                   )}
@@ -96,7 +96,7 @@ export const HistoryEventCard = memo(function HistoryEventCard({
             </div>
           )}
 
-          <p className="mt-1 text-[10px] text-muted-foreground/60">
+          <p className="mt-1 text-[10px] text-muted-foreground/80">
             {formatHistoryTime(event.timestamp)}
           </p>
         </div>
