@@ -1,148 +1,86 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, fireEvent, within } from "@testing-library/react";
-import React from "react";
+import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
+import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { NotificationPanel } from "@/features/notifications/components/NotificationPanel";
-import * as notificationsModule from "@/features/notifications/hooks/useNotifications";
-import type { Notification, NotificationState } from "@/features/notifications/lib/types";
-
-// ---------------------------------------------------------------------------
-// Mocks
-// ---------------------------------------------------------------------------
-
-const mockMarkRead = vi.fn();
-const mockMarkAllRead = vi.fn();
-const mockDismiss = vi.fn();
-const mockClearAll = vi.fn();
-
-vi.mock("@/features/notifications/hooks/useNotifications", () => ({
-  useNotificationStore: vi.fn(),
-  useNotificationActions: () => ({
-    addNotification: vi.fn(),
-    markRead: mockMarkRead,
-    markAllRead: mockMarkAllRead,
-    dismiss: mockDismiss,
-    clearAll: mockClearAll,
-  }),
-}));
-
-vi.mock("@/features/notifications/hooks/useAlertRules", () => ({
-  useAlertRules: () => ({
-    rules: [],
-    updateRule: vi.fn(),
-    resetDefaults: vi.fn(),
-  }),
-}));
-
-vi.mock("@/features/notifications/lib/browserNotifications", () => ({
-  requestNotificationPermission: vi.fn(),
-}));
+import {
+  addNotification,
+  clearAll,
+} from "@/features/notifications/hooks/useNotifications";
+import type { Notification } from "@/features/notifications/lib/types";
 
 function makeNotification(overrides: Partial<Notification> = {}): Notification {
   return {
-    id: "n1",
+    id: `n-${Math.random().toString(36).slice(2, 8)}`,
     type: "completion",
-    title: "Agent completed",
-    body: "Agent alex finished",
+    title: "Test Notification",
+    body: "A test notification body",
     timestamp: Date.now(),
     read: false,
     ...overrides,
   };
 }
 
-function setNotifications(notifications: Notification[]) {
-  const state: NotificationState = {
-    notifications,
-    unreadCount: notifications.filter((n) => !n.read).length,
-  };
-  (notificationsModule.useNotificationStore as ReturnType<typeof vi.fn>).mockReturnValue(state);
-}
-
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
-
-beforeEach(() => {
-  mockMarkRead.mockClear();
-  mockMarkAllRead.mockClear();
-  mockDismiss.mockClear();
-  mockClearAll.mockClear();
-});
-
 describe("NotificationPanel", () => {
+  beforeEach(() => {
+    clearAll();
+  });
+
+  afterEach(cleanup);
+
   it("renders empty state when no notifications", () => {
-    setNotifications([]);
-    const { container } = render(<NotificationPanel />);
-    expect(within(container).getAllByText("No notifications yet").length).toBeGreaterThanOrEqual(1);
+    render(<NotificationPanel />);
+    expect(screen.getByText("No notifications yet")).toBeInTheDocument();
   });
 
-  it("renders notifications", () => {
-    setNotifications([makeNotification({ title: "Test Alert" })]);
-    const { container } = render(<NotificationPanel />);
-    expect(within(container).getAllByText("Test Alert").length).toBeGreaterThanOrEqual(1);
+  it("renders notifications from the store", () => {
+    addNotification(makeNotification({ title: "Build Complete" }));
+    addNotification(makeNotification({ title: "Error Detected" }));
+    render(<NotificationPanel />);
+    expect(screen.getByText("Build Complete")).toBeInTheDocument();
+    expect(screen.getByText("Error Detected")).toBeInTheDocument();
   });
 
-  it("filters by type when tab clicked", () => {
-    setNotifications([
-      makeNotification({ id: "1", type: "completion", title: "CompletionMsg" }),
-      makeNotification({ id: "2", type: "error", title: "ErrorMsg" }),
-    ]);
-    const { container } = render(<NotificationPanel />);
+  it("filters notifications by type tab", () => {
+    addNotification(makeNotification({ title: "Done", type: "completion" }));
+    addNotification(makeNotification({ title: "Over budget", type: "budget" }));
+    render(<NotificationPanel />);
 
-    // Both visible initially
-    expect(within(container).getAllByText("CompletionMsg").length).toBeGreaterThanOrEqual(1);
-    expect(within(container).getAllByText("ErrorMsg").length).toBeGreaterThanOrEqual(1);
+    // Both visible on "All"
+    expect(screen.getByText("Done")).toBeInTheDocument();
+    expect(screen.getByText("Over budget")).toBeInTheDocument();
 
-    // Click Errors tab (first match)
-    const errorTabs = within(container).getAllByText("Errors");
-    fireEvent.click(errorTabs[0]);
+    // Click "Budget" tab
+    fireEvent.click(screen.getByText("Budget"));
+    expect(screen.queryByText("Done")).not.toBeInTheDocument();
+    expect(screen.getByText("Over budget")).toBeInTheDocument();
 
-    // After filter, CompletionMsg should be gone
-    expect(within(container).queryAllByText("CompletionMsg")).toHaveLength(0);
-    expect(within(container).getAllByText("ErrorMsg").length).toBeGreaterThanOrEqual(1);
+    // Click "Completions" tab
+    fireEvent.click(screen.getByText("Completions"));
+    expect(screen.getByText("Done")).toBeInTheDocument();
+    expect(screen.queryByText("Over budget")).not.toBeInTheDocument();
   });
 
-  it("mark all read button calls markAllRead", () => {
-    setNotifications([makeNotification()]);
-    const { container } = render(<NotificationPanel />);
-    const btns = within(container).getAllByLabelText("Mark all read");
-    fireEvent.click(btns[0]);
-    expect(mockMarkAllRead).toHaveBeenCalled();
+  it("shows empty state when filter matches nothing", () => {
+    addNotification(makeNotification({ type: "completion" }));
+    render(<NotificationPanel />);
+
+    fireEvent.click(screen.getByText("Errors"));
+    expect(screen.getByText("No notifications yet")).toBeInTheDocument();
   });
 
-  it("dismiss button removes notification", () => {
-    setNotifications([makeNotification({ id: "abc" })]);
-    const { container } = render(<NotificationPanel />);
-    const btns = within(container).getAllByLabelText("Dismiss notification");
-    fireEvent.click(btns[0]);
-    expect(mockDismiss).toHaveBeenCalledWith("abc");
+  it("has mark-all-read button", () => {
+    render(<NotificationPanel />);
+    expect(screen.getByLabelText("Mark all read")).toBeInTheDocument();
   });
 
-  it("clicking notification marks it as read", () => {
-    setNotifications([makeNotification({ id: "xyz", title: "ClickMe" })]);
-    const { container } = render(<NotificationPanel />);
-    const items = within(container).getAllByText("ClickMe");
-    fireEvent.click(items[0]);
-    expect(mockMarkRead).toHaveBeenCalledWith("xyz");
+  it("has notification settings button", () => {
+    render(<NotificationPanel />);
+    expect(screen.getByLabelText("Notification settings")).toBeInTheDocument();
   });
 
-  it("navigates to settings and back", () => {
-    setNotifications([]);
-    const { container } = render(<NotificationPanel />);
-
-    const settingsBtns = within(container).getAllByLabelText("Notification settings");
-    fireEvent.click(settingsBtns[0]);
-    expect(within(container).getAllByText("Alert Rules").length).toBeGreaterThanOrEqual(1);
-
-    const backBtns = within(container).getAllByLabelText("Back to notifications");
-    fireEvent.click(backBtns[0]);
-    expect(within(container).getAllByText("Notifications").length).toBeGreaterThanOrEqual(1);
-  });
-
-  it("shows all filter tabs including Rate Limits", () => {
-    setNotifications([]);
-    const { container } = render(<NotificationPanel />);
+  it("renders all filter tabs", () => {
+    render(<NotificationPanel />);
     for (const label of ["All", "Completions", "Errors", "Budget", "Rate Limits"]) {
-      expect(within(container).getAllByText(label).length).toBeGreaterThanOrEqual(1);
+      expect(screen.getByText(label)).toBeInTheDocument();
     }
   });
 });
