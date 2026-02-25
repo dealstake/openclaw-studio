@@ -68,7 +68,7 @@ describe("store reducer — bounded messageParts", () => {
     expect(parts[parts.length - 1]).toEqual({ type: "text", text: "overflow" });
   });
 
-  it("updatePart mutates in-place (same array ref)", () => {
+  it("updatePart returns a new array reference (immutable)", () => {
     const state = stateWithParts(5);
     const originalParts = state.agents[0].messageParts;
     const next = agentStoreReducer(state, {
@@ -77,9 +77,11 @@ describe("store reducer — bounded messageParts", () => {
       index: 2,
       patch: { text: "updated" },
     });
-    // The array reference should be the same (in-place mutation)
-    expect(next.agents[0].messageParts).toBe(originalParts);
+    // Array reference must differ so React.memo consumers detect the change
+    expect(next.agents[0].messageParts).not.toBe(originalParts);
     expect(next.agents[0].messageParts[2]).toMatchObject({ text: "updated" });
+    // Other elements are unchanged
+    expect(next.agents[0].messageParts[0]).toBe(originalParts[0]);
   });
 
   it("updatePart ignores out-of-bounds index", () => {

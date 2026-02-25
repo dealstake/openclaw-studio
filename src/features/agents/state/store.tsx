@@ -196,11 +196,14 @@ const reducer = (state: AgentStoreState, action: Action): AgentStoreState => {
           if (agent.agentId !== action.agentId) return agent;
           const { index, patch } = action;
           if (index < 0 || index >= agent.messageParts.length) return agent;
-          // Mutate in-place and return same array ref — avoids O(n) copy per streaming delta.
-          // React detects the change via the new agent object spread.
           const updated = { ...agent.messageParts[index], ...patch } as MessagePart;
-          agent.messageParts[index] = updated;
-          return { ...agent, messageParts: agent.messageParts };
+          // Return a new array reference so consumers that memoize on
+          // messageParts identity (e.g. React.memo, useMemo) correctly
+          // detect the change. The spread is O(n) but n is bounded by
+          // MAX_PARTS (500) and streaming deltas are already debounced.
+          const newParts = agent.messageParts.slice();
+          newParts[index] = updated;
+          return { ...agent, messageParts: newParts };
         }),
       };
     case "markActivity": {
