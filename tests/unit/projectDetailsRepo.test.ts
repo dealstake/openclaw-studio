@@ -147,4 +147,104 @@ A test project.
     projectsRepo.remove(db, "test-project.md");
     expect(repo.getByDoc(db, "test-project.md")).toBeNull();
   });
+
+  it("stores and retrieves plan items", () => {
+    repo.upsertFromMarkdown(db, "test-project.md", sampleMarkdown);
+    const items = repo.getPlanItems(db, "test-project.md");
+
+    expect(items.length).toBe(5);
+    expect(items[0].phaseName).toBe("Phase 1: Setup");
+    expect(items[0].taskDescription).toBe("Install dependencies");
+    expect(items[0].isCompleted).toBe(true);
+    expect(items[2].taskDescription).toBe("Write tests");
+    expect(items[2].isCompleted).toBe(false);
+    expect(items[3].phaseName).toBe("Phase 2: Build");
+  });
+
+  it("replaces plan items on re-upsert (delete-all-then-insert)", () => {
+    repo.upsertFromMarkdown(db, "test-project.md", sampleMarkdown);
+    expect(repo.getPlanItems(db, "test-project.md").length).toBe(5);
+
+    const updatedMd = `# Test Project
+## Implementation Plan
+### Phase 1: Setup
+- [x] Only one item now
+`;
+    repo.upsertFromMarkdown(db, "test-project.md", updatedMd);
+    const items = repo.getPlanItems(db, "test-project.md");
+    expect(items.length).toBe(1);
+    expect(items[0].taskDescription).toBe("Only one item now");
+  });
+
+  it("stores and retrieves history entries", () => {
+    const mdWithHistory = sampleMarkdown + `
+## History
+- 2026-02-19: Project created
+- 2026-02-20: Phase 1 completed
+`;
+    repo.upsertFromMarkdown(db, "test-project.md", mdWithHistory);
+    const history = repo.getHistory(db, "test-project.md");
+
+    expect(history.length).toBe(2);
+    expect(history[0].entryDate).toBe("2026-02-19");
+    expect(history[0].entryText).toBe("Project created");
+    expect(history[1].entryDate).toBe("2026-02-20");
+    expect(history[1].sortOrder).toBe(1);
+  });
+
+  it("stores fileMtimeMs when provided", () => {
+    const mtime = 1740500000000;
+    repo.upsertFromMarkdown(db, "test-project.md", sampleMarkdown, mtime);
+    const row = repo.getByDoc(db, "test-project.md");
+    expect(row!.fileMtimeMs).toBe(mtime);
+  });
+
+  it("stores null fileMtimeMs when not provided", () => {
+    repo.upsertFromMarkdown(db, "test-project.md", sampleMarkdown);
+    const row = repo.getByDoc(db, "test-project.md");
+    expect(row!.fileMtimeMs).toBeNull();
+  });
+
+  it("toProjectDetails includes planItems and history when rows provided", () => {
+    repo.upsertFromMarkdown(db, "test-project.md", sampleMarkdown + `
+## History
+- 2026-02-19: Created
+`);
+    const row = repo.getByDoc(db, "test-project.md")!;
+    const planItemRows = repo.getPlanItems(db, "test-project.md");
+    const historyRows = repo.getHistory(db, "test-project.md");
+    const details = repo.toProjectDetails(row, planItemRows, historyRows);
+
+    expect(details.planItems.length).toBe(5);
+    expect(details.planItems[0].phaseName).toBe("Phase 1: Setup");
+    expect(details.planItems[0].isCompleted).toBe(true);
+    expect(details.history.length).toBe(1);
+    expect(details.history[0].entryDate).toBe("2026-02-19");
+    expect(details.history[0].entryText).toBe("Created");
+  });
+
+  it("toProjectDetails returns empty planItems/history when no rows provided", () => {
+    repo.upsertFromMarkdown(db, "test-project.md", sampleMarkdown);
+    const row = repo.getByDoc(db, "test-project.md")!;
+    const details = repo.toProjectDetails(row);
+
+    expect(details.planItems).toEqual([]);
+    expect(details.history).toEqual([]);
+  });
+
+  it("mtime-based invalidation: updated mtime triggers re-parse", () => {
+    const mtime1 = 1740500000000;
+    repo.upsertFromMarkdown(db, "test-project.md", sampleMarkdown, mtime1);
+    const row1 = repo.getByDoc(db, "test-project.md")!;
+    expect(row1.fileMtimeMs).toBe(mtime1);
+    expect(row1.progressCompleted).toBe(2);
+
+    // Simulate file change: new content with new mtime
+    const mtime2 = 1740500060000;
+    const updatedMd = sampleMarkdown.replace("- [ ] Write tests", "- [x] Write tests");
+    repo.upsertFromMarkdown(db, "test-project.md", updatedMd, mtime2);
+    const row2 = repo.getByDoc(db, "test-project.md")!;
+    expect(row2.fileMtimeMs).toBe(mtime2);
+    expect(row2.progressCompleted).toBe(3);
+  });
 });

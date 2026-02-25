@@ -161,4 +161,82 @@ describe("parseProjectFile", () => {
     expect(result.associatedTasks).toHaveLength(1);
     expect(result.associatedTasks[0].name).toBe("Build Bot");
   });
+
+  it("extracts structured plan items per phase", () => {
+    const md = `# Project
+## Implementation Plan
+### Phase 1: Setup (DONE)
+- [x] Install deps
+- [x] Create schema
+### Phase 2: Build
+- [ ] Create component
+- [x] Write types
+`;
+    const result = parseProjectFile(md);
+    expect(result.planItems).toHaveLength(4);
+    expect(result.planItems[0]).toEqual({
+      phaseName: "Phase 1: Setup (DONE)",
+      taskDescription: "Install deps",
+      isCompleted: true,
+      sortOrder: 0,
+    });
+    expect(result.planItems[2]).toEqual({
+      phaseName: "Phase 2: Build",
+      taskDescription: "Create component",
+      isCompleted: false,
+      sortOrder: 2,
+    });
+    expect(result.planItems[3].isCompleted).toBe(true);
+  });
+
+  it("assigns Ungrouped phase when no ### heading precedes checkboxes", () => {
+    const md = `# Project
+## Implementation Plan
+- [x] Top-level task
+### Phase 1
+- [ ] Scoped task
+`;
+    const result = parseProjectFile(md);
+    expect(result.planItems[0].phaseName).toBe("Ungrouped");
+    expect(result.planItems[1].phaseName).toBe("Phase 1");
+  });
+
+  it("extracts history entries with dates", () => {
+    const md = `# Project
+## History
+- 2026-02-20: Project created
+- 2026-02-21: Phase 1 completed by cron agent
+- 2026-02-22: Phase 2 started
+`;
+    const result = parseProjectFile(md);
+    expect(result.history).toHaveLength(3);
+    expect(result.history[0]).toEqual({
+      entryDate: "2026-02-20",
+      entryText: "Project created",
+      sortOrder: 0,
+    });
+    expect(result.history[2]).toEqual({
+      entryDate: "2026-02-22",
+      entryText: "Phase 2 started",
+      sortOrder: 2,
+    });
+  });
+
+  it("returns empty history when section is missing", () => {
+    const md = `# Project
+## Implementation Plan
+- [x] Done
+`;
+    const result = parseProjectFile(md);
+    expect(result.history).toEqual([]);
+  });
+
+  it("returns empty planItems when no checkboxes in Implementation Plan", () => {
+    const md = `# Project
+## Implementation Plan
+Just some prose about the plan.
+`;
+    const result = parseProjectFile(md);
+    expect(result.planItems).toEqual([]);
+  });
 });
