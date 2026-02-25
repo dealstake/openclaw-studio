@@ -157,9 +157,15 @@ export function createGatewayRuntimeEventHandler(
     if (eventKind === "prompt-error") {
       const payload = event.payload as Record<string, unknown> | undefined;
       const sessionKey = typeof payload?.sessionKey === "string" ? payload.sessionKey : null;
+      const runId = typeof payload?.runId === "string" ? payload.runId : null;
       const errorMsg = typeof payload?.error === "string" ? payload.error
         : typeof payload?.message === "string" ? payload.message
         : "Agent run failed";
+
+      // Always clear run tracking if runId is present, regardless of agent match
+      if (runId) {
+        state.clearRunTracking(runId);
+      }
 
       deps.onSystemEvent?.({
         kind: "prompt-error",
@@ -172,7 +178,6 @@ export function createGatewayRuntimeEventHandler(
         const agentsSnapshot = deps.getAgents();
         const agentId = findAgentBySessionKey(agentsSnapshot, sessionKey);
         if (agentId) {
-          state.clearRunTracking(null);
           deps.clearPendingLivePatch(agentId);
           deps.dispatch({
             type: "appendPart",
