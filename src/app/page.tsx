@@ -1400,8 +1400,8 @@ const AgentStudioPage = () => {
 
   if (status === "connecting" || (status === "connected" && !agentsLoadedOnce)) {
     return (
-      <div className="relative w-screen overflow-hidden bg-background" style={{ minHeight: '100dvh' }}>
-        <div className="flex items-center justify-center px-6" style={{ minHeight: '100dvh' }}>
+      <div className="relative w-screen overflow-hidden bg-background" style={{ minHeight: '100svh' }}>
+        <div className="flex items-center justify-center px-6" style={{ minHeight: '100svh' }}>
           <div className="bg-card rounded-lg w-full max-w-md px-6 py-8 flex flex-col items-center gap-4">
             <BrandMark size="lg" />
             <div className="text-sm text-muted-foreground">
@@ -1418,7 +1418,7 @@ const AgentStudioPage = () => {
 
   return (
     <Suspense fallback={null}>
-    <div className="relative w-screen overflow-hidden bg-background" style={{ minHeight: '100dvh' }}>
+    <div className="relative w-screen overflow-hidden bg-background" style={{ minHeight: '100svh' }}>
       {state.loading ? (
         <div className="pointer-events-none fixed bottom-4 left-0 right-0 z-50 flex justify-center px-3">
           <div className="bg-card rounded-lg px-6 py-3 font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
@@ -1426,7 +1426,7 @@ const AgentStudioPage = () => {
           </div>
         </div>
       ) : null}
-      <div className="relative w-full overflow-hidden bg-background" style={{ height: '100dvh' }}>
+      <div className="relative w-full overflow-hidden bg-background" style={{ height: '100svh' }}>
         {/* ── Header hover zone: reveals header on mouse enter ──────── */}
         <div
           className="fixed inset-x-0 top-0 z-30 h-3"

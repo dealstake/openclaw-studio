@@ -247,7 +247,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   return (
     <div
       className="absolute inset-x-0 bottom-0 z-10 px-4"
-      style={{ paddingBottom: `calc(12px + env(safe-area-inset-bottom) + var(--keyboard-offset, 0px))` }}
+      style={{ paddingBottom: `calc(1rem + env(safe-area-inset-bottom) + var(--keyboard-offset, 0px))` }}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDragOver={handleDragOver}
@@ -300,7 +300,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
           {/* Attach button */}
           <button
             type="button"
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground"
             aria-label="Attach file"
             onClick={() => fileInputRef.current?.click()}
           >
@@ -345,7 +345,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
           <div className="shrink-0">
             {running ? (
               <button
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-destructive text-destructive-foreground shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-destructive text-destructive-foreground shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
                 type="button"
                 aria-label="Stop agent"
                 onClick={onStop}
@@ -355,7 +355,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
               </button>
             ) : (
               <button
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
                 type="button"
                 aria-label="Send message"
                 onClick={handleClickSend}
