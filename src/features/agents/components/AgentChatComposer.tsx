@@ -13,7 +13,7 @@ import {
 import type { GatewayModelChoice } from "@/lib/gateway/models";
 import type { MessagePart } from "@/lib/chat/types";
 import type { GatewayStatus } from "@/lib/gateway/GatewayClient";
-import { AlertCircle, ArrowUp, Paperclip, Settings2, Square, UploadCloud, WifiOff } from "lucide-react";
+import { AlertCircle, Paperclip, Send, Settings2, Square, UploadCloud, WifiOff } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ChatAttachmentPreview } from "./ChatAttachmentPreview";
 import { ModelPicker } from "./ModelPicker";
@@ -394,7 +394,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
                 onClick={handleClickSend}
                 disabled={sendDisabled}
               >
-                <ArrowUp className="h-4 w-4" />
+                <Send className="h-4 w-4" />
               </button>
             )}
           </div>
