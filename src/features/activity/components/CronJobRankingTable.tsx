@@ -11,7 +11,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import type { JobStats } from "../lib/cronStatsCalculator";
 import { TrendSparkline } from "./TrendSparkline";
 
-const compactNumber = new Intl.NumberFormat("en", { notation: "compact" });
+const compactNumber = new Intl.NumberFormat(undefined, { notation: "compact" });
 
 function successRateColor(rate: number): string {
   if (rate >= 0.9) return "text-green-400";

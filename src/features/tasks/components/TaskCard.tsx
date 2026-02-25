@@ -1,6 +1,7 @@
 "use client";
 
 import { memo, useCallback } from "react";
+import { Terminal, AlertTriangle } from "lucide-react";
 import type { StudioTask } from "@/features/tasks/types";
 import { humanReadableSchedule } from "@/features/tasks/lib/schedule";
 import { formatRelativeTime } from "@/lib/text/time";
@@ -33,6 +34,8 @@ export const TaskCard = memo(function TaskCard({
 }: TaskCardProps) {
   const typeConfig = TYPE_CONFIG[task.type];
   const TypeIcon = typeConfig.icon;
+  const isUnmanaged = task.managementStatus === "unmanaged";
+  const isOrphan = task.managementStatus === "orphan";
 
   const statusKey = getTaskStatusKey(task);
   const dotClass = STATUS_DOT_CLASS[statusKey];
@@ -55,6 +58,8 @@ export const TaskCard = memo(function TaskCard({
         focused && !selected
           ? "border-primary/30 bg-card/90 ring-1 ring-primary/10"
           : ""
+      }${isUnmanaged ? " border-dashed border-b-amber-500/30" : ""}${
+        isOrphan ? " border-dashed border-b-destructive/30 opacity-70" : ""
       }`}
       onClick={handleSelect}
       role="option"
@@ -63,32 +68,49 @@ export const TaskCard = memo(function TaskCard({
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") handleSelect(); }}
       data-task-card
     >
-      {/* Title row: status dot + name + toggle */}
+      {/* Title row: status dot + name + management badge + toggle */}
       <CardHeader>
-        <span className={`h-2 w-2 shrink-0 rounded-full ${dotClass}`} />
+        {isOrphan ? (
+          <AlertTriangle className="h-3 w-3 shrink-0 text-destructive" />
+        ) : (
+          <span className={`h-2 w-2 shrink-0 rounded-full ${dotClass}`} />
+        )}
         <span className="min-w-0 flex-1 truncate text-xs font-medium text-foreground" title={task.name}>
           {task.name}
         </span>
+        {isUnmanaged ? (
+          <CardBadge className="border-amber-500/30 bg-amber-500/10 text-amber-300 gap-1">
+            <Terminal className="h-2.5 w-2.5" />
+            CLI
+          </CardBadge>
+        ) : isOrphan ? (
+          <CardBadge className="border-destructive/30 bg-destructive/10 text-destructive gap-1">
+            <AlertTriangle className="h-2.5 w-2.5" />
+            Orphan
+          </CardBadge>
+        ) : null}
         {/* Persistent toggle — green when enabled, grey when disabled */}
-        <button
-          type="button"
-          aria-label={task.enabled ? "Pause task" : "Resume task"}
-          disabled={busy || busyAction === "toggle"}
-          className={`relative h-5 w-9 shrink-0 rounded-full border transition disabled:opacity-50 disabled:cursor-not-allowed ${
-            task.enabled
-              ? "border-emerald-500/50 bg-emerald-500/30"
-              : "border-border bg-muted/50"
-          }`}
-          onClick={handleToggle}
-        >
-          <span
-            className={`absolute top-0.5 h-3.5 w-3.5 rounded-full transition-all shadow-sm ${
+        {!isOrphan ? (
+          <button
+            type="button"
+            aria-label={task.enabled ? "Pause task" : "Resume task"}
+            disabled={busy || busyAction === "toggle"}
+            className={`relative h-6 w-11 shrink-0 cursor-pointer rounded-full border transition disabled:opacity-50 disabled:cursor-not-allowed ${
               task.enabled
-                ? "left-[17px] bg-emerald-400"
-                : "left-0.5 bg-muted-foreground/70"
+                ? "border-emerald-500/50 bg-emerald-500/30"
+                : "border-border bg-muted/50"
             }`}
-          />
-        </button>
+            onClick={handleToggle}
+          >
+            <span
+              className={`pointer-events-none absolute top-0.5 left-0.5 h-5 w-5 rounded-full transition-all shadow-sm ${
+                task.enabled
+                  ? "translate-x-5 bg-emerald-400"
+                  : "bg-muted-foreground/70"
+              }`}
+            />
+          </button>
+        ) : null}
       </CardHeader>
 
       {/* Type badge + schedule */}
@@ -106,6 +128,13 @@ export const TaskCard = memo(function TaskCard({
       {task.description ? (
         <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-muted-foreground">
           {task.description}
+        </p>
+      ) : null}
+
+      {/* Orphan warning */}
+      {isOrphan ? (
+        <p className="mt-1 text-[10px] font-medium text-destructive">
+          Cron job missing — metadata only
         </p>
       ) : null}
 

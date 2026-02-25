@@ -26,7 +26,6 @@ const MANAGEMENT_ITEMS: { value: ManagementTab; label: string }[] = [
   { value: "sessions", label: "Sessions" },
   { value: "usage", label: "Usage" },
   { value: "channels", label: "Channels" },
-  { value: "cron", label: "Cron" },
   { value: "settings", label: "Settings" },
 ];
 

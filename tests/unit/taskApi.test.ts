@@ -11,6 +11,7 @@ const mockTask: StudioTask = {
   id: "t1",
   cronJobId: "cron-1",
   agentId: "agent-1",
+    managementStatus: "managed",
   name: "Test",
   description: "",
   type: "periodic",

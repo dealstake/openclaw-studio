@@ -20,8 +20,6 @@ import {
   type ExecApprovalRequest,
 } from "@/features/exec-approvals/types";
 import { appendActivityParts, finalizeActivityMessage } from "@/features/activity/hooks/useActivityMessageStore";
-import type { CronJobSummary } from "@/lib/cron/types";
-
 export interface RuntimeEventSubscriptionParams {
   client: GatewayClient;
   status: "disconnected" | "connecting" | "connected";
@@ -39,8 +37,9 @@ export interface RuntimeEventSubscriptionParams {
   refreshHeartbeatLatestUpdateRef: MutableRefObject<() => void>;
   loadChannelsStatusRef: MutableRefObject<() => Promise<void>>;
   loadAllSessionsRef: MutableRefObject<() => Promise<unknown>>;
-  loadAllCronJobsRef: MutableRefObject<() => Promise<unknown>>;
-  allCronJobsRef: MutableRefObject<CronJobSummary[]>;
+  loadTasksRef: MutableRefObject<() => Promise<unknown>>;
+  /** Resolve a cron job ID to a display name (used for activity messages). */
+  cronJobNameResolverRef: MutableRefObject<(cronJobId: string) => string | undefined>;
   bumpHeartbeatTick: () => void;
   updateSpecialLatestUpdate: (agentId: string, agent: AgentEntry, message: string) => void;
   setExecApprovalQueue: Dispatch<SetStateAction<ExecApprovalRequest[]>>;
@@ -62,8 +61,8 @@ export function useRuntimeEventSubscription({
   refreshHeartbeatLatestUpdateRef,
   loadChannelsStatusRef,
   loadAllSessionsRef,
-  loadAllCronJobsRef,
-  allCronJobsRef,
+  loadTasksRef,
+  cronJobNameResolverRef,
   bumpHeartbeatTick,
   updateSpecialLatestUpdate,
   setExecApprovalQueue,
@@ -106,7 +105,7 @@ export function useRuntimeEventSubscription({
         void loadAllSessionsRef.current();
       },
       onCronUpdate: () => {
-        void loadAllCronJobsRef.current();
+        void loadTasksRef.current();
         setCronEventTick((prev) => prev + 1);
       },
       onSystemEvent: () => {
@@ -121,8 +120,8 @@ export function useRuntimeEventSubscription({
         if (!sourceName) {
           const cronMatch = sourceKey.match(/:cron:([^:]+)/);
           if (cronMatch) {
-            const job = allCronJobsRef.current.find((j) => j.id === cronMatch[1]);
-            if (job) sourceName = job.name;
+            const resolved = cronJobNameResolverRef.current(cronMatch[1]);
+            if (resolved) sourceName = resolved;
           }
           if (!sourceName) sourceName = data.sourceType === "heartbeat" ? "Heartbeat" : "Agent Run";
         }

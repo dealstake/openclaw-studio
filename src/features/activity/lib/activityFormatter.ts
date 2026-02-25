@@ -2,7 +2,7 @@ import { formatRelativeTime } from "@/lib/text/time";
 
 import type { ActivityEvent, ActivityStatus, DisplayEvent } from "./activityTypes";
 
-const compactNumber = new Intl.NumberFormat("en", { notation: "compact" });
+const compactNumber = new Intl.NumberFormat(undefined, { notation: "compact" });
 
 /**
  * Transform a raw ActivityEvent into a display-ready DisplayEvent.

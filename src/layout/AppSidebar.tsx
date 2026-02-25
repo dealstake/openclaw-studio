@@ -5,7 +5,6 @@ import {
   MessageSquare,
   BarChart3,
   Radio,
-  Clock,
   Settings,
   Plus,
   ChevronLeft,
@@ -19,13 +18,12 @@ import { useSessionHistory } from "@/features/sessions/hooks/useSessionHistory";
 import { SessionList } from "@/features/sessions/components/SessionList";
 
 /** Management nav items that open in expanded modal */
-export type ManagementTab = "sessions" | "usage" | "channels" | "cron" | "settings";
+export type ManagementTab = "sessions" | "usage" | "channels" | "settings";
 
 const NAV_ITEMS: Array<{ value: ManagementTab; label: string; icon: typeof MessageSquare }> = [
   { value: "sessions", label: "Sessions", icon: MessageSquare },
   { value: "usage", label: "Usage", icon: BarChart3 },
   { value: "channels", label: "Channels", icon: Radio },
-  { value: "cron", label: "Cron", icon: Clock },
 ];
 
 const ALL_NAV_ITEMS = [...NAV_ITEMS, { value: "settings" as ManagementTab, label: "Settings", icon: Settings }];
@@ -51,8 +49,8 @@ const NavIconButton = memo(function NavIconButton({
   onKeyDown,
 }: NavIconButtonProps) {
   const Icon = item.icon;
-  const sizeClass = size === "sm" ? "h-7 w-7" : "h-8 w-8";
-  const iconSize = size === "sm" ? "h-3.5 w-3.5" : "h-4 w-4";
+  const sizeClass = size === "sm" ? "h-10 w-10" : "h-11 w-11";
+  const iconSize = size === "sm" ? "h-4 w-4" : "h-5 w-5";
   const indicatorClass =
     indicatorPosition === "left"
       ? "before:absolute before:inset-y-1 before:-left-1 before:w-0.5 before:rounded-full before:bg-primary"

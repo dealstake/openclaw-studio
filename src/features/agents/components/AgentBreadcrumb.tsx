@@ -106,7 +106,7 @@ export const AgentBreadcrumb = memo(function AgentBreadcrumb({
           avatarUrl={selected.avatarUrl}
           size={20}
         />
-        <span className="max-w-[140px] truncate text-sm font-semibold text-foreground" title={selected.name || selected.agentId}>
+        <span className="max-w-[140px] truncate text-sm font-semibold text-foreground max-[375px]:hidden" title={selected.name || selected.agentId}>
           {selected.name || selected.agentId}
         </span>
         <span
@@ -171,7 +171,7 @@ export const AgentBreadcrumb = memo(function AgentBreadcrumb({
               <div className="mx-3 my-1 border-t border-border/50" />
               <button
                 type="button"
-                className="flex w-full min-h-[40px] items-center gap-3 px-3 py-2 text-left text-sm text-muted-foreground transition hover:bg-muted/60 hover:text-foreground focus-ring"
+                className="flex w-full min-h-[44px] items-center gap-3 px-3 py-2 text-left text-sm text-muted-foreground transition hover:bg-muted/60 hover:text-foreground focus-ring"
                 onClick={() => {
                   onCreateAgent();
                   setOpen(false);

@@ -65,6 +65,7 @@ function makeTask(overrides: Partial<StudioTask> = {}): StudioTask {
     id: "task-1",
     cronJobId: "cron-1",
     agentId: "agent-1",
+    managementStatus: "managed",
     name: "Test Task",
     description: "",
     type: "periodic",
@@ -90,6 +91,7 @@ function makeCronJob(overrides: Partial<CronJobSummary> = {}): CronJobSummary {
     name: "[TASK] Test Task",
     enabled: true,
     agentId: "agent-1",
+    managementStatus: "managed",
     schedule: { kind: "every", everyMs: 3_600_000 },
     payload: { kind: "agentTurn", message: "Do something", model: "default" },
     sessionTarget: "isolated",
@@ -199,7 +201,7 @@ describe("useAgentTasks", () => {
     });
 
     expect(result.current.tasks).toHaveLength(1);
-    expect(result.current.tasks[0].name).toContain("UNMANAGED");
+    expect(result.current.tasks[0].managementStatus).toBe("unmanaged");
     expect(result.current.tasks[0].cronJobId).toBe("cron-orphan");
   });
 
@@ -336,8 +338,9 @@ describe("useAgentTasks", () => {
 
   it("deleteTask removes the task from state", async () => {
     const task = makeTask();
+    const cron = makeCronJob();
 
-    const { result, client } = await renderWithTasks(fetchSpy, [task]);
+    const { result, client } = await renderWithTasks(fetchSpy, [task], [cron]);
 
     expect(result.current.tasks).toHaveLength(1);
 
@@ -353,9 +356,10 @@ describe("useAgentTasks", () => {
 
   it("deleteTask sets error on failure", async () => {
     const task = makeTask();
+    const cron = makeCronJob();
     mockRemoveCronJob.mockRejectedValueOnce(new Error("Delete failed"));
 
-    const { result } = await renderWithTasks(fetchSpy, [task]);
+    const { result } = await renderWithTasks(fetchSpy, [task], [cron]);
 
     await act(async () => {
       await result.current.deleteTask("task-1");

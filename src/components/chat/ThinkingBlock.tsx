@@ -69,13 +69,13 @@ export const ThinkingBlock = React.memo(function ThinkingBlock({
         />
 
         {/* Label */}
-        <span className="text-xs text-muted-foreground/70">
+        <span className="text-xs text-muted-foreground/65">
           {streaming ? "Thinking…" : "Thought"}
         </span>
 
         {/* Duration */}
         {durationLabel ? (
-          <span className="font-mono text-[10px] tabular-nums text-muted-foreground/50">
+          <span className="font-mono text-[10px] tabular-nums text-muted-foreground/70">
             {durationLabel}
           </span>
         ) : null}
@@ -86,7 +86,7 @@ export const ThinkingBlock = React.memo(function ThinkingBlock({
           {text ? (
             <MarkdownViewer
               content={text}
-              className="text-xs text-muted-foreground opacity-80"
+              className="text-xs text-muted-foreground/70 font-light leading-relaxed"
             />
           ) : streaming ? (
             <div className="flex items-center gap-2">

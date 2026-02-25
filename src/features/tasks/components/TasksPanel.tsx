@@ -1,12 +1,13 @@
 "use client";
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import { Plus, RefreshCw, ListChecks, Layers } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { CardSkeleton } from "@/components/ui/CardSkeleton";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
-import type { StudioTask, TaskType, TaskSchedule, UpdateTaskPayload } from "@/features/tasks/types";
+import type { ManagementStatus, StudioTask, TaskType, TaskSchedule, UpdateTaskPayload } from "@/features/tasks/types";
 import { TaskCard } from "./TaskCard";
 import { TaskDetailDrawer } from "./TaskDetailDrawer";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
@@ -18,13 +19,17 @@ import { PanelSearchInput } from "@/components/ui/PanelSearchInput";
 
 // ─── Filter tabs ─────────────────────────────────────────────────────────────
 
-type FilterTab = "all" | TaskType;
+type FilterTab = "all" | TaskType | ManagementStatus;
+
+const MGMT_STATUS_FILTERS: FilterTab[] = ["unmanaged", "orphan"];
 
 const FILTER_OPTIONS: FilterOption<FilterTab>[] = [
   { value: "all", label: "All" },
   { value: "constant", label: "Constant" },
   { value: "periodic", label: "Periodic" },
   { value: "scheduled", label: "Scheduled" },
+  { value: "unmanaged", label: "Unmanaged" },
+  { value: "orphan", label: "Orphan" },
 ];
 
 // ─── Props ───────────────────────────────────────────────────────────────────
@@ -42,6 +47,7 @@ interface TasksPanelProps {
   onUpdateSchedule: (taskId: string, schedule: TaskSchedule) => void;
   onRun: (taskId: string) => void;
   onDelete: (taskId: string) => void;
+  onAdopt?: (taskId: string) => void;
   onRefresh: () => void;
   onNewTask: () => void;
   maxConcurrentRuns?: number | null;
@@ -62,6 +68,7 @@ export const TasksPanel = memo(function TasksPanel({
   onUpdateSchedule,
   onRun,
   onDelete,
+  onAdopt,
   onRefresh,
   onNewTask,
   maxConcurrentRuns,
@@ -110,18 +117,31 @@ export const TasksPanel = memo(function TasksPanel({
     if (!open) handleDeleteCancel();
   }, [handleDeleteCancel]);
 
+
   const filterOptionsWithCounts = useMemo<FilterOption<FilterTab>[]>(() => {
-    const counts: Record<FilterTab, number> = {
+    const counts: Partial<Record<FilterTab, number>> = {
       all: tasks.length,
       constant: tasks.filter((t) => t.type === "constant").length,
       periodic: tasks.filter((t) => t.type === "periodic").length,
       scheduled: tasks.filter((t) => t.type === "scheduled").length,
+      unmanaged: tasks.filter((t) => t.managementStatus === "unmanaged").length,
+      orphan: tasks.filter((t) => t.managementStatus === "orphan").length,
     };
-    return FILTER_OPTIONS.map((opt) => ({ ...opt, count: counts[opt.value] }));
+    // Only show unmanaged/orphan pills if count > 0
+    return FILTER_OPTIONS.filter(
+      (opt) => !MGMT_STATUS_FILTERS.includes(opt.value) || (counts[opt.value] ?? 0) > 0
+    ).map((opt) => ({ ...opt, count: counts[opt.value] ?? 0 }));
   }, [tasks]);
 
   const filtered = useMemo(() => {
-    let result = filter === "all" ? tasks : tasks.filter((t) => t.type === filter);
+    let result: StudioTask[];
+    if (filter === "all") {
+      result = tasks;
+    } else if (MGMT_STATUS_FILTERS.includes(filter)) {
+      result = tasks.filter((t) => t.managementStatus === filter);
+    } else {
+      result = tasks.filter((t) => t.type === filter);
+    }
     if (search.trim()) {
       const q = search.trim().toLowerCase();
       result = result.filter(
@@ -162,6 +182,24 @@ export const TasksPanel = memo(function TasksPanel({
     }
   }, [focusIndex]);
 
+  // ─── Automated orphan detection ──────────────────────────────────────────
+  const orphanCount = useMemo(
+    () => tasks.filter((t) => t.managementStatus === "orphan").length,
+    [tasks],
+  );
+  const orphanToastShown = useRef(false);
+  useEffect(() => {
+    if (orphanCount > 0 && !orphanToastShown.current && !loading) {
+      orphanToastShown.current = true;
+      toast.warning(
+        `${orphanCount} orphaned task${orphanCount > 1 ? "s" : ""} detected — metadata exists but cron job is missing. Use the "Orphan" filter to review.`,
+        { duration: 8000 },
+      );
+    }
+    // Reset when orphans are resolved so toast fires again if new orphans appear
+    if (orphanCount === 0) orphanToastShown.current = false;
+  }, [orphanCount, loading]);
+
   if (!isSelected) return null;
 
   const pendingDeleteTask = pendingDeleteId
@@ -185,6 +223,7 @@ export const TasksPanel = memo(function TasksPanel({
         onUpdateSchedule={onUpdateSchedule}
         onRun={onRun}
         onDelete={handleDeleteRequest}
+        onAdopt={onAdopt}
       />
     );
   }
@@ -199,7 +238,8 @@ export const TasksPanel = memo(function TasksPanel({
           </SectionLabel>
           {tasks.length > 0 ? (
             <span className="rounded-full bg-muted px-1.5 py-0.5 font-mono text-[10px] font-semibold text-muted-foreground">
-              {tasks.length}
+              {tasks.filter((t) => t.managementStatus === "managed").length} managed
+              {tasks.some((t) => t.managementStatus === "unmanaged") ? ` · ${tasks.filter((t) => t.managementStatus === "unmanaged").length} unmanaged` : ""}
             </span>
           ) : null}
           {maxConcurrentRuns != null && (

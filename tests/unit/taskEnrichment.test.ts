@@ -1,87 +1,57 @@
-import { describe, expect, it } from "vitest";
+import { describe, it, expect } from "vitest";
 import {
+  enrichTasksWithCronData,
   generateTaskId,
   buildCronPayloadMessage,
   buildDelivery,
-  enrichTasksWithCronData,
 } from "@/features/tasks/lib/taskEnrichment";
-import type { StudioTask, CreateTaskPayload } from "@/features/tasks/types";
-import type { CronJobSummary } from "@/lib/cron/types";
+import type { StudioTask } from "@/features/tasks/types";
+import type { CronJobSummary } from "@/lib/cron/cron-types";
 
-// ─── generateTaskId ──────────────────────────────────────────────────────────
+// ─── Fixtures ────────────────────────────────────────────────────────────────
 
-describe("generateTaskId", () => {
-  it("returns a string starting with 'task-'", () => {
-    expect(generateTaskId()).toMatch(/^task-/);
-  });
+const AGENT_ID = "agent-test-001";
 
-  it("generates unique ids", () => {
-    const ids = new Set(Array.from({ length: 100 }, () => generateTaskId()));
-    expect(ids.size).toBe(100);
-  });
-});
-
-// ─── buildCronPayloadMessage ─────────────────────────────────────────────────
-
-describe("buildCronPayloadMessage", () => {
-  it("wraps prompt with task tag", () => {
-    expect(buildCronPayloadMessage("task-abc", "Do the thing")).toBe(
-      "[TASK:task-abc] Do the thing"
-    );
-  });
-});
-
-// ─── buildDelivery ───────────────────────────────────────────────────────────
-
-describe("buildDelivery", () => {
-  it("returns announce-only when no channel", () => {
-    const payload = { deliveryChannel: null } as unknown as CreateTaskPayload;
-    expect(buildDelivery(payload)).toEqual({ mode: "announce" });
-  });
-
-  it("includes channel when provided", () => {
-    const payload = {
-      deliveryChannel: "slack-general",
-      deliveryTarget: null,
-    } as unknown as CreateTaskPayload;
-    expect(buildDelivery(payload)).toEqual({
-      mode: "announce",
-      channel: "slack-general",
-    });
-  });
-
-  it("includes channel and target when both provided", () => {
-    const payload = {
-      deliveryChannel: "slack-general",
-      deliveryTarget: "U12345",
-    } as unknown as CreateTaskPayload;
-    expect(buildDelivery(payload)).toEqual({
-      mode: "announce",
-      channel: "slack-general",
-      to: "U12345",
-    });
-  });
-});
-
-// ─── enrichTasksWithCronData ─────────────────────────────────────────────────
+function makeCronJob(overrides: Partial<CronJobSummary> = {}): CronJobSummary {
+  return {
+    id: "cron-001",
+    name: "[TASK] Test Task",
+    agentId: AGENT_ID,
+    enabled: true,
+    createdAtMs: 1700000000000,
+    updatedAtMs: 1700000000000,
+    schedule: { kind: "every", everyMs: 900000 },
+    sessionTarget: "isolated",
+    wakeMode: "now",
+    payload: { kind: "agentTurn", message: "[TASK:task-001] Do stuff", model: "sonnet" },
+    state: {
+      lastRunAtMs: 1700000060000,
+      lastStatus: "ok",
+      runCount: 5,
+      nextRunAtMs: 1700000120000,
+    },
+    ...overrides,
+  };
+}
 
 function makeTask(overrides: Partial<StudioTask> = {}): StudioTask {
   return {
-    id: "t1",
-    cronJobId: "cron-1",
-    agentId: "agent-1",
+    id: "task-001",
+    cronJobId: "cron-001",
+    agentId: AGENT_ID,
+    managementStatus: "managed",
     name: "Test Task",
-    description: "",
+    description: "A test task",
     type: "periodic",
-    schedule: { type: "periodic", intervalMs: 3600000 },
-    prompt: "do stuff",
+    schedule: { type: "periodic", intervalMs: 900000 },
+    prompt: "Do stuff",
     model: "default",
     thinking: null,
     deliveryChannel: null,
     deliveryTarget: null,
-    enabled: true,
-    createdAt: "2026-01-01T00:00:00Z",
-    updatedAt: "2026-01-01T00:00:00Z",
+    enabled: false,
+    createdAt: "2024-01-01T00:00:00Z",
+    updatedAt: "2024-01-01T00:00:00Z",
     lastRunAt: null,
     lastRunStatus: null,
     runCount: 0,
@@ -89,128 +59,141 @@ function makeTask(overrides: Partial<StudioTask> = {}): StudioTask {
   };
 }
 
-function makeCronJob(overrides: Partial<CronJobSummary> = {}): CronJobSummary {
-  return {
-    id: "cron-1",
-    name: "Test",
-    enabled: true,
-    agentId: "agent-1",
-    schedule: { kind: "every", everyMs: 3600000 },
-    payload: { kind: "agentTurn", message: "test" },
-    sessionTarget: "isolated",
-    state: { runCount: 0, lastStatus: null, lastRunAtMs: null },
-    createdAtMs: Date.now(),
-    ...overrides,
-  } as CronJobSummary;
-}
+// ─── Tests ───────────────────────────────────────────────────────────────────
 
 describe("enrichTasksWithCronData", () => {
-  it("enriches task with matching cron data", () => {
+  it("enriches managed tasks with cron runtime state", () => {
     const tasks = [makeTask()];
-    const cronJobs = [
-      makeCronJob({
-        enabled: false,
-        state: { runCount: 5, lastStatus: "ok", lastRunAtMs: 1700000000000 },
-      }),
-    ];
+    const cronJobs = [makeCronJob()];
+    const result = enrichTasksWithCronData(tasks, cronJobs, AGENT_ID);
 
-    const result = enrichTasksWithCronData(tasks, cronJobs, "agent-1");
     expect(result).toHaveLength(1);
-    expect(result[0].enabled).toBe(false);
+    expect(result[0].managementStatus).toBe("managed");
+    // Cron is authoritative — overrides local state
+    expect(result[0].enabled).toBe(true);
+    expect(result[0].model).toBe("sonnet");
     expect(result[0].lastRunStatus).toBe("success");
-    expect(result[0].lastRunAt).toBe(new Date(1700000000000).toISOString());
+    expect(result[0].runCount).toBe(5);
+    expect(result[0].nextRunAtMs).toBe(1700000120000);
   });
 
-  it("maps error status correctly", () => {
-    const tasks = [makeTask()];
-    const cronJobs = [
-      makeCronJob({
-        state: { runCount: 1, lastStatus: "error", lastRunAtMs: 1700000000000 },
-      }),
-    ];
+  it("marks tasks as orphan when cron job is missing", () => {
+    const tasks = [makeTask({ cronJobId: "cron-missing" })];
+    const result = enrichTasksWithCronData(tasks, [], AGENT_ID);
 
-    const result = enrichTasksWithCronData(tasks, cronJobs, "agent-1");
+    expect(result).toHaveLength(1);
+    expect(result[0].managementStatus).toBe("orphan");
+    expect(result[0].rawCronJob).toBeUndefined();
+  });
+
+  it("synthesizes unmanaged tasks from cron jobs not in DB", () => {
+    const cronJobs = [makeCronJob({ id: "cron-unmanaged", name: "Raw CLI Job" })];
+    const result = enrichTasksWithCronData([], cronJobs, AGENT_ID);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].managementStatus).toBe("unmanaged");
+    expect(result[0].cronJobId).toBe("cron-unmanaged");
+    expect(result[0].name).toBe("Raw CLI Job");
+  });
+
+  it("strips [TASK] prefix from unmanaged job names", () => {
+    const cronJobs = [makeCronJob({ id: "cron-x", name: "[TASK] Prefixed Job" })];
+    const result = enrichTasksWithCronData([], cronJobs, AGENT_ID);
+
+    expect(result[0].name).toBe("Prefixed Job");
+  });
+
+  it("ignores cron jobs for other agents", () => {
+    const cronJobs = [makeCronJob({ id: "cron-other", agentId: "agent-other" })];
+    const result = enrichTasksWithCronData([], cronJobs, AGENT_ID);
+
+    expect(result).toHaveLength(0);
+  });
+
+  it("ignores system cron jobs (sys: prefix)", () => {
+    const cronJobs = [makeCronJob({ id: "sys:heartbeat", agentId: AGENT_ID })];
+    const result = enrichTasksWithCronData([], cronJobs, AGENT_ID);
+
+    expect(result).toHaveLength(0);
+  });
+
+  it("returns all three categories together", () => {
+    const tasks = [
+      makeTask({ id: "t1", cronJobId: "cron-001" }),
+      makeTask({ id: "t2", cronJobId: "cron-gone" }),
+    ];
+    const cronJobs = [
+      makeCronJob({ id: "cron-001" }),
+      makeCronJob({ id: "cron-orphan", name: "Orphan Job", agentId: AGENT_ID }),
+    ];
+    const result = enrichTasksWithCronData(tasks, cronJobs, AGENT_ID);
+
+    const managed = result.filter((t) => t.managementStatus === "managed");
+    const orphans = result.filter((t) => t.managementStatus === "orphan");
+    const unmanaged = result.filter((t) => t.managementStatus === "unmanaged");
+
+    expect(managed).toHaveLength(1);
+    expect(orphans).toHaveLength(1);
+    expect(unmanaged).toHaveLength(1);
+  });
+
+  it("reads thinking from cron payload", () => {
+    const cronJobs = [makeCronJob({
+      payload: { kind: "agentTurn", message: "[TASK:task-001] Do stuff", model: "sonnet", thinking: "low" },
+    })];
+    const result = enrichTasksWithCronData([makeTask()], cronJobs, AGENT_ID);
+
+    expect(result[0].thinking).toBe("low");
+  });
+
+  it("reads delivery from cron", () => {
+    const cronJobs = [makeCronJob({
+      delivery: { mode: "announce", channel: "telegram", to: "-100123" },
+    })];
+    const result = enrichTasksWithCronData([makeTask()], cronJobs, AGENT_ID);
+
+    expect(result[0].deliveryChannel).toBe("telegram");
+    expect(result[0].deliveryTarget).toBe("-100123");
+  });
+
+  it("maps cron lastStatus=error to lastRunStatus=error", () => {
+    const cronJobs = [makeCronJob({
+      state: { lastStatus: "error", lastRunAtMs: 1700000060000, runCount: 3 },
+    })];
+    const result = enrichTasksWithCronData([makeTask()], cronJobs, AGENT_ID);
+
     expect(result[0].lastRunStatus).toBe("error");
   });
+});
 
-  it("passes through tasks with no matching cron job", () => {
-    const tasks = [makeTask({ cronJobId: "nonexistent" })];
-    const result = enrichTasksWithCronData(tasks, [], "agent-1");
-    expect(result).toEqual(tasks);
+describe("generateTaskId", () => {
+  it("produces unique IDs with task- prefix", () => {
+    const a = generateTaskId();
+    const b = generateTaskId();
+    expect(a).toMatch(/^task-/);
+    expect(b).toMatch(/^task-/);
+    expect(a).not.toBe(b);
+  });
+});
+
+describe("buildCronPayloadMessage", () => {
+  it("wraps prompt with [TASK:id] prefix", () => {
+    const msg = buildCronPayloadMessage("task-abc", "Do the thing");
+    expect(msg).toBe("[TASK:task-abc] Do the thing");
+  });
+});
+
+describe("buildDelivery", () => {
+  it("returns announce mode with channel", () => {
+    const result = buildDelivery({
+      deliveryChannel: "telegram",
+      deliveryTarget: "-100123",
+    } as Parameters<typeof buildDelivery>[0]);
+    expect(result).toEqual({ mode: "announce", channel: "telegram", to: "-100123" });
   });
 
-  it("synthesizes orphan cron jobs as unmanaged tasks", () => {
-    const tasks: StudioTask[] = [];
-    const cronJobs = [
-      makeCronJob({ id: "orphan-1", name: "Orphan Job" }),
-    ];
-
-    const result = enrichTasksWithCronData(tasks, cronJobs, "agent-1");
-    expect(result).toHaveLength(1);
-    expect(result[0].id).toBe("orphan-1");
-    expect(result[0].name).toBe("Orphan Job");
-  });
-
-  it("does not synthesize system jobs", () => {
-    const cronJobs = [
-      makeCronJob({ id: "sys:heartbeat", name: "Heartbeat" }),
-    ];
-
-    const result = enrichTasksWithCronData([], cronJobs, "agent-1");
-    expect(result).toHaveLength(0);
-  });
-
-  it("does not synthesize jobs for other agents", () => {
-    const cronJobs = [
-      makeCronJob({ id: "other-job", agentId: "agent-2" }),
-    ];
-
-    const result = enrichTasksWithCronData([], cronJobs, "agent-1");
-    expect(result).toHaveLength(0);
-  });
-
-  it("reads consecutiveErrors from cron state when available", () => {
-    const tasks = [makeTask()];
-    const cronJobs = [
-      makeCronJob({
-        state: { runCount: 10, lastStatus: "error", lastRunAtMs: 1700000000000, consecutiveErrors: 5 } as CronJobSummary["state"] & { consecutiveErrors: number },
-      }),
-    ];
-
-    const result = enrichTasksWithCronData(tasks, cronJobs, "agent-1");
-    expect(result[0].consecutiveErrors).toBe(5);
-  });
-
-  it("defaults consecutiveErrors to 1 when cron state has error but no consecutiveErrors field", () => {
-    const tasks = [makeTask()];
-    const cronJobs = [
-      makeCronJob({
-        state: { runCount: 3, lastStatus: "error", lastRunAtMs: 1700000000000 },
-      }),
-    ];
-
-    const result = enrichTasksWithCronData(tasks, cronJobs, "agent-1");
-    expect(result[0].consecutiveErrors).toBe(1);
-  });
-
-  it("resets consecutiveErrors to 0 when last status is ok", () => {
-    const tasks = [makeTask({ consecutiveErrors: 3 })];
-    const cronJobs = [
-      makeCronJob({
-        state: { runCount: 10, lastStatus: "ok", lastRunAtMs: 1700000000000 },
-      }),
-    ];
-
-    const result = enrichTasksWithCronData(tasks, cronJobs, "agent-1");
-    expect(result[0].consecutiveErrors).toBe(0);
-  });
-
-  it("gives unnamed orphans a default name", () => {
-    const cronJobs = [
-      makeCronJob({ id: "orphan-1", name: "" }),
-    ];
-
-    const result = enrichTasksWithCronData([], cronJobs, "agent-1");
-    expect(result[0].name).toBe("[UNMANAGED] Unknown Task");
+  it("returns announce mode without channel", () => {
+    const result = buildDelivery({} as Parameters<typeof buildDelivery>[0]);
+    expect(result).toEqual({ mode: "announce" });
   });
 });
