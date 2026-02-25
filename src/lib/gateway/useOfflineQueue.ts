@@ -83,7 +83,7 @@ export function useOfflineQueue(
       replayingRef.current = true;
       const toReplay = [...current];
 
-      // Fire-and-forget replay — each message in order
+      // Fire-and-forget replay — remove each message only after successful send
       (async () => {
         let sent = 0;
         let failed = 0;
@@ -96,6 +96,8 @@ export function useOfflineQueue(
               msg.attachments
             );
             sent++;
+            // Remove only after successful send to prevent data loss
+            setQueue((prev) => prev.filter((m) => m.id !== msg.id));
           } catch {
             failed++;
           }
@@ -109,13 +111,13 @@ export function useOfflineQueue(
         }
         if (failed > 0) {
           toast.error(
-            `${failed} queued message${failed > 1 ? "s" : ""} failed to send`,
+            `${failed} queued message${failed > 1 ? "s" : ""} failed — still queued`,
             { duration: 5000 }
           );
         }
       })();
 
-      return []; // Clear queue immediately
+      return current; // Keep queue intact until individual messages succeed
     });
   }, [status]);
 

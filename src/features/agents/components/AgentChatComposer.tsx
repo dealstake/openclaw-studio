@@ -271,7 +271,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
       <div className="mx-auto flex max-w-3xl flex-col rounded-xl border border-border/30 bg-card/80 shadow-lg backdrop-blur-md focus-within:border-border/60 focus-within:bg-card transition">
         {/* Offline indicator */}
         {gatewayStatus && gatewayStatus !== "connected" && (
-          <div className="flex items-center gap-1.5 rounded-t-xl bg-amber-500/10 px-3 py-1.5 text-xs text-amber-600 dark:text-amber-400">
+          <div className="flex items-center gap-1.5 rounded-t-xl bg-amber-500/10 px-3 py-1.5 text-xs text-amber-700 dark:text-amber-400" role="status">
             <WifiOff className="h-3.5 w-3.5 shrink-0" aria-hidden />
             <span>
               {gatewayStatus === "connecting" ? "Reconnecting…" : "Offline"}

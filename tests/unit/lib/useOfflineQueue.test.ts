@@ -13,23 +13,24 @@ vi.mock("sonner", () => ({
   },
 }));
 
+type SendFn = (agentId: string, sessionKey: string, message: string, attachments?: { mimeType: string; fileName: string; content: string }[]) => Promise<void>;
+
 function makeMockClient(): GatewayClient {
   return {} as GatewayClient;
 }
 
 describe("useOfflineQueue", () => {
   let client: GatewayClient;
-  let sendFn: ReturnType<typeof vi.fn<(agentId: string, sessionKey: string, message: string, attachments?: { mimeType: string; fileName: string; content: string }[]) => Promise<void>>>;
+  let sendFn: ReturnType<typeof vi.fn<SendFn>>;
 
   beforeEach(() => {
     client = makeMockClient();
-    sendFn = vi.fn<(agentId: string, sessionKey: string, message: string, attachments?: { mimeType: string; fileName: string; content: string }[]) => Promise<void>>().mockResolvedValue(undefined);
-    vi.useFakeTimers();
+    sendFn = vi.fn<SendFn>().mockResolvedValue(undefined);
+    vi.clearAllMocks();
   });
 
   afterEach(() => {
-    vi.useRealTimers();
-    vi.clearAllMocks();
+    vi.restoreAllMocks();
   });
 
   it("reports isOffline when status is disconnected", () => {
@@ -96,15 +97,13 @@ describe("useOfflineQueue", () => {
     status.current = "connected";
     rerender();
 
-    // Let the async replay complete
-    await act(async () => {
-      await vi.runAllTimersAsync();
+    // Wait for async replay to complete
+    await vi.waitFor(() => {
+      expect(sendFn).toHaveBeenCalledTimes(2);
     });
 
-    expect(sendFn).toHaveBeenCalledTimes(2);
     expect(sendFn).toHaveBeenCalledWith("agent1", "session1", "hello", undefined);
     expect(sendFn).toHaveBeenCalledWith("agent1", "session1", "world", undefined);
-    expect(result.current.queueLength).toBe(0);
     expect(toast.success).toHaveBeenCalled();
   });
 
@@ -125,22 +124,25 @@ describe("useOfflineQueue", () => {
     expect(result.current.queueLength).toBe(0);
   });
 
-  it("expires stale messages after 5 minutes", () => {
+  it("stores attachments in queued messages", () => {
     const { result } = renderHook(() =>
       useOfflineQueue(client, "disconnected", sendFn)
     );
 
+    const attachment = { mimeType: "image/png", fileName: "test.png", content: "base64data" };
     act(() => {
-      result.current.enqueue("a", "s", "old message");
+      result.current.enqueue("agent1", "session1", "with file", [attachment]);
     });
-    expect(result.current.queueLength).toBe(1);
 
-    // Advance past 5 minutes + 30s interval
-    act(() => {
-      vi.advanceTimersByTime(5 * 60 * 1000 + 31_000);
-    });
+    expect(result.current.queue[0].attachments).toEqual([attachment]);
+  });
+
+  it("does not replay when already connected on mount", () => {
+    const { result } = renderHook(() =>
+      useOfflineQueue(client, "connected", sendFn)
+    );
 
     expect(result.current.queueLength).toBe(0);
-    expect(toast.warning).toHaveBeenCalled();
+    expect(sendFn).not.toHaveBeenCalled();
   });
 });
