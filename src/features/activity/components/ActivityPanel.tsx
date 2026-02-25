@@ -50,9 +50,13 @@ export const ActivityPanel = memo(function ActivityPanel() {
   return (
     <div className="flex h-full w-full flex-col overflow-hidden">
       {/* Tab bar */}
-      <div className="flex items-center gap-0 border-b border-border/20 px-3 pt-1.5">
+      <div role="tablist" aria-label="Activity view" className="flex items-center gap-0 border-b border-border/20 px-3 pt-1.5">
         <button
           type="button"
+          role="tab"
+          id="activity-tab-live"
+          aria-selected={activeTab === "live"}
+          aria-controls="activity-tabpanel-live"
           onClick={() => setActiveTab("live")}
           className={`flex items-center gap-1.5 px-2.5 pb-2 ${sectionLabelClass} transition-colors focus-ring rounded-md ${
             activeTab === "live"
@@ -70,6 +74,10 @@ export const ActivityPanel = memo(function ActivityPanel() {
         </button>
         <button
           type="button"
+          role="tab"
+          id="activity-tab-history"
+          aria-selected={activeTab === "history"}
+          aria-controls="activity-tabpanel-history"
           onClick={() => setActiveTab("history")}
           className={`flex items-center gap-1.5 px-2.5 pb-2 ${sectionLabelClass} transition-colors focus-ring rounded-md ${
             activeTab === "history"
@@ -84,17 +92,21 @@ export const ActivityPanel = memo(function ActivityPanel() {
 
       {/* Content */}
       {activeTab === "live" ? (
-        timeline.length === 0 ? (
-          <EmptyState
-            icon={Activity}
-            title="No live activity"
-            description="Running cron jobs, heartbeats, and sub-agents appear here"
-          />
-        ) : (
-          <LiveActivityFeed timeline={timeline} />
-        )
+        <div role="tabpanel" id="activity-tabpanel-live" aria-labelledby="activity-tab-live" className="flex-1 overflow-hidden">
+          {timeline.length === 0 ? (
+            <EmptyState
+              icon={Activity}
+              title="No live activity"
+              description="Running cron jobs, heartbeats, and sub-agents appear here"
+            />
+          ) : (
+            <LiveActivityFeed timeline={timeline} />
+          )}
+        </div>
       ) : (
-        <HistoryFeed />
+        <div role="tabpanel" id="activity-tabpanel-history" aria-labelledby="activity-tab-history" className="flex-1 overflow-hidden">
+          <HistoryFeed />
+        </div>
       )}
     </div>
   );

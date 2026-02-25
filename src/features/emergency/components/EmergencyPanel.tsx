@@ -1,6 +1,7 @@
 "use client";
 
 import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { useFocusReturn } from "@/hooks/useFocusReturn";
 import { X, PauseCircle, Square, Trash2, Loader2, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { EMERGENCY_ACTIONS, type EmergencyActionKind } from "../lib/types";
@@ -33,6 +34,9 @@ export const EmergencyPanel = memo(function EmergencyPanel({
   onRestoreCron,
 }: EmergencyPanelProps) {
   const [confirmAction, setConfirmAction] = useState<EmergencyActionKind | null>(null);
+
+  // Restore focus to the trigger element (FAB) when the panel closes
+  useFocusReturn(open);
 
   const handleConfirm = useCallback(async () => {
     if (!confirmAction) return;
