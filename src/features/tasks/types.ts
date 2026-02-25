@@ -45,6 +45,9 @@ export interface StudioTask {
   cronJobId: string;
   agentId: string;
 
+  /** Raw gateway cron job data, attached during enrichment for inspector views. */
+  rawCronJob?: import("@/lib/cron/types").CronJobSummary;
+
   /** Whether this task has both DB metadata and a cron job ('managed'),
    *  only a cron job ('unmanaged'), or only DB metadata ('orphan'). */
   managementStatus: ManagementStatus;

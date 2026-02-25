@@ -42,7 +42,7 @@ export function enrichTasksWithCronData(
 
   const enrichedTasks = tasks.map((task) => {
     const cron = cronMap.get(task.cronJobId);
-    if (!cron) return { ...task, managementStatus: "orphan" as const };
+    if (!cron) return { ...task, managementStatus: "orphan" as const, rawCronJob: undefined };
 
     // Read thinking from cron payload (authoritative)
     const cronThinking = cron.payload.kind === "agentTurn" ? (cron.payload.thinking ?? null) : null;
@@ -55,6 +55,7 @@ export function enrichTasksWithCronData(
     return {
       ...task,
       managementStatus: "managed" as const,
+      rawCronJob: cron,
       // Cron is authoritative for all runtime state
       enabled: cron.enabled,
       model: cronModel,
@@ -92,6 +93,7 @@ export function enrichTasksWithCronData(
     cronJobId: job.id,
     agentId: job.agentId ?? agentId,
     managementStatus: "unmanaged" as const,
+    rawCronJob: job,
     name: job.name?.replace(/^\[TASK]\s*/, "") || "Unknown Task",
     description: "This task exists in the gateway but has no Studio metadata.",
     type: "periodic",

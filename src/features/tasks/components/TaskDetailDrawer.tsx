@@ -10,6 +10,7 @@ import { TaskDetailHeader } from "./TaskDetailHeader";
 import { TaskMetadataSection } from "./TaskMetadataSection";
 import { TaskPromptSection } from "./TaskPromptSection";
 import { RunHistorySection } from "./RunHistorySection";
+import { RawGatewaySection } from "./RawGatewaySection";
 
 // ─── Props ───────────────────────────────────────────────────────────────────
 
@@ -130,6 +131,11 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
           editPrompt={editPrompt}
           defaultExpanded={editing}
           onEditPromptChange={(v) => setField("prompt", v)}
+        />
+
+        <RawGatewaySection
+          cronJob={task.rawCronJob}
+          cronJobId={task.cronJobId}
         />
 
         <RunHistorySection
