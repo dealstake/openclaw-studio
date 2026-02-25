@@ -1,7 +1,7 @@
 "use client";
 
 import { memo } from "react";
-import { Clock, Megaphone, Play, Trash2 } from "lucide-react";
+import { AlertTriangle, Clock, FolderInput, Megaphone, Play, Trash2 } from "lucide-react";
 import type { StudioTask, TaskSchedule } from "@/features/tasks/types";
 import {
   PERIODIC_INTERVAL_OPTIONS,
@@ -36,6 +36,7 @@ interface TaskMetadataSectionProps {
   onToggle: (taskId: string, enabled: boolean) => void;
   onRun: (taskId: string) => void;
   onDelete: (taskId: string) => void;
+  onAdopt?: (taskId: string) => void;
 }
 
 export const TaskMetadataSection = memo(function TaskMetadataSection({
@@ -52,6 +53,7 @@ export const TaskMetadataSection = memo(function TaskMetadataSection({
   onToggle,
   onRun,
   onDelete,
+  onAdopt,
 }: TaskMetadataSectionProps) {
   const typeConfig = TYPE_CONFIG[task.type];
   const TypeIcon = typeConfig.icon;
@@ -288,33 +290,74 @@ export const TaskMetadataSection = memo(function TaskMetadataSection({
         </div>
       ) : null}
 
+      {/* Orphan warning banner */}
+      {task.managementStatus === "orphan" ? (
+        <div className="flex items-start gap-2 border-b border-destructive/30 bg-destructive/5 px-4 py-3">
+          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />
+          <div className="text-[11px] leading-relaxed text-destructive">
+            <span className="font-semibold">Cron job missing.</span>{" "}
+            Task metadata exists but no matching gateway cron job was found.
+            You can delete the orphaned metadata or recreate the task.
+          </div>
+        </div>
+      ) : null}
+
+      {/* Unmanaged info banner */}
+      {task.managementStatus === "unmanaged" ? (
+        <div className="flex items-start gap-2 border-b border-amber-500/30 bg-amber-500/5 px-4 py-3">
+          <FolderInput className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-400" />
+          <div className="text-[11px] leading-relaxed text-amber-300">
+            <span className="font-semibold">Unmanaged cron job.</span>{" "}
+            This job was created via CLI and has no Studio metadata.
+            Adopt it to manage name, description, and prompt from Studio.
+          </div>
+        </div>
+      ) : null}
+
       {/* Actions */}
       <div className="flex items-center gap-2 border-b border-border/40 px-4 py-3">
-        <button
-          type="button"
-          className={`flex h-7 items-center gap-1.5 rounded-md border px-2.5 transition disabled:cursor-not-allowed disabled:opacity-60 ${
-            task.enabled
-              ? "border-amber-500/40 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20"
-              : "border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
-          }`}
-          onClick={() => onToggle(task.id, !task.enabled)}
-          disabled={busy}
-        >
-          <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em]">
-            {task.enabled ? "Pause" : "Resume"}
-          </span>
-        </button>
-        <button
-          type="button"
-          className="flex h-7 items-center gap-1.5 rounded-md border border-border/80 bg-card/70 px-2.5 text-muted-foreground transition hover:border-border hover:bg-muted/65 disabled:cursor-not-allowed disabled:opacity-60"
-          onClick={() => onRun(task.id)}
-          disabled={busy}
-        >
-          <Play className="h-3 w-3" />
-          <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em]">
-            Run Now
-          </span>
-        </button>
+        {task.managementStatus !== "orphan" ? (
+          <>
+            <button
+              type="button"
+              className={`flex h-7 items-center gap-1.5 rounded-md border px-2.5 transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                task.enabled
+                  ? "border-amber-500/40 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20"
+                  : "border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
+              }`}
+              onClick={() => onToggle(task.id, !task.enabled)}
+              disabled={busy}
+            >
+              <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em]">
+                {task.enabled ? "Pause" : "Resume"}
+              </span>
+            </button>
+            <button
+              type="button"
+              className="flex h-7 items-center gap-1.5 rounded-md border border-border/80 bg-card/70 px-2.5 text-muted-foreground transition hover:border-border hover:bg-muted/65 disabled:cursor-not-allowed disabled:opacity-60"
+              onClick={() => onRun(task.id)}
+              disabled={busy}
+            >
+              <Play className="h-3 w-3" />
+              <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em]">
+                Run Now
+              </span>
+            </button>
+          </>
+        ) : null}
+        {task.managementStatus === "unmanaged" && onAdopt ? (
+          <button
+            type="button"
+            className="flex h-7 items-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-2.5 text-primary transition hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
+            onClick={() => onAdopt(task.id)}
+            disabled={busy}
+          >
+            <FolderInput className="h-3 w-3" />
+            <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em]">
+              Adopt
+            </span>
+          </button>
+        ) : null}
         <button
           type="button"
           className="flex h-7 items-center gap-1.5 rounded-md border border-destructive/40 bg-transparent px-2.5 text-destructive transition hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-60"
@@ -323,7 +366,7 @@ export const TaskMetadataSection = memo(function TaskMetadataSection({
         >
           <Trash2 className="h-3 w-3" />
           <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em]">
-            Delete
+            {task.managementStatus === "orphan" ? "Delete Metadata" : "Delete"}
           </span>
         </button>
       </div>

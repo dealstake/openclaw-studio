@@ -46,6 +46,7 @@ interface TasksPanelProps {
   onUpdateSchedule: (taskId: string, schedule: TaskSchedule) => void;
   onRun: (taskId: string) => void;
   onDelete: (taskId: string) => void;
+  onAdopt?: (taskId: string) => void;
   onRefresh: () => void;
   onNewTask: () => void;
   maxConcurrentRuns?: number | null;
@@ -66,6 +67,7 @@ export const TasksPanel = memo(function TasksPanel({
   onUpdateSchedule,
   onRun,
   onDelete,
+  onAdopt,
   onRefresh,
   onNewTask,
   maxConcurrentRuns,
@@ -202,6 +204,7 @@ export const TasksPanel = memo(function TasksPanel({
         onUpdateSchedule={onUpdateSchedule}
         onRun={onRun}
         onDelete={handleDeleteRequest}
+        onAdopt={onAdopt}
       />
     );
   }

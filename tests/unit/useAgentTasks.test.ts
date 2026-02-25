@@ -338,8 +338,9 @@ describe("useAgentTasks", () => {
 
   it("deleteTask removes the task from state", async () => {
     const task = makeTask();
+    const cron = makeCronJob();
 
-    const { result, client } = await renderWithTasks(fetchSpy, [task]);
+    const { result, client } = await renderWithTasks(fetchSpy, [task], [cron]);
 
     expect(result.current.tasks).toHaveLength(1);
 
@@ -355,9 +356,10 @@ describe("useAgentTasks", () => {
 
   it("deleteTask sets error on failure", async () => {
     const task = makeTask();
+    const cron = makeCronJob();
     mockRemoveCronJob.mockRejectedValueOnce(new Error("Delete failed"));
 
-    const { result } = await renderWithTasks(fetchSpy, [task]);
+    const { result } = await renderWithTasks(fetchSpy, [task], [cron]);
 
     await act(async () => {
       await result.current.deleteTask("task-1");

@@ -306,6 +306,7 @@ export const AgentStudioPage = () => {
     updateTaskSchedule,
     runTask,
     deleteTask,
+    adoptTask,
   } = useAgentTasks(client, status, focusedAgentId);
   // eslint-disable-next-line react-hooks/refs
   loadTasksRef.current = loadTasks;
@@ -1032,6 +1033,7 @@ export const AgentStudioPage = () => {
               onUpdateTaskSchedule={updateTaskSchedule}
               onRunTask={runTask}
               onDeleteTask={deleteTask}
+              onAdoptTask={adoptTask}
               onRefreshTasks={() => { void loadTasks(); }}
               onNewTask={() => setShowTaskWizard(true)}
               cronMaxConcurrentRuns={cronMaxConcurrentRuns}
@@ -1114,6 +1116,7 @@ export const AgentStudioPage = () => {
                           onUpdateSchedule={updateTaskSchedule}
                           onRun={runTask}
                           onDelete={deleteTask}
+                          onAdopt={adoptTask}
                           onRefresh={() => { void loadTasks(); }}
                           onNewTask={() => setShowTaskWizard(true)}
                           maxConcurrentRuns={cronMaxConcurrentRuns}

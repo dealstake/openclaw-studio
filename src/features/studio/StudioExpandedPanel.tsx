@@ -38,6 +38,7 @@ interface StudioExpandedPanelProps {
   onUpdateTaskSchedule: (taskId: string, schedule: TaskSchedule) => Promise<void>;
   onRunTask: (taskId: string) => void;
   onDeleteTask: (taskId: string) => void;
+  onAdoptTask?: (taskId: string) => void;
   onRefreshTasks: () => void;
   onNewTask: () => void;
   cronMaxConcurrentRuns: number | undefined;
@@ -69,6 +70,7 @@ export const StudioExpandedPanel = memo(function StudioExpandedPanel({
   onUpdateTaskSchedule,
   onRunTask,
   onDeleteTask,
+  onAdoptTask,
   onRefreshTasks,
   onNewTask,
   cronMaxConcurrentRuns,
@@ -110,6 +112,7 @@ export const StudioExpandedPanel = memo(function StudioExpandedPanel({
                 onUpdateSchedule={onUpdateTaskSchedule}
                 onRun={onRunTask}
                 onDelete={onDeleteTask}
+                onAdopt={onAdoptTask}
                 onRefresh={onRefreshTasks}
                 onNewTask={onNewTask}
                 maxConcurrentRuns={cronMaxConcurrentRuns}
