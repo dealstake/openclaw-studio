@@ -106,39 +106,54 @@ const initialState: AgentStoreState = {
   error: null,
 };
 
+/**
+ * Preserve an existing runtime value when the session key matches,
+ * otherwise fall back to the provided default.
+ */
+const keepIfSameSession = <T,>(
+  sameSession: boolean,
+  existingValue: T | undefined,
+  fallback: T
+): T => (sameSession ? (existingValue ?? fallback) : fallback);
+
 const createRuntimeAgentState = (
   seed: AgentStoreSeed,
   existing?: AgentState | null
 ): AgentState => {
-  const sameSessionKey = existing?.sessionKey === seed.sessionKey;
+  const same = existing?.sessionKey === seed.sessionKey;
+  const keep = <T,>(field: T | undefined, fallback: T): T =>
+    keepIfSameSession(same, field, fallback);
+
   return {
     ...seed,
+    // Seed-or-existing fields (always preserved across sessions)
     avatarSeed: seed.avatarSeed ?? existing?.avatarSeed ?? seed.agentId,
     avatarUrl: seed.avatarUrl ?? existing?.avatarUrl ?? null,
     model: seed.model ?? existing?.model ?? null,
     thinkingLevel: seed.thinkingLevel ?? existing?.thinkingLevel ?? "high",
-    status: sameSessionKey ? (existing?.status ?? "idle") : "idle",
-    sessionCreated: sameSessionKey ? (existing?.sessionCreated ?? false) : false,
-    awaitingUserInput: sameSessionKey ? (existing?.awaitingUserInput ?? false) : false,
-    hasUnseenActivity: sameSessionKey ? (existing?.hasUnseenActivity ?? false) : false,
-    messageParts: sameSessionKey ? (existing?.messageParts ?? []) : [],
-    lastResult: sameSessionKey ? (existing?.lastResult ?? null) : null,
-    lastDiff: sameSessionKey ? (existing?.lastDiff ?? null) : null,
-    runId: sameSessionKey ? (existing?.runId ?? null) : null,
-    runStartedAt: sameSessionKey ? (existing?.runStartedAt ?? null) : null,
-    streamText: sameSessionKey ? (existing?.streamText ?? null) : null,
-    thinkingTrace: sameSessionKey ? (existing?.thinkingTrace ?? null) : null,
-    latestOverride: sameSessionKey ? (existing?.latestOverride ?? null) : null,
-    latestOverrideKind: sameSessionKey ? (existing?.latestOverrideKind ?? null) : null,
-    lastAssistantMessageAt: sameSessionKey ? (existing?.lastAssistantMessageAt ?? null) : null,
-    lastActivityAt: sameSessionKey ? (existing?.lastActivityAt ?? null) : null,
-    latestPreview: sameSessionKey ? (existing?.latestPreview ?? null) : null,
-    lastUserMessage: sameSessionKey ? (existing?.lastUserMessage ?? null) : null,
-    draft: sameSessionKey ? (existing?.draft ?? "") : "",
-    sessionSettingsSynced: sameSessionKey ? (existing?.sessionSettingsSynced ?? false) : false,
-    historyLoadedAt: sameSessionKey ? (existing?.historyLoadedAt ?? null) : null,
     toolCallingEnabled: seed.toolCallingEnabled ?? existing?.toolCallingEnabled ?? false,
     showThinkingTraces: seed.showThinkingTraces ?? existing?.showThinkingTraces ?? true,
+    // Session-scoped fields (reset when session changes)
+    status: keep(existing?.status, "idle"),
+    sessionCreated: keep(existing?.sessionCreated, false),
+    awaitingUserInput: keep(existing?.awaitingUserInput, false),
+    hasUnseenActivity: keep(existing?.hasUnseenActivity, false),
+    messageParts: keep(existing?.messageParts, []),
+    lastResult: keep(existing?.lastResult, null),
+    lastDiff: keep(existing?.lastDiff, null),
+    runId: keep(existing?.runId, null),
+    runStartedAt: keep(existing?.runStartedAt, null),
+    streamText: keep(existing?.streamText, null),
+    thinkingTrace: keep(existing?.thinkingTrace, null),
+    latestOverride: keep(existing?.latestOverride, null),
+    latestOverrideKind: keep(existing?.latestOverrideKind, null),
+    lastAssistantMessageAt: keep(existing?.lastAssistantMessageAt, null),
+    lastActivityAt: keep(existing?.lastActivityAt, null),
+    latestPreview: keep(existing?.latestPreview, null),
+    lastUserMessage: keep(existing?.lastUserMessage, null),
+    draft: keep(existing?.draft, ""),
+    sessionSettingsSynced: keep(existing?.sessionSettingsSynced, false),
+    historyLoadedAt: keep(existing?.historyLoadedAt, null),
   };
 };
 
