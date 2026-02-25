@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { SectionLabel } from "@/components/SectionLabel";
+import { TridentLogo } from "@/components/brand/TridentLogo";
 
 type EmptyStatePanelProps = {
   title: string;
@@ -8,6 +9,7 @@ type EmptyStatePanelProps = {
   detail?: string;
   fillHeight?: boolean;
   compact?: boolean;
+  branded?: boolean;
   className?: string;
 };
 
@@ -18,6 +20,7 @@ export const EmptyStatePanel = ({
   detail,
   fillHeight = false,
   compact = false,
+  branded = false,
   className,
 }: EmptyStatePanelProps) => {
   return (
@@ -25,9 +28,13 @@ export const EmptyStatePanel = ({
       className={cn(
         "animate-in fade-in zoom-in-[0.98] duration-300 rounded-md border border-border/80 bg-card/70 text-muted-foreground",
         fillHeight ? "flex h-full w-full flex-col justify-center" : "",
+        branded ? "items-center text-center" : "",
         className
       )}
     >
+      {branded ? (
+        <TridentLogo size={32} className="mb-3 text-brand-gold/50" />
+      ) : null}
       {label ? (
         <SectionLabel as="p">
           {label}

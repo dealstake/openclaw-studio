@@ -368,8 +368,8 @@ textarea:focus::-webkit-scrollbar {
 }
 
 .console-title {
-  font-family: var(--font-display), sans-serif;
-  letter-spacing: 0.06em;
+  font-family: var(--font-sans), sans-serif;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 

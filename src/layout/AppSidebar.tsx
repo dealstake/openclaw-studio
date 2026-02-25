@@ -53,6 +53,7 @@ const NavIconButton = memo(function NavIconButton({
   const Icon = item.icon;
   const sizeClass = size === "sm" ? "h-7 w-7" : "h-8 w-8";
   const iconSize = size === "sm" ? "h-3.5 w-3.5" : "h-4 w-4";
+  const fillClass = isActive ? "fill-current" : "";
   const indicatorClass =
     indicatorPosition === "left"
       ? "before:absolute before:inset-y-1 before:-left-1 before:w-0.5 before:rounded-full before:bg-primary"
@@ -74,7 +75,7 @@ const NavIconButton = memo(function NavIconButton({
           aria-label={item.label}
           aria-current={isActive ? "page" : undefined}
         >
-          <Icon className={iconSize} />
+          <Icon className={`${iconSize} ${fillClass}`} />
         </button>
       </TooltipTrigger>
       <TooltipContent side={tooltipSide} className="text-xs">

@@ -29,13 +29,15 @@ import { useCronRuns } from "@/features/cron/hooks/useCronRuns";
 
 const STATUS_PILL_CLASS: Record<string, string> = {
   ok: "border-emerald-500/30 bg-emerald-500/15 text-emerald-300",
-  error: "border-destructive/40 bg-destructive/20 text-red-300",
+  error: "border-red-500/40 bg-red-500/20 text-red-300",
+  running: "border-amber-500/30 bg-amber-500/15 text-amber-300",
   skipped: "border-border/70 bg-muted text-muted-foreground",
 };
 
 const STATUS_DOT_CLASS: Record<string, string> = {
   ok: "bg-emerald-400",
-  error: "bg-destructive",
+  error: "bg-red-500",
+  running: "bg-amber-400 animate-pulse",
   skipped: "bg-muted-foreground",
 };
 
