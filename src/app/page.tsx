@@ -1433,7 +1433,6 @@ const AgentStudioPage = () => {
 
   return (
     <EmergencyProvider>
-    <ExecApprovalProvider>
     <Suspense fallback={null}>
     <div className="relative w-screen overflow-hidden bg-background" style={{ minHeight: '100svh' }}>
       {state.loading ? (
@@ -1960,7 +1959,6 @@ const AgentStudioPage = () => {
       <EmergencyOverlay />
     </div>
     </Suspense>
-    </ExecApprovalProvider>
     </EmergencyProvider>
   );
 };
@@ -1969,7 +1967,9 @@ export default function Home() {
   return (
     <GatewayProvider>
       <AgentStoreProvider>
-        <AgentStudioPage />
+        <ExecApprovalProvider>
+          <AgentStudioPage />
+        </ExecApprovalProvider>
       </AgentStoreProvider>
     </GatewayProvider>
   );
