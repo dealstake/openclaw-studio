@@ -82,7 +82,7 @@ export const ChatStatusBar = React.memo(function ChatStatusBar({
       {/* Model name — right-aligned */}
       {model ? (
         <span
-          className={`${isActive && runStartedAt ? "" : "ml-auto"} truncate font-mono text-[10px] text-muted-foreground/70`}
+          className={`${isActive && runStartedAt ? "" : "ml-auto"} truncate font-mono text-[10px] text-muted-foreground/50`}
           title={model}
         >
           {model}

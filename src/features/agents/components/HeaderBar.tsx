@@ -343,8 +343,8 @@ export const HeaderBar = memo(function HeaderBar({
         )}
       </div>
 
-      {/* Center section — breadcrumb, centered on all viewports */}
-      <div className="flex flex-1 justify-center min-w-0">
+      {/* Center section — breadcrumb, hidden on mobile (available in drawer) */}
+      <div className="hidden sm:flex flex-1 justify-center min-w-0">
         {agents?.length && onSelectAgent ? (
           <AgentBreadcrumb
             agents={agents}
