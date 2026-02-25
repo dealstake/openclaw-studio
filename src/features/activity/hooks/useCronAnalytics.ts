@@ -39,23 +39,30 @@ export const useCronAnalytics = (
         runsResults.push(...batchResults);
       }
 
-      // Fetch sessions for token join — filter by kind client-side since the
-      // sessions.list RPC does not support a `kinds` parameter.
+      // Fetch cron sessions for token join.
+      // Use kinds filter + higher limit to capture older cron runs that
+      // would otherwise be crowded out by non-cron sessions.
       const sessionsResult = await client.call<SessionsListResult>(
         "sessions.list",
-        { limit: 200 }
+        { kinds: ["cron"], limit: 500 }
       );
+      const cronSessions = sessionsResult.sessions ?? [];
+
+      // Build lookup maps for robust run → session matching:
+      // 1. Primary: session key contains jobId (e.g. "cron-<jobId>-<timestamp>")
+      // 2. Fallback: timestamp-based matching within ±30s window
+      const sessionsByKey = new Map<string, { updatedAt?: number | null; totalTokens?: number | null }>();
       const sessionTokenMap = new Map<number, number>();
-      for (const s of sessionsResult.sessions ?? []) {
-        if (s.kind !== "cron") continue;
+      for (const s of cronSessions) {
+        sessionsByKey.set(s.key, s);
         if (s.updatedAt && s.totalTokens) {
           sessionTokenMap.set(s.updatedAt, s.totalTokens);
         }
       }
 
-      // Compute stats per job
+      // Compute stats per job — pass both lookup maps for robust matching
       const stats = runsResults.map(({ job, runs }) =>
-        computeJobStats(job.id, job.name, runs, sessionTokenMap)
+        computeJobStats(job.id, job.name, runs, sessionTokenMap, sessionsByKey)
       );
 
       setJobStats(rankJobsByTokens(stats));
