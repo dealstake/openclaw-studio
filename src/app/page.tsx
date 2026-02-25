@@ -61,6 +61,7 @@ import { PanelErrorBoundary } from "@/components/PanelErrorBoundary";
 import { PanelExpandModal } from "@/components/PanelExpandModal";
 import { ManagementPanelContent } from "@/components/ManagementPanelContent";
 import { ManagementDrawer } from "@/components/ManagementDrawer";
+import { ManagementPanelProvider } from "@/components/management/ManagementPanelContext";
 import { ExpandedContext } from "@/features/context/lib/expandedContext";
 import {
   parseExecApprovalRequested,
@@ -1394,10 +1395,11 @@ const AgentStudioPage = () => {
     onToolCallingToggle: (enabled: boolean) => { if (settingsAgent) handleToolCallingToggle(settingsAgent.agentId, enabled); },
     onThinkingTracesToggle: (enabled: boolean) => { if (settingsAgent) handleThinkingTracesToggle(settingsAgent.agentId, enabled); },
     onNavigateToTasks: () => setContextTab("tasks"),
+    onTranscriptClick: handleDrawerTranscriptClick,
   }), [
     client, status, focusedAgentId, allSessions, allSessionsLoading, allSessionsError,
     loadAllSessions, focusedAgent?.sessionKey, aggregateUsage, aggregateUsageLoading,
-    aggregateUsageFromList, usageByType, handleViewTrace,
+    aggregateUsageFromList, usageByType, handleViewTrace, handleDrawerTranscriptClick,
     channelsSnapshot, channelsLoading, channelsError, loadChannelsStatus,
     allCronJobs, allCronLoading, allCronError, allCronRunBusyJobId,
     allCronDeleteBusyJobId, allCronToggleBusyJobId,
@@ -1433,6 +1435,7 @@ const AgentStudioPage = () => {
 
   return (
     <EmergencyProvider>
+    <ManagementPanelProvider {...managementPanelProps}>
     <Suspense fallback={null}>
     <div className="relative w-screen overflow-hidden bg-background" style={{ minHeight: '100svh' }}>
       {state.loading ? (
@@ -1673,8 +1676,6 @@ const AgentStudioPage = () => {
               >
                 <ManagementPanelContent
                   tab={managementView}
-                  {...managementPanelProps}
-                  onTranscriptClick={handleDrawerTranscriptClick}
                 />
               </ManagementDrawer>
 
@@ -1783,7 +1784,6 @@ const AgentStudioPage = () => {
                     )}
                     <ManagementPanelContent
                       tab={expandedTab === "sessions" || expandedTab === "usage" || expandedTab === "channels" || expandedTab === "cron" || expandedTab === "settings" ? expandedTab : null}
-                      {...managementPanelProps}
                       onCloseSettings={clearExpandedTab}
                       onTranscriptClick={handleExpandedTranscriptClick}
                     />
@@ -1959,6 +1959,7 @@ const AgentStudioPage = () => {
       <EmergencyOverlay />
     </div>
     </Suspense>
+    </ManagementPanelProvider>
     </EmergencyProvider>
   );
 };

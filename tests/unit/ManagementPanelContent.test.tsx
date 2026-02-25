@@ -2,6 +2,8 @@ import { createElement } from "react";
 import { describe, expect, it, vi, afterEach } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import { ManagementPanelContent } from "@/components/ManagementPanelContent";
+import { ManagementPanelProvider } from "@/components/management/ManagementPanelContext";
+import type { ManagementPanelContextValue } from "@/components/management/ManagementPanelContext";
 import type { ManagementPanelContentProps } from "@/components/ManagementPanelContent";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 
@@ -33,9 +35,8 @@ function makeClient(): GatewayClient {
   return { call: vi.fn() } as unknown as GatewayClient;
 }
 
-function defaultProps(overrides: Partial<ManagementPanelContentProps> = {}): ManagementPanelContentProps {
+function defaultContext(overrides: Partial<ManagementPanelContextValue> = {}): ManagementPanelContextValue {
   return {
-    tab: null,
     client: makeClient(),
     status: "connected" as GatewayStatus,
     focusedAgentId: "agent-1",
@@ -77,29 +78,41 @@ function defaultProps(overrides: Partial<ManagementPanelContentProps> = {}): Man
   };
 }
 
+function renderWithProvider(
+  props: ManagementPanelContentProps,
+  ctxOverrides: Partial<ManagementPanelContextValue> = {},
+) {
+  const ctx = defaultContext(ctxOverrides);
+  return render(
+    createElement(ManagementPanelProvider, ctx,
+      createElement(ManagementPanelContent, props),
+    ),
+  );
+}
+
 describe("ManagementPanelContent", () => {
   it("renders nothing when tab is null", () => {
-    const { container } = render(createElement(ManagementPanelContent, defaultProps()));
+    const { container } = renderWithProvider({ tab: null });
     expect(container.innerHTML).toBe("");
   });
 
   it("renders SessionsPanel when tab is sessions", async () => {
-    render(createElement(ManagementPanelContent, defaultProps({ tab: "sessions" })));
+    renderWithProvider({ tab: "sessions" });
     expect(await screen.findByTestId("sessions-panel")).toBeInTheDocument();
   });
 
   it("renders UsagePanel when tab is usage", async () => {
-    render(createElement(ManagementPanelContent, defaultProps({ tab: "usage" })));
+    renderWithProvider({ tab: "usage" });
     expect(await screen.findByTestId("usage-panel")).toBeInTheDocument();
   });
 
   it("renders ChannelsPanel when tab is channels", async () => {
-    render(createElement(ManagementPanelContent, defaultProps({ tab: "channels" })));
+    renderWithProvider({ tab: "channels" });
     expect(await screen.findByTestId("channels-panel")).toBeInTheDocument();
   });
 
   it("renders CronPanel when tab is cron", async () => {
-    render(createElement(ManagementPanelContent, defaultProps({ tab: "cron" })));
+    renderWithProvider({ tab: "cron" });
     expect(await screen.findByTestId("cron-panel")).toBeInTheDocument();
   });
 
@@ -109,13 +122,13 @@ describe("ManagementPanelContent", () => {
       name: "Agent One",
       sessionKey: "key",
       status: "idle",
-    } as ManagementPanelContentProps["settingsAgent"];
-    render(createElement(ManagementPanelContent, defaultProps({ tab: "settings", settingsAgent })));
+    } as ManagementPanelContextValue["settingsAgent"];
+    renderWithProvider({ tab: "settings" }, { settingsAgent });
     expect(await screen.findByTestId("settings-panel")).toBeInTheDocument();
   });
 
   it("does not render settings panel when settingsAgent is null", () => {
-    render(createElement(ManagementPanelContent, defaultProps({ tab: "settings", settingsAgent: null })));
+    renderWithProvider({ tab: "settings" }, { settingsAgent: null });
     expect(screen.queryByTestId("settings-panel")).not.toBeInTheDocument();
   });
 });

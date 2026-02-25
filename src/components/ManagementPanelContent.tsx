@@ -4,11 +4,7 @@ import { lazy, memo, Suspense } from "react";
 import { PanelErrorBoundary } from "@/components/PanelErrorBoundary";
 import type { ManagementTab } from "@/layout/AppSidebar";
 import { ChannelsPanel } from "@/features/channels/components/ChannelsPanel";
-import type { ChannelsStatusSnapshot } from "@/lib/gateway/channels";
-import type { CronJobSummary } from "@/lib/cron/types";
-import type { AgentState } from "@/features/agents/state/store";
-import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
-import type { UsageByType } from "@/features/sessions/hooks/useAllSessions";
+import { useManagementPanel } from "@/components/management/ManagementPanelContext";
 
 const SessionsPanel = lazy(() =>
   import("@/features/sessions/components/SessionsPanel").then((m) => ({
@@ -31,105 +27,24 @@ import {
 
 const RESERVED_MAIN_AGENT_ID = "main";
 
-type SessionEntry = {
-  key: string;
-  updatedAt?: number | null;
-  displayName?: string;
-  origin?: { label?: string | null; provider?: string | null } | null;
-  thinkingLevel?: string;
-  modelProvider?: string;
-  model?: string;
-  inputTokens?: number | null;
-  outputTokens?: number | null;
-  totalTokens?: number | null;
-  contextTokens?: number | null;
-};
-
-export type ManagementPanelContentProps = {
+export interface ManagementPanelContentProps {
   tab: ManagementTab | null;
-  client: GatewayClient;
-  status: GatewayStatus;
-  // Sessions
-  focusedAgentId: string | null;
-  allSessions: SessionEntry[];
-  allSessionsLoading: boolean;
-  allSessionsError: string | null;
-  onRefreshSessions: () => void;
-  activeSessionKey: string | null;
-  aggregateUsage: { inputTokens: number; outputTokens: number; totalCost: number | null; messageCount: number } | null;
-  aggregateUsageLoading: boolean;
-  cumulativeUsage: { inputTokens: number; outputTokens: number; totalCost: number | null; messageCount: number } | null;
-  cumulativeUsageLoading: boolean;
-  usageByType: UsageByType | null;
-  onViewTrace: (sessionKey: string, agentId: string | null) => void;
-  onTranscriptClick: (sessionId: string, agentId: string | null) => void;
-  // Channels
-  channelsSnapshot: ChannelsStatusSnapshot | null;
-  channelsLoading: boolean;
-  channelsError: string | null;
-  onRefreshChannels: () => void;
-  // Cron
-  allCronJobs: CronJobSummary[];
-  allCronLoading: boolean;
-  allCronError: string | null;
-  allCronRunBusyJobId: string | null;
-  allCronDeleteBusyJobId: string | null;
-  allCronToggleBusyJobId: string | null;
-  onRunJob: (jobId: string) => void;
-  onDeleteJob: (jobId: string) => void;
-  onToggleEnabled: (jobId: string) => void;
-  onRefreshCron: () => void;
-  // Settings
-  settingsAgent: AgentState | null;
-  onCloseSettings: () => void;
-  onRenameAgent: (name: string) => Promise<boolean>;
-  onNewSession: () => void;
-  onDeleteAgent: () => void;
-  onToolCallingToggle: (enabled: boolean) => void;
-  onThinkingTracesToggle: (enabled: boolean) => void;
-  onNavigateToTasks: () => void;
-};
+  /** Override context onTranscriptClick for specific usage sites */
+  onTranscriptClick?: (sessionId: string, agentId: string | null) => void;
+  /** Override context onCloseSettings for specific usage sites */
+  onCloseSettings?: () => void;
+}
 
 export const ManagementPanelContent = memo(function ManagementPanelContent({
   tab,
-  client,
-  status,
-  focusedAgentId,
-  allSessions,
-  allSessionsLoading,
-  allSessionsError,
-  onRefreshSessions,
-  activeSessionKey,
-  aggregateUsage,
-  aggregateUsageLoading,
-  cumulativeUsage,
-  cumulativeUsageLoading,
-  usageByType,
-  onViewTrace,
-  onTranscriptClick,
-  channelsSnapshot,
-  channelsLoading,
-  channelsError,
-  onRefreshChannels,
-  allCronJobs,
-  allCronLoading,
-  allCronError,
-  allCronRunBusyJobId,
-  allCronDeleteBusyJobId,
-  allCronToggleBusyJobId,
-  onRunJob,
-  onDeleteJob,
-  onToggleEnabled,
-  onRefreshCron,
-  settingsAgent,
-  onCloseSettings,
-  onRenameAgent,
-  onNewSession,
-  onDeleteAgent,
-  onToolCallingToggle,
-  onThinkingTracesToggle,
-  onNavigateToTasks,
+  onTranscriptClick: onTranscriptClickOverride,
+  onCloseSettings: onCloseSettingsOverride,
 }: ManagementPanelContentProps) {
+  const ctx = useManagementPanel();
+
+  const onTranscriptClick = onTranscriptClickOverride ?? ctx.onTranscriptClick;
+  const onCloseSettings = onCloseSettingsOverride ?? ctx.onCloseSettings;
+
   if (!tab) return null;
 
   return (
@@ -137,35 +52,35 @@ export const ManagementPanelContent = memo(function ManagementPanelContent({
       {tab === "sessions" && (
         <PanelErrorBoundary name="Sessions">
           <SessionsPanel
-            client={client}
-            agentId={focusedAgentId}
-            sessions={allSessions}
-            loading={allSessionsLoading}
-            error={allSessionsError}
-            onRefresh={onRefreshSessions}
-            activeSessionKey={activeSessionKey}
-            aggregateUsage={aggregateUsage}
-            aggregateUsageLoading={aggregateUsageLoading}
-            cumulativeUsage={cumulativeUsage}
-            cumulativeUsageLoading={cumulativeUsageLoading}
-            usageByType={usageByType}
-            onViewTrace={onViewTrace}
+            client={ctx.client}
+            agentId={ctx.focusedAgentId}
+            sessions={ctx.allSessions}
+            loading={ctx.allSessionsLoading}
+            error={ctx.allSessionsError}
+            onRefresh={ctx.onRefreshSessions}
+            activeSessionKey={ctx.activeSessionKey}
+            aggregateUsage={ctx.aggregateUsage}
+            aggregateUsageLoading={ctx.aggregateUsageLoading}
+            cumulativeUsage={ctx.cumulativeUsage}
+            cumulativeUsageLoading={ctx.cumulativeUsageLoading}
+            usageByType={ctx.usageByType}
+            onViewTrace={ctx.onViewTrace}
             onTranscriptClick={onTranscriptClick}
           />
         </PanelErrorBoundary>
       )}
       {tab === "usage" && (
         <PanelErrorBoundary name="Usage">
-          <UsagePanel client={client} status={status} />
+          <UsagePanel client={ctx.client} status={ctx.status} />
         </PanelErrorBoundary>
       )}
       {tab === "channels" && (
         <PanelErrorBoundary name="Channels">
           <ChannelsPanel
-            snapshot={channelsSnapshot}
-            loading={channelsLoading}
-            error={channelsError}
-            onRefresh={onRefreshChannels}
+            snapshot={ctx.channelsSnapshot}
+            loading={ctx.channelsLoading}
+            error={ctx.channelsError}
+            onRefresh={ctx.onRefreshChannels}
             hideHeader
           />
         </PanelErrorBoundary>
@@ -173,35 +88,35 @@ export const ManagementPanelContent = memo(function ManagementPanelContent({
       {tab === "cron" && (
         <PanelErrorBoundary name="Cron">
           <CronPanel
-            client={client}
-            cronJobs={allCronJobs}
-            loading={allCronLoading}
-            error={allCronError}
-            runBusyJobId={allCronRunBusyJobId}
-            deleteBusyJobId={allCronDeleteBusyJobId}
-            toggleBusyJobId={allCronToggleBusyJobId}
-            onRunJob={onRunJob}
-            onDeleteJob={onDeleteJob}
-            onToggleEnabled={onToggleEnabled}
-            onRefresh={onRefreshCron}
+            client={ctx.client}
+            cronJobs={ctx.allCronJobs}
+            loading={ctx.allCronLoading}
+            error={ctx.allCronError}
+            runBusyJobId={ctx.allCronRunBusyJobId}
+            deleteBusyJobId={ctx.allCronDeleteBusyJobId}
+            toggleBusyJobId={ctx.allCronToggleBusyJobId}
+            onRunJob={ctx.onRunJob}
+            onDeleteJob={ctx.onDeleteJob}
+            onToggleEnabled={ctx.onToggleEnabled}
+            onRefresh={ctx.onRefreshCron}
           />
         </PanelErrorBoundary>
       )}
-      {tab === "settings" && settingsAgent && (
+      {tab === "settings" && ctx.settingsAgent && (
         <PanelErrorBoundary name="Settings">
           <AgentSettingsPanel
-            key={settingsAgent.agentId}
-            agent={settingsAgent}
-            client={client}
-            status={status}
+            key={ctx.settingsAgent.agentId}
+            agent={ctx.settingsAgent}
+            client={ctx.client}
+            status={ctx.status}
             onClose={onCloseSettings}
-            onRename={onRenameAgent}
-            onNewSession={onNewSession}
-            onDelete={onDeleteAgent}
-            canDelete={settingsAgent.agentId !== RESERVED_MAIN_AGENT_ID}
-            onToolCallingToggle={onToolCallingToggle}
-            onThinkingTracesToggle={onThinkingTracesToggle}
-            onNavigateToTasks={onNavigateToTasks}
+            onRename={ctx.onRenameAgent}
+            onNewSession={ctx.onNewSession}
+            onDelete={ctx.onDeleteAgent}
+            canDelete={ctx.settingsAgent.agentId !== RESERVED_MAIN_AGENT_ID}
+            onToolCallingToggle={ctx.onToolCallingToggle}
+            onThinkingTracesToggle={ctx.onThinkingTracesToggle}
+            onNavigateToTasks={ctx.onNavigateToTasks}
           />
         </PanelErrorBoundary>
       )}
