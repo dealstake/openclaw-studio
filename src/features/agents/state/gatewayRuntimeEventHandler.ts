@@ -12,6 +12,7 @@ import type {
 import { RuntimeTrackingState } from "./runtimeTrackingState";
 import { handleRuntimeChatEvent } from "./chatEventHandler";
 import { handleRuntimeAgentEvent } from "./agentEventHandler";
+import { findAgentBySessionKey } from "./agentLookup";
 
 // Re-export types for backward compatibility
 export type { GatewayRuntimeEventHandlerDeps, GatewayRuntimeEventHandler } from "./gatewayRuntimeEventHandler.types";
@@ -150,6 +151,59 @@ export function createGatewayRuntimeEventHandler(
         cronRefreshTimer = null;
         deps.onCronUpdate?.();
       }, 750);
+      return;
+    }
+
+    if (eventKind === "prompt-error") {
+      const payload = event.payload as Record<string, unknown> | undefined;
+      const sessionKey = typeof payload?.sessionKey === "string" ? payload.sessionKey : null;
+      const errorMsg = typeof payload?.error === "string" ? payload.error
+        : typeof payload?.message === "string" ? payload.message
+        : "Agent run failed";
+
+      deps.onSystemEvent?.({
+        kind: "prompt-error",
+        title: "Prompt error",
+        subtitle: errorMsg,
+      });
+
+      // If we can identify the agent, surface the error in their chat
+      if (sessionKey) {
+        const agentsSnapshot = deps.getAgents();
+        const agentId = findAgentBySessionKey(agentsSnapshot, sessionKey);
+        if (agentId) {
+          state.clearRunTracking(null);
+          deps.clearPendingLivePatch(agentId);
+          deps.dispatch({
+            type: "appendPart",
+            agentId,
+            part: {
+              type: "status",
+              state: "error",
+              errorMessage: `❌ ${errorMsg}`,
+            },
+          });
+          deps.dispatch({
+            type: "updateAgent",
+            agentId,
+            patch: {
+              status: "error",
+              runId: null,
+              runStartedAt: null,
+              streamText: null,
+              thinkingTrace: null,
+            },
+          });
+        }
+      }
+
+      // Also route to activity feed
+      deps.onActivityMessage?.(`prompt-error-${Date.now()}`, {
+        sourceName: "Prompt Error",
+        sourceType: "system",
+        parts: [{ type: "text", text: `❌ ${errorMsg}${sessionKey ? ` (${sessionKey})` : ""}`, streaming: false }],
+        status: "error",
+      });
       return;
     }
   };

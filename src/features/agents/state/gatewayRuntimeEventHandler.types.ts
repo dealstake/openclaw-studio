@@ -35,7 +35,7 @@ export type GatewayRuntimeEventHandlerDeps = {
   onCronUpdate?: () => void;
   onSubAgentLifecycle?: (sessionKey: string, phase: string) => void;
   onSystemEvent?: (event: {
-    kind: "exec-approval" | "session-lifecycle" | "cron-schedule";
+    kind: "exec-approval" | "session-lifecycle" | "cron-schedule" | "prompt-error";
     title: string;
     subtitle: string;
   }) => void;

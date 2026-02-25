@@ -133,4 +133,5 @@ export type GatewayEventKind =
   | "cron-update"
   | "nodes-update"
   | "config-update"
+  | "prompt-error"
   | "ignore";

@@ -119,7 +119,20 @@ export const useAgentTasks = (
           runCount: 0,
         };
 
-        await saveTaskMetadata(task);
+        try {
+          await saveTaskMetadata(task);
+        } catch (dbErr) {
+          // Cron job was created but DB write failed — clean up orphaned cron job
+          console.warn("Task metadata save failed, removing orphaned cron job", result.jobId, dbErr);
+          try {
+            await removeCronJob(client, result.jobId);
+          } catch {
+            // If cleanup also fails, warn — orphan cron job exists
+            console.error("Failed to remove orphaned cron job:", result.jobId);
+            toast.error(`Task created in gateway but metadata save failed. Orphaned cron job: ${result.jobId}`);
+          }
+          throw dbErr;
+        }
         setTasks((prev) => [task, ...prev]);
         toast.success(`Task "${payload.name}" created`);
       } catch (err) {
