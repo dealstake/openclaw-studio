@@ -53,7 +53,7 @@ describe("taskIcon", () => {
     expect(taskIcon("Random Task").icon).toBe(Bot);
   });
   it("includes color className", () => {
-    expect(taskIcon("Project Continuation").className).toBe("text-amber-400");
+    expect(taskIcon("Project Continuation").className).toBe("text-amber-300");
   });
 });
 

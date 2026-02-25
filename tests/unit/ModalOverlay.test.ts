@@ -3,8 +3,8 @@ import { describe, expect, it } from "vitest";
 import { MODAL_OVERLAY_CLASSES } from "@/components/ModalOverlay";
 
 describe("ModalOverlay", () => {
-  it("exports MODAL_OVERLAY_CLASSES with z-[100]", () => {
-    expect(MODAL_OVERLAY_CLASSES).toContain("z-[100]");
+  it("exports MODAL_OVERLAY_CLASSES with z-index modal token", () => {
+    expect(MODAL_OVERLAY_CLASSES).toContain("z-[var(--z-modal)]");
   });
 
   it("includes backdrop blur", () => {

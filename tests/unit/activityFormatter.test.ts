@@ -25,19 +25,19 @@ const makeEvent = (overrides: Partial<ActivityEvent> = {}): ActivityEvent => ({
 describe("formatActivityEvent", () => {
   it("formats a success event", () => {
     const result = formatActivityEvent(makeEvent());
-    expect(result.statusColor).toBe("text-green-400");
+    expect(result.statusColor).toBe("text-green-300");
     expect(result.relativeTime).toBeTruthy();
     expect(result.formattedTokens).toBeNull();
   });
 
   it("formats an error event", () => {
     const result = formatActivityEvent(makeEvent({ status: "error" }));
-    expect(result.statusColor).toBe("text-red-400");
+    expect(result.statusColor).toBe("text-red-300");
   });
 
   it("formats a partial event", () => {
     const result = formatActivityEvent(makeEvent({ status: "partial" }));
-    expect(result.statusColor).toBe("text-yellow-400");
+    expect(result.statusColor).toBe("text-yellow-300");
   });
 
   it("formats tokens when present", () => {
@@ -55,9 +55,9 @@ describe("formatActivityEvent", () => {
 
 describe("getStatusColor", () => {
   it("returns correct colors", () => {
-    expect(getStatusColor("success")).toBe("text-green-400");
-    expect(getStatusColor("error")).toBe("text-red-400");
-    expect(getStatusColor("partial")).toBe("text-yellow-400");
+    expect(getStatusColor("success")).toBe("text-green-300");
+    expect(getStatusColor("error")).toBe("text-red-300");
+    expect(getStatusColor("partial")).toBe("text-yellow-300");
   });
 });
 

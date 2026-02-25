@@ -30,11 +30,11 @@ export function formatActivityEvent(raw: ActivityEvent): DisplayEvent {
 export function getStatusColor(status: ActivityStatus): string {
   switch (status) {
     case "success":
-      return "text-green-400";
+      return "text-green-300";
     case "error":
-      return "text-red-400";
+      return "text-red-300";
     case "partial":
-      return "text-yellow-400";
+      return "text-yellow-300";
     default:
       return "text-muted-foreground";
   }

@@ -48,7 +48,7 @@ describe("useProjectStatuses", () => {
     expect(result.current.get("foo.md")).toEqual({
       emoji: "🔨",
       label: "Active",
-      color: "text-green-400",
+      color: "text-green-300",
     });
     expect(result.current.get("bar.md")).toEqual({
       emoji: "✅",
@@ -58,7 +58,7 @@ describe("useProjectStatuses", () => {
     expect(result.current.get("baz.md")).toEqual({
       emoji: "📋",
       label: "Defined",
-      color: "text-amber-400",
+      color: "text-amber-300",
     });
     expect(result.current.get("qux.md")).toEqual({
       emoji: "⏸️",
@@ -68,7 +68,7 @@ describe("useProjectStatuses", () => {
     expect(result.current.get("backlog.md")).toEqual({
       emoji: "🌊",
       label: "Backlog",
-      color: "text-blue-400",
+      color: "text-blue-300",
     });
   });
 
