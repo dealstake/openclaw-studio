@@ -146,7 +146,7 @@ export const ProjectCard = memo(function ProjectCard({
                       {label}
                     </span>
                     {wouldQueue && (
-                      <span className="text-[8px] text-orange-400">queued</span>
+                      <span className="text-xs text-orange-400/80">queued</span>
                     )}
                     {isCurrent && <Check className="h-3 w-3 shrink-0 text-primary-text" />}
                   </button>

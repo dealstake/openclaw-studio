@@ -86,7 +86,7 @@ export const ToolCallGroup = React.memo(function ToolCallGroup({
       onOpenChange={setOpen}
       className={`hidden sm:block ${className}`}
     >
-      <CollapsibleTrigger className="group/tool flex items-center gap-1.5 rounded-md px-1 py-0.5 text-left transition-colors hover:bg-muted/50">
+      <CollapsibleTrigger className="group/tool flex w-full items-center gap-1.5 rounded-md px-3 py-3 min-h-[44px] sm:min-h-0 sm:px-1 sm:py-0.5 text-left transition-colors hover:bg-muted/50">
         {/* Chevron */}
         <ChevronRight
           size={14}
