@@ -12,7 +12,8 @@ import {
 
 import type { GatewayModelChoice } from "@/lib/gateway/models";
 import type { MessagePart } from "@/lib/chat/types";
-import { AlertCircle, ArrowUp, Paperclip, Square, UploadCloud } from "lucide-react";
+import type { GatewayStatus } from "@/lib/gateway/GatewayClient";
+import { AlertCircle, ArrowUp, Paperclip, Square, UploadCloud, WifiOff } from "lucide-react";
 import { ChatAttachmentPreview } from "./ChatAttachmentPreview";
 import { ModelPicker } from "./ModelPicker";
 import { ThinkingToggle } from "./ThinkingToggle";
@@ -40,6 +41,8 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   allowThinking,
   messageParts,
   runStartedAt,
+  gatewayStatus,
+  queueLength,
 }: {
   onDraftChange: (value: string) => void;
   onSend: (message: string, attachments?: ChatAttachment[]) => void;
@@ -61,6 +64,8 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   allowThinking: boolean;
   messageParts?: MessagePart[];
   runStartedAt?: number | null;
+  gatewayStatus?: GatewayStatus;
+  queueLength?: number;
 }) {
   const localRef = useRef<HTMLTextAreaElement | null>(null);
   const pendingResizeRef = useRef<number | null>(null);
@@ -264,6 +269,18 @@ export const AgentChatComposer = memo(function AgentChatComposer({
       <div className="pointer-events-none h-24 bg-gradient-to-t from-background via-background/80 to-transparent" />
       {/* Main composer — rectangular card with toolbar */}
       <div className="mx-auto flex max-w-3xl flex-col rounded-xl border border-border/30 bg-card/80 shadow-lg backdrop-blur-md focus-within:border-border/60 focus-within:bg-card transition">
+        {/* Offline indicator */}
+        {gatewayStatus && gatewayStatus !== "connected" && (
+          <div className="flex items-center gap-1.5 rounded-t-xl bg-amber-500/10 px-3 py-1.5 text-xs text-amber-600 dark:text-amber-400">
+            <WifiOff className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            <span>
+              {gatewayStatus === "connecting" ? "Reconnecting…" : "Offline"}
+              {(queueLength ?? 0) > 0 && ` · ${queueLength} message${(queueLength ?? 0) > 1 ? "s" : ""} queued`}
+              {" — messages will send when reconnected"}
+            </span>
+          </div>
+        )}
+
         {/* File error message */}
         {fileError && (
           <div className="flex items-center gap-1.5 rounded-t-xl bg-destructive/10 px-3 py-1.5 text-xs text-destructive">

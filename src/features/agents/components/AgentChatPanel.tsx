@@ -9,6 +9,7 @@ import type { AgentState as AgentRecord } from "@/features/agents/state/store";
 import type { MessagePart } from "@/lib/chat/types";
 import { AlertTriangle, ArrowLeft, RefreshCw, X, Zap } from "lucide-react";
 import type { GatewayModelChoice } from "@/lib/gateway/models";
+import type { GatewayStatus } from "@/lib/gateway/GatewayClient";
 import type { ChatAttachment } from "../hooks/useFileUpload";
 import { AgentChatView } from "./AgentChatView";
 import { EmptyStatePanel } from "./EmptyStatePanel";
@@ -35,6 +36,10 @@ type AgentChatPanelProps = {
   /** True when the agent's session key changed (session reset detected) */
   sessionContinued?: boolean;
   onDismissContinuationBanner?: () => void;
+  /** Current gateway connection status for offline indicator */
+  gatewayStatus?: GatewayStatus;
+  /** Number of messages queued for offline delivery */
+  queueLength?: number;
 };
 
 export const AgentChatPanel = memo(function AgentChatPanel({
@@ -55,6 +60,8 @@ export const AgentChatPanel = memo(function AgentChatPanel({
   onExitSessionView,
   sessionContinued = false,
   onDismissContinuationBanner,
+  gatewayStatus,
+  queueLength = 0,
 }: AgentChatPanelProps) {
   const draftRef = useRef<HTMLTextAreaElement | null>(null);
   const scrollToBottomNextOutputRef = useRef(false);
@@ -232,6 +239,8 @@ export const AgentChatPanel = memo(function AgentChatPanel({
             allowThinking={models.length > 0}
             messageParts={agent.messageParts}
             runStartedAt={agent.runStartedAt}
+            gatewayStatus={gatewayStatus}
+            queueLength={queueLength}
           />
         )}
       </div>

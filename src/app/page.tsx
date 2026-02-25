@@ -98,6 +98,7 @@ import { useAgentHistorySync } from "@/features/agents/hooks/useAgentHistorySync
 import { useDeleteAgent } from "@/features/agents/hooks/useDeleteAgent";
 import { useCreateAgent } from "@/features/agents/hooks/useCreateAgent";
 import { useRenameAgent } from "@/features/agents/hooks/useRenameAgent";
+import { useOfflineQueue } from "@/lib/gateway/useOfflineQueue";
 import { useGatewayModels } from "@/features/agents/hooks/useGatewayModels";
 import { useSettingsPanel } from "@/features/agents/hooks/useSettingsPanel";
 import { useChatCallbacks } from "@/features/agents/hooks/useChatCallbacks";
@@ -1083,6 +1084,8 @@ const AgentStudioPage = () => {
     setStopBusyAgentId,
   });
 
+  const { isOffline, queueLength, enqueue } = useOfflineQueue(client, status, handleSend);
+
   useEffect(() => {
     const handler = createGatewayRuntimeEventHandler({
       getStatus: () => status,
@@ -1254,11 +1257,25 @@ const AgentStudioPage = () => {
 
   const stableChatOnSend = useCallback((message: string, attachments?: { mimeType: string; fileName: string; content: string }[]) => {
     const fa = focusedAgentRef.current;
-    if (fa) {
-      setViewingSessionKey(null);
+    if (!fa) return;
+    setViewingSessionKey(null);
+    if (isOffline) {
+      enqueue(fa.agentId, fa.sessionKey, message, attachments);
+      // Show the message in the chat as pending
+      dispatch({
+        type: "appendPart",
+        agentId: fa.agentId,
+        part: { type: "text", text: `> ${message.trim()}` },
+      });
+      dispatch({
+        type: "appendPart",
+        agentId: fa.agentId,
+        part: { type: "text", text: "⏳ *Message queued — will send when reconnected*" },
+      });
+    } else {
       handleSend(fa.agentId, fa.sessionKey, message, attachments);
     }
-  }, [handleSend]);
+  }, [handleSend, isOffline, enqueue, dispatch]);
 
   const stableChatOnStopRun = useCallback(() => {
     const fa = focusedAgentRef.current;
@@ -1669,7 +1686,9 @@ const AgentStudioPage = () => {
               {focusedAgent ? (
                 <AgentChatPanel
                   agent={focusedAgent}
-                  canSend={status === "connected"}
+                  canSend={status === "connected" || isOffline}
+                  gatewayStatus={status}
+                  queueLength={queueLength}
                   models={gatewayModels}
                   stopBusy={stopBusyAgentId === focusedAgent.agentId}
                   onModelChange={stableChatOnModelChange}
