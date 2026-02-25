@@ -3,7 +3,7 @@ import { describe, expect, it, vi, afterEach } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import { ManagementPanelContent } from "@/components/ManagementPanelContent";
 import { ManagementPanelProvider } from "@/components/management/ManagementPanelContext";
-import type { ManagementPanelContextValue } from "@/components/management/ManagementPanelContext";
+import type { ManagementPanelContextValue, ManagementPanelProviderProps } from "@/components/management/ManagementPanelContext";
 import type { ManagementPanelContentProps } from "@/components/ManagementPanelContent";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 
@@ -84,9 +84,7 @@ function renderWithProvider(
 ) {
   const ctx = defaultContext(ctxOverrides);
   return render(
-    createElement(ManagementPanelProvider, ctx,
-      createElement(ManagementPanelContent, props),
-    ),
+    createElement(ManagementPanelProvider, { ...ctx, children: createElement(ManagementPanelContent, props) } as ManagementPanelProviderProps),
   );
 }
 
