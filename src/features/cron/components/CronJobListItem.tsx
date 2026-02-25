@@ -29,7 +29,7 @@ import { useCronRuns } from "@/features/cron/hooks/useCronRuns";
 
 const STATUS_PILL_CLASS: Record<string, string> = {
   ok: "border-emerald-500/30 bg-emerald-500/15 text-emerald-400",
-  error: "border-destructive/35 bg-destructive/12 text-destructive",
+  error: "border-destructive/40 bg-destructive/20 text-red-400",
   skipped: "border-border/70 bg-muted text-muted-foreground",
 };
 
@@ -110,7 +110,7 @@ export const CronJobListItem = memo(function CronJobListItem({
             : ""
       }`}
     >
-      <div className="group/cron flex items-start justify-between gap-2 px-3 py-2">
+      <div className="group/cron flex items-start justify-between gap-2">
         <button
           type="button"
           className="flex min-w-0 flex-1 items-start gap-2 text-left"
@@ -242,7 +242,7 @@ export const CronJobListItem = memo(function CronJobListItem({
       {expanded ? (
         <div
           id={`cron-detail-${job.id}`}
-          className="border-t border-border/60 px-3 py-2"
+          className="border-t border-border/60 pt-2"
         >
           <div className="mb-2 space-y-1">
             {job.payload.kind === "agentTurn" && job.payload.model ? (
