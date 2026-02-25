@@ -112,7 +112,7 @@ export const TaskCard = memo(function TaskCard({
       {/* Runtime info */}
       <CardMeta className="mt-1 flex-wrap gap-x-2 gap-y-0.5 text-[10px]">
         {task.runningAtMs ? (
-          <span className="font-semibold text-purple-400">Running…</span>
+          <span className="font-semibold text-purple-300">Running…</span>
         ) : task.nextRunAtMs ? (
           <span>
             Next: {formatRelativeTime(task.nextRunAtMs)}
@@ -127,7 +127,7 @@ export const TaskCard = memo(function TaskCard({
         {task.lastRunStatus === "error" ? (
           <span className="font-semibold text-destructive">Failed</span>
         ) : task.lastRunStatus === "success" ? (
-          <span className="font-semibold text-emerald-400">OK</span>
+          <span className="font-semibold text-emerald-300">OK</span>
         ) : null}
         {task.runCount > 0 ? (
           <span>Runs: {task.runCount}</span>

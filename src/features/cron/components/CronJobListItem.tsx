@@ -28,8 +28,8 @@ import { BaseCard } from "@/components/ui/BaseCard";
 import { useCronRuns } from "@/features/cron/hooks/useCronRuns";
 
 const STATUS_PILL_CLASS: Record<string, string> = {
-  ok: "border-emerald-500/30 bg-emerald-500/15 text-emerald-400",
-  error: "border-destructive/40 bg-destructive/20 text-red-400",
+  ok: "border-emerald-500/30 bg-emerald-500/15 text-emerald-300",
+  error: "border-destructive/40 bg-destructive/20 text-red-300",
   skipped: "border-border/70 bg-muted text-muted-foreground",
 };
 

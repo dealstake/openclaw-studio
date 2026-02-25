@@ -11,17 +11,17 @@ export const TYPE_CONFIG: Record<
   constant: {
     label: "Constant",
     icon: Zap,
-    className: "border-amber-500/30 bg-amber-500/10 text-amber-400",
+    className: "border-amber-500/30 bg-amber-500/10 text-amber-300",
   },
   periodic: {
     label: "Periodic",
     icon: Clock,
-    className: "border-blue-500/30 bg-blue-500/10 text-blue-400",
+    className: "border-blue-500/30 bg-blue-500/10 text-blue-300",
   },
   scheduled: {
     label: "Scheduled",
     icon: Calendar,
-    className: "border-violet-500/30 bg-violet-500/10 text-violet-400",
+    className: "border-violet-500/30 bg-violet-500/10 text-violet-300",
   },
 };
 

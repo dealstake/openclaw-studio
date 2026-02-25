@@ -111,7 +111,7 @@ export const ProjectCard = memo(function ProjectCard({
               side="bottom"
               align="start"
               sideOffset={4}
-              className="z-50 min-w-[140px] rounded-md border border-border bg-card p-1 shadow-lg animate-in fade-in-0 zoom-in-95"
+              className="z-[var(--z-popover)] min-w-[140px] rounded-md border border-border bg-card p-1 shadow-lg animate-in fade-in-0 zoom-in-95"
               onClick={(e) => e.stopPropagation()}
             >
               {CYCLE_STATUSES.map(({ emoji, label }) => {

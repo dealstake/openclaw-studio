@@ -158,7 +158,7 @@ export const EmergencyPanel = memo(function EmergencyPanel({
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        className="fixed right-0 top-0 z-[var(--z-float)] flex h-full w-full max-w-sm flex-col border-l border-navy-800 bg-navy-950 shadow-2xl focus:outline-none"
+        className="fixed right-0 top-0 z-[var(--z-modal)] flex h-full w-full max-w-sm flex-col border-l border-navy-800 bg-navy-950 shadow-2xl focus:outline-none"
       >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-navy-800 px-4 py-3">
