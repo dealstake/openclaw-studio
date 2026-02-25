@@ -73,10 +73,11 @@ export function useSpecialUpdates(params: {
   }, []);
 
   const updateSpecialLatestUpdate = useCallback(
-    async (agentId: string, agent: AgentState, message: string) => {
+    async (agentId: string, agent: AgentState, message: string, signal?: AbortSignal) => {
       const key = agentId;
       const kind = resolveSpecialUpdateKind(message);
       if (!kind) {
+        if (signal?.aborted) return;
         if (agent.latestOverride || agent.latestOverrideKind) {
           dispatch({
             type: "updateAgent",
@@ -93,11 +94,13 @@ export function useSpecialUpdates(params: {
           const resolvedId =
             agent.agentId?.trim() || parseAgentIdFromSessionKey(agent.sessionKey);
           if (!resolvedId) {
-            dispatch({
-              type: "updateAgent",
-              agentId: agent.agentId,
-              patch: { latestOverride: null, latestOverrideKind: null },
-            });
+            if (!signal?.aborted) {
+              dispatch({
+                type: "updateAgent",
+                agentId: agent.agentId,
+                patch: { latestOverride: null, latestOverrideKind: null },
+              });
+            }
             return;
           }
           const sessions = await client.call<SessionsListResult>("sessions.list", {
@@ -106,6 +109,7 @@ export function useSpecialUpdates(params: {
             includeUnknown: false,
             limit: 48,
           });
+          if (signal?.aborted) return;
           const entries = Array.isArray(sessions.sessions) ? sessions.sessions : [];
           const heartbeatSessions = entries.filter((entry) => {
             const label = entry.origin?.label;
@@ -117,17 +121,20 @@ export function useSpecialUpdates(params: {
           );
           const sessionKey = sorted[0]?.key;
           if (!sessionKey) {
-            dispatch({
-              type: "updateAgent",
-              agentId: agent.agentId,
-              patch: { latestOverride: null, latestOverrideKind: null },
-            });
+            if (!signal?.aborted) {
+              dispatch({
+                type: "updateAgent",
+                agentId: agent.agentId,
+                patch: { latestOverride: null, latestOverrideKind: null },
+              });
+            }
             return;
           }
           const history = await client.call<ChatHistoryResult>("chat.history", {
             sessionKey,
             limit: 200,
           });
+          if (signal?.aborted) return;
           const content = findLatestHeartbeatResponse(history.messages ?? []) ?? "";
           dispatch({
             type: "updateAgent",
@@ -140,6 +147,7 @@ export function useSpecialUpdates(params: {
           return;
         }
         const cronResult = await listCronJobs(client, { includeDisabled: true });
+        if (signal?.aborted) return;
         const job = resolveCronJobForAgent(cronResult.jobs, agent);
         const content = job ? formatCronJobDisplay(job) : "";
         dispatch({
@@ -163,10 +171,10 @@ export function useSpecialUpdates(params: {
     [client, dispatch, resolveCronJobForAgent]
   );
 
-  const refreshHeartbeatLatestUpdate = useCallback(() => {
+  const refreshHeartbeatLatestUpdate = useCallback((signal?: AbortSignal) => {
     const currentAgents = stateRef.current.agents;
     for (const agent of currentAgents) {
-      void updateSpecialLatestUpdate(agent.agentId, agent, "heartbeat");
+      void updateSpecialLatestUpdate(agent.agentId, agent, "heartbeat", signal);
     }
   }, [stateRef, updateSpecialLatestUpdate]);
 
@@ -183,6 +191,7 @@ export function useSpecialUpdates(params: {
     .join("|");
 
   useEffect(() => {
+    const controller = new AbortController();
     const currentAgents = stateRef.current.agents;
     let changed = false;
     const nextSnapshot = new Map<string, string>();
@@ -210,8 +219,10 @@ export function useSpecialUpdates(params: {
       const previous = specialUpdateRef.current.get(key);
       if (previous === marker) continue;
       specialUpdateRef.current.set(key, marker);
-      void updateSpecialLatestUpdate(agent.agentId, agent, lastMessage);
+      void updateSpecialLatestUpdate(agent.agentId, agent, lastMessage, controller.signal);
     }
+
+    return () => controller.abort();
   }, [agentMessageFingerprint, heartbeatTick, stateRef, specialUpdateRef, updateSpecialLatestUpdate]);
 
   return {
