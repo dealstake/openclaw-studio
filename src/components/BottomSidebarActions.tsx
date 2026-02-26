@@ -32,8 +32,17 @@ export const BottomSidebarActions = memo(function BottomSidebarActions({
         setDropdownOpen(false);
       }
     }
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        setDropdownOpen(false);
+      }
+    }
     document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
   }, [dropdownOpen]);
 
   if (collapsed) {
@@ -111,7 +120,7 @@ export const BottomSidebarActions = memo(function BottomSidebarActions({
           </TooltipContent>
         </Tooltip>
         {dropdownOpen && (
-          <div className="absolute bottom-full left-0 mb-1 z-50 min-w-44 rounded-md border border-border/80 bg-popover/95 p-1 shadow-lg backdrop-blur">
+          <div className="absolute bottom-0 left-full ml-2 z-50 min-w-44 rounded-md border border-border/80 bg-popover/95 p-1 shadow-lg backdrop-blur">
             <button
               type="button"
               className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-medium text-foreground transition hover:bg-muted"

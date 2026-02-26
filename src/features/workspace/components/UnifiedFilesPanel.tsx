@@ -38,10 +38,10 @@ export const UnifiedFilesPanel = memo(function UnifiedFilesPanel({
           type="button"
           role="tab"
           id="workspace-tab"
-          aria-controls="files-tabpanel"
+          aria-controls="workspace-tabpanel"
           aria-selected={subTab === "workspace"}
           onClick={() => handleTabChange("workspace")}
-          className={`rounded-md px-3 py-3 text-xs font-medium transition-colors ${
+          className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
             subTab === "workspace"
               ? "bg-muted text-foreground"
               : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
@@ -53,10 +53,10 @@ export const UnifiedFilesPanel = memo(function UnifiedFilesPanel({
           type="button"
           role="tab"
           id="artifacts-tab"
-          aria-controls="files-tabpanel"
+          aria-controls="artifacts-tabpanel"
           aria-selected={subTab === "artifacts"}
           onClick={() => handleTabChange("artifacts")}
-          className={`rounded-md px-3 py-3 text-xs font-medium transition-colors ${
+          className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
             subTab === "artifacts"
               ? "bg-muted text-foreground"
               : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
@@ -67,24 +67,30 @@ export const UnifiedFilesPanel = memo(function UnifiedFilesPanel({
       </div>
 
       {/* Panel content */}
-      <div
-        id="files-tabpanel"
-        role="tabpanel"
-        aria-labelledby={subTab === "workspace" ? "workspace-tab" : "artifacts-tab"}
-        className="min-h-0 flex-1 overflow-hidden"
-      >
-        {subTab === "workspace" ? (
+      <div className="min-h-0 flex-1 overflow-hidden">
+        <div
+          id="workspace-tabpanel"
+          role="tabpanel"
+          aria-labelledby="workspace-tab"
+          className={subTab === "workspace" ? "h-full" : "hidden"}
+        >
           <WorkspaceExplorerPanel
             agentId={agentId}
             client={client}
-            isTabActive={isTabActive}
+            isTabActive={isTabActive && subTab === "workspace"}
             eventTick={eventTick}
           />
-        ) : (
+        </div>
+        <div
+          id="artifacts-tabpanel"
+          role="tabpanel"
+          aria-labelledby="artifacts-tab"
+          className={subTab === "artifacts" ? "h-full" : "hidden"}
+        >
           <ArtifactsPanel
-            isSelected={isTabActive ?? false}
+            isSelected={(isTabActive ?? false) && subTab === "artifacts"}
           />
-        )}
+        </div>
       </div>
     </div>
   );
