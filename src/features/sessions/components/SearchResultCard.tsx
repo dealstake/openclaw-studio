@@ -44,7 +44,8 @@ export const SearchResultCard = memo(function SearchResultCard({
       variant="compact"
       isHoverable
       className="cursor-pointer"
-      role="button"
+      role="option"
+      aria-selected={false}
       tabIndex={0}
       onClick={onClick}
       onKeyDown={(e) => {
