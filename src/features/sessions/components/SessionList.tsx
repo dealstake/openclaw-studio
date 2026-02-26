@@ -22,6 +22,7 @@ type SessionListProps = {
   onDelete: (key: string) => void;
   onTogglePin: (key: string) => void;
   onViewTrace?: (key: string) => void;
+  onExport?: (key: string) => void;
   className?: string;
 };
 
@@ -38,6 +39,7 @@ export const SessionList = memo(function SessionList({
   onDelete,
   onTogglePin,
   onViewTrace,
+  onExport,
   className = "",
 }: SessionListProps) {
   const [renamingKey, setRenamingKey] = useState<string | null>(null);
@@ -147,6 +149,7 @@ export const SessionList = memo(function SessionList({
                   onDelete={onDelete}
                   onTogglePin={onTogglePin}
                   onViewTrace={onViewTrace}
+                  onExport={onExport}
                 />
               ))}
             </div>

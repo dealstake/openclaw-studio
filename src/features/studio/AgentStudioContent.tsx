@@ -57,6 +57,7 @@ import { useGatewayModels } from "@/features/agents/hooks/useGatewayModels";
 import { useRuntimeEventSubscription } from "@/features/studio/useRuntimeEventSubscription";
 import { useStudioChatCallbacks } from "@/features/studio/useStudioChatCallbacks";
 import { MobileSessionDrawer } from "@/features/studio/MobileSessionDrawer";
+import { exportConversationAsMarkdown } from "@/features/sessions/lib/exportConversation";
 import { StudioExpandedPanel } from "@/features/studio/StudioExpandedPanel";
 import { StudioModals } from "@/features/studio/StudioModals";
 import { useSettingsPanel } from "@/features/agents/hooks/useSettingsPanel";
@@ -710,6 +711,16 @@ export const AgentStudioPage = () => {
     handleDeleteAgent, handleToolCallingToggle, handleThinkingTracesToggle, setContextTab,
   ]);
 
+  const handleExportSession = useCallback(
+    (key: string) => {
+      if (!focusedAgentId) return;
+      void exportConversationAsMarkdown(focusedAgentId, key, key).catch((err) =>
+        console.error("Export failed:", err),
+      );
+    },
+    [focusedAgentId],
+  );
+
   const stableChatTokenLimit = useMemo(() => {
     if (!focusedAgent) return undefined;
     const cw = agentContextWindow.get(focusedAgent.agentId);
@@ -857,6 +868,7 @@ export const AgentStudioPage = () => {
                 onSelectSession={handleSidebarSessionSelect}
                 onNewSession={stableChatOnNewSession}
                 onViewTrace={(key) => handleViewTrace(key, focusedAgentId)}
+                onExport={handleExportSession}
               />
             ) : null}
             {/* App sidebar — desktop only, collapsible: floating overlay */}

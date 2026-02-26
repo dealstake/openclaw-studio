@@ -22,6 +22,7 @@ type SessionItemProps = {
   onDelete: (key: string) => void;
   onTogglePin: (key: string) => void;
   onViewTrace?: (key: string) => void;
+  onExport?: (key: string) => void;
 };
 
 export const SessionItem = memo(function SessionItem({
@@ -38,6 +39,7 @@ export const SessionItem = memo(function SessionItem({
   onDelete,
   onTogglePin,
   onViewTrace,
+  onExport,
 }: SessionItemProps) {
   const itemRef = useRef<HTMLButtonElement>(null);
   const handleClick = useCallback(() => onSelect(session.key), [onSelect, session.key]);
@@ -107,6 +109,7 @@ export const SessionItem = memo(function SessionItem({
             onDelete={onDelete}
             onTogglePin={onTogglePin}
             onViewTrace={onViewTrace}
+            onExport={onExport}
           />
         </div>
       )}

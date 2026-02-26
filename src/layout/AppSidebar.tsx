@@ -23,6 +23,7 @@ import { SessionList } from "@/features/sessions/components/SessionList";
 import { SearchResultCard } from "@/features/sessions/components/SearchResultCard";
 import { SessionViewToggle, type SessionView } from "@/features/sessions/components/SessionViewToggle";
 import { HistorySessionList } from "@/features/sessions/components/HistorySessionList";
+import { exportConversationAsMarkdown } from "@/features/sessions/lib/exportConversation";
 
 /** Management nav items that open in expanded modal */
 export type ManagementTab = "usage" | "channels" | "settings";
@@ -181,6 +182,19 @@ export const AppSidebar = memo(function AppSidebar({
     [deleteSession],
   );
   const handleRetry = useCallback(() => void load(), [load]);
+
+  const handleExport = useCallback(
+    (key: string) => {
+      // Find display name from groups
+      const session = groups.flatMap((g) => g.sessions).find((s) => s.key === key);
+      const displayName = session?.displayName ?? key;
+      if (!agentId) return;
+      void exportConversationAsMarkdown(agentId, key, displayName).catch((err) =>
+        console.error("Export failed:", err),
+      );
+    },
+    [agentId, groups],
+  );
 
   /** Arrow-key navigation within sidebar nav items */
   const handleNavKeyDown = useCallback(
@@ -366,6 +380,7 @@ export const AppSidebar = memo(function AppSidebar({
               onDelete={handleDelete}
               onTogglePin={togglePin}
               onViewTrace={onViewTrace}
+              onExport={handleExport}
             />
           ) : (
             <HistorySessionList
