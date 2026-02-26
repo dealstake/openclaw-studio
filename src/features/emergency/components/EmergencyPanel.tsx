@@ -162,11 +162,11 @@ export const EmergencyPanel = memo(function EmergencyPanel({
       >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-navy-800 px-4 py-3">
-          <h2 className="text-lg font-semibold text-red-400">⚠️ Emergency Controls</h2>
+          <h2 className="text-lg font-semibold text-red-400"><span aria-hidden="true">⚠️</span> Emergency Controls</h2>
           <button
             onClick={onClose}
             aria-label="Close emergency panel"
-            className="rounded p-1 text-navy-400 hover:bg-navy-800 hover:text-navy-200"
+            className="rounded-full p-2 text-navy-400 hover:bg-navy-800 hover:text-navy-200"
           >
             <X className="h-5 w-5" />
           </button>
