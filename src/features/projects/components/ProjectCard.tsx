@@ -16,6 +16,7 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 import type { ProjectEntry } from "./ProjectsPanel";
 import { MarkdownViewer } from "@/components/MarkdownViewer";
 import { BaseCard, CardHeader } from "@/components/ui/BaseCard";
+import { formatRelativeTime } from "@/lib/text/time";
 
 interface ProjectCardProps {
   project: ProjectEntry;
@@ -200,6 +201,22 @@ export const ProjectCard = memo(function ProjectCard({
 
       {/* Description */}
       <MarkdownViewer content={project.oneLiner} className="mt-2 text-xs leading-relaxed text-muted-foreground line-clamp-2 [&>*]:m-0 [&>*>*]:m-0 [&>*]:inline" />
+
+      {/* Dates */}
+      {(project.createdAt || project.updatedAt) && (
+        <div className="mt-1.5 flex items-center gap-3 text-[11px] font-mono text-muted-foreground/60">
+          {project.createdAt && (
+            <span title={`Created: ${new Date(project.createdAt).toLocaleString()}`}>
+              Created {formatRelativeTime(new Date(project.createdAt).getTime())}
+            </span>
+          )}
+          {project.updatedAt && project.updatedAt !== project.createdAt && (
+            <span title={`Updated: ${new Date(project.updatedAt).toLocaleString()}`}>
+              · Updated {formatRelativeTime(new Date(project.updatedAt).getTime())}
+            </span>
+          )}
+        </div>
+      )}
 
       <ConfirmDialog
         open={pendingDone}

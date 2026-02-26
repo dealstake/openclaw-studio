@@ -34,6 +34,8 @@ export interface ProjectEntry {
   priority: string;
   priorityEmoji: string;
   oneLiner: string;
+  createdAt?: string;
+  updatedAt?: string;
   details?: ProjectDetails;
 }
 
