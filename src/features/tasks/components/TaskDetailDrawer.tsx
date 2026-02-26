@@ -11,6 +11,8 @@ import { TaskMetadataSection } from "./TaskMetadataSection";
 import { TaskPromptSection } from "./TaskPromptSection";
 import { RunHistorySection } from "./RunHistorySection";
 import { RawGatewaySection } from "./RawGatewaySection";
+import { ChevronRight, Settings2 } from "lucide-react";
+import { sectionLabelClass } from "@/components/SectionLabel";
 
 // ─── Props ───────────────────────────────────────────────────────────────────
 
@@ -42,6 +44,7 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
   const [runs, setRuns] = useState<CronRunEntry[]>([]);
   const [runsLoading, setRunsLoading] = useState(false);
   const [runsError, setRunsError] = useState<string | null>(null);
+  const [advancedExpanded, setAdvancedExpanded] = useState(false);
   const loadingRef = useRef(false);
 
   const {
@@ -118,6 +121,7 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
           editDeliveryChannel={editDeliveryChannel}
           editDeliveryTarget={editDeliveryTarget}
           busy={busy}
+          showAdvanced={advancedExpanded || editing}
           onFieldChange={setField}
           onUpdateSchedule={onUpdateSchedule}
           onToggle={onToggle}
@@ -133,10 +137,31 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
           onEditPromptChange={(v) => setField("prompt", v)}
         />
 
-        <RawGatewaySection
-          cronJob={task.rawCronJob}
-          cronJobId={task.cronJobId}
-        />
+        {/* Advanced toggle — collapsed by default */}
+        <div className="border-b border-border/40">
+          <button
+            type="button"
+            className="flex w-full items-center gap-1.5 px-4 py-3 text-xs text-muted-foreground hover:text-foreground transition"
+            onClick={() => setAdvancedExpanded((prev) => !prev)}
+            aria-expanded={advancedExpanded}
+          >
+            <ChevronRight
+              className={`h-3 w-3 shrink-0 transition-transform duration-150 ${
+                advancedExpanded ? "rotate-90" : ""
+              }`}
+            />
+            <Settings2 className="h-3 w-3 shrink-0" />
+            <span className={sectionLabelClass}>Advanced</span>
+          </button>
+          {advancedExpanded ? (
+            <div className="animate-in fade-in slide-in-from-top-1 duration-150">
+              <RawGatewaySection
+                cronJob={task.rawCronJob}
+                cronJobId={task.cronJobId}
+              />
+            </div>
+          ) : null}
+        </div>
 
         <RunHistorySection
           runs={runs}
