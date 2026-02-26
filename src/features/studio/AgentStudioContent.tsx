@@ -988,7 +988,7 @@ export const AgentStudioPage = () => {
               {/* Bottom sheet drag handle — mobile only */}
               {isMobileLayout && (
                 <div
-                  className="flex justify-center py-3 cursor-grab active:cursor-grabbing"
+                  className="flex justify-center py-5 cursor-grab active:cursor-grabbing"
                   aria-hidden="true"
                 >
                   <div className="h-1 w-10 rounded-full bg-muted-foreground/30" />
