@@ -144,7 +144,7 @@ export const ContextPanel = memo(function ContextPanel({
                   aria-selected={isActive}
                   tabIndex={isActive ? 0 : -1}
                   aria-controls={tabPanelId(tab.value)}
-                  className={`flex-shrink-0 min-w-[44px] px-2.5 pb-2 ${sectionLabelClass} transition-colors focus-ring rounded-md ${
+                  className={`flex-shrink-0 items-center justify-center min-w-[44px] min-h-[44px] px-2.5 ${sectionLabelClass} transition-colors focus-ring rounded-md ${
                     isActive
                       ? "text-foreground font-semibold border-b-2 border-primary"
                       : "text-muted-foreground hover:text-foreground"
