@@ -15,7 +15,7 @@ import { LinkedTaskRow } from "./LinkedTaskRow";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import type { ProjectEntry } from "./ProjectsPanel";
 import { MarkdownViewer } from "@/components/MarkdownViewer";
-import { BaseCard, CardHeader } from "@/components/ui/BaseCard";
+import { BaseCard, CardHeader, CardTitle, CardMeta } from "@/components/ui/BaseCard";
 import { formatRelativeTime } from "@/lib/text/time";
 
 interface ProjectCardProps {
@@ -80,11 +80,8 @@ export const ProjectCard = memo(function ProjectCard({
   const linkedTasks = details?.associatedTasks ?? [];
   const isDone = project.statusEmoji === "✅";
 
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      onOpenFile();
-    }
+  const handleCardClick = useCallback(() => {
+    onOpenFile();
   }, [onOpenFile]);
 
   return (
@@ -92,14 +89,31 @@ export const ProjectCard = memo(function ProjectCard({
       variant="flush"
       isHoverable
       className="group/card"
+      onClick={handleCardClick}
     >
-      {/* Header Row: Clickable Status Badge + Priority + Name + Task Badge */}
+      {/* Primary: Project Name — the most important info, shown first */}
       <CardHeader>
+        <CardTitle className="text-sm font-semibold" title={project.name}>
+          {project.name}
+        </CardTitle>
+        {linkedTasks.length > 0 && (
+          <span
+            className="inline-flex shrink-0 items-center gap-0.5 rounded-full border border-border/60 bg-muted/40 px-1.5 py-0.5 font-mono text-xs text-muted-foreground"
+            title={`${linkedTasks.length} linked task${linkedTasks.length > 1 ? "s" : ""}`}
+          >
+            <LinkIcon className="h-2.5 w-2.5" />
+            {linkedTasks.length}
+          </span>
+        )}
+      </CardHeader>
+
+      {/* Secondary: Status Badge + Priority */}
+      <CardMeta className="mt-1.5">
         <Popover.Root open={statusOpen} onOpenChange={setStatusOpen}>
           <Popover.Trigger asChild>
             <button
               type="button"
-              className={`inline-flex items-center justify-center gap-1 rounded border px-2.5 min-h-[44px] sm:min-h-[32px] font-mono text-xs font-semibold uppercase tracking-[0.12em] transition hover:brightness-125 ${statusColors}`}
+              className={`inline-flex items-center justify-center gap-1 rounded border px-2 min-h-[44px] sm:min-h-[28px] font-mono text-[10px] font-semibold uppercase tracking-[0.12em] transition hover:brightness-125 ${statusColors}`}
               onClick={(e) => { e.stopPropagation(); }}
               aria-label={`Change status (current: ${statusLabel})`}
             >
@@ -177,27 +191,7 @@ export const ProjectCard = memo(function ProjectCard({
             title={project.priority}
           />
         )}
-        <h3 className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground" title={project.name}>
-          <button
-            type="button"
-            className="w-full truncate text-left hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary rounded-sm cursor-pointer"
-            onClick={onOpenFile}
-            onKeyDown={handleKeyDown}
-            aria-label={`Open project file: ${project.name}`}
-          >
-            {project.name}
-          </button>
-        </h3>
-        {linkedTasks.length > 0 && (
-          <span
-            className="inline-flex shrink-0 items-center gap-0.5 rounded-full border border-border/60 bg-muted/40 px-1.5 py-0.5 font-mono text-xs text-muted-foreground"
-            title={`${linkedTasks.length} linked task${linkedTasks.length > 1 ? "s" : ""}`}
-          >
-            <LinkIcon className="h-2.5 w-2.5" />
-            {linkedTasks.length}
-          </span>
-        )}
-      </CardHeader>
+      </CardMeta>
 
       {/* Description */}
       <MarkdownViewer content={project.oneLiner} className="mt-2 text-xs leading-relaxed text-muted-foreground line-clamp-2 [&>*]:m-0 [&>*>*]:m-0 [&>*]:inline" />
