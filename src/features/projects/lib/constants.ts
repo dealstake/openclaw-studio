@@ -160,6 +160,11 @@ export function sortProjects<
   });
 }
 
+// ─── Magic Strings ───────────────────────────────────────────────────────────
+
+/** Prefix used in project file content to mark archived projects */
+export const ARCHIVED_PREFIX = "<!-- Archived:";
+
 // ─── Status Toggle Mappings (legacy — kept for backward compat) ──────────────
 
 export const TOGGLE_MAP: Record<string, { emoji: string; label: string }> = {

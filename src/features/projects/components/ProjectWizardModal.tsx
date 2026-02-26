@@ -24,7 +24,7 @@ import {
 } from "./ProjectPreviewCard";
 import { ProjectConfigSchema } from "../lib/projectConfigSchema";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
-import { TYPE_CARDS, type ProjectType } from "../lib/constants";
+import { TYPE_CARDS, ARCHIVED_PREFIX, type ProjectType } from "../lib/constants";
 import { slugify, generateMarkdown } from "../lib/projectMarkdown";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -118,7 +118,7 @@ export const ProjectWizardModal = memo(function ProjectWizardModal({
       );
       if (checkRes.ok) {
         const checkData = (await checkRes.json()) as { content?: string };
-        if (checkData.content && !checkData.content.startsWith("<!-- Archived:")) {
+        if (checkData.content && !checkData.content.startsWith(ARCHIVED_PREFIX)) {
           setError(`A project file "${doc}" already exists. Choose a different name.`);
           setCreating(false);
           return;

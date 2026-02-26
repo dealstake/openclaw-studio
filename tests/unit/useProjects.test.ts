@@ -155,83 +155,6 @@ describe("useProjects", () => {
     });
   });
 
-  // ─── toggleStatus ────────────────────────────────────────────────────────
-
-  describe("toggleStatus", () => {
-    it("optimistically updates status and calls PATCH", async () => {
-      const fetchMock = mockFetchSuccess([projectA, projectB]);
-      global.fetch = fetchMock;
-
-      const { result } = renderHook(() =>
-        useProjects("agent-1", client),
-      );
-      await act(async () => {});
-
-      // Reset fetch mock to track PATCH
-      fetchMock.mockResolvedValue({
-        ok: true,
-        status: 200,
-        json: async () => ({ projects: [{ ...projectA, status: "⏸️ Parked", statusEmoji: "⏸️" }, projectB] }),
-      });
-
-      await act(async () => {
-        await result.current.toggleStatus(projectA);
-      });
-
-      // PATCH was called (second call after initial GET)
-      const patchCall = fetchMock.mock.calls.find(
-        (c: unknown[]) => (c[1] as RequestInit)?.method === "PATCH",
-      );
-      expect(patchCall).toBeDefined();
-      const body = JSON.parse((patchCall![1] as RequestInit).body as string);
-      expect(body.status).toBe("⏸️ Parked");
-    });
-
-    it("rolls back on PATCH failure", async () => {
-      const fetchMock = mockFetchSuccess([projectA]);
-      global.fetch = fetchMock;
-
-      const { result } = renderHook(() =>
-        useProjects("agent-1", client),
-      );
-      await act(async () => {});
-
-      // Make PATCH fail
-      fetchMock.mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-        json: async () => ({ error: "Update failed" }),
-      });
-
-      await act(async () => {
-        await result.current.toggleStatus(projectA);
-      });
-
-      // Should rollback to original status
-      expect(result.current.projects[0].statusEmoji).toBe("🔨");
-    });
-
-    it("does nothing for unknown status emoji", async () => {
-      global.fetch = mockFetchSuccess([
-        makeProject({ statusEmoji: "❓", status: "❓ Unknown" }),
-      ]);
-
-      const { result } = renderHook(() =>
-        useProjects("agent-1", client),
-      );
-      await act(async () => {});
-
-      const fetchBefore = (global.fetch as ReturnType<typeof vi.fn>).mock.calls.length;
-
-      await act(async () => {
-        await result.current.toggleStatus(result.current.projects[0]);
-      });
-
-      // No additional fetch calls (no PATCH)
-      expect((global.fetch as ReturnType<typeof vi.fn>).mock.calls.length).toBe(fetchBefore);
-    });
-  });
-
   // ─── changeStatus ────────────────────────────────────────────────────────
 
   describe("changeStatus", () => {
@@ -365,9 +288,9 @@ describe("useProjects", () => {
         json: async () => ({ projects: [] }),
       });
 
-      // Toggle 🔨 → ⏸️ (parking)
+      // Change 🔨 → ⏸️ (parking)
       await act(async () => {
-        await result.current.toggleStatus(projectWithTasks);
+        await result.current.changeStatus(projectWithTasks, "⏸️", "Parked");
       });
 
       expect(mockManageCronJobs).toHaveBeenCalledWith(
@@ -405,7 +328,7 @@ describe("useProjects", () => {
       });
 
       await act(async () => {
-        await result.current.toggleStatus(parkedWithTasks);
+        await result.current.changeStatus(parkedWithTasks, "🔨", "Active");
       });
 
       expect(mockManageCronJobs).toHaveBeenCalledWith(
