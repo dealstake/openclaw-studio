@@ -63,8 +63,6 @@ const TYPE_CARDS: Array<{
 interface TaskWizardModalProps {
   open: boolean;
   agents: string[];
-  /** @deprecated WizardChat handles creating state internally */
-  creating?: boolean;
   client: GatewayClient;
   onClose: () => void;
   onCreateTask: (payload: CreateTaskPayload) => Promise<void>;
@@ -76,7 +74,6 @@ interface TaskWizardModalProps {
 export const TaskWizardModal = memo(function TaskWizardModal({
   open,
   agents,
-  creating: _creating = false,
   client,
   onClose,
   onCreateTask,
@@ -93,7 +90,6 @@ export const TaskWizardModal = memo(function TaskWizardModal({
     },
     [wizard],
   );
-  void _creating; // Kept for interface compat; WizardChat handles its own state
   const [showAgentCreation, setShowAgentCreation] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
   const [localAgents, setLocalAgents] = useState<string[]>(agents);

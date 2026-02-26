@@ -124,7 +124,7 @@ export const TasksPanel = memo(function TasksPanel({
 
       orphan: tasks.filter((t) => t.managementStatus === "orphan").length,
     };
-    // Only show unmanaged/orphan pills if count > 0
+    // Only show orphan pills if count > 0
     return FILTER_OPTIONS.filter(
       (opt) => !MGMT_STATUS_FILTERS.includes(opt.value) || (counts[opt.value] ?? 0) > 0
     ).map((opt) => ({ ...opt, count: counts[opt.value] ?? 0 }));

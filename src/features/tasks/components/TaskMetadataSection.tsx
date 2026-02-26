@@ -1,9 +1,10 @@
 "use client";
 
 import { memo } from "react";
-import { AlertTriangle, Play, Trash2 } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import type { StudioTask, TaskSchedule } from "@/features/tasks/types";
 import { TaskScheduleEditor } from "./TaskScheduleEditor";
+import { TaskActions } from "./TaskActions";
 import { formatRelativeTime } from "@/lib/text/time";
 import { formatDurationCompact as formatDuration } from "@/lib/text/time";
 import {
@@ -116,48 +117,15 @@ export const TaskMetadataSection = memo(function TaskMetadataSection({
       ) : null}
 
       {/* Actions */}
-      <div className="flex items-center gap-2 border-b border-border/40 px-4 py-3">
-        {task.managementStatus !== "orphan" ? (
-          <>
-            <button
-              type="button"
-              className={`flex h-8 items-center gap-1.5 rounded-md border px-2.5 transition disabled:cursor-not-allowed disabled:opacity-60 ${
-                task.enabled
-                  ? "border-amber-500/40 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20"
-                  : "border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
-              }`}
-              onClick={() => onToggle(task.id, !task.enabled)}
-              disabled={busy}
-            >
-              <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em]">
-                {task.enabled ? "Pause" : "Resume"}
-              </span>
-            </button>
-            <button
-              type="button"
-              className="flex h-8 items-center gap-1.5 rounded-md border border-border/80 bg-card/70 px-2.5 text-muted-foreground transition hover:border-border hover:bg-muted/65 disabled:cursor-not-allowed disabled:opacity-60"
-              onClick={() => onRun(task.id)}
-              disabled={busy}
-            >
-              <Play className="h-3 w-3" />
-              <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em]">
-                Trigger Run
-              </span>
-            </button>
-          </>
-        ) : null}
-        <button
-          type="button"
-          className="flex h-8 items-center gap-1.5 rounded-md border border-destructive/40 bg-transparent px-2.5 text-destructive transition hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-60"
-          onClick={() => onDelete(task.id)}
-          disabled={busy}
-        >
-          <Trash2 className="h-3 w-3" />
-          <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em]">
-            {task.managementStatus === "orphan" ? "Delete Metadata" : "Delete"}
-          </span>
-        </button>
-      </div>
+      <TaskActions
+        taskId={task.id}
+        enabled={task.enabled}
+        managementStatus={task.managementStatus}
+        busy={busy}
+        onToggle={onToggle}
+        onRun={onRun}
+        onDelete={onDelete}
+      />
     </>
   );
 });

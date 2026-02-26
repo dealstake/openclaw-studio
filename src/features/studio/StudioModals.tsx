@@ -76,7 +76,6 @@ export const StudioModals = memo(function StudioModals({
       <TaskWizardModal
         open={showTaskWizard}
         agents={agents.map((a) => a.agentId)}
-        creating={busyTaskId !== null}
         client={client}
         onClose={onCloseTaskWizard}
         onCreateTask={onCreateTask}
