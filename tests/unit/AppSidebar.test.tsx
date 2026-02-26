@@ -40,6 +40,16 @@ vi.mock("@/components/theme-toggle", () => ({
   ThemeToggle: () => createElement("button", { "data-testid": "theme-toggle" }, "Toggle"),
 }));
 
+// Mock NotificationBell
+vi.mock("@/features/notifications/components/NotificationBell", () => ({
+  NotificationBell: () => createElement("button", { "aria-label": "Notifications" }, "🔔"),
+}));
+
+// Mock LogoutButton
+vi.mock("@/components/brand/LogoutButton", () => ({
+  LogoutButton: () => createElement("button", null, "Sign Out"),
+}));
+
 afterEach(cleanup);
 
 function makeClient(): GatewayClient {
@@ -117,7 +127,7 @@ describe("AppSidebar", () => {
 
     it("renders settings button", () => {
       render(createElement(AppSidebar, defaultProps()));
-      expect(screen.getByLabelText("Settings")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /settings/i })).toBeInTheDocument();
     });
 
     it("calls onSelectSession when session clicked", () => {

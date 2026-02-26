@@ -62,7 +62,7 @@ export const BottomSidebarActions = memo(function BottomSidebarActions({
             </TooltipContent>
           </Tooltip>
           {dropdownOpen && (
-            <div className="absolute bottom-full left-full mb-1 ml-1 z-50 min-w-44 rounded-md border border-border/80 bg-popover/95 p-1 shadow-lg backdrop-blur">
+            <div className="absolute bottom-full left-full mb-1 ml-2 z-50 min-w-44 rounded-md border border-border/80 bg-popover/95 p-1 shadow-lg backdrop-blur">
               <button
                 type="button"
                 className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-medium text-foreground transition hover:bg-muted"
@@ -94,12 +94,11 @@ export const BottomSidebarActions = memo(function BottomSidebarActions({
             <button
               type="button"
               onClick={() => setDropdownOpen((v) => !v)}
-              className={`flex h-8 items-center gap-2 rounded-md px-2 py-1.5 text-[13px] transition-all duration-150 ${
+              className={`flex h-10 items-center gap-2 rounded-md px-2 py-1.5 text-[13px] transition-all duration-150 ${
                 settingsActive || dropdownOpen
                   ? "bg-accent text-accent-foreground"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
               }`}
-              aria-label="Settings"
               aria-expanded={dropdownOpen}
               aria-haspopup="true"
             >
