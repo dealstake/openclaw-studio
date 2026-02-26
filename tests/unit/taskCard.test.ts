@@ -66,9 +66,11 @@ describe("TaskCard", () => {
     expect(screen.queryByText("Important task")).toBeNull();
   });
 
-  it("shows status text for error state", () => {
+  it("shows error icon and relative time for error state", () => {
     renderCard(makeTask({ lastRunAt: "2026-02-17T12:00:00Z", lastRunStatus: "error" }));
-    expect(screen.getByText("Last run failed")).toBeDefined();
+    // Error state shows XCircle icon (with text-destructive class) + relative time, not "Last run failed" text
+    const errorIcon = document.querySelector(".text-destructive");
+    expect(errorIcon).toBeDefined();
   });
 
   it("shows Paused status when disabled", () => {
