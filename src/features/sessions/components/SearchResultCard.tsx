@@ -57,7 +57,7 @@ export const SearchResultCard = memo(function SearchResultCard({
     >
       <CardHeader>
         <Search className="h-3 w-3 flex-shrink-0 text-muted-foreground/60" />
-        <span className={`truncate ${sectionLabelClass} text-foreground`}>
+        <span className={`truncate ${sectionLabelClass} text-foreground transition-colors duration-150 group-hover/card:text-primary`}>
           {displayName}
         </span>
         {result.archived && (

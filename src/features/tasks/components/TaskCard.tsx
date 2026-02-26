@@ -79,7 +79,7 @@ export const TaskCard = memo(function TaskCard({
         ) : (
           <span className={`h-2 w-2 shrink-0 rounded-full ${dotClass}`} />
         )}
-        <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground" title={task.name}>
+        <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground transition-colors duration-150 group-hover/card:text-primary" title={task.name}>
           {task.name}
           {isRunning && <span className="ml-1.5 text-xs font-normal text-purple-300">Running…</span>}
         </span>

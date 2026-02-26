@@ -14,7 +14,7 @@ import { LinkedTaskRow } from "./LinkedTaskRow";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import type { ProjectEntry } from "./ProjectsPanel";
 import { MarkdownViewer } from "@/components/MarkdownViewer";
-import { BaseCard, CardHeader, CardTitle, CardMeta } from "@/components/ui/BaseCard";
+import { BaseCard, CardTitle } from "@/components/ui/BaseCard";
 import { formatRelativeTime } from "@/lib/text/time";
 
 interface ProjectCardProps {
@@ -87,9 +87,8 @@ export const ProjectCard = memo(function ProjectCard({
       isHoverable
       className="group/card"
     >
-      {/* Primary: Project Name — the most important info, shown first */}
-      <CardHeader>
-
+      {/* Single cohesive row: Title + Status Badge + Priority Dot */}
+      <div className="flex items-center gap-2">
         <CardTitle as="div" className="text-sm font-semibold">
           <button
             type="button"
@@ -101,109 +100,110 @@ export const ProjectCard = memo(function ProjectCard({
             {project.name}
           </button>
         </CardTitle>
-        {linkedTasks.length > 0 && (
-          <span
-            className="inline-flex shrink-0 items-center gap-0.5 rounded-full border border-border/60 bg-muted/40 px-1.5 py-0.5 font-mono text-xs text-muted-foreground"
-            title={`${linkedTasks.length} linked task${linkedTasks.length > 1 ? "s" : ""}`}
-          >
-            <LinkIcon className="h-2.5 w-2.5" />
-            {linkedTasks.length}
-          </span>
-        )}
-      </CardHeader>
 
-      {/* Secondary: Status Badge + Priority */}
-      <CardMeta className="mt-1.5">
-        <Popover.Root open={statusOpen} onOpenChange={setStatusOpen}>
-          <Popover.Trigger asChild>
-            <button
-              type="button"
-              className={`inline-flex items-center justify-center gap-1 rounded border px-2 min-h-[44px] font-mono text-[10px] font-semibold uppercase tracking-[0.12em] transition hover:brightness-125 ${statusColors}`}
-              onClick={(e) => { e.stopPropagation(); }}
-              aria-label={`Change status (current: ${statusLabel})`}
+        {/* Right side: linked tasks count + status badge + priority dot */}
+        <div className="flex shrink-0 items-center gap-1.5">
+          {linkedTasks.length > 0 && (
+            <span
+              className="inline-flex items-center gap-0.5 rounded-full border border-border/60 bg-muted/40 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground"
+              title={`${linkedTasks.length} linked task${linkedTasks.length > 1 ? "s" : ""}`}
             >
-              <StatusIcon className="h-3 w-3" />
-              {statusLabel}
-            </button>
-          </Popover.Trigger>
-          <Popover.Portal>
-            <Popover.Content
-              side="bottom"
-              align="start"
-              sideOffset={4}
-              className="z-[var(--z-popover)] min-w-[140px] rounded-md border border-border bg-card p-1 shadow-lg animate-in fade-in-0 zoom-in-95"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {CYCLE_STATUSES.map(({ emoji, label }) => {
-                const cfg = STATUS_CONFIG[emoji];
-                if (!cfg) return null;
-                const Icon = cfg.icon;
-                const isCurrent = project.statusEmoji === emoji;
-                const wouldQueue = emoji === "🚧" && !isCurrent && buildingCount > 0;
-                return (
-                  <button
-                    key={emoji}
-                    type="button"
-                    className={`flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs transition ${
-                      isCurrent
-                        ? "bg-muted/50 text-foreground"
-                        : "text-muted-foreground hover:bg-muted/30 hover:text-foreground"
-                    }`}
-                    onClick={() => {
-                      if (!isCurrent) {
-                        if (emoji === "✅") {
-                          setStatusOpen(false);
-                          setPendingDone(true);
-                          return;
-                        }
-                        onChangeStatus(emoji, label);
-                      }
-                      setStatusOpen(false);
-                    }}
-                  >
-                    <Icon className={`h-3 w-3 shrink-0 ${cfg.colors.split(" ").pop() ?? ""}`} />
-                    <span className="flex-1 font-mono text-xs font-semibold uppercase tracking-[0.1em]">
-                      {label}
-                    </span>
-                    {wouldQueue && (
-                      <span className="text-xs text-orange-400/80">queued</span>
-                    )}
-                    {isCurrent && <Check className="h-3 w-3 shrink-0 text-primary-text" />}
-                  </button>
-                );
-              })}
-              <div className="my-1 border-t border-border/40" />
+              <LinkIcon className="h-2.5 w-2.5" />
+              {linkedTasks.length}
+            </span>
+          )}
+
+          <Popover.Root open={statusOpen} onOpenChange={setStatusOpen}>
+            <Popover.Trigger asChild>
               <button
                 type="button"
-                className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs text-red-400 transition hover:bg-red-500/10"
-                onClick={() => {
-                  setStatusOpen(false);
-                  onArchive();
-                }}
+                className={`inline-flex min-h-[44px] sm:min-h-0 items-center justify-center gap-1 rounded border px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.08em] transition hover:brightness-125 ${statusColors}`}
+                onClick={(e) => { e.stopPropagation(); }}
+                aria-label={`Change status (current: ${statusLabel})`}
               >
-                <Archive className="h-3 w-3 shrink-0" />
-                <span className="flex-1 font-mono text-xs font-semibold uppercase tracking-[0.1em]">
-                  Archive
-                </span>
+                <StatusIcon className="h-3 w-3" />
+                {statusLabel}
               </button>
-            </Popover.Content>
-          </Popover.Portal>
-        </Popover.Root>
+            </Popover.Trigger>
+            <Popover.Portal>
+              <Popover.Content
+                side="bottom"
+                align="end"
+                sideOffset={4}
+                className="z-[var(--z-popover)] min-w-[140px] rounded-md border border-border bg-card p-1 shadow-lg animate-in fade-in-0 zoom-in-95"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {CYCLE_STATUSES.map(({ emoji, label }) => {
+                  const cfg = STATUS_CONFIG[emoji];
+                  if (!cfg) return null;
+                  const Icon = cfg.icon;
+                  const isCurrent = project.statusEmoji === emoji;
+                  const wouldQueue = emoji === "🚧" && !isCurrent && buildingCount > 0;
+                  return (
+                    <button
+                      key={emoji}
+                      type="button"
+                      className={`flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs transition ${
+                        isCurrent
+                          ? "bg-muted/50 text-foreground"
+                          : "text-muted-foreground hover:bg-muted/30 hover:text-foreground"
+                      }`}
+                      onClick={() => {
+                        if (!isCurrent) {
+                          if (emoji === "✅") {
+                            setStatusOpen(false);
+                            setPendingDone(true);
+                            return;
+                          }
+                          onChangeStatus(emoji, label);
+                        }
+                        setStatusOpen(false);
+                      }}
+                    >
+                      <Icon className={`h-3 w-3 shrink-0 ${cfg.colors.split(" ").pop() ?? ""}`} />
+                      <span className="flex-1 font-mono text-xs font-semibold uppercase tracking-[0.1em]">
+                        {label}
+                      </span>
+                      {wouldQueue && (
+                        <span className="text-xs text-orange-400/80">queued</span>
+                      )}
+                      {isCurrent && <Check className="h-3 w-3 shrink-0 text-primary-text" />}
+                    </button>
+                  );
+                })}
+                <div className="my-1 border-t border-border/40" />
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs text-red-400 transition hover:bg-red-500/10"
+                  onClick={() => {
+                    setStatusOpen(false);
+                    onArchive();
+                  }}
+                >
+                  <Archive className="h-3 w-3 shrink-0" />
+                  <span className="flex-1 font-mono text-xs font-semibold uppercase tracking-[0.1em]">
+                    Archive
+                  </span>
+                </button>
+              </Popover.Content>
+            </Popover.Portal>
+          </Popover.Root>
 
-        {priorityDot && !isDone && (
-          <span
-            className={`h-2 w-2 shrink-0 rounded-full ${priorityDot}`}
-            title={project.priority}
-          />
-        )}
-      </CardMeta>
+          {priorityDot && !isDone && (
+            <span
+              className={`h-2 w-2 shrink-0 rounded-full ${priorityDot}`}
+              title={project.priority}
+            />
+          )}
+        </div>
+      </div>
 
       {/* Description */}
-      <MarkdownViewer content={project.oneLiner} className="mt-2 text-xs leading-relaxed text-muted-foreground line-clamp-2 [&>*]:m-0 [&>*>*]:m-0 [&>*]:inline" />
+      <MarkdownViewer content={project.oneLiner} className="mt-1 text-xs leading-relaxed text-muted-foreground line-clamp-2 [&>*]:m-0 [&>*>*]:m-0 [&>*]:inline" />
 
       {/* Dates */}
       {(project.createdAt || project.updatedAt) && (
-        <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-mono text-muted-foreground/80">
+        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] font-mono text-muted-foreground/70">
           {project.createdAt && (
             <span title={`Created: ${new Date(project.createdAt).toLocaleString()}`}>
               Created {formatRelativeTime(new Date(project.createdAt).getTime())}
@@ -230,7 +230,7 @@ export const ProjectCard = memo(function ProjectCard({
       />
 
       {details && (
-        <div className="mt-3 space-y-2.5">
+        <div className="mt-2 space-y-2">
           {!isDone && (
             <div className="flex items-center gap-2">
               <div

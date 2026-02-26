@@ -38,7 +38,7 @@ export const NotificationItem = React.memo(function NotificationItem({
         <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${color}`} />
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline justify-between gap-2">
-            <span className="truncate text-xs font-semibold text-foreground">
+            <span className="truncate text-xs font-semibold text-foreground transition-colors duration-150 group-hover/card:text-primary">
               {notification.title}
             </span>
             <span className="shrink-0 text-xs text-muted-foreground">
