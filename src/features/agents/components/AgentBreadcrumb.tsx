@@ -79,7 +79,7 @@ export const AgentBreadcrumb = memo(function AgentBreadcrumb({
   if (!selected) return null;
 
   return (
-    <div ref={containerRef} className="relative">
+    <div ref={containerRef} className="relative min-w-0">
       <button
         type="button"
         onClick={toggle}

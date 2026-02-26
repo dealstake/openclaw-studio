@@ -57,7 +57,7 @@ export const FloatingContextControls = memo(function FloatingContextControls({
   if (!contextPanelOpen) {
     return (
       <div
-        className={`fixed top-4 right-4 z-[var(--z-header)] flex items-center gap-1 rounded-full bg-background/95 p-1 shadow-lg ring-1 ring-border/20 backdrop-blur-xl ${baseTransition}`}
+        className={`fixed top-4 right-4 z-[var(--z-header)] flex min-w-0 items-center gap-1 rounded-full bg-background/95 p-1 shadow-lg ring-1 ring-border/20 backdrop-blur-xl ${baseTransition}`}
         data-testid="floating-context-controls"
       >
         {agents.length > 0 && (

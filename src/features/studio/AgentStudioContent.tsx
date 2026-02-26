@@ -1,5 +1,10 @@
 "use client";
 
+// TODO: Navigation architecture debt — three overlapping navigation surfaces
+// (SessionHistorySidebar, FloatingContextControls, MobileContextMenu/overlay drawer)
+// create fragmented UX on tablet breakpoints. Consolidate into a single responsive
+// navigation model. See projects/mobile-ux-polish-sprint.md Phase 1 #3.
+
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AgentChatPanel } from "@/features/agents/components/AgentChatPanel";
 import {

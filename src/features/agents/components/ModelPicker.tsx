@@ -145,6 +145,7 @@ function ModelBottomSheet({
       {/* Sheet */}
       <div
         className="relative w-full max-w-lg rounded-t-2xl border-t border-border bg-popover pb-safe animate-in slide-in-from-bottom duration-300"
+        style={{ marginBottom: 'var(--keyboard-offset, 0px)' }}
         role="dialog"
         aria-label="Select model"
       >
