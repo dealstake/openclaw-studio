@@ -85,16 +85,16 @@ const ArtifactRow = memo(function ArtifactRow({
   );
 
   return (
-    <a
-      href={file.webViewLink ?? "#"}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="group flex w-full items-start gap-3.5 rounded-lg border border-border/70 bg-card/65 px-4 py-3.5 text-left no-underline transition hover:border-border hover:bg-muted/55 focus-ring"
-    >
+    <div className="group flex w-full items-start gap-3.5 rounded-lg border border-border/70 bg-card/65 px-4 py-3.5 text-left transition hover:border-border hover:bg-muted/55 focus-within:border-border">
       <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted/40">
         {fileIcon(file.mimeType)}
       </div>
-      <div className="min-w-0 flex-1">
+      <a
+        href={file.webViewLink ?? "#"}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="min-w-0 flex-1 no-underline focus-ring rounded"
+      >
         <div
           className="truncate text-[12px] font-medium leading-tight text-foreground transition-colors group-hover:text-primary-text"
           title={file.name}
@@ -108,23 +108,23 @@ const ArtifactRow = memo(function ArtifactRow({
           <span>{formatSizeFromString(file.size)}</span>
           <span>{formatTimestamp(file.modifiedTime)}</span>
         </div>
-      </div>
+      </a>
       <div className="mt-0.5 flex shrink-0 items-center gap-1">
         <button
           type="button"
           onClick={handlePin}
-          className={`flex h-7 w-7 items-center justify-center rounded transition ${
+          className={`flex h-11 w-11 items-center justify-center rounded-md transition ${
             isPinned
               ? "text-primary opacity-100 hover:bg-muted/50"
-              : "text-muted-foreground opacity-0 group-hover:opacity-60 hover:opacity-100 hover:bg-muted/50"
+              : "text-muted-foreground/50 opacity-0 group-hover:opacity-100 hover:text-foreground/80 hover:bg-muted/50"
           }`}
           title={isPinned ? "Unpin" : "Pin to top"}
           aria-label={isPinned ? "Unpin" : "Pin to top"}
         >
-          <Pin className={`h-3 w-3 ${isPinned ? "fill-primary" : ""}`} />
+          <Pin className={`h-3.5 w-3.5 ${isPinned ? "fill-primary" : ""}`} />
         </button>
       </div>
-    </a>
+    </div>
   );
 });
 
