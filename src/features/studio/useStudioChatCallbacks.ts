@@ -172,9 +172,6 @@ export function useStudioChatCallbacks({
       if (parts.length >= 3 && parts[0] === "agent") {
         agentId = parts[1];
         sessionId = parts.slice(2).join(":");
-      } else if (parts.length >= 2) {
-        agentId = parts[0];
-        sessionId = parts.slice(1).join(":");
       }
       const effectiveAgentId = agentId || focusedAgent?.agentId || "";
       if (!effectiveAgentId) return;
