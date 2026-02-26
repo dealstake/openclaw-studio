@@ -14,7 +14,7 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { PanelIconButton } from "@/components/PanelIconButton";
 import { SectionLabel } from "@/components/SectionLabel";
 import { PanelToolbar } from "@/components/ui/PanelToolbar";
-import { FilterPillGroup, type FilterOption } from "@/components/ui/FilterPillGroup";
+import { FilterGroup, type FilterGroupOption } from "@/components/ui/FilterGroup";
 import { SearchInput } from "@/components/SearchInput";
 
 // ─── Filter tabs ─────────────────────────────────────────────────────────────
@@ -23,7 +23,7 @@ type FilterTab = "all" | TaskType | "orphan";
 
 const MGMT_STATUS_FILTERS: FilterTab[] = ["orphan"];
 
-const FILTER_OPTIONS: FilterOption<FilterTab>[] = [
+const FILTER_OPTIONS: FilterGroupOption<FilterTab>[] = [
   { value: "all", label: "All" },
   { value: "constant", label: "Constant" },
   { value: "periodic", label: "Periodic" },
@@ -70,17 +70,22 @@ export const TasksPanel = memo(function TasksPanel({
   onNewTask,
   maxConcurrentRuns,
 }: TasksPanelProps) {
-  const [filter, setFilterRaw] = useState<FilterTab>("all");
+  const [filter, setFilterRaw] = useState<FilterTab[]>(["all"]);
   const [search, setSearchRaw] = useState("");
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [focusIndex, setFocusIndex] = useState(-1);
   const listRef = useRef<HTMLDivElement>(null);
 
-  const setFilter = useCallback((f: FilterTab) => {
-    setFilterRaw(f);
+  const setFilter = useCallback((next: FilterTab[]) => {
+    if (next.length === 0) { setFilterRaw(["all"]); setFocusIndex(-1); return; }
+    const hadAll = filter.includes("all");
+    const hasAll = next.includes("all");
+    if (hasAll && !hadAll) { setFilterRaw(["all"]); }
+    else if (hasAll && next.length > 1) { setFilterRaw(next.filter((v) => v !== "all") as FilterTab[]); }
+    else { setFilterRaw(next); }
     setFocusIndex(-1);
-  }, []);
+  }, [filter]);
 
   const setSearch = useCallback((s: string) => {
     setSearchRaw(s);
@@ -115,7 +120,9 @@ export const TasksPanel = memo(function TasksPanel({
   }, [handleDeleteCancel]);
 
 
-  const filterOptionsWithCounts = useMemo<FilterOption<FilterTab>[]>(() => {
+  const isAllSelected = filter.includes("all");
+
+  const filterOptionsWithCounts = useMemo<FilterGroupOption<FilterTab>[]>(() => {
     const counts: Partial<Record<FilterTab, number>> = {
       all: tasks.length,
       constant: tasks.filter((t) => t.type === "constant").length,
@@ -132,12 +139,16 @@ export const TasksPanel = memo(function TasksPanel({
 
   const filtered = useMemo(() => {
     let result: StudioTask[];
-    if (filter === "all") {
+    if (isAllSelected) {
       result = tasks;
-    } else if (MGMT_STATUS_FILTERS.includes(filter)) {
-      result = tasks.filter((t) => t.managementStatus === filter);
     } else {
-      result = tasks.filter((t) => t.type === filter);
+      result = tasks.filter((t) => {
+        for (const f of filter) {
+          if (MGMT_STATUS_FILTERS.includes(f) && t.managementStatus === f) return true;
+          if (!MGMT_STATUS_FILTERS.includes(f) && t.type === f) return true;
+        }
+        return false;
+      });
     }
     if (search.trim()) {
       const q = search.trim().toLowerCase();
@@ -148,7 +159,7 @@ export const TasksPanel = memo(function TasksPanel({
       );
     }
     return result;
-  }, [tasks, filter, search]);
+  }, [tasks, filter, isAllSelected, search]);
 
   // Keyboard navigation
   const handleListKeyDown = useCallback(
@@ -278,7 +289,7 @@ export const TasksPanel = memo(function TasksPanel({
       {/* Toolbar: filters + search */}
       {tasks.length > 0 ? (
         <PanelToolbar>
-          <FilterPillGroup<FilterTab>
+          <FilterGroup<FilterTab>
             options={filterOptionsWithCounts}
             value={filter}
             onChange={setFilter}

@@ -19,8 +19,8 @@ export interface FilterPillGroupProps<V extends string = string> {
 }
 
 /**
- * Horizontal pill group for panel-level filtering.
- * Follows consistent styling across all panels.
+ * @deprecated Use `FilterGroup` instead — supports multi-select, flex-wrap, and aria-pressed.
+ * Horizontal pill group for panel-level filtering (single-select only).
  */
 export const FilterPillGroup = React.memo(function FilterPillGroup({
   options,

@@ -20,8 +20,7 @@ import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import { PanelIconButton } from "@/components/PanelIconButton";
 import { SectionLabel } from "@/components/SectionLabel";
 import { PanelToolbar } from "@/components/ui/PanelToolbar";
-import { FilterPillGroup } from "@/components/ui/FilterPillGroup";
-import type { FilterOption } from "@/components/ui/FilterPillGroup";
+import { FilterGroup, type FilterGroupOption } from "@/components/ui/FilterGroup";
 import { SearchInput } from "@/components/SearchInput";
 import { STATUS_CONFIG, STATUS_KEYS } from "../lib/constants";
 
@@ -61,7 +60,7 @@ export const ProjectsPanel = memo(function ProjectsPanel({
 }: ProjectsPanelProps) {
   const [showWizard, setShowWizard] = useState(false);
   const [archiveTarget, setArchiveTarget] = useState<ProjectEntry | null>(null);
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string[]>(["all"]);
   const [editingProjectDoc, setEditingProjectDoc] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
@@ -99,9 +98,9 @@ export const ProjectsPanel = memo(function ProjectsPanel({
     return counts;
   }, [projects]);
 
-  // Build FilterPillGroup options from status counts
-  const filterOptions = useMemo<FilterOption[]>(() => {
-    const opts: FilterOption[] = [
+  // Build FilterGroup options from status counts
+  const filterOptions = useMemo<FilterGroupOption[]>(() => {
+    const opts: FilterGroupOption[] = [
       { value: "all", label: "All", count: projects.length },
     ];
     for (const key of STATUS_KEYS) {
@@ -114,9 +113,32 @@ export const ProjectsPanel = memo(function ProjectsPanel({
     return opts;
   }, [projects.length, statusCounts]);
 
+  // Handle filter changes: "all" is exclusive — selecting it clears others, selecting a status clears "all"
+  const handleFilterChange = useCallback((next: string[]) => {
+    if (next.length === 0) {
+      setStatusFilter(["all"]);
+      return;
+    }
+    const hadAll = statusFilter.includes("all");
+    const hasAll = next.includes("all");
+    if (hasAll && !hadAll) {
+      // User clicked "all" — reset to all
+      setStatusFilter(["all"]);
+    } else if (hasAll && next.length > 1) {
+      // User clicked a specific status while "all" was active — remove "all"
+      setStatusFilter(next.filter((v) => v !== "all"));
+    } else {
+      setStatusFilter(next);
+    }
+  }, [statusFilter]);
+
+  const isAllSelected = statusFilter.includes("all");
+
   const filteredProjects = useMemo(() => {
     let result = projects;
-    if (statusFilter !== "all") result = result.filter((p) => p.statusEmoji === statusFilter);
+    if (!isAllSelected) {
+      result = result.filter((p) => statusFilter.includes(p.statusEmoji));
+    }
     if (debouncedQuery.trim()) {
       const q = debouncedQuery.trim().toLowerCase();
       result = result.filter((p) =>
@@ -124,7 +146,7 @@ export const ProjectsPanel = memo(function ProjectsPanel({
       );
     }
     return result;
-  }, [projects, statusFilter, debouncedQuery]);
+  }, [projects, statusFilter, isAllSelected, debouncedQuery]);
 
   if (!agentId) return null;
 
@@ -139,7 +161,7 @@ export const ProjectsPanel = memo(function ProjectsPanel({
           </SectionLabel>
           {!loading && projects.length > 0 && (
             <span className="font-mono text-[10px] text-muted-foreground/60">
-              {statusFilter !== "all" ? `${filteredProjects.length}/${projects.length}` : projects.length}
+              {!isAllSelected ? `${filteredProjects.length}/${projects.length}` : projects.length}
             </span>
           )}
         </div>
@@ -171,10 +193,10 @@ export const ProjectsPanel = memo(function ProjectsPanel({
             />
           )}
           {filterOptions.length > 2 && (
-            <FilterPillGroup
+            <FilterGroup
               options={filterOptions}
               value={statusFilter}
-              onChange={setStatusFilter}
+              onChange={handleFilterChange}
             />
           )}
         </PanelToolbar>
@@ -206,7 +228,7 @@ export const ProjectsPanel = memo(function ProjectsPanel({
       {!loading && !error && projects.length > 0 && filteredProjects.length === 0 && (
         <EmptyState
           icon={SearchX}
-          title={`No ${statusFilter !== "all" ? (STATUS_CONFIG[statusFilter]?.label ?? "") + " " : "matching "}projects`}
+          title={`No ${!isAllSelected ? "matching " : ""}projects`}
           className="py-8"
         />
       )}

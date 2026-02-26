@@ -3,7 +3,7 @@
 import { memo, useCallback, useMemo, useState } from "react";
 import { Activity, Radio, History } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { sectionLabelClass } from "@/components/SectionLabel";
+import { FilterGroup, type FilterGroupOption } from "@/components/ui/FilterGroup";
 import { useActivityMessageStore } from "@/features/activity/hooks/useActivityMessageStore";
 import { LiveActivityFeed } from "./LiveActivityFeed";
 import { HistoryFeed } from "./HistoryFeed";
@@ -47,72 +47,27 @@ export const ActivityPanel = memo(function ActivityPanel() {
     [timeline],
   );
 
-  const handleTabKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      const tabs = Array.from(
-        e.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]'),
-      );
-      const activeIndex = tabs.findIndex(
-        (tab) => tab.getAttribute("aria-selected") === "true",
-      );
+  const tabOptions = useMemo<FilterGroupOption<ActivityTab>[]>(() => [
+    { value: "live", label: "Live", icon: <Radio className="h-3 w-3" />, count: runningCount > 0 ? runningCount : undefined },
+    { value: "history", label: "History", icon: <History className="h-3 w-3" /> },
+  ], [runningCount]);
 
-      let nextIndex = -1;
-      if (e.key === "ArrowRight") {
-        nextIndex = (activeIndex + 1) % tabs.length;
-      } else if (e.key === "ArrowLeft") {
-        nextIndex = (activeIndex - 1 + tabs.length) % tabs.length;
-      }
-
-      if (nextIndex !== -1) {
-        e.preventDefault();
-        tabs[nextIndex].focus();
-        setActiveTab(tabs[nextIndex].id.includes("live") ? "live" : "history");
-      }
-    },
-    [setActiveTab],
-  );
+  // Single-select behavior: always exactly one tab selected
+  const handleTabChange = useCallback((next: ActivityTab[]) => {
+    if (next.length === 0) return; // Don't allow deselecting
+    // Take the newest selection (last added)
+    setActiveTab(next[next.length - 1]);
+  }, []);
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden">
       {/* Tab bar */}
-      <div role="tablist" aria-label="Activity view" onKeyDown={handleTabKeyDown} className="flex items-center gap-0 border-b border-border/20 px-3 pt-1.5">
-        <button
-          type="button"
-          role="tab"
-          id="activity-tab-live"
-          aria-selected={activeTab === "live"}
-          aria-controls="activity-tabpanel-live"
-          onClick={() => setActiveTab("live")}
-          className={`flex h-11 items-center gap-1.5 px-3 pb-2 ${sectionLabelClass} transition-colors focus-ring rounded-md ${
-            activeTab === "live"
-              ? "text-foreground font-semibold border-b-2 border-primary"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <Radio className="h-3 w-3" />
-          Live
-          {runningCount > 0 && (
-            <span className="ml-0.5 rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[9px] font-bold text-emerald-400">
-              {runningCount}
-            </span>
-          )}
-        </button>
-        <button
-          type="button"
-          role="tab"
-          id="activity-tab-history"
-          aria-selected={activeTab === "history"}
-          aria-controls="activity-tabpanel-history"
-          onClick={() => setActiveTab("history")}
-          className={`flex h-11 items-center gap-1.5 px-3 pb-2 ${sectionLabelClass} transition-colors focus-ring rounded-md ${
-            activeTab === "history"
-              ? "text-foreground font-semibold border-b-2 border-primary"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <History className="h-3 w-3" />
-          History
-        </button>
+      <div className="px-3 pt-2 pb-1">
+        <FilterGroup<ActivityTab>
+          options={tabOptions}
+          value={[activeTab]}
+          onChange={handleTabChange}
+        />
       </div>
 
       {/* Content */}
