@@ -93,7 +93,7 @@ export const ProjectCard = memo(function ProjectCard({
     >
       {/* Primary: Project Name — the most important info, shown first */}
       <CardHeader>
-        <CardTitle className="text-sm font-semibold" title={project.name}>
+        <CardTitle as="div" className="text-sm font-semibold" title={project.name}>
           {project.name}
         </CardTitle>
         {linkedTasks.length > 0 && (
@@ -113,7 +113,7 @@ export const ProjectCard = memo(function ProjectCard({
           <Popover.Trigger asChild>
             <button
               type="button"
-              className={`inline-flex items-center justify-center gap-1 rounded border px-2 min-h-[44px] sm:min-h-[28px] font-mono text-[10px] font-semibold uppercase tracking-[0.12em] transition hover:brightness-125 ${statusColors}`}
+              className={`inline-flex items-center justify-center gap-1 rounded border px-2 min-h-[44px] sm:min-h-[36px] font-mono text-[10px] font-semibold uppercase tracking-[0.12em] transition hover:brightness-125 ${statusColors}`}
               onClick={(e) => { e.stopPropagation(); }}
               aria-label={`Change status (current: ${statusLabel})`}
             >
