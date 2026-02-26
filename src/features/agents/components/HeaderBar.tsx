@@ -132,7 +132,7 @@ function ConnectionDot({
     <button
       type="button"
       onClick={onClick}
-      className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-muted/60"
+      className="flex h-11 w-11 items-center justify-center rounded-full transition-colors hover:bg-muted/60"
       aria-label={label}
       title={label}
       data-testid="gateway-status-dot"

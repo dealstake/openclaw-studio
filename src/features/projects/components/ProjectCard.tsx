@@ -232,7 +232,7 @@ export const ProjectCard = memo(function ProjectCard({
                   />
                 )}
               </div>
-              <span className="font-mono text-xs text-muted-foreground">
+              <span className="font-mono text-xs text-foreground/80">
                 {details.progress.total > 0
                   ? `${details.progress.completed}/${details.progress.total}`
                   : "—"}
