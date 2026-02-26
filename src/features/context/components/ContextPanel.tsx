@@ -142,7 +142,7 @@ export const ContextPanel = memo(function ContextPanel({
     <div className="flex h-full w-full flex-col overflow-hidden">
       {/* Single tab bar — responsive via CSS, no duplication */}
       {!hideTabBar && (
-        <div className="flex items-center border-b border-border/20 px-3 pt-2">
+        <div className="flex items-center border-b border-border/20 px-3 pt-0">
           {/* Scrollable tab buttons with overflow indicators */}
           <div className="relative min-w-0 flex-1 overflow-hidden">
             {showScrollLeft && (

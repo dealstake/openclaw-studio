@@ -1,9 +1,11 @@
 "use client";
 
 import { memo, useState, useCallback } from "react";
+import { FolderOpen } from "lucide-react";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import { WorkspaceExplorerPanel } from "./WorkspaceExplorerPanel";
 import { ArtifactsPanel } from "@/features/artifacts/components/ArtifactsPanel";
+import { SectionLabel } from "@/components/SectionLabel";
 
 type SubTab = "workspace" | "artifacts";
 
@@ -28,11 +30,19 @@ export const UnifiedFilesPanel = memo(function UnifiedFilesPanel({
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-3 pt-3 pb-1">
+        <div className="flex items-center gap-2">
+          <FolderOpen className="h-4 w-4 text-muted-foreground" />
+          <SectionLabel as="span">Files</SectionLabel>
+        </div>
+      </div>
+
       {/* Segmented control */}
       <div
         role="tablist"
         aria-label="File views"
-        className="flex shrink-0 items-center gap-1 border-b border-border/50 p-2"
+        className="flex shrink-0 items-center gap-1 border-b border-border/50 px-3 pb-2"
       >
         <button
           type="button"

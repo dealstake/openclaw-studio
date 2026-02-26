@@ -17,7 +17,7 @@ export const HistoryEventCard = memo(function HistoryEventCard({
   const hasSummary = !!event.summary?.trim();
 
   return (
-    <div className="group rounded-lg px-3 py-2.5 transition-colors hover:bg-muted/40">
+    <div className="group/card rounded-lg px-3 py-2.5 transition-colors hover:bg-muted/40">
       <div className="flex gap-2.5">
         <div className="flex-shrink-0 pt-0.5">
           {(() => {
@@ -27,7 +27,7 @@ export const HistoryEventCard = memo(function HistoryEventCard({
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <span className="text-[13px] font-medium text-foreground truncate">
+            <span className="text-[13px] font-medium text-foreground truncate transition-colors duration-150 group-hover/card:text-primary">
               {event.taskName}
             </span>
             <span
