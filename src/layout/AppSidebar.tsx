@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useRef, useEffect } from "react";
+import { memo, useCallback, useRef, useEffect, useState } from "react";
 import {
   MessageSquare,
   BarChart3,
@@ -18,9 +18,11 @@ import { SearchInput } from "@/components/SearchInput";
 import { EmptyState } from "@/components/ui/EmptyState";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { useSessionHistory } from "@/features/sessions/hooks/useSessionHistory";
-import { useTranscriptSearch } from "@/features/sessions/hooks/useTranscripts";
+import { useTranscriptSearch, useTranscripts } from "@/features/sessions/hooks/useTranscripts";
 import { SessionList } from "@/features/sessions/components/SessionList";
 import { SearchResultCard } from "@/features/sessions/components/SearchResultCard";
+import { SessionViewToggle, type SessionView } from "@/features/sessions/components/SessionViewToggle";
+import { HistorySessionList } from "@/features/sessions/components/HistorySessionList";
 
 /** Management nav items that open in expanded modal */
 export type ManagementTab = "usage" | "channels" | "settings";
@@ -130,6 +132,21 @@ export const AppSidebar = memo(function AppSidebar({
     searching,
     error: searchError,
   } = useTranscriptSearch(agentId);
+
+  // Active/History toggle
+  const [sessionView, setSessionView] = useState<SessionView>("active");
+
+  // History transcripts (paginated)
+  const {
+    transcripts,
+    loading: historyLoading,
+    loadingMore: historyLoadingMore,
+    error: historyError,
+    hasMore: historyHasMore,
+    totalCount: historyTotalCount,
+    loadMore: historyLoadMore,
+    refresh: historyRefresh,
+  } = useTranscripts(agentId);
 
   // Unified search handler: drives both client-side filter and server-side search
   const handleSearchChange = useCallback(
@@ -273,7 +290,12 @@ export const AppSidebar = memo(function AppSidebar({
             />
           </div>
 
-          {/* Session list or search results */}
+          {/* Active / History toggle */}
+          <div className="px-3 pb-2 shrink-0">
+            <SessionViewToggle value={sessionView} onChange={setSessionView} />
+          </div>
+
+          {/* Session list, search results, or history */}
           {showSearchResults ? (
             <div
               className="min-h-0 flex-1 overflow-y-auto px-1.5 pb-2"
@@ -328,7 +350,7 @@ export const AppSidebar = memo(function AppSidebar({
                 </>
               )}
             </div>
-          ) : (
+          ) : sessionView === "active" ? (
             <SessionList
               groups={groups}
               loading={loading}
@@ -341,6 +363,18 @@ export const AppSidebar = memo(function AppSidebar({
               onRename={handleRename}
               onDelete={handleDelete}
               onTogglePin={togglePin}
+            />
+          ) : (
+            <HistorySessionList
+              transcripts={transcripts}
+              loading={historyLoading}
+              loadingMore={historyLoadingMore}
+              error={historyError}
+              hasMore={historyHasMore}
+              totalCount={historyTotalCount}
+              onLoadMore={historyLoadMore}
+              onRefresh={historyRefresh}
+              onSelect={onSelectSession}
             />
           )}
 
