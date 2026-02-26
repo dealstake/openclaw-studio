@@ -108,6 +108,7 @@ export function useAppLayout() {
   }, [contextPanel, sessionSidebar, mobilePane]);
 
   // ── Swipe gestures (mobile) ────────────────────────────────────
+  const [swipeDy, setSwipeDy] = useState(0);
   const swipeHandlers = useSwipeDrawer({
     onSwipeRight: isMobileLayout
       ? () => {
@@ -115,6 +116,7 @@ export function useAppLayout() {
             sessionSidebar.setMobileSessionDrawerOpen(true);
           }
           if (mobilePane === "context") {
+            setSwipeDy(0);
             setMobilePane("chat");
           }
         }
@@ -132,9 +134,20 @@ export function useAppLayout() {
     onSwipeDown: isMobileLayout
       ? () => {
           if (mobilePane === "context") {
+            setSwipeDy(0);
             setMobilePane("chat");
           }
         }
+      : undefined,
+    onSwipeMove: isMobileLayout
+      ? (dy: number) => {
+          if (mobilePane === "context") {
+            setSwipeDy(dy);
+          }
+        }
+      : undefined,
+    onSwipeCancel: isMobileLayout
+      ? () => setSwipeDy(0)
       : undefined,
   });
 
@@ -189,5 +202,6 @@ export function useAppLayout() {
 
     // Swipe
     swipeHandlers,
+    swipeDy,
   } as const;
 }
