@@ -252,7 +252,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
 
   return (
     <div
-      className="absolute inset-x-0 bottom-0 z-10 px-3 sm:px-4"
+      className="absolute inset-x-0 bottom-0 z-10 px-4"
       style={{ paddingBottom: `calc(1rem + env(safe-area-inset-bottom) + var(--keyboard-offset, 0px))` }}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}

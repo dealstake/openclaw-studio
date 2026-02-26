@@ -6,7 +6,6 @@ import "./globals.css";
 export const viewport: Viewport = {
   viewportFit: "cover",
   interactiveWidget: "resizes-content",
-  maximumScale: 1,
 };
 
 export const metadata: Metadata = {
