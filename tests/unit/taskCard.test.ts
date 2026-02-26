@@ -56,24 +56,6 @@ describe("TaskCard", () => {
     expect(screen.getByText("My Cool Task")).toBeDefined();
   });
 
-  it("renders the type badge", () => {
-    renderCard(makeTask({ type: "periodic" }));
-    expect(screen.getByText("Periodic")).toBeDefined();
-  });
-
-  it("renders constant type badge", () => {
-    renderCard(makeTask({ type: "constant", schedule: { type: "constant", intervalMs: 60_000 } }));
-    expect(screen.getByText("Constant")).toBeDefined();
-  });
-
-  it("renders scheduled type badge", () => {
-    renderCard(makeTask({
-      type: "scheduled",
-      schedule: { type: "scheduled", days: [1], times: ["09:00"], timezone: "UTC" },
-    }));
-    expect(screen.getByText("Scheduled")).toBeDefined();
-  });
-
   it("renders description when present", () => {
     renderCard(makeTask({ description: "Important task" }));
     expect(screen.getByText("Important task")).toBeDefined();
@@ -84,15 +66,19 @@ describe("TaskCard", () => {
     expect(screen.queryByText("Important task")).toBeNull();
   });
 
-  it("shows last run info when available", () => {
-    renderCard(makeTask({ lastRunAt: "2026-02-17T12:00:00Z" }));
-    const el = screen.getByText(/Last:/);
-    expect(el).toBeDefined();
+  it("shows status text for error state", () => {
+    renderCard(makeTask({ lastRunAt: "2026-02-17T12:00:00Z", lastRunStatus: "error" }));
+    expect(screen.getByText("Last run failed")).toBeDefined();
   });
 
-  it("shows Failed badge when last run errored", () => {
-    renderCard(makeTask({ lastRunAt: "2026-02-17T12:00:00Z", lastRunStatus: "error" }));
-    expect(screen.getByText("Failed")).toBeDefined();
+  it("shows Paused status when disabled", () => {
+    renderCard(makeTask({ enabled: false }));
+    expect(screen.getByText("Paused")).toBeDefined();
+  });
+
+  it("shows Running status when running", () => {
+    renderCard(makeTask({ runningAtMs: Date.now() }));
+    expect(screen.getByText("Running…")).toBeDefined();
   });
 
   it("calls onSelect when clicked", () => {
@@ -102,29 +88,10 @@ describe("TaskCard", () => {
     expect(onSelect).toHaveBeenCalledWith("task-abc");
   });
 
-  it("calls onToggle when toggle is clicked", () => {
-    const onToggle = vi.fn();
-    const onSelect = vi.fn();
-    renderCard(makeTask({ enabled: true }), { onToggle, onSelect });
-    fireEvent.click(screen.getByLabelText(/Pause task/));
-    expect(onToggle).toHaveBeenCalledWith("task-abc", false);
-  });
-
-  it("disables toggle when busy", () => {
-    renderCard(makeTask(), { busy: true });
-    const toggle = screen.getByLabelText(/Pause task/);
-    expect(toggle.hasAttribute("disabled")).toBe(true);
-  });
-
   it("shows selected styling", () => {
     const { container } = renderCard(makeTask(), { selected: true });
     const card = container.firstChild as HTMLElement;
     expect(card.className).toContain("border-primary");
-  });
-
-  it("renders schedule description", () => {
-    renderCard(makeTask({ schedule: { type: "periodic", intervalMs: 900_000 } }));
-    expect(screen.getByText("Every 15 min")).toBeDefined();
   });
 
   it("supports keyboard activation via Enter", () => {
@@ -135,8 +102,21 @@ describe("TaskCard", () => {
     expect(onSelect).toHaveBeenCalledWith("task-abc");
   });
 
-  it("shows Resume label when task is disabled", () => {
-    renderCard(makeTask({ enabled: false }));
-    expect(screen.getByLabelText(/Resume task/)).toBeDefined();
+  it("has aria-label with task name and status", () => {
+    const { container } = renderCard(makeTask({ name: "My Task", enabled: true }));
+    const card = container.firstChild as HTMLElement;
+    expect(card.getAttribute("aria-label")).toContain("My Task");
+    expect(card.getAttribute("aria-label")).toContain("Active");
+  });
+
+  it("does not render inline toggle (toggle moved to drawer)", () => {
+    renderCard(makeTask({ enabled: true }));
+    expect(screen.queryByLabelText(/Pause task/)).toBeNull();
+    expect(screen.queryByLabelText(/Resume task/)).toBeNull();
+  });
+
+  it("does not render type badge (simplified card)", () => {
+    renderCard(makeTask({ type: "periodic" }));
+    expect(screen.queryByText("Periodic")).toBeNull();
   });
 });
