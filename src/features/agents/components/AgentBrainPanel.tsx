@@ -406,26 +406,28 @@ export const AgentBrainPanel = memo(function AgentBrainPanel({
           </div>
         </section>
 
-        {/* ── Model & Thinking ── */}
-        {models && models.length > 0 && modelValue && onModelChange && (
-          <section className="rounded-md border border-border/80 bg-card/70 p-4" data-testid="brain-model-picker">
-            <SectionLabel>Model &amp; Thinking</SectionLabel>
-            <div className="mt-3">
-              <ModelPicker models={models} value={modelValue} onChange={onModelChange} />
+        <div className="flex flex-col gap-4">
+          {/* ── Model & Thinking ── */}
+          {models && models.length > 0 && modelValue && onModelChange && (
+            <div className="rounded-md border border-border/80 bg-card/70 p-4" data-testid="brain-model-picker">
+              <SectionLabel>Model &amp; Thinking</SectionLabel>
+              <div className="mt-3">
+                <ModelPicker models={models} value={modelValue} onChange={onModelChange} />
+              </div>
             </div>
-          </section>
-        )}
+          )}
 
-        {/* ── Heartbeats ── */}
-        {status && selectedAgent && (
-          <TooltipProvider>
-            <HeartbeatsSettingsSection
-              client={client}
-              agentId={selectedAgent.agentId}
-              status={status}
-            />
-          </TooltipProvider>
-        )}
+          {/* ── Heartbeats ── */}
+          {status && selectedAgent && (
+            <TooltipProvider>
+              <HeartbeatsSettingsSection
+                client={client}
+                agentId={selectedAgent.agentId}
+                status={status}
+              />
+            </TooltipProvider>
+          )}
+        </div>
       </div>
     </div>
   );

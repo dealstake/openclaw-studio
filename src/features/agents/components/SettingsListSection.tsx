@@ -58,10 +58,12 @@ export const SettingsListSection = memo(function SettingsListSection({
       ) : null}
 
       {!loading && !error && !isEmpty ? (
-        <div className="mt-3 flex flex-col gap-2">
-          {children}
+        <>
+          <ul role="list" className="mt-3 flex flex-col gap-2">
+            {children}
+          </ul>
           {footer}
-        </div>
+        </>
       ) : null}
     </section>
   );
