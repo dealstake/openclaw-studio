@@ -92,10 +92,12 @@ export function parseProjectFile(markdown: string): ProjectDetails {
   const pending = (implSection.match(/- \[ \]/g) || []).length;
   const total = completed + pending;
   
+  // Clamp completed to total (defensive — stale data can produce impossible values)
+  const clampedCompleted = Math.min(completed, total);
   details.progress = {
-    completed,
+    completed: clampedCompleted,
     total,
-    percent: total > 0 ? Math.round((completed / total) * 100) : 0,
+    percent: total > 0 ? Math.round((clampedCompleted / total) * 100) : 0,
   };
 
   // Parse structured plan items (per-phase, per-task)
