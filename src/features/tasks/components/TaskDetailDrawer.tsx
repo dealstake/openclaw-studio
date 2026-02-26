@@ -53,6 +53,7 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
   const [runs, setRuns] = useState<CronRunEntry[]>([]);
   const [runsLoading, setRunsLoading] = useState(false);
   const [runsError, setRunsError] = useState<string | null>(null);
+  const [pendingTrigger, setPendingTrigger] = useState(false);
   const [activeTab, setActiveTab] = useState<DrawerTab>("overview");
   const loadingRef = useRef(false);
 
@@ -98,9 +99,13 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
   const handleRun = useCallback(
     (taskId: string) => {
       onRun(taskId);
+      setPendingTrigger(true);
+      setActiveTab("history");
       // Auto-refresh run history after trigger
       if (task) {
-        setTimeout(() => void loadRuns(task.cronJobId), 3000);
+        setTimeout(() => {
+          void loadRuns(task.cronJobId).then(() => setPendingTrigger(false));
+        }, 3000);
       }
     },
     [onRun, task, loadRuns]
@@ -110,6 +115,7 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
     if (!task) {
       setRuns([]);
       setRunsError(null);
+      setPendingTrigger(false);
       setActiveTab("overview");
       cancelEditing();
       return;
@@ -187,6 +193,7 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
             runs={runs}
             loading={runsLoading}
             error={runsError}
+            pendingTrigger={pendingTrigger}
             onRetry={handleRetryRuns}
           />
           </div>
