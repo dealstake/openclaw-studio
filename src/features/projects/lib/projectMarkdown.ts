@@ -51,7 +51,7 @@ _Document technical choices and rationale here._
 _Updated by the agent at end of each work session_
 - **Last worked on**: ${now} — Project created via AI wizard
 - **Immediate next step**: Define implementation plan details and begin Phase 1
-- **Blocked by**: Nothing
+
 - **Context needed**: TBD
 
 ## History

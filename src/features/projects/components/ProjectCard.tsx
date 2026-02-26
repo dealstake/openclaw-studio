@@ -75,8 +75,9 @@ export const ProjectCard = memo(function ProjectCard({
   }, [details?.planItems]);
 
   const isBlocked = details?.continuation?.blockedBy &&
-    details.continuation.blockedBy.toLowerCase() !== "nothing" &&
-    details.continuation.blockedBy.toLowerCase() !== "none";
+    !details.continuation.blockedBy.toLowerCase().startsWith("nothing") &&
+    !details.continuation.blockedBy.toLowerCase().startsWith("none") &&
+    !details.continuation.blockedBy.toLowerCase().startsWith("n/a");
   const linkedTasks = details?.associatedTasks ?? [];
   const isDone = project.statusEmoji === "✅";
 
