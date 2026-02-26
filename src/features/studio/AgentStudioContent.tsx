@@ -1050,10 +1050,7 @@ export const AgentStudioPage = () => {
                         status={status}
                         models={gatewayModels}
                         modelValue={
-                          (() => {
-                            const raw = focusedAgent?.model ?? "";
-                            return raw.includes("/") ? raw : (gatewayModels.find((m) => m.id === raw) ? `${gatewayModels.find((m) => m.id === raw)!.provider}/${raw}` : raw);
-                          })()
+                          focusedAgent?.model ?? (gatewayModels.length > 0 ? `${gatewayModels[0].provider}/${gatewayModels[0].id}` : "")
                         }
                         onModelChange={stableChatOnModelChange}
                         onClose={() => {
