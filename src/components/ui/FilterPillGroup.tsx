@@ -43,7 +43,7 @@ export const FilterPillGroup = React.memo(function FilterPillGroup({
             aria-selected={active}
             className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 min-h-[44px] sm:min-h-0 font-mono text-[10px] font-semibold uppercase tracking-wider transition focus-ring ${
               active
-                ? "border-primary/30 bg-primary/10 text-primary"
+                ? "border-primary/40 bg-primary/15 text-primary dark:bg-primary/20"
                 : "border-border/60 text-muted-foreground hover:bg-muted/40"
             }`}
             onClick={() => onChange(opt.value)}
@@ -53,7 +53,7 @@ export const FilterPillGroup = React.memo(function FilterPillGroup({
               <span
                 className={`inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[8px] font-bold ${
                   active
-                    ? "bg-primary/20 text-primary"
+                    ? "bg-primary/25 text-primary dark:bg-primary/30"
                     : "bg-muted-foreground/15 text-muted-foreground"
                 }`}
               >

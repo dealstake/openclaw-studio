@@ -96,6 +96,7 @@ export const AgentBreadcrumb = memo(function AgentBreadcrumb({
         onClick={toggle}
         className={`flex min-h-[44px] items-center gap-2 rounded-lg px-2 py-1.5 transition hover:bg-muted/60 ${open ? "bg-muted/60" : ""}`}
         data-testid="agent-breadcrumb-trigger"
+        aria-label={`Switch agent — current: ${selected.name || selected.agentId}`}
         aria-expanded={open}
         aria-haspopup="listbox"
       >
