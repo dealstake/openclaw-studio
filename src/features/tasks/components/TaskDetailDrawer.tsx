@@ -134,13 +134,15 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
       />
 
       {/* Tab bar */}
-      <div className="flex border-b border-border/40" role="tablist">
+      <div className="flex border-b border-border/40" role="tablist" aria-label="Task details">
         {TAB_CONFIG.map(({ key, label }) => (
           <button
             key={key}
+            id={`task-tab-${key}`}
             type="button"
             role="tab"
             aria-selected={activeTab === key}
+            aria-controls={`task-panel-${key}`}
             className={`flex-1 px-3 py-2 text-xs font-medium transition ${
               activeTab === key
                 ? "border-b-2 border-primary text-foreground"
@@ -156,7 +158,7 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
       <div className="min-h-0 flex-1 overflow-y-auto">
         {/* Overview tab */}
         {activeTab === "overview" ? (
-          <>
+          <div role="tabpanel" id="task-panel-overview" aria-labelledby="task-tab-overview">
             <TaskMetadataSection
               task={task}
               editing={editing}
@@ -175,22 +177,24 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
               defaultExpanded={editing}
               onEditPromptChange={(v) => setField("prompt", v)}
             />
-          </>
+          </div>
         ) : null}
 
         {/* Run History tab */}
         {activeTab === "history" ? (
+          <div role="tabpanel" id="task-panel-history" aria-labelledby="task-tab-history">
           <RunHistorySection
             runs={runs}
             loading={runsLoading}
             error={runsError}
             onRetry={handleRetryRuns}
           />
+          </div>
         ) : null}
 
         {/* Advanced tab */}
         {activeTab === "advanced" ? (
-          <>
+          <div role="tabpanel" id="task-panel-advanced" aria-labelledby="task-tab-advanced">
             <TaskAdvancedSection
               task={task}
               editing={editing}
@@ -204,7 +208,7 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
               cronJob={task.rawCronJob}
               cronJobId={task.cronJobId}
             />
-          </>
+          </div>
         ) : null}
       </div>
     </div>
