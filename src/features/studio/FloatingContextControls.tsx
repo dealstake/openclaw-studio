@@ -140,7 +140,7 @@ export const FloatingContextControls = memo(function FloatingContextControls({
           type="button"
           onClick={onContextClose}
           className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
-          aria-label="Close panel (Command+Backslash)"
+          aria-label="Close panel"
           title="Close panel (⌘\)"
         >
           <X className="h-3.5 w-3.5" />
