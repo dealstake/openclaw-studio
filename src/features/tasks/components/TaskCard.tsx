@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useCallback } from "react";
-import { AlertTriangle, Clock, Play, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
+import { AlertTriangle, Clock, Play, CheckCircle2, XCircle, AlertCircle, Minus } from "lucide-react";
 import type { StudioTask } from "@/features/tasks/types";
 import { humanReadableSchedule } from "@/features/tasks/lib/schedule";
 import { formatRelativeTime, formatDuration } from "@/lib/text/time";
@@ -126,10 +126,10 @@ export const TaskCard = memo(function TaskCard({
           >
             {task.lastRunStatus === "success" && <CheckCircle2 className="h-3 w-3 shrink-0 text-emerald-400" />}
             {task.lastRunStatus === "error" && <XCircle className="h-3 w-3 shrink-0 text-destructive" />}
-            {!task.lastRunStatus && <span className="h-3 w-3 shrink-0 text-center opacity-40">—</span>}
+            {!task.lastRunStatus && <Minus className="h-3 w-3 shrink-0 opacity-40" />}
             <span>
               {task.lastRunAt
-                ? `${formatRelativeTime(new Date(task.lastRunAt).getTime())}${task.lastDurationMs ? ` (${formatDuration(task.lastDurationMs)})` : ""}`
+                ? `${formatRelativeTime(new Date(task.lastRunAt).getTime())}${task.lastDurationMs ? ` · ${formatDuration(task.lastDurationMs)}` : ""}`
                 : "Never run"}
             </span>
           </div>

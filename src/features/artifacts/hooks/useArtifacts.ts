@@ -46,21 +46,38 @@ export function useArtifacts(isSelected: boolean) {
       setUploadError(null);
 
       try {
-        for (const file of Array.from(fileList)) {
-          const formData = new FormData();
-          formData.append("file", file);
-          const res = await fetch("/api/artifacts/upload", {
-            method: "POST",
-            body: formData,
-          });
-          if (!res.ok) {
-            const body = await res.json().catch(() => ({}));
-            throw new Error(
-              (body as { error?: string }).error ||
-                `Upload failed (${res.status})`,
-            );
-          }
+        const results = await Promise.allSettled(
+          Array.from(fileList).map(async (file) => {
+            const formData = new FormData();
+            formData.append("file", file);
+            const res = await fetch("/api/artifacts/upload", {
+              method: "POST",
+              body: formData,
+            });
+            if (!res.ok) {
+              const body = await res.json().catch(() => ({}));
+              throw new Error(
+                (body as { error?: string }).error ||
+                  `Upload failed for ${file.name} (${res.status})`,
+              );
+            }
+          }),
+        );
+
+        const failures = results.filter(
+          (r): r is PromiseRejectedResult => r.status === "rejected",
+        );
+        if (failures.length > 0) {
+          const msgs = failures.map((f) =>
+            f.reason instanceof Error ? f.reason.message : "Upload failed",
+          );
+          setUploadError(
+            failures.length === fileList.length
+              ? `All uploads failed: ${msgs[0]}`
+              : `${failures.length}/${fileList.length} failed: ${msgs.join("; ")}`,
+          );
         }
+
         await fetchFiles(true);
       } catch (err) {
         setUploadError(err instanceof Error ? err.message : "Upload failed.");
