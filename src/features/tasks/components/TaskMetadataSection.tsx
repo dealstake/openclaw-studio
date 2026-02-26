@@ -31,6 +31,7 @@ interface TaskMetadataSectionProps {
   editDeliveryChannel: string;
   editDeliveryTarget: string;
   busy: boolean;
+  showAdvanced: boolean;
   onFieldChange: (field: "name" | "description" | "model" | "prompt" | "thinking" | "deliveryChannel" | "deliveryTarget", value: string) => void;
   onUpdateSchedule: (taskId: string, schedule: TaskSchedule) => void;
   onToggle: (taskId: string, enabled: boolean) => void;
@@ -47,6 +48,7 @@ export const TaskMetadataSection = memo(function TaskMetadataSection({
   editDeliveryChannel,
   editDeliveryTarget,
   busy,
+  showAdvanced,
   onFieldChange,
   onUpdateSchedule,
   onToggle,
@@ -173,41 +175,8 @@ export const TaskMetadataSection = memo(function TaskMetadataSection({
           </p>
         ) : null}
 
-        {/* Meta */}
+        {/* Essential meta — always visible */}
         <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-          {editing ? (
-            <div className="flex items-center gap-1.5">
-              <span>Model:</span>
-              <input
-                className={`${inputClass} w-48`}
-                value={editModel}
-                onChange={(e) => onFieldChange("model", e.target.value)}
-                placeholder="e.g. anthropic/claude-sonnet-4-6"
-              />
-            </div>
-          ) : (
-            <span>Model: {task.model.split("/").pop()}</span>
-          )}
-          {editing ? (
-            <div className="flex items-center gap-1.5">
-              <span>Thinking:</span>
-              <select
-                aria-label="Thinking level"
-                className="h-6 rounded-md border border-border/80 bg-card/70 px-1.5 font-mono text-[11px] text-foreground outline-none transition hover:border-border focus:border-primary/60"
-                value={editThinking}
-                onChange={(e) => onFieldChange("thinking", e.target.value)}
-              >
-                {THINKING_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          ) : task.thinking ? (
-            <span>Thinking: {task.thinking}</span>
-          ) : null}
-          <span>Agent: {task.agentId}</span>
           {task.runningAtMs ? (
             <span className="font-semibold text-purple-400">● Running now</span>
           ) : task.nextRunAtMs ? (
@@ -221,7 +190,6 @@ export const TaskMetadataSection = memo(function TaskMetadataSection({
                 : ""}
             </span>
           ) : null}
-          <span>Runs: {task.runCount}</span>
           {task.consecutiveErrors ? (
             <span className="font-semibold text-destructive">
               {task.consecutiveErrors} consecutive error
@@ -229,10 +197,50 @@ export const TaskMetadataSection = memo(function TaskMetadataSection({
             </span>
           ) : null}
         </div>
+
+        {/* Advanced meta — model, thinking, agent, run count */}
+        {showAdvanced ? (
+          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+            {editing ? (
+              <div className="flex items-center gap-1.5">
+                <span>Model:</span>
+                <input
+                  className={`${inputClass} w-48`}
+                  value={editModel}
+                  onChange={(e) => onFieldChange("model", e.target.value)}
+                  placeholder="e.g. anthropic/claude-sonnet-4-6"
+                />
+              </div>
+            ) : (
+              <span>Model: {task.model.split("/").pop()}</span>
+            )}
+            {editing ? (
+              <div className="flex items-center gap-1.5">
+                <span>Thinking:</span>
+                <select
+                  aria-label="Thinking level"
+                  className="h-6 rounded-md border border-border/80 bg-card/70 px-1.5 font-mono text-[11px] text-foreground outline-none transition hover:border-border focus:border-primary/60"
+                  value={editThinking}
+                  onChange={(e) => onFieldChange("thinking", e.target.value)}
+                >
+                  {THINKING_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : task.thinking ? (
+              <span>Thinking: {task.thinking}</span>
+            ) : null}
+            <span>Agent: {task.agentId}</span>
+            <span>Runs: {task.runCount}</span>
+          </div>
+        ) : null}
       </div>
 
-      {/* Delivery */}
-      {(editing || task.deliveryChannel) ? (
+      {/* Delivery — advanced only */}
+      {showAdvanced && (editing || task.deliveryChannel) ? (
         <div className="border-b border-border/40 px-4 py-3">
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <Megaphone className="h-3 w-3 shrink-0" />
