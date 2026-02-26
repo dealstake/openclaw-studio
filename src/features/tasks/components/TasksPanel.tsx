@@ -15,7 +15,7 @@ import { PanelIconButton } from "@/components/PanelIconButton";
 import { SectionLabel } from "@/components/SectionLabel";
 import { PanelToolbar } from "@/components/ui/PanelToolbar";
 import { FilterPillGroup, type FilterOption } from "@/components/ui/FilterPillGroup";
-import { PanelSearchInput } from "@/components/ui/PanelSearchInput";
+import { SearchInput } from "@/components/SearchInput";
 
 // ─── Filter tabs ─────────────────────────────────────────────────────────────
 
@@ -288,7 +288,8 @@ export const TasksPanel = memo(function TasksPanel({
             value={filter}
             onChange={setFilter}
           />
-          <PanelSearchInput
+          <SearchInput
+            variant="compact"
             value={search}
             onChange={setSearch}
             placeholder="Search tasks…"

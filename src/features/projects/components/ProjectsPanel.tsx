@@ -22,7 +22,7 @@ import { SectionLabel } from "@/components/SectionLabel";
 import { PanelToolbar } from "@/components/ui/PanelToolbar";
 import { FilterPillGroup } from "@/components/ui/FilterPillGroup";
 import type { FilterOption } from "@/components/ui/FilterPillGroup";
-import { PanelSearchInput } from "@/components/ui/PanelSearchInput";
+import { SearchInput } from "@/components/SearchInput";
 import { STATUS_CONFIG, STATUS_KEYS } from "../lib/constants";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -163,7 +163,8 @@ export const ProjectsPanel = memo(function ProjectsPanel({
       {projects.length > 0 && (
         <PanelToolbar className="rounded-lg border-0 px-0 py-0">
           {projects.length > 5 && (
-            <PanelSearchInput
+            <SearchInput
+              variant="compact"
               value={searchQuery}
               onChange={handleSearchChange}
               placeholder="Search projects…"
