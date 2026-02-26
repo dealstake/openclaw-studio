@@ -120,21 +120,23 @@ const formatEveryMs = (ms: number): string => {
   return `${ms}ms`;
 };
 
-function formatStaggerSuffix(staggerMs?: number): string {
+function formatStaggerSuffix(staggerMs?: number, compact?: boolean): string {
   if (!staggerMs || staggerMs <= 0) return "";
   const ms = staggerMs;
-  if (ms >= 3_600_000 && ms % 3_600_000 === 0) return ` ±${ms / 3_600_000}h`;
-  if (ms >= 60_000 && ms % 60_000 === 0) return ` ±${ms / 60_000}m`;
-  if (ms >= 1_000 && ms % 1_000 === 0) return ` ±${ms / 1_000}s`;
-  return ` ±${ms}ms`;
+  const prefix = compact ? " +" : " ±";
+  if (ms >= 3_600_000 && ms % 3_600_000 === 0) return `${prefix}${ms / 3_600_000}h`;
+  if (ms >= 60_000 && ms % 60_000 === 0) return `${prefix}${ms / 60_000}m`;
+  if (ms >= 1_000 && ms % 1_000 === 0) return `${prefix}${ms / 1_000}s`;
+  return `${prefix}${ms}ms`;
 }
 
-export function humanReadableSchedule(schedule: TaskSchedule): string {
+export function humanReadableSchedule(schedule: TaskSchedule, options?: { compact?: boolean }): string {
+  const compact = options?.compact;
   switch (schedule.type) {
     case "constant":
-      return `Runs every ${formatEveryMs(schedule.intervalMs)}${formatStaggerSuffix(schedule.staggerMs)}`;
+      return `${compact ? "" : "Runs e"}${compact ? "E" : ""}very ${formatEveryMs(schedule.intervalMs)}${formatStaggerSuffix(schedule.staggerMs, compact)}`;
     case "periodic":
-      return `Every ${formatEveryMs(schedule.intervalMs)}${formatStaggerSuffix(schedule.staggerMs)}`;
+      return `Every ${formatEveryMs(schedule.intervalMs)}${formatStaggerSuffix(schedule.staggerMs, compact)}`;
     case "scheduled": {
       // Guard against empty days/times (e.g., from incomplete cron parsing)
       if (schedule.days.length === 0 || schedule.times.length === 0) {

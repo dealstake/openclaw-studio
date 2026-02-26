@@ -1,12 +1,28 @@
 "use client";
 
 import { memo, useCallback } from "react";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Clock, Play, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
 import type { StudioTask } from "@/features/tasks/types";
 import { humanReadableSchedule } from "@/features/tasks/lib/schedule";
-import { formatRelativeTime } from "@/lib/text/time";
+import { formatRelativeTime, formatDuration } from "@/lib/text/time";
 import { STATUS_DOT_CLASS, getTaskStatusKey, STATUS_LABEL } from "@/features/tasks/lib/taskTypeConfig";
 import { BaseCard, CardHeader } from "@/components/ui/BaseCard";
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+/** Abbreviate model name: "anthropic/claude-opus-4-6" → "opus" */
+function abbreviateModel(model: string): string {
+  if (!model || model === "default") return "default";
+  const name = model.split("/").pop() ?? model;
+  // Common abbreviations
+  if (name.includes("opus")) return "opus";
+  if (name.includes("sonnet")) return "sonnet";
+  if (name.includes("haiku")) return "haiku";
+  if (name.includes("gpt-4")) return "gpt-4";
+  if (name.includes("gpt-3")) return "gpt-3.5";
+  if (name.includes("gemini")) return "gemini";
+  return name.length > 16 ? `${name.slice(0, 14)}…` : name;
+}
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -31,19 +47,12 @@ export const TaskCard = memo(function TaskCard({
   const isOrphan = task.managementStatus === "orphan";
   const statusKey = getTaskStatusKey(task);
   const dotClass = STATUS_DOT_CLASS[statusKey];
+  const isRunning = statusKey === "running";
+  const hasErrors = (task.consecutiveErrors ?? 0) > 0;
 
   const handleSelect = useCallback(() => {
     onSelect(task.id);
   }, [onSelect, task.id]);
-
-  // Build the tertiary line: "Next run in Xm" or "Paused" or "Running…"
-  const statusText = (() => {
-    if (statusKey === "running") return "Running…";
-    if (statusKey === "paused") return "Paused";
-    if (statusKey === "error") return "Last run failed";
-    if (task.nextRunAtMs) return `Next: ${formatRelativeTime(task.nextRunAtMs)}`;
-    return humanReadableSchedule(task.schedule);
-  })();
 
   return (
     <BaseCard
@@ -63,7 +72,7 @@ export const TaskCard = memo(function TaskCard({
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") handleSelect(); }}
       data-task-card
     >
-      {/* Row 1: status dot + name */}
+      {/* Row 1: status dot + name + model badge */}
       <CardHeader>
         {isOrphan ? (
           <AlertTriangle className="h-3 w-3 shrink-0 text-destructive" />
@@ -72,25 +81,70 @@ export const TaskCard = memo(function TaskCard({
         )}
         <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground" title={task.name}>
           {task.name}
+          {isRunning && <span className="ml-1.5 text-xs font-normal text-purple-300">Running…</span>}
+        </span>
+        <span
+          className="ml-2 shrink-0 rounded bg-muted/50 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground"
+          title={task.model}
+        >
+          {abbreviateModel(task.model)}
         </span>
       </CardHeader>
 
-      {/* Row 2: description (one line) */}
-      {task.description ? (
+      {/* Row 2: description (one line, only if meaningful) */}
+      {task.description && !task.description.startsWith("This task exists in the gateway") ? (
         <p className="mt-0.5 truncate text-xs leading-relaxed text-muted-foreground">
           {task.description}
         </p>
       ) : null}
 
-      {/* Row 3: status / next run */}
-      <p className={`mt-1 text-xs ${
-        statusKey === "running" ? "font-semibold text-purple-300" :
-        statusKey === "error" ? "font-semibold text-destructive" :
-        statusKey === "paused" ? "text-muted-foreground/70" :
-        "text-muted-foreground"
-      }`}>
-        {isOrphan ? "Cron job missing — metadata only" : statusText}
-      </p>
+      {/* Row 3: Metadata — frequency, next run, last run, errors */}
+      {!isOrphan ? (
+        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-border/20 pt-2 text-[11px] text-muted-foreground">
+          {/* Frequency */}
+          <div className="flex items-center gap-1" title="Schedule frequency">
+            <Clock className="h-3 w-3 shrink-0 opacity-60" />
+            <span>{humanReadableSchedule(task.schedule, { compact: true })}</span>
+          </div>
+
+          {/* Next Run */}
+          <div className="flex items-center gap-1" title={task.nextRunAtMs ? `Next run: ${new Date(task.nextRunAtMs).toLocaleString()}` : "No next run"}>
+            <Play className="h-3 w-3 shrink-0 opacity-60" />
+            <span>
+              {statusKey === "paused"
+                ? "Paused"
+                : task.nextRunAtMs
+                  ? formatRelativeTime(task.nextRunAtMs)
+                  : "—"}
+            </span>
+          </div>
+
+          {/* Last Run */}
+          <div
+            className="flex items-center gap-1"
+            title={task.lastRunAt ? `Last run: ${new Date(task.lastRunAt).toLocaleString()}${task.lastDurationMs ? ` (${formatDuration(task.lastDurationMs)})` : ""}` : "Never run"}
+          >
+            {task.lastRunStatus === "success" && <CheckCircle2 className="h-3 w-3 shrink-0 text-emerald-400" />}
+            {task.lastRunStatus === "error" && <XCircle className="h-3 w-3 shrink-0 text-destructive" />}
+            {!task.lastRunStatus && <span className="h-3 w-3 shrink-0 text-center opacity-40">—</span>}
+            <span>
+              {task.lastRunAt
+                ? `${formatRelativeTime(new Date(task.lastRunAt).getTime())}${task.lastDurationMs ? ` (${formatDuration(task.lastDurationMs)})` : ""}`
+                : "Never run"}
+            </span>
+          </div>
+
+          {/* Consecutive Errors Badge */}
+          {hasErrors && (
+            <div className="ml-auto flex items-center gap-1 rounded-full bg-destructive/10 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-destructive">
+              <AlertCircle className="h-3 w-3" />
+              {task.consecutiveErrors}
+            </div>
+          )}
+        </div>
+      ) : (
+        <p className="mt-1 text-xs text-destructive/80">Cron job missing — metadata only</p>
+      )}
     </BaseCard>
   );
 });
