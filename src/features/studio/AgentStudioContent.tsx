@@ -7,7 +7,8 @@ import {
 } from "@/features/agents/components/AgentInspectPanels";
 import { AppSidebar, type ManagementTab } from "@/layout/AppSidebar";
 import type { BreadcrumbAgent } from "@/features/agents/components/AgentBreadcrumb";
-import { HeaderBar } from "@/features/agents/components/HeaderBar";
+import { FloatingContextControls } from "@/features/studio/FloatingContextControls";
+import { FloatingMobileHeader } from "@/features/studio/FloatingMobileHeader";
 import { EmptyStatePanel } from "@/features/agents/components/EmptyStatePanel";
 import { BrandMark } from "@/components/brand/BrandMark";
 import { GatewayStatusBanner } from "@/components/GatewayStatusBanner";
@@ -773,31 +774,46 @@ export const AgentStudioPage = () => {
         </div>
       ) : null}
       <div className="relative w-full overflow-hidden bg-background" style={{ height: '100svh' }}>
-        {/* ── Header hover zone: reveals header on mouse enter ──────── */}
+        {/* ── Header hover zone: reveals floating controls on mouse enter ──────── */}
         <div
           className="fixed inset-x-0 top-0 z-30 h-3"
           onMouseEnter={onHoverZoneEnter}
           onMouseLeave={onHoverZoneLeave}
           aria-hidden="true"
         />
-        {/* ── Header: fixed glassmorphic bar with auto-hide ──────────── */}
-        <div
-          className={`fixed inset-x-0 top-0 z-30 transform-gpu transition-transform duration-300 ease-out ${headerVisible ? "translate-y-0" : "-translate-y-full"}`}
-          onMouseEnter={onHoverZoneEnter}
-          onMouseLeave={onHoverZoneLeave}
-        >
-          <HeaderBar
-            running={focusedAgentRunning}
-
+        {/* ── Floating context controls — desktop (replaces HeaderBar) ──────── */}
+        {isWide(breakpoint) && (
+          <div
+            onMouseEnter={onHoverZoneEnter}
+            onMouseLeave={onHoverZoneLeave}
+          >
+            <FloatingContextControls
+              agents={breadcrumbAgents}
+              selectedAgentId={focusedAgentId}
+              onSelectAgent={(agentId) => {
+                flushPendingDraft(focusedAgent?.agentId ?? null);
+                dispatch({ type: "selectAgent", agentId });
+              }}
+              onCreateAgent={() => setShowAgentWizard(true)}
+              contextTab={contextTab}
+              contextPanelOpen={contextPanelOpen}
+              onContextTabClick={(tab) => {
+                if (contextPanelOpen && contextTab === tab) {
+                  setContextPanelOpen(false);
+                } else {
+                  setContextTab(tab);
+                  setContextPanelOpen(true);
+                }
+              }}
+              onContextClose={() => setContextPanelOpen(false)}
+              visible={headerVisible}
+            />
+          </div>
+        )}
+        {/* ── Floating mobile header — hamburger + context menu ──────── */}
+        {!isWide(breakpoint) && (
+          <FloatingMobileHeader
             onOpenSessionHistory={() => setMobileSessionDrawerOpen(true)}
-            agents={breadcrumbAgents}
-            selectedAgentId={focusedAgentId}
-            onSelectAgent={(agentId) => {
-              flushPendingDraft(focusedAgent?.agentId ?? null);
-              dispatch({ type: "selectAgent", agentId });
-            }}
-            onCreateAgent={() => setShowAgentWizard(true)}
-            showContextTabs={isWide(breakpoint)}
             contextTab={contextTab}
             contextPanelOpen={contextPanelOpen}
             onContextTabClick={(tab) => {
@@ -807,21 +823,22 @@ export const AgentStudioPage = () => {
                 setContextTab(tab);
                 setContextPanelOpen(true);
               }
+              if (mobilePane !== "context") setMobilePane("context");
             }}
-            onContextClose={() => setContextPanelOpen(false)}
+            visible={headerVisible}
           />
-        </div>
+        )}
 
-        {/* ── Status banners: fixed below header ───────────────────── */}
+        {/* ── Status banners: fixed below floating controls ─────────── */}
         {errorMessage ? (
-          <div className="fixed inset-x-0 top-12 z-30">
+          <div className="fixed inset-x-0 top-16 z-30 px-4">
             <div className="rounded-md border border-destructive bg-destructive px-4 py-2 text-sm text-destructive-foreground">
               {errorMessage}
             </div>
           </div>
         ) : null}
         {configMutationStatusLine ? (
-          <div className="fixed inset-x-0 top-12 z-30">
+          <div className="fixed inset-x-0 top-16 z-30 px-4">
             <div className="rounded-md border border-border/80 bg-card/80 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.11em] text-muted-foreground">
               {configMutationStatusLine}
             </div>
@@ -830,7 +847,7 @@ export const AgentStudioPage = () => {
 
         {/* ── Gateway connection banner: shown when disconnected ──── */}
         {status !== "connected" ? (
-          <div className="fixed inset-x-0 top-12 z-30">
+          <div className="fixed inset-x-0 top-16 z-30 px-4">
             <GatewayStatusBanner
               status={status}
               onReconnect={() => void connect()}
@@ -839,7 +856,7 @@ export const AgentStudioPage = () => {
         ) : null}
 
         {showFleetLayout ? (
-          <div className="absolute inset-0 pt-12">
+          <div className="absolute inset-0">
             {/* Backdrop for mobile context drawer */}
             {mobilePane !== "chat" && !showContextInline ? (
               <div
@@ -868,7 +885,7 @@ export const AgentStudioPage = () => {
               />
             ) : null}
             {/* App sidebar — desktop only, collapsible: floating overlay */}
-            <div className={`${showSidebarInline ? "fixed inset-y-0 left-0 top-12 z-20 flex" : "hidden"}`}>
+            <div className={`${showSidebarInline ? "fixed inset-y-0 left-0 z-20 flex" : "hidden"}`}>
               <AppSidebar
                 client={client}
                 status={status}
@@ -986,7 +1003,7 @@ export const AgentStudioPage = () => {
               className={
                 isMobileLayout
                   ? `fixed inset-x-0 bottom-0 z-40 h-[85vh] rounded-t-3xl transform-gpu transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${mobilePane === "context" ? "translate-y-0" : "translate-y-full"} bg-background/95 backdrop-blur-xl ring-1 ring-white/[0.06] border-t border-border/50 min-h-0 overflow-hidden p-0 shadow-[0_-4px_24px_-6px_rgba(0,0,0,0.3)]`
-                  : `fixed top-12 right-0 bottom-0 z-20 w-[360px] transform-gpu transition-transform duration-300 ease-out ${showContextInline ? "translate-x-0" : "translate-x-full"} bg-background/60 backdrop-blur-xl ring-1 ring-white/[0.06] min-h-0 overflow-hidden p-0 shadow-[-4px_0_24px_-6px_rgba(0,0,0,0.3)]`
+                  : `fixed inset-y-0 right-0 z-20 w-[360px] transform-gpu transition-transform duration-300 ease-out ${showContextInline ? "translate-x-0" : "translate-x-full"} bg-background/60 backdrop-blur-xl ring-1 ring-white/[0.06] min-h-0 overflow-hidden p-0 shadow-[-4px_0_24px_-6px_rgba(0,0,0,0.3)]`
               }
             >
               {/* Bottom sheet drag handle — mobile only, swipe down to dismiss */}
@@ -1089,7 +1106,7 @@ export const AgentStudioPage = () => {
             </div>
           </div>
         ) : (
-          <div className="absolute inset-0 pt-12 bg-background rounded-lg fade-up-delay flex flex-col overflow-hidden p-5 sm:p-6">
+          <div className="absolute inset-0 bg-background rounded-lg fade-up-delay flex flex-col overflow-hidden p-5 sm:p-6">
             <EmptyStatePanel
               label="Fleet"
               title="No agents available"
