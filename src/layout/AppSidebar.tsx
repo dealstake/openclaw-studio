@@ -98,6 +98,7 @@ interface AppSidebarProps {
   onToggleCollapse: () => void;
   onManagementNav: (tab: ManagementTab) => void;
   activeManagementTab?: ManagementTab | null;
+  onViewTrace?: (sessionKey: string) => void;
 }
 
 export const AppSidebar = memo(function AppSidebar({
@@ -111,6 +112,7 @@ export const AppSidebar = memo(function AppSidebar({
   onToggleCollapse,
   onManagementNav,
   activeManagementTab,
+  onViewTrace,
 }: AppSidebarProps) {
   const {
     groups,
@@ -363,6 +365,7 @@ export const AppSidebar = memo(function AppSidebar({
               onRename={handleRename}
               onDelete={handleDelete}
               onTogglePin={togglePin}
+              onViewTrace={onViewTrace}
             />
           ) : (
             <HistorySessionList

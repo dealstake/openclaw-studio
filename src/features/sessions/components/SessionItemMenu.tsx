@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useCallback, useState } from "react";
-import { MoreHorizontal, Pin, PinOff, Pencil, Trash2 } from "lucide-react";
+import { MoreHorizontal, Pin, PinOff, Pencil, Trash2, FileSearch } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,6 +17,7 @@ type SessionItemMenuProps = {
   onRename: (key: string) => void;
   onDelete: (key: string) => void;
   onTogglePin: (key: string) => void;
+  onViewTrace?: (key: string) => void;
 };
 
 export const SessionItemMenu = memo(function SessionItemMenu({
@@ -26,6 +27,7 @@ export const SessionItemMenu = memo(function SessionItemMenu({
   onRename,
   onDelete,
   onTogglePin,
+  onViewTrace,
 }: SessionItemMenuProps) {
   const [confirmOpen, setConfirmOpen] = useState(false);
 
@@ -79,6 +81,17 @@ export const SessionItemMenu = memo(function SessionItemMenu({
               </>
             )}
           </DropdownMenuItem>
+          {onViewTrace && (
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onViewTrace(sessionKey);
+              }}
+            >
+              <FileSearch className="mr-2 h-3.5 w-3.5" />
+              View Trace
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem
             onClick={(e) => {
               e.stopPropagation();

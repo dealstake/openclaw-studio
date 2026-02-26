@@ -21,6 +21,7 @@ type SessionItemProps = {
   onRenameCancel: () => void;
   onDelete: (key: string) => void;
   onTogglePin: (key: string) => void;
+  onViewTrace?: (key: string) => void;
 };
 
 export const SessionItem = memo(function SessionItem({
@@ -36,6 +37,7 @@ export const SessionItem = memo(function SessionItem({
   onRenameCancel,
   onDelete,
   onTogglePin,
+  onViewTrace,
 }: SessionItemProps) {
   const itemRef = useRef<HTMLButtonElement>(null);
   const handleClick = useCallback(() => onSelect(session.key), [onSelect, session.key]);
@@ -104,6 +106,7 @@ export const SessionItem = memo(function SessionItem({
             onRename={onRenameStart}
             onDelete={onDelete}
             onTogglePin={onTogglePin}
+            onViewTrace={onViewTrace}
           />
         </div>
       )}

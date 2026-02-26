@@ -882,6 +882,7 @@ export const AgentStudioPage = () => {
                 viewingSessionKey={viewingSessionKey}
                 onSelectSession={handleSidebarSessionSelect}
                 onNewSession={stableChatOnNewSession}
+                onViewTrace={(key) => handleViewTrace(key, focusedAgentId)}
               />
             ) : null}
             {/* App sidebar — desktop only, collapsible: floating overlay */}
@@ -897,6 +898,7 @@ export const AgentStudioPage = () => {
                 onToggleCollapse={() => setSessionSidebarCollapsed((p) => !p)}
                 onManagementNav={handleManagementNav}
                 activeManagementTab={managementView}
+                onViewTrace={(key) => handleViewTrace(key, focusedAgentId)}
               />
             </div>
             {/* ── Chat canvas: base layer filling viewport ─────────── */}

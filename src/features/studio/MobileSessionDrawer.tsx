@@ -26,6 +26,7 @@ interface MobileSessionDrawerProps {
   viewingSessionKey: string | null;
   onSelectSession: (key: string | null) => void;
   onNewSession: () => void;
+  onViewTrace?: (key: string) => void;
 }
 
 const MANAGEMENT_ITEMS: { value: ManagementTab; label: string }[] = [
@@ -47,6 +48,7 @@ export const MobileSessionDrawer = memo(function MobileSessionDrawer({
   viewingSessionKey,
   onSelectSession,
   onNewSession,
+  onViewTrace,
 }: MobileSessionDrawerProps) {
   const {
     groups,
@@ -186,6 +188,7 @@ export const MobileSessionDrawer = memo(function MobileSessionDrawer({
           onRename={handleRename}
           onDelete={handleDelete}
           onTogglePin={togglePin}
+          onViewTrace={onViewTrace}
         />
       </div>
     </div>
