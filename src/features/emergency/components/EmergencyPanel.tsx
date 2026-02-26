@@ -146,9 +146,9 @@ export const EmergencyPanel = memo(function EmergencyPanel({
             <button
               onClick={onClose}
               aria-label="Close emergency panel"
-              className="rounded-full p-2 text-navy-400 hover:bg-navy-800 hover:text-navy-200"
+              className="rounded-full p-3 text-navy-400 hover:bg-navy-800 hover:text-navy-200"
             >
-              <X className="h-5 w-5" />
+              <X className="h-[18px] w-[18px]" />
             </button>
           </div>
 
@@ -158,12 +158,14 @@ export const EmergencyPanel = memo(function EmergencyPanel({
               const Icon = ACTION_ICONS[action.icon] ?? Square;
               const status = actionStatus[action.kind];
               const isPending = status === "pending";
+              const descriptionId = `${action.kind}-description`;
 
               return (
                 <button
                   key={action.kind}
                   onClick={() => setConfirmAction(action.kind)}
                   disabled={isPending}
+                  aria-describedby={descriptionId}
                   className={`flex w-full items-start gap-3 rounded-lg border p-3 text-left transition-colors ${
                     action.destructive
                       ? "border-red-800/50 bg-red-950/30 hover:bg-red-950/50"
@@ -179,7 +181,7 @@ export const EmergencyPanel = memo(function EmergencyPanel({
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="font-medium text-navy-100">{action.label}</div>
-                    <div className="text-sm text-navy-400 mt-0.5">{action.description}</div>
+                    <div id={descriptionId} className="text-sm text-navy-400 mt-0.5">{action.description}</div>
                     {status === "success" && (
                       <div className="text-xs text-green-400 mt-1">✓ Done</div>
                     )}
