@@ -29,35 +29,50 @@ export const UnifiedFilesPanel = memo(function UnifiedFilesPanel({
   return (
     <div className="flex h-full w-full flex-col overflow-hidden">
       {/* Segmented control */}
-      <div className="flex shrink-0 items-center gap-1 border-b border-border/50 px-3 py-2">
+      <div
+        role="tablist"
+        aria-label="File views"
+        className="flex shrink-0 items-center gap-1 border-b border-border/50 p-2"
+      >
         <button
           type="button"
+          role="tab"
+          id="workspace-tab"
+          aria-controls="files-tabpanel"
+          aria-selected={subTab === "workspace"}
           onClick={() => handleTabChange("workspace")}
-          className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+          className={`rounded-md px-3 py-3 text-xs font-medium transition-colors ${
             subTab === "workspace"
               ? "bg-muted text-foreground"
               : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
           }`}
-          aria-pressed={subTab === "workspace"}
         >
           Workspace
         </button>
         <button
           type="button"
+          role="tab"
+          id="artifacts-tab"
+          aria-controls="files-tabpanel"
+          aria-selected={subTab === "artifacts"}
           onClick={() => handleTabChange("artifacts")}
-          className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+          className={`rounded-md px-3 py-3 text-xs font-medium transition-colors ${
             subTab === "artifacts"
               ? "bg-muted text-foreground"
               : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
           }`}
-          aria-pressed={subTab === "artifacts"}
         >
           Artifacts
         </button>
       </div>
 
       {/* Panel content */}
-      <div className="min-h-0 flex-1 overflow-hidden">
+      <div
+        id="files-tabpanel"
+        role="tabpanel"
+        aria-labelledby={subTab === "workspace" ? "workspace-tab" : "artifacts-tab"}
+        className="min-h-0 flex-1 overflow-hidden"
+      >
         {subTab === "workspace" ? (
           <WorkspaceExplorerPanel
             agentId={agentId}
