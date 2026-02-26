@@ -12,6 +12,8 @@ import { TaskPromptSection } from "./TaskPromptSection";
 import { TaskAdvancedSection } from "./TaskAdvancedSection";
 import { RunHistorySection } from "./RunHistorySection";
 import { RawGatewaySection } from "./RawGatewaySection";
+import { TaskHealthSection } from "./TaskHealthSection";
+import { TaskUpcomingRuns } from "./TaskUpcomingRuns";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -183,6 +185,8 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
               defaultExpanded={editing}
               onEditPromptChange={(v) => setField("prompt", v)}
             />
+            <TaskHealthSection task={task} />
+            <TaskUpcomingRuns task={task} />
           </div>
         ) : null}
 
