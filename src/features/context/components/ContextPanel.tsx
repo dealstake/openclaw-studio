@@ -165,7 +165,7 @@ export const ContextPanel = memo(function ContextPanel({
               </PanelIconButton>
             )}
             {onClose && (
-              <PanelIconButton onClick={onClose} aria-label="Close panel" data-testid="close-panel-btn" className="hidden lg:flex">
+              <PanelIconButton onClick={onClose} aria-label="Close panel" data-testid="close-panel-btn">
                 <X className="h-3.5 w-3.5" />
               </PanelIconButton>
             )}
