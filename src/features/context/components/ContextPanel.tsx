@@ -162,7 +162,7 @@ export const ContextPanel = memo(function ContextPanel({
       {!hideTabBar && (
         <div className="flex items-center border-b border-border/20 px-3 pt-2">
           {/* Scrollable tab buttons with overflow indicators */}
-          <div className="relative min-w-0 flex-1">
+          <div className="relative min-w-0 flex-1 overflow-hidden">
             {showScrollLeft && (
               <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-6 bg-gradient-to-r from-card to-transparent" aria-hidden="true" />
             )}
