@@ -100,7 +100,7 @@ export const TaskCard = memo(function TaskCard({
 
       {/* Row 3: Metadata — frequency, next run, last run, errors */}
       {!isOrphan ? (
-        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-border/20 pt-2 text-[11px] text-muted-foreground">
+        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
           {/* Frequency */}
           <div className="flex items-center gap-1" title="Schedule frequency">
             <Clock className="h-3 w-3 shrink-0 opacity-60" />

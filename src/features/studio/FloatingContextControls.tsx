@@ -53,7 +53,7 @@ export const FloatingContextControls = memo(function FloatingContextControls({
 
   return (
     <div
-      className={`fixed top-4 right-4 z-[var(--z-header)] flex items-center gap-1 rounded-full bg-background/70 p-1 shadow-lg ring-1 ring-white/[0.08] backdrop-blur-lg transform-gpu transition-all duration-300 ease-in-out ${
+      className={`fixed top-4 right-4 z-[var(--z-header)] flex items-center gap-1 rounded-full bg-background/95 p-1 shadow-lg ring-1 ring-border/20 backdrop-blur-xl transform-gpu transition-all duration-300 ease-in-out ${
         visible
           ? "opacity-100 translate-y-0"
           : "opacity-0 -translate-y-4 pointer-events-none"

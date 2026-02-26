@@ -6,7 +6,6 @@ import {
   FolderKanban,
   Plus,
   RefreshCw,
-  SearchX,
 } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { CardSkeleton } from "@/components/ui/CardSkeleton";
@@ -21,7 +20,6 @@ import { PanelIconButton } from "@/components/PanelIconButton";
 import { SectionLabel } from "@/components/SectionLabel";
 import { PanelToolbar } from "@/components/ui/PanelToolbar";
 import { FilterGroup, type FilterGroupOption } from "@/components/ui/FilterGroup";
-import { SearchInput } from "@/components/SearchInput";
 import { STATUS_CONFIG, STATUS_KEYS, sortProjects } from "../lib/constants";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -64,9 +62,6 @@ export const ProjectsPanel = memo(function ProjectsPanel({
   const [archiveTarget, setArchiveTarget] = useState<ProjectEntry | null>(null);
   const [statusFilter, setStatusFilter] = useState<string[]>(["all"]);
   const [editingProjectDoc, setEditingProjectDoc] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedQuery, setDebouncedQuery] = useState("");
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Open wizard programmatically when requestCreateProject increments
   const createProjectTickRef = useRef(requestCreateProject ?? 0);
@@ -81,15 +76,7 @@ export const ProjectsPanel = memo(function ProjectsPanel({
   const { projects, loading, error, refresh, changeStatus, archive, buildingCount, getQueuePosition } =
     useProjects(agentId, client, { isTabActive, eventTick });
 
-  const handleSearchChange = useCallback((value: string) => {
-    setSearchQuery(value);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => setDebouncedQuery(value), 200);
-  }, []);
 
-  useEffect(() => {
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-  }, []);
 
   // Count projects per status for filter badges
   const statusCounts = useMemo(() => {
@@ -135,14 +122,8 @@ export const ProjectsPanel = memo(function ProjectsPanel({
     if (!isAllSelected) {
       result = result.filter((p) => statusFilter.includes(p.statusEmoji));
     }
-    if (debouncedQuery.trim()) {
-      const q = debouncedQuery.trim().toLowerCase();
-      result = result.filter((p) =>
-        p.name.toLowerCase().includes(q) || p.oneLiner.toLowerCase().includes(q)
-      );
-    }
     return sortProjects(result);
-  }, [projects, statusFilter, isAllSelected, debouncedQuery]);
+  }, [projects, statusFilter, isAllSelected]);
 
   if (!agentId) return null;
 
@@ -177,24 +158,14 @@ export const ProjectsPanel = memo(function ProjectsPanel({
         </div>
       </div>
 
-      {/* Toolbar: Search + Filters */}
-      {projects.length > 0 && (
+      {/* Toolbar: Filters */}
+      {projects.length > 0 && filterOptions.length > 2 && (
         <PanelToolbar className="rounded-lg border-0 px-0 py-0">
-          {projects.length > 5 && (
-            <SearchInput
-              variant="compact"
-              value={searchQuery}
-              onChange={handleSearchChange}
-              placeholder="Search projects…"
-            />
-          )}
-          {filterOptions.length > 2 && (
-            <FilterGroup
-              options={filterOptions}
-              value={statusFilter}
-              onChange={handleFilterChange}
-            />
-          )}
+          <FilterGroup
+            options={filterOptions}
+            value={statusFilter}
+            onChange={handleFilterChange}
+          />
         </PanelToolbar>
       )}
 
@@ -223,8 +194,8 @@ export const ProjectsPanel = memo(function ProjectsPanel({
       {/* Filtered empty */}
       {!loading && !error && projects.length > 0 && filteredProjects.length === 0 && (
         <EmptyState
-          icon={SearchX}
-          title={`No ${!isAllSelected ? "matching " : ""}projects`}
+          icon={FolderKanban}
+          title="No matching projects"
           className="py-8"
         />
       )}

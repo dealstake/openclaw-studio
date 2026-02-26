@@ -89,7 +89,6 @@ export const AgentBreadcrumb = memo(function AgentBreadcrumb({
         aria-expanded={open}
         aria-haspopup="listbox"
       >
-        <span className="text-muted-foreground/60 select-none" aria-hidden="true">/</span>
         <AgentAvatar
           seed={selected.avatarSeed ?? selected.agentId}
           name={selected.name || selected.agentId}

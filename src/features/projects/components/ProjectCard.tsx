@@ -231,7 +231,7 @@ export const ProjectCard = memo(function ProjectCard({
       />
 
       {details && (
-        <div className="mt-3 space-y-2.5 border-t border-border/40 pt-2.5">
+        <div className="mt-3 space-y-2.5">
           {!isDone && (
             <div className="flex items-center gap-2">
               <div
