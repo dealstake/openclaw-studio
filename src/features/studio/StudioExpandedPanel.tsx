@@ -12,7 +12,7 @@ import { TasksPanel } from "@/features/tasks/components/TasksPanel";
 import {
   AgentBrainPanel,
 } from "@/features/agents/components/AgentInspectPanels";
-import { WorkspaceExplorerPanel } from "@/features/workspace/components/WorkspaceExplorerPanel";
+import { UnifiedFilesPanel } from "@/features/workspace/components/UnifiedFilesPanel";
 import { ActivityPanel } from "@/features/activity/components/ActivityPanel";
 import type { ManagementTab } from "@/layout/AppSidebar";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
@@ -132,7 +132,7 @@ export const StudioExpandedPanel = memo(function StudioExpandedPanel({
           )}
           {expandedTab === "workspace" && (
             <PanelErrorBoundary name="Workspace">
-              <WorkspaceExplorerPanel
+              <UnifiedFilesPanel
                 client={client}
                 agentId={focusedAgentId}
                 isTabActive

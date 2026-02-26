@@ -122,15 +122,12 @@ describe("useAppLayout", () => {
     expect(result.current.mobilePane).toBe("chat");
   });
 
-  it("handleFilesToggle toggles contextMode between agent and files", () => {
+  it("handleFilesToggle opens workspace tab in context panel", () => {
     const { result } = renderHook(() => useAppLayout());
-    expect(result.current.contextMode).toBe("agent");
     act(() => result.current.handleFilesToggle());
-    expect(result.current.contextMode).toBe("files");
+    expect(result.current.contextTab).toBe("workspace");
+    expect(result.current.contextPanelOpen).toBe(true);
     expect(result.current.mobilePane).toBe("context");
-    act(() => result.current.handleFilesToggle());
-    expect(result.current.contextMode).toBe("agent");
-    expect(result.current.mobilePane).toBe("chat");
   });
 
   it("handleBackToChat clears managementView", () => {

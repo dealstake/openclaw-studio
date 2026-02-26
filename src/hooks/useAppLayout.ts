@@ -49,15 +49,10 @@ export function useAppLayout() {
 
   // ── Files toggle ──────────────────────────────────────────────
   const handleFilesToggle = useCallback(() => {
-    contextPanel.setContextMode((prev) => {
-      if (prev === "files") {
-        setMobilePane("chat");
-        return "agent";
-      }
-      setMobilePane("context");
-      return "files";
-    });
-  }, [contextPanel]);
+    contextPanel.setContextTab("workspace");
+    contextPanel.setContextPanelOpen(true);
+    setMobilePane("context");
+  }, [contextPanel, setMobilePane]);
 
   const handleBackToChat = useCallback(() => {
     setManagementView(null);

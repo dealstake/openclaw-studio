@@ -22,7 +22,6 @@ import {
 } from "@/features/agents/state/store";
 import { createGatewayRuntimeEventHandler } from "@/features/agents/state/gatewayRuntimeEventHandler";
 // settingsCoordinator accessed via useGateway() context
-import { ArtifactsPanel } from "@/features/artifacts/components/ArtifactsPanel";
 import { TasksPanel } from "@/features/tasks/components/TasksPanel";
 import { ProjectsPanel } from "@/features/projects/components/ProjectsPanel";
 import { useAgentTasks } from "@/features/tasks/hooks/useAgentTasks";
@@ -36,7 +35,7 @@ import { ManagementDrawer } from "@/components/ManagementDrawer";
 import { ManagementPanelProvider } from "@/components/management/ManagementPanelContext";
 import { useExecApprovalContext } from "@/features/exec-approvals/ExecApprovalProvider";
 import { useCommandPalette } from "@/features/command-palette/hooks/useCommandPalette";
-import { WorkspaceExplorerPanel } from "@/features/workspace/components/WorkspaceExplorerPanel";
+import { UnifiedFilesPanel } from "@/features/workspace/components/UnifiedFilesPanel";
 import { ActivityPanel } from "@/features/activity/components/ActivityPanel";
 // Heartbeat entries now routed exclusively via onActivityMessage to useActivityMessageStore
 import { TraceViewer } from "@/features/sessions/components/TraceViewer";
@@ -91,7 +90,7 @@ export const AgentStudioPage = () => {
     sessionSidebarCollapsed, setSessionSidebarCollapsed,
     mobileSessionDrawerOpen, setMobileSessionDrawerOpen,
     contextPanelOpen, setContextPanelOpen,
-    contextMode, setContextMode,
+    setContextMode,
     contextTab, setContextTab,
     expandedTab,
     brainFileTab, setBrainFileTab,
@@ -416,7 +415,7 @@ export const AgentStudioPage = () => {
     expandedTab,
     managementView,
     contextTab,
-    contextMode,
+    contextMode: "agent" as const,
     setContextTab,
   });
 
@@ -799,6 +798,7 @@ export const AgentStudioPage = () => {
           <HeaderBar
             running={focusedAgentRunning}
             onConnectionSettings={() => setShowConnectionPanel((prev) => !prev)}
+
             onOpenSessionHistory={() => setMobileSessionDrawerOpen(true)}
             agents={breadcrumbAgents}
             selectedAgentId={focusedAgentId}
@@ -1027,10 +1027,7 @@ export const AgentStudioPage = () => {
                   <div className="h-1 w-10 rounded-full bg-muted-foreground/30" />
                 </div>
               )}
-              {contextMode === "files" ? (
-                <ArtifactsPanel isSelected />
-              ) : (
-                <ContextPanel
+              <ContextPanel
                   activeTab={contextTab}
                   expandedTab={expandedTab === "projects" || expandedTab === "tasks" || expandedTab === "brain" || expandedTab === "workspace" || expandedTab === "activity" ? expandedTab : null}
                   onExpandToggle={handleExpandToggle}
@@ -1092,7 +1089,7 @@ export const AgentStudioPage = () => {
                   }
                   workspaceContent={
                     <PanelErrorBoundary name="Workspace">
-                      <WorkspaceExplorerPanel
+                      <UnifiedFilesPanel
                         key={focusedAgent?.agentId ?? "none"}
                         agentId={focusedAgent?.agentId ?? null}
                         client={client}
@@ -1107,7 +1104,6 @@ export const AgentStudioPage = () => {
                     </PanelErrorBoundary>
                   }
                 />
-              )}
             </div>
           </div>
         ) : (
