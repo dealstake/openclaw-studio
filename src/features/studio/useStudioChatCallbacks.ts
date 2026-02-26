@@ -158,6 +158,47 @@ export function useStudioChatCallbacks({
     [focusedAgent?.agentId, setMobilePane],
   );
 
+  // Sidebar session select — parses composite key (agent:id:session) and fetches transcript
+  const handleSidebarSessionSelect = useCallback(
+    (compositeKey: string | null) => {
+      if (!compositeKey) {
+        setViewingSessionKey(null);
+        return;
+      }
+      // Extract agentId and sessionId from composite key format "agent:<agentId>:<sessionId>"
+      const parts = compositeKey.split(":");
+      let agentId: string | null = null;
+      let sessionId = compositeKey;
+      if (parts.length >= 3 && parts[0] === "agent") {
+        agentId = parts[1];
+        sessionId = parts.slice(2).join(":");
+      } else if (parts.length >= 2) {
+        agentId = parts[0];
+        sessionId = parts.slice(1).join(":");
+      }
+      const effectiveAgentId = agentId || focusedAgent?.agentId || "";
+      if (!effectiveAgentId) return;
+      // Set viewing key to the composite key (for sidebar highlight matching)
+      setViewingSessionKey(compositeKey);
+      setViewingSessionLoading(true);
+      setViewingSessionHistory([]);
+      setMobilePane("chat");
+      fetchTranscriptMessages(effectiveAgentId, sessionId, 0, 200)
+        .then((result) => {
+          setViewingSessionHistory(transformMessagesToMessageParts(result.messages));
+        })
+        .catch((err) => {
+          console.error("Failed to load transcript:", err);
+          setViewingSessionHistory([{
+            type: "text",
+            text: `Failed to load transcript: ${err instanceof Error ? err.message : "Unknown error"}`,
+          }]);
+        })
+        .finally(() => setViewingSessionLoading(false));
+    },
+    [focusedAgent?.agentId, setMobilePane],
+  );
+
   const handleDrawerTranscriptClick = useCallback(
     (sessionId: string, agentId: string | null) => {
       handleTranscriptClick(sessionId, agentId, () => setManagementView(null));
@@ -192,6 +233,7 @@ export function useStudioChatCallbacks({
     stableChatTokenUsed,
     // Trace/transcript handlers
     handleViewTrace,
+    handleSidebarSessionSelect,
     handleDrawerTranscriptClick,
     handleExpandedTranscriptClick,
   };

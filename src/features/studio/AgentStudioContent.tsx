@@ -656,7 +656,6 @@ export const AgentStudioPage = () => {
   // ── Stable callbacks extracted to useStudioChatCallbacks ──
   const {
     viewingSessionKey,
-    setViewingSessionKey,
     viewingSessionHistory,
     viewingTrace,
     viewingSessionLoading,
@@ -671,6 +670,7 @@ export const AgentStudioPage = () => {
     stableChatOnDismissContinuation,
     stableChatTokenUsed,
     handleViewTrace,
+    handleSidebarSessionSelect,
     handleDrawerTranscriptClick,
     handleExpandedTranscriptClick,
   } = useStudioChatCallbacks({
@@ -880,7 +880,7 @@ export const AgentStudioPage = () => {
                 client={client}
                 status={status}
                 viewingSessionKey={viewingSessionKey}
-                onSelectSession={setViewingSessionKey}
+                onSelectSession={handleSidebarSessionSelect}
                 onNewSession={stableChatOnNewSession}
               />
             ) : null}
@@ -891,7 +891,7 @@ export const AgentStudioPage = () => {
                 status={status}
                 agentId={focusedAgentId}
                 activeSessionKey={viewingSessionKey ?? (focusedAgent ? `${focusedAgent.agentId}:main` : null)}
-                onSelectSession={(key) => setViewingSessionKey(key === `${focusedAgentId}:main` ? null : key)}
+                onSelectSession={(key) => key === `${focusedAgentId}:main` ? handleSidebarSessionSelect(null) : handleSidebarSessionSelect(key)}
                 onNewSession={stableChatOnNewSession}
                 collapsed={sessionSidebarCollapsed}
                 onToggleCollapse={() => setSessionSidebarCollapsed((p) => !p)}
