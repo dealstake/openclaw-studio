@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useSyncExternalStore } from "react";
-import type { RecentItem } from "../lib/types";
+import type { RecentItem, RecentItemType } from "../lib/types";
 
 const STORAGE_KEY = "studio:command-palette-recent";
 const MAX_RECENT = 5;
@@ -13,6 +13,8 @@ function notify() {
   for (const fn of listeners) fn();
 }
 
+const VALID_TYPES = new Set(["navigation", "agent", "action"]);
+
 /** Type guard for RecentItem to safely validate localStorage data */
 function isRecentItem(v: unknown): v is RecentItem {
   return (
@@ -20,7 +22,8 @@ function isRecentItem(v: unknown): v is RecentItem {
     v !== null &&
     typeof (v as RecentItem).id === "string" &&
     typeof (v as RecentItem).label === "string" &&
-    typeof (v as RecentItem).accessedAt === "number"
+    typeof (v as RecentItem).accessedAt === "number" &&
+    VALID_TYPES.has((v as RecentItem).type)
   );
 }
 
@@ -77,10 +80,10 @@ function subscribe(cb: () => void): () => void {
 export function useRecentItems() {
   const items = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
-  const trackRecent = useCallback((id: string, label: string) => {
+  const trackRecent = useCallback((id: string, label: string, type: RecentItemType = "action") => {
     const current = readFromStorage();
     const filtered = current.filter((item) => item.id !== id);
-    const updated = [{ id, label, accessedAt: Date.now() }, ...filtered].slice(
+    const updated = [{ id, label, type, accessedAt: Date.now() }, ...filtered].slice(
       0,
       MAX_RECENT,
     );
