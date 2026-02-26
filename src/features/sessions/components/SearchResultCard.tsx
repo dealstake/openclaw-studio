@@ -77,7 +77,7 @@ export const SearchResultCard = memo(function SearchResultCard({
         {result.matches.slice(0, 2).map((match, i) => (
           <div
             key={i}
-            className="line-clamp-2 rounded bg-muted/30 px-2 py-1 text-[11px] leading-relaxed text-muted-foreground/80"
+            className="line-clamp-2 rounded bg-muted/30 px-2 py-1 text-xs leading-relaxed text-muted-foreground"
           >
             <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/60">
               {match.role}:{" "}

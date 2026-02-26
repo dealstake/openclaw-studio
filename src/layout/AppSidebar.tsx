@@ -275,7 +275,12 @@ export const AppSidebar = memo(function AppSidebar({
 
           {/* Session list or search results */}
           {showSearchResults ? (
-            <div className="min-h-0 flex-1 overflow-y-auto px-1.5 pb-2">
+            <div
+              className="min-h-0 flex-1 overflow-y-auto px-1.5 pb-2"
+              role="region"
+              aria-label="Search results"
+              aria-live="polite"
+            >
               {searching && searchResults.length === 0 ? (
                 <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -306,14 +311,13 @@ export const AppSidebar = memo(function AppSidebar({
                     {searchResults.length} result{searchResults.length !== 1 ? "s" : ""}
                     {searching && <Loader2 className="ml-1.5 inline h-3 w-3 animate-spin" />}
                   </div>
-                  <div className="flex flex-col gap-1 px-1">
+                  <div className="flex flex-col gap-1.5 px-1" role="listbox" aria-label="Search results list">
                     {searchResults.map((result) => (
                       <SearchResultCard
                         key={result.sessionId}
                         result={result}
                         query={search}
                         onClick={() => {
-                          // Use sessionKey (composite key) if available, else construct from sessionId
                           const key = result.sessionKey ?? result.sessionId;
                           onSelectSession(key);
                           handleSearchChange("");
