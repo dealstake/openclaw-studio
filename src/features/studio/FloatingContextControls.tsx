@@ -78,7 +78,7 @@ export const FloatingContextControls = memo(function FloatingContextControls({
         <button
           type="button"
           onClick={emergency.toggle}
-          className="flex h-10 w-10 items-center justify-center rounded-full text-red-500 transition-colors hover:bg-muted/60 hover:text-red-400"
+          className="flex h-11 w-11 items-center justify-center rounded-full text-red-500 transition-colors hover:bg-muted/60 hover:text-red-400"
           aria-label="Emergency controls"
           title="Emergency controls"
         >
@@ -94,7 +94,7 @@ export const FloatingContextControls = memo(function FloatingContextControls({
             key={value}
             type="button"
             onClick={() => onContextTabClick(value)}
-            className={`flex h-10 w-10 items-center justify-center rounded-full transition-colors ${
+            className={`flex h-11 w-11 items-center justify-center rounded-full transition-colors ${
               isActive
                 ? "bg-accent text-accent-foreground"
                 : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
@@ -114,7 +114,7 @@ export const FloatingContextControls = memo(function FloatingContextControls({
           <button
             type="button"
             onClick={onContextClose}
-            className="flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
             aria-label="Close panel"
             title="Close panel (⌘\)"
           >

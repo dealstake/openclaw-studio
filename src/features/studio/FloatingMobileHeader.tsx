@@ -89,7 +89,7 @@ export const FloatingMobileHeader = memo(function FloatingMobileHeader({
         </HeaderIconButton>
 
         {menuOpen && (
-          <div className="absolute right-0 top-12 z-50 min-w-48 rounded-md border border-border/80 bg-popover/95 p-1 shadow-lg backdrop-blur">
+          <div className="absolute right-0 top-12 z-[var(--z-popover)] min-w-48 rounded-md border border-border/80 bg-popover/95 p-1 shadow-lg backdrop-blur">
             {CONTEXT_TAB_ITEMS.map(({ value, label, Icon }) => {
               const isActive = contextPanelOpen && contextTab === value;
               return (
