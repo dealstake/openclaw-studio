@@ -7,6 +7,7 @@ import { FilterGroup, type FilterGroupOption } from "@/components/ui/FilterGroup
 import { useActivityMessageStore } from "@/features/activity/hooks/useActivityMessageStore";
 import { LiveActivityFeed } from "./LiveActivityFeed";
 import { HistoryFeed } from "./HistoryFeed";
+import { SectionLabel } from "@/components/SectionLabel";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -14,18 +15,6 @@ type ActivityTab = "live" | "history";
 
 // ── Main Panel ─────────────────────────────────────────────────────────
 
-/**
- * ActivityPanel — Context panel tab for real-time activity feed.
- * Renders heartbeat, cron, sub-agent, and system events as a unified timeline
- * with expandable rich content (markdown, thinking blocks, tool calls).
- *
- * Decomposed: sub-components live in sibling files.
- * - LiveActivityFeed — virtualized live timeline
- * - HistoryFeed — virtualized paginated history
- * - ActivityMessageCard — single live message card
- * - HistoryEventCard — single history event card
- * - MessagePartsRenderer — rich message part rendering
- */
 export const ActivityPanel = memo(function ActivityPanel() {
   const [activeTab, setActiveTab] = useState<ActivityTab>("live");
   const { messages: activityMessages } = useActivityMessageStore();
@@ -54,15 +43,27 @@ export const ActivityPanel = memo(function ActivityPanel() {
 
   // Single-select behavior: always exactly one tab selected
   const handleTabChange = useCallback((next: ActivityTab[]) => {
-    if (next.length === 0) return; // Don't allow deselecting
-    // Take the newest selection (last added)
+    if (next.length === 0) return;
     setActiveTab(next[next.length - 1]);
   }, []);
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-3 pt-3 pb-1">
+        <div className="flex items-center gap-2">
+          <Activity className="h-4 w-4 text-muted-foreground" />
+          <SectionLabel as="span">Activity</SectionLabel>
+          {runningCount > 0 && (
+            <span className="rounded-full bg-muted px-1.5 py-0.5 font-mono text-[10px] font-semibold text-muted-foreground">
+              {runningCount}
+            </span>
+          )}
+        </div>
+      </div>
+
       {/* Tab bar */}
-      <div className="px-3 pt-2 pb-1">
+      <div className="px-3 pb-1">
         <FilterGroup<ActivityTab>
           options={tabOptions}
           value={[activeTab]}

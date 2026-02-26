@@ -8,6 +8,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { ErrorBanner } from "@/components/ErrorBanner";
 import { CardSkeleton } from "@/components/ui/CardSkeleton";
 import type { ProjectDetails } from "../lib/parseProject";
 import { ProjectCard } from "./ProjectCard";
@@ -179,9 +180,7 @@ export const ProjectsPanel = memo(function ProjectsPanel({
 
       {/* Error */}
       {error && (
-        <div className="rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-400">
-          {error}
-        </div>
+        <ErrorBanner message={error} onRetry={refresh} />
       )}
 
       {/* Empty */}
