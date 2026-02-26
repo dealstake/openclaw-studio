@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useRef, useState, useEffect, useMemo, type KeyboardEvent, type ReactNode } from "react";
+import { memo, useCallback, useRef, useState, useEffect, useMemo, type KeyboardEvent, type ReactNode, type UIEvent } from "react";
 import { Maximize2, X } from "lucide-react";
 
 import { PanelIconButton } from "@/components/PanelIconButton";
@@ -65,6 +65,39 @@ export const ContextPanel = memo(function ContextPanel({
 
   const tabBarRef = useRef<HTMLDivElement>(null);
 
+  // Scroll indicator state: show gradient fades when tabs overflow
+  const [showScrollLeft, setShowScrollLeft] = useState(false);
+  const [showScrollRight, setShowScrollRight] = useState(false);
+
+  const updateScrollIndicators = useCallback(() => {
+    const el = tabBarRef.current;
+    if (!el) return;
+    setShowScrollLeft(el.scrollLeft > 2);
+    setShowScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 2);
+  }, []);
+
+  const handleTabScroll = useCallback(
+    (e: UIEvent<HTMLDivElement>) => {
+      void e;
+      updateScrollIndicators();
+    },
+    [updateScrollIndicators]
+  );
+
+  // Check scroll indicators on mount and when tabs change
+  useEffect(() => {
+    updateScrollIndicators();
+  }, [activeTab, updateScrollIndicators]);
+
+  // Also check on resize
+  useEffect(() => {
+    const el = tabBarRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => updateScrollIndicators());
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [updateScrollIndicators]);
+
   // Auto-scroll active tab into view on mobile
   useEffect(() => {
     const container = tabBarRef.current;
@@ -73,7 +106,10 @@ export const ContextPanel = memo(function ContextPanel({
     if (activeBtn) {
       activeBtn.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
     }
-  }, [activeTab]);
+    // Update indicators after scroll animation
+    const timer = setTimeout(updateScrollIndicators, 350);
+    return () => clearTimeout(timer);
+  }, [activeTab, updateScrollIndicators]);
 
   // Keyboard navigation for roving tabindex (WAI-ARIA Tabs pattern)
   const handleTabKeyDown = useCallback(
@@ -125,14 +161,22 @@ export const ContextPanel = memo(function ContextPanel({
       {/* Single tab bar — responsive via CSS, no duplication */}
       {!hideTabBar && (
         <div className="flex items-center border-b border-border/20 px-3 pt-2">
-          {/* Scrollable tab buttons */}
-          <div
-            ref={tabBarRef}
-            className="flex min-w-0 flex-1 items-center gap-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-            role="tablist"
-            aria-label="Context panel tabs"
-            onKeyDown={handleTabKeyDown}
-          >
+          {/* Scrollable tab buttons with overflow indicators */}
+          <div className="relative min-w-0 flex-1">
+            {showScrollLeft && (
+              <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-6 bg-gradient-to-r from-card to-transparent" aria-hidden="true" />
+            )}
+            {showScrollRight && (
+              <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-6 bg-gradient-to-l from-card to-transparent" aria-hidden="true" />
+            )}
+            <div
+              ref={tabBarRef}
+              className="flex items-center gap-0 overflow-x-auto px-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              role="tablist"
+              aria-label="Context panel tabs"
+              onKeyDown={handleTabKeyDown}
+              onScroll={handleTabScroll}
+            >
             {CONTEXT_TAB_CONFIG.map((tab) => {
               const isActive = activeTab === tab.value;
               return (
@@ -156,6 +200,7 @@ export const ContextPanel = memo(function ContextPanel({
                 </button>
               );
             })}
+            </div>
           </div>
           {/* Pinned action buttons — never scroll off-screen */}
           <div className="ml-auto flex flex-shrink-0 items-center gap-1 pl-2">
