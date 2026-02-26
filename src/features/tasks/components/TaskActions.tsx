@@ -24,7 +24,7 @@ export const TaskActions = memo(function TaskActions({
   onDelete,
 }: TaskActionsProps) {
   return (
-    <div className="flex items-center gap-2 border-b border-border/40 px-4 py-3">
+    <div className="flex flex-wrap items-center gap-2 border-b border-border/40 px-4 py-3">
       {managementStatus !== "orphan" ? (
         <>
           <button
