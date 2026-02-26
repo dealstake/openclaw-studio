@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { DriveFile } from "../types";
+import { isArtifactsListResponse, parseApiError } from "../lib/api";
 
 /**
  * Data-fetching hook for Google Drive artifacts.
@@ -24,12 +25,12 @@ export function useArtifacts(isSelected: boolean) {
     try {
       const res = await fetch("/api/artifacts");
       if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(
-          (body as { error?: string }).error || `HTTP ${res.status}`,
-        );
+        throw new Error(await parseApiError(res, "Failed to load artifacts"));
       }
-      const data = (await res.json()) as { files: DriveFile[] };
+      const data: unknown = await res.json();
+      if (!isArtifactsListResponse(data)) {
+        throw new Error("Unexpected response format from artifacts API");
+      }
       setFiles(data.files);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load artifacts.");
@@ -55,10 +56,8 @@ export function useArtifacts(isSelected: boolean) {
               body: formData,
             });
             if (!res.ok) {
-              const body = await res.json().catch(() => ({}));
               throw new Error(
-                (body as { error?: string }).error ||
-                  `Upload failed for ${file.name} (${res.status})`,
+                await parseApiError(res, `Upload failed for ${file.name}`),
               );
             }
           }),
