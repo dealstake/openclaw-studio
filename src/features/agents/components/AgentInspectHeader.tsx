@@ -1,6 +1,8 @@
 "use client";
 import { memo } from "react";
-import { SectionLabel, sectionLabelClass} from "@/components/SectionLabel";
+import { X } from "lucide-react";
+import { SectionLabel } from "@/components/SectionLabel";
+import { PanelIconButton } from "@/components/PanelIconButton";
 
 export const AgentInspectHeader = memo(function AgentInspectHeader({
   label,
@@ -23,15 +25,14 @@ export const AgentInspectHeader = memo(function AgentInspectHeader({
         </SectionLabel>
         <div className="console-title text-2xl leading-none text-foreground">{title}</div>
       </div>
-      <button
-        className={`rounded-md border border-border/80 bg-card/70 px-3 py-2 ${sectionLabelClass} text-muted-foreground transition hover:border-border hover:bg-muted/65 disabled:cursor-not-allowed disabled:opacity-50`}
-        type="button"
+      <PanelIconButton
+        aria-label="Close panel"
         data-testid={closeTestId}
         disabled={closeDisabled}
         onClick={onClose}
       >
-        Close
-      </button>
+        <X className="h-3.5 w-3.5" />
+      </PanelIconButton>
     </div>
   );
 });

@@ -182,7 +182,7 @@ export const ProjectCard = memo(function ProjectCard({
             className="w-full truncate text-left hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary rounded-sm cursor-pointer"
             onClick={onOpenFile}
             onKeyDown={handleKeyDown}
-            aria-label={`Open ${project.name} project file`}
+            aria-label="Open project file"
           >
             {project.name}
           </button>
@@ -214,7 +214,7 @@ export const ProjectCard = memo(function ProjectCard({
       />
 
       {details && (
-        <div className="mt-1 space-y-0.5 border-t border-border/40 pt-1">
+        <div className="mt-2 space-y-2 border-t border-border/40 pt-2">
           {!isDone && (
             <div className="flex items-center gap-2">
               <div
