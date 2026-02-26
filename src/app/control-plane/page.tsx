@@ -40,7 +40,7 @@ export default function ControlPlanePage() {
     <main className="mx-auto flex h-screen w-full max-w-[1600px] flex-col gap-4 p-4">
       <header className="bg-card rounded-lg flex items-center justify-between px-4 py-3">
         <div>
-          <h1 className="font-display text-3xl tracking-wide text-foreground">Task Control Plane</h1>
+          <h1 className="font-semibold text-3xl tracking-wide text-foreground">Task Control Plane</h1>
           <p className="text-sm text-muted-foreground">
             Trello-style read-only Kanban view powered by Beads JSON state.
           </p>

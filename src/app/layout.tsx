@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Bebas_Neue, IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
+import { IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
 
@@ -12,12 +12,6 @@ export const metadata: Metadata = {
   title: "Trident Control Center",
   description: "AI agent operations dashboard for Trident Funding Solutions.",
 };
-
-const display = Bebas_Neue({
-  variable: "--font-display",
-  weight: "400",
-  subsets: ["latin"],
-});
 
 const sans = IBM_Plex_Sans({
   variable: "--font-sans",
@@ -46,7 +40,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${display.variable} ${sans.variable} ${mono.variable} antialiased overflow-x-hidden`}>
+      <body className={`${sans.variable} ${mono.variable} antialiased overflow-x-hidden`}>
         {children}
         <Toaster
           theme="system"
