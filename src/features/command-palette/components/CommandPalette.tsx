@@ -1,7 +1,8 @@
 "use client";
 
-import { memo, useEffect } from "react";
+import { memo, useEffect, useRef } from "react";
 import { Command as Cmdk } from "cmdk";
+import FocusTrap from "focus-trap-react";
 import { Search } from "lucide-react";
 import { Z_BACKDROP, Z_MODAL } from "@/lib/styles/z-index";
 import type { CommandAction } from "../lib/types";
@@ -26,6 +27,8 @@ export const CommandPalette = memo(function CommandPalette({
   onOpenChange,
   actions,
 }: Props) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
   // Global Cmd+K listener
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -61,49 +64,66 @@ export const CommandPalette = memo(function CommandPalette({
       <div
         className="fixed inset-0 flex items-start justify-center pt-16 sm:pt-[20vh] pointer-events-none"
         style={{ zIndex: Z_MODAL }}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Command Palette"
       >
-        <div className="pointer-events-auto w-full max-w-lg mx-4 animate-in fade-in slide-in-from-top-4 duration-200">
-          <Cmdk
-            label="Command Palette"
-            loop
-            className="rounded-lg border border-border bg-card shadow-lg overflow-hidden"
+        <FocusTrap
+          active={open}
+          focusTrapOptions={{
+            escapeDeactivates: true,
+            onDeactivate: () => onOpenChange(false),
+            allowOutsideClick: true,
+            fallbackFocus: () => containerRef.current ?? document.body,
+          }}
+        >
+          <div
+            ref={containerRef}
+            className="pointer-events-auto w-full max-w-lg mx-4 animate-in fade-in slide-in-from-top-4 duration-200"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Command Palette"
           >
-            <div className="flex items-center gap-2 border-b border-border px-3">
-              <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
-              <Cmdk.Input
-                placeholder="Type a command or search…"
-                className="flex-1 h-12 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
-                autoFocus
-              />
-              <kbd className="hidden sm:inline-flex items-center gap-0.5 rounded border border-border bg-muted/50 px-1.5 py-0.5 text-xs text-muted-foreground font-mono">
-                ESC
-              </kbd>
-            </div>
-            <Cmdk.List className="max-h-72 overflow-y-auto p-2">
-              <Cmdk.Empty className="py-6 text-center text-sm text-muted-foreground">
-                No results found.
-              </Cmdk.Empty>
-              {GROUP_ORDER.map((groupKey) => {
-                const items = grouped.get(groupKey);
-                if (!items?.length) return null;
-                return (
-                  <Cmdk.Group
-                    key={groupKey}
-                    heading={GROUP_LABELS[groupKey]}
-                    className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground"
-                  >
-                    {items.map((action) => (
-                      <CommandItem key={action.id} action={action} />
-                    ))}
-                  </Cmdk.Group>
-                );
-              })}
-            </Cmdk.List>
-          </Cmdk>
-        </div>
+            <Cmdk
+              label="Command Palette"
+              loop
+              className="rounded-lg border border-border bg-card shadow-lg overflow-hidden"
+            >
+              <div className="flex items-center gap-2 border-b border-border px-3">
+                <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <Cmdk.Input
+                  placeholder="Type a command or search…"
+                  className="flex-1 h-12 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
+                  autoFocus
+                />
+                <kbd className="hidden sm:inline-flex items-center gap-0.5 rounded border border-border bg-muted/50 px-1.5 py-0.5 text-xs text-muted-foreground font-mono">
+                  ESC
+                </kbd>
+              </div>
+              <Cmdk.List className="max-h-72 overflow-y-auto p-2">
+                <Cmdk.Empty
+                  className="py-6 text-center text-sm text-muted-foreground"
+                  role="status"
+                  aria-live="polite"
+                >
+                  No results found.
+                </Cmdk.Empty>
+                {GROUP_ORDER.map((groupKey) => {
+                  const items = grouped.get(groupKey);
+                  if (!items?.length) return null;
+                  return (
+                    <Cmdk.Group
+                      key={groupKey}
+                      heading={GROUP_LABELS[groupKey]}
+                      className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground"
+                    >
+                      {items.map((action) => (
+                        <CommandItem key={action.id} action={action} />
+                      ))}
+                    </Cmdk.Group>
+                  );
+                })}
+              </Cmdk.List>
+            </Cmdk>
+          </div>
+        </FocusTrap>
       </div>
     </>
   );

@@ -72,6 +72,7 @@ function createRecentActions(
         } else if (recent.id.startsWith("agent-") && onSwitchAgent) {
           onSwitchAgent(recent.id.replace("agent-", ""));
         }
+        ctx.trackRecent(recent.id, recent.label);
         ctx.close();
       },
     };
@@ -102,7 +103,9 @@ function createGatewayActions(
       group: "actions" as const,
       keywords: ["restart", "gateway", "reconnect", "refresh"],
       onSelect: () => {
-        void client.call("gateway.restart", {});
+        void client.call("gateway.restart", {}).catch(() => {
+          /* network error — gateway is restarting, ignore */
+        });
         ctx.close();
       },
     },
