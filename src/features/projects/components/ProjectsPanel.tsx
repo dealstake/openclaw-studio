@@ -115,17 +115,11 @@ export const ProjectsPanel = memo(function ProjectsPanel({
 
   // Handle filter changes: "all" is exclusive — selecting it clears others, selecting a status clears "all"
   const handleFilterChange = useCallback((next: string[]) => {
-    if (next.length === 0) {
-      setStatusFilter(["all"]);
-      return;
-    }
     const hadAll = statusFilter.includes("all");
     const hasAll = next.includes("all");
     if (hasAll && !hadAll) {
-      // User clicked "all" — reset to all
       setStatusFilter(["all"]);
     } else if (hasAll && next.length > 1) {
-      // User clicked a specific status while "all" was active — remove "all"
       setStatusFilter(next.filter((v) => v !== "all"));
     } else {
       setStatusFilter(next);
