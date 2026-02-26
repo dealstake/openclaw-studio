@@ -22,6 +22,7 @@ import {
   ProjectPreviewCard,
   type ProjectConfig,
 } from "./ProjectPreviewCard";
+import { ProjectConfigSchema } from "../lib/projectConfigSchema";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import { TYPE_CARDS, type ProjectType } from "../lib/constants";
 import { slugify, generateMarkdown } from "../lib/projectMarkdown";
@@ -92,8 +93,11 @@ export const ProjectWizardModal = memo(function ProjectWizardModal({
   }, []);
 
   const handleConfigExtracted = useCallback((config: unknown) => {
-    if (config && typeof config === "object" && "name" in config) {
-      setPreviewConfig(config as ProjectConfig);
+    const result = ProjectConfigSchema.safeParse(config);
+    if (result.success) {
+      setPreviewConfig(result.data);
+    } else {
+      console.warn("AI returned invalid project config:", result.error.flatten());
     }
   }, []);
 

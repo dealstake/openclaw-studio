@@ -89,12 +89,20 @@ export const ProjectCard = memo(function ProjectCard({
       variant="flush"
       isHoverable
       className="group/card"
-      onClick={handleCardClick}
     >
       {/* Primary: Project Name — the most important info, shown first */}
       <CardHeader>
-        <CardTitle as="div" className="text-sm font-semibold" title={project.name}>
-          {project.name}
+
+        <CardTitle as="div" className="text-sm font-semibold">
+          <button
+            type="button"
+            className="text-left cursor-pointer truncate hover:underline"
+            title={project.name}
+            onClick={handleCardClick}
+            aria-label={`Open project: ${project.name}`}
+          >
+            {project.name}
+          </button>
         </CardTitle>
         {linkedTasks.length > 0 && (
           <span
@@ -259,6 +267,7 @@ export const ProjectCard = memo(function ProjectCard({
                 onClick={(e) => { e.stopPropagation(); setPhasesExpanded((v) => !v); }}
                 aria-expanded={phasesExpanded}
                 aria-controls={`phases-${project.doc}`}
+                aria-label={`${phasesExpanded ? "Collapse" : "Expand"} phases section`}
               >
                 {phasesExpanded ? (
                   <ChevronDown className="h-3 w-3" />
@@ -315,6 +324,7 @@ export const ProjectCard = memo(function ProjectCard({
                 onClick={(e) => { e.stopPropagation(); setTasksExpanded((v) => !v); }}
                 aria-expanded={tasksExpanded}
                 aria-controls={`tasks-${project.doc}`}
+                aria-label={`${tasksExpanded ? "Collapse" : "Expand"} linked tasks section`}
               >
                 {tasksExpanded ? (
                   <ChevronDown className="h-3 w-3" />
@@ -344,6 +354,7 @@ export const ProjectCard = memo(function ProjectCard({
                 onClick={(e) => { e.stopPropagation(); setHistoryExpanded((v) => !v); }}
                 aria-expanded={historyExpanded}
                 aria-controls={`history-${project.doc}`}
+                aria-label={`${historyExpanded ? "Collapse" : "Expand"} history section`}
               >
                 {historyExpanded ? (
                   <ChevronDown className="h-3 w-3" />
