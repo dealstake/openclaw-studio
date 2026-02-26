@@ -33,7 +33,7 @@ export const TraceTurnRow = React.memo(function TraceTurnRow({
   return (
     <button
       type="button"
-      className={`flex w-full items-center gap-2 border-b border-border/40 px-3 py-2 text-left text-xs transition hover:bg-muted/40 ${
+      className={`flex w-full items-center gap-2 border-b border-border/40 px-3 py-2 text-left text-xs transition hover:bg-muted/40 min-h-[44px] ${
         isSelected ? "bg-accent" : ""
       }`}
       onClick={() => onSelect(turn.index)}

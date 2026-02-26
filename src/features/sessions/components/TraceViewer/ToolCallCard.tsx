@@ -26,7 +26,7 @@ export const ToolCallCard = React.memo(function ToolCallCard({
     <div className="rounded-lg border border-border bg-card/50">
       <button
         type="button"
-        className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition hover:bg-muted/30"
+        className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition hover:bg-muted/30 min-h-[44px]"
         onClick={() => setExpanded(!expanded)}
         aria-expanded={expanded}
       >
