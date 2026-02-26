@@ -19,6 +19,7 @@ const UsagePanel = lazy(() =>
 import {
   AgentSettingsPanel,
 } from "@/features/agents/components/AgentInspectPanels";
+import { LogoutButton } from "@/components/brand/LogoutButton";
 
 const RESERVED_MAIN_AGENT_ID = "main";
 
@@ -96,6 +97,9 @@ export const ManagementPanelContent = memo(function ManagementPanelContent({
             onThinkingTracesToggle={ctx.onThinkingTracesToggle}
             onNavigateToTasks={ctx.onNavigateToTasks}
           />
+          <div className="mt-4 border-t border-border/40 px-4 pt-4">
+            <LogoutButton />
+          </div>
         </PanelErrorBoundary>
       )}
     </Suspense>

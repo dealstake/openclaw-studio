@@ -5,6 +5,9 @@ import type { BreadcrumbAgent } from "@/features/agents/components/AgentBreadcru
 import type { ManagementTab } from "@/layout/AppSidebar";
 import { SessionHistorySidebar } from "@/features/sessions/components/SessionHistorySidebar";
 import { sectionLabelClass } from "@/components/SectionLabel";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { NotificationBell } from "@/features/notifications/components/NotificationBell";
+import { LogoutButton } from "@/components/brand/LogoutButton";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 
 interface MobileSessionDrawerProps {
@@ -100,6 +103,14 @@ export const MobileSessionDrawer = memo(function MobileSessionDrawer({
               {item.label}
             </button>
           ))}
+        </div>
+        {/* Utilities: Notifications + Theme + Logout */}
+        <div className="flex items-center justify-between border-b border-border/40 px-3 py-3">
+          <div className="flex items-center gap-2">
+            <NotificationBell />
+            <ThemeToggle />
+          </div>
+          <LogoutButton iconOnly={false} className="text-[11px]" />
         </div>
         {/* Session history */}
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">

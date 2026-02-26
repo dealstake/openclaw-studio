@@ -1,19 +1,11 @@
 import { memo, useEffect, useState, useRef } from "react";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { HeaderIconButton } from "@/components/HeaderIconButton";
 
 import { BrandMark } from "@/components/brand/BrandMark";
-import { LogoutButton } from "@/components/brand/LogoutButton";
-import { NotificationBell } from "@/features/notifications/components/NotificationBell";
-import { useNotificationStore } from "@/features/notifications/hooks/useNotifications";
 import {
   Ellipsis,
   Menu,
   FolderOpen,
-  PanelRight,
-  Settings,
-  Plus,
-  Wifi,
   FolderKanban,
   ListChecks,
   Brain,
@@ -22,24 +14,16 @@ import {
   X,
 } from "lucide-react";
 import { useEmergencyOptional } from "@/features/emergency/EmergencyProvider";
-import { getCfIdentity, type CfIdentity } from "@/lib/cloudflare-auth";
 import { AgentBreadcrumb, type BreadcrumbAgent } from "./AgentBreadcrumb";
 import type { ContextTab } from "@/features/context/components/ContextPanel";
 
 type HeaderBarProps = {
   onConnectionSettings: () => void;
-  onFilesToggle: () => void;
-  filesActive: boolean;
-  filesDisabled?: boolean;
-  onOpenContext?: () => void;
   onOpenSessionHistory?: () => void;
   agents?: BreadcrumbAgent[];
   selectedAgentId?: string | null;
   onSelectAgent?: (agentId: string) => void;
   onCreateAgent?: () => void;
-  /** New props for overflow menu actions */
-  onNewSession?: () => void;
-  onOpenSettings?: () => void;
   running?: boolean;
   /** Context tab cluster — unified into header on wide viewports */
   showContextTabs?: boolean;
@@ -67,24 +51,17 @@ const CONTEXT_TAB_ITEMS: Array<{
 
 /* ── Overflow menu ───────────────────────────────────────────────────── */
 
-function OverflowMenu({
-  onNewSession,
-  onOpenSettings,
-  onConnectionSettings,
-  onFilesToggle,
-  filesActive,
-  onOpenContext,
-  unreadCount,
-  identity,
+/** Mobile-only overflow menu — context panel tabs + emergency */
+function MobileContextMenu({
+  contextTab,
+  contextPanelOpen,
+  onContextTabClick,
+  emergency,
 }: {
-  onNewSession?: () => void;
-  onOpenSettings?: () => void;
-  onConnectionSettings: () => void;
-  onFilesToggle: () => void;
-  filesActive: boolean;
-  onOpenContext?: () => void;
-  unreadCount?: number;
-  identity: CfIdentity | null;
+  contextTab?: ContextTab;
+  contextPanelOpen?: boolean;
+  onContextTabClick?: (tab: ContextTab) => void;
+  emergency: ReturnType<typeof useEmergencyOptional>;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -101,84 +78,47 @@ function OverflowMenu({
   }, [open]);
 
   const menuItemClass =
-    "flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-medium text-foreground transition hover:bg-muted";
+    "flex w-full items-center gap-2 rounded-md px-3 py-2.5 text-left text-xs font-medium text-foreground transition hover:bg-muted min-h-[44px]";
 
   return (
     <div className="relative" ref={ref}>
       <HeaderIconButton
         onClick={() => setOpen((v) => !v)}
-        aria-label="Open studio menu"
+        aria-label="Open context menu"
         data-testid="studio-menu-toggle"
       >
-        <div className="relative">
-          <Ellipsis className="h-4 w-4" />
-          {(unreadCount ?? 0) > 0 ? (
-            <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-destructive sm:hidden" />
-          ) : null}
-        </div>
+        <Ellipsis className="h-4 w-4" />
       </HeaderIconButton>
 
       {open ? (
         <div className="absolute right-0 top-11 z-50 min-w-48 rounded-md border border-border/80 bg-popover/95 p-1 shadow-lg backdrop-blur">
-          {onNewSession ? (
-            <button
-              className={menuItemClass}
-              type="button"
-              onClick={() => { onNewSession(); setOpen(false); }}
-            >
-              <Plus className="h-3.5 w-3.5 text-muted-foreground" />
-              New Session
-            </button>
-          ) : null}
-          {onOpenSettings ? (
-            <button
-              className={menuItemClass}
-              type="button"
-              onClick={() => { onOpenSettings(); setOpen(false); }}
-            >
-              <Settings className="h-3.5 w-3.5 text-muted-foreground" />
-              Agent Settings
-            </button>
-          ) : null}
-          <button
-            className={menuItemClass}
-            type="button"
-            onClick={() => { onFilesToggle(); setOpen(false); }}
-          >
-            <FolderOpen className="h-3.5 w-3.5 text-muted-foreground" />
-            {filesActive ? "Back to Context" : "Files"}
-          </button>
-          {onOpenContext ? (
-            <button
-              className={menuItemClass}
-              type="button"
-              onClick={() => { onOpenContext(); setOpen(false); }}
-            >
-              <PanelRight className="h-3.5 w-3.5 text-muted-foreground" />
-              Context Panel
-            </button>
-          ) : null}
-          <div className="my-1 border-t border-border/40" />
-          <div className="px-1 py-1">
-            <ThemeToggle />
-          </div>
-          <button
-            className={menuItemClass}
-            type="button"
-            onClick={() => { onConnectionSettings(); setOpen(false); }}
-          >
-            <Wifi className="h-3.5 w-3.5 text-muted-foreground" />
-            Gateway Connection
-          </button>
-          {identity?.email ? (
+          {CONTEXT_TAB_ITEMS.map(({ value, label, Icon }) => {
+            const isActive = contextPanelOpen && contextTab === value;
+            return (
+              <button
+                key={value}
+                className={`${menuItemClass} ${isActive ? "bg-accent text-accent-foreground" : ""}`}
+                type="button"
+                onClick={() => { onContextTabClick?.(value); setOpen(false); }}
+              >
+                <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+                {label}
+              </button>
+            );
+          })}
+          {emergency && (
             <>
               <div className="my-1 border-t border-border/40" />
-              <div className="px-3 py-1 text-xs text-muted-foreground truncate">
-                {identity.email}
-              </div>
-              <LogoutButton className="w-full" />
+              <button
+                className={menuItemClass}
+                type="button"
+                onClick={() => { emergency.toggle(); setOpen(false); }}
+              >
+                <ShieldAlert className="h-3.5 w-3.5 text-red-500" />
+                Emergency
+              </button>
             </>
-          ) : null}
+          )}
         </div>
       ) : null}
     </div>
@@ -189,40 +129,20 @@ function OverflowMenu({
 
 export const HeaderBar = memo(function HeaderBar({
   onConnectionSettings,
-  onFilesToggle,
-  filesActive,
-  onOpenContext,
   onOpenSessionHistory,
   agents,
   selectedAgentId,
   onSelectAgent,
   onCreateAgent,
-  onNewSession,
-  onOpenSettings,
   showContextTabs,
   contextTab,
   contextPanelOpen,
   onContextTabClick,
   onContextClose,
 }: HeaderBarProps) {
-  const [identity, setIdentity] = useState<CfIdentity | null>(null);
-  const { unreadCount } = useNotificationStore();
+  // Suppress unused lint — onConnectionSettings still wired from parent for connection panel toggle
+  void onConnectionSettings;
   const emergency = useEmergencyOptional();
-
-  useEffect(() => {
-    let cancelled = false;
-    const fetchIdentity = async () => {
-      const id = await getCfIdentity();
-      if (!cancelled) setIdentity(id);
-      if (!id && !cancelled) {
-        await new Promise((r) => setTimeout(r, 2000));
-        const retry = await getCfIdentity();
-        if (!cancelled) setIdentity(retry);
-      }
-    };
-    fetchIdentity();
-    return () => { cancelled = true; };
-  }, []);
 
   return (
     <div className="flex h-12 w-full items-center justify-between bg-background/60 px-4 backdrop-blur-xl transition-colors duration-300 hover:bg-background/80">
@@ -307,22 +227,11 @@ export const HeaderBar = memo(function HeaderBar({
         </div>
       ) : (
         <div className="flex shrink-0 items-center gap-1.5">
-          {/* NotificationBell — hidden on mobile, shown in overflow instead */}
-          <div className="hidden sm:flex">
-            <NotificationBell />
-          </div>
-          <div className="hidden sm:flex">
-            <ThemeToggle />
-          </div>
-          <OverflowMenu
-            onNewSession={onNewSession}
-            onOpenSettings={onOpenSettings}
-            onConnectionSettings={onConnectionSettings}
-            onFilesToggle={onFilesToggle}
-            filesActive={filesActive}
-            onOpenContext={onOpenContext}
-            unreadCount={unreadCount}
-            identity={identity}
+          <MobileContextMenu
+            contextTab={contextTab}
+            contextPanelOpen={contextPanelOpen}
+            onContextTabClick={onContextTabClick}
+            emergency={emergency}
           />
         </div>
       )}

@@ -99,7 +99,7 @@ export const AgentStudioPage = () => {
     managementView, setManagementView,
     headerVisible, onHoverZoneEnter, onHoverZoneLeave,
     handleExpandToggle, clearExpandedTab, switchToChat,
-    handleFilesToggle, handleBackToChat,
+    handleFilesToggle: _handleFilesToggle, handleBackToChat,
     swipeHandlers,
   } = layout;
   const [showConnectionPanel, setShowConnectionPanel] = useState(false);
@@ -799,23 +799,7 @@ export const AgentStudioPage = () => {
           <HeaderBar
             running={focusedAgentRunning}
             onConnectionSettings={() => setShowConnectionPanel((prev) => !prev)}
-            onFilesToggle={handleFilesToggle}
-            filesActive={contextMode === "files"}
-            onOpenContext={() => {
-              if (isWide(breakpoint)) {
-                setContextPanelOpen(true);
-              } else {
-                setMobilePane("context");
-              }
-            }}
             onOpenSessionHistory={() => setMobileSessionDrawerOpen(true)}
-            onNewSession={stableChatOnNewSession}
-            onOpenSettings={() => {
-              if (focusedAgent && !settingsAgentId) {
-                setSettingsAgentId(focusedAgent.agentId);
-              }
-              setManagementView("settings");
-            }}
             agents={breadcrumbAgents}
             selectedAgentId={focusedAgentId}
             onSelectAgent={(agentId) => {
