@@ -1,16 +1,13 @@
 "use client";
 
 import { memo } from "react";
-import { AlertTriangle, Clock, Megaphone, Play, Trash2 } from "lucide-react";
+import { AlertTriangle, Megaphone, Play, Trash2 } from "lucide-react";
 import type { StudioTask, TaskSchedule } from "@/features/tasks/types";
 import {
-  PERIODIC_INTERVAL_OPTIONS,
-  CONSTANT_INTERVAL_OPTIONS,
-  STAGGER_OPTIONS,
   THINKING_OPTIONS,
   DELIVERY_MODE_OPTIONS,
 } from "@/features/tasks/types";
-import { humanReadableSchedule } from "@/features/tasks/lib/schedule";
+import { TaskScheduleEditor } from "./TaskScheduleEditor";
 import { formatRelativeTime } from "@/lib/text/time";
 import { formatDurationCompact as formatDuration } from "@/lib/text/time";
 import {
@@ -80,85 +77,12 @@ export const TaskMetadataSection = memo(function TaskMetadataSection({
           </span>
         </div>
 
-        {/* Schedule */}
-        {task.schedule.type === "periodic" ||
-        task.schedule.type === "constant" ? (
-          <div className="mt-2 flex items-center gap-2">
-            <Clock className="h-3 w-3 shrink-0 text-muted-foreground" />
-            <select
-              aria-label="Task schedule interval"
-              className="h-7 rounded-md border border-border/80 bg-card/70 px-2 font-mono text-[11px] text-foreground outline-none transition hover:border-border focus:border-primary/60 disabled:cursor-not-allowed disabled:opacity-60"
-              value={task.schedule.intervalMs}
-              disabled={busy}
-              onChange={(e) => {
-                const ms = Number(e.target.value);
-                const currentMs =
-                  task.schedule.type === "constant" ||
-                  task.schedule.type === "periodic"
-                    ? task.schedule.intervalMs
-                    : 0;
-                if (!ms || ms === currentMs) return;
-                const sched = task.schedule;
-                const newSchedule: TaskSchedule =
-                  sched.type === "constant"
-                    ? {
-                        type: "constant",
-                        intervalMs: ms,
-                        ...(sched.staggerMs
-                          ? { staggerMs: sched.staggerMs }
-                          : {}),
-                      }
-                    : {
-                        type: "periodic",
-                        intervalMs: ms,
-                        ...("staggerMs" in sched && sched.staggerMs
-                          ? { staggerMs: sched.staggerMs }
-                          : {}),
-                      };
-                onUpdateSchedule(task.id, newSchedule);
-              }}
-            >
-              {(task.schedule.type === "constant"
-                ? CONSTANT_INTERVAL_OPTIONS
-                : PERIODIC_INTERVAL_OPTIONS
-              ).map((opt) => (
-                <option key={opt.ms} value={opt.ms}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-            {/* Stagger control */}
-            <select
-              aria-label="Task stagger window"
-              className="h-7 rounded-md border border-border/80 bg-card/70 px-2 font-mono text-[11px] text-foreground outline-none transition hover:border-border focus:border-primary/60 disabled:cursor-not-allowed disabled:opacity-60"
-              value={task.schedule.staggerMs ?? 0}
-              disabled={busy}
-              onChange={(e) => {
-                const staggerMs = Number(e.target.value);
-                const current =
-                  task.schedule.type === "constant" || task.schedule.type === "periodic"
-                    ? (task.schedule.staggerMs ?? 0)
-                    : 0;
-                if (staggerMs === current) return;
-                const newSchedule: TaskSchedule = {
-                  ...task.schedule,
-                  staggerMs: staggerMs || undefined,
-                } as TaskSchedule;
-                onUpdateSchedule(task.id, newSchedule);
-              }}
-            >
-              {STAGGER_OPTIONS.map((opt) => (
-                <option key={opt.ms} value={opt.ms}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        ) : (
-          <div className="mt-2 text-[11px] text-muted-foreground">
-            {humanReadableSchedule(task.schedule)}
-          </div>
-        )}
+        {/* Schedule — staged editing with Save/Cancel */}
+        <TaskScheduleEditor
+          schedule={task.schedule}
+          busy={busy}
+          onSave={(newSchedule) => onUpdateSchedule(task.id, newSchedule)}
+        />
 
         {/* Description */}
         {editing ? (
