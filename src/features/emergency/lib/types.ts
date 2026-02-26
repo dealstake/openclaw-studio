@@ -11,10 +11,12 @@ export type ActionStatus = "idle" | "pending" | "success" | "error";
 
 export interface ActionResult {
   kind: EmergencyActionKind;
-  status: "success" | "error";
+  status: "success" | "partial" | "error";
   message: string;
   /** Number of items affected (jobs paused, sessions stopped, etc.) */
   affected: number;
+  /** Number of items that failed (0 if all succeeded) */
+  failed?: number;
 }
 
 export interface EmergencyActionConfig {

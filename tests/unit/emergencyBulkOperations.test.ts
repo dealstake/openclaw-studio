@@ -128,7 +128,7 @@ describe("Emergency bulk operations", () => {
       });
 
       // 2 out of 3 succeeded (s2 kill failed)
-      expect(res).toMatchObject({ status: "success", affected: 2 });
+      expect(res).toMatchObject({ status: "partial", affected: 2, failed: 1 });
     });
 
     it("handles empty sessions gracefully", async () => {
@@ -176,7 +176,7 @@ describe("Emergency bulk operations", () => {
         res = await result.current.executeAction("cleanup-zombies");
       });
 
-      expect(res).toMatchObject({ status: "success", affected: 1 });
+      expect(res).toMatchObject({ status: "partial", affected: 1, failed: 1 });
     });
 
     it("skips sessions without lastActiveAt", async () => {

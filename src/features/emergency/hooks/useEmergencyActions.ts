@@ -46,27 +46,30 @@ export const useEmergencyActions = (client: GatewayClient, gatewayStatus: Gatewa
       const enabledJobs = result.jobs.filter((j: CronJobSummary) => j.enabled);
       const pausedIds: string[] = [];
 
+      let failedCount = 0;
       for (const job of enabledJobs) {
         try {
           await updateCronJob(client, job.id, { enabled: false });
           pausedIds.push(job.id);
         } catch {
-          // Continue with remaining jobs
+          failedCount++;
         }
       }
 
+      const total = enabledJobs.length;
+      const hasFailures = failedCount > 0;
+      const resultStatus = hasFailures ? (pausedIds.length > 0 ? "partial" as const : "error" as const) : "success" as const;
+      const message = hasFailures
+        ? `Paused ${pausedIds.length} of ${total} job${total === 1 ? "" : "s"}. ${failedCount} failed.`
+        : `Paused ${pausedIds.length} cron job${pausedIds.length === 1 ? "" : "s"}`;
+
       setState((prev) => ({
         ...prev,
-        status: { ...prev.status, "pause-all-cron": "success" },
+        status: { ...prev.status, "pause-all-cron": resultStatus === "error" ? "error" : "success" },
         pausedJobIds: pausedIds,
-        lastResult: {
-          kind: "pause-all-cron",
-          status: "success",
-          message: `Paused ${pausedIds.length} cron job${pausedIds.length === 1 ? "" : "s"}`,
-          affected: pausedIds.length,
-        },
+        lastResult: { kind: "pause-all-cron", status: resultStatus, message, affected: pausedIds.length, failed: failedCount },
       }));
-      return { kind: "pause-all-cron", status: "success", message: `Paused ${pausedIds.length} cron job${pausedIds.length === 1 ? "" : "s"}`, affected: pausedIds.length };
+      return { kind: "pause-all-cron", status: resultStatus, message, affected: pausedIds.length, failed: failedCount };
     } catch (err) {
       if (isGatewayDisconnectLikeError(err)) throw err;
       const msg = err instanceof Error ? err.message : "Failed to pause cron jobs";
@@ -87,22 +90,31 @@ export const useEmergencyActions = (client: GatewayClient, gatewayStatus: Gatewa
       );
       const activeSessions = result.sessions ?? [];
       let stopped = 0;
+      let failedCount = 0;
 
       for (const session of activeSessions) {
         try {
           await client.call("sessions.kill", { sessionKey: session.sessionKey });
           stopped++;
         } catch {
-          // Continue with remaining sessions
+          failedCount++;
         }
       }
 
-      setActionStatus("stop-active-sessions", "success");
+      const total = activeSessions.length;
+      const hasFailures = failedCount > 0;
+      const resultStatus = hasFailures ? (stopped > 0 ? "partial" as const : "error" as const) : "success" as const;
+      const message = hasFailures
+        ? `Stopped ${stopped} of ${total} session${total === 1 ? "" : "s"}. ${failedCount} failed.`
+        : `Stopped ${stopped} session${stopped === 1 ? "" : "s"}`;
+
+      setActionStatus("stop-active-sessions", resultStatus === "error" ? "error" : "success");
       const res: ActionResult = {
         kind: "stop-active-sessions",
-        status: "success",
-        message: `Stopped ${stopped} session${stopped === 1 ? "" : "s"}`,
+        status: resultStatus,
+        message,
         affected: stopped,
+        failed: failedCount,
       };
       setState((prev) => ({ ...prev, lastResult: res }));
       return res;
@@ -132,21 +144,30 @@ export const useEmergencyActions = (client: GatewayClient, gatewayStatus: Gatewa
       });
 
       let cleaned = 0;
+      let failedCount = 0;
       for (const zombie of zombies) {
         try {
           await client.call("sessions.kill", { sessionKey: zombie.sessionKey });
           cleaned++;
         } catch {
-          // Continue
+          failedCount++;
         }
       }
 
-      setActionStatus("cleanup-zombies", "success");
+      const total = zombies.length;
+      const hasFailures = failedCount > 0;
+      const resultStatus = hasFailures ? (cleaned > 0 ? "partial" as const : "error" as const) : "success" as const;
+      const message = hasFailures
+        ? `Cleaned up ${cleaned} of ${total} zombie${total === 1 ? "" : "s"}. ${failedCount} failed.`
+        : `Cleaned up ${cleaned} zombie session${cleaned === 1 ? "" : "s"}`;
+
+      setActionStatus("cleanup-zombies", resultStatus === "error" ? "error" : "success");
       const res: ActionResult = {
         kind: "cleanup-zombies",
-        status: "success",
-        message: `Cleaned up ${cleaned} zombie session${cleaned === 1 ? "" : "s"}`,
+        status: resultStatus,
+        message,
         affected: cleaned,
+        failed: failedCount,
       };
       setState((prev) => ({ ...prev, lastResult: res }));
       return res;
