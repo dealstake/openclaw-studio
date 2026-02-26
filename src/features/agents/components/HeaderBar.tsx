@@ -190,7 +190,7 @@ export const HeaderBar = memo(function HeaderBar({
                 key={value}
                 type="button"
                 onClick={() => onContextTabClick?.(value)}
-                className={`flex h-10 w-10 items-center justify-center rounded-full transition-colors ${
+                className={`flex h-11 w-11 items-center justify-center rounded-full transition-colors ${
                   isActive
                     ? "bg-accent text-accent-foreground"
                     : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
@@ -208,7 +208,7 @@ export const HeaderBar = memo(function HeaderBar({
               <button
                 type="button"
                 onClick={onContextClose}
-                className="flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+                className="flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
                 aria-label="Close panel"
                 title="Close panel (⌘\)"
               >
