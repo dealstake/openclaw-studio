@@ -54,7 +54,7 @@ const NavIconButton = memo(function NavIconButton({
   onKeyDown,
 }: NavIconButtonProps) {
   const Icon = item.icon;
-  const sizeClass = size === "sm" ? "h-11 w-11" : "h-11 w-11";
+  const sizeClass = "h-11 w-11";
   const iconSize = size === "sm" ? "h-4 w-4" : "h-5 w-5";
   const indicatorClass =
     indicatorPosition === "left"

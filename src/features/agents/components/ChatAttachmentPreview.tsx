@@ -72,7 +72,7 @@ const AttachmentThumbnail = memo(function AttachmentThumbnail({
       <button
         type="button"
         onClick={() => onRemove(file.id)}
-        className="absolute -right-2 -top-2 flex h-10 w-10 items-center justify-center rounded-full bg-foreground/80 text-background shadow-sm transition hover:bg-foreground sm:h-5 sm:w-5"
+        className="absolute -right-2 -top-2 flex h-11 w-11 items-center justify-center rounded-full bg-foreground/80 text-background shadow-sm transition hover:bg-foreground sm:h-6 sm:w-6 sm:min-h-[44px] sm:min-w-[44px]"
         aria-label={`Remove ${file.name}`}
       >
         <X className="h-3 w-3" />
