@@ -199,7 +199,7 @@ export const ProjectCard = memo(function ProjectCard({
       </CardHeader>
 
       {/* Description */}
-      <MarkdownViewer content={project.oneLiner} className="mt-1 text-xs leading-relaxed text-muted-foreground line-clamp-2 [&>*]:m-0 [&>*>*]:m-0" />
+      <MarkdownViewer content={project.oneLiner} className="mt-2 text-xs leading-relaxed text-muted-foreground line-clamp-2 [&>*]:m-0 [&>*>*]:m-0 [&>*]:inline" />
 
       <ConfirmDialog
         open={pendingDone}
@@ -214,7 +214,7 @@ export const ProjectCard = memo(function ProjectCard({
       />
 
       {details && (
-        <div className="mt-2 space-y-2 border-t border-border/40 pt-2">
+        <div className="mt-3 space-y-2.5 border-t border-border/40 pt-2.5">
           {!isDone && (
             <div className="flex items-center gap-2">
               <div
