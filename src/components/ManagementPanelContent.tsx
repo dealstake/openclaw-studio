@@ -86,8 +86,6 @@ export const ManagementPanelContent = memo(function ManagementPanelContent({
           <AgentSettingsPanel
             key={ctx.settingsAgent.agentId}
             agent={ctx.settingsAgent}
-            client={ctx.client}
-            status={ctx.status}
             onClose={onCloseSettings}
             onRename={ctx.onRenameAgent}
             onNewSession={ctx.onNewSession}
@@ -95,7 +93,6 @@ export const ManagementPanelContent = memo(function ManagementPanelContent({
             canDelete={ctx.settingsAgent.agentId !== RESERVED_MAIN_AGENT_ID}
             onToolCallingToggle={ctx.onToolCallingToggle}
             onThinkingTracesToggle={ctx.onThinkingTracesToggle}
-            onNavigateToTasks={ctx.onNavigateToTasks}
           />
           <div className="mt-4 border-t border-border/40 px-4 pt-4">
             <LogoutButton />

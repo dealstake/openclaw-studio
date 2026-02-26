@@ -1080,6 +1080,15 @@ export const AgentStudioPage = () => {
                         onTabChange={setBrainFileTab}
                         previewMode={brainPreviewMode}
                         onPreviewModeChange={setBrainPreviewMode}
+                        status={status}
+                        models={gatewayModels}
+                        modelValue={
+                          (() => {
+                            const raw = focusedAgent?.model ?? "";
+                            return raw.includes("/") ? raw : (gatewayModels.find((m) => m.id === raw) ? `${gatewayModels.find((m) => m.id === raw)!.provider}/${raw}` : raw);
+                          })()
+                        }
+                        onModelChange={stableChatOnModelChange}
                         onClose={() => {
                           setContextMode("agent");
                           setMobilePane("chat");
