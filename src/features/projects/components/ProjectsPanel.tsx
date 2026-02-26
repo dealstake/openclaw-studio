@@ -128,7 +128,7 @@ export const ProjectsPanel = memo(function ProjectsPanel({
   if (!agentId) return null;
 
   return (
-    <div className="flex flex-col gap-2 px-3 py-3">
+    <div className="flex flex-col gap-3 px-3 py-3">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -143,12 +143,15 @@ export const ProjectsPanel = memo(function ProjectsPanel({
           )}
         </div>
         <div className="flex items-center gap-1.5">
-          <PanelIconButton
+          <button
+            type="button"
+            className="flex items-center gap-1 rounded-md border border-border/80 bg-card/70 px-2 py-1 text-xs text-muted-foreground transition hover:border-border hover:bg-muted/65 active:scale-[0.97] focus-ring min-h-[44px] sm:min-h-0"
             aria-label="New project"
             onClick={() => setShowWizard(true)}
           >
             <Plus className="h-3 w-3" />
-          </PanelIconButton>
+            <span className="hidden sm:inline">New</span>
+          </button>
           <PanelIconButton
             aria-label="Refresh projects"
             onClick={refresh}
