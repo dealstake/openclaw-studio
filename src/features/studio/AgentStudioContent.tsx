@@ -219,7 +219,7 @@ export const AgentStudioPage = () => {
     setManagementView((prev) => (prev === tab ? null : tab));
   }, [focusedAgent, settingsAgentId, setSettingsAgentId, setManagementView]);
 
-  const handleCmdNavTab = useCallback((tab: ContextTab | "sessions" | "usage" | "channels" | "settings") => {
+  const handleCmdNavTab = useCallback((tab: ContextTab | "usage" | "channels" | "settings") => {
     const contextTabs = new Set<string>(["projects", "tasks", "brain", "workspace", "activity"]);
     if (contextTabs.has(tab)) {
       setContextTab(tab as ContextTab);
@@ -909,7 +909,7 @@ export const AgentStudioPage = () => {
               <ManagementDrawer
                 open={managementView !== null}
                 onOpenChange={(open) => { if (!open) setManagementView(null); }}
-                title={managementView ? ({ sessions: "Sessions", usage: "Usage", channels: "Channels", cron: "Cron", settings: "Settings" } as Record<ManagementTab, string>)[managementView] : ""}
+                title={managementView ? ({ usage: "Usage", channels: "Channels", cron: "Cron", settings: "Settings" } as Record<ManagementTab, string>)[managementView] : ""}
                 sidebarOffsetPx={sessionSidebarCollapsed ? 56 : 288}
               >
                 <ManagementPanelContent

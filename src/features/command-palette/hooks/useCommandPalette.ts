@@ -6,7 +6,6 @@ import {
   ListTodo,
   Brain,
   FolderOpen,
-  History,
   BarChart3,
   Radio,
 
@@ -32,7 +31,6 @@ const TAB_COMMANDS: Array<{
   { tab: "tasks", label: "Go to Tasks", icon: ListTodo, shortcut: "⌘⇧T", keywords: ["task", "cron", "job"] },
   { tab: "brain", label: "Go to Brain Files", icon: Brain, shortcut: "⌘⇧B", keywords: ["brain", "memory", "soul"] },
   { tab: "workspace", label: "Go to Files", icon: FolderOpen, keywords: ["file", "workspace", "explorer"] },
-  { tab: "sessions", label: "Go to Sessions", icon: History, keywords: ["session", "history", "transcript"] },
   { tab: "usage", label: "Go to Usage", icon: BarChart3, keywords: ["usage", "cost", "tokens", "spend"] },
   { tab: "channels", label: "Go to Channels", icon: Radio, keywords: ["channel", "whatsapp", "telegram", "discord"] },
 

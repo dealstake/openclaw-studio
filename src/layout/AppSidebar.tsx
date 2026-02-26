@@ -17,10 +17,9 @@ import { useSessionHistory } from "@/features/sessions/hooks/useSessionHistory";
 import { SessionList } from "@/features/sessions/components/SessionList";
 
 /** Management nav items that open in expanded modal */
-export type ManagementTab = "sessions" | "usage" | "channels" | "settings";
+export type ManagementTab = "usage" | "channels" | "settings";
 
 const NAV_ITEMS: Array<{ value: ManagementTab; label: string; icon: typeof MessageSquare }> = [
-  { value: "sessions", label: "Sessions", icon: MessageSquare },
   { value: "usage", label: "Usage", icon: BarChart3 },
   { value: "channels", label: "Channels", icon: Radio },
 ];

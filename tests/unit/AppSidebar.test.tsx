@@ -100,8 +100,7 @@ describe("AppSidebar", () => {
 
     it("renders management nav items", () => {
       render(createElement(AppSidebar, defaultProps()));
-      // Expanded mode has nav items with aria-labels
-      expect(screen.getAllByLabelText("Sessions").length).toBeGreaterThanOrEqual(1);
+      // Expanded mode has nav items with aria-labels (Sessions removed from nav)
       expect(screen.getByLabelText("Usage")).toBeInTheDocument();
       expect(screen.getByLabelText("Channels")).toBeInTheDocument();
     });
@@ -156,7 +155,6 @@ describe("AppSidebar", () => {
 
     it("renders nav icon buttons with labels", () => {
       render(createElement(AppSidebar, defaultProps({ collapsed: true })));
-      expect(screen.getAllByLabelText("Sessions").length).toBeGreaterThanOrEqual(1);
       expect(screen.getByLabelText("Usage")).toBeInTheDocument();
       expect(screen.getByLabelText("Channels")).toBeInTheDocument();
     });

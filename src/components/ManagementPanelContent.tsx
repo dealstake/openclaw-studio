@@ -6,11 +6,6 @@ import type { ManagementTab } from "@/layout/AppSidebar";
 import { ChannelsPanel } from "@/features/channels/components/ChannelsPanel";
 import { useManagementPanel } from "@/components/management/ManagementPanelContext";
 
-const SessionsPanel = lazy(() =>
-  import("@/features/sessions/components/SessionsPanel").then((m) => ({
-    default: m.SessionsPanel,
-  }))
-);
 const UsagePanel = lazy(() =>
   import("@/features/usage/components/UsagePanel").then((m) => ({
     default: m.UsagePanel,
@@ -45,26 +40,6 @@ export const ManagementPanelContent = memo(function ManagementPanelContent({
 
   return (
     <Suspense fallback={null}>
-      {tab === "sessions" && (
-        <PanelErrorBoundary name="Sessions">
-          <SessionsPanel
-            client={ctx.client}
-            agentId={ctx.focusedAgentId}
-            sessions={ctx.allSessions}
-            loading={ctx.allSessionsLoading}
-            error={ctx.allSessionsError}
-            onRefresh={ctx.onRefreshSessions}
-            activeSessionKey={ctx.activeSessionKey}
-            aggregateUsage={ctx.aggregateUsage}
-            aggregateUsageLoading={ctx.aggregateUsageLoading}
-            cumulativeUsage={ctx.cumulativeUsage}
-            cumulativeUsageLoading={ctx.cumulativeUsageLoading}
-            usageByType={ctx.usageByType}
-            onViewTrace={ctx.onViewTrace}
-            onTranscriptClick={onTranscriptClick}
-          />
-        </PanelErrorBoundary>
-      )}
       {tab === "usage" && (
         <PanelErrorBoundary name="Usage">
           <UsagePanel client={ctx.client} status={ctx.status} />

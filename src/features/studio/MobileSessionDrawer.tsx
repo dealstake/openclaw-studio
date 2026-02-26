@@ -1,13 +1,16 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useCallback, useRef, useEffect } from "react";
+import { Plus } from "lucide-react";
 import type { BreadcrumbAgent } from "@/features/agents/components/AgentBreadcrumb";
 import type { ManagementTab } from "@/layout/AppSidebar";
-import { SessionHistorySidebar } from "@/features/sessions/components/SessionHistorySidebar";
 import { sectionLabelClass } from "@/components/SectionLabel";
+import { SearchInput } from "@/components/SearchInput";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NotificationBell } from "@/features/notifications/components/NotificationBell";
 import { LogoutButton } from "@/components/brand/LogoutButton";
+import { SessionList } from "@/features/sessions/components/SessionList";
+import { useSessionHistory } from "@/features/sessions/hooks/useSessionHistory";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 
 interface MobileSessionDrawerProps {
@@ -26,7 +29,6 @@ interface MobileSessionDrawerProps {
 }
 
 const MANAGEMENT_ITEMS: { value: ManagementTab; label: string }[] = [
-  { value: "sessions", label: "Sessions" },
   { value: "usage", label: "Usage" },
   { value: "channels", label: "Channels" },
   { value: "settings", label: "Settings" },
@@ -46,6 +48,39 @@ export const MobileSessionDrawer = memo(function MobileSessionDrawer({
   onSelectSession,
   onNewSession,
 }: MobileSessionDrawerProps) {
+  const {
+    groups,
+    loading,
+    error,
+    load,
+    search,
+    setSearch,
+    pinnedKeys,
+    togglePin,
+    deleteSession,
+    renameSession,
+  } = useSessionHistory(client, status, focusedAgentId);
+
+  const loadRef = useRef(load);
+  useEffect(() => {
+    loadRef.current = load;
+  });
+  useEffect(() => {
+    if (open) void loadRef.current();
+  }, [open, focusedAgentId, status]);
+
+  const handleRename = useCallback(
+    (key: string, name: string) => void renameSession(key, name),
+    [renameSession],
+  );
+  const handleDelete = useCallback(
+    (key: string) => void deleteSession(key),
+    [deleteSession],
+  );
+  const handleRetry = useCallback(() => void load(), [load]);
+
+  const activeSessionKey = viewingSessionKey ?? (focusedAgentId ? `${focusedAgentId}:main` : null);
+
   if (!open) return null;
 
   return (
@@ -112,25 +147,46 @@ export const MobileSessionDrawer = memo(function MobileSessionDrawer({
           </div>
           <LogoutButton iconOnly={false} className="text-[11px]" />
         </div>
-        {/* Session history */}
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          <SessionHistorySidebar
-            client={client}
-            status={status}
-            agentId={focusedAgentId}
-            activeSessionKey={viewingSessionKey ?? (focusedAgentId ? `${focusedAgentId}:main` : null)}
-            onSelectSession={(key) => {
-              onSelectSession(key === `${focusedAgentId}:main` ? null : key);
-              onClose();
-            }}
-            onNewSession={() => {
+        {/* Session history header */}
+        <div className="flex items-center gap-2 px-3 py-2.5 shrink-0">
+          <span className={`${sectionLabelClass} flex-1`}>Sessions</span>
+          <button
+            type="button"
+            onClick={() => {
               onNewSession();
               onClose();
             }}
-            collapsed={false}
-            onToggleCollapse={onClose}
+            className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-primary hover:text-primary-foreground"
+            aria-label="New session"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+        </div>
+        {/* Search */}
+        <div className="px-3 py-2 shrink-0">
+          <SearchInput
+            value={search}
+            onChange={setSearch}
+            placeholder="Search sessions…"
           />
         </div>
+        {/* Session list */}
+        <SessionList
+          groups={groups}
+          loading={loading}
+          error={error}
+          search={search}
+          activeSessionKey={activeSessionKey}
+          pinnedKeys={pinnedKeys}
+          onRetry={handleRetry}
+          onSelect={(key) => {
+            onSelectSession(key === `${focusedAgentId}:main` ? null : key);
+            onClose();
+          }}
+          onRename={handleRename}
+          onDelete={handleDelete}
+          onTogglePin={togglePin}
+        />
       </div>
     </div>
   );

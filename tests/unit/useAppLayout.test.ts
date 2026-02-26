@@ -132,8 +132,8 @@ describe("useAppLayout", () => {
 
   it("handleBackToChat clears managementView", () => {
     const { result } = renderHook(() => useAppLayout());
-    act(() => result.current.setManagementView("sessions"));
-    expect(result.current.managementView).toBe("sessions");
+    act(() => result.current.setManagementView("usage"));
+    expect(result.current.managementView).toBe("usage");
     act(() => result.current.handleBackToChat());
     expect(result.current.managementView).toBeNull();
   });
