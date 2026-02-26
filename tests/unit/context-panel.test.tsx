@@ -143,8 +143,8 @@ describe("ContextPanel", () => {
         projectsContent={<div data-testid="projects-content">Projects</div>}
       />
     );
-    // Both projects and tasks should be mounted (lazy mount keeps previous)
+    // Only active tab should be rendered (lazy rendering unmounts inactive tabs)
     expect(screen.getByTestId("tasks-content")).toBeInTheDocument();
-    expect(screen.getByTestId("projects-content")).toBeInTheDocument();
+    expect(screen.queryByTestId("projects-content")).not.toBeInTheDocument();
   });
 });

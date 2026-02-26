@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useRef, useState, useEffect, useMemo, type KeyboardEvent, type ReactNode, type UIEvent } from "react";
+import { memo, useCallback, useRef, useEffect, useMemo, useState, type KeyboardEvent, type ReactNode, type UIEvent } from "react";
 import { Maximize2, X } from "lucide-react";
 
 import { PanelIconButton } from "@/components/PanelIconButton";
@@ -25,9 +25,6 @@ interface ContextPanelProps {
   activityContent?: ReactNode;
 }
 
-/** Exported for backwards compat — prefer CONTEXT_TAB_CONFIG from lib/tabs.ts */
-export const TAB_OPTIONS = CONTEXT_TAB_CONFIG.map(({ value, label }) => ({ value, label }));
-
 export const ContextPanel = memo(function ContextPanel({
   activeTab,
   onTabChange,
@@ -41,24 +38,9 @@ export const ContextPanel = memo(function ContextPanel({
   workspaceContent,
   activityContent,
 }: ContextPanelProps) {
-  // Lazy mount: track which tabs have been activated at least once.
-  const [mountedTabs, setMountedTabs] = useState<Set<ContextTab>>(
-    () => new Set<ContextTab>([activeTab])
-  );
-
-  const effectiveMountedTabs = mountedTabs.has(activeTab)
-    ? mountedTabs
-    : new Set([...mountedTabs, activeTab]);
-
   const handleTabClick = useCallback(
     (tab: ContextTab) => {
       onTabChange(tab);
-      setMountedTabs((prev) => {
-        if (prev.has(tab)) return prev;
-        const next = new Set(prev);
-        next.add(tab);
-        return next;
-      });
     },
     [onTabChange]
   );
@@ -229,21 +211,15 @@ export const ContextPanel = memo(function ContextPanel({
             </button>
           </div>
         ) : (
-          <>
-            {CONTEXT_TAB_CONFIG.map(({ value }) =>
-              effectiveMountedTabs.has(value) ? (
-                <div
-                  key={value}
-                  role="tabpanel"
-                  id={tabPanelId(value)}
-                  aria-labelledby={tabButtonId(value)}
-                  className={activeTab === value ? "flex h-full w-full flex-col overflow-hidden animate-in fade-in duration-150" : "hidden"}
-                >
-                  {contentMap[value] ?? null}
-                </div>
-              ) : null
-            )}
-          </>
+          <div
+            key={activeTab}
+            role="tabpanel"
+            id={tabPanelId(activeTab)}
+            aria-labelledby={tabButtonId(activeTab)}
+            className="flex h-full w-full flex-col overflow-hidden animate-in fade-in duration-150"
+          >
+            {contentMap[activeTab] ?? null}
+          </div>
         )}
       </div>
     </div>

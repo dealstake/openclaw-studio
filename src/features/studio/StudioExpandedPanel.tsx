@@ -2,7 +2,7 @@
 
 import { memo } from "react";
 import type { ContextTab } from "@/features/context/components/ContextPanel";
-import { TAB_OPTIONS } from "@/features/context/components/ContextPanel";
+import { CONTEXT_TAB_CONFIG } from "@/features/context/lib/tabs";
 import { PanelExpandModal } from "@/components/PanelExpandModal";
 import { PanelErrorBoundary } from "@/components/PanelErrorBoundary";
 import { ExpandedContext } from "@/features/context/lib/expandedContext";
@@ -82,7 +82,7 @@ export const StudioExpandedPanel = memo(function StudioExpandedPanel({
 }: StudioExpandedPanelProps) {
   if (!expandedTab) return null;
 
-  const title = TAB_OPTIONS.find((t) => t.value === expandedTab)?.label
+  const title = CONTEXT_TAB_CONFIG.find((t) => t.value === expandedTab)?.label
     ?? ({ usage: "Usage", channels: "Channels", cron: "Cron", settings: "Settings" } as Record<string, string>)[expandedTab]
     ?? "";
 
