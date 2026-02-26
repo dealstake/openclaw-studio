@@ -103,7 +103,7 @@ The JSON block MUST be valid JSON conforming to this structure:
     {
       "name": "Phase 1: Data Layer",
       "tasks": [
-        "Create \`src/features/foo/hooks/useFoo.ts\` following useAllSessions pattern",
+        "Create \`src/features/foo/hooks/useFoo.ts\` following useSessionHistory pattern",
         "Add types to \`src/features/foo/lib/types.ts\`",
         "Write tests in \`tests/unit/useFoo.test.ts\`"
       ]

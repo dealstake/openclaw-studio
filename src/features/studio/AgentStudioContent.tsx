@@ -39,7 +39,7 @@ import { ActivityPanel } from "@/features/activity/components/ActivityPanel";
 // Heartbeat entries now routed exclusively via onActivityMessage to useActivityMessageStore
 import { TraceViewer } from "@/features/sessions/components/TraceViewer";
 import { useChannelsStatus } from "@/features/channels/hooks/useChannelsStatus";
-import { useAllSessions } from "@/features/sessions/hooks/useAllSessions";
+
 import { EmergencyProvider } from "@/features/emergency/EmergencyProvider";
 import { useNotificationEvaluator } from "@/features/notifications/hooks/useNotificationEvaluator";
 import { useSessionUsage } from "@/features/sessions/hooks/useSessionUsage";
@@ -111,8 +111,6 @@ export const AgentStudioPage = () => {
   const loadTasksRef = useRef<() => Promise<any>>(() => Promise.resolve());
   /** Resolve a cron job ID to its display name via enriched tasks data. */
   const cronJobNameResolverRef = useRef<(cronJobId: string) => string | undefined>(() => undefined);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const loadAllSessionsRef = useRef<() => Promise<any>>(() => Promise.resolve());
   const loadChannelsStatusRef = useRef<() => Promise<void>>(() => Promise.resolve());
   // loadCumulativeUsageRef removed — sessions.usage aggregate eliminated (P0 perf fix)
   // loadSummarySnapshotRef + refreshContextWindowRef provided by useStudioDataSync
@@ -172,20 +170,11 @@ export const AgentStudioPage = () => {
   // P0: sessions.usage aggregate RPC eliminated — use aggregateTokensFromList instead
   // (sessions.usage was taking 1-8 seconds and causing slow consumer disconnects)
 
-  // TODO: useAllSessions data is no longer consumed by any UI after SessionsPanel removal.
-  // The loadAllSessions ref is still threaded through useStudioDataSync and useRuntimeEventSubscription
-  // for refresh-on-reconnect. Remove entirely in a follow-up to eliminate wasted RPC calls.
-  const {
-    loadAllSessions,
-  } = useAllSessions(client, status);
-
   // Emergency state moved to EmergencyProvider
 
   useNotificationEvaluator(client, status);
 
   // Keep load-function refs current (avoids stale closures)
-  // eslint-disable-next-line react-hooks/refs
-  loadAllSessionsRef.current = loadAllSessions;
   // eslint-disable-next-line react-hooks/refs
   loadChannelsStatusRef.current = loadChannelsStatus;
   // loadCumulativeUsageRef removed — sessions.usage aggregate eliminated (P0 perf fix)
@@ -372,7 +361,6 @@ export const AgentStudioPage = () => {
     focusedAgentStatus: focusedAgent?.status ?? null,
     hasRunningAgents,
     selectedBrainAgentId,
-    loadAllSessionsRef,
     loadSessionUsageRef,
     loadGatewayStatus,
     parsePresenceFromStatus,
@@ -516,7 +504,6 @@ export const AgentStudioPage = () => {
     void loadAgents();
     const deferTimer = window.setTimeout(() => {
       void loadChannelsStatusRef.current();
-      void loadAllSessionsRef.current();
       void loadTasksRef.current();
     }, client.connectedForMs < 3_000 ? 2_000 : 0);
     return () => window.clearTimeout(deferTimer);
@@ -586,7 +573,6 @@ export const AgentStudioPage = () => {
     loadAgentHistoryRef,
     refreshHeartbeatLatestUpdateRef,
     loadChannelsStatusRef,
-    loadAllSessionsRef,
     loadTasksRef,
     cronJobNameResolverRef,
     bumpHeartbeatTick,

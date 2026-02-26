@@ -36,7 +36,6 @@ export interface RuntimeEventSubscriptionParams {
   loadAgentHistoryRef: MutableRefObject<(agentId: string) => Promise<any>>;
   refreshHeartbeatLatestUpdateRef: MutableRefObject<() => void>;
   loadChannelsStatusRef: MutableRefObject<() => Promise<void>>;
-  loadAllSessionsRef: MutableRefObject<() => Promise<unknown>>;
   loadTasksRef: MutableRefObject<() => Promise<unknown>>;
   /** Resolve a cron job ID to a display name (used for activity messages). */
   cronJobNameResolverRef: MutableRefObject<(cronJobId: string) => string | undefined>;
@@ -60,7 +59,6 @@ export function useRuntimeEventSubscription({
   loadAgentHistoryRef,
   refreshHeartbeatLatestUpdateRef,
   loadChannelsStatusRef,
-  loadAllSessionsRef,
   loadTasksRef,
   cronJobNameResolverRef,
   bumpHeartbeatTick,
@@ -102,7 +100,7 @@ export function useRuntimeEventSubscription({
         void loadChannelsStatusRef.current();
       },
       onSessionsUpdate: () => {
-        void loadAllSessionsRef.current();
+        // Session list refresh handled by 30s polling in useSessionHistory
       },
       onCronUpdate: () => {
         void loadTasksRef.current();

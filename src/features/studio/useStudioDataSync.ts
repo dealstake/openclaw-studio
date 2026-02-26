@@ -44,7 +44,6 @@ export interface UseStudioDataSyncParams {
   selectedBrainAgentId: string | null;
 
   // Refs for load functions (stable refs to avoid re-render loops)
-  loadAllSessionsRef: MutableRefObject<() => Promise<unknown>>;
   loadSessionUsageRef: MutableRefObject<(key: string) => Promise<void>>;
 
   // Direct load functions
@@ -107,7 +106,6 @@ export function useStudioDataSync(params: UseStudioDataSyncParams): UseStudioDat
     focusedAgentStatus,
     hasRunningAgents,
     selectedBrainAgentId,
-    loadAllSessionsRef,
     loadSessionUsageRef,
     loadGatewayStatus,
     parsePresenceFromStatus,
@@ -238,9 +236,9 @@ export function useStudioDataSync(params: UseStudioDataSyncParams): UseStudioDat
     if (prev === "running" && focusedAgentStatus === "idle") {
       void loadSessionUsageRef.current(focusedSessionKey);
       void refreshContextWindowRef.current(focusedAgentId, focusedSessionKey);
-      void loadAllSessionsRef.current();
+      // Session list refresh handled by 30s polling in useSessionHistory
     }
-  }, [focusedAgentId, focusedSessionKey, focusedAgentStatus, loadSessionUsageRef, refreshContextWindowRef, loadAllSessionsRef]);
+  }, [focusedAgentId, focusedSessionKey, focusedAgentStatus, loadSessionUsageRef, refreshContextWindowRef]);
 
   // ── Favicon ──
   useEffect(() => {
