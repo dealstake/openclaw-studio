@@ -99,7 +99,7 @@ export const FloatingMobileHeader = memo(function FloatingMobileHeader({
                   type="button"
                   onClick={() => { onContextTabClick(value); setMenuOpen(false); }}
                 >
-                  <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+                  <Icon className="h-3.5 w-3.5 text-foreground/70" />
                   {label}
                 </button>
               );

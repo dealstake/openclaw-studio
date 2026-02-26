@@ -71,7 +71,7 @@ export const MobileSessionDrawer = memo(function MobileSessionDrawer({
                   }}
                   className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2.5 text-left text-[13px] font-medium transition-colors min-h-[44px] ${
                     agent.agentId === focusedAgentId
-                      ? "bg-accent text-accent-foreground"
+                      ? "bg-muted text-foreground"
                       : "text-foreground/80 hover:bg-muted"
                   }`}
                 >
@@ -96,7 +96,7 @@ export const MobileSessionDrawer = memo(function MobileSessionDrawer({
               }}
               className={`flex w-full items-center rounded-lg px-3 py-2.5 text-left text-[13px] font-medium transition-colors min-h-[44px] ${
                 managementView === item.value
-                  ? "bg-accent text-accent-foreground"
+                  ? "bg-muted text-foreground"
                   : "text-foreground/80 hover:bg-muted"
               }`}
             >
