@@ -1,11 +1,18 @@
 "use client";
 
-import { memo, useState, useRef, useEffect } from "react";
-import { Settings, ShieldAlert } from "lucide-react";
+import { memo } from "react";
+import { Settings, ShieldAlert, LogOut } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NotificationBell } from "@/features/notifications/components/NotificationBell";
-import { LogoutButton } from "@/components/brand/LogoutButton";
+import { logout } from "@/lib/cloudflare-auth";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { useEmergencyOptional } from "@/features/emergency/EmergencyProvider";
 
 type BottomSidebarActionsProps = {
@@ -15,70 +22,91 @@ type BottomSidebarActionsProps = {
 };
 
 /**
- * Bottom-left sidebar actions: Notifications (top), Theme (middle), Settings gear with dropdown (bottom).
+ * Bottom-left sidebar actions: Notifications, Theme toggle, Settings gear with dropdown.
  * Settings dropdown includes: Agent Settings, Emergency Controls, Sign Out.
+ * Uses Radix DropdownMenu (portal-rendered) to escape sidebar overflow:hidden.
  */
 export const BottomSidebarActions = memo(function BottomSidebarActions({
   collapsed,
   onOpenSettings,
   settingsActive,
 }: BottomSidebarActionsProps) {
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
   const emergency = useEmergencyOptional();
 
-  useEffect(() => {
-    if (!dropdownOpen) return;
-    function handleClick(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setDropdownOpen(false);
-      }
-    }
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        setDropdownOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClick);
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("mousedown", handleClick);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [dropdownOpen]);
+  const settingsDropdown = (
+    <DropdownMenu>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <DropdownMenuTrigger asChild>
+            {collapsed ? (
+              <button
+                type="button"
+                className={`flex h-11 w-11 items-center justify-center rounded-md transition-all duration-150 ${
+                  settingsActive
+                    ? "bg-accent text-accent-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+                aria-label="Settings"
+              >
+                <Settings className="h-5 w-5" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                className={`flex h-10 items-center gap-2 rounded-md px-2 py-1.5 text-[13px] transition-all duration-150 ${
+                  settingsActive
+                    ? "bg-accent text-accent-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+                aria-label="Settings"
+              >
+                <Settings className="h-3.5 w-3.5 shrink-0" />
+                <span>Settings</span>
+              </button>
+            )}
+          </DropdownMenuTrigger>
+        </TooltipTrigger>
+        <TooltipContent side="right" className="text-xs">
+          Settings
+        </TooltipContent>
+      </Tooltip>
 
-  const dropdownMenu = dropdownOpen && (
-    <div className="absolute bottom-full left-full mb-1 ml-2 z-50 min-w-48 rounded-md border border-border/80 bg-popover/95 p-1 shadow-lg backdrop-blur">
-      <button
-        type="button"
-        className="flex w-full items-center gap-2.5 rounded-sm px-2.5 py-2 text-left text-xs font-medium text-foreground transition hover:bg-muted"
-        onClick={() => {
-          onOpenSettings();
-          setDropdownOpen(false);
-        }}
+      <DropdownMenuContent
+        side="right"
+        align="end"
+        sideOffset={8}
+        className="min-w-48"
       >
-        <Settings className="h-3.5 w-3.5 text-muted-foreground" />
-        Agent Settings
-      </button>
-      {emergency && (
-        <>
-          <div className="my-1 border-t border-border/40" />
-          <button
-            type="button"
-            className="flex w-full items-center gap-2.5 rounded-sm px-2.5 py-2 text-left text-xs font-medium text-red-500 transition hover:bg-red-500/10"
-            onClick={() => {
-              emergency.toggle();
-              setDropdownOpen(false);
-            }}
-          >
-            <ShieldAlert className="h-3.5 w-3.5" />
-            Emergency Controls
-          </button>
-        </>
-      )}
-      <div className="my-1 border-t border-border/40" />
-      <LogoutButton className="w-full" />
-    </div>
+        <DropdownMenuItem
+          onClick={onOpenSettings}
+        >
+          <Settings className="h-3.5 w-3.5 text-muted-foreground" />
+          Agent Settings
+        </DropdownMenuItem>
+
+        {emergency && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={emergency.toggle}
+              className="text-red-500 focus:text-red-500"
+            >
+              <ShieldAlert className="h-3.5 w-3.5 !text-red-500" />
+              Emergency Controls
+            </DropdownMenuItem>
+          </>
+        )}
+
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onClick={logout}
+          variant="destructive"
+        >
+          <LogOut className="h-3.5 w-3.5" />
+          Sign Out
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 
   if (collapsed) {
@@ -86,28 +114,7 @@ export const BottomSidebarActions = memo(function BottomSidebarActions({
       <div className="mt-auto flex flex-col items-center gap-1 pb-3">
         <NotificationBell />
         <ThemeToggle />
-        <div className="relative" ref={dropdownRef}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                onClick={() => setDropdownOpen((v) => !v)}
-                className={`flex h-11 w-11 items-center justify-center rounded-md transition-all duration-150 ${
-                  settingsActive
-                    ? "bg-accent text-accent-foreground before:absolute before:inset-y-1 before:-left-1 before:w-0.5 before:rounded-full before:bg-primary"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                }`}
-                aria-label="Settings"
-              >
-                <Settings className="h-5 w-5" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="right" className="text-xs">
-              Settings
-            </TooltipContent>
-          </Tooltip>
-          {dropdownMenu}
-        </div>
+        {settingsDropdown}
       </div>
     );
   }
@@ -117,30 +124,7 @@ export const BottomSidebarActions = memo(function BottomSidebarActions({
       <NotificationBell />
       <ThemeToggle />
       <div className="flex-1" />
-      <div className="relative" ref={dropdownRef}>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              type="button"
-              onClick={() => setDropdownOpen((v) => !v)}
-              className={`flex h-10 items-center gap-2 rounded-md px-2 py-1.5 text-[13px] transition-all duration-150 ${
-                settingsActive || dropdownOpen
-                  ? "bg-accent text-accent-foreground"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
-              }`}
-              aria-expanded={dropdownOpen}
-              aria-haspopup="true"
-            >
-              <Settings className="h-3.5 w-3.5 shrink-0" />
-              <span>Settings</span>
-            </button>
-          </TooltipTrigger>
-          <TooltipContent side="right" className="text-xs">
-            Settings
-          </TooltipContent>
-        </Tooltip>
-        {dropdownMenu}
-      </div>
+      {settingsDropdown}
     </div>
   );
 });
