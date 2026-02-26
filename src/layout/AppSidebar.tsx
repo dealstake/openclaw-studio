@@ -7,14 +7,20 @@ import {
   Radio,
   Plus,
   ChevronLeft,
+  Loader2,
+  AlertCircle,
+  SearchX,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { BottomSidebarActions } from "@/components/BottomSidebarActions";
 import { sectionLabelClass } from "@/components/SectionLabel";
 import { SearchInput } from "@/components/SearchInput";
+import { EmptyState } from "@/components/ui/EmptyState";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { useSessionHistory } from "@/features/sessions/hooks/useSessionHistory";
+import { useTranscriptSearch } from "@/features/sessions/hooks/useTranscripts";
 import { SessionList } from "@/features/sessions/components/SessionList";
+import { SearchResultCard } from "@/features/sessions/components/SearchResultCard";
 
 /** Management nav items that open in expanded modal */
 export type ManagementTab = "usage" | "channels" | "settings";
@@ -116,6 +122,26 @@ export const AppSidebar = memo(function AppSidebar({
     deleteSession,
     renameSession,
   } = useSessionHistory(client, status, agentId);
+
+  // Server-side search across ALL sessions (active + archived)
+  const {
+    setQuery: setServerSearchQuery,
+    results: searchResults,
+    searching,
+    error: searchError,
+  } = useTranscriptSearch(agentId);
+
+  // Unified search handler: drives both client-side filter and server-side search
+  const handleSearchChange = useCallback(
+    (value: string) => {
+      setSearch(value);
+      setServerSearchQuery(value);
+    },
+    [setSearch, setServerSearchQuery],
+  );
+
+  // Whether to show server-side search results overlay
+  const showSearchResults = search.trim().length > 0 && (searching || searchResults.length > 0 || searchError);
 
   const loadRef = useRef(load);
   useEffect(() => {
@@ -242,25 +268,77 @@ export const AppSidebar = memo(function AppSidebar({
           <div className="px-3 py-2 shrink-0">
             <SearchInput
               value={search}
-              onChange={setSearch}
+              onChange={handleSearchChange}
               placeholder="Search sessions…"
             />
           </div>
 
-          {/* Session list */}
-          <SessionList
-            groups={groups}
-            loading={loading}
-            error={error}
-            search={search}
-            activeSessionKey={activeSessionKey}
-            pinnedKeys={pinnedKeys}
-            onRetry={handleRetry}
-            onSelect={onSelectSession}
-            onRename={handleRename}
-            onDelete={handleDelete}
-            onTogglePin={togglePin}
-          />
+          {/* Session list or search results */}
+          {showSearchResults ? (
+            <div className="min-h-0 flex-1 overflow-y-auto px-1.5 pb-2">
+              {searching && searchResults.length === 0 ? (
+                <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span className="text-xs">Searching…</span>
+                </div>
+              ) : searchError ? (
+                <div className="flex flex-col items-center gap-2 px-3 py-8 text-center">
+                  <AlertCircle className="h-5 w-5 text-destructive/70" />
+                  <p className="text-xs text-muted-foreground">{searchError}</p>
+                  <button
+                    type="button"
+                    onClick={() => setServerSearchQuery(search)}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    Retry
+                  </button>
+                </div>
+              ) : searchResults.length === 0 ? (
+                <EmptyState
+                  icon={SearchX}
+                  title="No results found"
+                  description="Try a different search term"
+                  className="py-8"
+                />
+              ) : (
+                <>
+                  <div className={`${sectionLabelClass} px-2.5 py-1.5 text-[10px]`}>
+                    {searchResults.length} result{searchResults.length !== 1 ? "s" : ""}
+                    {searching && <Loader2 className="ml-1.5 inline h-3 w-3 animate-spin" />}
+                  </div>
+                  <div className="flex flex-col gap-1 px-1">
+                    {searchResults.map((result) => (
+                      <SearchResultCard
+                        key={result.sessionId}
+                        result={result}
+                        query={search}
+                        onClick={() => {
+                          // Use sessionKey (composite key) if available, else construct from sessionId
+                          const key = result.sessionKey ?? result.sessionId;
+                          onSelectSession(key);
+                          handleSearchChange("");
+                        }}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          ) : (
+            <SessionList
+              groups={groups}
+              loading={loading}
+              error={error}
+              search={search}
+              activeSessionKey={activeSessionKey}
+              pinnedKeys={pinnedKeys}
+              onRetry={handleRetry}
+              onSelect={onSelectSession}
+              onRename={handleRename}
+              onDelete={handleDelete}
+              onTogglePin={togglePin}
+            />
+          )}
 
           {/* Notifications + Theme + Settings dropdown pinned to bottom */}
           <BottomSidebarActions
