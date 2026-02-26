@@ -54,7 +54,7 @@ const NavIconButton = memo(function NavIconButton({
   onKeyDown,
 }: NavIconButtonProps) {
   const Icon = item.icon;
-  const sizeClass = size === "sm" ? "h-10 w-10" : "h-11 w-11";
+  const sizeClass = size === "sm" ? "h-11 w-11" : "h-11 w-11";
   const iconSize = size === "sm" ? "h-4 w-4" : "h-5 w-5";
   const indicatorClass =
     indicatorPosition === "left"
@@ -281,7 +281,7 @@ export const AppSidebar = memo(function AppSidebar({
             <button
               type="button"
               onClick={onToggleCollapse}
-              className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="flex h-7 w-7 min-h-[44px] min-w-[44px] items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               aria-label="Collapse sidebar"
             >
               <ChevronLeft className="h-4 w-4" />
@@ -290,7 +290,7 @@ export const AppSidebar = memo(function AppSidebar({
             <button
               type="button"
               onClick={onNewSession}
-              className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-primary hover:text-primary-foreground"
+              className="flex h-7 w-7 min-h-[44px] min-w-[44px] items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-primary hover:text-primary-foreground"
               aria-label="New session"
             >
               <Plus className="h-4 w-4" />
