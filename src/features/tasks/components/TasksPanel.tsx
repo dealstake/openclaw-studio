@@ -15,7 +15,7 @@ import { PanelIconButton } from "@/components/PanelIconButton";
 import { SectionLabel } from "@/components/SectionLabel";
 import { PanelToolbar } from "@/components/ui/PanelToolbar";
 import { FilterGroup, type FilterGroupOption } from "@/components/ui/FilterGroup";
-import { SearchInput } from "@/components/SearchInput";
+
 
 // ─── Filter tabs ─────────────────────────────────────────────────────────────
 
@@ -71,7 +71,7 @@ export const TasksPanel = memo(function TasksPanel({
   maxConcurrentRuns,
 }: TasksPanelProps) {
   const [filter, setFilterRaw] = useState<FilterTab[]>(["all"]);
-  const [search, setSearchRaw] = useState("");
+
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [focusIndex, setFocusIndex] = useState(-1);
@@ -87,10 +87,7 @@ export const TasksPanel = memo(function TasksPanel({
     setFocusIndex(-1);
   }, [filter]);
 
-  const setSearch = useCallback((s: string) => {
-    setSearchRaw(s);
-    setFocusIndex(-1);
-  }, []);
+
 
   const handleSelect = useCallback((taskId: string) => {
     setSelectedTaskId((prev) => (prev === taskId ? null : taskId));
@@ -150,16 +147,8 @@ export const TasksPanel = memo(function TasksPanel({
         return false;
       });
     }
-    if (search.trim()) {
-      const q = search.trim().toLowerCase();
-      result = result.filter(
-        (t) =>
-          t.name.toLowerCase().includes(q) ||
-          (t.description ?? "").toLowerCase().includes(q),
-      );
-    }
     return result;
-  }, [tasks, filter, isAllSelected, search]);
+  }, [tasks, filter, isAllSelected]);
 
   // Keyboard navigation
   const handleListKeyDown = useCallback(
@@ -294,13 +283,7 @@ export const TasksPanel = memo(function TasksPanel({
             value={filter}
             onChange={setFilter}
           />
-          <SearchInput
-            variant="compact"
-            value={search}
-            onChange={setSearch}
-            placeholder="Search tasks…"
-            className="max-w-[200px] sm:max-w-[160px]"
-          />
+
         </PanelToolbar>
       ) : null}
 

@@ -1,11 +1,12 @@
 "use client";
 
 import { memo, useState, useRef, useEffect } from "react";
-import { Settings } from "lucide-react";
+import { Settings, ShieldAlert } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NotificationBell } from "@/features/notifications/components/NotificationBell";
 import { LogoutButton } from "@/components/brand/LogoutButton";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useEmergencyOptional } from "@/features/emergency/EmergencyProvider";
 
 type BottomSidebarActionsProps = {
   collapsed: boolean;
@@ -15,7 +16,7 @@ type BottomSidebarActionsProps = {
 
 /**
  * Bottom-left sidebar actions: Notifications (top), Theme (middle), Settings gear with dropdown (bottom).
- * Replaces the old Settings button + ThemeToggle in AppSidebar.
+ * Settings dropdown includes: Agent Settings, Emergency Controls, Sign Out.
  */
 export const BottomSidebarActions = memo(function BottomSidebarActions({
   collapsed,
@@ -24,6 +25,7 @@ export const BottomSidebarActions = memo(function BottomSidebarActions({
 }: BottomSidebarActionsProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const emergency = useEmergencyOptional();
 
   useEffect(() => {
     if (!dropdownOpen) return;
@@ -44,6 +46,40 @@ export const BottomSidebarActions = memo(function BottomSidebarActions({
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [dropdownOpen]);
+
+  const dropdownMenu = dropdownOpen && (
+    <div className="absolute bottom-full left-full mb-1 ml-2 z-50 min-w-48 rounded-md border border-border/80 bg-popover/95 p-1 shadow-lg backdrop-blur">
+      <button
+        type="button"
+        className="flex w-full items-center gap-2.5 rounded-sm px-2.5 py-2 text-left text-xs font-medium text-foreground transition hover:bg-muted"
+        onClick={() => {
+          onOpenSettings();
+          setDropdownOpen(false);
+        }}
+      >
+        <Settings className="h-3.5 w-3.5 text-muted-foreground" />
+        Agent Settings
+      </button>
+      {emergency && (
+        <>
+          <div className="my-1 border-t border-border/40" />
+          <button
+            type="button"
+            className="flex w-full items-center gap-2.5 rounded-sm px-2.5 py-2 text-left text-xs font-medium text-red-500 transition hover:bg-red-500/10"
+            onClick={() => {
+              emergency.toggle();
+              setDropdownOpen(false);
+            }}
+          >
+            <ShieldAlert className="h-3.5 w-3.5" />
+            Emergency Controls
+          </button>
+        </>
+      )}
+      <div className="my-1 border-t border-border/40" />
+      <LogoutButton className="w-full" />
+    </div>
+  );
 
   if (collapsed) {
     return (
@@ -70,23 +106,7 @@ export const BottomSidebarActions = memo(function BottomSidebarActions({
               Settings
             </TooltipContent>
           </Tooltip>
-          {dropdownOpen && (
-            <div className="absolute bottom-full left-full mb-1 ml-2 z-50 min-w-44 rounded-md border border-border/80 bg-popover/95 p-1 shadow-lg backdrop-blur">
-              <button
-                type="button"
-                className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-medium text-foreground transition hover:bg-muted"
-                onClick={() => {
-                  onOpenSettings();
-                  setDropdownOpen(false);
-                }}
-              >
-                <Settings className="h-3.5 w-3.5 text-muted-foreground" />
-                Agent Settings
-              </button>
-              <div className="my-1 border-t border-border/40" />
-              <LogoutButton className="w-full" />
-            </div>
-          )}
+          {dropdownMenu}
         </div>
       </div>
     );
@@ -119,23 +139,7 @@ export const BottomSidebarActions = memo(function BottomSidebarActions({
             Settings
           </TooltipContent>
         </Tooltip>
-        {dropdownOpen && (
-          <div className="absolute bottom-0 left-full ml-2 z-50 min-w-44 rounded-md border border-border/80 bg-popover/95 p-1 shadow-lg backdrop-blur">
-            <button
-              type="button"
-              className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-medium text-foreground transition hover:bg-muted"
-              onClick={() => {
-                onOpenSettings();
-                setDropdownOpen(false);
-              }}
-            >
-              <Settings className="h-3.5 w-3.5 text-muted-foreground" />
-              Agent Settings
-            </button>
-            <div className="my-1 border-t border-border/40" />
-            <LogoutButton className="w-full" />
-          </div>
-        )}
+        {dropdownMenu}
       </div>
     </div>
   );
