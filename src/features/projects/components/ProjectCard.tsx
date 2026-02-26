@@ -1,14 +1,13 @@
 import { memo, useState, useCallback, useMemo } from "react";
 import {
   Archive,
-  ChevronDown,
-  ChevronRight,
   ClipboardList,
   LinkIcon,
   Check,
   Layers,
   History,
 } from "lucide-react";
+import { CollapsibleSection } from "./CollapsibleSection";
 import * as Popover from "@radix-ui/react-popover";
 import { STATUS_CONFIG, CYCLE_STATUSES, QUEUED_CONFIG, PRIORITY_DOT } from "../lib/constants";
 import { LinkedTaskRow } from "./LinkedTaskRow";
@@ -37,9 +36,6 @@ export const ProjectCard = memo(function ProjectCard({
   buildingCount,
   queuePosition,
 }: ProjectCardProps) {
-  const [tasksExpanded, setTasksExpanded] = useState(false);
-  const [phasesExpanded, setPhasesExpanded] = useState(false);
-  const [historyExpanded, setHistoryExpanded] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
   const [pendingDone, setPendingDone] = useState(false);
 
@@ -261,46 +257,29 @@ export const ProjectCard = memo(function ProjectCard({
           )}
 
           {!isDone && phaseGroups.length > 0 && (
-            <div className="pt-0.5">
-              <button
-                type="button"
-                className="flex items-center gap-1 py-2 text-xs text-muted-foreground hover:text-foreground transition min-h-[44px]"
-                onClick={(e) => { e.stopPropagation(); setPhasesExpanded((v) => !v); }}
-                aria-expanded={phasesExpanded}
-                aria-controls={`phases-${project.doc}`}
-                aria-label={`${phasesExpanded ? "Collapse" : "Expand"} phases section`}
-              >
-                {phasesExpanded ? (
-                  <ChevronDown className="h-3 w-3" />
-                ) : (
-                  <ChevronRight className="h-3 w-3" />
-                )}
-                <Layers className="h-2.5 w-2.5" />
-                <span className="font-semibold">
-                  {phaseGroups.length} Phase{phaseGroups.length > 1 ? "s" : ""}
-                </span>
-              </button>
-              {phasesExpanded && (
-                <div id={`phases-${project.doc}`} className="mt-1 ml-4 space-y-1">
-                  {phaseGroups.map((phase) => (
-                    <div key={phase.name} className="flex items-center gap-2">
-                      <span className={`text-xs min-w-0 flex-1 truncate ${phase.percent === 100 ? "text-emerald-400 line-through" : "text-muted-foreground"}`} title={phase.name}>
-                        {phase.name}
-                      </span>
-                      <div className="h-1 w-16 shrink-0 rounded-full bg-border overflow-hidden">
-                        <div
-                          className={`h-full transition-all duration-500 ${phase.percent === 100 ? "bg-emerald-500/60" : "bg-primary/60"}`}
-                          style={{ width: `${phase.percent}%` }}
-                        />
-                      </div>
-                      <span className="font-mono text-xs text-muted-foreground shrink-0">
-                        {phase.completed}/{phase.total}
-                      </span>
-                    </div>
-                  ))}
+            <CollapsibleSection
+              id={`phases-${project.doc}`}
+              icon={Layers}
+              label={`${phaseGroups.length} Phase${phaseGroups.length > 1 ? "s" : ""}`}
+              ariaLabel="Phases section"
+            >
+              {phaseGroups.map((phase) => (
+                <div key={phase.name} className="flex items-center gap-2">
+                  <span className={`text-xs min-w-0 flex-1 truncate ${phase.percent === 100 ? "text-emerald-400 line-through" : "text-muted-foreground"}`} title={phase.name}>
+                    {phase.name}
+                  </span>
+                  <div className="h-1 w-16 shrink-0 rounded-full bg-border overflow-hidden">
+                    <div
+                      className={`h-full transition-all duration-500 ${phase.percent === 100 ? "bg-emerald-500/60" : "bg-primary/60"}`}
+                      style={{ width: `${phase.percent}%` }}
+                    />
+                  </div>
+                  <span className="font-mono text-xs text-muted-foreground shrink-0">
+                    {phase.completed}/{phase.total}
+                  </span>
                 </div>
-              )}
-            </div>
+              ))}
+            </CollapsibleSection>
           )}
 
           {!isDone && details.continuation.nextStep && (
@@ -318,66 +297,34 @@ export const ProjectCard = memo(function ProjectCard({
           )}
 
           {linkedTasks.length > 0 && (
-            <div className="pt-0.5">
-              <button
-                type="button"
-                className="flex items-center gap-1 py-2 text-xs text-muted-foreground hover:text-foreground transition min-h-[44px]"
-                onClick={(e) => { e.stopPropagation(); setTasksExpanded((v) => !v); }}
-                aria-expanded={tasksExpanded}
-                aria-controls={`tasks-${project.doc}`}
-                aria-label={`${tasksExpanded ? "Collapse" : "Expand"} linked tasks section`}
-              >
-                {tasksExpanded ? (
-                  <ChevronDown className="h-3 w-3" />
-                ) : (
-                  <ChevronRight className="h-3 w-3" />
-                )}
-                <LinkIcon className="h-2.5 w-2.5" />
-                <span className="font-semibold">
-                  {linkedTasks.length} Linked Task{linkedTasks.length > 1 ? "s" : ""}
-                </span>
-              </button>
-              {tasksExpanded && (
-                <div id={`tasks-${project.doc}`} className="mt-1 ml-4 space-y-1">
-                  {linkedTasks.map((task) => (
-                    <LinkedTaskRow key={task.cronJobId} task={task} isProjectParked={project.statusEmoji === "⏸️"} />
-                  ))}
-                </div>
-              )}
-            </div>
+            <CollapsibleSection
+              id={`tasks-${project.doc}`}
+              icon={LinkIcon}
+              label={`${linkedTasks.length} Linked Task${linkedTasks.length > 1 ? "s" : ""}`}
+              ariaLabel="Linked tasks section"
+            >
+              {linkedTasks.map((task) => (
+                <LinkedTaskRow key={task.cronJobId} task={task} isProjectParked={project.statusEmoji === "⏸️"} />
+              ))}
+            </CollapsibleSection>
           )}
 
           {details.history && details.history.length > 0 && (
-            <div className="pt-0.5">
-              <button
-                type="button"
-                className="flex items-center gap-1 py-2 text-xs text-muted-foreground hover:text-foreground transition min-h-[44px]"
-                onClick={(e) => { e.stopPropagation(); setHistoryExpanded((v) => !v); }}
-                aria-expanded={historyExpanded}
-                aria-controls={`history-${project.doc}`}
-                aria-label={`${historyExpanded ? "Collapse" : "Expand"} history section`}
-              >
-                {historyExpanded ? (
-                  <ChevronDown className="h-3 w-3" />
-                ) : (
-                  <ChevronRight className="h-3 w-3" />
-                )}
-                <History className="h-2.5 w-2.5" />
-                <span className="font-semibold">
-                  History ({details.history.length})
-                </span>
-              </button>
-              {historyExpanded && (
-                <div id={`history-${project.doc}`} className="mt-1 ml-4 space-y-1.5">
-                  {details.history.map((entry, i) => (
-                    <div key={i} className="flex items-start gap-2 text-xs">
-                      <span className="shrink-0 font-mono text-muted-foreground">{entry.entryDate}</span>
-                      <span className="text-muted-foreground leading-snug">{entry.entryText}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+            <CollapsibleSection
+              id={`history-${project.doc}`}
+              icon={History}
+              label={`History (${details.history.length})`}
+              ariaLabel="History section"
+            >
+              <div className="space-y-1.5">
+                {details.history.map((entry, i) => (
+                  <div key={i} className="flex items-start gap-2 text-xs">
+                    <span className="shrink-0 font-mono text-muted-foreground">{entry.entryDate}</span>
+                    <span className="text-muted-foreground leading-snug">{entry.entryText}</span>
+                  </div>
+                ))}
+              </div>
+            </CollapsibleSection>
           )}
         </div>
       )}

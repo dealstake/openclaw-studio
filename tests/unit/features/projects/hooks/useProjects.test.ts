@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach, type Mock } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { useProjects } from "@/features/projects/hooks/useProjects";
-import { TOGGLE_MAP } from "@/features/projects/lib/constants";
+
 import type { ProjectEntry } from "@/features/projects/components/ProjectsPanel";
 
 // ─── Mocks ───────────────────────────────────────────────────────────────────
@@ -113,47 +113,6 @@ describe("useProjects", () => {
         expect(result.current.loading).toBe(false);
         expect(result.current.error).toContain("500");
       });
-    });
-  });
-
-  // ─── toggleStatus ────────────────────────────────────────────────────────
-
-  describe("toggleStatus", () => {
-    it("toggles Active → Parked via TOGGLE_MAP", async () => {
-      const p = makeProject({ statusEmoji: "🔨" });
-      mockFetchSuccess([p]);
-
-      const { result } = renderHook(() => useProjects("agent-1", null));
-
-      await waitFor(() => expect(result.current.projects).toHaveLength(1));
-
-      // Mock the PATCH call + subsequent reload
-      (global.fetch as Mock).mockResolvedValueOnce({ ok: true, json: async () => ({}) });
-      mockFetchSuccess([{ ...p, status: "⏸️ Parked", statusEmoji: "⏸️" }]);
-
-      await act(async () => {
-        await result.current.toggleStatus(result.current.projects[0]);
-      });
-
-      // Optimistic update should apply immediately
-      expect(TOGGLE_MAP["🔨"]).toEqual({ emoji: "⏸️", label: "Parked" });
-    });
-
-    it("no-ops for statuses not in TOGGLE_MAP (e.g. ✅)", async () => {
-      const p = makeProject({ statusEmoji: "✅" });
-      mockFetchSuccess([p]);
-
-      const { result } = renderHook(() => useProjects("agent-1", null));
-      await waitFor(() => expect(result.current.projects).toHaveLength(1));
-
-      const fetchCountBefore = (global.fetch as Mock).mock.calls.length;
-
-      await act(async () => {
-        await result.current.toggleStatus(result.current.projects[0]);
-      });
-
-      // No additional fetch should have been made (no PATCH)
-      expect((global.fetch as Mock).mock.calls.length).toBe(fetchCountBefore);
     });
   });
 

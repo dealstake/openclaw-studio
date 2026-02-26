@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { ProjectEntry } from "../components/ProjectsPanel";
 import { parseProjectFile, type ProjectDetails } from "../lib/parseProject";
-import { TOGGLE_MAP } from "../lib/constants";
+
 import { manageProjectCronJobs } from "../lib/cronJobs";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import { useVisibilityRefresh } from "@/hooks/useVisibilityRefresh";
@@ -16,7 +16,6 @@ interface UseProjectsResult {
   loading: boolean;
   error: string | null;
   refresh: () => void;
-  toggleStatus: (project: ProjectEntry) => Promise<void>;
   changeStatus: (project: ProjectEntry, newEmoji: string, newLabel: string) => Promise<void>;
   archive: (project: ProjectEntry) => Promise<void>;
   /** Number of projects currently in Building status */
@@ -165,21 +164,6 @@ export function useProjects(
     [agentId, client],
   );
 
-  const toggleStatus = useCallback(
-    async (project: ProjectEntry) => {
-      const toggle = TOGGLE_MAP[project.statusEmoji];
-      if (!toggle) return;
-
-      await applyStatusChange(project, toggle.emoji, toggle.label, {
-        successMessage:
-          toggle.emoji === "⏸️"
-            ? `"${project.name}" paused`
-            : `"${project.name}" activated`,
-      });
-    },
-    [applyStatusChange],
-  );
-
   const archive = useCallback(
     async (project: ProjectEntry) => {
       if (!agentId) return;
@@ -241,5 +225,5 @@ export function useProjects(
     void loadProjects();
   }, [loadProjects]);
 
-  return { projects, loading, error, refresh, toggleStatus, changeStatus, archive, buildingCount, getQueuePosition };
+  return { projects, loading, error, refresh, changeStatus, archive, buildingCount, getQueuePosition };
 }
