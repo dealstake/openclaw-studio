@@ -1,12 +1,8 @@
 "use client";
 
 import { memo } from "react";
-import { AlertTriangle, Megaphone, Play, Trash2 } from "lucide-react";
+import { AlertTriangle, Play, Trash2 } from "lucide-react";
 import type { StudioTask, TaskSchedule } from "@/features/tasks/types";
-import {
-  THINKING_OPTIONS,
-  DELIVERY_MODE_OPTIONS,
-} from "@/features/tasks/types";
 import { TaskScheduleEditor } from "./TaskScheduleEditor";
 import { formatRelativeTime } from "@/lib/text/time";
 import { formatDurationCompact as formatDuration } from "@/lib/text/time";
@@ -17,19 +13,14 @@ import {
   getTaskStatusKey,
 } from "@/features/tasks/lib/taskTypeConfig";
 import { sectionLabelClass } from "@/components/SectionLabel";
-import { inputClass, textareaClass } from "@/features/tasks/lib/styles";
+import { textareaClass } from "@/features/tasks/lib/styles";
 
 interface TaskMetadataSectionProps {
   task: StudioTask;
   editing: boolean;
   editDescription: string;
-  editModel: string;
-  editThinking: string;
-  editDeliveryChannel: string;
-  editDeliveryTarget: string;
   busy: boolean;
-  showAdvanced: boolean;
-  onFieldChange: (field: "name" | "description" | "model" | "prompt" | "thinking" | "deliveryChannel" | "deliveryTarget", value: string) => void;
+  onFieldChange: (field: "description", value: string) => void;
   onUpdateSchedule: (taskId: string, schedule: TaskSchedule) => void;
   onToggle: (taskId: string, enabled: boolean) => void;
   onRun: (taskId: string) => void;
@@ -40,12 +31,7 @@ export const TaskMetadataSection = memo(function TaskMetadataSection({
   task,
   editing,
   editDescription,
-  editModel,
-  editThinking,
-  editDeliveryChannel,
-  editDeliveryTarget,
   busy,
-  showAdvanced,
   onFieldChange,
   onUpdateSchedule,
   onToggle,
@@ -114,111 +100,8 @@ export const TaskMetadataSection = memo(function TaskMetadataSection({
                 : ""}
             </span>
           ) : null}
-          {task.consecutiveErrors ? (
-            <span className="font-semibold text-destructive">
-              {task.consecutiveErrors} consecutive error
-              {task.consecutiveErrors > 1 ? "s" : ""}
-            </span>
-          ) : null}
         </div>
-
-        {/* Advanced meta — model, thinking, agent, run count */}
-        {showAdvanced ? (
-          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-            {editing ? (
-              <div className="flex items-center gap-1.5">
-                <span>Model:</span>
-                <input
-                  className={`${inputClass} w-48`}
-                  value={editModel}
-                  onChange={(e) => onFieldChange("model", e.target.value)}
-                  placeholder="e.g. anthropic/claude-sonnet-4-6"
-                />
-              </div>
-            ) : (
-              <span>Model: {task.model.split("/").pop()}</span>
-            )}
-            {editing ? (
-              <div className="flex items-center gap-1.5">
-                <span>Thinking:</span>
-                <select
-                  aria-label="Thinking level"
-                  className="h-6 rounded-md border border-border/80 bg-card/70 px-1.5 font-mono text-[11px] text-foreground outline-none transition hover:border-border focus:border-primary/60"
-                  value={editThinking}
-                  onChange={(e) => onFieldChange("thinking", e.target.value)}
-                >
-                  {THINKING_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ) : task.thinking ? (
-              <span>Thinking: {task.thinking}</span>
-            ) : null}
-            <span>Agent: {task.agentId}</span>
-            <span>Runs: {task.runCount}</span>
-          </div>
-        ) : null}
       </div>
-
-      {/* Delivery — advanced only */}
-      {showAdvanced && (editing || task.deliveryChannel) ? (
-        <div className="border-b border-border/40 px-4 py-3">
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Megaphone className="h-3 w-3 shrink-0" />
-            <span className={sectionLabelClass}>Delivery</span>
-          </div>
-          {editing ? (
-            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-2">
-              <div className="flex items-center gap-1.5 text-xs">
-                <span className="text-muted-foreground">Mode:</span>
-                <select
-                  aria-label="Delivery mode"
-                  className="h-6 rounded-md border border-border/80 bg-card/70 px-1.5 font-mono text-[11px] text-foreground outline-none transition hover:border-border focus:border-primary/60"
-                  value={editDeliveryChannel ? "announce" : "none"}
-                  onChange={(e) => {
-                    if (e.target.value === "none") {
-                      onFieldChange("deliveryChannel", "");
-                      onFieldChange("deliveryTarget", "");
-                    }
-                  }}
-                >
-                  {DELIVERY_MODE_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex items-center gap-1.5 text-xs">
-                <span className="text-muted-foreground">Channel:</span>
-                <input
-                  className={`${inputClass} w-32`}
-                  value={editDeliveryChannel}
-                  onChange={(e) => onFieldChange("deliveryChannel", e.target.value)}
-                  placeholder="e.g. whatsapp"
-                />
-              </div>
-              <div className="flex items-center gap-1.5 text-xs">
-                <span className="text-muted-foreground">Target:</span>
-                <input
-                  className={`${inputClass} w-40`}
-                  value={editDeliveryTarget}
-                  onChange={(e) => onFieldChange("deliveryTarget", e.target.value)}
-                  placeholder="e.g. user id"
-                />
-              </div>
-            </div>
-          ) : (
-            <div className="mt-1 flex flex-wrap gap-x-4 text-xs text-muted-foreground">
-              <span>Channel: {task.deliveryChannel || "default"}</span>
-              {task.deliveryTarget ? <span>Target: {task.deliveryTarget}</span> : null}
-            </div>
-          )}
-        </div>
-      ) : null}
 
       {/* Orphan warning banner */}
       {task.managementStatus === "orphan" ? (
@@ -232,16 +115,13 @@ export const TaskMetadataSection = memo(function TaskMetadataSection({
         </div>
       ) : null}
 
-
-
-
       {/* Actions */}
       <div className="flex items-center gap-2 border-b border-border/40 px-4 py-3">
         {task.managementStatus !== "orphan" ? (
           <>
             <button
               type="button"
-              className={`flex h-7 items-center gap-1.5 rounded-md border px-2.5 transition disabled:cursor-not-allowed disabled:opacity-60 ${
+              className={`flex h-8 items-center gap-1.5 rounded-md border px-2.5 transition disabled:cursor-not-allowed disabled:opacity-60 ${
                 task.enabled
                   ? "border-amber-500/40 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20"
                   : "border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
@@ -255,20 +135,20 @@ export const TaskMetadataSection = memo(function TaskMetadataSection({
             </button>
             <button
               type="button"
-              className="flex h-7 items-center gap-1.5 rounded-md border border-border/80 bg-card/70 px-2.5 text-muted-foreground transition hover:border-border hover:bg-muted/65 disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex h-8 items-center gap-1.5 rounded-md border border-border/80 bg-card/70 px-2.5 text-muted-foreground transition hover:border-border hover:bg-muted/65 disabled:cursor-not-allowed disabled:opacity-60"
               onClick={() => onRun(task.id)}
               disabled={busy}
             >
               <Play className="h-3 w-3" />
               <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em]">
-                Run Now
+                Trigger Run
               </span>
             </button>
           </>
         ) : null}
         <button
           type="button"
-          className="flex h-7 items-center gap-1.5 rounded-md border border-destructive/40 bg-transparent px-2.5 text-destructive transition hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex h-8 items-center gap-1.5 rounded-md border border-destructive/40 bg-transparent px-2.5 text-destructive transition hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-60"
           onClick={() => onDelete(task.id)}
           disabled={busy}
         >

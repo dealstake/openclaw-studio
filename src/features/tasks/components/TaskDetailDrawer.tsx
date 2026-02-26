@@ -9,10 +9,19 @@ import { type CronRunEntry, fetchCronRuns } from "@/lib/cron/types";
 import { TaskDetailHeader } from "./TaskDetailHeader";
 import { TaskMetadataSection } from "./TaskMetadataSection";
 import { TaskPromptSection } from "./TaskPromptSection";
+import { TaskAdvancedSection } from "./TaskAdvancedSection";
 import { RunHistorySection } from "./RunHistorySection";
 import { RawGatewaySection } from "./RawGatewaySection";
-import { ChevronRight, Settings2 } from "lucide-react";
-import { sectionLabelClass } from "@/components/SectionLabel";
+
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+type DrawerTab = "overview" | "history" | "advanced";
+
+const TAB_CONFIG: { key: DrawerTab; label: string }[] = [
+  { key: "overview", label: "Overview" },
+  { key: "history", label: "Run History" },
+  { key: "advanced", label: "Advanced" },
+];
 
 // ─── Props ───────────────────────────────────────────────────────────────────
 
@@ -44,7 +53,7 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
   const [runs, setRuns] = useState<CronRunEntry[]>([]);
   const [runsLoading, setRunsLoading] = useState(false);
   const [runsError, setRunsError] = useState<string | null>(null);
-  const [advancedExpanded, setAdvancedExpanded] = useState(false);
+  const [activeTab, setActiveTab] = useState<DrawerTab>("overview");
   const loadingRef = useRef(false);
 
   const {
@@ -55,6 +64,7 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
 
   const startEditing = useCallback(() => {
     startEditingForm();
+    setActiveTab("overview");
   }, [startEditingForm]);
 
   const loadRuns = useCallback(
@@ -85,10 +95,22 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
     if (task) void loadRuns(task.cronJobId);
   }, [task, loadRuns]);
 
+  const handleRun = useCallback(
+    (taskId: string) => {
+      onRun(taskId);
+      // Auto-refresh run history after trigger
+      if (task) {
+        setTimeout(() => void loadRuns(task.cronJobId), 3000);
+      }
+    },
+    [onRun, task, loadRuns]
+  );
+
   useEffect(() => {
     if (!task) {
       setRuns([]);
       setRunsError(null);
+      setActiveTab("overview");
       cancelEditing();
       return;
     }
@@ -111,64 +133,79 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
         onClose={onClose}
       />
 
-      <div className="min-h-0 flex-1 overflow-y-auto">
-        <TaskMetadataSection
-          task={task}
-          editing={editing}
-          editDescription={editDescription}
-          editModel={editModel}
-          editThinking={editThinking}
-          editDeliveryChannel={editDeliveryChannel}
-          editDeliveryTarget={editDeliveryTarget}
-          busy={busy}
-          showAdvanced={advancedExpanded || editing}
-          onFieldChange={setField}
-          onUpdateSchedule={onUpdateSchedule}
-          onToggle={onToggle}
-          onRun={onRun}
-          onDelete={onDelete}
-        />
-
-        <TaskPromptSection
-          prompt={task.prompt}
-          editing={editing}
-          editPrompt={editPrompt}
-          defaultExpanded={editing}
-          onEditPromptChange={(v) => setField("prompt", v)}
-        />
-
-        {/* Advanced toggle — collapsed by default */}
-        <div className="border-b border-border/40">
+      {/* Tab bar */}
+      <div className="flex border-b border-border/40" role="tablist">
+        {TAB_CONFIG.map(({ key, label }) => (
           <button
+            key={key}
             type="button"
-            className="flex w-full items-center gap-1.5 px-4 py-3 text-xs text-muted-foreground hover:text-foreground transition"
-            onClick={() => setAdvancedExpanded((prev) => !prev)}
-            aria-expanded={advancedExpanded}
+            role="tab"
+            aria-selected={activeTab === key}
+            className={`flex-1 px-3 py-2 text-xs font-medium transition ${
+              activeTab === key
+                ? "border-b-2 border-primary text-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+            onClick={() => setActiveTab(key)}
           >
-            <ChevronRight
-              className={`h-3 w-3 shrink-0 transition-transform duration-150 ${
-                advancedExpanded ? "rotate-90" : ""
-              }`}
-            />
-            <Settings2 className="h-3 w-3 shrink-0" />
-            <span className={sectionLabelClass}>Advanced</span>
+            {label}
           </button>
-          {advancedExpanded ? (
-            <div className="animate-in fade-in slide-in-from-top-1 duration-150">
-              <RawGatewaySection
-                cronJob={task.rawCronJob}
-                cronJobId={task.cronJobId}
-              />
-            </div>
-          ) : null}
-        </div>
+        ))}
+      </div>
 
-        <RunHistorySection
-          runs={runs}
-          loading={runsLoading}
-          error={runsError}
-          onRetry={handleRetryRuns}
-        />
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        {/* Overview tab */}
+        {activeTab === "overview" ? (
+          <>
+            <TaskMetadataSection
+              task={task}
+              editing={editing}
+              editDescription={editDescription}
+              busy={busy}
+              onFieldChange={setField}
+              onUpdateSchedule={onUpdateSchedule}
+              onToggle={onToggle}
+              onRun={handleRun}
+              onDelete={onDelete}
+            />
+            <TaskPromptSection
+              prompt={task.prompt}
+              editing={editing}
+              editPrompt={editPrompt}
+              defaultExpanded={editing}
+              onEditPromptChange={(v) => setField("prompt", v)}
+            />
+          </>
+        ) : null}
+
+        {/* Run History tab */}
+        {activeTab === "history" ? (
+          <RunHistorySection
+            runs={runs}
+            loading={runsLoading}
+            error={runsError}
+            onRetry={handleRetryRuns}
+          />
+        ) : null}
+
+        {/* Advanced tab */}
+        {activeTab === "advanced" ? (
+          <>
+            <TaskAdvancedSection
+              task={task}
+              editing={editing}
+              editModel={editModel}
+              editThinking={editThinking}
+              editDeliveryChannel={editDeliveryChannel}
+              editDeliveryTarget={editDeliveryTarget}
+              onFieldChange={setField}
+            />
+            <RawGatewaySection
+              cronJob={task.rawCronJob}
+              cronJobId={task.cronJobId}
+            />
+          </>
+        ) : null}
       </div>
     </div>
   );
