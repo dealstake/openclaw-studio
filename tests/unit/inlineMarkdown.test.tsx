@@ -1,6 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { TranscriptCard } from "@/features/sessions/components/TranscriptCard";
 import { ProjectCard } from "@/features/projects/components/ProjectCard";
 
 // Mock MarkdownViewer to verify it receives correct content
@@ -11,42 +10,6 @@ vi.mock("@/components/MarkdownViewer", () => ({
     </div>
   ),
 }));
-
-describe("TranscriptCard preview", () => {
-  it("renders preview as plain text paragraph", () => {
-    const transcript = {
-      sessionId: "test-session",
-      sessionKey: "test-key",
-      path: "/test/path",
-      size: 1024,
-      startedAt: new Date().toISOString(),
-      model: "anthropic/claude-opus-4-6",
-      preview: "Some code and bold text",
-      archived: false,
-      updatedAt: new Date().toISOString(),
-    };
-
-    render(<TranscriptCard transcript={transcript} />);
-    expect(screen.getByText("Some code and bold text")).toBeInTheDocument();
-  });
-
-  it("does not render preview paragraph when no preview", () => {
-    const transcript = {
-      sessionId: "test-session",
-      sessionKey: "test-key",
-      path: "/test/path",
-      size: 1024,
-      startedAt: new Date().toISOString(),
-      model: "anthropic/claude-opus-4-6",
-      preview: "",
-      archived: false,
-      updatedAt: new Date().toISOString(),
-    };
-
-    const { container } = render(<TranscriptCard transcript={transcript} />);
-    expect(container.querySelector(".line-clamp-2")).toBeNull();
-  });
-});
 
 describe("ProjectCard inline markdown", () => {
   const baseProject = {

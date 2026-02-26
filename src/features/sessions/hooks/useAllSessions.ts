@@ -1,7 +1,13 @@
 import { useCallback, useRef, useState } from "react";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { isGatewayDisconnectLikeError } from "@/lib/gateway/GatewayClient";
-import type { SessionEntry } from "@/features/sessions/components/SessionsPanel";
+// SessionEntry was previously in SessionsPanel.tsx (now deleted)
+type SessionEntry = {
+  key: string;
+  updatedAt?: number | null;
+  displayName?: string;
+  origin?: { label?: string | null; provider?: string | null } | null;
+};
 import { inferSessionType } from "@/features/sessions/lib/sessionKeyUtils";
 import type { SessionsListResult } from "@/features/sessions/lib/types";
 

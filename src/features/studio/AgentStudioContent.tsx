@@ -164,16 +164,18 @@ export const AgentStudioPage = () => {
   } = useGatewayStatus(client, status);
 
   const {
-    sessionUsage, sessionUsageLoading,
+    sessionUsage,
     loadSessionUsage, resetSessionUsage,
   } = useSessionUsage(client, status);
 
   // P0: sessions.usage aggregate RPC eliminated — use aggregateTokensFromList instead
   // (sessions.usage was taking 1-8 seconds and causing slow consumer disconnects)
 
+  // TODO: useAllSessions data is no longer consumed by any UI after SessionsPanel removal.
+  // The loadAllSessions ref is still threaded through useStudioDataSync and useRuntimeEventSubscription
+  // for refresh-on-reconnect. Remove entirely in a follow-up to eliminate wasted RPC calls.
   const {
-    allSessions, allSessionsLoading, allSessionsError,
-    aggregateUsageFromList, usageByType, loadAllSessions,
+    loadAllSessions,
   } = useAllSessions(client, status);
 
   // Emergency state moved to EmergencyProvider
@@ -338,19 +340,6 @@ export const AgentStudioPage = () => {
 
   // Connect/disconnect resets, context window refresh, session usage loading,
   // session key change detection, and turn-complete reloads handled by useStudioDataSync
-
-  // Aggregate usage: use the focused session's usage as the primary data source
-  // (per-session usage loads lazily in SessionsPanel cards)
-  const aggregateUsage = useMemo(() => {
-    if (!sessionUsage) return null;
-    return {
-      inputTokens: sessionUsage.inputTokens,
-      outputTokens: sessionUsage.outputTokens,
-      totalCost: sessionUsage.totalCost,
-      messageCount: sessionUsage.messageCount,
-    };
-  }, [sessionUsage]);
-  const aggregateUsageLoading = sessionUsageLoading;
 
   // Favicon effect handled by useStudioDataSync
   // resolveAgentName + resolveAgentAvatarUrl extracted to useLoadAgents
@@ -698,21 +687,7 @@ export const AgentStudioPage = () => {
     client,
     status,
     focusedAgentId,
-    allSessions,
-    allSessionsLoading,
-    allSessionsError,
-    onRefreshSessions: () => { void loadAllSessions(); },
     activeSessionKey: focusedAgent?.sessionKey ?? null,
-    aggregateUsage,
-    aggregateUsageLoading,
-    cumulativeUsage: aggregateUsageFromList ? {
-      inputTokens: aggregateUsageFromList.inputTokens,
-      outputTokens: aggregateUsageFromList.outputTokens,
-      totalCost: null,
-      messageCount: aggregateUsageFromList.messageCount,
-    } : null,
-    cumulativeUsageLoading: allSessionsLoading,
-    usageByType,
     onViewTrace: handleViewTrace,
     channelsSnapshot,
     channelsLoading,
@@ -728,9 +703,8 @@ export const AgentStudioPage = () => {
     onNavigateToTasks: () => setContextTab("tasks"),
     onTranscriptClick: handleDrawerTranscriptClick,
   }), [
-    client, status, focusedAgentId, allSessions, allSessionsLoading, allSessionsError,
-    loadAllSessions, focusedAgent?.sessionKey, aggregateUsage, aggregateUsageLoading,
-    aggregateUsageFromList, usageByType, handleViewTrace, handleDrawerTranscriptClick,
+    client, status, focusedAgentId,
+    focusedAgent?.sessionKey, handleViewTrace, handleDrawerTranscriptClick,
     channelsSnapshot, channelsLoading, channelsError, loadChannelsStatus,
     settingsAgent, handleBackToChat, handleRenameAgent, handleNewSession,
     handleDeleteAgent, handleToolCallingToggle, handleThinkingTracesToggle, setContextTab,

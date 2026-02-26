@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { isGatewayDisconnectLikeError } from "@/lib/gateway/GatewayClient";
 
@@ -186,6 +186,15 @@ export function useSessionHistory(client: GatewayClient, status: GatewayStatus, 
       console.error("Failed to rename session:", err);
     }
   }, [client]);
+
+  // Auto-refresh every 30s for cross-tab freshness
+  const loadRef = useRef(load);
+  loadRef.current = load;
+  useEffect(() => {
+    if (status !== "connected") return;
+    const id = window.setInterval(() => { void loadRef.current(); }, 30_000);
+    return () => window.clearInterval(id);
+  }, [status]);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return sessions;
