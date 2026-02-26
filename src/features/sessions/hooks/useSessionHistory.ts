@@ -19,6 +19,7 @@ export type SessionHistoryGroup = {
 
 import type { SessionsListResult } from "@/features/sessions/lib/types";
 import type { TranscriptEntry } from "./useTranscripts";
+import { filterAgentSessions } from "../lib/filterAgentSessions";
 
 // --- Pin storage (localStorage) ---
 
@@ -94,25 +95,7 @@ export function useSessionHistory(client: GatewayClient, status: GatewayStatus, 
         limit: 200,
       });
       const raw = result.sessions ?? [];
-      const mainKey = `agent:${agentId}:main`;
-      const agentPrefix = `agent:${agentId}:`;
-      const agentSessions = raw
-        .filter((s) => {
-          const key = s.key;
-          return key.startsWith(agentPrefix);
-        })
-        .filter((s) => {
-          const key = s.key;
-          return !key.includes(":cron:") && !key.includes(":sub:");
-        })
-        .map((s): SessionHistoryEntry => ({
-          key: s.key,
-          displayName: s.displayName || (s.key === mainKey ? "Main Session" : s.key.slice(agentPrefix.length) || s.key),
-          updatedAt: s.updatedAt ?? 0,
-          messageCount: s.messageCount ?? 0,
-          isMain: s.key === mainKey,
-        }))
-        .sort((a, b) => b.updatedAt - a.updatedAt);
+      const agentSessions = filterAgentSessions(raw, agentId);
 
       setSessions(agentSessions);
 

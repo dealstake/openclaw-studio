@@ -52,6 +52,15 @@ export const SessionItem = memo(function SessionItem({
     (name: string) => onRename(session.key, name),
     [onRename, session.key],
   );
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "F2" && !renaming) {
+        e.preventDefault();
+        onRenameStart(session.key);
+      }
+    },
+    [renaming, onRenameStart, session.key],
+  );
 
   useEffect(() => {
     if (focused) itemRef.current?.scrollIntoView({ block: "nearest" });
@@ -66,6 +75,7 @@ export const SessionItem = memo(function SessionItem({
       aria-selected={active}
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
+      onKeyDown={handleKeyDown}
       className={`group flex w-full items-start gap-2.5 rounded-lg px-2.5 py-2.5 text-left transition-all duration-200 focus-ring min-h-[44px] ${
         active
           ? "bg-accent text-accent-foreground"
