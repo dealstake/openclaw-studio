@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useMemo } from "react";
+import { memo, useCallback, useEffect, useMemo } from "react";
 import { useVisibilityRefresh } from "@/hooks/useVisibilityRefresh";
 import { Skeleton } from "@/components/Skeleton";
 import { ErrorBanner } from "@/components/ErrorBanner";
@@ -75,25 +75,21 @@ const ArtifactRow = memo(function ArtifactRow({
   isPinned: boolean;
   onTogglePin: (id: string) => void;
 }) {
-  const handleClick = useCallback(() => {
-    if (file.webViewLink) {
-      window.open(file.webViewLink, "_blank", "noopener,noreferrer");
-    }
-  }, [file.webViewLink]);
-
   const handlePin = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
+      e.preventDefault();
       onTogglePin(file.id);
     },
     [file.id, onTogglePin],
   );
 
   return (
-    <button
-      type="button"
-      onClick={handleClick}
-      className="group flex w-full items-start gap-3.5 rounded-lg border border-border/70 bg-card/65 px-4 py-3.5 text-left transition hover:border-border hover:bg-muted/55 focus-ring"
+    <a
+      href={file.webViewLink ?? "#"}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="group flex w-full items-start gap-3.5 rounded-lg border border-border/70 bg-card/65 px-4 py-3.5 text-left no-underline transition hover:border-border hover:bg-muted/55 focus-ring"
     >
       <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted/40">
         {fileIcon(file.mimeType)}
@@ -128,7 +124,7 @@ const ArtifactRow = memo(function ArtifactRow({
           <Pin className={`h-3 w-3 ${isPinned ? "fill-primary" : ""}`} />
         </button>
       </div>
-    </button>
+    </a>
   );
 });
 
@@ -150,7 +146,14 @@ export const ArtifactsPanel = memo(function ArtifactsPanel({
     clearUploadError,
   } = useArtifacts(isSelected);
 
-  const { pins, sortDir, toggleSort, togglePin } = useArtifactPins();
+  const { pins, sortDir, toggleSort, togglePin, pruneWith } = useArtifactPins();
+
+  // Prune stale pins when file list changes
+  useEffect(() => {
+    if (files.length > 0) {
+      pruneWith(new Set(files.map((f) => f.id)));
+    }
+  }, [files, pruneWith]);
 
   // Sort files, then partition pinned to top
   const sortedFiles = useMemo(() => {
