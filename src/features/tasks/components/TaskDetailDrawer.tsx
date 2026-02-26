@@ -24,7 +24,6 @@ interface TaskDetailDrawerProps {
   onUpdateSchedule: (taskId: string, schedule: TaskSchedule) => void;
   onRun: (taskId: string) => void;
   onDelete: (taskId: string) => void;
-  onAdopt?: (taskId: string) => void;
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -39,7 +38,6 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
   onUpdateSchedule,
   onRun,
   onDelete,
-  onAdopt,
 }: TaskDetailDrawerProps) {
   const [runs, setRuns] = useState<CronRunEntry[]>([]);
   const [runsLoading, setRunsLoading] = useState(false);
@@ -125,7 +123,6 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
           onToggle={onToggle}
           onRun={onRun}
           onDelete={onDelete}
-          onAdopt={onAdopt}
         />
 
         <TaskPromptSection

@@ -1,7 +1,7 @@
 "use client";
 
 import { memo } from "react";
-import { AlertTriangle, Clock, FolderInput, Megaphone, Play, Trash2 } from "lucide-react";
+import { AlertTriangle, Clock, Megaphone, Play, Trash2 } from "lucide-react";
 import type { StudioTask, TaskSchedule } from "@/features/tasks/types";
 import {
   PERIODIC_INTERVAL_OPTIONS,
@@ -36,7 +36,6 @@ interface TaskMetadataSectionProps {
   onToggle: (taskId: string, enabled: boolean) => void;
   onRun: (taskId: string) => void;
   onDelete: (taskId: string) => void;
-  onAdopt?: (taskId: string) => void;
 }
 
 export const TaskMetadataSection = memo(function TaskMetadataSection({
@@ -53,7 +52,6 @@ export const TaskMetadataSection = memo(function TaskMetadataSection({
   onToggle,
   onRun,
   onDelete,
-  onAdopt,
 }: TaskMetadataSectionProps) {
   const typeConfig = TYPE_CONFIG[task.type];
   const TypeIcon = typeConfig.icon;
@@ -302,17 +300,8 @@ export const TaskMetadataSection = memo(function TaskMetadataSection({
         </div>
       ) : null}
 
-      {/* Unmanaged info banner */}
-      {task.managementStatus === "unmanaged" ? (
-        <div className="flex items-start gap-2 border-b border-amber-500/30 bg-amber-500/5 px-4 py-3">
-          <FolderInput className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-400" />
-          <div className="text-[11px] leading-relaxed text-amber-300">
-            <span className="font-semibold">Unmanaged cron job.</span>{" "}
-            This job was created via CLI and has no Studio metadata.
-            Adopt it to manage name, description, and prompt from Studio.
-          </div>
-        </div>
-      ) : null}
+
+
 
       {/* Actions */}
       <div className="flex items-center gap-2 border-b border-border/40 px-4 py-3">
@@ -344,19 +333,6 @@ export const TaskMetadataSection = memo(function TaskMetadataSection({
               </span>
             </button>
           </>
-        ) : null}
-        {task.managementStatus === "unmanaged" && onAdopt ? (
-          <button
-            type="button"
-            className="flex h-7 items-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-2.5 text-primary transition hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
-            onClick={() => onAdopt(task.id)}
-            disabled={busy}
-          >
-            <FolderInput className="h-3 w-3" />
-            <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em]">
-              Adopt
-            </span>
-          </button>
         ) : null}
         <button
           type="button"

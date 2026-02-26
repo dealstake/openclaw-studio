@@ -48,7 +48,37 @@ export const useAgentTasks = (
         listCronJobs(client, { includeDisabled: true }),
       ]);
       const enriched = enrichTasksWithCronData(raw, cronResult.jobs, agentId);
-      setTasks(enriched);
+
+      // Auto-import: persist any unmanaged tasks so they become managed
+      const unmanagedTasks = enriched.filter((t) => t.managementStatus === "unmanaged");
+      if (unmanagedTasks.length > 0) {
+        const imported = await Promise.allSettled(
+          unmanagedTasks.map(async (t) => {
+            const newId = generateTaskId();
+            const now = new Date().toISOString();
+            const managed: StudioTask = {
+              ...t,
+              id: newId,
+              managementStatus: "managed" as const,
+              createdAt: now,
+              updatedAt: now,
+            };
+            await saveTaskMetadata(managed);
+            return { oldId: t.id, managed };
+          })
+        );
+        // Replace unmanaged tasks with their managed versions
+        const importMap = new Map<string, StudioTask>();
+        for (const result of imported) {
+          if (result.status === "fulfilled") {
+            importMap.set(result.value.oldId, result.value.managed);
+          }
+        }
+        const finalTasks = enriched.map((t) => importMap.get(t.id) ?? t);
+        setTasks(finalTasks);
+      } else {
+        setTasks(enriched);
+      }
       setError(null);
     } catch (err) {
       if (!isGatewayDisconnectLikeError(err)) {
