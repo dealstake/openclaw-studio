@@ -4,6 +4,7 @@ import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { ChevronDown, Check, Plus } from "lucide-react";
 import { AgentAvatar } from "./AgentAvatar";
 import type { AgentStatus } from "@/features/agents/state/store";
+import { formatModelDisplayName } from "@/lib/models/utils";
 
 export type BreadcrumbAgent = {
   agentId: string;
@@ -39,19 +40,7 @@ const statusLabelClass: Record<AgentStatus, string> = {
   error: "text-destructive",
 };
 
-/** Extract short model name from full qualified id (e.g. "anthropic/claude-opus-4-6" → "Opus 4.6") */
-function formatModelShort(model: string): string {
-  const id = model.includes("/") ? model.split("/").pop()! : model;
-  if (id.includes("opus")) return "Opus " + extractVersion(id);
-  if (id.includes("sonnet")) return "Sonnet " + extractVersion(id);
-  if (id.includes("haiku")) return "Haiku " + extractVersion(id);
-  return id;
-}
-
-function extractVersion(id: string): string {
-  const m = id.match(/(\d+)[.-](\d+)/);
-  return m ? `${m[1]}.${m[2]}` : "";
-}
+/* Model display formatting delegated to @/lib/models/utils */
 
 export const AgentBreadcrumb = memo(function AgentBreadcrumb({
   agents,
@@ -157,7 +146,7 @@ export const AgentBreadcrumb = memo(function AgentBreadcrumb({
                 </div>
                 {agent.model ? (
                   <span className="truncate text-xs text-muted-foreground">
-                    {formatModelShort(agent.model)}
+                    {formatModelDisplayName(agent.model)}
                   </span>
                 ) : null}
               </div>

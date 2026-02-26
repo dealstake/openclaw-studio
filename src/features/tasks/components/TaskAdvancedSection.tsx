@@ -8,6 +8,7 @@ import {
   DELIVERY_MODE_OPTIONS,
 } from "@/features/tasks/types";
 import { sectionLabelClass } from "@/components/SectionLabel";
+import { formatModelDisplayName } from "@/lib/models/utils";
 import { inputClass } from "@/features/tasks/lib/styles";
 
 // ─── Props ───────────────────────────────────────────────────────────────────
@@ -52,7 +53,7 @@ export const TaskAdvancedSection = memo(function TaskAdvancedSection({
               />
             </div>
           ) : (
-            <span>Model: {task.model.split("/").pop()}</span>
+            <span>Model: {formatModelDisplayName(task.model)}</span>
           )}
           {editing ? (
             <div className="flex items-center gap-1.5">

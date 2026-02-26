@@ -978,7 +978,7 @@ export const AgentStudioPage = () => {
               className={
                 isMobileLayout
                   ? `fixed inset-x-0 bottom-0 z-50 h-[70vh] rounded-t-3xl transform-gpu ${swipeDy > 0 ? "" : "transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]"} ${mobilePane === "context" ? "translate-y-0" : "translate-y-full"} bg-background/95 backdrop-blur-xl ring-1 ring-white/[0.06] border-t border-border/50 min-h-0 overflow-hidden p-0 shadow-[0_-4px_24px_-6px_rgba(0,0,0,0.3)]`
-                  : `fixed inset-y-0 right-0 z-20 w-[360px] transform-gpu transition-transform duration-300 ease-out ${showContextInline ? "translate-x-0" : "translate-x-full"} bg-background/60 backdrop-blur-xl ring-1 ring-white/[0.06] min-h-0 overflow-hidden p-0 shadow-[-4px_0_24px_-6px_rgba(0,0,0,0.3)]`
+                  : `fixed inset-y-0 right-0 z-20 w-[360px] pt-20 transform-gpu transition-transform duration-300 ease-out ${showContextInline ? "translate-x-0" : "translate-x-full"} bg-background/60 backdrop-blur-xl ring-1 ring-white/[0.06] min-h-0 overflow-hidden p-0 shadow-[-4px_0_24px_-6px_rgba(0,0,0,0.3)]`
               }
               style={isMobileLayout && swipeDy > 0 ? { transform: `translateY(${swipeDy}px)` } : undefined}
               onTouchStart={isMobileLayout ? swipeHandlers.onTouchStart : undefined}
