@@ -91,6 +91,8 @@
   padding: 0.14rem 0.28rem;
   border-radius: 0.32rem;
   border: 1px solid color-mix(in oklch, var(--border) 75%, transparent);
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .agent-markdown pre {

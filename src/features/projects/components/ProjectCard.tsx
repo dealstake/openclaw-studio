@@ -182,7 +182,7 @@ export const ProjectCard = memo(function ProjectCard({
             className="w-full truncate text-left hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary rounded-sm cursor-pointer"
             onClick={onOpenFile}
             onKeyDown={handleKeyDown}
-            aria-label="Open project file"
+            aria-label={`Open project file: ${project.name}`}
           >
             {project.name}
           </button>
