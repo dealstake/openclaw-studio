@@ -157,6 +157,7 @@ export const HeaderBar = memo(function HeaderBar({
             aria-label="Emergency controls"
             title="Emergency controls"
             data-testid="emergency-toggle"
+            className="hidden sm:flex"
           >
             <ShieldAlert className="h-4 w-4 text-red-500" />
           </HeaderIconButton>
