@@ -44,7 +44,7 @@ export const SessionItemMenu = memo(function SessionItemMenu({
         <DropdownMenuTrigger asChild>
           <button
             type="button"
-            className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-all duration-150 hover:bg-muted hover:text-foreground group-hover:opacity-100 focus:opacity-100 focus-ring"
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md text-muted-foreground opacity-0 transition-all duration-150 hover:bg-muted hover:text-foreground group-hover:opacity-100 focus:opacity-100 focus-ring -mr-2"
             aria-label={`Actions for ${displayName}`}
             onClick={(e) => e.stopPropagation()}
           >
