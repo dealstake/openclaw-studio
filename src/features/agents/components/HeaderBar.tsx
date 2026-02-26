@@ -18,7 +18,6 @@ import { AgentBreadcrumb, type BreadcrumbAgent } from "./AgentBreadcrumb";
 import type { ContextTab } from "@/features/context/components/ContextPanel";
 
 type HeaderBarProps = {
-  onConnectionSettings: () => void;
   onOpenSessionHistory?: () => void;
   agents?: BreadcrumbAgent[];
   selectedAgentId?: string | null;
@@ -46,10 +45,6 @@ const CONTEXT_TAB_ITEMS: Array<{
   { value: "workspace", label: "Files", Icon: FolderOpen },
   { value: "activity", label: "Activity", Icon: Activity },
 ];
-
-/* ── Connection status dot ───────────────────────────────────────────── */
-
-/* ── Overflow menu ───────────────────────────────────────────────────── */
 
 /** Mobile-only overflow menu — context panel tabs + emergency */
 function MobileContextMenu({
@@ -128,7 +123,6 @@ function MobileContextMenu({
 /* ── Header bar ──────────────────────────────────────────────────────── */
 
 export const HeaderBar = memo(function HeaderBar({
-  onConnectionSettings,
   onOpenSessionHistory,
   agents,
   selectedAgentId,
@@ -140,8 +134,6 @@ export const HeaderBar = memo(function HeaderBar({
   onContextTabClick,
   onContextClose,
 }: HeaderBarProps) {
-  // Suppress unused lint — onConnectionSettings still wired from parent for connection panel toggle
-  void onConnectionSettings;
   const emergency = useEmergencyOptional();
 
   return (

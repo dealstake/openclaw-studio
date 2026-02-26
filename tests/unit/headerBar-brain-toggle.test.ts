@@ -30,7 +30,6 @@ describe("HeaderBar mobile context menu", () => {
 
     render(
       createElement(HeaderBar, {
-        onConnectionSettings: vi.fn(),
         showContextTabs: false,
         onContextTabClick,
       })

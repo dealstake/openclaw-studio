@@ -8,7 +8,6 @@ import {
 import { AppSidebar, type ManagementTab } from "@/layout/AppSidebar";
 import type { BreadcrumbAgent } from "@/features/agents/components/AgentBreadcrumb";
 import { HeaderBar } from "@/features/agents/components/HeaderBar";
-import { ConnectionPanel } from "@/features/agents/components/ConnectionPanel";
 import { EmptyStatePanel } from "@/features/agents/components/EmptyStatePanel";
 import { BrandMark } from "@/components/brand/BrandMark";
 import { GatewayStatusBanner } from "@/components/GatewayStatusBanner";
@@ -28,7 +27,6 @@ import { useAgentTasks } from "@/features/tasks/hooks/useAgentTasks";
 import { ContextPanel } from "@/features/context/components/ContextPanel";
 import type { ContextTab } from "@/features/context/components/ContextPanel";
 
-// ContextTabCluster is now integrated into HeaderBar on wide viewports
 import { PanelErrorBoundary } from "@/components/PanelErrorBoundary";
 import { ManagementPanelContent } from "@/components/ManagementPanelContent";
 import { ManagementDrawer } from "@/components/ManagementDrawer";
@@ -73,12 +71,7 @@ export const AgentStudioPage = () => {
     client,
     status,
     gatewayUrl,
-    token,
-    error: gatewayError,
     connect,
-    disconnect,
-    setGatewayUrl,
-    setToken,
     settingsCoordinator,
   } = useGateway();
 
@@ -101,7 +94,6 @@ export const AgentStudioPage = () => {
     handleFilesToggle: _handleFilesToggle, handleBackToChat,
     swipeHandlers,
   } = layout;
-  const [showConnectionPanel, setShowConnectionPanel] = useState(false);
   const [showTaskWizard, setShowTaskWizard] = useState(false);
   const [showAgentWizard, setShowAgentWizard] = useState(false);
   const [focusFilter, setFocusFilter] = useState<FocusFilter>("all");
@@ -612,7 +604,6 @@ export const AgentStudioPage = () => {
     setCronEventTick,
   });
 
-  const connectionPanelVisible = showConnectionPanel;
   const hasAnyAgents = agents.length > 0;
   const showFleetLayout = hasAnyAgents || status === "connected";
 
@@ -797,7 +788,6 @@ export const AgentStudioPage = () => {
         >
           <HeaderBar
             running={focusedAgentRunning}
-            onConnectionSettings={() => setShowConnectionPanel((prev) => !prev)}
 
             onOpenSessionHistory={() => setMobileSessionDrawerOpen(true)}
             agents={breadcrumbAgents}
@@ -823,23 +813,6 @@ export const AgentStudioPage = () => {
         </div>
 
         {/* ── Status banners: fixed below header ───────────────────── */}
-        {connectionPanelVisible ? (
-          <div className="fixed inset-x-0 top-12 z-30">
-            <div className="rounded-lg bg-card px-4 py-4 sm:px-6 sm:py-6">
-              <ConnectionPanel
-                gatewayUrl={gatewayUrl}
-                token={token}
-                status={status}
-                error={gatewayError}
-                onGatewayUrlChange={setGatewayUrl}
-                onTokenChange={setToken}
-                onConnect={() => void connect()}
-                onDisconnect={disconnect}
-              />
-            </div>
-          </div>
-        ) : null}
-
         {errorMessage ? (
           <div className="fixed inset-x-0 top-12 z-30">
             <div className="rounded-md border border-destructive bg-destructive px-4 py-2 text-sm text-destructive-foreground">
@@ -856,7 +829,7 @@ export const AgentStudioPage = () => {
         ) : null}
 
         {/* ── Gateway connection banner: shown when disconnected ──── */}
-        {status !== "connected" && !connectionPanelVisible ? (
+        {status !== "connected" ? (
           <div className="fixed inset-x-0 top-12 z-30">
             <GatewayStatusBanner
               status={status}
