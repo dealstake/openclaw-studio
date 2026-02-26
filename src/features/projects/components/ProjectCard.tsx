@@ -204,7 +204,7 @@ export const ProjectCard = memo(function ProjectCard({
 
       {/* Dates */}
       {(project.createdAt || project.updatedAt) && (
-        <div className="mt-1.5 flex items-center gap-3 text-[11px] font-mono text-muted-foreground/60">
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-mono text-muted-foreground/80">
           {project.createdAt && (
             <span title={`Created: ${new Date(project.createdAt).toLocaleString()}`}>
               Created {formatRelativeTime(new Date(project.createdAt).getTime())}
