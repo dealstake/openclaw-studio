@@ -85,6 +85,11 @@ export const SessionItem = memo(function SessionItem({
             {highlightMatch(session.displayName, searchQuery)}
           </p>
         )}
+        {session.summary && (
+          <p className="mt-0.5 truncate text-[11px] text-muted-foreground/70">
+            {session.summary}
+          </p>
+        )}
         <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
           {formatRelativeTime(session.updatedAt)}
           {session.messageCount > 0 ? ` · ${session.messageCount} msgs` : ""}

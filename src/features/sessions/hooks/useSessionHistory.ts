@@ -8,6 +8,8 @@ export type SessionHistoryEntry = {
   updatedAt: number;
   messageCount: number;
   isMain: boolean;
+  /** First-message preview (truncated to 60 chars) */
+  summary?: string;
 };
 
 export type SessionHistoryGroup = {
@@ -16,6 +18,7 @@ export type SessionHistoryGroup = {
 };
 
 import type { SessionsListResult } from "@/features/sessions/lib/types";
+import type { TranscriptEntry } from "./useTranscripts";
 
 // --- Pin storage (localStorage) ---
 
@@ -112,6 +115,30 @@ export function useSessionHistory(client: GatewayClient, status: GatewayStatus, 
         .sort((a, b) => b.updatedAt - a.updatedAt);
 
       setSessions(agentSessions);
+
+      // Fetch previews from transcripts API and merge as summaries
+      try {
+        const params = new URLSearchParams({ agentId, page: "1", perPage: "200" });
+        const resp = await fetch(`/api/sessions/transcripts?${params}`);
+        if (resp.ok) {
+          const data = await resp.json();
+          const transcripts: TranscriptEntry[] = data.transcripts ?? [];
+          const previewMap = new Map<string, string>();
+          for (const t of transcripts) {
+            if (t.sessionKey && t.preview) {
+              previewMap.set(t.sessionKey, t.preview.length > 60 ? t.preview.slice(0, 57) + "…" : t.preview);
+            }
+          }
+          if (previewMap.size > 0) {
+            setSessions(prev => prev.map(s => {
+              const preview = previewMap.get(s.key);
+              return preview ? { ...s, summary: preview } : s;
+            }));
+          }
+        }
+      } catch {
+        // Non-critical — previews are a nice-to-have enhancement
+      }
     } catch (err) {
       if (!isGatewayDisconnectLikeError(err)) {
         setError(err instanceof Error ? err.message : "Failed to load sessions");
