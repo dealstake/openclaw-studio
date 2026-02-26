@@ -82,17 +82,31 @@ export function formatTranscriptDisplayName(
 /**
  * Split text by query matches for highlighting. Returns array of { text, match } segments.
  */
+const splitByQueryCache = new Map<string, RegExp>();
+
 export function splitByQuery(
   text: string,
   query: string,
 ): Array<{ text: string; match: boolean }> {
   if (!query.trim()) return [{ text, match: false }];
-  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const parts = text.split(new RegExp(`(${escaped})`, "gi"));
+  let regex = splitByQueryCache.get(query);
+  if (!regex) {
+    const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    regex = new RegExp(`(${escaped})`, "gi");
+    splitByQueryCache.set(query, regex);
+    // Prevent unbounded cache growth
+    if (splitByQueryCache.size > 100) {
+      const firstKey = splitByQueryCache.keys().next().value;
+      if (firstKey !== undefined) splitByQueryCache.delete(firstKey);
+    }
+  }
+  regex.lastIndex = 0;
+  const parts = text.split(regex);
+  const queryLower = query.toLowerCase();
   return parts
     .filter((p) => p.length > 0)
     .map((part) => ({
       text: part,
-      match: part.toLowerCase() === query.toLowerCase(),
+      match: part.toLowerCase() === queryLower,
     }));
 }

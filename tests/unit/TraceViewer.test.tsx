@@ -50,7 +50,7 @@ const mockSummary = {
   totalTokens: 410,
   totalCost: 0.01,
   totalDurationMs: 2000,
-  turnBreakdown: { user: 1, assistant: 1, tool: 0 },
+  turnBreakdown: { user: 1, assistant: 1, system: 0, tool: 0 },
 };
 
 let hookReturnValue = {

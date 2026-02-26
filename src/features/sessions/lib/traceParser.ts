@@ -41,7 +41,7 @@ export type TraceSummary = {
   totalTokens: number;
   totalCost: number;
   totalDurationMs: number;
-  turnBreakdown: { user: number; assistant: number; tool: number };
+  turnBreakdown: { user: number; assistant: number; system: number; tool: number };
 };
 
 type ContentBlock = {
@@ -224,10 +224,12 @@ export function parseTrace(
   const totalDurationMs =
     timestamps.length >= 2 ? Math.max(...timestamps) - Math.min(...timestamps) : 0;
 
-  const turnBreakdown = { user: 0, assistant: 0, tool: 0 };
+  const turnBreakdown = { user: 0, assistant: 0, system: 0, tool: 0 };
   for (const t of turns) {
     if (t.role === "user") turnBreakdown.user++;
     else if (t.role === "assistant") turnBreakdown.assistant++;
+    else if (t.role === "system") turnBreakdown.system++;
+    // Note: tool results are already filtered out above, but guard against future role additions
     else turnBreakdown.tool++;
   }
 

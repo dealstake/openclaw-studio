@@ -51,7 +51,7 @@ describe("traceParser", () => {
     expect(summary.totalTokens).toBe(35);
     expect(summary.totalCost).toBe(0.0035);
     expect(summary.model).toBe("claude-opus-4-6");
-    expect(summary.turnBreakdown).toEqual({ user: 1, assistant: 1, tool: 0 });
+    expect(summary.turnBreakdown).toEqual({ user: 1, assistant: 1, system: 0, tool: 0 });
   });
 
   it("parses assistant turns with tool calls", () => {
