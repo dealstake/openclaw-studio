@@ -204,7 +204,7 @@ export const ProjectsPanel = memo(function ProjectsPanel({
       )}
 
       {/* All projects — flat list, sorted by status */}
-      <div className="animate-in fade-in duration-300">
+      <div className="flex flex-col gap-3 animate-in fade-in duration-300">
         {filteredProjects.map((project, i) => (
           <div
             key={project.doc}
