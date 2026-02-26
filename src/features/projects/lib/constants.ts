@@ -67,6 +67,13 @@ export const QUEUED_CONFIG: StatusConfig = {
 
 // ─── Priority ────────────────────────────────────────────────────────────────
 
+export const PRIORITY_ORDER: Record<string, number> = {
+  "🔴": 0, // P0
+  "🟡": 1, // P1
+  "🟢": 2, // P2
+  "⚪": 3, // P3
+};
+
 export const PRIORITY_DOT: Record<string, string> = {
   "🔴": "bg-red-400",
   "🟡": "bg-yellow-400",
@@ -128,6 +135,30 @@ export const TYPE_CARDS: Array<{
     color: "border-zinc-500/40 hover:border-zinc-500/70 hover:bg-zinc-500/5",
   },
 ];
+
+// ─── Sort ────────────────────────────────────────────────────────────────────
+
+/**
+ * Sort projects deterministically:
+ * 1. Status rank (Building → Active → Defined → Backlog → Parked → Done)
+ * 2. Priority rank within same status (P0 → P1 → P2 → P3)
+ * 3. Name alphabetically as tiebreaker
+ */
+export function sortProjects<
+  T extends { statusEmoji: string; priorityEmoji: string; name: string },
+>(projects: T[]): T[] {
+  return [...projects].sort((a, b) => {
+    const statusA = STATUS_ORDER[a.statusEmoji] ?? 99;
+    const statusB = STATUS_ORDER[b.statusEmoji] ?? 99;
+    if (statusA !== statusB) return statusA - statusB;
+
+    const prioA = PRIORITY_ORDER[a.priorityEmoji] ?? 99;
+    const prioB = PRIORITY_ORDER[b.priorityEmoji] ?? 99;
+    if (prioA !== prioB) return prioA - prioB;
+
+    return a.name.localeCompare(b.name);
+  });
+}
 
 // ─── Status Toggle Mappings (legacy — kept for backward compat) ──────────────
 

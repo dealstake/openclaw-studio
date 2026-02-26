@@ -22,7 +22,7 @@ import { SectionLabel } from "@/components/SectionLabel";
 import { PanelToolbar } from "@/components/ui/PanelToolbar";
 import { FilterGroup, type FilterGroupOption } from "@/components/ui/FilterGroup";
 import { SearchInput } from "@/components/SearchInput";
-import { STATUS_CONFIG, STATUS_KEYS } from "../lib/constants";
+import { STATUS_CONFIG, STATUS_KEYS, sortProjects } from "../lib/constants";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -139,7 +139,7 @@ export const ProjectsPanel = memo(function ProjectsPanel({
         p.name.toLowerCase().includes(q) || p.oneLiner.toLowerCase().includes(q)
       );
     }
-    return result;
+    return sortProjects(result);
   }, [projects, statusFilter, isAllSelected, debouncedQuery]);
 
   if (!agentId) return null;
