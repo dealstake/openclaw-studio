@@ -30,7 +30,6 @@ describe("HeaderBar brain toggle", () => {
 
     render(
       createElement(HeaderBar, {
-        status: "disconnected",
         onConnectionSettings: vi.fn(),
         onFilesToggle,
         filesActive: false,

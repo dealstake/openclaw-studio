@@ -5,12 +5,11 @@ import {
   MessageSquare,
   BarChart3,
   Radio,
-  Settings,
   Plus,
   ChevronLeft,
 } from "lucide-react";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { BottomSidebarActions } from "@/components/BottomSidebarActions";
 import { sectionLabelClass } from "@/components/SectionLabel";
 import { SearchInput } from "@/components/SearchInput";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
@@ -25,8 +24,6 @@ const NAV_ITEMS: Array<{ value: ManagementTab; label: string; icon: typeof Messa
   { value: "usage", label: "Usage", icon: BarChart3 },
   { value: "channels", label: "Channels", icon: Radio },
 ];
-
-const ALL_NAV_ITEMS = [...NAV_ITEMS, { value: "settings" as ManagementTab, label: "Settings", icon: Settings }];
 
 /* ─── Shared nav icon button ─── */
 type NavIconButtonProps = {
@@ -195,18 +192,12 @@ export const AppSidebar = memo(function AppSidebar({
               <MessageSquare className="h-4 w-4" />
             </button>
           </div>
-          {/* Settings + theme toggle pinned to bottom */}
-          <div className="mt-auto flex flex-col items-center gap-1 pb-3">
-            <ThemeToggle />
-            <NavIconButton
-              item={ALL_NAV_ITEMS[ALL_NAV_ITEMS.length - 1]}
-              isActive={activeManagementTab === "settings"}
-              size="md"
-              indicatorPosition="left"
-              tooltipSide="right"
-              onClick={onManagementNav}
-            />
-          </div>
+          {/* Notifications + Theme + Settings dropdown pinned to bottom */}
+          <BottomSidebarActions
+            collapsed
+            onOpenSettings={() => onManagementNav("settings")}
+            settingsActive={activeManagementTab === "settings"}
+          />
         </>
       ) : (
         /* ── Expanded: nav icons + session history ── */
@@ -272,31 +263,12 @@ export const AppSidebar = memo(function AppSidebar({
             onTogglePin={togglePin}
           />
 
-          {/* Settings + theme toggle pinned to bottom */}
-          <div className="border-t border-border/20 px-2 py-2 shrink-0 flex items-center gap-1">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  onClick={() => onManagementNav("settings")}
-                  className={`flex min-w-0 flex-1 items-center gap-2.5 rounded-md px-2 py-1.5 text-[13px] transition-all duration-150 ${
-                    activeManagementTab === "settings"
-                      ? "bg-accent text-accent-foreground"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                  }`}
-                  aria-label="Settings"
-                  aria-current={activeManagementTab === "settings" ? "page" : undefined}
-                >
-                  <Settings className="h-3.5 w-3.5 shrink-0" />
-                  <span>Settings</span>
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="right" className="text-xs">
-                Settings
-              </TooltipContent>
-            </Tooltip>
-            <ThemeToggle />
-          </div>
+          {/* Notifications + Theme + Settings dropdown pinned to bottom */}
+          <BottomSidebarActions
+            collapsed={false}
+            onOpenSettings={() => onManagementNav("settings")}
+            settingsActive={activeManagementTab === "settings"}
+          />
         </>
       )}
     </div>

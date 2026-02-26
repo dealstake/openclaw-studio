@@ -1,8 +1,7 @@
 import { memo, useEffect, useState, useRef } from "react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { HeaderIconButton } from "@/components/HeaderIconButton";
-import type { GatewayStatus } from "@/lib/gateway/GatewayClient";
-import type { WorkspaceHealthStatus } from "@/features/workspace/hooks/useWorkspaceHealth";
+
 import { BrandMark } from "@/components/brand/BrandMark";
 import { LogoutButton } from "@/components/brand/LogoutButton";
 import { NotificationBell } from "@/features/notifications/components/NotificationBell";
@@ -24,12 +23,10 @@ import {
 } from "lucide-react";
 import { useEmergencyOptional } from "@/features/emergency/EmergencyProvider";
 import { getCfIdentity, type CfIdentity } from "@/lib/cloudflare-auth";
-import { formatUptime } from "@/lib/text/time";
 import { AgentBreadcrumb, type BreadcrumbAgent } from "./AgentBreadcrumb";
 import type { ContextTab } from "@/features/context/components/ContextPanel";
 
 type HeaderBarProps = {
-  status: GatewayStatus;
   onConnectionSettings: () => void;
   onFilesToggle: () => void;
   filesActive: boolean;
@@ -40,10 +37,6 @@ type HeaderBarProps = {
   selectedAgentId?: string | null;
   onSelectAgent?: (agentId: string) => void;
   onCreateAgent?: () => void;
-  gatewayVersion?: string;
-  gatewayUptime?: number;
-  sidecarHealth?: WorkspaceHealthStatus | null;
-  sidecarError?: string | null;
   /** New props for overflow menu actions */
   onNewSession?: () => void;
   onOpenSettings?: () => void;
@@ -71,78 +64,6 @@ const CONTEXT_TAB_ITEMS: Array<{
 ];
 
 /* ── Connection status dot ───────────────────────────────────────────── */
-
-const connectionDotClass: Record<GatewayStatus, string> = {
-  connected: "bg-emerald-500",
-  connecting: "bg-amber-600 animate-pulse",
-  disconnected: "bg-muted-foreground/40",
-};
-
-const connectionLabel: Record<GatewayStatus, string> = {
-  connected: "Connected",
-  connecting: "Connecting…",
-  disconnected: "Disconnected",
-};
-
-function ConnectionDot({
-  status,
-  gatewayVersion,
-  gatewayUptime,
-  sidecarHealth,
-  sidecarError,
-  onClick,
-}: {
-  status: GatewayStatus;
-  gatewayVersion?: string;
-  gatewayUptime?: number;
-  sidecarHealth?: WorkspaceHealthStatus | null;
-  sidecarError?: string | null;
-  onClick?: () => void;
-}) {
-  const uptimeStr = gatewayUptime ? formatUptime(gatewayUptime) : undefined;
-
-  // Determine sidecar status line
-  let sidecarLine: string | null = null;
-  if (sidecarHealth) {
-    if (!sidecarHealth.configured) {
-      sidecarLine = null; // No sidecar configured — don't show anything
-    } else if (sidecarHealth.healthy) {
-      sidecarLine = `Sidecar: OK (${sidecarHealth.mode})`;
-    } else {
-      sidecarLine = `Sidecar: unhealthy${sidecarError ? ` — ${sidecarError}` : ""}`;
-    }
-  }
-
-  // If sidecar is configured but unhealthy, override dot to amber
-  const effectiveStatus =
-    sidecarHealth?.configured && !sidecarHealth.healthy && status === "connected"
-      ? "connecting" // amber dot
-      : status;
-
-  const label = [
-    connectionLabel[status],
-    gatewayVersion ? `v${gatewayVersion}` : null,
-    uptimeStr ? `up ${uptimeStr}` : null,
-    sidecarLine,
-  ]
-    .filter(Boolean)
-    .join(" · ");
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex h-11 w-11 items-center justify-center rounded-full transition-colors hover:bg-muted/60"
-      aria-label={label}
-      title={label}
-      data-testid="gateway-status-dot"
-    >
-      <span
-        className={`inline-block h-2 w-2 shrink-0 rounded-full ${connectionDotClass[effectiveStatus]}`}
-      />
-    </button>
-  );
-}
 
 /* ── Overflow menu ───────────────────────────────────────────────────── */
 
@@ -267,7 +188,6 @@ function OverflowMenu({
 /* ── Header bar ──────────────────────────────────────────────────────── */
 
 export const HeaderBar = memo(function HeaderBar({
-  status,
   onConnectionSettings,
   onFilesToggle,
   filesActive,
@@ -277,10 +197,6 @@ export const HeaderBar = memo(function HeaderBar({
   selectedAgentId,
   onSelectAgent,
   onCreateAgent,
-  gatewayVersion,
-  gatewayUptime,
-  sidecarHealth,
-  sidecarError,
   onNewSession,
   onOpenSettings,
   showContextTabs,
@@ -323,14 +239,6 @@ export const HeaderBar = memo(function HeaderBar({
           </HeaderIconButton>
         ) : null}
         <BrandMark size="sm" className="hidden sm:flex" />
-        <ConnectionDot
-          status={status}
-          gatewayVersion={gatewayVersion}
-          gatewayUptime={gatewayUptime}
-          sidecarHealth={sidecarHealth}
-          sidecarError={sidecarError}
-          onClick={onConnectionSettings}
-        />
         {emergency && (
           <HeaderIconButton
             onClick={emergency.toggle}
@@ -395,21 +303,7 @@ export const HeaderBar = memo(function HeaderBar({
               </button>
             </>
           )}
-          {/* Divider between context tabs and utility icons */}
-          <div className="mx-1 h-4 w-px bg-border/30" />
-          {/* Utility icons */}
-          <NotificationBell />
-          <ThemeToggle />
-          <OverflowMenu
-            onNewSession={onNewSession}
-            onOpenSettings={onOpenSettings}
-            onConnectionSettings={onConnectionSettings}
-            onFilesToggle={onFilesToggle}
-            filesActive={filesActive}
-            onOpenContext={onOpenContext}
-            unreadCount={unreadCount}
-            identity={identity}
-          />
+          {/* Utility icons moved to BottomSidebarActions — only AgentBreadcrumb remains in header */}
         </div>
       ) : (
         <div className="flex shrink-0 items-center gap-1.5">

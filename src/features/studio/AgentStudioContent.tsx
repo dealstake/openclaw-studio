@@ -65,7 +65,7 @@ import { useSettingsPanel } from "@/features/agents/hooks/useSettingsPanel";
 import { useChatCallbacks } from "@/features/agents/hooks/useChatCallbacks";
 import { isWide } from "@/hooks/useBreakpoint";
 import { useAppLayout } from "@/hooks/useAppLayout";
-import { useWorkspaceHealth } from "@/features/workspace/hooks/useWorkspaceHealth";
+
 import { useLoadAgents } from "@/features/studio/useLoadAgents";
 import { useStudioDataSync } from "@/features/studio/useStudioDataSync";
 
@@ -168,11 +168,8 @@ export const AgentStudioPage = () => {
   } = useChannelsStatus(client, status);
 
   const {
-    gatewayVersion, gatewayUptime,
     loadGatewayStatus, parsePresenceFromStatus, resetPresence,
   } = useGatewayStatus(client, status);
-
-  const { health: sidecarHealth, error: sidecarError } = useWorkspaceHealth();
 
   const {
     sessionUsage, sessionUsageLoading,
@@ -800,7 +797,6 @@ export const AgentStudioPage = () => {
           onMouseLeave={onHoverZoneLeave}
         >
           <HeaderBar
-            status={status}
             running={focusedAgentRunning}
             onConnectionSettings={() => setShowConnectionPanel((prev) => !prev)}
             onFilesToggle={handleFilesToggle}
@@ -827,10 +823,6 @@ export const AgentStudioPage = () => {
               dispatch({ type: "selectAgent", agentId });
             }}
             onCreateAgent={() => setShowAgentWizard(true)}
-            gatewayVersion={gatewayVersion}
-            gatewayUptime={gatewayUptime}
-            sidecarHealth={sidecarHealth}
-            sidecarError={sidecarError}
             showContextTabs={isWide(breakpoint)}
             contextTab={contextTab}
             contextPanelOpen={contextPanelOpen}
