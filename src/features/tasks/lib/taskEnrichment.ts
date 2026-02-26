@@ -92,7 +92,7 @@ export function enrichTasksWithCronData(
     id: job.id,
     cronJobId: job.id,
     agentId: job.agentId ?? agentId,
-    managementStatus: "unmanaged" as const,
+    managementStatus: "managed" as const,
     rawCronJob: job,
     name: job.name?.replace(/^\[TASK]\s*/, "") || "Unknown Task",
     description: "This task exists in the gateway but has no Studio metadata.",

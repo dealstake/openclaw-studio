@@ -86,17 +86,17 @@ describe("enrichTasksWithCronData", () => {
     expect(result[0].rawCronJob).toBeUndefined();
   });
 
-  it("synthesizes unmanaged tasks from cron jobs not in DB", () => {
-    const cronJobs = [makeCronJob({ id: "cron-unmanaged", name: "Raw CLI Job" })];
+  it("synthesizes managed tasks from cron jobs not in DB (auto-import)", () => {
+    const cronJobs = [makeCronJob({ id: "cron-new", name: "Raw CLI Job" })];
     const result = enrichTasksWithCronData([], cronJobs, AGENT_ID);
 
     expect(result).toHaveLength(1);
-    expect(result[0].managementStatus).toBe("unmanaged");
-    expect(result[0].cronJobId).toBe("cron-unmanaged");
+    expect(result[0].managementStatus).toBe("managed");
+    expect(result[0].cronJobId).toBe("cron-new");
     expect(result[0].name).toBe("Raw CLI Job");
   });
 
-  it("strips [TASK] prefix from unmanaged job names", () => {
+  it("strips [TASK] prefix from auto-imported job names", () => {
     const cronJobs = [makeCronJob({ id: "cron-x", name: "[TASK] Prefixed Job" })];
     const result = enrichTasksWithCronData([], cronJobs, AGENT_ID);
 
@@ -130,11 +130,9 @@ describe("enrichTasksWithCronData", () => {
 
     const managed = result.filter((t) => t.managementStatus === "managed");
     const orphans = result.filter((t) => t.managementStatus === "orphan");
-    const unmanaged = result.filter((t) => t.managementStatus === "unmanaged");
 
-    expect(managed).toHaveLength(1);
+    expect(managed).toHaveLength(2); // 1 existing + 1 auto-imported
     expect(orphans).toHaveLength(1);
-    expect(unmanaged).toHaveLength(1);
   });
 
   it("reads thinking from cron payload", () => {
