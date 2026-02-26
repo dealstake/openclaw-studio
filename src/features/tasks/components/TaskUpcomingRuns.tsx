@@ -59,7 +59,7 @@ export const TaskUpcomingRuns = memo(function TaskUpcomingRuns({
               />
               {formatRunTime(runMs)}
             </span>
-            <span className="text-[10px] tabular-nums opacity-70">
+            <span className="text-[10px] tabular-nums">
               {formatRelativeTime(runMs)}
             </span>
           </li>
