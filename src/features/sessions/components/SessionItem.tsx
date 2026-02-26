@@ -42,6 +42,7 @@ export const SessionItem = memo(function SessionItem({
   onExport,
 }: SessionItemProps) {
   const itemRef = useRef<HTMLButtonElement>(null);
+  const itemId = `session-item-${session.key.replace(/:/g, "-")}`;
   const handleClick = useCallback(() => onSelect(session.key), [onSelect, session.key]);
   const handleDoubleClick = useCallback(
     () => onRenameStart(session.key),
@@ -58,6 +59,7 @@ export const SessionItem = memo(function SessionItem({
 
   return (
     <button
+      id={itemId}
       ref={itemRef}
       type="button"
       role="option"

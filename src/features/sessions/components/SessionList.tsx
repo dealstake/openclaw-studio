@@ -98,17 +98,20 @@ export const SessionList = memo(function SessionList({
     [flatKeys, focusedIndex, renamingKey, onSelect],
   );
 
-  // Reset focus when search changes (groups change)
-  const prevGroupsRef = useMemo(() => ({ len: groups.length }), [groups]);
-  if (prevGroupsRef && focusedIndex >= flatKeys.length) {
-    // stale index — reset (safe in render since it only adjusts downward)
-  }
+  // Clamp focus index when list shrinks (e.g. search filter)
+  const effectiveFocusIndex = focusedIndex >= flatKeys.length ? -1 : focusedIndex;
+
+  const activeDescendantId =
+    effectiveFocusIndex >= 0 && flatKeys[effectiveFocusIndex]
+      ? `session-item-${flatKeys[effectiveFocusIndex].replace(/:/g, "-")}`
+      : undefined;
 
   return (
     <div
       className={`min-h-0 flex-1 overflow-y-auto px-1.5 pb-2 ${className}`}
       role="listbox"
       aria-label="Session history"
+      aria-activedescendant={activeDescendantId}
       tabIndex={0}
       onKeyDown={handleListKeyDown}
     >
@@ -138,7 +141,7 @@ export const SessionList = memo(function SessionList({
                   key={session.key}
                   session={session}
                   active={session.key === activeSessionKey}
-                  focused={flatKeys[focusedIndex] === session.key}
+                  focused={flatKeys[effectiveFocusIndex] === session.key}
                   pinned={pinnedKeys.has(session.key)}
                   renaming={renamingKey === session.key}
                   searchQuery={search}

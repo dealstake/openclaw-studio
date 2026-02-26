@@ -14,7 +14,14 @@ export async function exportConversationAsMarkdown(
   const parts = sessionKey.split(":");
   const sessionId = parts.length >= 3 ? parts.slice(2).join(":") : sessionKey;
 
-  const { messages } = await fetchTranscriptMessages(agentId, sessionId, 0, 10000);
+  let messages;
+  try {
+    const result = await fetchTranscriptMessages(agentId, sessionId, 0, 10000);
+    messages = result.messages;
+  } catch (error) {
+    console.error("Failed to fetch transcript for export:", error);
+    throw new Error("Failed to fetch conversation history for export.");
+  }
   const messageParts = transformMessagesToMessageParts(messages);
 
   const lines: string[] = [];
