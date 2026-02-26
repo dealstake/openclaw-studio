@@ -72,3 +72,5 @@ jobs:
             GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
             WORKSPACE_SIDECAR_URL=${{ secrets.WORKSPACE_SIDECAR_URL }}
             WORKSPACE_SIDECAR_TOKEN=${{ secrets.WORKSPACE_SIDECAR_TOKEN }}
+            GATEWAY_TOKEN=${{ secrets.GATEWAY_TOKEN }}
+            GATEWAY_URL=wss://gateway.tridentfundingsolutions.com

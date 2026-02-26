@@ -7,7 +7,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { EmptyState } from "@/components/ui/EmptyState";
 import { CardSkeleton } from "@/components/ui/CardSkeleton";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
-import type { ManagementStatus, StudioTask, TaskType, TaskSchedule, UpdateTaskPayload } from "@/features/tasks/types";
+import type { StudioTask, TaskType, TaskSchedule, UpdateTaskPayload } from "@/features/tasks/types";
 import { TaskCard } from "./TaskCard";
 import { TaskDetailDrawer } from "./TaskDetailDrawer";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
@@ -15,20 +15,19 @@ import { PanelIconButton } from "@/components/PanelIconButton";
 import { SectionLabel } from "@/components/SectionLabel";
 import { PanelToolbar } from "@/components/ui/PanelToolbar";
 import { FilterPillGroup, type FilterOption } from "@/components/ui/FilterPillGroup";
-import { PanelSearchInput } from "@/components/ui/PanelSearchInput";
+import { SearchInput } from "@/components/SearchInput";
 
 // ─── Filter tabs ─────────────────────────────────────────────────────────────
 
-type FilterTab = "all" | TaskType | ManagementStatus;
+type FilterTab = "all" | TaskType | "orphan";
 
-const MGMT_STATUS_FILTERS: FilterTab[] = ["unmanaged", "orphan"];
+const MGMT_STATUS_FILTERS: FilterTab[] = ["orphan"];
 
 const FILTER_OPTIONS: FilterOption<FilterTab>[] = [
   { value: "all", label: "All" },
   { value: "constant", label: "Constant" },
   { value: "periodic", label: "Periodic" },
   { value: "scheduled", label: "Scheduled" },
-  { value: "unmanaged", label: "Unmanaged" },
   { value: "orphan", label: "Orphan" },
 ];
 
@@ -47,7 +46,6 @@ interface TasksPanelProps {
   onUpdateSchedule: (taskId: string, schedule: TaskSchedule) => void;
   onRun: (taskId: string) => void;
   onDelete: (taskId: string) => void;
-  onAdopt?: (taskId: string) => void;
   onRefresh: () => void;
   onNewTask: () => void;
   maxConcurrentRuns?: number | null;
@@ -68,7 +66,6 @@ export const TasksPanel = memo(function TasksPanel({
   onUpdateSchedule,
   onRun,
   onDelete,
-  onAdopt,
   onRefresh,
   onNewTask,
   maxConcurrentRuns,
@@ -124,7 +121,7 @@ export const TasksPanel = memo(function TasksPanel({
       constant: tasks.filter((t) => t.type === "constant").length,
       periodic: tasks.filter((t) => t.type === "periodic").length,
       scheduled: tasks.filter((t) => t.type === "scheduled").length,
-      unmanaged: tasks.filter((t) => t.managementStatus === "unmanaged").length,
+
       orphan: tasks.filter((t) => t.managementStatus === "orphan").length,
     };
     // Only show unmanaged/orphan pills if count > 0
@@ -223,7 +220,6 @@ export const TasksPanel = memo(function TasksPanel({
         onUpdateSchedule={onUpdateSchedule}
         onRun={onRun}
         onDelete={handleDeleteRequest}
-        onAdopt={onAdopt}
       />
     );
   }
@@ -238,8 +234,7 @@ export const TasksPanel = memo(function TasksPanel({
           </SectionLabel>
           {tasks.length > 0 ? (
             <span className="rounded-full bg-muted px-1.5 py-0.5 font-mono text-[10px] font-semibold text-muted-foreground">
-              {tasks.filter((t) => t.managementStatus === "managed").length} managed
-              {tasks.some((t) => t.managementStatus === "unmanaged") ? ` · ${tasks.filter((t) => t.managementStatus === "unmanaged").length} unmanaged` : ""}
+              {tasks.length}
             </span>
           ) : null}
           {maxConcurrentRuns != null && (
@@ -288,7 +283,8 @@ export const TasksPanel = memo(function TasksPanel({
             value={filter}
             onChange={setFilter}
           />
-          <PanelSearchInput
+          <SearchInput
+            variant="compact"
             value={search}
             onChange={setSearch}
             placeholder="Search tasks…"

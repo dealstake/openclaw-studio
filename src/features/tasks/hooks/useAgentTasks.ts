@@ -48,7 +48,35 @@ export const useAgentTasks = (
         listCronJobs(client, { includeDisabled: true }),
       ]);
       const enriched = enrichTasksWithCronData(raw, cronResult.jobs, agentId);
-      setTasks(enriched);
+
+      // Auto-import: persist any newly-discovered cron jobs (id === cronJobId means no DB record yet)
+      const needsImport = enriched.filter((t) => t.id === t.cronJobId && t.managementStatus !== "orphan");
+      if (needsImport.length > 0) {
+        const imported = await Promise.allSettled(
+          needsImport.map(async (t) => {
+            const newId = generateTaskId();
+            const now = new Date().toISOString();
+            const managed: StudioTask = {
+              ...t,
+              id: newId,
+              createdAt: now,
+              updatedAt: now,
+            };
+            await saveTaskMetadata(managed);
+            return { oldId: t.id, managed };
+          })
+        );
+        const importMap = new Map<string, StudioTask>();
+        for (const result of imported) {
+          if (result.status === "fulfilled") {
+            importMap.set(result.value.oldId, result.value.managed);
+          }
+        }
+        const finalTasks = enriched.map((t) => importMap.get(t.id) ?? t);
+        setTasks(finalTasks);
+      } else {
+        setTasks(enriched);
+      }
       setError(null);
     } catch (err) {
       if (!isGatewayDisconnectLikeError(err)) {
@@ -308,93 +336,18 @@ export const useAgentTasks = (
         if (!task) throw new Error("Task not found.");
 
         const isOrphan = task.managementStatus === "orphan";
-        const isUnmanaged = task.managementStatus === "unmanaged";
-
         // For orphans (DB-only), skip cron removal — the cron job doesn't exist
         if (!isOrphan) {
           await removeCronJob(client, task.cronJobId);
         }
 
-        // For unmanaged (cron-only), skip DB deletion — no DB metadata exists
-        if (!isUnmanaged) {
-          await deleteTaskMetadata(agentId, taskId);
-        }
+        await deleteTaskMetadata(agentId, taskId);
 
         const taskName = task.name;
         setTasks((prev) => prev.filter((t) => t.id !== taskId));
         toast.success(`Task "${taskName}" deleted`);
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to delete task.";
-        setError(message);
-        toast.error(message);
-      } finally {
-        setBusyTaskId(null);
-        setBusyAction(null);
-      }
-    },
-    [agentId, client]
-  );
-
-  const adoptTask = useCallback(
-    async (taskId: string, name?: string, description?: string) => {
-      if (!agentId || busyTaskIdRef.current) return;
-      setBusyTaskId(taskId);
-      setBusyAction("update");
-      setError(null);
-      try {
-        const task = tasksRef.current.find((t) => t.id === taskId);
-        if (!task) throw new Error("Task not found.");
-        if (task.managementStatus !== "unmanaged") throw new Error("Only unmanaged tasks can be adopted.");
-
-        const newTaskId = generateTaskId();
-        const now = new Date().toISOString();
-        const adoptName = name || task.name;
-
-        // 1. Rename cron job with [TASK] prefix and inject task ID into payload
-        const cronPatch: Record<string, unknown> = {
-          name: `[TASK] ${adoptName}`,
-        };
-        // Update payload to include task ID marker
-        if (task.rawCronJob?.payload.kind === "agentTurn") {
-          cronPatch.payload = {
-            ...task.rawCronJob.payload,
-            message: buildCronPayloadMessage(newTaskId, task.prompt),
-          };
-        }
-        await updateCronJob(client, task.cronJobId, cronPatch);
-
-        // 2. Create DB metadata
-        const managedTask: StudioTask = {
-          ...task,
-          id: newTaskId,
-          managementStatus: "managed",
-          name: adoptName,
-          description: description || task.description,
-          updatedAt: now,
-          createdAt: now,
-        };
-
-        try {
-          await saveTaskMetadata(managedTask);
-        } catch (dbErr) {
-          // Rollback: restore original cron job name
-          console.warn("Adopt metadata save failed, rolling back cron rename", dbErr);
-          try {
-            await updateCronJob(client, task.cronJobId, {
-              name: task.rawCronJob?.name ?? task.name,
-              ...(task.rawCronJob?.payload ? { payload: task.rawCronJob.payload } : {}),
-            });
-          } catch {
-            console.error("Failed to rollback cron rename during adopt");
-          }
-          throw dbErr;
-        }
-
-        // 3. Update local state — replace unmanaged with managed
-        setTasks((prev) => prev.map((t) => (t.id === taskId ? managedTask : t)));
-        toast.success(`Task "${adoptName}" adopted`);
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to adopt task.";
         setError(message);
         toast.error(message);
       } finally {
@@ -418,6 +371,5 @@ export const useAgentTasks = (
     updateTaskSchedule,
     runTask,
     deleteTask,
-    adoptTask,
   };
 };

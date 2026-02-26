@@ -201,8 +201,10 @@ describe("useAgentTasks", () => {
     });
 
     expect(result.current.tasks).toHaveLength(1);
-    expect(result.current.tasks[0].managementStatus).toBe("unmanaged");
+    // Auto-import converts unmanaged → managed by persisting metadata
+    expect(result.current.tasks[0].managementStatus).toBe("managed");
     expect(result.current.tasks[0].cronJobId).toBe("cron-orphan");
+    expect(mockSaveTaskMetadata).toHaveBeenCalledTimes(1);
   });
 
   it("loadTasks sets error on fetch failure", async () => {

@@ -38,7 +38,7 @@ export type TaskSchedule = ConstantSchedule | PeriodicSchedule | ScheduledSchedu
 // ─── StudioTask ──────────────────────────────────────────────────────────────
 
 /** Classification of how a task relates to its cron job and DB metadata. */
-export type ManagementStatus = "managed" | "unmanaged" | "orphan";
+export type ManagementStatus = "managed" | "orphan";
 
 export interface StudioTask {
   id: string;
@@ -49,7 +49,7 @@ export interface StudioTask {
   rawCronJob?: import("@/lib/cron/types").CronJobSummary;
 
   /** Whether this task has both DB metadata and a cron job ('managed'),
-   *  only a cron job ('unmanaged'), or only DB metadata ('orphan'). */
+   *  both DB + cron ('managed'), or only DB metadata ('orphan'). */
   managementStatus: ManagementStatus;
 
   // User-facing

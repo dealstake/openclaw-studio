@@ -32,7 +32,7 @@ export const STATUS_ORDER: Record<string, number> = {
 
 export const STATUS_CONFIG: Record<string, StatusConfig> = {
   "🚧": { label: "Building", icon: Loader2, colors: "border-purple-500/30 bg-purple-500/10 text-purple-300" },
-  "🔨": { label: "Active", icon: Hammer, colors: "border-amber-500/30 bg-amber-500/10 text-amber-300" },
+  "🔨": { label: "Active", icon: Hammer, colors: "border-amber-500/30 bg-amber-500/15 text-amber-200" },
   "📋": { label: "Defined", icon: ClipboardList, colors: "border-blue-500/30 bg-blue-500/10 text-blue-300" },
   "🌊": { label: "Backlog", icon: Inbox, colors: "border-cyan-500/30 bg-cyan-500/10 text-cyan-300" },
   "⏸️": { label: "Parked", icon: PauseCircle, colors: "border-zinc-500/30 bg-zinc-500/10 text-zinc-300" },

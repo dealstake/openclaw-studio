@@ -14,6 +14,29 @@ const DEFAULT_GATEWAY_URL =
 const DEFAULT_GATEWAY_TOKEN =
   process.env.NEXT_PUBLIC_GATEWAY_TOKEN ?? "";
 
+/**
+ * Fetch runtime gateway config from server-side API route.
+ * Returns runtime env vars (GATEWAY_TOKEN, GATEWAY_URL) which take
+ * priority over build-time NEXT_PUBLIC_* values.
+ * Falls back to null on failure (caller uses build-time defaults).
+ */
+async function fetchRuntimeConfig(): Promise<{
+  url: string;
+  token: string;
+} | null> {
+  try {
+    const res = await fetch("/api/gateway/config", { cache: "no-store" });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { url?: string; token?: string };
+    if (typeof data.url === "string" && typeof data.token === "string") {
+      return { url: data.url, token: data.token };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 const formatGatewayError = (error: unknown) => {
   if (error instanceof GatewayResponseError) {
     return `Gateway error (${error.code}): ${error.message}`;
@@ -60,11 +83,27 @@ export const useGatewayConnection = (
     let cancelled = false;
     const loadSettings = async () => {
       try {
+        // 1. Fetch runtime config from server-side API (highest priority)
+        const runtimeConfig = await fetchRuntimeConfig();
+
+        // 2. Load studio settings (user overrides)
         const settings = await settingsCoordinator.loadSettings();
         const gateway = settings?.gateway ?? null;
+
         if (cancelled) return;
-        const nextGatewayUrl = gateway?.url?.trim() ? gateway.url : DEFAULT_GATEWAY_URL;
-        const nextToken = typeof gateway?.token === "string" ? gateway.token : DEFAULT_GATEWAY_TOKEN;
+
+        // Priority: Studio settings > Runtime API > Build-time defaults
+        // Studio settings override runtime because user explicitly set them in the UI
+        const runtimeUrl = runtimeConfig?.url?.trim() || DEFAULT_GATEWAY_URL;
+        const runtimeToken = runtimeConfig?.token || DEFAULT_GATEWAY_TOKEN;
+
+        const nextGatewayUrl = gateway?.url?.trim()
+          ? gateway.url
+          : runtimeUrl;
+        const nextToken = typeof gateway?.token === "string" && gateway.token
+          ? gateway.token
+          : runtimeToken;
+
         loadedGatewaySettings.current = {
           gatewayUrl: nextGatewayUrl.trim(),
           token: nextToken,

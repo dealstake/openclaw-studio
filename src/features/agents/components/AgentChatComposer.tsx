@@ -13,7 +13,7 @@ import {
 import type { GatewayModelChoice } from "@/lib/gateway/models";
 import type { MessagePart } from "@/lib/chat/types";
 import type { GatewayStatus } from "@/lib/gateway/GatewayClient";
-import { AlertCircle, ArrowUp, Paperclip, Settings2, Square, UploadCloud, WifiOff } from "lucide-react";
+import { AlertCircle, Paperclip, Send, Settings2, Square, UploadCloud, WifiOff } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ChatAttachmentPreview } from "./ChatAttachmentPreview";
 import { ModelPicker } from "./ModelPicker";
@@ -378,7 +378,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
           <div className="shrink-0">
             {running ? (
               <button
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-destructive text-destructive-foreground shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-destructive text-destructive-foreground shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
                 type="button"
                 aria-label="Stop agent"
                 onClick={onStop}
@@ -388,13 +388,13 @@ export const AgentChatComposer = memo(function AgentChatComposer({
               </button>
             ) : (
               <button
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
                 type="button"
                 aria-label="Send message"
                 onClick={handleClickSend}
                 disabled={sendDisabled}
               >
-                <ArrowUp className="h-4 w-4" />
+                <Send className="h-4 w-4" />
               </button>
             )}
           </div>

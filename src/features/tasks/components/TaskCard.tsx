@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useCallback } from "react";
-import { Terminal, AlertTriangle } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import type { StudioTask } from "@/features/tasks/types";
 import { humanReadableSchedule } from "@/features/tasks/lib/schedule";
 import { formatRelativeTime } from "@/lib/text/time";
@@ -34,7 +34,6 @@ export const TaskCard = memo(function TaskCard({
 }: TaskCardProps) {
   const typeConfig = TYPE_CONFIG[task.type];
   const TypeIcon = typeConfig.icon;
-  const isUnmanaged = task.managementStatus === "unmanaged";
   const isOrphan = task.managementStatus === "orphan";
 
   const statusKey = getTaskStatusKey(task);
@@ -58,9 +57,7 @@ export const TaskCard = memo(function TaskCard({
         focused && !selected
           ? "border-primary/30 bg-card/90 ring-1 ring-primary/10"
           : ""
-      }${isUnmanaged ? " border-dashed border-b-amber-500/30" : ""}${
-        isOrphan ? " border-dashed border-b-destructive/30 opacity-70" : ""
-      }`}
+      }${isOrphan ? " border-dashed border-b-destructive/30 opacity-70" : ""}`}
       onClick={handleSelect}
       role="option"
       aria-selected={selected || focused}
@@ -78,12 +75,7 @@ export const TaskCard = memo(function TaskCard({
         <span className="min-w-0 flex-1 truncate text-xs font-medium text-foreground" title={task.name}>
           {task.name}
         </span>
-        {isUnmanaged ? (
-          <CardBadge className="border-amber-500/30 bg-amber-500/10 text-amber-300 gap-1">
-            <Terminal className="h-2.5 w-2.5" />
-            CLI
-          </CardBadge>
-        ) : isOrphan ? (
+        {isOrphan ? (
           <CardBadge className="border-destructive/30 bg-destructive/10 text-destructive gap-1">
             <AlertTriangle className="h-2.5 w-2.5" />
             Orphan
