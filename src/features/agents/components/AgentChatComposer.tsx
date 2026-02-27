@@ -211,7 +211,6 @@ export const AgentChatComposer = memo(function AgentChatComposer({
           if (errs && errs.length > 0) showFileError(errs[0]);
         });
       }
-      // Reset input so same file can be selected again
       e.target.value = "";
     },
     [addFiles, showFileError]
@@ -252,8 +251,8 @@ export const AgentChatComposer = memo(function AgentChatComposer({
 
   return (
     <div
-      className="absolute inset-x-0 bottom-0 z-10 px-4"
-      style={{ paddingBottom: `calc(1rem + env(safe-area-inset-bottom) + var(--keyboard-offset, 0px))` }}
+      className="absolute inset-x-0 bottom-0 z-10 px-2 sm:px-4"
+      style={{ paddingBottom: `calc(0.5rem + env(safe-area-inset-bottom) + var(--keyboard-offset, 0px))` }}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDragOver={handleDragOver}
@@ -267,12 +266,12 @@ export const AgentChatComposer = memo(function AgentChatComposer({
         </div>
       )}
       {/* Gradient fade above composer */}
-      <div className="pointer-events-none h-10 bg-gradient-to-t from-background via-background/80 to-transparent" />
-      {/* Main composer — rectangular card with toolbar */}
+      <div className="pointer-events-none h-6 sm:h-8 bg-gradient-to-t from-background to-transparent" />
+      {/* Main composer card */}
       <div className="mx-auto flex max-w-3xl flex-col rounded-xl border border-border/30 bg-card/80 shadow-lg backdrop-blur-md focus-within:border-border/60 focus-within:bg-card transition">
         {/* Offline indicator */}
         {gatewayStatus && gatewayStatus !== "connected" && (
-          <div className="flex items-center gap-1.5 rounded-t-xl bg-amber-500/10 px-3 py-1.5 text-xs text-amber-700 dark:text-amber-400" role="status">
+          <div className="flex items-center gap-1.5 rounded-t-xl bg-amber-500/10 px-3 py-1 text-xs text-amber-700 dark:text-amber-400" role="status">
             <WifiOff className="h-3.5 w-3.5 shrink-0" aria-hidden />
             <span>
               {gatewayStatus === "connecting" ? "Reconnecting…" : "Offline"}
@@ -284,7 +283,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
 
         {/* File error message */}
         {fileError && (
-          <div className="flex items-center gap-1.5 rounded-t-xl bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
+          <div className="flex items-center gap-1.5 rounded-t-xl bg-destructive/10 px-3 py-1 text-xs text-destructive">
             <AlertCircle className="h-3.5 w-3.5 shrink-0" />
             <span className="truncate">{fileError}</span>
           </div>
@@ -292,79 +291,22 @@ export const AgentChatComposer = memo(function AgentChatComposer({
 
         {/* Attachment preview row */}
         {hasFiles && (
-          <div className="px-3 pt-2">
+          <div className="px-3 pt-1.5">
             <ChatAttachmentPreview files={files} onRemove={removeFile} />
           </div>
         )}
 
-        {/* Textarea area */}
-        <div className="flex items-start gap-2 px-3 pt-2.5 pb-1">
-          <textarea
-            ref={handleRef}
-            rows={1}
-            defaultValue={initialDraft}
-            className="max-h-[200px] min-h-[36px] flex-1 resize-none bg-transparent py-1 text-sm leading-normal text-foreground outline-none placeholder:text-muted-foreground"
-            aria-label="Message to agent"
-            onChange={handleChange}
-            onKeyDown={handleKeyDown}
-            onFocus={handleFocus}
-            onPaste={handlePaste}
-            placeholder={`Message ${agentName}...`}
-          />
-        </div>
-
-        {/* Toolbar row — attach, model, thinking, token gauge, send */}
-        <div className="flex min-w-0 items-center gap-0.5 overflow-hidden border-t border-border/10 px-2 py-1">
-          {/* Attach button */}
-          <button
-            type="button"
-            className="flex h-9 w-9 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground"
-            aria-label="Attach file"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <Paperclip className="h-4 w-4" />
-          </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            className="hidden"
-            accept={acceptString}
-            multiple
-            onChange={handleFileInputChange}
-          />
-
-          {(models.length > 0 || allowThinking) && (
-            <Popover>
-              <PopoverTrigger asChild>
-                <button
-                  type="button"
-                  className="flex h-9 w-9 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground"
-                  aria-label="Model & thinking settings"
-                >
-                  <Settings2 className="h-4 w-4" />
-                </button>
-              </PopoverTrigger>
-              <PopoverContent align="start" className="w-auto min-w-[200px] space-y-2 p-2" side="top">
-                {models.length > 0 && (
-                  <ModelPicker models={models} value={modelValue} onChange={onModelChange} />
-                )}
-                {allowThinking && (
-                  <ThinkingToggle value={thinkingLevel} onChange={onThinkingChange} />
-                )}
-              </PopoverContent>
-            </Popover>
-          )}
-
-          {/* Right-aligned group: streaming status + token gauge (stacked on sm+) */}
-          <div className="ml-auto mr-1 flex items-center gap-3">
+        {/* Streaming status bar — shown above input only when active */}
+        {running && (
+          <div className="flex items-center gap-2 px-3 pt-1.5 pb-0.5">
             <StreamingStatus
               running={running}
               messageParts={messageParts ?? []}
               runStartedAt={runStartedAt}
             />
             {tokenPct !== null && (
-              <div className="hidden items-center gap-1.5 opacity-60 sm:flex">
-                <div className="h-1 w-12 overflow-hidden rounded-full bg-muted">
+              <div className="flex items-center gap-1.5 opacity-60">
+                <div className="h-1 w-10 overflow-hidden rounded-full bg-muted">
                   <div
                     className={`h-full rounded-full transition-all ${tokenPct >= 80 ? "bg-yellow-500" : "bg-primary/60"}`}
                     style={{ width: `${Math.min(tokenPct, 100)}%` }}
@@ -374,11 +316,83 @@ export const AgentChatComposer = memo(function AgentChatComposer({
               </div>
             )}
           </div>
+        )}
 
-          <div className="shrink-0">
+        {/* Single-row input: [attach] [settings] [textarea] [token] [send/stop] */}
+        <div className="flex items-end gap-1 px-2 py-1.5">
+          {/* Left actions: attach + settings */}
+          <div className="flex shrink-0 items-center">
+            <button
+              type="button"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground"
+              aria-label="Attach file"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Paperclip className="h-4 w-4" />
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              accept={acceptString}
+              multiple
+              onChange={handleFileInputChange}
+            />
+
+            {(models.length > 0 || allowThinking) && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                    aria-label="Model & thinking settings"
+                  >
+                    <Settings2 className="h-4 w-4" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-auto min-w-[200px] space-y-2 p-2" side="top">
+                  {models.length > 0 && (
+                    <ModelPicker models={models} value={modelValue} onChange={onModelChange} />
+                  )}
+                  {allowThinking && (
+                    <ThinkingToggle value={thinkingLevel} onChange={onThinkingChange} />
+                  )}
+                </PopoverContent>
+              </Popover>
+            )}
+          </div>
+
+          {/* Textarea — grows vertically */}
+          <textarea
+            ref={handleRef}
+            rows={1}
+            defaultValue={initialDraft}
+            className="max-h-[200px] min-h-[36px] flex-1 resize-none self-center bg-transparent py-1.5 text-sm leading-normal text-foreground outline-none placeholder:text-muted-foreground"
+            aria-label="Message to agent"
+            onChange={handleChange}
+            onKeyDown={handleKeyDown}
+            onFocus={handleFocus}
+            onPaste={handlePaste}
+            placeholder={`Message ${agentName}...`}
+          />
+
+          {/* Right side: token gauge (when idle) + send/stop */}
+          <div className="flex shrink-0 items-center gap-1">
+            {!running && tokenPct !== null && (
+              <div className="hidden items-center gap-1.5 opacity-60 sm:flex">
+                <div className="h-1 w-10 overflow-hidden rounded-full bg-muted">
+                  <div
+                    className={`h-full rounded-full transition-all ${tokenPct >= 80 ? "bg-yellow-500" : "bg-primary/60"}`}
+                    style={{ width: `${Math.min(tokenPct, 100)}%` }}
+                  />
+                </div>
+                <span className="font-mono text-[10px] text-muted-foreground">{tokenPct}%</span>
+              </div>
+            )}
+
             {running ? (
               <button
-                className="flex h-9 w-9 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-lg bg-destructive text-destructive-foreground shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-destructive text-destructive-foreground shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
                 type="button"
                 aria-label="Stop agent"
                 onClick={onStop}
@@ -388,7 +402,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
               </button>
             ) : (
               <button
-                className="flex h-9 w-9 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
                 type="button"
                 aria-label="Send message"
                 onClick={handleClickSend}

@@ -77,7 +77,7 @@ export const FloatingContextControls = memo(function FloatingContextControls({
             key={value}
             type="button"
             onClick={() => onContextTabClick(value)}
-            className="flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+            className="flex h-11 w-11 sm:h-9 sm:w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
             aria-label={label}
             title={label}
           >
