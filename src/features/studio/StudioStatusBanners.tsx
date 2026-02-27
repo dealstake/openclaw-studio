@@ -1,12 +1,12 @@
 "use client";
 
 import { GatewayStatusBanner } from "@/components/GatewayStatusBanner";
-import type { GatewayClientStatus } from "@/lib/gateway/GatewayClient";
+import type { GatewayStatus } from "@/lib/gateway/GatewayClient";
 
 interface StudioStatusBannersProps {
   errorMessage: string | null;
   configMutationStatusLine: string | null;
-  status: GatewayClientStatus;
+  status: GatewayStatus;
   onReconnect: () => void;
 }
 

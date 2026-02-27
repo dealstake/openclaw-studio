@@ -953,7 +953,7 @@ export const AgentStudioPage = () => {
               swipeDy={swipeDy}
               swipeHandlers={swipeHandlers}
               contextTab={contextTab}
-              expandedTab={expandedTab === "projects" || expandedTab === "tasks" || expandedTab === "brain" || expandedTab === "workspace" || expandedTab === "activity" ? expandedTab : null}
+              expandedTab={expandedTab as "projects" | "tasks" | "brain" | "workspace" | "activity" | null}
               onExpandToggle={handleExpandToggle}
               onClose={() => setContextPanelOpen(false)}
               onTabChange={setContextTab}

@@ -9,10 +9,10 @@ import { TasksPanel } from "@/features/tasks/components/TasksPanel";
 import { AgentBrainPanel } from "@/features/agents/components/AgentInspectPanels";
 import { UnifiedFilesPanel } from "@/features/workspace/components/UnifiedFilesPanel";
 import { ActivityPanel } from "@/features/activity/components/ActivityPanel";
-import type { GatewayClient } from "@/lib/gateway/GatewayClient";
-import type { GatewayClientStatus } from "@/lib/gateway/GatewayClient";
-import type { AgentEntry, GatewayModel } from "@/features/agents/state/store";
-import type { AgentTask } from "@/features/tasks/hooks/useAgentTasks";
+import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
+import type { AgentState } from "@/features/agents/state/store";
+import type { GatewayModelChoice } from "@/lib/gateway/models";
+import type { AgentFileName } from "@/lib/agents/agentFiles";
 
 export type ExpandableTab = "projects" | "tasks" | "brain" | "workspace" | "activity";
 
@@ -28,7 +28,7 @@ interface StudioContextDrawerProps {
   };
   contextTab: ContextTab;
   expandedTab: ExpandableTab | null;
-  onExpandToggle: (tab: ExpandableTab) => void;
+  onExpandToggle: () => void;
   onClose: () => void;
   onTabChange: (tab: ContextTab) => void;
   switchToChat: () => void;
@@ -38,34 +38,34 @@ interface StudioContextDrawerProps {
   client: GatewayClient;
   cronEventTick: number;
   createProjectTick: number;
-  // Tasks
-  agentTasks: AgentTask[];
+  // Tasks — use inline types matching what TasksPanel + useAgentTasks expose
+  agentTasks: Parameters<typeof TasksPanel>[0]["tasks"];
   tasksLoading: boolean;
   tasksError: string | null;
   busyTaskId: string | null;
-  busyAction: string | null;
-  onToggleTask: (id: string) => void;
-  onUpdateTask: (id: string, updates: Record<string, unknown>) => Promise<void>;
-  onUpdateTaskSchedule: (id: string, schedule: Record<string, unknown>) => Promise<void>;
+  busyAction: "toggle" | "run" | "delete" | "update" | null;
+  onToggleTask: (taskId: string, enabled: boolean) => void;
+  onUpdateTask: Parameters<typeof TasksPanel>[0]["onUpdateTask"];
+  onUpdateTaskSchedule: Parameters<typeof TasksPanel>[0]["onUpdateSchedule"];
   onRunTask: (id: string) => void;
   onDeleteTask: (id: string) => void;
   onRefreshTasks: () => void;
   onNewTask: () => void;
   cronMaxConcurrentRuns: number | undefined;
   // Brain
-  agents: AgentEntry[];
+  agents: AgentState[];
   selectedBrainAgentId: string | null;
-  brainFileTab: string;
-  onBrainFileTabChange: (tab: string) => void;
+  brainFileTab: AgentFileName;
+  onBrainFileTabChange: (tab: AgentFileName) => void;
   brainPreviewMode: boolean;
   onBrainPreviewModeChange: (mode: boolean) => void;
-  status: GatewayClientStatus;
-  gatewayModels: GatewayModel[];
+  status: GatewayStatus;
+  gatewayModels: GatewayModelChoice[];
   modelValue: string;
-  onModelChange: (agentId: string, model: string) => void;
+  onModelChange: (value: string | null) => void;
   onBrainClose: () => void;
   // Workspace
-  focusedAgent: AgentEntry | null;
+  focusedAgent: AgentState | null;
 }
 
 export const StudioContextDrawer = React.memo(function StudioContextDrawer(props: StudioContextDrawerProps) {
@@ -82,11 +82,6 @@ export const StudioContextDrawer = React.memo(function StudioContextDrawer(props
     status, gatewayModels, modelValue, onModelChange, onBrainClose,
     focusedAgent,
   } = props;
-
-  const expandedTabForPanel: ExpandableTab | null =
-    expandedTab === "projects" || expandedTab === "tasks" || expandedTab === "brain" || expandedTab === "workspace" || expandedTab === "activity"
-      ? expandedTab
-      : null;
 
   return (
     <div
@@ -107,7 +102,7 @@ export const StudioContextDrawer = React.memo(function StudioContextDrawer(props
       )}
       <ContextPanel
         activeTab={contextTab}
-        expandedTab={expandedTabForPanel}
+        expandedTab={expandedTab}
         onExpandToggle={onExpandToggle}
         onClose={showContextInline ? onClose : switchToChat}
         onTabChange={onTabChange}
