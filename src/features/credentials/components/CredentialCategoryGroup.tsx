@@ -18,7 +18,6 @@ export interface CredentialCategoryGroupProps {
   credentials: Credential[];
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
-  onClaim?: (id: string) => void;
   defaultOpen?: boolean;
 }
 
@@ -28,7 +27,6 @@ export const CredentialCategoryGroup = React.memo(
     credentials,
     onEdit,
     onDelete,
-    onClaim,
     defaultOpen = true,
   }: CredentialCategoryGroupProps) {
     return (
@@ -55,7 +53,6 @@ export const CredentialCategoryGroup = React.memo(
                 credential={cred}
                 onEdit={() => onEdit(cred.id)}
                 onDelete={() => onDelete(cred.id)}
-                onClaim={onClaim ? () => onClaim(cred.id) : undefined}
                 style={{ animationDelay: `${Math.min(idx * 50, 300)}ms` }}
               />
             ))}

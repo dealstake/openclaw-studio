@@ -14,8 +14,8 @@ import { ErrorBanner } from "@/components/ErrorBanner";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { useCredentials } from "../hooks/useCredentials";
 import { CredentialsList } from "./CredentialsList";
-import { AddCredentialSheet } from "./AddCredentialSheet";
-import { findTemplateByConfigPath } from "../lib/templates";
+import { CredentialSheet } from "./CredentialSheet";
+import { findTemplate } from "../lib/templates";
 import type { Credential } from "../lib/types";
 
 export interface CredentialsPanelProps {
@@ -33,19 +33,22 @@ export const CredentialsPanel = React.memo(function CredentialsPanel({
     error,
     refresh,
     create,
+    update,
     remove,
-    claim,
+    readSecretValues,
   } = useCredentials(client, status);
 
   const [search, setSearch] = useState("");
-  const [addOpen, setAddOpen] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [editingCredential, setEditingCredential] = useState<Credential | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Credential | null>(null);
 
   const handleEdit = useCallback(
-    (id: string) => {
+    async (id: string) => {
       const cred = credentials.find((c) => c.id === id);
       if (cred) {
-        setAddOpen(true);
+        setEditingCredential(cred);
+        setSheetOpen(true);
       }
     },
     [credentials],
@@ -65,18 +68,6 @@ export const CredentialsPanel = React.memo(function CredentialsPanel({
     setDeleteTarget(null);
   }, [deleteTarget, remove]);
 
-  const handleClaim = useCallback(
-    async (id: string) => {
-      const cred = credentials.find((c) => c.id === id);
-      if (!cred) return;
-      const configPath = cred.configPaths[0];
-      if (!configPath) return;
-      const template = findTemplateByConfigPath(configPath);
-      await claim(configPath, template?.key, template);
-    },
-    [credentials, claim],
-  );
-
   const handleAddSave = useCallback(
     async (
       metadata: Parameters<typeof create>[0],
@@ -88,10 +79,43 @@ export const CredentialsPanel = React.memo(function CredentialsPanel({
     [create],
   );
 
+  const handleEditSave = useCallback(
+    async (
+      values: Parameters<typeof create>[1],
+      overrides: { humanName?: string; description?: string },
+    ) => {
+      if (!editingCredential) return;
+      const template = editingCredential.templateKey
+        ? findTemplate(editingCredential.templateKey)
+        : undefined;
+      await update(
+        editingCredential.id,
+        {
+          humanName: overrides.humanName ?? editingCredential.humanName,
+          description: overrides.description,
+        },
+        values,
+        template,
+      );
+    },
+    [editingCredential, update],
+  );
+
+  const handleSheetClose = useCallback((open: boolean) => {
+    if (!open) {
+      setEditingCredential(null);
+    }
+    setSheetOpen(open);
+  }, []);
+
+  const handleAddNew = useCallback(() => {
+    setEditingCredential(null);
+    setSheetOpen(true);
+  }, []);
+
   const stats = useMemo(() => {
-    const active = credentials.filter((c) => c.status === "active").length;
-    const unmanaged = credentials.filter((c) => c.status === "unmanaged").length;
-    return { active, unmanaged, total: credentials.length };
+    const connected = credentials.filter((c) => c.status === "connected").length;
+    return { connected, total: credentials.length };
   }, [credentials]);
 
   return (
@@ -104,9 +128,9 @@ export const CredentialsPanel = React.memo(function CredentialsPanel({
               <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
             </PanelIconButton>
             <PanelIconButton
-              onClick={() => setAddOpen(true)}
-              title="Add credential"
-              aria-label="Add credential"
+              onClick={handleAddNew}
+              title="Add service"
+              aria-label="Add service"
               variant="primary"
             >
               <Plus className="h-4 w-4" />
@@ -117,19 +141,15 @@ export const CredentialsPanel = React.memo(function CredentialsPanel({
         <PanelSearchInput
           value={search}
           onChange={setSearch}
-          placeholder="Search credentials…"
+          placeholder="Search services…"
           className="flex-1"
         />
       </PanelToolbar>
 
       {stats.total > 0 && (
         <div className="flex items-center gap-3 border-b border-border/20 px-3 py-1.5 text-xs text-muted-foreground/60">
-          <span>{stats.active} active</span>
-          {stats.unmanaged > 0 && (
-            <span className="font-medium text-amber-700 dark:text-amber-400">
-              {stats.unmanaged} unmanaged
-            </span>
-          )}
+          <span>{stats.connected} connected</span>
+          <span>· {stats.total} total</span>
         </div>
       )}
 
@@ -145,9 +165,9 @@ export const CredentialsPanel = React.memo(function CredentialsPanel({
         {!loading && credentials.length === 0 && !error && (
           <EmptyState
             icon={KeyRound}
-            title="No credentials"
+            title="No services connected"
             description="Add API keys and secrets to power your skills and integrations."
-            action={{ label: "Add Credential", onClick: () => setAddOpen(true) }}
+            action={{ label: "Add Service", onClick: handleAddNew }}
           />
         )}
 
@@ -157,15 +177,17 @@ export const CredentialsPanel = React.memo(function CredentialsPanel({
             search={search}
             onEdit={handleEdit}
             onDelete={handleDelete}
-            onClaim={handleClaim}
           />
         )}
       </div>
 
-      <AddCredentialSheet
-        open={addOpen}
-        onOpenChange={setAddOpen}
+      <CredentialSheet
+        open={sheetOpen}
+        onOpenChange={handleSheetClose}
         onSave={handleAddSave}
+        editing={editingCredential}
+        onEditSave={handleEditSave}
+        readSecretValues={readSecretValues}
       />
 
       <ConfirmDialog

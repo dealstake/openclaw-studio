@@ -10,7 +10,6 @@ export interface CredentialsListProps {
   search: string;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
-  onClaim: (id: string) => void;
 }
 
 export const CredentialsList = React.memo(function CredentialsList({
@@ -18,7 +17,6 @@ export const CredentialsList = React.memo(function CredentialsList({
   search,
   onEdit,
   onDelete,
-  onClaim,
 }: CredentialsListProps) {
   const filtered = useMemo(() => {
     if (!search.trim()) return credentials;
@@ -54,7 +52,6 @@ export const CredentialsList = React.memo(function CredentialsList({
           credentials={creds}
           onEdit={onEdit}
           onDelete={onDelete}
-          onClaim={onClaim}
         />
       ))}
     </div>

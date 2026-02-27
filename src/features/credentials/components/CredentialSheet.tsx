@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { ArrowLeft, X } from "lucide-react";
 import {
   Dialog,
@@ -9,21 +9,33 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type {
+  Credential,
   CredentialMetadata,
   CredentialTemplate,
   CredentialValues,
 } from "../lib/types";
 import { TemplateGrid } from "./TemplateGrid";
 import { SetupForm } from "./SetupForm";
+import { findTemplate } from "../lib/templates";
 
-export interface AddCredentialSheetProps {
+export interface CredentialSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Called when creating a new credential */
   onSave: (
     metadata: Omit<CredentialMetadata, "id" | "createdAt" | "configPaths">,
     values: CredentialValues,
     template: CredentialTemplate,
   ) => Promise<void>;
+  /** Credential being edited (null = add mode) */
+  editing?: Credential | null;
+  /** Called when saving edits to an existing credential */
+  onEditSave?: (
+    values: CredentialValues,
+    overrides: { humanName?: string; description?: string },
+  ) => Promise<void>;
+  /** Function to read current secret values for pre-population */
+  readSecretValues?: (credential: Credential) => Promise<CredentialValues>;
 }
 
 type Step = "select" | "setup";
@@ -51,22 +63,49 @@ const CUSTOM_TEMPLATE: CredentialTemplate = {
   },
 };
 
-export const AddCredentialSheet = React.memo(function AddCredentialSheet({
+export const CredentialSheet = React.memo(function CredentialSheet({
   open,
   onOpenChange,
   onSave,
-}: AddCredentialSheetProps) {
+  editing,
+  onEditSave,
+  readSecretValues,
+}: CredentialSheetProps) {
+  const isEditMode = !!editing;
   const [step, setStep] = useState<Step>("select");
   const [selectedTemplate, setSelectedTemplate] =
     useState<CredentialTemplate | null>(null);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
+  const [editInitialValues, setEditInitialValues] = useState<CredentialValues | undefined>(undefined);
+  const [loadingValues, setLoadingValues] = useState(false);
+
+  // When opening in edit mode, load current values and go directly to setup
+  useEffect(() => {
+    if (open && editing) {
+      setStep("setup");
+      const template = editing.templateKey
+        ? findTemplate(editing.templateKey)
+        : null;
+      setSelectedTemplate(template ?? CUSTOM_TEMPLATE);
+
+      if (readSecretValues) {
+        setLoadingValues(true);
+        readSecretValues(editing)
+          .then((values) => setEditInitialValues(values))
+          .catch(() => setEditInitialValues({}))
+          .finally(() => setLoadingValues(false));
+      }
+    }
+  }, [open, editing, readSecretValues]);
 
   const reset = useCallback(() => {
     setStep("select");
     setSelectedTemplate(null);
     setSaving(false);
     setSearch("");
+    setEditInitialValues(undefined);
+    setLoadingValues(false);
   }, []);
 
   const handleOpenChange = useCallback(
@@ -97,20 +136,24 @@ export const AddCredentialSheet = React.memo(function AddCredentialSheet({
       if (!selectedTemplate) return;
       setSaving(true);
       try {
-        await onSave(
-          {
-            humanName: overrides.humanName ?? selectedTemplate.serviceName,
-            type: selectedTemplate.type,
-            serviceName: selectedTemplate.serviceName,
-            templateKey: selectedTemplate.key,
-            description: overrides.description,
-            serviceUrl: selectedTemplate.serviceUrl || undefined,
-            apiKeyPageUrl: selectedTemplate.apiKeyPageUrl || undefined,
-            category: selectedTemplate.category,
-          },
-          values,
-          selectedTemplate,
-        );
+        if (isEditMode && onEditSave) {
+          await onEditSave(values, overrides);
+        } else {
+          await onSave(
+            {
+              humanName: overrides.humanName ?? selectedTemplate.serviceName,
+              type: selectedTemplate.type,
+              serviceName: selectedTemplate.serviceName,
+              templateKey: selectedTemplate.key,
+              description: overrides.description,
+              serviceUrl: selectedTemplate.serviceUrl || undefined,
+              apiKeyPageUrl: selectedTemplate.apiKeyPageUrl || undefined,
+              category: selectedTemplate.category,
+            },
+            values,
+            selectedTemplate,
+          );
+        }
         handleOpenChange(false);
       } catch {
         // Error handled by parent hook
@@ -118,8 +161,14 @@ export const AddCredentialSheet = React.memo(function AddCredentialSheet({
         setSaving(false);
       }
     },
-    [selectedTemplate, onSave, handleOpenChange],
+    [selectedTemplate, isEditMode, onEditSave, onSave, handleOpenChange],
   );
+
+  const sheetTitle = isEditMode
+    ? `Edit — ${editing?.humanName}`
+    : step === "select"
+      ? "Add Service"
+      : selectedTemplate?.serviceName;
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -128,7 +177,7 @@ export const AddCredentialSheet = React.memo(function AddCredentialSheet({
         aria-describedby={undefined}
       >
         <DialogHeader className="flex-row items-center gap-2 space-y-0 border-b border-border/30 pb-3">
-          {step === "setup" && (
+          {step === "setup" && !isEditMode && (
             <button
               type="button"
               onClick={() => setStep("select")}
@@ -139,7 +188,7 @@ export const AddCredentialSheet = React.memo(function AddCredentialSheet({
             </button>
           )}
           <DialogTitle className="flex-1 text-sm font-medium">
-            {step === "select" ? "Add Credential" : selectedTemplate?.serviceName}
+            {sheetTitle}
           </DialogTitle>
           <button
             type="button"
@@ -152,7 +201,7 @@ export const AddCredentialSheet = React.memo(function AddCredentialSheet({
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto px-1 py-3">
-          {step === "select" && (
+          {step === "select" && !isEditMode && (
             <div className="space-y-3">
               <input
                 type="text"
@@ -168,13 +217,19 @@ export const AddCredentialSheet = React.memo(function AddCredentialSheet({
               />
             </div>
           )}
-          {step === "setup" && selectedTemplate && (
+          {step === "setup" && selectedTemplate && !loadingValues && (
             <SetupForm
               template={selectedTemplate}
+              initialValues={isEditMode ? editInitialValues : undefined}
               onSave={handleSave}
-              onCancel={() => setStep("select")}
+              onCancel={isEditMode ? () => handleOpenChange(false) : () => setStep("select")}
               saving={saving}
             />
+          )}
+          {loadingValues && (
+            <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">
+              Loading…
+            </div>
           )}
         </div>
       </DialogContent>

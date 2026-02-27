@@ -12,6 +12,7 @@ export const CREDENTIAL_TEMPLATES: CredentialTemplate[] = [
     category: "ai",
     serviceUrl: "https://elevenlabs.io",
     apiKeyPageUrl: "https://elevenlabs.io/subscription",
+    powersDescription: "Powers text-to-speech for voice replies",
     instructions: [
       "1. Go to [elevenlabs.io/subscription](https://elevenlabs.io/subscription)",
       "2. Sign in to your account",
@@ -37,6 +38,7 @@ export const CREDENTIAL_TEMPLATES: CredentialTemplate[] = [
     category: "ai",
     serviceUrl: "https://ai.google.dev",
     apiKeyPageUrl: "https://aistudio.google.com/apikey",
+    powersDescription: "Powers image generation via Nano Banana Pro",
     instructions: [
       "1. Go to [AI Studio](https://aistudio.google.com/apikey)",
       "2. Click **Create API Key**",
@@ -62,6 +64,7 @@ export const CREDENTIAL_TEMPLATES: CredentialTemplate[] = [
     category: "productivity",
     serviceUrl: "https://www.notion.so",
     apiKeyPageUrl: "https://www.notion.so/my-integrations",
+    powersDescription: "Powers Notion workspace integration",
     instructions: [
       "1. Go to [My Integrations](https://www.notion.so/my-integrations)",
       "2. Click **New Integration**",
@@ -87,6 +90,7 @@ export const CREDENTIAL_TEMPLATES: CredentialTemplate[] = [
     category: "ai",
     serviceUrl: "https://platform.openai.com",
     apiKeyPageUrl: "https://platform.openai.com/api-keys",
+    powersDescription: "Powers OpenAI model access and Codex agent",
     instructions: [
       "1. Go to [API Keys](https://platform.openai.com/api-keys)",
       "2. Click **Create new secret key**",
@@ -112,6 +116,7 @@ export const CREDENTIAL_TEMPLATES: CredentialTemplate[] = [
     category: "development",
     serviceUrl: "https://brave.com/search/api",
     apiKeyPageUrl: "https://api.search.brave.com/app/keys",
+    powersDescription: "Powers web search across all agents",
     instructions: [
       "1. Go to [Brave Search API](https://api.search.brave.com/app/keys)",
       "2. Sign up or sign in",
@@ -137,6 +142,7 @@ export const CREDENTIAL_TEMPLATES: CredentialTemplate[] = [
     category: "communication",
     serviceUrl: "https://www.twilio.com",
     apiKeyPageUrl: "https://console.twilio.com",
+    powersDescription: "Powers SMS and voice call capabilities",
     instructions: [
       "1. Go to [Twilio Console](https://console.twilio.com)",
       "2. Copy your **Account SID** and **Auth Token** from the dashboard",
@@ -169,6 +175,7 @@ export const CREDENTIAL_TEMPLATES: CredentialTemplate[] = [
     category: "communication",
     serviceUrl: "https://telnyx.com",
     apiKeyPageUrl: "https://portal.telnyx.com/#/app/api-keys",
+    powersDescription: "Powers telephony and messaging via Telnyx",
     instructions: [
       "1. Go to [Telnyx Portal](https://portal.telnyx.com/#/app/api-keys)",
       "2. Create or copy your **API Key**",
@@ -193,6 +200,7 @@ export const CREDENTIAL_TEMPLATES: CredentialTemplate[] = [
     category: "communication",
     serviceUrl: "https://mail.google.com",
     apiKeyPageUrl: "https://myaccount.google.com/apppasswords",
+    powersDescription: "Powers email reading and sending via Gmail",
     instructions: [
       "1. Go to [App Passwords](https://myaccount.google.com/apppasswords)",
       "2. Select **Mail** and your device",
@@ -228,6 +236,7 @@ export const CREDENTIAL_TEMPLATES: CredentialTemplate[] = [
     category: "development",
     serviceUrl: "https://github.com",
     apiKeyPageUrl: "https://github.com/settings/tokens",
+    powersDescription: "Powers GitHub issue tracking and PR management",
     instructions: [
       "1. Go to [Personal Access Tokens](https://github.com/settings/tokens)",
       "2. Click **Generate new token (classic)** or use fine-grained tokens",
@@ -254,6 +263,7 @@ export const CREDENTIAL_TEMPLATES: CredentialTemplate[] = [
     category: "productivity",
     serviceUrl: "https://developers.google.com/maps/documentation/places",
     apiKeyPageUrl: "https://console.cloud.google.com/apis/credentials",
+    powersDescription: "Powers location search and place details",
     instructions: [
       "1. Go to [Google Cloud Credentials](https://console.cloud.google.com/apis/credentials)",
       "2. Click **Create Credentials → API Key**",
@@ -283,6 +293,7 @@ export const CREDENTIAL_TEMPLATES: CredentialTemplate[] = [
     category: "iot",
     serviceUrl: "https://www.eightsleep.com",
     apiKeyPageUrl: "https://www.eightsleep.com",
+    powersDescription: "Powers smart mattress temperature and sleep tracking",
     instructions: [
       "Enter your Eight Sleep account credentials.",
       "These are the same email and password you use in the Eight Sleep app.",
@@ -315,6 +326,7 @@ export const CREDENTIAL_TEMPLATES: CredentialTemplate[] = [
     category: "iot",
     serviceUrl: "https://developers.meethue.com",
     apiKeyPageUrl: "https://developers.meethue.com",
+    powersDescription: "Powers smart lighting control via Hue Bridge",
     instructions: [
       "1. Press the **link button** on your Hue Bridge",
       "2. Run `openhue setup` in your terminal within 30 seconds",

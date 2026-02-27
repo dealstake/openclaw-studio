@@ -68,6 +68,7 @@ export function useCredentials(client: GatewayClient, status: GatewayStatus) {
       id: string,
       metadataUpdates?: Partial<Omit<CredentialMetadata, "id">>,
       newValues?: CredentialValues,
+      template?: CredentialTemplate,
     ) => {
       try {
         await credentialService.updateCredential(
@@ -75,6 +76,7 @@ export function useCredentials(client: GatewayClient, status: GatewayStatus) {
           id,
           metadataUpdates,
           newValues,
+          template,
         );
         await load();
       } catch (err) {
@@ -102,28 +104,11 @@ export function useCredentials(client: GatewayClient, status: GatewayStatus) {
     [client, load],
   );
 
-  const claim = useCallback(
-    async (
-      configPath: string,
-      templateKey?: string,
-      template?: CredentialTemplate,
-    ) => {
-      try {
-        await credentialService.claimCredential(
-          client,
-          configPath,
-          templateKey,
-          template,
-        );
-        await load();
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Failed to claim credential",
-        );
-        throw err;
-      }
+  const readSecretValues = useCallback(
+    async (credential: Credential) => {
+      return credentialService.readSecretValues(client, credential);
     },
-    [client, load],
+    [client],
   );
 
   return {
@@ -134,6 +119,6 @@ export function useCredentials(client: GatewayClient, status: GatewayStatus) {
     create,
     update,
     remove,
-    claim,
+    readSecretValues,
   };
 }

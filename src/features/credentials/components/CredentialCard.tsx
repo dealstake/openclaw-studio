@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useCallback } from "react";
-import { MoreHorizontal, Pencil, Trash2, Link } from "lucide-react";
+import React from "react";
+import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { BaseCard, CardHeader, CardTitle, CardMeta } from "@/components/ui/BaseCard";
 import {
   DropdownMenu,
@@ -18,7 +18,6 @@ export interface CredentialCardProps {
   credential: Credential;
   onEdit: () => void;
   onDelete: () => void;
-  onClaim?: () => void;
   style?: React.CSSProperties;
 }
 
@@ -26,27 +25,16 @@ export const CredentialCard = React.memo(function CredentialCard({
   credential,
   onEdit,
   onDelete,
-  onClaim,
   style,
 }: CredentialCardProps) {
-  const isUnmanaged = credential.status === "unmanaged";
-
-  const handleClick = useCallback(() => {
-    if (isUnmanaged && onClaim) {
-      onClaim();
-    } else {
-      onEdit();
-    }
-  }, [isUnmanaged, onClaim, onEdit]);
-
   return (
     <BaseCard
       variant="compact"
       isHoverable
-      onClick={handleClick}
+      onClick={onEdit}
       style={style}
       className="animate-in fade-in slide-in-from-bottom-1 fill-mode-both duration-200"
-      aria-label={`Credential: ${credential.humanName}, Status: ${STATUS_LABELS[credential.status]}`}
+      aria-label={`${credential.humanName} — ${STATUS_LABELS[credential.status]}`}
     >
       <CardHeader>
         <div className="flex min-w-0 flex-1 items-center gap-2.5">
@@ -67,7 +55,7 @@ export const CredentialCard = React.memo(function CredentialCard({
           <CardTitle as="div">{credential.humanName}</CardTitle>
         </div>
 
-        {/* Overflow menu — stop propagation to avoid triggering card click */}
+        {/* Overflow menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
@@ -80,17 +68,10 @@ export const CredentialCard = React.memo(function CredentialCard({
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-36">
-            {isUnmanaged && onClaim ? (
-              <DropdownMenuItem onClick={onClaim}>
-                <Link className="mr-2 h-3.5 w-3.5" />
-                Claim
-              </DropdownMenuItem>
-            ) : (
-              <DropdownMenuItem onClick={onEdit}>
-                <Pencil className="mr-2 h-3.5 w-3.5" />
-                Edit
-              </DropdownMenuItem>
-            )}
+            <DropdownMenuItem onClick={onEdit}>
+              <Pencil className="mr-2 h-3.5 w-3.5" />
+              Edit
+            </DropdownMenuItem>
             <DropdownMenuItem
               onClick={onDelete}
               className="text-destructive focus:text-destructive"
@@ -103,17 +84,17 @@ export const CredentialCard = React.memo(function CredentialCard({
       </CardHeader>
 
       <CardMeta className="mt-1.5">
+        {credential.description && (
+          <span className="text-muted-foreground/70">
+            {credential.description}
+          </span>
+        )}
         {credential.maskedPreview && (
           <span className="font-mono text-xs">{credential.maskedPreview}</span>
         )}
         {credential.pathCount > 1 && (
           <span className="text-muted-foreground/50">
             · {credential.pathCount} paths
-          </span>
-        )}
-        {isUnmanaged && (
-          <span className="text-xs italic text-muted-foreground/50">
-            Unmanaged
           </span>
         )}
       </CardMeta>

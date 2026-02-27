@@ -14,11 +14,10 @@ export type CredentialType =
   | "custom";
 
 export type CredentialStatus =
-  | "active"
+  | "connected"
   | "expiring_soon"
   | "expired"
-  | "missing"
-  | "unmanaged";
+  | "needs_setup";
 
 export type CredentialCategory =
   | "ai"
@@ -47,19 +46,17 @@ export const CATEGORY_ORDER: CredentialCategory[] = [
 ];
 
 export const STATUS_DOT_COLORS: Record<CredentialStatus, string> = {
-  active: "bg-emerald-500",
+  connected: "bg-emerald-500",
   expiring_soon: "bg-amber-500",
   expired: "bg-destructive",
-  missing: "bg-amber-500",
-  unmanaged: "bg-muted-foreground/30",
+  needs_setup: "bg-amber-500",
 };
 
 export const STATUS_LABELS: Record<CredentialStatus, string> = {
-  active: "Active",
+  connected: "Connected",
   expiring_soon: "Expiring Soon",
   expired: "Expired",
-  missing: "Missing Secret",
-  unmanaged: "Unmanaged",
+  needs_setup: "Needs Setup",
 };
 
 // ── Field Definitions ────────────────────────────────────────────────────────
@@ -116,6 +113,7 @@ export interface CredentialTemplate {
   serviceUrl: string;
   apiKeyPageUrl: string;
   instructions: string;
+  powersDescription?: string;
   fields: CredentialFieldDef[];
   /** Map of fieldId → openclaw.json config paths to write to */
   configPathMap: Record<string, string[]>;
