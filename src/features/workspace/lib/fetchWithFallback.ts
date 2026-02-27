@@ -23,8 +23,8 @@ export async function fetchWithFallback<T>(
     try {
       const data = await gatewayFn();
       return { data, source: "gateway" };
-    } catch {
-      // both failed
+    } catch (gwErr) {
+      console.warn("[fetchWithFallback] Both API and gateway fallback failed:", gwErr);
     }
   }
 

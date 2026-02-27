@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { isGatewayDisconnectLikeError } from "@/lib/gateway/GatewayClient";
 import type { ChannelsStatusSnapshot } from "@/lib/gateway/channels";
@@ -27,24 +27,37 @@ export const useChannelsStatus = (client: GatewayClient, status: GatewayStatus) 
     }).length;
   }, [channelsSnapshot]);
 
+  const abortRef = useRef<AbortController | null>(null);
+
   const loadChannelsStatus = useCallback(async () => {
     if (status !== "connected") return;
+
+    // Abort any in-flight request to prevent race conditions on rapid re-calls
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setChannelsLoading(true);
     try {
       const result = await client.call<ChannelsStatusSnapshot>("channels.status", {});
+      if (controller.signal.aborted) return;
       setChannelsSnapshot(result);
       setChannelsError(null);
     } catch (err) {
+      if (controller.signal.aborted) return;
       if (!isGatewayDisconnectLikeError(err)) {
         const message = err instanceof Error ? err.message : "Failed to load channels status.";
         setChannelsError(message);
       }
     } finally {
-      setChannelsLoading(false);
+      if (!controller.signal.aborted) {
+        setChannelsLoading(false);
+      }
     }
   }, [client, status]);
 
   const resetChannelsStatus = useCallback(() => {
+    abortRef.current?.abort();
     setChannelsSnapshot(null);
     setChannelsLoading(false);
   }, []);
