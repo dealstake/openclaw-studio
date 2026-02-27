@@ -95,7 +95,7 @@ export const AgentStudioPage = () => {
     brainFileTab, setBrainFileTab,
     brainPreviewMode, setBrainPreviewMode,
     managementView, setManagementView,
-    headerVisible, onHoverZoneEnter, onHoverZoneLeave,
+    headerVisible, onHoverZoneEnter, onHoverZoneLeave, onFocusZoneEnter, onFocusZoneLeave,
     handleExpandToggle, clearExpandedTab, switchToChat,
     handleFilesToggle: _handleFilesToggle, handleBackToChat,
     swipeHandlers,
@@ -741,13 +741,16 @@ export const AgentStudioPage = () => {
           className="fixed inset-x-0 top-0 z-30 h-3"
           onMouseEnter={onHoverZoneEnter}
           onMouseLeave={onHoverZoneLeave}
-          aria-hidden="true"
+          onFocus={onFocusZoneEnter}
+          onBlur={onFocusZoneLeave}
         />
         {/* ── Floating context controls — desktop (replaces HeaderBar) ──────── */}
         {isWide(breakpoint) && (
           <div
             onMouseEnter={onHoverZoneEnter}
             onMouseLeave={onHoverZoneLeave}
+            onFocus={onFocusZoneEnter}
+            onBlur={onFocusZoneLeave}
           >
             <FloatingContextControls
               agents={breadcrumbAgents}

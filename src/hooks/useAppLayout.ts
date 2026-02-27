@@ -32,7 +32,7 @@ export function useAppLayout() {
   const [managementView, setManagementView] = useState<ManagementTab | null>(null);
 
   // ── Auto-hide header (desktop only) ────────────────────────────
-  const { isVisible: headerVisible, onHoverZoneEnter, onHoverZoneLeave } = useAutoHideHeader({
+  const { isVisible: headerVisible, onHoverZoneEnter, onHoverZoneLeave, onFocusZoneEnter, onFocusZoneLeave } = useAutoHideHeader({
     disabled: isMobileLayout,
   });
 
@@ -192,6 +192,8 @@ export function useAppLayout() {
     headerVisible,
     onHoverZoneEnter,
     onHoverZoneLeave,
+    onFocusZoneEnter,
+    onFocusZoneLeave,
 
     // Actions
     handleExpandToggle,

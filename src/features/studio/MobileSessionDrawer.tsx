@@ -83,12 +83,59 @@ export const MobileSessionDrawer = memo(function MobileSessionDrawer({
   );
   const handleRetry = useCallback(() => void load(), [load]);
 
+  // Close on Escape key
+  useEffect(() => {
+    if (!open) return;
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        onClose();
+      }
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [open, onClose]);
+
+  // Focus trap — keep focus within drawer while open
+  const drawerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const drawer = drawerRef.current;
+    if (!drawer) return;
+
+    // Save previously focused element and focus the drawer
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    const firstFocusable = drawer.querySelector<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    firstFocusable?.focus();
+
+    function handleFocusTrap(e: FocusEvent) {
+      if (!drawer || !e.relatedTarget) return;
+      if (!drawer.contains(e.relatedTarget as Node)) {
+        e.preventDefault();
+        const focusables = drawer.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusables.length > 0) {
+          focusables[0].focus();
+        }
+      }
+    }
+
+    drawer.addEventListener("focusout", handleFocusTrap);
+    return () => {
+      drawer.removeEventListener("focusout", handleFocusTrap);
+      previouslyFocused?.focus();
+    };
+  }, [open]);
+
   const activeSessionKey = viewingSessionKey ?? (focusedAgentId ? `${focusedAgentId}:main` : null);
 
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="mobile-drawer-title">
+    <div className="fixed inset-0 z-50" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="mobile-drawer-title" ref={drawerRef}>
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
       <div
         className="absolute inset-y-0 left-0 w-[280px] animate-in slide-in-from-left duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] bg-[var(--surface-elevated)] flex flex-col"

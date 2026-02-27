@@ -69,7 +69,16 @@ export function useAutoHideHeader(options?: {
     setHoverReveal(false);
   }, []);
 
+  /** Reveal header when any element in the zone receives keyboard focus */
+  const onFocusZoneEnter = useCallback(() => {
+    if (!disabled) setHoverReveal(true);
+  }, [disabled]);
+
+  const onFocusZoneLeave = useCallback(() => {
+    setHoverReveal(false);
+  }, []);
+
   const isVisible = disabled || !headerHidden || hoverReveal;
 
-  return { isVisible, onHoverZoneEnter, onHoverZoneLeave };
+  return { isVisible, onHoverZoneEnter, onHoverZoneLeave, onFocusZoneEnter, onFocusZoneLeave };
 }

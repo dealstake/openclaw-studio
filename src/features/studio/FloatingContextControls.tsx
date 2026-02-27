@@ -1,28 +1,10 @@
 "use client";
 
 import { memo } from "react";
-import {
-  FolderKanban,
-  ListChecks,
-  Brain,
-  FolderOpen,
-  Activity,
-  X,
-} from "lucide-react";
+import { X } from "lucide-react";
 import { AgentBreadcrumb, type BreadcrumbAgent } from "@/features/agents/components/AgentBreadcrumb";
+import { CONTEXT_TAB_CONFIG } from "@/features/context/lib/tabs";
 import type { ContextTab } from "@/features/context/components/ContextPanel";
-
-const CONTEXT_TAB_ITEMS: Array<{
-  value: ContextTab;
-  label: string;
-  Icon: typeof FolderKanban;
-}> = [
-  { value: "projects", label: "Projects", Icon: FolderKanban },
-  { value: "tasks", label: "Tasks", Icon: ListChecks },
-  { value: "brain", label: "Brain", Icon: Brain },
-  { value: "workspace", label: "Files", Icon: FolderOpen },
-  { value: "activity", label: "Activity", Icon: Activity },
-];
 
 interface FloatingContextControlsProps {
   agents: BreadcrumbAgent[];
@@ -72,7 +54,7 @@ export const FloatingContextControls = memo(function FloatingContextControls({
           </>
         )}
 
-        {CONTEXT_TAB_ITEMS.map(({ value, label, Icon }) => (
+        {CONTEXT_TAB_CONFIG.map(({ value, label, Icon }) => (
           <button
             key={value}
             type="button"
@@ -116,7 +98,7 @@ export const FloatingContextControls = memo(function FloatingContextControls({
         data-testid="context-panel-tabs"
         /* 5 icons × 36px + close + gaps ≈ ~280px — fits within 360px panel */
       >
-        {CONTEXT_TAB_ITEMS.map(({ value, label, Icon }) => {
+        {CONTEXT_TAB_CONFIG.map(({ value, label, Icon }) => {
           const isActive = contextTab === value;
           return (
             <button

@@ -4,28 +4,12 @@ import { memo, useState, useRef, useEffect } from "react";
 import {
   Menu,
   Ellipsis,
-  FolderKanban,
-  ListChecks,
-  Brain,
-  FolderOpen,
-  Activity,
   ShieldAlert,
 } from "lucide-react";
 import { HeaderIconButton } from "@/components/HeaderIconButton";
 import { useEmergencyOptional } from "@/features/emergency/EmergencyProvider";
+import { CONTEXT_TAB_CONFIG } from "@/features/context/lib/tabs";
 import type { ContextTab } from "@/features/context/components/ContextPanel";
-
-const CONTEXT_TAB_ITEMS: Array<{
-  value: ContextTab;
-  label: string;
-  Icon: typeof FolderKanban;
-}> = [
-  { value: "projects", label: "Projects", Icon: FolderKanban },
-  { value: "tasks", label: "Tasks", Icon: ListChecks },
-  { value: "brain", label: "Brain", Icon: Brain },
-  { value: "workspace", label: "Files", Icon: FolderOpen },
-  { value: "activity", label: "Activity", Icon: Activity },
-];
 
 interface FloatingMobileHeaderProps {
   onOpenSessionHistory: () => void;
@@ -90,7 +74,7 @@ export const FloatingMobileHeader = memo(function FloatingMobileHeader({
 
         {menuOpen && (
           <div className="absolute right-0 top-10 z-[var(--z-popover)] min-w-48 rounded-md border border-border/80 bg-popover/95 p-1 shadow-lg backdrop-blur">
-            {CONTEXT_TAB_ITEMS.map(({ value, label, Icon }) => {
+            {CONTEXT_TAB_CONFIG.map(({ value, label, Icon }) => {
               const isActive = contextPanelOpen && contextTab === value;
               return (
                 <button
