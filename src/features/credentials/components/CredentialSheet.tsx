@@ -1,13 +1,15 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
-import { ArrowLeft, X } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  SideSheet,
+  SideSheetContent,
+  SideSheetHeader,
+  SideSheetTitle,
+  SideSheetClose,
+  SideSheetBody,
+} from "@/components/ui/SideSheet";
 import type {
   Credential,
   CredentialMetadata,
@@ -187,36 +189,28 @@ export const CredentialSheet = React.memo(function CredentialSheet({
       : selectedTemplate?.serviceName;
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent
-        className="fixed inset-y-0 right-0 left-auto m-0 flex h-full w-full max-w-md flex-col rounded-none border-l sm:rounded-none"
-        aria-describedby={undefined}
-      >
-        <DialogHeader className="flex-row items-center gap-2 space-y-0 border-b border-border/30 pb-3">
-          {step === "setup" && !isEditMode && (
-            <button
-              type="button"
-              onClick={() => setStep("select")}
-              className="flex h-7 w-7 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground"
-              aria-label="Back to template selection"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </button>
-          )}
-          <DialogTitle className="flex-1 text-sm font-medium">
-            {sheetTitle}
-          </DialogTitle>
-          <button
-            type="button"
-            onClick={() => handleOpenChange(false)}
-            className="flex h-7 w-7 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground"
-            aria-label="Close"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </DialogHeader>
+    <SideSheet open={open} onOpenChange={handleOpenChange}>
+      <SideSheetContent aria-describedby={undefined}>
+        <SideSheetHeader>
+          <div className="flex flex-1 items-center gap-2">
+            {step === "setup" && !isEditMode && (
+              <button
+                type="button"
+                onClick={() => setStep("select")}
+                className="flex h-7 w-7 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground"
+                aria-label="Back to template selection"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </button>
+            )}
+            <SideSheetTitle className="flex-1 text-sm font-medium">
+              {sheetTitle}
+            </SideSheetTitle>
+          </div>
+          <SideSheetClose />
+        </SideSheetHeader>
 
-        <div className="flex-1 overflow-y-auto px-1 py-3">
+        <SideSheetBody className="px-1">
           {step === "select" && !isEditMode && (
             <div className="space-y-3">
               <input
@@ -247,8 +241,8 @@ export const CredentialSheet = React.memo(function CredentialSheet({
               Loading…
             </div>
           )}
-        </div>
-      </DialogContent>
-    </Dialog>
+        </SideSheetBody>
+      </SideSheetContent>
+    </SideSheet>
   );
 });

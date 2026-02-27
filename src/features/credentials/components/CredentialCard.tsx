@@ -85,15 +85,15 @@ export const CredentialCard = React.memo(function CredentialCard({
 
       <CardMeta className="mt-1.5">
         {credential.description && (
-          <span className="text-muted-foreground/70">
+          <span className="text-muted-foreground">
             {credential.description}
           </span>
         )}
         {credential.maskedPreview && (
-          <span className="font-mono text-xs">{credential.maskedPreview}</span>
+          <span className="font-mono text-xs text-muted-foreground">{credential.maskedPreview}</span>
         )}
         {credential.pathCount > 1 && (
-          <span className="text-muted-foreground/70">
+          <span className="text-muted-foreground">
             · {credential.pathCount} paths
           </span>
         )}

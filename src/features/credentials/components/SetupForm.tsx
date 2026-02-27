@@ -4,7 +4,7 @@ import React, { useCallback, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { ExternalLink } from "lucide-react";
 import type { CredentialTemplate, CredentialValues } from "../lib/types";
-import { SecureInput } from "./SecureInput";
+import { SecureInput } from "@/components/ui/SecureInput";
 
 export interface SetupFormProps {
   template: CredentialTemplate;
