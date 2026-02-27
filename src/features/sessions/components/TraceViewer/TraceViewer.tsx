@@ -1,15 +1,16 @@
 "use no memo";
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useRef } from "react";
-import { useVirtualizer } from "@tanstack/react-virtual";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { ErrorBanner } from "@/components/ErrorBanner";
 import { Skeleton } from "@/components/Skeleton";
 import { useSessionTrace } from "../../hooks/useSessionTrace";
+import { turnsToTree } from "../../lib/traceParser";
+import type { TraceNode } from "../../lib/traceParser";
 import { TraceHeader } from "./TraceHeader";
-import { TraceTurnRow } from "./TraceTurnRow";
-import { TraceTurnDetail } from "./TraceTurnDetail";
+import { TraceNodeRow } from "./TraceNodeRow";
+import { TraceNodeDetail } from "./TraceNodeDetail";
 
 type TraceViewerProps = {
   agentId: string;
@@ -27,58 +28,70 @@ export const TraceViewer = React.memo(function TraceViewer({
     summary,
     loading,
     error,
-    selectedTurnIndex,
-    setSelectedTurnIndex,
     load,
   } = useSessionTrace(agentId, sessionId);
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const listRef = useRef<HTMLDivElement>(null);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
   // Auto-load on mount
   useEffect(() => {
     load();
   }, [load]);
 
-  // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Virtual: memoization handled by "use no memo"
-  const virtualizer = useVirtualizer({
-    count: turns.length,
-    getScrollElement: () => listRef.current,
-    estimateSize: () => 40,
-    overscan: 10,
-  });
+  // Build the tree from flat turns
+  const tree = useMemo(() => turnsToTree(turns), [turns]);
+
+  // Flatten tree for keyboard navigation
+  const flatNodes = useMemo(() => {
+    const result: TraceNode[] = [];
+    function walk(nodes: TraceNode[]) {
+      for (const n of nodes) {
+        result.push(n);
+        if (n.children.length > 0) walk(n.children);
+      }
+    }
+    walk(tree);
+    return result;
+  }, [tree]);
+
+  // Auto-select the first node when tree first loads (derive, don't effect)
+  const effectiveSelectedId = selectedNodeId ?? (tree.length > 0 ? tree[0].id : null);
+
+  const selectedNode = useMemo(
+    () => flatNodes.find((n) => n.id === effectiveSelectedId) ?? null,
+    [flatNodes, effectiveSelectedId],
+  );
 
   const maxLatency = useMemo(
     () => turns.reduce((max, t) => (t.latencyMs && t.latencyMs > max ? t.latencyMs : max), 0),
     [turns],
   );
 
-  const selectedTurn =
-    selectedTurnIndex !== null && selectedTurnIndex < turns.length
-      ? turns[selectedTurnIndex]
-      : null;
+  const handleSelect = useCallback((node: TraceNode) => {
+    setSelectedNodeId(node.id);
+  }, []);
 
-  // Keyboard navigation — scoped to container (not window) to avoid capturing unrelated events
+  // Keyboard navigation
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === "Escape") {
         onClose();
         return;
       }
-      if (turns.length === 0) return;
+      if (flatNodes.length === 0) return;
+      const currentIdx = flatNodes.findIndex((n) => n.id === effectiveSelectedId);
       if (e.key === "ArrowDown") {
         e.preventDefault();
-        setSelectedTurnIndex((prev) =>
-          prev === null ? 0 : Math.min(prev + 1, turns.length - 1),
-        );
+        const next = currentIdx < 0 ? 0 : Math.min(currentIdx + 1, flatNodes.length - 1);
+        setSelectedNodeId(flatNodes[next].id);
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
-        setSelectedTurnIndex((prev) =>
-          prev === null ? 0 : Math.max(prev - 1, 0),
-        );
+        const prev = currentIdx < 0 ? 0 : Math.max(currentIdx - 1, 0);
+        setSelectedNodeId(flatNodes[prev].id);
       }
     },
-    [onClose, turns.length, setSelectedTurnIndex],
+    [onClose, flatNodes, effectiveSelectedId],
   );
 
   // Auto-focus container so keyboard events are captured immediately
@@ -116,52 +129,28 @@ export const TraceViewer = React.memo(function TraceViewer({
         </div>
       )}
 
-      {/* Two-column layout: turn list (left) + detail (right) */}
+      {/* Two-column layout: tree (left) + detail (right) */}
       <div className="flex min-h-0 flex-1 flex-col md:flex-row">
-        {/* Turn list */}
+        {/* Tree list */}
         <div
-          ref={listRef}
           className="min-h-0 flex-1 overflow-auto border-b border-border md:max-w-[45%] md:border-b-0 md:border-r"
           role="listbox"
-          aria-label="Trace turns"
+          aria-label="Trace tree"
         >
-          <div
-            style={{
-              height: `${virtualizer.getTotalSize()}px`,
-              position: "relative",
-              width: "100%",
-            }}
-          >
-            {virtualizer.getVirtualItems().map((vItem) => {
-              const turn = turns[vItem.index];
-              return (
-                <div
-                  key={vItem.key}
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    transform: `translateY(${vItem.start}px)`,
-                  }}
-                  data-index={vItem.index}
-                  ref={virtualizer.measureElement}
-                >
-                  <TraceTurnRow
-                    turn={turn}
-                    isSelected={selectedTurnIndex === vItem.index}
-                    maxLatency={maxLatency}
-                    onSelect={setSelectedTurnIndex}
-                  />
-                </div>
-              );
-            })}
-          </div>
+          {tree.map((node) => (
+            <TraceNodeRow
+              key={node.id}
+              node={node}
+              selectedId={effectiveSelectedId}
+              maxLatency={maxLatency}
+              onSelect={handleSelect}
+            />
+          ))}
         </div>
 
         {/* Detail pane */}
         <div className="min-h-0 flex-1 overflow-auto">
-          <TraceTurnDetail turn={selectedTurn} loading={loading} />
+          <TraceNodeDetail node={selectedNode} loading={loading} />
         </div>
       </div>
     </div>

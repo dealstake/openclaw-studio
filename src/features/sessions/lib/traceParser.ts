@@ -34,6 +34,24 @@ export type TraceTurn = {
   thinkingContent?: string;
 };
 
+export type TraceNode = {
+  id: string;
+  type: "message" | "thinking" | "tool_call";
+  role: "user" | "assistant" | "system";
+  content: string;
+  children: TraceNode[];
+  depth: number;
+  // Present on message nodes
+  tokens?: TraceTurn["tokens"];
+  cost?: TraceTurn["cost"];
+  model?: string | null;
+  stopReason?: string | null;
+  timestamp?: number;
+  latencyMs?: number | null;
+  // Present on tool_call nodes
+  toolCall?: ToolCallTrace;
+};
+
 export type TraceSummary = {
   sessionId: string;
   model: string | null;
@@ -245,4 +263,60 @@ export function parseTrace(
       turnBreakdown,
     },
   };
+}
+
+/**
+ * Convert flat TraceTurn[] into a hierarchical TraceNode[] tree.
+ * Each turn becomes a message node. Assistant turns with thinking or tool calls
+ * get nested children (thinking node first, then tool_call nodes).
+ */
+export function turnsToTree(turns: TraceTurn[]): TraceNode[] {
+  let nodeId = 0;
+  const nodes: TraceNode[] = [];
+
+  for (const turn of turns) {
+    const children: TraceNode[] = [];
+
+    // Thinking as a child of the assistant message
+    if (turn.thinkingContent) {
+      children.push({
+        id: `node-${++nodeId}`,
+        type: "thinking",
+        role: turn.role,
+        content: turn.thinkingContent,
+        children: [],
+        depth: 1,
+      });
+    }
+
+    // Tool calls as children of the assistant message
+    for (const tc of turn.toolCalls) {
+      children.push({
+        id: `node-${++nodeId}`,
+        type: "tool_call",
+        role: turn.role,
+        content: tc.result ?? "",
+        children: [],
+        depth: 1,
+        toolCall: tc,
+      });
+    }
+
+    nodes.push({
+      id: `node-${++nodeId}`,
+      type: "message",
+      role: turn.role,
+      content: turn.content,
+      children,
+      depth: 0,
+      tokens: turn.tokens,
+      cost: turn.cost,
+      model: turn.model,
+      stopReason: turn.stopReason,
+      timestamp: turn.timestamp,
+      latencyMs: turn.latencyMs,
+    });
+  }
+
+  return nodes;
 }
