@@ -27,17 +27,7 @@ export const HistoryEventCard = memo(function HistoryEventCard({
   const hasSummary = !!event.summary?.trim();
 
   return (
-    <div
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" && canViewTrace) {
-          e.preventDefault();
-          handleViewTrace();
-        }
-      }}
-      className="group/card rounded-lg px-3 py-2.5 transition-colors hover:bg-muted/40 focus-visible:ring-1 focus-visible:ring-primary/50 outline-none"
-    >
+    <div className="group/card rounded-lg px-3 py-2.5 transition-colors hover:bg-muted/40">
       <div className="flex gap-2.5">
         <div className="flex-shrink-0 pt-0.5">
           {(() => {
@@ -55,23 +45,24 @@ export const HistoryEventCard = memo(function HistoryEventCard({
             >
               {pill.label}
             </span>
-            {canViewTrace && (
-              <button
-                type="button"
-                onClick={handleViewTrace}
-                aria-label="View trace"
-                className="ml-auto flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md px-1 py-0.5 text-muted-foreground opacity-0 transition-all group-hover/card:opacity-100 hover:bg-muted/60 hover:text-foreground focus:opacity-100"
-              >
-                <FileSearch size={12} />
-              </button>
-            )}
-            {hasSummary && (
-              <button
-                type="button"
-                onClick={() => setExpanded((v) => !v)}
-                aria-label={expanded ? "Show less" : "Show more"}
-                className={`${canViewTrace ? "" : "ml-auto "}flex min-h-[44px] min-w-[44px] items-center justify-center gap-0.5 rounded-md px-1 py-0.5 text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground`}
-              >
+            <div className="ml-auto flex items-center gap-1">
+              {canViewTrace && (
+                <button
+                  type="button"
+                  onClick={handleViewTrace}
+                  aria-label="View trace"
+                  className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md px-1 py-0.5 text-muted-foreground opacity-0 transition-all group-hover/card:opacity-100 group-hover/card:text-foreground/80 hover:bg-muted/60 hover:text-foreground focus:opacity-100"
+                >
+                  <FileSearch size={12} />
+                </button>
+              )}
+              {hasSummary && (
+                <button
+                  type="button"
+                  onClick={() => setExpanded((v) => !v)}
+                  aria-label={expanded ? "Show less" : "Show more"}
+                  className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-0.5 rounded-md px-1 py-0.5 text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+                >
                 <ChevronRight
                   size={12}
                   className={`transition-transform ${expanded ? "rotate-90" : ""}`}
@@ -79,6 +70,7 @@ export const HistoryEventCard = memo(function HistoryEventCard({
                 <span className="text-[10px]">{expanded ? "Less" : "More"}</span>
               </button>
             )}
+            </div>
           </div>
 
           {(event.projectName || event.meta?.phase) && (
