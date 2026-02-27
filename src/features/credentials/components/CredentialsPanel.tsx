@@ -2,6 +2,7 @@
 
 import React, { useCallback, useMemo, useState } from "react";
 import { KeyRound, Plus, RefreshCw } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { PanelToolbar } from "@/components/ui/PanelToolbar";
@@ -96,31 +97,36 @@ export const CredentialsPanel = React.memo(function CredentialsPanel({
   return (
     <TooltipProvider>
     <div className="flex h-full flex-col">
-      <PanelToolbar>
+      <PanelToolbar
+        actions={
+          <>
+            <PanelIconButton onClick={refresh} title="Refresh" aria-label="Refresh">
+              <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
+            </PanelIconButton>
+            <PanelIconButton
+              onClick={() => setAddOpen(true)}
+              title="Add credential"
+              aria-label="Add credential"
+              variant="primary"
+            >
+              <Plus className="h-4 w-4" />
+            </PanelIconButton>
+          </>
+        }
+      >
         <PanelSearchInput
           value={search}
           onChange={setSearch}
           placeholder="Search credentials…"
           className="flex-1"
         />
-        <PanelIconButton onClick={refresh} title="Refresh" aria-label="Refresh">
-          <RefreshCw className="h-4 w-4" />
-        </PanelIconButton>
-        <PanelIconButton
-          onClick={() => setAddOpen(true)}
-          title="Add credential"
-          aria-label="Add credential"
-          variant="primary"
-        >
-          <Plus className="h-4 w-4" />
-        </PanelIconButton>
       </PanelToolbar>
 
       {stats.total > 0 && (
         <div className="flex items-center gap-3 border-b border-border/20 px-3 py-1.5 text-xs text-muted-foreground/60">
           <span>{stats.active} active</span>
           {stats.unmanaged > 0 && (
-            <span className="font-medium text-amber-600 dark:text-amber-400">
+            <span className="font-medium text-amber-700 dark:text-amber-400">
               {stats.unmanaged} unmanaged
             </span>
           )}

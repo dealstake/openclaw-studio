@@ -46,6 +46,7 @@ export const CredentialCard = React.memo(function CredentialCard({
       onClick={handleClick}
       style={style}
       className="animate-in fade-in slide-in-from-bottom-1 fill-mode-both duration-200"
+      aria-label={`Credential: ${credential.humanName}, Status: ${STATUS_LABELS[credential.status]}`}
     >
       <CardHeader>
         <div className="flex min-w-0 flex-1 items-center gap-2.5">
@@ -72,8 +73,8 @@ export const CredentialCard = React.memo(function CredentialCard({
             <button
               type="button"
               onClick={(e) => e.stopPropagation()}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded text-muted-foreground/50 transition-colors hover:bg-muted/50 hover:text-foreground"
-              aria-label="Credential actions"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded text-muted-foreground/50 transition-colors hover:bg-muted/50 hover:text-foreground"
+              aria-label={`Actions for ${credential.humanName}`}
             >
               <MoreHorizontal className="h-4 w-4" />
             </button>
