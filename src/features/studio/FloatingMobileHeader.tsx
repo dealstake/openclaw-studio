@@ -73,9 +73,9 @@ export const FloatingMobileHeader = memo(function FloatingMobileHeader({
       <HeaderIconButton
         onClick={onOpenSessionHistory}
         aria-label="Open session history"
-        className="min-h-[44px] min-w-[44px] rounded-full bg-background/70 shadow-lg ring-1 ring-white/[0.08] backdrop-blur-lg"
+        className="min-h-[36px] min-w-[36px] rounded-full bg-background/70 shadow-md ring-1 ring-white/[0.08] backdrop-blur-lg"
       >
-        <Menu className="h-4 w-4" />
+        <Menu className="h-3.5 w-3.5" />
       </HeaderIconButton>
 
       {/* Right: context menu */}
@@ -83,13 +83,13 @@ export const FloatingMobileHeader = memo(function FloatingMobileHeader({
         <HeaderIconButton
           onClick={() => setMenuOpen((v) => !v)}
           aria-label="Open context menu"
-          className="min-h-[44px] min-w-[44px] rounded-full bg-background/70 shadow-lg ring-1 ring-white/[0.08] backdrop-blur-lg"
+          className="min-h-[36px] min-w-[36px] rounded-full bg-background/70 shadow-md ring-1 ring-white/[0.08] backdrop-blur-lg"
         >
-          <Ellipsis className="h-4 w-4" />
+          <Ellipsis className="h-3.5 w-3.5" />
         </HeaderIconButton>
 
         {menuOpen && (
-          <div className="absolute right-0 top-12 z-[var(--z-popover)] min-w-48 rounded-md border border-border/80 bg-popover/95 p-1 shadow-lg backdrop-blur">
+          <div className="absolute right-0 top-10 z-[var(--z-popover)] min-w-48 rounded-md border border-border/80 bg-popover/95 p-1 shadow-lg backdrop-blur">
             {CONTEXT_TAB_ITEMS.map(({ value, label, Icon }) => {
               const isActive = contextPanelOpen && contextTab === value;
               return (
