@@ -33,6 +33,7 @@ interface MobileSessionDrawerProps {
 const MANAGEMENT_ITEMS: { value: ManagementTab; label: string }[] = [
   { value: "usage", label: "Usage" },
   { value: "channels", label: "Channels" },
+  { value: "credentials", label: "Credentials" },
   { value: "settings", label: "Settings" },
 ];
 

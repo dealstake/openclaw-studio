@@ -11,6 +11,11 @@ const UsagePanel = lazy(() =>
     default: m.UsagePanel,
   }))
 );
+const CredentialsPanel = lazy(() =>
+  import("@/features/credentials/components/CredentialsPanel").then((m) => ({
+    default: m.CredentialsPanel,
+  }))
+);
 import {
   AgentSettingsPanel,
 } from "@/features/agents/components/AgentInspectPanels";
@@ -54,6 +59,11 @@ export const ManagementPanelContent = memo(function ManagementPanelContent({
             onRefresh={ctx.onRefreshChannels}
             hideHeader
           />
+        </PanelErrorBoundary>
+      )}
+      {tab === "credentials" && (
+        <PanelErrorBoundary name="Credentials">
+          <CredentialsPanel client={ctx.client} status={ctx.status} />
         </PanelErrorBoundary>
       )}
       {tab === "settings" && ctx.settingsAgent && (
