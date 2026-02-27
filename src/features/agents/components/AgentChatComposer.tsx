@@ -267,9 +267,9 @@ export const AgentChatComposer = memo(function AgentChatComposer({
         </div>
       )}
       {/* Gradient fade above composer */}
-      <div className="pointer-events-none h-24 bg-gradient-to-t from-background via-background/80 to-transparent" />
+      <div className="pointer-events-none h-10 bg-gradient-to-t from-background via-background/80 to-transparent" />
       {/* Main composer — rectangular card with toolbar */}
-      <div className="mx-auto flex max-w-3xl flex-col rounded-2xl border border-border/30 bg-card/80 shadow-xl backdrop-blur-md focus-within:border-border/60 focus-within:bg-card transition">
+      <div className="mx-auto flex max-w-3xl flex-col rounded-xl border border-border/30 bg-card/80 shadow-lg backdrop-blur-md focus-within:border-border/60 focus-within:bg-card transition">
         {/* Offline indicator */}
         {gatewayStatus && gatewayStatus !== "connected" && (
           <div className="flex items-center gap-1.5 rounded-t-xl bg-amber-500/10 px-3 py-1.5 text-xs text-amber-700 dark:text-amber-400" role="status">
@@ -298,12 +298,12 @@ export const AgentChatComposer = memo(function AgentChatComposer({
         )}
 
         {/* Textarea area */}
-        <div className="flex items-start gap-2 px-4 pt-4 pb-2">
+        <div className="flex items-start gap-2 px-3 pt-2.5 pb-1">
           <textarea
             ref={handleRef}
-            rows={2}
+            rows={1}
             defaultValue={initialDraft}
-            className="max-h-[200px] min-h-[52px] flex-1 resize-none bg-transparent py-1.5 text-base leading-relaxed text-foreground outline-none placeholder:text-muted-foreground"
+            className="max-h-[200px] min-h-[36px] flex-1 resize-none bg-transparent py-1 text-sm leading-normal text-foreground outline-none placeholder:text-muted-foreground"
             aria-label="Message to agent"
             onChange={handleChange}
             onKeyDown={handleKeyDown}
@@ -314,11 +314,11 @@ export const AgentChatComposer = memo(function AgentChatComposer({
         </div>
 
         {/* Toolbar row — attach, model, thinking, token gauge, send */}
-        <div className="flex min-w-0 items-center gap-1 overflow-hidden border-t border-border/10 px-3 py-2">
+        <div className="flex min-w-0 items-center gap-0.5 overflow-hidden border-t border-border/10 px-2 py-1">
           {/* Attach button */}
           <button
             type="button"
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground"
+            className="flex h-9 w-9 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground"
             aria-label="Attach file"
             onClick={() => fileInputRef.current?.click()}
           >
@@ -338,7 +338,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
               <PopoverTrigger asChild>
                 <button
                   type="button"
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                  className="flex h-9 w-9 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground"
                   aria-label="Model & thinking settings"
                 >
                   <Settings2 className="h-4 w-4" />
@@ -378,7 +378,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
           <div className="shrink-0">
             {running ? (
               <button
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-destructive text-destructive-foreground shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
+                className="flex h-9 w-9 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-lg bg-destructive text-destructive-foreground shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
                 type="button"
                 aria-label="Stop agent"
                 onClick={onStop}
@@ -388,7 +388,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
               </button>
             ) : (
               <button
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
+                className="flex h-9 w-9 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
                 type="button"
                 aria-label="Send message"
                 onClick={handleClickSend}
