@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Bot, Clock, Coins, Hash } from "lucide-react";
+import { Bot, Clock, Coins, Hash, X } from "lucide-react";
 
 import { SectionLabel } from "@/components/SectionLabel";
 import { PanelIconButton } from "@/components/PanelIconButton";
@@ -23,7 +23,7 @@ export const TraceHeader = React.memo(function TraceHeader({
       <div className="flex items-center justify-between">
         <SectionLabel as="h3">Session Trace</SectionLabel>
         <PanelIconButton onClick={onClose} aria-label="Close trace viewer">
-          <span className="text-xs">✕</span>
+          <X className="h-3.5 w-3.5" />
         </PanelIconButton>
       </div>
 

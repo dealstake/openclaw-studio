@@ -150,7 +150,7 @@ export const TraceViewer = React.memo(function TraceViewer({
 
         {/* Detail pane */}
         <div className="min-h-0 flex-1 overflow-auto">
-          <TraceNodeDetail node={selectedNode} loading={loading} />
+          <TraceNodeDetail node={selectedNode} loading={loading && !selectedNode} />
         </div>
       </div>
     </div>

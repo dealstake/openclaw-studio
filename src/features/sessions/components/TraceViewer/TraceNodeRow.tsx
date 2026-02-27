@@ -77,18 +77,18 @@ export const TraceNodeRow = React.memo(function TraceNodeRow({
       >
         {/* Expand/collapse toggle */}
         {hasChildren ? (
-          <span
+          <button
+            type="button"
             className="shrink-0 cursor-pointer text-muted-foreground"
             onClick={handleToggle}
-            role="button"
-            tabIndex={-1}
+            aria-label={expanded ? "Collapse" : "Expand"}
           >
             {expanded ? (
               <ChevronDown className="h-3 w-3" />
             ) : (
               <ChevronRight className="h-3 w-3" />
             )}
-          </span>
+          </button>
         ) : (
           <span className="w-3 shrink-0" />
         )}
