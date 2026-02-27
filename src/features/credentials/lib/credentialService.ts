@@ -49,6 +49,8 @@ function generateCredentialId(): string {
 /** Mask a secret: first4 + "••••" + last4 */
 export function getMaskedPreview(value: string): string {
   if (typeof value !== "string" || value.length < 8) return "••••••••";
+  // 1Password references (op://...) and secret refs (__OP...__) — generic mask
+  if (/^(op:\/\/|__\w)/.test(value)) return "••••••••";
   return `${value.slice(0, 4)}••••${value.slice(-4)}`;
 }
 

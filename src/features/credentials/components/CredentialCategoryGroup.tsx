@@ -34,14 +34,14 @@ export const CredentialCategoryGroup = React.memo(
         <CollapsibleTrigger className="group/trigger flex w-full items-center gap-1.5 py-1">
           <ChevronRight
             className={cn(
-              "h-3.5 w-3.5 shrink-0 text-muted-foreground/50 transition-transform duration-150",
+              "h-3.5 w-3.5 shrink-0 text-muted-foreground/70 transition-transform duration-150",
               "group-data-[state=open]/trigger:rotate-90",
             )}
           />
           <SectionLabel>
             {CATEGORY_LABELS[category]}
           </SectionLabel>
-          <span className="ml-1 text-xs tabular-nums text-muted-foreground/50">
+          <span className="ml-1 text-xs tabular-nums text-muted-foreground/70">
             {credentials.length}
           </span>
         </CollapsibleTrigger>

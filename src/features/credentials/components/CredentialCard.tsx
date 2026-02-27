@@ -61,7 +61,7 @@ export const CredentialCard = React.memo(function CredentialCard({
             <button
               type="button"
               onClick={(e) => e.stopPropagation()}
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded text-muted-foreground/50 transition-colors hover:bg-muted/50 hover:text-foreground"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded text-muted-foreground/70 transition-colors hover:bg-muted/50 hover:text-foreground"
               aria-label={`Actions for ${credential.humanName}`}
             >
               <MoreHorizontal className="h-4 w-4" />
@@ -93,7 +93,7 @@ export const CredentialCard = React.memo(function CredentialCard({
           <span className="font-mono text-xs">{credential.maskedPreview}</span>
         )}
         {credential.pathCount > 1 && (
-          <span className="text-muted-foreground/50">
+          <span className="text-muted-foreground/70">
             · {credential.pathCount} paths
           </span>
         )}

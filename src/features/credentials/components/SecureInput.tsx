@@ -61,7 +61,7 @@ export const SecureInput = React.memo(function SecureInput({
           spellCheck={false}
           className={cn(
             "h-9 w-full rounded-md border border-border/50 bg-background px-3 pr-16",
-            "font-mono text-sm text-foreground placeholder:text-muted-foreground/50",
+            "font-mono text-sm text-foreground placeholder:text-muted-foreground/70",
             "transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
             "disabled:cursor-not-allowed disabled:opacity-50",
           )}
@@ -70,7 +70,7 @@ export const SecureInput = React.memo(function SecureInput({
           <button
             type="button"
             onClick={() => setVisible((v) => !v)}
-            className="flex h-8 w-8 items-center justify-center rounded text-muted-foreground/60 transition-colors hover:text-foreground"
+            className="flex h-10 w-10 items-center justify-center rounded text-muted-foreground/60 transition-colors hover:text-foreground"
             aria-label={visible ? "Hide value" : "Show value"}
           >
             {visible ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
@@ -79,7 +79,7 @@ export const SecureInput = React.memo(function SecureInput({
             type="button"
             onClick={handleCopy}
             disabled={!value}
-            className="flex h-8 w-8 items-center justify-center rounded text-muted-foreground/60 transition-colors hover:text-foreground disabled:opacity-30"
+            className="flex h-10 w-10 items-center justify-center rounded text-muted-foreground/60 transition-colors hover:text-foreground disabled:opacity-30"
             aria-label="Copy to clipboard"
           >
             {copied ? (
