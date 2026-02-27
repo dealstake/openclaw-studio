@@ -226,22 +226,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
     };
   }, []);
 
-  // Mobile keyboard awareness
-  useEffect(() => {
-    const vv = window.visualViewport;
-    if (!vv) return;
-    const handler = () => {
-      const offset = window.innerHeight - vv.height;
-      document.documentElement.style.setProperty("--keyboard-offset", `${offset}px`);
-    };
-    vv.addEventListener("resize", handler);
-    vv.addEventListener("scroll", handler);
-    return () => {
-      vv.removeEventListener("resize", handler);
-      vv.removeEventListener("scroll", handler);
-      document.documentElement.style.removeProperty("--keyboard-offset");
-    };
-  }, []);
+
 
   const sendDisabled = !canSend || running || (isEmpty && !hasFiles) || isEncoding;
 
@@ -252,7 +237,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   return (
     <div
       className="absolute inset-x-0 bottom-0 z-10 px-2 sm:px-4"
-      style={{ paddingBottom: `calc(0.5rem + env(safe-area-inset-bottom) + var(--keyboard-offset, 0px))` }}
+      style={{ paddingBottom: `calc(0.5rem + env(safe-area-inset-bottom))` }}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDragOver={handleDragOver}

@@ -7,16 +7,14 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AgentChatPanel } from "@/features/agents/components/AgentChatPanel";
-import {
-  AgentBrainPanel,
-} from "@/features/agents/components/AgentInspectPanels";
+// AgentBrainPanel moved to StudioContextDrawer
 import { AppSidebar, type ManagementTab } from "@/layout/AppSidebar";
 import type { BreadcrumbAgent } from "@/features/agents/components/AgentBreadcrumb";
 import { FloatingContextControls } from "@/features/studio/FloatingContextControls";
 import { FloatingMobileHeader } from "@/features/studio/FloatingMobileHeader";
 import { EmptyStatePanel } from "@/features/agents/components/EmptyStatePanel";
-import { BrandMark } from "@/components/brand/BrandMark";
-import { GatewayStatusBanner } from "@/components/GatewayStatusBanner";
+// BrandMark moved to StudioLoadingScreen
+// GatewayStatusBanner moved to StudioStatusBanners
 import { Users } from "lucide-react";
 import { useGateway } from "@/lib/gateway/GatewayProvider";
 import {
@@ -27,20 +25,18 @@ import {
 } from "@/features/agents/state/store";
 import { createGatewayRuntimeEventHandler } from "@/features/agents/state/gatewayRuntimeEventHandler";
 // settingsCoordinator accessed via useGateway() context
-import { TasksPanel } from "@/features/tasks/components/TasksPanel";
-import { ProjectsPanel } from "@/features/projects/components/ProjectsPanel";
+// TasksPanel + ProjectsPanel moved to StudioContextDrawer
 import { useAgentTasks } from "@/features/tasks/hooks/useAgentTasks";
-import { ContextPanel } from "@/features/context/components/ContextPanel";
+// ContextPanel moved to StudioContextDrawer
 import type { ContextTab } from "@/features/context/components/ContextPanel";
 
-import { PanelErrorBoundary } from "@/components/PanelErrorBoundary";
+// PanelErrorBoundary moved to StudioContextDrawer
 import { ManagementPanelContent } from "@/components/ManagementPanelContent";
 import { ManagementDrawer } from "@/components/ManagementDrawer";
 import { ManagementPanelProvider } from "@/components/management/ManagementPanelContext";
 import { useExecApprovalContext } from "@/features/exec-approvals/ExecApprovalProvider";
 import { useCommandPalette } from "@/features/command-palette/hooks/useCommandPalette";
-import { UnifiedFilesPanel } from "@/features/workspace/components/UnifiedFilesPanel";
-import { ActivityPanel } from "@/features/activity/components/ActivityPanel";
+// UnifiedFilesPanel + ActivityPanel moved to StudioContextDrawer
 // Heartbeat entries now routed exclusively via onActivityMessage to useActivityMessageStore
 import { TraceViewer } from "@/features/sessions/components/TraceViewer";
 import { useChannelsStatus } from "@/features/channels/hooks/useChannelsStatus";
@@ -65,6 +61,9 @@ import { MobileSessionDrawer } from "@/features/studio/MobileSessionDrawer";
 import { exportConversationAsMarkdown } from "@/features/sessions/lib/exportConversation";
 import { StudioExpandedPanel } from "@/features/studio/StudioExpandedPanel";
 import { StudioModals } from "@/features/studio/StudioModals";
+import { StudioLoadingScreen } from "@/features/studio/StudioLoadingScreen";
+import { StudioStatusBanners } from "@/features/studio/StudioStatusBanners";
+import { StudioContextDrawer } from "@/features/studio/StudioContextDrawer";
 import { useSettingsPanel } from "@/features/agents/hooks/useSettingsPanel";
 import { useChatCallbacks } from "@/features/agents/hooks/useChatCallbacks";
 import { isWide } from "@/hooks/useBreakpoint";
@@ -721,21 +720,7 @@ export const AgentStudioPage = () => {
   }, [focusedAgent, agentContextWindow, findModelMatch]);
 
   if (status === "connecting" || (status === "connected" && !agentsLoadedOnce)) {
-    return (
-      <div className="relative w-screen overflow-hidden bg-background" style={{ minHeight: '100svh' }}>
-        <div className="flex items-center justify-center px-6" style={{ minHeight: '100svh' }}>
-          <div className="bg-card rounded-lg w-full max-w-md px-6 py-8 flex flex-col items-center gap-4">
-            <BrandMark size="lg" />
-            <div className="text-sm text-muted-foreground">
-              {status === "connecting" ? "Connecting to gateway…" : "Loading agents…"}
-            </div>
-            <div className="typing-dots mt-1">
-              <span /><span /><span />
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return <StudioLoadingScreen status={status} />;
   }
 
   return (
@@ -807,30 +792,12 @@ export const AgentStudioPage = () => {
         )}
 
         {/* ── Status banners: fixed below floating controls ─────────── */}
-        {errorMessage ? (
-          <div className="fixed inset-x-0 top-16 z-30 px-4">
-            <div className="rounded-md border border-destructive bg-destructive px-4 py-2 text-sm text-destructive-foreground">
-              {errorMessage}
-            </div>
-          </div>
-        ) : null}
-        {configMutationStatusLine ? (
-          <div className="fixed inset-x-0 top-16 z-30 px-4">
-            <div className="rounded-md border border-border/80 bg-card/80 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.11em] text-muted-foreground">
-              {configMutationStatusLine}
-            </div>
-          </div>
-        ) : null}
-
-        {/* ── Gateway connection banner: shown when disconnected ──── */}
-        {status !== "connected" ? (
-          <div className="fixed inset-x-0 top-16 z-30 px-4">
-            <GatewayStatusBanner
-              status={status}
-              onReconnect={() => void connect()}
-            />
-          </div>
-        ) : null}
+        <StudioStatusBanners
+          errorMessage={errorMessage}
+          configMutationStatusLine={configMutationStatusLine}
+          status={status}
+          onReconnect={() => void connect()}
+        />
 
         {showFleetLayout ? (
           <div className="absolute inset-0">
@@ -979,110 +946,52 @@ export const AgentStudioPage = () => {
             )}
             {/* Context tab cluster is now integrated into HeaderBar on wide viewports */}
             {/* Context Panel: floating overlay — bottom sheet on mobile, right panel on desktop */}
-            <div
-              className={
-                isMobileLayout
-                  ? `fixed inset-x-0 bottom-0 z-50 h-[70vh] rounded-t-3xl transform-gpu ${swipeDy > 0 ? "" : "transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]"} ${mobilePane === "context" ? "translate-y-0" : "translate-y-full"} bg-background/95 backdrop-blur-xl ring-1 ring-white/[0.06] border-t border-border/50 min-h-0 overflow-hidden p-0 shadow-[0_-4px_24px_-6px_rgba(0,0,0,0.3)]`
-                  : `fixed inset-y-0 right-0 z-20 w-[360px] pt-20 transform-gpu transition-transform duration-300 ease-out ${showContextInline ? "translate-x-0" : "translate-x-full"} bg-background/60 backdrop-blur-xl ring-1 ring-white/[0.06] min-h-0 overflow-hidden p-0 shadow-[-4px_0_24px_-6px_rgba(0,0,0,0.3)]`
-              }
-              style={isMobileLayout && swipeDy > 0 ? { transform: `translateY(${swipeDy}px)` } : undefined}
-              onTouchStart={isMobileLayout ? swipeHandlers.onTouchStart : undefined}
-              onTouchMove={isMobileLayout ? swipeHandlers.onTouchMove : undefined}
-              onTouchEnd={isMobileLayout ? swipeHandlers.onTouchEnd : undefined}
-            >
-              {/* Bottom sheet drag handle — mobile only */}
-              {isMobileLayout && (
-                <div
-                  className="flex justify-center py-5 cursor-grab active:cursor-grabbing"
-                  aria-hidden="true"
-                >
-                  <div className="h-1 w-10 rounded-full bg-muted-foreground/30" />
-                </div>
-              )}
-              <ContextPanel
-                  activeTab={contextTab}
-                  expandedTab={expandedTab === "projects" || expandedTab === "tasks" || expandedTab === "brain" || expandedTab === "workspace" || expandedTab === "activity" ? expandedTab : null}
-                  onExpandToggle={handleExpandToggle}
-                  onClose={showContextInline ? () => setContextPanelOpen(false) : switchToChat}
-                  onTabChange={setContextTab}
-                  hideTabBar={isWide(breakpoint)}
-                  projectsContent={
-                    <PanelErrorBoundary name="Projects">
-                      <div className="flex h-full w-full flex-col overflow-y-auto">
-                        <ProjectsPanel
-                          agentId={focusedAgent?.agentId ?? null}
-                          client={client}
-                          isTabActive={contextTab === "projects"}
-                          eventTick={cronEventTick}
-                          requestCreateProject={createProjectTick}
-                        />
-                      </div>
-                    </PanelErrorBoundary>
-                  }
-                  tasksContent={
-                    <PanelErrorBoundary name="Tasks">
-                      <div className="flex h-full w-full flex-col overflow-y-auto">
-                        <TasksPanel
-                          isSelected
-                          client={client}
-                          tasks={agentTasks}
-                          loading={tasksLoading}
-                          error={tasksError}
-                          busyTaskId={busyTaskId}
-                          busyAction={busyAction}
-                          onToggle={toggleTask}
-                          onUpdateTask={updateTask}
-                          onUpdateSchedule={updateTaskSchedule}
-                          onRun={runTask}
-                          onDelete={deleteTask}
-                          onRefresh={() => { void loadTasks(); }}
-                          onNewTask={() => setShowTaskWizard(true)}
-                          maxConcurrentRuns={cronMaxConcurrentRuns}
-                        />
-                      </div>
-                    </PanelErrorBoundary>
-                  }
-                  brainContent={
-                    <PanelErrorBoundary name="Brain">
-                      <AgentBrainPanel
-                        client={client}
-                        agents={agents}
-                        selectedAgentId={selectedBrainAgentId}
-                        activeTab={brainFileTab}
-                        onTabChange={setBrainFileTab}
-                        previewMode={brainPreviewMode}
-                        onPreviewModeChange={setBrainPreviewMode}
-                        status={status}
-                        models={gatewayModels}
-                        modelValue={
-                          focusedAgent?.model ?? (gatewayModels.length > 0 ? `${gatewayModels[0].provider}/${gatewayModels[0].id}` : "")
-                        }
-                        onModelChange={stableChatOnModelChange}
-                        onClose={() => {
-                          setContextMode("agent");
-                          setMobilePane("chat");
-                        }}
-                      />
-                    </PanelErrorBoundary>
-                  }
-                  workspaceContent={
-                    <PanelErrorBoundary name="Workspace">
-                      <UnifiedFilesPanel
-                        key={focusedAgent?.agentId ?? "none"}
-                        agentId={focusedAgent?.agentId ?? null}
-                        client={client}
-                        isTabActive={contextTab === "workspace"}
-                        eventTick={cronEventTick}
-                      />
-                    </PanelErrorBoundary>
-                  }
-                  activityContent={
-                    <PanelErrorBoundary name="Activity">
-                      <ActivityPanel />
-                    </PanelErrorBoundary>
-                  }
-                />
-            </div>
+            <StudioContextDrawer
+              isMobileLayout={isMobileLayout}
+              showContextInline={showContextInline}
+              mobilePane={mobilePane}
+              swipeDy={swipeDy}
+              swipeHandlers={swipeHandlers}
+              contextTab={contextTab}
+              expandedTab={expandedTab === "projects" || expandedTab === "tasks" || expandedTab === "brain" || expandedTab === "workspace" || expandedTab === "activity" ? expandedTab : null}
+              onExpandToggle={handleExpandToggle}
+              onClose={() => setContextPanelOpen(false)}
+              onTabChange={setContextTab}
+              switchToChat={switchToChat}
+              hideTabBar={isWide(breakpoint)}
+              focusedAgentId={focusedAgent?.agentId ?? null}
+              client={client}
+              cronEventTick={cronEventTick}
+              createProjectTick={createProjectTick}
+              agentTasks={agentTasks}
+              tasksLoading={tasksLoading}
+              tasksError={tasksError}
+              busyTaskId={busyTaskId}
+              busyAction={busyAction}
+              onToggleTask={toggleTask}
+              onUpdateTask={updateTask}
+              onUpdateTaskSchedule={updateTaskSchedule}
+              onRunTask={runTask}
+              onDeleteTask={deleteTask}
+              onRefreshTasks={() => { void loadTasks(); }}
+              onNewTask={() => setShowTaskWizard(true)}
+              cronMaxConcurrentRuns={cronMaxConcurrentRuns}
+              agents={agents}
+              selectedBrainAgentId={selectedBrainAgentId}
+              brainFileTab={brainFileTab}
+              onBrainFileTabChange={setBrainFileTab}
+              brainPreviewMode={brainPreviewMode}
+              onBrainPreviewModeChange={setBrainPreviewMode}
+              status={status}
+              gatewayModels={gatewayModels}
+              modelValue={focusedAgent?.model ?? (gatewayModels.length > 0 ? `${gatewayModels[0].provider}/${gatewayModels[0].id}` : "")}
+              onModelChange={stableChatOnModelChange}
+              onBrainClose={() => {
+                setContextMode("agent");
+                setMobilePane("chat");
+              }}
+              focusedAgent={focusedAgent}
+            />
           </div>
         ) : (
           <div className="absolute inset-0 bg-background rounded-lg fade-up-delay flex flex-col overflow-hidden p-5 sm:p-6">
