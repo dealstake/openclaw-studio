@@ -135,30 +135,33 @@ export function useLoadAgents(params: UseLoadAgentsParams) {
             )
           : agentsResult.agents;
 
+      // Batch: fetch all sessions in ONE call instead of N per-agent calls.
       const mainSessionKeyByAgent = new Map<string, SessionsListEntry | null>();
-      await Promise.all(
-        realAgents.map(async (agent) => {
-          try {
-            const expectedMainKey = buildAgentMainSessionKey(agent.id, mainKey);
-            const sessions = await client.call<SessionsListResult>("sessions.list", {
-              agentId: agent.id,
-              includeGlobal: false,
-              includeUnknown: false,
-              search: expectedMainKey,
-              limit: 4,
-            });
-            const entries = Array.isArray(sessions.sessions) ? sessions.sessions : [];
-            const mainEntry =
-              entries.find((entry) => isSameSessionKey(entry.key ?? "", expectedMainKey)) ?? null;
-            mainSessionKeyByAgent.set(agent.id, mainEntry);
-          } catch (err) {
-            if (!isGatewayDisconnectLikeError(err)) {
-              console.error("Failed to list sessions while resolving agent session.", err);
-            }
-            mainSessionKeyByAgent.set(agent.id, null);
-          }
-        })
-      );
+      const expectedMainKeys = new Map<string, string>();
+      for (const agent of realAgents) {
+        expectedMainKeys.set(agent.id, buildAgentMainSessionKey(agent.id, mainKey));
+      }
+      try {
+        const allSessions = await client.call<SessionsListResult>("sessions.list", {
+          includeGlobal: false,
+          includeUnknown: false,
+          limit: Math.max(realAgents.length * 4, 64),
+        });
+        const entries = Array.isArray(allSessions.sessions) ? allSessions.sessions : [];
+        for (const agent of realAgents) {
+          const expected = expectedMainKeys.get(agent.id)!;
+          const mainEntry =
+            entries.find((entry) => isSameSessionKey(entry.key ?? "", expected)) ?? null;
+          mainSessionKeyByAgent.set(agent.id, mainEntry);
+        }
+      } catch (err) {
+        if (!isGatewayDisconnectLikeError(err)) {
+          console.error("Failed to list sessions while resolving agent sessions.", err);
+        }
+        for (const agent of realAgents) {
+          mainSessionKeyByAgent.set(agent.id, null);
+        }
+      }
       const seeds: AgentStoreSeed[] = realAgents.map((agent) => {
         const persistedSeed =
           settings && gatewayKey ? resolveAgentAvatarSeed(settings, gatewayKey, agent.id) : null;

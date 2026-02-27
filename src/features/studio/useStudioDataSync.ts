@@ -308,11 +308,11 @@ export function useStudioDataSync(params: UseStudioDataSyncParams): UseStudioDat
     void loadSummarySnapshotRef.current();
   }, [status]);
 
-  // Poll summary every 30s when any agent is running
+  // Fallback poll every 120s — primary refresh is WS-driven via onSessionsUpdate
   useVisibilityRefresh(
     () => void loadSummarySnapshotRef.current(),
     {
-      pollMs: 30_000,
+      pollMs: 120_000,
       enabled: status === "connected" && hasRunningAgents,
       debounceMs: 2_000,
     },

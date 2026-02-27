@@ -130,7 +130,8 @@ export function useRuntimeEventSubscription({
         void loadChannelsStatusRef.current();
       },
       onSessionsUpdate: () => {
-        // Session list refresh handled by 30s polling in useSessionHistory
+        // Refresh summary snapshot on session events — replaces 30s polling
+        void loadSummarySnapshotRef.current();
       },
       onCronUpdate: () => {
         void loadTasksRef.current();
