@@ -216,7 +216,7 @@ export const AppSidebar = memo(function AppSidebar({
 
   /* ── Single shell with animated width transition ── */
   return (
-    <TooltipProvider delayDuration={300}>
+    <TooltipProvider >
     <div
       className={`flex h-full flex-col bg-background/60 backdrop-blur-xl ring-1 ring-white/[0.06] shadow-[4px_0_24px_-6px_rgba(0,0,0,0.3)] transform-gpu transition-[width] duration-300 ease-out overflow-hidden ${
         collapsed ? "w-14" : "w-72"

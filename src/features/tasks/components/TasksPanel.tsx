@@ -238,7 +238,7 @@ export const TasksPanel = memo(function TasksPanel({
             </span>
           ) : null}
           {maxConcurrentRuns != null && (
-            <TooltipProvider delayDuration={300}>
+            <TooltipProvider >
               <Tooltip>
                 <TooltipTrigger asChild>
                   <span className="flex items-center gap-1 rounded-full bg-muted/60 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
