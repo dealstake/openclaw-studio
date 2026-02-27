@@ -251,7 +251,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
         </div>
       )}
       {/* Gradient fade above composer */}
-      <div className="pointer-events-none h-6 sm:h-8 bg-gradient-to-t from-background to-transparent" />
+      <div className="pointer-events-none h-3 sm:h-6 bg-gradient-to-t from-background to-transparent" />
       {/* Main composer card */}
       <div className="mx-auto flex max-w-3xl flex-col rounded-xl border border-border/30 bg-card/80 shadow-lg backdrop-blur-md focus-within:border-border/60 focus-within:bg-card transition">
         {/* Offline indicator */}
