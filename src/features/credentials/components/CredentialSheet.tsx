@@ -131,27 +131,43 @@ export const CredentialSheet = React.memo(function CredentialSheet({
   const handleSave = useCallback(
     async (
       values: CredentialValues,
-      overrides: { humanName?: string; description?: string },
+      overrides: {
+        humanName?: string;
+        description?: string;
+        customConfigPath?: string;
+      },
     ) => {
       if (!selectedTemplate) return;
       setSaving(true);
+
+      // For custom templates, inject the user-provided config path
+      const resolvedTemplate =
+        selectedTemplate.key === "custom" && overrides.customConfigPath
+          ? {
+              ...selectedTemplate,
+              configPathMap: {
+                apiKey: [overrides.customConfigPath.trim()],
+              },
+            }
+          : selectedTemplate;
+
       try {
         if (isEditMode && onEditSave) {
           await onEditSave(values, overrides);
         } else {
           await onSave(
             {
-              humanName: overrides.humanName ?? selectedTemplate.serviceName,
-              type: selectedTemplate.type,
-              serviceName: selectedTemplate.serviceName,
-              templateKey: selectedTemplate.key,
+              humanName: overrides.humanName ?? resolvedTemplate.serviceName,
+              type: resolvedTemplate.type,
+              serviceName: resolvedTemplate.serviceName,
+              templateKey: resolvedTemplate.key,
               description: overrides.description,
-              serviceUrl: selectedTemplate.serviceUrl || undefined,
-              apiKeyPageUrl: selectedTemplate.apiKeyPageUrl || undefined,
-              category: selectedTemplate.category,
+              serviceUrl: resolvedTemplate.serviceUrl || undefined,
+              apiKeyPageUrl: resolvedTemplate.apiKeyPageUrl || undefined,
+              category: resolvedTemplate.category,
             },
             values,
-            selectedTemplate,
+            resolvedTemplate,
           );
         }
         handleOpenChange(false);

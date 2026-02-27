@@ -11,7 +11,11 @@ export interface SetupFormProps {
   initialValues?: CredentialValues;
   onSave: (
     values: CredentialValues,
-    overrides: { humanName?: string; description?: string },
+    overrides: {
+      humanName?: string;
+      description?: string;
+      customConfigPath?: string;
+    },
   ) => void;
   onCancel: () => void;
   saving?: boolean;
@@ -28,6 +32,8 @@ export const SetupForm = React.memo(function SetupForm({
     () => initialValues ?? {},
   );
   const [humanName, setHumanName] = useState(template.serviceName);
+  const [customConfigPath, setCustomConfigPath] = useState("");
+  const isCustom = template.key === "custom";
 
   const handleFieldChange = useCallback((fieldId: string, value: string) => {
     setValues((prev) => ({ ...prev, [fieldId]: value }));
@@ -36,17 +42,21 @@ export const SetupForm = React.memo(function SetupForm({
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault();
-      onSave(values, { humanName });
+      onSave(values, {
+        humanName,
+        customConfigPath: isCustom ? customConfigPath : undefined,
+      });
     },
-    [values, humanName, onSave],
+    [values, humanName, customConfigPath, isCustom, onSave],
   );
 
-  const allRequiredFilled = template.fields
-    .filter((f) => f.required)
-    .every((f) => {
-      const v = values[f.id];
-      return typeof v === "string" && v.trim().length > 0;
-    });
+  const allRequiredFilled =
+    template.fields
+      .filter((f) => f.required)
+      .every((f) => {
+        const v = values[f.id];
+        return typeof v === "string" && v.trim().length > 0;
+      }) && (!isCustom || customConfigPath.trim().length > 0);
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
@@ -91,6 +101,29 @@ export const SetupForm = React.memo(function SetupForm({
           className="h-9 w-full rounded-md border border-border/50 bg-background px-3 text-sm text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
         />
       </div>
+
+      {/* Config path (custom template only) */}
+      {isCustom && (
+        <div className="space-y-1.5">
+          <label
+            htmlFor="cred-config-path"
+            className="block text-xs font-medium text-muted-foreground"
+          >
+            Config Path <span className="text-destructive">*</span>
+          </label>
+          <input
+            id="cred-config-path"
+            type="text"
+            value={customConfigPath}
+            onChange={(e) => setCustomConfigPath(e.target.value)}
+            placeholder="e.g. skills.entries.myservice.apiKey"
+            className="h-9 w-full rounded-md border border-border/50 bg-background px-3 font-mono text-sm text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+          />
+          <p className="text-[11px] leading-snug text-muted-foreground/70">
+            The dotted config path where the secret will be stored.
+          </p>
+        </div>
+      )}
 
       {/* Secret fields */}
       {template.fields.map((field) => (
