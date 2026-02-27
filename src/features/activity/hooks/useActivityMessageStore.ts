@@ -24,6 +24,12 @@ export interface ActivityMessage {
   timestamp: number;
   /** Current streaming status */
   status: "streaming" | "complete" | "error";
+  /** Input tokens consumed (populated from gateway events) */
+  tokensIn?: number | null;
+  /** Output tokens consumed (populated from gateway events) */
+  tokensOut?: number | null;
+  /** Total cost in USD (populated from gateway events) */
+  totalCost?: number | null;
 }
 
 const MAX_ENTRIES = 200;

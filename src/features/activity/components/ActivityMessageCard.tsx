@@ -6,6 +6,7 @@ import { isReasoningPart, isToolInvocationPart } from "@/lib/chat/types";
 import type { ActivityMessage } from "@/features/activity/hooks/useActivityMessageStore";
 import { taskIcon, STATUS_COLORS, formatTime } from "@/features/activity/lib/activityDisplayUtils";
 import { MessagePartsRenderer, getTextContent } from "./MessagePartsRenderer";
+import { formatTokens, formatCost } from "@/lib/text/format";
 
 /** Card for a single live activity message (streaming or complete) */
 export const ActivityMessageCard = memo(function ActivityMessageCard({
@@ -88,9 +89,15 @@ export const ActivityMessageCard = memo(function ActivityMessageCard({
             </div>
           )}
 
-          <p className="mt-1 text-[10px] text-muted-foreground/60">
-            {formatTime(entry.timestamp)}
-          </p>
+          <div className="mt-1 flex items-center gap-2 text-[10px] text-muted-foreground/60">
+            <span>{formatTime(entry.timestamp)}</span>
+            {((entry.tokensIn ?? 0) + (entry.tokensOut ?? 0) > 0) && (
+              <span>{formatTokens((entry.tokensIn ?? 0) + (entry.tokensOut ?? 0))} tokens</span>
+            )}
+            {(entry.totalCost != null && entry.totalCost > 0) && (
+              <span>{formatCost(entry.totalCost)}</span>
+            )}
+          </div>
         </div>
       </div>
     </div>

@@ -5,6 +5,7 @@ import { ChevronRight } from "lucide-react";
 import { MarkdownViewer } from "@/components/MarkdownViewer";
 import type { ActivityEvent } from "@/features/activity/lib/activityTypes";
 import { taskIcon, STATUS_PILL, formatHistoryTime } from "@/features/activity/lib/activityDisplayUtils";
+import { formatTokens } from "@/lib/text/format";
 
 /** Card for a completed activity history event */
 export const HistoryEventCard = memo(function HistoryEventCard({
@@ -88,7 +89,7 @@ export const HistoryEventCard = memo(function HistoryEventCard({
                   )}
                   {(event.tokensIn || event.tokensOut) && (
                     <span>
-                      {((event.tokensIn ?? 0) + (event.tokensOut ?? 0)).toLocaleString()} tokens
+                      ↑{formatTokens(event.tokensIn ?? 0)} ↓{formatTokens(event.tokensOut ?? 0)}
                     </span>
                   )}
                 </div>
@@ -96,9 +97,16 @@ export const HistoryEventCard = memo(function HistoryEventCard({
             </div>
           )}
 
-          <p className="mt-1 text-[10px] text-muted-foreground/60">
-            {formatHistoryTime(event.timestamp)}
-          </p>
+          <div className="mt-1 flex items-center gap-2 text-[10px] text-muted-foreground/60">
+            <span>{formatHistoryTime(event.timestamp)}</span>
+            {(() => {
+              const totalTokens = (event.tokensIn ?? event.meta?.tokensIn ?? 0) + (event.tokensOut ?? event.meta?.tokensOut ?? 0);
+              return totalTokens > 0 ? <span>{formatTokens(totalTokens)} tokens</span> : null;
+            })()}
+            {(event.meta?.durationMs != null && event.meta.durationMs > 0 && !expanded) && (
+              <span>{Math.round(event.meta.durationMs / 1000)}s</span>
+            )}
+          </div>
         </div>
       </div>
     </div>
