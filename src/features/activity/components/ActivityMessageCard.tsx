@@ -59,7 +59,7 @@ export const ActivityMessageCard = memo(function ActivityMessageCard({
                 type="button"
                 onClick={() => setExpanded((v) => !v)}
                 aria-label={expanded ? "Show less" : "Show more"}
-                className="ml-auto flex items-center gap-0.5 rounded-md px-1 py-0.5 text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+                className="ml-auto flex min-h-[44px] min-w-[44px] items-center justify-center gap-0.5 rounded-md px-1 py-0.5 text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
               >
                 <ChevronRight
                   size={12}
@@ -89,7 +89,7 @@ export const ActivityMessageCard = memo(function ActivityMessageCard({
             </div>
           )}
 
-          <div className="mt-1 flex items-center gap-2 text-[10px] text-muted-foreground/60">
+          <div className="mt-1 flex items-center gap-2 text-[10px] text-muted-foreground">
             <span>{formatTime(entry.timestamp)}</span>
             {((entry.tokensIn ?? 0) + (entry.tokensOut ?? 0) > 0) && (
               <span>{formatTokens((entry.tokensIn ?? 0) + (entry.tokensOut ?? 0))} tokens</span>

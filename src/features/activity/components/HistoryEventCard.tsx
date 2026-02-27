@@ -41,7 +41,7 @@ export const HistoryEventCard = memo(function HistoryEventCard({
                 type="button"
                 onClick={() => setExpanded((v) => !v)}
                 aria-label={expanded ? "Show less" : "Show more"}
-                className="ml-auto flex items-center gap-0.5 rounded-md px-1 py-0.5 text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+                className="ml-auto flex min-h-[44px] min-w-[44px] items-center justify-center gap-0.5 rounded-md px-1 py-0.5 text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
               >
                 <ChevronRight
                   size={12}
@@ -97,7 +97,7 @@ export const HistoryEventCard = memo(function HistoryEventCard({
             </div>
           )}
 
-          <div className="mt-1 flex items-center gap-2 text-[10px] text-muted-foreground/60">
+          <div className="mt-1 flex items-center gap-2 text-[10px] text-muted-foreground">
             <span>{formatHistoryTime(event.timestamp)}</span>
             {(() => {
               const totalTokens = (event.tokensIn ?? event.meta?.tokensIn ?? 0) + (event.tokensOut ?? event.meta?.tokensOut ?? 0);

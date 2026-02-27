@@ -63,7 +63,7 @@ export const HistoryFeed = memo(function HistoryFeed() {
           onClick={refresh}
           disabled={loading}
           aria-label="Refresh history"
-          className="flex items-center gap-1 rounded-md p-2 -m-1 text-[10px] text-muted-foreground/80 transition-colors hover:bg-muted/60 hover:text-muted-foreground disabled:opacity-50"
+          className="flex min-h-[44px] items-center gap-1 rounded-md px-3 py-2 text-[10px] text-muted-foreground/80 transition-colors hover:bg-muted/60 hover:text-muted-foreground disabled:opacity-50"
         >
           <RefreshCw size={10} className={loading ? "animate-spin" : ""} />
           Refresh
