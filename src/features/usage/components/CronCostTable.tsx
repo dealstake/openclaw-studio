@@ -4,16 +4,16 @@ import { memo, useMemo } from "react";
 import { formatTokens, formatCost } from "@/lib/text/format";
 import type { SessionCostEntry } from "@/features/usage/lib/costCalculator";
 
-/** Extract cron job ID from session key: "cron-<jobId>-<timestamp>" → jobId */
+/** UUID v4 pattern: 8-4-4-4-12 hex chars */
+const UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+
+/** Extract cron job ID from session key: "cron-<uuid>-<timestamp>" → uuid */
 function extractCronJobId(key: string): string {
-  // key format: cron-<uuid>-<timestamp>
+  const match = UUID_RE.exec(key);
+  if (match) return match[0];
+  // Fallback: strip "cron-" prefix and last segment (timestamp)
   const parts = key.split("-");
-  // UUID is parts[1..5] (5 segments), timestamp is last
-  if (parts.length >= 7) {
-    return parts.slice(1, 6).join("-");
-  }
-  // Fallback: everything between first and last dash
-  return parts.slice(1, -1).join("-");
+  return parts.slice(1, -1).join("-") || key;
 }
 
 type CronJobGroup = {

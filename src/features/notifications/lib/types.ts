@@ -26,7 +26,7 @@ export interface Notification {
   data?: Record<string, unknown>;
 }
 
-/** Shape of the notification Zustand store state. */
+/** Shape of the notification store state. */
 export interface NotificationState {
   notifications: Notification[];
   unreadCount: number;

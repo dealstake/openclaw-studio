@@ -9,6 +9,7 @@ import { ErrorBanner } from "@/components/ErrorBanner";
 import { Skeleton } from "@/components/Skeleton";
 import { PanelIconButton } from "@/components/PanelIconButton";
 import { formatTokens, formatCost } from "@/lib/text/format";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DailyTrendChart } from "@/features/usage/components/DailyTrendChart";
 import { CronCostTable } from "@/features/usage/components/CronCostTable";
 import { SummaryCard } from "@/features/usage/components/SummaryCard";
@@ -144,7 +145,16 @@ export const UsagePanel = memo(function UsagePanel({
                   .sort(([, a], [, b]) => b.cost - a.cost)
                   .map(([model, data]) => (
                     <tr key={model} className="border-b border-border/50 last:border-0">
-                      <td className="px-3 py-2 font-medium text-foreground max-w-[120px] truncate" title={model}>{model}</td>
+                      <td className="px-3 py-2 font-medium text-foreground max-w-[120px]">
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="block truncate">{model}</span>
+                            </TooltipTrigger>
+                            <TooltipContent side="right">{model}</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </td>
                       <td className="px-3 py-2 text-right text-muted-foreground">{data.requests}</td>
                       <td className="px-3 py-2 text-right text-muted-foreground">
                         {formatTokens(data.inputTokens + data.outputTokens)}

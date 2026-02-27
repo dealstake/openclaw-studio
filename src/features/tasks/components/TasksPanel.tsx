@@ -10,6 +10,7 @@ import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import type { StudioTask, TaskType, TaskSchedule, UpdateTaskPayload } from "@/features/tasks/types";
 import { TaskCard } from "./TaskCard";
 import { TaskDetailDrawer } from "./TaskDetailDrawer";
+import { TaskActionsProvider } from "@/features/tasks/context/TaskActionsContext";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { PanelIconButton } from "@/components/PanelIconButton";
 import { SectionLabel } from "@/components/SectionLabel";
@@ -210,17 +211,20 @@ export const TasksPanel = memo(function TasksPanel({
   // When a task is selected, show the detail drawer instead of the list
   if (selectedTask) {
     return (
-      <TaskDetailDrawer
-        task={selectedTask}
-        client={client}
-        busy={busyTaskId === selectedTask.id}
-        onClose={handleCloseDrawer}
+      <TaskActionsProvider
         onToggle={onToggle}
         onUpdateTask={onUpdateTask}
         onUpdateSchedule={onUpdateSchedule}
         onRun={onRun}
         onDelete={handleDeleteRequest}
-      />
+      >
+        <TaskDetailDrawer
+          task={selectedTask}
+          client={client}
+          busy={busyTaskId === selectedTask.id}
+          onClose={handleCloseDrawer}
+        />
+      </TaskActionsProvider>
     );
   }
 

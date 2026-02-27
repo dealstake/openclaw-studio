@@ -4,8 +4,9 @@ import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { useTaskEditForm } from "@/features/tasks/hooks/useTaskEditForm";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import { isGatewayDisconnectLikeError } from "@/lib/gateway/GatewayClient";
-import type { StudioTask, TaskSchedule, UpdateTaskPayload } from "@/features/tasks/types";
+import type { StudioTask } from "@/features/tasks/types";
 import { type CronRunEntry, fetchCronRuns } from "@/lib/cron/types";
+import { useTaskActions, TaskActionsProvider } from "@/features/tasks/context/TaskActionsContext";
 import { TaskDetailHeader } from "./TaskDetailHeader";
 import { TaskMetadataSection } from "./TaskMetadataSection";
 import { TaskPromptSection } from "./TaskPromptSection";
@@ -32,11 +33,6 @@ interface TaskDetailDrawerProps {
   client: GatewayClient;
   busy: boolean;
   onClose: () => void;
-  onToggle: (taskId: string, enabled: boolean) => void;
-  onUpdateTask: (taskId: string, updates: UpdateTaskPayload) => void;
-  onUpdateSchedule: (taskId: string, schedule: TaskSchedule) => void;
-  onRun: (taskId: string) => void;
-  onDelete: (taskId: string) => void;
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -46,12 +42,9 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
   client,
   busy,
   onClose,
-  onToggle,
-  onUpdateTask,
-  onUpdateSchedule,
-  onRun,
-  onDelete,
 }: TaskDetailDrawerProps) {
+  const actions = useTaskActions();
+  const { onUpdateTask } = actions;
   const [runs, setRuns] = useState<CronRunEntry[]>([]);
   const [runsLoading, setRunsLoading] = useState(false);
   const [runsError, setRunsError] = useState<string | null>(null);
@@ -100,7 +93,7 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
 
   const handleRun = useCallback(
     (taskId: string) => {
-      onRun(taskId);
+      actions.onRun(taskId);
       setPendingTrigger(true);
       setActiveTab("history");
       // Auto-refresh run history after trigger
@@ -110,7 +103,7 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
         }, 3000);
       }
     },
-    [onRun, task, loadRuns]
+    [actions, task, loadRuns]
   );
 
   useEffect(() => {
@@ -128,6 +121,13 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
   if (!task) return null;
 
   return (
+    <TaskActionsProvider
+      onToggle={actions.onToggle}
+      onUpdateTask={actions.onUpdateTask}
+      onUpdateSchedule={actions.onUpdateSchedule}
+      onRun={handleRun}
+      onDelete={actions.onDelete}
+    >
     <div className="flex h-full w-full flex-col overflow-hidden animate-in slide-in-from-right-8 fade-in duration-200">
       <TaskDetailHeader
         taskName={task.name}
@@ -173,10 +173,6 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
               editDescription={editDescription}
               busy={busy}
               onFieldChange={setField}
-              onUpdateSchedule={onUpdateSchedule}
-              onToggle={onToggle}
-              onRun={handleRun}
-              onDelete={onDelete}
             />
             <TaskPromptSection
               prompt={task.prompt}
@@ -223,5 +219,6 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
         ) : null}
       </div>
     </div>
+    </TaskActionsProvider>
   );
 });

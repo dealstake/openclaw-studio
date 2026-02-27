@@ -10,21 +10,17 @@ import {
 } from "@/components/ui/tooltip";
 import type { TrendBucket } from "@/features/usage/lib/trendAggregator";
 
-/** Model color palette using semantic chart tokens */
-const MODEL_COLORS: Record<string, string> = {
-  "claude-opus-4": "bg-chart-1",
-  "claude-sonnet-4": "bg-chart-2",
-  "claude-haiku-3.5": "bg-chart-3",
-};
-
-const FALLBACK_COLORS = [
+/** Rotating chart color palette using semantic tokens (themeable via CSS custom props). */
+const CHART_COLORS = [
+  "bg-chart-1",
+  "bg-chart-2",
+  "bg-chart-3",
   "bg-chart-4",
   "bg-chart-5",
-  "bg-chart-3",
 ];
 
-function getModelColor(model: string, idx: number): string {
-  return MODEL_COLORS[model] ?? FALLBACK_COLORS[idx % FALLBACK_COLORS.length];
+function getModelColor(_model: string, idx: number): string {
+  return CHART_COLORS[idx % CHART_COLORS.length];
 }
 
 function formatDateLabel(date: string): string {

@@ -3,15 +3,13 @@
 import { memo } from "react";
 import { Play, Trash2 } from "lucide-react";
 import type { ManagementStatus } from "@/features/tasks/types";
+import { useTaskActions } from "@/features/tasks/context/TaskActionsContext";
 
 interface TaskActionsProps {
   taskId: string;
   enabled: boolean;
   managementStatus: ManagementStatus;
   busy: boolean;
-  onToggle: (taskId: string, enabled: boolean) => void;
-  onRun: (taskId: string) => void;
-  onDelete: (taskId: string) => void;
 }
 
 export const TaskActions = memo(function TaskActions({
@@ -19,10 +17,9 @@ export const TaskActions = memo(function TaskActions({
   enabled,
   managementStatus,
   busy,
-  onToggle,
-  onRun,
-  onDelete,
 }: TaskActionsProps) {
+  const { onToggle, onRun, onDelete } = useTaskActions();
+
   return (
     <div className="flex flex-wrap items-center gap-2 border-b border-border/40 px-4 py-3">
       {managementStatus !== "orphan" ? (

@@ -2,9 +2,10 @@
 
 import { memo } from "react";
 import { AlertTriangle } from "lucide-react";
-import type { StudioTask, TaskSchedule } from "@/features/tasks/types";
+import type { StudioTask } from "@/features/tasks/types";
 import { TaskScheduleEditor } from "./TaskScheduleEditor";
 import { TaskActions } from "./TaskActions";
+import { useTaskActions } from "@/features/tasks/context/TaskActionsContext";
 import { formatRelativeTime } from "@/lib/text/time";
 import { formatDurationCompact as formatDuration } from "@/lib/text/time";
 import {
@@ -22,10 +23,6 @@ interface TaskMetadataSectionProps {
   editDescription: string;
   busy: boolean;
   onFieldChange: (field: "description", value: string) => void;
-  onUpdateSchedule: (taskId: string, schedule: TaskSchedule) => void;
-  onToggle: (taskId: string, enabled: boolean) => void;
-  onRun: (taskId: string) => void;
-  onDelete: (taskId: string) => void;
 }
 
 export const TaskMetadataSection = memo(function TaskMetadataSection({
@@ -34,11 +31,8 @@ export const TaskMetadataSection = memo(function TaskMetadataSection({
   editDescription,
   busy,
   onFieldChange,
-  onUpdateSchedule,
-  onToggle,
-  onRun,
-  onDelete,
 }: TaskMetadataSectionProps) {
+  const { onUpdateSchedule } = useTaskActions();
   const typeConfig = TYPE_CONFIG[task.type];
   const TypeIcon = typeConfig.icon;
   const statusKey = getTaskStatusKey(task);
@@ -122,9 +116,6 @@ export const TaskMetadataSection = memo(function TaskMetadataSection({
         enabled={task.enabled}
         managementStatus={task.managementStatus}
         busy={busy}
-        onToggle={onToggle}
-        onRun={onRun}
-        onDelete={onDelete}
       />
     </>
   );
