@@ -72,7 +72,7 @@ export const CredentialCard = React.memo(function CredentialCard({
             <button
               type="button"
               onClick={(e) => e.stopPropagation()}
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-muted-foreground/50 transition-colors hover:bg-muted/50 hover:text-foreground"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded text-muted-foreground/50 transition-colors hover:bg-muted/50 hover:text-foreground"
               aria-label="Credential actions"
             >
               <MoreHorizontal className="h-4 w-4" />

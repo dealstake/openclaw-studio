@@ -70,7 +70,7 @@ export const SecureInput = React.memo(function SecureInput({
           <button
             type="button"
             onClick={() => setVisible((v) => !v)}
-            className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground/60 transition-colors hover:text-foreground"
+            className="flex h-8 w-8 items-center justify-center rounded text-muted-foreground/60 transition-colors hover:text-foreground"
             aria-label={visible ? "Hide value" : "Show value"}
           >
             {visible ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
@@ -79,7 +79,7 @@ export const SecureInput = React.memo(function SecureInput({
             type="button"
             onClick={handleCopy}
             disabled={!value}
-            className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground/60 transition-colors hover:text-foreground disabled:opacity-30"
+            className="flex h-8 w-8 items-center justify-center rounded text-muted-foreground/60 transition-colors hover:text-foreground disabled:opacity-30"
             aria-label="Copy to clipboard"
           >
             {copied ? (

@@ -46,7 +46,7 @@ export const CredentialsList = React.memo(function CredentialsList({
   if (grouped.length === 0) return null;
 
   return (
-    <div className="space-y-1">
+    <div className="space-y-2">
       {grouped.map(({ category, credentials: creds }) => (
         <CredentialCategoryGroup
           key={category}

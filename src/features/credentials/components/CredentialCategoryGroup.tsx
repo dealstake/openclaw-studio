@@ -43,12 +43,12 @@ export const CredentialCategoryGroup = React.memo(
           <SectionLabel>
             {CATEGORY_LABELS[category]}
           </SectionLabel>
-          <span className="ml-1 text-[10px] tabular-nums text-muted-foreground/50">
+          <span className="ml-1 text-xs tabular-nums text-muted-foreground/50">
             {credentials.length}
           </span>
         </CollapsibleTrigger>
         <CollapsibleContent>
-          <div className="space-y-1.5 pb-3 pt-1">
+          <div className="space-y-2 pb-3 pt-1">
             {credentials.map((cred, idx) => (
               <CredentialCard
                 key={cred.id}

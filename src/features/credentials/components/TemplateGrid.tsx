@@ -41,7 +41,7 @@ export const TemplateGrid = React.memo(function TemplateGrid({
           <CardTitle as="div" className="text-xs">
             {template.serviceName}
           </CardTitle>
-          <span className="mt-0.5 text-[10px] text-muted-foreground/60">
+          <span className="mt-0.5 text-xs text-muted-foreground/60">
             {CATEGORY_LABELS[template.category]}
           </span>
         </BaseCard>
@@ -60,7 +60,7 @@ export const TemplateGrid = React.memo(function TemplateGrid({
             Custom
           </CardTitle>
         </div>
-        <span className="mt-0.5 text-[10px] text-muted-foreground/60">
+        <span className="mt-0.5 text-xs text-muted-foreground/60">
           Any service
         </span>
       </BaseCard>

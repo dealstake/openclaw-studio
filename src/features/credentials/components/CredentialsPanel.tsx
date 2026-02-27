@@ -2,6 +2,7 @@
 
 import React, { useCallback, useMemo, useState } from "react";
 import { KeyRound, Plus, RefreshCw } from "lucide-react";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { PanelToolbar } from "@/components/ui/PanelToolbar";
 import { PanelSearchInput } from "@/components/ui/PanelSearchInput";
@@ -93,6 +94,7 @@ export const CredentialsPanel = React.memo(function CredentialsPanel({
   }, [credentials]);
 
   return (
+    <TooltipProvider>
     <div className="flex h-full flex-col">
       <PanelToolbar>
         <PanelSearchInput
@@ -115,10 +117,10 @@ export const CredentialsPanel = React.memo(function CredentialsPanel({
       </PanelToolbar>
 
       {stats.total > 0 && (
-        <div className="flex items-center gap-3 border-b border-border/20 px-3 py-1.5 text-[10px] text-muted-foreground/60">
+        <div className="flex items-center gap-3 border-b border-border/20 px-3 py-1.5 text-xs text-muted-foreground/60">
           <span>{stats.active} active</span>
           {stats.unmanaged > 0 && (
-            <span className="text-amber-500/70">
+            <span className="font-medium text-amber-600 dark:text-amber-400">
               {stats.unmanaged} unmanaged
             </span>
           )}
@@ -172,5 +174,6 @@ export const CredentialsPanel = React.memo(function CredentialsPanel({
         onConfirm={confirmDelete}
       />
     </div>
+    </TooltipProvider>
   );
 });
