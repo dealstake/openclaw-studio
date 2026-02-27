@@ -83,7 +83,7 @@ export const EntryRow = memo(function EntryRow({
       {/* Copy path button — visible on hover */}
       <button
         type="button"
-        className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded text-muted-foreground opacity-0 transition hover:bg-muted hover:text-foreground group-hover/card:opacity-100"
+        className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded text-muted-foreground opacity-0 transition hover:bg-muted hover:text-foreground group-hover/card:opacity-100 group-focus-within/card:opacity-100"
         onClick={handleCopyPath}
         aria-label={`Copy path: ${entry.path || entry.name}`}
         title="Copy path"
@@ -91,7 +91,7 @@ export const EntryRow = memo(function EntryRow({
         <Copy className="h-3 w-3" />
       </button>
       {entry.type === "directory" && (
-        <ChevronRight className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground opacity-0 transition group-hover/card:opacity-100" />
+        <ChevronRight className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground opacity-0 transition group-hover/card:opacity-100 group-focus-within/card:opacity-100" />
       )}
     </div>
   );
