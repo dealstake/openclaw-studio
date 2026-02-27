@@ -10,6 +10,7 @@ import { transformMessagesToMessageParts } from "@/features/sessions/lib/transfo
 import { fetchTranscriptMessages } from "@/features/sessions/hooks/useTranscripts";
 import type { Action as AgentStoreAction, AgentState as AgentEntry } from "@/features/agents/state/store";
 import type { ManagementTab } from "@/layout/AppSidebar";
+import { useTraceViewStore, openTrace as openTraceAction, closeTrace as closeTraceAction } from "@/features/sessions/state/traceViewStore";
 
 export interface StudioChatCallbacksParams {
   focusedAgentRef: MutableRefObject<AgentEntry | null>;
@@ -52,10 +53,9 @@ export function useStudioChatCallbacks({
 }: StudioChatCallbacksParams) {
   const [viewingSessionKey, setViewingSessionKey] = useState<string | null>(null);
   const [viewingSessionHistory, setViewingSessionHistory] = useState<MessagePart[]>([]);
-  const [viewingTrace, setViewingTrace] = useState<{ agentId: string; sessionId: string } | null>(null);
+  const { trace: viewingTrace } = useTraceViewStore();
+  const clearViewingTrace = closeTraceAction;
   const [viewingSessionLoading, setViewingSessionLoading] = useState(false);
-
-  const clearViewingTrace = useCallback(() => setViewingTrace(null), []);
 
   const stableChatOnModelChange = useCallback((value: string | null) => {
     const fa = focusedAgentRef.current;
@@ -111,7 +111,7 @@ export function useStudioChatCallbacks({
     if (!agentId) return;
     const prefix = `agent:${agentId}:`;
     const sessionId = sessionKey.startsWith(prefix) ? sessionKey.slice(prefix.length) : sessionKey;
-    setViewingTrace({ agentId, sessionId });
+    openTraceAction(agentId, sessionId);
   }, []);
 
   const stableChatOnDismissContinuation = useCallback(() => {

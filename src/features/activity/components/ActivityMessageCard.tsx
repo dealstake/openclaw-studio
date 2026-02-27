@@ -1,12 +1,13 @@
 "use client";
 
-import { memo, useState } from "react";
-import { ChevronRight, Loader2 } from "lucide-react";
+import { memo, useCallback, useState } from "react";
+import { ChevronRight, FileSearch, Loader2 } from "lucide-react";
 import { isReasoningPart, isToolInvocationPart } from "@/lib/chat/types";
 import type { ActivityMessage } from "@/features/activity/hooks/useActivityMessageStore";
 import { taskIcon, STATUS_COLORS, formatTime } from "@/features/activity/lib/activityDisplayUtils";
 import { MessagePartsRenderer, getTextContent } from "./MessagePartsRenderer";
 import { formatTokens, formatCost } from "@/lib/text/format";
+import { openTraceFromKey } from "@/features/sessions/state/traceViewStore";
 
 /** Card for a single live activity message (streaming or complete) */
 export const ActivityMessageCard = memo(function ActivityMessageCard({
@@ -15,6 +16,9 @@ export const ActivityMessageCard = memo(function ActivityMessageCard({
   entry: ActivityMessage;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const handleViewTrace = useCallback(() => {
+    if (entry.sourceKey) openTraceFromKey(entry.sourceKey);
+  }, [entry.sourceKey]);
   const isStreaming = entry.status === "streaming";
   const fullText = getTextContent(entry.parts);
   const hasRichContent =
@@ -38,7 +42,17 @@ export const ActivityMessageCard = memo(function ActivityMessageCard({
   })();
 
   return (
-    <div className="group/card rounded-lg px-3 py-2.5 transition-colors hover:bg-muted/40">
+    <div
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" && entry.sourceKey) {
+          e.preventDefault();
+          handleViewTrace();
+        }
+      }}
+      className="group/card rounded-lg px-3 py-2.5 transition-colors hover:bg-muted/40 focus-visible:ring-1 focus-visible:ring-primary/50 outline-none"
+    >
       <div className="flex gap-2.5">
         <div className="flex-shrink-0 pt-0.5">
           {(() => {
@@ -54,12 +68,22 @@ export const ActivityMessageCard = memo(function ActivityMessageCard({
             <span
               className={`inline-block h-1.5 w-1.5 rounded-full flex-shrink-0 ${STATUS_COLORS[entry.status] ?? "bg-muted-foreground/30"} ${isStreaming ? "animate-pulse" : ""}`}
             />
+            {entry.sourceKey && (
+              <button
+                type="button"
+                onClick={handleViewTrace}
+                aria-label="View trace"
+                className="ml-auto flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md px-1 py-0.5 text-muted-foreground opacity-0 transition-all group-hover/card:opacity-100 hover:bg-muted/60 hover:text-foreground focus:opacity-100"
+              >
+                <FileSearch size={12} />
+              </button>
+            )}
             {hasRichContent && (
               <button
                 type="button"
                 onClick={() => setExpanded((v) => !v)}
                 aria-label={expanded ? "Show less" : "Show more"}
-                className="ml-auto flex min-h-[44px] min-w-[44px] items-center justify-center gap-0.5 rounded-md px-1 py-0.5 text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+                className={`${entry.sourceKey ? "" : "ml-auto "}flex min-h-[44px] min-w-[44px] items-center justify-center gap-0.5 rounded-md px-1 py-0.5 text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground`}
               >
                 <ChevronRight
                   size={12}
