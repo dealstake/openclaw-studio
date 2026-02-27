@@ -69,6 +69,12 @@ export const ExecApprovalOverlay = ({
       aria-modal="true"
       aria-label="Exec approval requested"
       data-testid="exec-approval-overlay"
+      onKeyDown={(e) => {
+        if (e.key === "Escape") {
+          e.stopPropagation();
+          onDecision(current.id, "deny");
+        }
+      }}
     >
       <div className="w-full max-w-lg rounded-lg border border-border bg-card/95 p-6 shadow-lg">
         <div className="flex items-center gap-3">
