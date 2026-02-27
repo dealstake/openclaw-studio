@@ -105,27 +105,30 @@ export const MobileSessionDrawer = memo(function MobileSessionDrawer({
 
     // Save previously focused element and focus the drawer
     const previouslyFocused = document.activeElement as HTMLElement | null;
-    const firstFocusable = drawer.querySelector<HTMLElement>(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-    );
+    const focusableSelector = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+    const focusables = Array.from(drawer.querySelectorAll<HTMLElement>(focusableSelector));
+    const firstFocusable = focusables[0];
+    const lastFocusable = focusables[focusables.length - 1];
     firstFocusable?.focus();
 
-    function handleFocusTrap(e: FocusEvent) {
-      if (!drawer || !e.relatedTarget) return;
-      if (!drawer.contains(e.relatedTarget as Node)) {
-        e.preventDefault();
-        const focusables = drawer.querySelectorAll<HTMLElement>(
-          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-        );
-        if (focusables.length > 0) {
-          focusables[0].focus();
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key !== "Tab") return;
+      if (e.shiftKey) {
+        if (document.activeElement === firstFocusable) {
+          e.preventDefault();
+          lastFocusable?.focus();
+        }
+      } else {
+        if (document.activeElement === lastFocusable) {
+          e.preventDefault();
+          firstFocusable?.focus();
         }
       }
     }
 
-    drawer.addEventListener("focusout", handleFocusTrap);
+    document.addEventListener("keydown", handleKeyDown);
     return () => {
-      drawer.removeEventListener("focusout", handleFocusTrap);
+      document.removeEventListener("keydown", handleKeyDown);
       previouslyFocused?.focus();
     };
   }, [open]);

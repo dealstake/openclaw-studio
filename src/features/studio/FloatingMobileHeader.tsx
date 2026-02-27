@@ -57,7 +57,7 @@ export const FloatingMobileHeader = memo(function FloatingMobileHeader({
       <HeaderIconButton
         onClick={onOpenSessionHistory}
         aria-label="Open session history"
-        className="min-h-[36px] min-w-[36px] rounded-full bg-background/70 shadow-md ring-1 ring-white/[0.08] backdrop-blur-lg"
+        className="h-11 w-11 rounded-full bg-background/70 shadow-md ring-1 ring-white/[0.08] backdrop-blur-lg"
       >
         <Menu className="h-3.5 w-3.5" />
       </HeaderIconButton>
@@ -67,7 +67,7 @@ export const FloatingMobileHeader = memo(function FloatingMobileHeader({
         <HeaderIconButton
           onClick={() => setMenuOpen((v) => !v)}
           aria-label="Open context menu"
-          className="min-h-[36px] min-w-[36px] rounded-full bg-background/70 shadow-md ring-1 ring-white/[0.08] backdrop-blur-lg"
+          className="h-11 w-11 rounded-full bg-background/70 shadow-md ring-1 ring-white/[0.08] backdrop-blur-lg"
         >
           <Ellipsis className="h-3.5 w-3.5" />
         </HeaderIconButton>
