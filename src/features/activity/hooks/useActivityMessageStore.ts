@@ -33,7 +33,9 @@ export interface ActivityMessage {
 }
 
 /** Maximum live activity entries before FIFO eviction. Override via NEXT_PUBLIC_ACTIVITY_MAX_ENTRIES. */
-const MAX_ENTRIES = Number(process.env.NEXT_PUBLIC_ACTIVITY_MAX_ENTRIES) || 200;
+const rawMaxEntries = process.env.NEXT_PUBLIC_ACTIVITY_MAX_ENTRIES;
+const parsedMaxEntries = rawMaxEntries ? parseInt(rawMaxEntries, 10) : NaN;
+const MAX_ENTRIES = !isNaN(parsedMaxEntries) && parsedMaxEntries >= 0 ? parsedMaxEntries : 200;
 
 // --- Module-level store ---
 let messages: ActivityMessage[] = [];
