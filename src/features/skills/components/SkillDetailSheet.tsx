@@ -21,6 +21,7 @@ export interface SkillDetailSheetProps {
   onOpenChange: (open: boolean) => void;
   onToggle: (key: string, enabled: boolean) => Promise<void>;
   onSaveApiKey: (key: string, apiKey: string) => Promise<void>;
+  onSetupCredential?: (skill: Skill) => void;
   busy: boolean;
 }
 
@@ -30,6 +31,7 @@ export const SkillDetailSheet = React.memo(function SkillDetailSheet({
   onOpenChange,
   onToggle,
   onSaveApiKey,
+  onSetupCredential,
   busy,
 }: SkillDetailSheetProps) {
   const [apiKey, setApiKey] = useState("");
@@ -131,9 +133,28 @@ export const SkillDetailSheet = React.memo(function SkillDetailSheet({
                 )}
 
                 {needsApiKey && (
-                  <div className="flex items-center gap-1.5 text-xs text-amber-500">
-                    <AlertTriangle className="h-3.5 w-3.5" />
-                    <span>Required API key not configured</span>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-1.5 text-xs text-amber-500">
+                      <AlertTriangle className="h-3.5 w-3.5" />
+                      <span>Required API key not configured</span>
+                    </div>
+                    {onSetupCredential && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onOpenChange(false);
+                          onSetupCredential(skill);
+                        }}
+                        className={cn(
+                          "flex h-9 items-center justify-center rounded-md border border-amber-500/30 bg-amber-500/10 px-4",
+                          "text-sm font-medium text-amber-500 transition-colors",
+                          "min-h-[44px] md:min-h-0",
+                          "hover:bg-amber-500/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/60",
+                        )}
+                      >
+                        Set up in Credential Vault
+                      </button>
+                    )}
                   </div>
                 )}
 

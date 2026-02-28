@@ -6,6 +6,9 @@ import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { SectionLabel } from "@/components/SectionLabel";
 import { ErrorBanner } from "@/components/ErrorBanner";
 import { useSkills } from "../hooks/useSkills";
+import { useCredentials } from "@/features/credentials/hooks/useCredentials";
+import { findTemplateForSkillKey } from "@/features/credentials/lib/templates";
+import { CredentialSheet } from "@/features/credentials/components/CredentialSheet";
 import { SkillsList } from "./SkillsList";
 import { SkillDetailSheet } from "./SkillDetailSheet";
 import { SkillInstallSheet } from "./SkillInstallSheet";
@@ -35,9 +38,17 @@ export const SkillsPanel = React.memo(function SkillsPanel({
     onSaveApiKey,
   } = useSkills(client, status);
 
+  const {
+    create: createCredential,
+  } = useCredentials(client, status);
+
   const [selectedSkill, setSelectedSkill] = useState<Skill | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [installSheetOpen, setInstallSheetOpen] = useState(false);
+  const [credSheetOpen, setCredSheetOpen] = useState(false);
+  const [credTemplateKey, setCredTemplateKey] = useState<string | undefined>(
+    undefined,
+  );
 
   const handleSelect = useCallback((skill: Skill) => {
     setSelectedSkill(skill);
@@ -52,6 +63,37 @@ export const SkillsPanel = React.memo(function SkillsPanel({
   const handleInstalled = useCallback(() => {
     void reload();
   }, [reload]);
+
+  const handleSetupCredential = useCallback((skill: Skill) => {
+    const template = findTemplateForSkillKey(skill.key);
+    if (template) {
+      setCredTemplateKey(template.key);
+      setCredSheetOpen(true);
+    }
+  }, []);
+
+  const handleCredSheetOpenChange = useCallback((open: boolean) => {
+    setCredSheetOpen(open);
+    if (!open) {
+      setCredTemplateKey(undefined);
+      // Refresh skills after credential save
+      void reload();
+    }
+  }, [reload]);
+
+  // Only show "Set up" for skills that have a matching credential template
+  const hasTemplateForSkill = useCallback((skill: Skill) => {
+    return !!findTemplateForSkillKey(skill.key);
+  }, []);
+
+  const setupCredentialHandler = useCallback(
+    (skill: Skill) => {
+      if (hasTemplateForSkill(skill)) {
+        handleSetupCredential(skill);
+      }
+    },
+    [hasTemplateForSkill, handleSetupCredential],
+  );
 
   return (
     <div className="flex h-full flex-col">
@@ -92,6 +134,7 @@ export const SkillsPanel = React.memo(function SkillsPanel({
         onSearchChange={setSearch}
         onToggle={onToggle}
         onSelect={handleSelect}
+        onSetupCredential={setupCredentialHandler}
         busyKey={busyKey}
         loading={loading}
       />
@@ -103,6 +146,11 @@ export const SkillsPanel = React.memo(function SkillsPanel({
         onOpenChange={handleSheetOpenChange}
         onToggle={onToggle}
         onSaveApiKey={onSaveApiKey}
+        onSetupCredential={
+          selectedSkill && hasTemplateForSkill(selectedSkill)
+            ? handleSetupCredential
+            : undefined
+        }
         busy={busyKey === selectedSkill?.key}
       />
 
@@ -112,6 +160,14 @@ export const SkillsPanel = React.memo(function SkillsPanel({
         open={installSheetOpen}
         onOpenChange={setInstallSheetOpen}
         onInstalled={handleInstalled}
+      />
+
+      {/* Credential setup sheet (cross-linked from skills) */}
+      <CredentialSheet
+        open={credSheetOpen}
+        onOpenChange={handleCredSheetOpenChange}
+        onSave={createCredential}
+        initialTemplateKey={credTemplateKey}
       />
     </div>
   );

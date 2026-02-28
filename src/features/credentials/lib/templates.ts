@@ -362,3 +362,16 @@ export function findTemplateByConfigPath(
       .includes(configPath),
   );
 }
+
+/** Find a credential template that powers a given skill key.
+ *  Matches when any configPathMap value includes `skills.entries.<skillKey>.` */
+export function findTemplateForSkillKey(
+  skillKey: string,
+): CredentialTemplate | undefined {
+  const prefix = `skills.entries.${skillKey}.`;
+  return CREDENTIAL_TEMPLATES.find((t) =>
+    Object.values(t.configPathMap)
+      .flat()
+      .some((path) => path.startsWith(prefix)),
+  );
+}

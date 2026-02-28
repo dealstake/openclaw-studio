@@ -44,6 +44,7 @@ export interface SkillCardProps {
   skill: Skill;
   onToggle: (key: string, enabled: boolean) => Promise<void>;
   onSelect: (skill: Skill) => void;
+  onSetupCredential?: (skill: Skill) => void;
   busy: boolean;
 }
 
@@ -51,6 +52,7 @@ export const SkillCard = React.memo(function SkillCard({
   skill,
   onToggle,
   onSelect,
+  onSetupCredential,
   busy,
 }: SkillCardProps) {
   const badge = statusBadge(skill);
@@ -130,10 +132,25 @@ export const SkillCard = React.memo(function SkillCard({
           {sourceBadge(skill.source)}
         </span>
         {needsApiKey && (
-          <span className="flex items-center gap-1 text-[10px] text-amber-500">
-            <AlertTriangle className="h-3 w-3" />
-            Needs API Key
-          </span>
+          onSetupCredential ? (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onSetupCredential(skill);
+              }}
+              className="flex items-center gap-1 text-[10px] text-amber-500 underline decoration-amber-500/40 transition-colors hover:text-amber-400"
+              aria-label={`Set up API key for ${skill.name}`}
+            >
+              <AlertTriangle className="h-3 w-3" />
+              Set up API Key
+            </button>
+          ) : (
+            <span className="flex items-center gap-1 text-[10px] text-amber-500">
+              <AlertTriangle className="h-3 w-3" />
+              Needs API Key
+            </span>
+          )
         )}
       </div>
     </BaseCard>

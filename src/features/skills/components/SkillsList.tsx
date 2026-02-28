@@ -21,6 +21,7 @@ export interface SkillsListProps {
   onSearchChange: (search: string) => void;
   onToggle: (key: string, enabled: boolean) => Promise<void>;
   onSelect: (skill: Skill) => void;
+  onSetupCredential?: (skill: Skill) => void;
   busyKey: string | null;
   loading: boolean;
 }
@@ -33,6 +34,7 @@ export const SkillsList = React.memo(function SkillsList({
   onSearchChange,
   onToggle,
   onSelect,
+  onSetupCredential,
   busyKey,
   loading,
 }: SkillsListProps) {
@@ -109,6 +111,7 @@ export const SkillsList = React.memo(function SkillsList({
                 skill={skill}
                 onToggle={onToggle}
                 onSelect={onSelect}
+                onSetupCredential={onSetupCredential}
                 busy={busyKey === skill.key}
               />
             ))}

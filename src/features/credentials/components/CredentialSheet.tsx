@@ -38,6 +38,8 @@ export interface CredentialSheetProps {
   ) => Promise<void>;
   /** Function to read current secret values for pre-population */
   readSecretValues?: (credential: Credential) => Promise<CredentialValues>;
+  /** Pre-select a template by key, skipping the template selection step */
+  initialTemplateKey?: string;
 }
 
 type Step = "select" | "setup";
@@ -72,6 +74,7 @@ export const CredentialSheet = React.memo(function CredentialSheet({
   editing,
   onEditSave,
   readSecretValues,
+  initialTemplateKey,
 }: CredentialSheetProps) {
   const isEditMode = !!editing;
   const [step, setStep] = useState<Step>("select");
@@ -81,6 +84,17 @@ export const CredentialSheet = React.memo(function CredentialSheet({
   const [search, setSearch] = useState("");
   const [editInitialValues, setEditInitialValues] = useState<CredentialValues | undefined>(undefined);
   const [loadingValues, setLoadingValues] = useState(false);
+
+  // When opening with initialTemplateKey, skip to setup step
+  useEffect(() => {
+    if (open && !editing && initialTemplateKey) {
+      const template = findTemplate(initialTemplateKey);
+      if (template) {
+        setSelectedTemplate(template);
+        setStep("setup");
+      }
+    }
+  }, [open, editing, initialTemplateKey]);
 
   // When opening in edit mode, load current values and go directly to setup
   useEffect(() => {
