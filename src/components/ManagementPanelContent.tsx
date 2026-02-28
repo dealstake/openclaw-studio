@@ -16,6 +16,11 @@ const CredentialsPanel = lazy(() =>
     default: m.CredentialsPanel,
   }))
 );
+const ModelsPanel = lazy(() =>
+  import("@/features/models/components/ModelsPanel").then((m) => ({
+    default: m.ModelsPanel,
+  }))
+);
 import {
   AgentSettingsPanel,
 } from "@/features/agents/components/AgentInspectPanels";
@@ -64,6 +69,11 @@ export const ManagementPanelContent = memo(function ManagementPanelContent({
       {tab === "credentials" && (
         <PanelErrorBoundary name="Credentials">
           <CredentialsPanel client={ctx.client} status={ctx.status} />
+        </PanelErrorBoundary>
+      )}
+      {tab === "models" && (
+        <PanelErrorBoundary name="Models">
+          <ModelsPanel client={ctx.client} status={ctx.status} />
         </PanelErrorBoundary>
       )}
       {tab === "settings" && ctx.settingsAgent && (

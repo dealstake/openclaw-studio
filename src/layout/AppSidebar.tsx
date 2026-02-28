@@ -6,6 +6,7 @@ import {
   BarChart3,
   Radio,
   KeyRound,
+  Cpu,
   Plus,
   ChevronLeft,
   Loader2,
@@ -27,12 +28,13 @@ import { HistorySessionList } from "@/features/sessions/components/HistorySessio
 import { exportConversationAsMarkdown } from "@/features/sessions/lib/exportConversation";
 
 /** Management nav items that open in expanded modal */
-export type ManagementTab = "usage" | "channels" | "credentials" | "settings";
+export type ManagementTab = "usage" | "channels" | "credentials" | "models" | "settings";
 
 const NAV_ITEMS: Array<{ value: ManagementTab; label: string; icon: typeof MessageSquare }> = [
   { value: "usage", label: "Usage", icon: BarChart3 },
   { value: "channels", label: "Channels", icon: Radio },
   { value: "credentials", label: "Credentials", icon: KeyRound },
+  { value: "models", label: "Models", icon: Cpu },
 ];
 
 /* ─── Shared nav icon button ─── */
