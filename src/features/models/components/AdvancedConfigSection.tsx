@@ -72,7 +72,7 @@ export const AdvancedConfigSection = memo(function AdvancedConfigSection({
                 className={`min-h-[44px] rounded-md border px-3 py-2 text-xs transition-colors ${
                   roles.subagentThinking === level.value ||
                   (!roles.subagentThinking && level.value === "off")
-                    ? "border-primary bg-primary/10 text-primary"
+                    ? "border-primary bg-primary/20 text-foreground font-medium"
                     : "border-border/40 text-muted-foreground hover:bg-muted"
                 } disabled:cursor-not-allowed disabled:opacity-50`}
                 aria-pressed={
