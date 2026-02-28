@@ -440,7 +440,7 @@ export const CredentialSheet = React.memo(function CredentialSheet({
           {step === "next-steps" && selectedTemplate?.suggestedTasks && (
             <>
               {testResult && (
-                <div className="px-4 pt-4">
+                <div className="px-4">
                   <ConnectionTestStep result={testResult} testing={false} />
                 </div>
               )}
