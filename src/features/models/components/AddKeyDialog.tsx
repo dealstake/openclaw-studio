@@ -107,7 +107,8 @@ export const AddKeyDialog = memo(function AddKeyDialog({
                 id="add-key-provider"
                 value={provider}
                 onChange={(e) => setProvider(e.target.value)}
-                className="h-9 w-full rounded-md border border-border/50 bg-background px-3 text-sm text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+                required
+                className="h-11 w-full rounded-md border border-border/50 bg-background px-3 text-sm text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
               >
                 {PROVIDERS.map((p) => (
                   <option key={p.value} value={p.value}>
@@ -133,9 +134,10 @@ export const AddKeyDialog = memo(function AddKeyDialog({
                 placeholder={`${provider}:mykey`}
                 autoComplete="off"
                 spellCheck={false}
-                className="h-9 w-full rounded-md border border-border/50 bg-background px-3 font-mono text-sm text-foreground placeholder:text-muted-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+                required
+                className="h-11 w-full rounded-md border border-border/50 bg-background px-3 font-mono text-sm text-foreground placeholder:text-muted-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
               />
-              <p className="text-[11px] text-muted-foreground/60">
+              <p className="text-xs text-muted-foreground">
                 Unique identifier like &quot;anthropic:maxplan&quot; or &quot;openai:main&quot;
               </p>
             </div>
@@ -167,7 +169,7 @@ export const AddKeyDialog = memo(function AddKeyDialog({
                 type="button"
                 onClick={() => handleOpenChange(false)}
                 disabled={saving}
-                className="h-9 rounded-md px-4 text-sm text-muted-foreground transition-colors hover:text-foreground"
+                className="h-11 rounded-md px-4 text-sm text-muted-foreground transition-colors hover:text-foreground"
               >
                 Cancel
               </button>
@@ -175,7 +177,7 @@ export const AddKeyDialog = memo(function AddKeyDialog({
                 type="button"
                 onClick={handleSave}
                 disabled={saving || !token.trim() || !profileId.trim()}
-                className="flex h-9 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex h-11 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                 {saving ? "Saving…" : "Save Key"}

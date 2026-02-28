@@ -66,17 +66,17 @@ const BrainKeyCard = memo(function BrainKeyCard({
                 {profile.id}
               </span>
               {profile.isLastGood && (
-                <span className="flex-shrink-0 rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-medium text-emerald-500">
+                <span className="flex-shrink-0 rounded-full bg-emerald-500/25 px-1.5 py-0.5 text-[10px] font-medium text-emerald-400">
                   Active
                 </span>
               )}
               {isDisabled && (
-                <span className="flex-shrink-0 rounded-full bg-destructive/15 px-1.5 py-0.5 text-[10px] font-medium text-destructive">
+                <span className="flex-shrink-0 rounded-full bg-destructive/25 px-1.5 py-0.5 text-[10px] font-medium text-destructive">
                   Disabled
                 </span>
               )}
               {isCooling && !isDisabled && (
-                <span className="flex-shrink-0 rounded-full bg-yellow-500/15 px-1.5 py-0.5 text-[10px] font-medium text-yellow-600">
+                <span className="flex-shrink-0 rounded-full bg-yellow-500/25 px-1.5 py-0.5 text-[10px] font-medium text-yellow-400">
                   Cooldown
                 </span>
               )}
@@ -217,7 +217,7 @@ export const BrainKeysSection = memo(function BrainKeysSection({
         </div>
       ))}
 
-      <p className="text-[11px] text-muted-foreground/60">
+      <p className="text-xs text-muted-foreground">
         New keys take effect on the next session. Restart the gateway for
         immediate effect.
       </p>
