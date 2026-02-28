@@ -60,6 +60,7 @@ function makeAgent(overrides: Partial<AgentState> = {}): AgentState {
     historyLoadedAt: null,
     toolCallingEnabled: true,
     showThinkingTraces: true,
+  wizardContext: null,
     model: "openai/gpt-5",
     thinkingLevel: "medium",
     avatarSeed: "seed-1",

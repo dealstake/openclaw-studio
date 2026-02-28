@@ -5,7 +5,7 @@
 
 // ── Types ──────────────────────────────────────────────────────────────
 
-export type WizardConfigType = "task" | "project" | "agent";
+export type WizardConfigType = "task" | "project" | "agent" | "skill" | "credential";
 
 export type ExtractedConfig = {
   config: unknown;
@@ -19,6 +19,8 @@ const CONFIG_TAGS: Record<WizardConfigType, string> = {
   task: "json:task-config",
   project: "json:project-config",
   agent: "json:agent-config",
+  skill: "json:skill-config",
+  credential: "json:credential-config",
 };
 
 // ── Type guards ────────────────────────────────────────────────────────
@@ -42,10 +44,22 @@ function isValidAgentConfig(parsed: unknown): boolean {
   return "name" in parsed && "agentId" in parsed;
 }
 
+function isValidSkillConfig(parsed: unknown): boolean {
+  if (!isObject(parsed)) return false;
+  return "name" in parsed && "description" in parsed;
+}
+
+function isValidCredentialConfig(parsed: unknown): boolean {
+  if (!isObject(parsed)) return false;
+  return "name" in parsed && ("key" in parsed || "type" in parsed);
+}
+
 const VALIDATORS: Record<WizardConfigType, (p: unknown) => boolean> = {
   task: isValidTaskConfig,
   project: isValidProjectConfig,
   agent: isValidAgentConfig,
+  skill: isValidSkillConfig,
+  credential: isValidCredentialConfig,
 };
 
 // ── Extractor ──────────────────────────────────────────────────────────
