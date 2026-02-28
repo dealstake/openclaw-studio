@@ -8,6 +8,7 @@ import { taskIcon, STATUS_COLORS, formatTime } from "@/features/activity/lib/act
 import { MessagePartsRenderer, getTextContent } from "./MessagePartsRenderer";
 import { formatTokens, formatCost } from "@/lib/text/format";
 import { openTraceFromKey } from "@/features/sessions/state/traceViewStore";
+import { ActivityActionMenu } from "./ActivityActionMenu";
 
 /** Card for a single live activity message (streaming or complete) */
 export const ActivityMessageCard = memo(function ActivityMessageCard({
@@ -59,6 +60,11 @@ export const ActivityMessageCard = memo(function ActivityMessageCard({
               className={`inline-block h-1.5 w-1.5 rounded-full flex-shrink-0 ${STATUS_COLORS[entry.status] ?? "bg-muted-foreground/30"} ${isStreaming ? "animate-pulse" : ""}`}
             />
             <div className="ml-auto flex items-center gap-1">
+              <ActivityActionMenu
+                sessionKey={entry.sourceKey}
+                taskName={entry.sourceName}
+                status={entry.status}
+              />
               {entry.sourceKey && (
                 <button
                   type="button"

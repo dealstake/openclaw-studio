@@ -7,6 +7,7 @@ import type { ActivityEvent } from "@/features/activity/lib/activityTypes";
 import { taskIcon, STATUS_PILL, formatHistoryTime } from "@/features/activity/lib/activityDisplayUtils";
 import { formatTokens } from "@/lib/text/format";
 import { openTraceFromKey } from "@/features/sessions/state/traceViewStore";
+import { ActivityActionMenu } from "./ActivityActionMenu";
 
 /** Card for a completed activity history event */
 export const HistoryEventCard = memo(function HistoryEventCard({
@@ -46,6 +47,12 @@ export const HistoryEventCard = memo(function HistoryEventCard({
               {pill.label}
             </span>
             <div className="ml-auto flex items-center gap-1">
+              <ActivityActionMenu
+                taskId={event.taskId}
+                taskName={event.taskName}
+                sessionKey={event.sessionKey}
+                status={event.status}
+              />
               {canViewTrace && (
                 <button
                   type="button"
