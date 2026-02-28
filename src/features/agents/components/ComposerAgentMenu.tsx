@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useCallback, useEffect, useRef, useState } from "react";
-import { ChevronDown, Check, Brain, Zap, Sparkles, ChevronRight, Plus } from "lucide-react";
+import { Check, Brain, Zap, Sparkles, Plus, Paperclip, CircleOff, Gauge, Activity, Cpu } from "lucide-react";
 import { AgentAvatar } from "./AgentAvatar";
 import type { AgentStatus } from "@/features/agents/state/store";
 import type { GatewayModelChoice } from "@/lib/gateway/models";
@@ -9,7 +9,6 @@ import { formatModelDisplayName } from "@/lib/models/utils";
 
 /* ── Types ─────────────────────────────────────────────────────── */
 
-/** Same shape as BreadcrumbAgent — kept separate for clean dependency */
 export type ComposerAgent = {
   agentId: string;
   name: string;
@@ -31,6 +30,7 @@ type ComposerAgentMenuProps = {
   allowThinking: boolean;
   tokenPct?: number | null;
   onNewSession?: () => void;
+  onAttach?: () => void;
 };
 
 /* ── Constants ─────────────────────────────────────────────────── */
@@ -42,18 +42,25 @@ const statusDotClass: Record<AgentStatus, string> = {
 };
 
 const THINKING_LEVELS = [
-  { value: "off", label: "Off", description: "No reasoning chain" },
-  { value: "low", label: "Low", description: "Light reasoning" },
-  { value: "medium", label: "Medium", description: "Balanced reasoning" },
-  { value: "high", label: "High", description: "Deep reasoning" },
+  { value: "off", label: "Off", icon: CircleOff },
+  { value: "low", label: "Low", icon: Gauge },
+  { value: "medium", label: "Medium", icon: Activity },
+  { value: "high", label: "High", icon: Cpu },
 ] as const;
 
-const MODEL_BADGES: Record<string, { icon: typeof Brain; className: string; label: string }> = {
-  "claude-opus-4-6": { icon: Brain, className: "bg-purple-500/15 text-purple-400", label: "Reasoning" },
-  "claude-sonnet-4-6": { icon: Zap, className: "bg-blue-500/15 text-blue-400", label: "Fast" },
-  "claude-sonnet-4-5": { icon: Zap, className: "bg-blue-500/15 text-blue-400", label: "Fast" },
-  "claude-haiku-3.5": { icon: Sparkles, className: "bg-green-500/15 text-green-400", label: "Efficient" },
+/** Map model ID fragments to icons + style */
+const MODEL_ICON: Record<string, { icon: typeof Brain; className: string }> = {
+  "claude-opus": { icon: Brain, className: "text-purple-400" },
+  "claude-sonnet": { icon: Zap, className: "text-blue-400" },
+  "claude-haiku": { icon: Sparkles, className: "text-green-400" },
 };
+
+function getModelIcon(modelId: string) {
+  for (const [fragment, meta] of Object.entries(MODEL_ICON)) {
+    if (modelId.includes(fragment)) return meta;
+  }
+  return { icon: Zap, className: "text-muted-foreground" };
+}
 
 /* ── Component ─────────────────────────────────────────────────── */
 
@@ -69,19 +76,16 @@ export const ComposerAgentMenu = memo(function ComposerAgentMenu({
   allowThinking,
   tokenPct,
   onNewSession,
+  onAttach,
 }: ComposerAgentMenuProps) {
   const [open, setOpen] = useState(false);
-  const [subMenu, setSubMenu] = useState<"model" | "thinking" | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const selected = agents.find((a) => a.agentId === selectedAgentId) ?? agents[0];
-  const selectedModel = models.find((m) => `${m.provider}/${m.id}` === modelValue) ?? models[0];
-  const selectedModelName = selectedModel?.name ?? formatModelDisplayName(modelValue);
   const currentThinking = THINKING_LEVELS.find((l) => l.value === thinkingLevel) ?? THINKING_LEVELS[0];
 
   const toggle = useCallback(() => {
     setOpen((p) => !p);
-    setSubMenu(null);
   }, []);
 
   // Close on click outside
@@ -90,7 +94,6 @@ export const ComposerAgentMenu = memo(function ComposerAgentMenu({
     const handler = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setOpen(false);
-        setSubMenu(null);
       }
     };
     document.addEventListener("mousedown", handler);
@@ -101,27 +104,21 @@ export const ComposerAgentMenu = memo(function ComposerAgentMenu({
   useEffect(() => {
     if (!open) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        if (subMenu) {
-          setSubMenu(null);
-        } else {
-          setOpen(false);
-        }
-      }
+      if (e.key === "Escape") setOpen(false);
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [open, subMenu]);
+  }, [open]);
 
   if (!selected) return null;
 
   return (
     <div ref={containerRef} className="relative min-w-0">
-      {/* Trigger — compact pill showing agent avatar + name + model */}
+      {/* Trigger — avatar button only, no chevron */}
       <button
         type="button"
         onClick={toggle}
-        className={`flex h-9 items-center gap-1 rounded-xl px-1.5 transition hover:bg-muted/80 sm:gap-1.5 sm:px-2 ${open ? "bg-muted/80" : "bg-muted/40"}`}
+        className={`relative flex h-8 w-8 items-center justify-center rounded-full transition hover:ring-2 hover:ring-primary/30 ${open ? "ring-2 ring-primary/40" : ""}`}
         aria-label={`Agent settings — ${selected.name}`}
         aria-expanded={open}
         aria-haspopup="menu"
@@ -130,59 +127,65 @@ export const ComposerAgentMenu = memo(function ComposerAgentMenu({
           seed={selected.avatarSeed ?? selected.agentId}
           name={selected.name || selected.agentId}
           avatarUrl={selected.avatarUrl}
-          size={18}
+          size={28}
         />
-        {/* Desktop: name + % + status dot + chevron. Mobile: just chevron */}
-        <div className="hidden min-w-0 items-center gap-1.5 sm:flex">
-          <span className="max-w-[100px] truncate text-xs font-semibold text-foreground">
-            {selected.name || selected.agentId}
-          </span>
-          {tokenPct !== null && tokenPct !== undefined && (
-            <span className={`font-mono text-[10px] ${tokenPct >= 80 ? "font-bold text-yellow-500" : "text-muted-foreground"}`}>
-              {tokenPct}%
-            </span>
-          )}
+        {/* Status dot overlay */}
+        <span
+          className={`absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full ring-2 ring-background ${statusDotClass[selected.status]}`}
+        />
+        {/* Context % badge (desktop only, when available) */}
+        {tokenPct !== null && tokenPct !== undefined && (
           <span
-            className={`h-1.5 w-1.5 shrink-0 rounded-full ${statusDotClass[selected.status]}`}
-          />
-        </div>
-        <ChevronDown
-          className={`h-3 w-3 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
-        />
+            className={`absolute -top-1 -right-1 hidden rounded-full px-1 text-[8px] font-bold leading-tight sm:block ${
+              tokenPct >= 80
+                ? "bg-yellow-500/90 text-yellow-950"
+                : "bg-muted text-muted-foreground"
+            }`}
+          >
+            {tokenPct}
+          </span>
+        )}
       </button>
 
-      {/* Dropdown menu */}
+      {/* Dropdown menu — flat single-line entries */}
       {open && (
         <div
-          className="absolute bottom-full right-0 z-50 mb-2 min-w-[280px] max-w-[calc(100vw-2rem)] rounded-xl border border-border/80 bg-popover py-1.5 shadow-xl"
+          className="absolute bottom-full right-0 z-50 mb-2 min-w-[240px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-border/80 bg-popover/95 py-1 shadow-2xl backdrop-blur-xl dark:bg-popover/90"
           role="menu"
           aria-label="Agent settings"
         >
           {/* New Session */}
           {onNewSession && (
-            <>
-              <button
-                type="button"
-                role="menuitem"
-                className="flex w-full min-h-[44px] items-center gap-3 px-3 py-2 text-left transition hover:bg-muted/60"
-                onClick={() => {
-                  onNewSession();
-                  setOpen(false);
-                }}
-              >
-                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-                  <Plus className="h-4 w-4" />
-                </div>
-                <span className="text-sm font-medium text-foreground">New Session</span>
-              </button>
-              <div className="mx-3 my-1.5 border-t border-border/40" />
-            </>
+            <button
+              type="button"
+              role="menuitem"
+              className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition hover:bg-muted/60"
+              onClick={() => { onNewSession(); setOpen(false); }}
+            >
+              <Plus className="h-4 w-4 shrink-0 text-primary" />
+              <span className="text-sm font-medium text-foreground">New Session</span>
+            </button>
           )}
 
-          {/* Agent switcher section (if multiple agents) */}
+          {/* Attach File */}
+          {onAttach && (
+            <button
+              type="button"
+              role="menuitem"
+              className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition hover:bg-muted/60"
+              onClick={() => { onAttach(); setOpen(false); }}
+            >
+              <Paperclip className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <span className="text-sm text-foreground">Attach File</span>
+            </button>
+          )}
+
+          {(onNewSession || onAttach) && <div className="mx-3 my-1 border-t border-border/40" />}
+
+          {/* Agent switcher (only if multiple agents) */}
           {agents.length > 1 && (
             <>
-              <div className="px-3 py-1.5">
+              <div className="px-3 py-1">
                 <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Agent</span>
               </div>
               {agents.map((agent) => (
@@ -191,137 +194,84 @@ export const ComposerAgentMenu = memo(function ComposerAgentMenu({
                   type="button"
                   role="menuitemradio"
                   aria-checked={agent.agentId === selectedAgentId}
-                  className={`flex w-full min-h-[44px] items-center gap-3 px-3 py-2 text-left transition hover:bg-muted/60 ${
+                  className={`flex w-full items-center gap-3 px-3 py-2 text-left transition hover:bg-muted/60 ${
                     agent.agentId === selectedAgentId ? "bg-muted/30" : ""
                   }`}
-                  onClick={() => {
-                    onSelectAgent(agent.agentId);
-                    setOpen(false);
-                    setSubMenu(null);
-                  }}
+                  onClick={() => { onSelectAgent(agent.agentId); setOpen(false); }}
                 >
                   <AgentAvatar
                     seed={agent.avatarSeed ?? agent.agentId}
                     name={agent.name || agent.agentId}
                     avatarUrl={agent.avatarUrl}
-                    size={22}
+                    size={20}
                   />
-                  <span className="flex-1 truncate text-sm font-medium text-foreground">
-                    {agent.name || agent.agentId}
-                  </span>
-                  {agent.agentId === selectedAgentId && (
-                    <Check className="h-3.5 w-3.5 shrink-0 text-primary" />
-                  )}
+                  <span className="flex-1 truncate text-sm text-foreground">{agent.name || agent.agentId}</span>
+                  {agent.agentId === selectedAgentId && <Check className="h-3.5 w-3.5 shrink-0 text-primary" />}
                 </button>
               ))}
               <div className="mx-3 my-1 border-t border-border/40" />
             </>
           )}
 
-          {/* Model selector */}
+          {/* Model selector — flat single-line entries with icons */}
           {models.length > 0 && (
-            <button
-              type="button"
-              role="menuitem"
-              className="flex w-full min-h-[44px] items-center gap-3 px-3 py-2.5 text-left transition hover:bg-muted/60"
-              onClick={() => setSubMenu(subMenu === "model" ? null : "model")}
-              aria-expanded={subMenu === "model"}
-            >
-              <Brain className="h-4 w-4 shrink-0 text-muted-foreground" />
-              <div className="flex min-w-0 flex-1 flex-col">
-                <span className="text-xs font-medium text-foreground">Model</span>
-                <span className="truncate text-[11px] text-muted-foreground">{selectedModelName}</span>
+            <>
+              <div className="px-3 py-1">
+                <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Model</span>
               </div>
-              <ChevronRight className={`h-3 w-3 shrink-0 text-muted-foreground transition-transform ${subMenu === "model" ? "rotate-90" : ""}`} />
-            </button>
-          )}
-
-          {/* Model sub-menu (inline expand) */}
-          {subMenu === "model" && (
-            <div className="border-t border-border/20 bg-popover py-1" role="listbox" aria-label="Available models">
               {models.map((model) => {
                 const key = `${model.provider}/${model.id}`;
                 const isSelected = key === modelValue;
-                const badge = MODEL_BADGES[model.id];
-                const BadgeIcon = badge?.icon ?? Zap;
+                const { icon: ModelIcon, className: iconClass } = getModelIcon(model.id);
                 return (
                   <button
                     key={key}
                     type="button"
-                    role="option"
-                    aria-selected={isSelected}
-                    className={`flex w-full min-h-[44px] items-center gap-3 px-5 py-2 text-left transition hover:bg-muted/60 ${
-                      isSelected ? "bg-muted/40" : ""
+                    role="menuitemradio"
+                    aria-checked={isSelected}
+                    className={`flex w-full items-center gap-3 px-3 py-2 text-left transition hover:bg-muted/60 ${
+                      isSelected ? "bg-muted/30" : ""
                     }`}
-                    onClick={() => {
-                      onModelChange(key);
-                      setSubMenu(null);
-                    }}
+                    onClick={() => { onModelChange(key); setOpen(false); }}
                   >
-                    <div className="flex min-w-0 flex-1 items-center gap-2">
-                      <span className="text-sm text-foreground">
-                        {model.name ?? formatModelDisplayName(model.id)}
-                      </span>
-                      {badge && (
-                        <span className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[9px] font-medium ${badge.className}`}>
-                          <BadgeIcon className="h-2.5 w-2.5" />
-                          {badge.label}
-                        </span>
-                      )}
-                    </div>
+                    <ModelIcon className={`h-4 w-4 shrink-0 ${iconClass}`} />
+                    <span className="flex-1 truncate text-sm text-foreground">
+                      {model.name ?? formatModelDisplayName(model.id)}
+                    </span>
                     {isSelected && <Check className="h-3.5 w-3.5 shrink-0 text-primary" />}
                   </button>
                 );
               })}
-            </div>
+              <div className="mx-3 my-1 border-t border-border/40" />
+            </>
           )}
 
-          {/* Thinking level */}
+          {/* Thinking level — flat single-line entries with icons */}
           {allowThinking && (
             <>
-              <button
-                type="button"
-                role="menuitem"
-                className="flex w-full min-h-[44px] items-center gap-3 px-3 py-2.5 text-left transition hover:bg-muted/60"
-                onClick={() => setSubMenu(subMenu === "thinking" ? null : "thinking")}
-                aria-expanded={subMenu === "thinking"}
-              >
-                <Sparkles className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <div className="flex min-w-0 flex-1 flex-col">
-                  <span className="text-xs font-medium text-foreground">Thinking</span>
-                  <span className="text-[11px] text-muted-foreground">{currentThinking.label}</span>
-                </div>
-                <ChevronRight className={`h-3 w-3 shrink-0 text-muted-foreground transition-transform ${subMenu === "thinking" ? "rotate-90" : ""}`} />
-              </button>
-
-              {subMenu === "thinking" && (
-                <div className="border-t border-border/20 bg-popover py-1" role="radiogroup" aria-label="Thinking level">
-                  {THINKING_LEVELS.map((level) => {
-                    const isActive = level.value === thinkingLevel;
-                    return (
-                      <button
-                        key={level.value}
-                        type="button"
-                        role="radio"
-                        aria-checked={isActive}
-                        className={`flex w-full min-h-[44px] items-center gap-3 px-5 py-2 text-left transition hover:bg-muted/60 ${
-                          isActive ? "bg-muted/40" : ""
-                        }`}
-                        onClick={() => {
-                          onThinkingChange(level.value);
-                          setSubMenu(null);
-                        }}
-                      >
-                        <div className="flex min-w-0 flex-1 flex-col">
-                          <span className="text-sm text-foreground">{level.label}</span>
-                          <span className="text-[11px] text-muted-foreground">{level.description}</span>
-                        </div>
-                        {isActive && <Check className="h-3.5 w-3.5 shrink-0 text-primary" />}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
+              <div className="px-3 py-1">
+                <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Thinking</span>
+              </div>
+              {THINKING_LEVELS.map((level) => {
+                const isActive = level.value === thinkingLevel;
+                const LevelIcon = level.icon;
+                return (
+                  <button
+                    key={level.value}
+                    type="button"
+                    role="menuitemradio"
+                    aria-checked={isActive}
+                    className={`flex w-full items-center gap-3 px-3 py-2 text-left transition hover:bg-muted/60 ${
+                      isActive ? "bg-muted/30" : ""
+                    }`}
+                    onClick={() => { onThinkingChange(level.value); setOpen(false); }}
+                  >
+                    <LevelIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <span className="flex-1 text-sm text-foreground">{level.label}</span>
+                    {isActive && <Check className="h-3.5 w-3.5 shrink-0 text-primary" />}
+                  </button>
+                );
+              })}
             </>
           )}
         </div>

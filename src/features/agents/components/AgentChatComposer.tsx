@@ -13,7 +13,7 @@ import {
 import type { GatewayModelChoice } from "@/lib/gateway/models";
 import type { MessagePart } from "@/lib/chat/types";
 import type { GatewayStatus } from "@/lib/gateway/GatewayClient";
-import { AlertCircle, Paperclip, Send, Square, UploadCloud, WifiOff } from "lucide-react";
+import { AlertCircle, ArrowUp, Square, UploadCloud, WifiOff } from "lucide-react";
 import { ChatAttachmentPreview } from "./ChatAttachmentPreview";
 import { ComposerAgentMenu, type ComposerAgent } from "./ComposerAgentMenu";
 import { StreamingStatus } from "./StreamingStatus";
@@ -78,7 +78,6 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   runStartedAt?: number | null;
   gatewayStatus?: GatewayStatus;
   queueLength?: number;
-  /** Wizard mode props — when set, composer shows wizard banner */
   wizardType?: WizardType | null;
   wizardTheme?: WizardTheme | null;
   wizardStarters?: WizardStarter[];
@@ -171,7 +170,6 @@ export const AgentChatComposer = memo(function AgentChatComposer({
     doSend();
   }, [doSend]);
 
-  // ── Paste handler ──────────────────────────────────────────────────
   const handlePaste = useCallback(
     (event: ClipboardEvent<HTMLTextAreaElement>) => {
       const items = event.clipboardData?.items;
@@ -193,7 +191,6 @@ export const AgentChatComposer = memo(function AgentChatComposer({
     [addFiles, showFileError]
   );
 
-  // ── Drag & drop handlers ──────────────────────────────────────────
   const handleDragEnter = useCallback((e: DragEvent) => {
     e.preventDefault();
     dragCountRef.current++;
@@ -225,7 +222,6 @@ export const AgentChatComposer = memo(function AgentChatComposer({
     [addFiles, showFileError]
   );
 
-  // ── File input handler ─────────────────────────────────────────────
   const handleFileInputChange = useCallback(
     (e: ChangeEvent<HTMLInputElement>) => {
       const selected = Array.from(e.target.files ?? []);
@@ -239,7 +235,10 @@ export const AgentChatComposer = memo(function AgentChatComposer({
     [addFiles, showFileError]
   );
 
-  // Cleanup rAF + error timer on unmount
+  const triggerAttach = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
   useEffect(() => {
     return () => {
       if (pendingResizeRef.current !== null) {
@@ -248,8 +247,6 @@ export const AgentChatComposer = memo(function AgentChatComposer({
       if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
     };
   }, []);
-
-
 
   const sendDisabled = !canSend || running || (isEmpty && !hasFiles) || isEncoding;
 
@@ -268,15 +265,18 @@ export const AgentChatComposer = memo(function AgentChatComposer({
     >
       {/* Drag overlay */}
       {isDragging && (
-        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-primary bg-background/80 backdrop-blur-sm animate-in fade-in zoom-in-95">
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center rounded-3xl border-2 border-dashed border-primary bg-background/80 backdrop-blur-sm animate-in fade-in zoom-in-95">
           <UploadCloud className="mb-2 h-10 w-10 animate-bounce text-primary" />
           <span className="text-sm font-medium text-foreground">Drop files here</span>
         </div>
       )}
-      {/* Gradient fade above composer */}
+
+      {/* Gradient fade */}
       <div className="pointer-events-none h-4 sm:h-8 bg-gradient-to-t from-background to-transparent" />
-      {/* Main composer card — unified single line */}
-      <div className={`mx-auto flex max-w-3xl flex-col rounded-2xl border shadow-lg transition-all duration-200 ${wizardType && wizardTheme ? `${wizardTheme.border} border-opacity-40 bg-popover` : "border-border/30 bg-card/90 backdrop-blur-md focus-within:border-border/60 focus-within:shadow-xl"}`}>
+
+      {/* Glassmorphic composer card */}
+      <div className={`mx-auto flex max-w-3xl flex-col rounded-[24px] border transition-all duration-200 ${wizardType && wizardTheme ? `${wizardTheme.border} border-opacity-40 bg-popover` : "border-border/50 bg-background/70 shadow-2xl backdrop-blur-xl focus-within:border-border/80 dark:bg-background/40 dark:shadow-[0_8px_32px_rgba(0,0,0,0.3)]"}`}>
+
         {/* Wizard banner */}
         {wizardType && wizardTheme && onWizardExit && (
           <WizardBanner
@@ -291,7 +291,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
 
         {/* Offline indicator */}
         {gatewayStatus && gatewayStatus !== "connected" && (
-          <div className="flex items-center gap-1.5 rounded-t-2xl bg-amber-500/10 px-4 py-2 text-xs text-amber-700 dark:text-amber-400" role="status">
+          <div className="flex items-center gap-1.5 rounded-t-[24px] bg-amber-500/10 px-4 py-2 text-xs text-amber-700 dark:text-amber-400" role="status">
             <WifiOff className="h-3.5 w-3.5 shrink-0" aria-hidden />
             <span>
               {gatewayStatus === "connecting" ? "Reconnecting…" : "Offline"}
@@ -300,24 +300,24 @@ export const AgentChatComposer = memo(function AgentChatComposer({
           </div>
         )}
 
-        {/* File error message */}
+        {/* File error */}
         {fileError && (
-          <div className="flex items-center gap-1.5 rounded-t-2xl bg-destructive/10 px-4 py-2 text-xs text-destructive">
+          <div className="flex items-center gap-1.5 rounded-t-[24px] bg-destructive/10 px-4 py-2 text-xs text-destructive">
             <AlertCircle className="h-3.5 w-3.5 shrink-0" />
             <span className="truncate">{fileError}</span>
           </div>
         )}
 
-        {/* Attachment preview row */}
+        {/* Attachment preview */}
         {hasFiles && (
-          <div className="px-3 pt-2">
+          <div className="px-4 pt-3">
             <ChatAttachmentPreview files={files} onRemove={removeFile} />
           </div>
         )}
 
-        {/* Expanded state: streaming status + full progress meter */}
+        {/* Streaming expanded state */}
         {running && (
-          <div className="flex items-center gap-3 border-b border-border/10 bg-muted/20 px-4 py-2.5 animate-in slide-in-from-top-2 fade-in duration-200">
+          <div className="flex items-center gap-3 border-b border-border/20 px-4 py-2.5 animate-in slide-in-from-top-2 fade-in duration-200">
             <StreamingStatus
               running={running}
               messageParts={messageParts ?? []}
@@ -338,43 +338,33 @@ export const AgentChatComposer = memo(function AgentChatComposer({
           </div>
         )}
 
-        {/* Single-line input row: [attach] [textarea] [agent pill] [send/stop] */}
-        <div className="flex items-end gap-1.5 p-1.5">
-          {/* Attach button */}
-          <div className="mb-[1px] flex shrink-0 items-center">
-            <button
-              type="button"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              aria-label="Attach file"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Paperclip className="h-4 w-4" />
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              className="hidden"
-              accept={acceptString}
-              multiple
-              onChange={handleFileInputChange}
-            />
-          </div>
+        {/* Hidden file input (triggered from dropdown) */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          accept={acceptString}
+          multiple
+          onChange={handleFileInputChange}
+        />
 
-          {/* Textarea — grows vertically */}
+        {/* Single-line input: [textarea] [avatar button] [send/stop] */}
+        <div className="flex items-end gap-1.5 p-2 sm:p-2.5">
+          {/* Textarea */}
           <textarea
             ref={handleRef}
             rows={1}
             defaultValue={initialDraft}
-            className="max-h-[200px] min-h-[36px] flex-1 resize-none self-center bg-transparent px-1 py-2 text-sm leading-relaxed text-foreground outline-none placeholder:text-muted-foreground"
+            className="max-h-[200px] min-h-[36px] flex-1 resize-none self-center bg-transparent px-2 py-2 text-sm leading-relaxed text-foreground outline-none placeholder:text-muted-foreground"
             aria-label="Message to agent"
             onChange={handleChange}
             onKeyDown={handleKeyDown}
             onFocus={handleFocus}
             onPaste={handlePaste}
-            placeholder={wizardType && wizardTheme ? `Describe what you need...` : `Message ${agentName}...`}
+            placeholder={wizardType && wizardTheme ? "Describe what you need..." : `Message ${agentName}...`}
           />
 
-          {/* Agent menu pill (inline) */}
+          {/* Agent avatar button (unified dropdown trigger) */}
           {composerAgents && composerAgents.length > 0 && selectedAgentId && onSelectAgent && (
             <div className="mb-[1px] shrink-0">
               <ComposerAgentMenu
@@ -389,31 +379,32 @@ export const AgentChatComposer = memo(function AgentChatComposer({
                 allowThinking={allowThinking}
                 tokenPct={running ? null : tokenPct}
                 onNewSession={onNewSession}
+                onAttach={triggerAttach}
               />
             </div>
           )}
 
-          {/* Send/Stop */}
+          {/* Send / Stop */}
           <div className="mb-[1px] shrink-0">
             {running ? (
               <button
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-destructive text-destructive-foreground shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
                 type="button"
                 aria-label="Stop agent"
                 onClick={onStop}
                 disabled={!canSend || stopBusy}
               >
-                <Square className="h-3.5 w-3.5 fill-current" />
+                <Square className="h-3 w-3 fill-current" />
               </button>
             ) : (
               <button
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
                 type="button"
                 aria-label="Send message"
                 onClick={handleClickSend}
                 disabled={sendDisabled}
               >
-                <Send className="h-4 w-4" />
+                <ArrowUp className="h-4 w-4" />
               </button>
             )}
           </div>
