@@ -17,11 +17,11 @@ function statusBadge(skill: Skill) {
   if (skill.blocked)
     return {
       label: "Blocked",
-      cls: "bg-amber-500/10 text-amber-500",
+      cls: "bg-amber-900/30 text-amber-300",
     };
   return {
     label: "Ready",
-    cls: "bg-emerald-500/10 text-emerald-500",
+    cls: "bg-emerald-900/30 text-emerald-300",
   };
 }
 

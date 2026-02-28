@@ -69,7 +69,7 @@ export const SkillsList = React.memo(function SkillsList({
               "rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
               filter === f.value
-                ? "bg-primary/10 text-primary"
+                ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
             )}
           >
