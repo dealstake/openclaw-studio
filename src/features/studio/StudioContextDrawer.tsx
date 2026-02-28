@@ -9,12 +9,13 @@ import { TasksPanel } from "@/features/tasks/components/TasksPanel";
 import { AgentBrainPanel } from "@/features/agents/components/AgentInspectPanels";
 import { UnifiedFilesPanel } from "@/features/workspace/components/UnifiedFilesPanel";
 import { ActivityPanel } from "@/features/activity/components/ActivityPanel";
+import { SkillsPanel } from "@/features/skills/components/SkillsPanel";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import type { AgentState } from "@/features/agents/state/store";
 import type { GatewayModelChoice } from "@/lib/gateway/models";
 import type { AgentFileName } from "@/lib/agents/agentFiles";
 
-export type ExpandableTab = "projects" | "tasks" | "brain" | "workspace" | "activity";
+export type ExpandableTab = "projects" | "tasks" | "brain" | "workspace" | "skills" | "activity";
 
 interface StudioContextDrawerProps {
   isMobileLayout: boolean;
@@ -170,6 +171,11 @@ export const StudioContextDrawer = React.memo(function StudioContextDrawer(props
               isTabActive={contextTab === "workspace"}
               eventTick={cronEventTick}
             />
+          </PanelErrorBoundary>
+        }
+        skillsContent={
+          <PanelErrorBoundary name="Skills">
+            <SkillsPanel client={client} status={status} />
           </PanelErrorBoundary>
         }
         activityContent={

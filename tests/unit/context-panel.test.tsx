@@ -27,7 +27,7 @@ describe("ContextPanel", () => {
   it("renders 5 tab buttons from config", () => {
     renderPanel();
     const tabs = screen.getAllByRole("tab");
-    expect(tabs).toHaveLength(5);
+    expect(tabs).toHaveLength(6);
   });
 
   it("marks active tab as selected", () => {

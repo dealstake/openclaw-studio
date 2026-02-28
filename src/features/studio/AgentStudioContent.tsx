@@ -912,6 +912,7 @@ export const AgentStudioPage = () => {
               onClose={clearExpandedTab}
               focusedAgentId={focusedAgent?.agentId ?? null}
               client={client}
+              status={status}
               cronEventTick={cronEventTick}
               createProjectTick={createProjectTick}
               agentTasks={agentTasks}
@@ -956,7 +957,7 @@ export const AgentStudioPage = () => {
               swipeDy={swipeDy}
               swipeHandlers={swipeHandlers}
               contextTab={contextTab}
-              expandedTab={expandedTab as "projects" | "tasks" | "brain" | "workspace" | "activity" | null}
+              expandedTab={expandedTab as "projects" | "tasks" | "brain" | "workspace" | "skills" | "activity" | null}
               onExpandToggle={handleExpandToggle}
               onClose={() => setContextPanelOpen(false)}
               onTabChange={setContextTab}

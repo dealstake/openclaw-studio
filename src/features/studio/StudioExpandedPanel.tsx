@@ -14,8 +14,9 @@ import {
 } from "@/features/agents/components/AgentInspectPanels";
 import { UnifiedFilesPanel } from "@/features/workspace/components/UnifiedFilesPanel";
 import { ActivityPanel } from "@/features/activity/components/ActivityPanel";
+import { SkillsPanel } from "@/features/skills/components/SkillsPanel";
 import type { ManagementTab } from "@/layout/AppSidebar";
-import type { GatewayClient } from "@/lib/gateway/GatewayClient";
+import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import type { StudioTask, UpdateTaskPayload, TaskSchedule } from "@/features/tasks/types";
 import type { AgentState } from "@/features/agents/state/store";
 import type { AgentFileName } from "@/lib/agents/agentFiles";
@@ -25,6 +26,7 @@ interface StudioExpandedPanelProps {
   onClose: () => void;
   focusedAgentId: string | null;
   client: GatewayClient;
+  status: GatewayStatus;
   cronEventTick: number;
   createProjectTick: number;
   // Tasks
@@ -57,6 +59,7 @@ export const StudioExpandedPanel = memo(function StudioExpandedPanel({
   onClose,
   focusedAgentId,
   client,
+  status,
   cronEventTick,
   createProjectTick,
   agentTasks,
@@ -138,6 +141,11 @@ export const StudioExpandedPanel = memo(function StudioExpandedPanel({
                 isTabActive
                 eventTick={cronEventTick}
               />
+            </PanelErrorBoundary>
+          )}
+          {expandedTab === "skills" && (
+            <PanelErrorBoundary name="Skills">
+              <SkillsPanel client={client} status={status} />
             </PanelErrorBoundary>
           )}
           {expandedTab === "activity" && (
