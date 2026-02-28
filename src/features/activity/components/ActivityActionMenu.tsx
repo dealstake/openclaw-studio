@@ -60,9 +60,6 @@ export const ActivityActionMenu = memo(function ActivityActionMenu(
   const [loading, setLoading] = useState(false);
   const [killOpen, setKillOpen] = useState(false);
 
-  const actions = getActions(props);
-  if (actions.length === 0) return null;
-
   const handleAction = useCallback(
     async (actionId: string) => {
       if (actionId === "copy" && props.sessionKey) {
@@ -111,6 +108,9 @@ export const ActivityActionMenu = memo(function ActivityActionMenu(
       setLoading(false);
     }
   }, [client, props.sessionKey]);
+
+  const actions = getActions(props);
+  if (actions.length === 0) return null;
 
   return (
     <>

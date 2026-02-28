@@ -14,6 +14,7 @@ export const HistoryFeed = memo(function HistoryFeed() {
     useActivityHistory();
   const parentRef = useRef<HTMLDivElement>(null);
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
     count: events.length,
     getScrollElement: () => parentRef.current,
