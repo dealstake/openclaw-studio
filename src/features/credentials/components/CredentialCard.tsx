@@ -83,11 +83,14 @@ export const CredentialCard = React.memo(function CredentialCard({
         </DropdownMenu>
       </CardHeader>
 
-      <CardMeta className="mt-1.5 flex-wrap">
+      <CardMeta className="mt-1.5 flex-wrap items-center gap-x-1.5">
         {credential.description && (
           <span className="text-muted-foreground">
             {credential.description}
           </span>
+        )}
+        {credential.description && credential.maskedPreview && (
+          <span className="text-muted-foreground/50">·</span>
         )}
         {credential.maskedPreview && (
           <span className="font-mono text-xs text-muted-foreground">{credential.maskedPreview}</span>

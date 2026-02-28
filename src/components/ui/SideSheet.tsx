@@ -40,6 +40,7 @@ export const SideSheetContent = React.forwardRef<
     <SideSheetOverlay />
     <DialogPrimitive.Content
       ref={ref}
+      aria-describedby={undefined}
       className={cn(
         // Side-sheet positioning — no transforms, no centering
         "fixed inset-y-0 right-0 z-50 m-0 flex h-full w-full max-w-md flex-col",

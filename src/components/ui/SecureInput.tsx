@@ -61,7 +61,7 @@ export const SecureInput = React.memo(function SecureInput({
           spellCheck={false}
           className={cn(
             "h-9 w-full rounded-md border border-border/50 bg-background px-3 pr-16",
-            "font-mono text-sm text-foreground placeholder:text-muted-foreground/70",
+            "font-mono text-sm text-foreground placeholder:text-muted-foreground",
             "transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
             "disabled:cursor-not-allowed disabled:opacity-50",
           )}
