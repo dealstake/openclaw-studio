@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useEffect, useMemo } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { BarChart3, RefreshCw } from "lucide-react";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { useUsageData, type TimeRange } from "@/features/usage/hooks/useUsageData";
@@ -14,7 +14,16 @@ import { formatTokens, formatCost } from "@/lib/text/format";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DailyTrendChart } from "@/features/usage/components/DailyTrendChart";
 import { CronCostTable } from "@/features/usage/components/CronCostTable";
+import { AgentCostTable } from "@/features/usage/components/AgentCostTable";
 import { SummaryCard } from "@/features/usage/components/SummaryCard";
+
+type BreakdownView = "model" | "agent" | "cron";
+
+const BREAKDOWN_OPTIONS: FilterGroupOption<BreakdownView>[] = [
+  { value: "model", label: "By Model" },
+  { value: "agent", label: "By Agent" },
+  { value: "cron", label: "Cron Jobs" },
+];
 
 const TIME_RANGE_OPTIONS: FilterGroupOption<TimeRange>[] = [
   { value: "today", label: "Today" },
@@ -47,8 +56,12 @@ export const UsagePanel = memo(function UsagePanel({
     refresh,
   } = useUsageData(client, status);
 
+  const [breakdownView, setBreakdownView] = useState<BreakdownView>("model");
+
   // Collect unique model names for the trend chart legend
   const models = useMemo(() => Array.from(costByModel.keys()), [costByModel]);
+
+  const hasCronEntries = useMemo(() => entries.some((e) => e.isCron), [entries]);
 
   useEffect(() => {
     void refresh();
@@ -114,16 +127,33 @@ export const UsagePanel = memo(function UsagePanel({
       </div>
 
       {/* Truncation warning */}
-      {totalSessions >= 200 && (
+      {totalSessions >= 2000 && (
         <p className="text-xs text-muted-foreground bg-muted/50 rounded-md px-3 py-2">
-          Showing data from 200 most recent sessions. Older sessions are excluded from totals.
+          Showing data from 2,000 most recent sessions. Older sessions are excluded from totals.
         </p>
       )}
 
-      {/* Cost by model table */}
-      {costByModel.size > 0 && (
+      {/* Daily trend chart */}
+      {dailyTrends.length > 0 && (
         <div>
-          <SectionLabel className="mb-2">By Model</SectionLabel>
+          <SectionLabel className="mb-2">Daily Trend</SectionLabel>
+          <DailyTrendChart trends={dailyTrends} models={models} />
+        </div>
+      )}
+
+      {/* Breakdown view switcher */}
+      <div>
+        <div className="flex items-center gap-3 mb-2">
+          <SectionLabel>Breakdown</SectionLabel>
+          <FilterGroup
+            options={BREAKDOWN_OPTIONS}
+            value={[breakdownView]}
+            onChange={(v) => { if (v.length > 0) setBreakdownView(v[v.length - 1]!); }}
+            allowEmpty={false}
+          />
+        </div>
+
+        {breakdownView === "model" && costByModel.size > 0 && (
           <div className="overflow-x-auto rounded-lg border border-border">
             <table className="w-full text-sm">
               <thead>
@@ -159,24 +189,15 @@ export const UsagePanel = memo(function UsagePanel({
               </tbody>
             </table>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Daily trend chart */}
-      {dailyTrends.length > 0 && (
-        <div>
-          <SectionLabel className="mb-2">Daily Trend</SectionLabel>
-          <DailyTrendChart trends={dailyTrends} models={models} />
-        </div>
-      )}
+        {breakdownView === "agent" && <AgentCostTable entries={entries} />}
 
-      {/* Cron cost attribution */}
-      {entries.some((e) => e.isCron) && (
-        <div>
-          <SectionLabel className="mb-2">Cron Cost Attribution</SectionLabel>
-          <CronCostTable entries={entries} />
-        </div>
-      )}
+        {breakdownView === "cron" && hasCronEntries && <CronCostTable entries={entries} />}
+        {breakdownView === "cron" && !hasCronEntries && (
+          <p className="text-xs text-muted-foreground py-4 text-center">No cron sessions in this time range.</p>
+        )}
+      </div>
     </div>
   );
 });

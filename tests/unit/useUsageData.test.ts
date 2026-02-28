@@ -62,7 +62,7 @@ describe("useUsageData", () => {
     expect(client.call).toHaveBeenCalledWith("sessions.list", {
       includeGlobal: true,
       includeUnknown: true,
-      limit: 200,
+      limit: 2000,
     });
     expect(result.current.totalSessions).toBeGreaterThan(0);
   });
