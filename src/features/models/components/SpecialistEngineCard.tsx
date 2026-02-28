@@ -34,25 +34,25 @@ export const SpecialistEngineCard = memo(function SpecialistEngineCard({
         </span>
 
         {/* Content */}
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 flex flex-col gap-1">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-foreground">
               {engine.displayName}
             </span>
             <span
               className={`h-2 w-2 shrink-0 rounded-full ${statusColor}`}
-              title={statusLabel}
+              aria-hidden="true"
             />
-            <span className="text-[10px] text-muted-foreground">
+            <span className="text-xs text-muted-foreground" role="status">
               {statusLabel}
             </span>
           </div>
 
-          <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1">
+          <p className="text-xs text-muted-foreground line-clamp-1">
             {engine.purpose}
           </p>
 
-          <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
             <span>Model: {engine.model}</span>
             <span className="font-mono">Key: {engine.maskedApiKey}</span>
           </div>

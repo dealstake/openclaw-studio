@@ -23,16 +23,16 @@ export const BrainModelSection = memo(function BrainModelSection({
       </p>
       <BaseCard variant="default" isHoverable={false}>
         <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">Active</span>
-            <span className="text-sm font-medium text-foreground">
+          <div className="flex min-w-0 items-center justify-between gap-4">
+            <span className="shrink-0 text-xs text-muted-foreground">Active</span>
+            <span className="truncate text-sm font-medium text-foreground">
               {config.primaryName}
             </span>
           </div>
           {config.fallbackNames.length > 0 && (
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">Backup</span>
-              <span className="text-sm text-foreground">
+            <div className="flex min-w-0 items-center justify-between gap-4">
+              <span className="shrink-0 text-xs text-muted-foreground">Backup</span>
+              <span className="truncate text-sm text-foreground">
                 {config.fallbackNames.join(", ")}
               </span>
             </div>
