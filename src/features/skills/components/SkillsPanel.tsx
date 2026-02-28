@@ -111,7 +111,7 @@ export const SkillsPanel = React.memo(function SkillsPanel({
   return (
     <div className="flex h-full flex-col">
       {/* Header with sub-tab switcher */}
-      <div className="flex items-center justify-between px-3 pt-3 pb-1">
+      <div className="flex items-center justify-between px-3 pt-3 pb-2">
         <SectionLabel>Skills</SectionLabel>
         <div className="flex items-center gap-2">
           {subTab === "system" && onCreateSkill && (
@@ -152,7 +152,7 @@ export const SkillsPanel = React.memo(function SkillsPanel({
           aria-selected={subTab === "personas"}
           onClick={() => setSubTab("personas")}
           className={cn(
-            "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+            "rounded-md px-3 py-2.5 text-xs font-medium transition-colors min-h-[44px]",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
             subTab === "personas"
               ? "bg-primary text-primary-foreground"
@@ -167,7 +167,7 @@ export const SkillsPanel = React.memo(function SkillsPanel({
           aria-selected={subTab === "system"}
           onClick={() => setSubTab("system")}
           className={cn(
-            "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+            "rounded-md px-3 py-2.5 text-xs font-medium transition-colors min-h-[44px]",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
             subTab === "system"
               ? "bg-primary text-primary-foreground"

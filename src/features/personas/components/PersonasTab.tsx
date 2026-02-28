@@ -97,7 +97,7 @@ export const PersonasTab = React.memo(function PersonasTab({
           aria-label="Search personas"
           className={cn(
             "h-8 w-full rounded-md border border-border/40 bg-background/50 pl-8 pr-3",
-            "text-sm text-foreground placeholder:text-muted-foreground/50",
+            "text-sm text-foreground placeholder:text-muted-foreground/70",
             "transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
           )}
         />
@@ -145,7 +145,7 @@ export const PersonasTab = React.memo(function PersonasTab({
                 ? "No personas yet"
                 : "No personas match this filter"}
             </p>
-            <p className="text-xs text-muted-foreground/60">
+            <p className="text-xs text-muted-foreground/80">
               {allPersonas.length === 0
                 ? "Create your first AI persona to get started"
                 : search
