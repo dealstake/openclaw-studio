@@ -10,7 +10,8 @@ import { randomUUID } from "node:crypto";
 
 const GATEWAY_URL =
   process.env.NEXT_PUBLIC_GATEWAY_URL ?? "ws://127.0.0.1:18789";
-const GATEWAY_TOKEN = process.env.NEXT_PUBLIC_GATEWAY_TOKEN ?? "";
+const GATEWAY_TOKEN =
+  process.env.GATEWAY_TOKEN ?? process.env.NEXT_PUBLIC_GATEWAY_TOKEN ?? "";
 
 const CONNECT_TIMEOUT_MS = 5_000;
 const RPC_TIMEOUT_MS = 30_000;

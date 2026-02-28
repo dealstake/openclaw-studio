@@ -9,7 +9,6 @@ import {
 } from "@/features/usage/lib/costCalculator";
 import {
   aggregateByDay,
-  filterByTimeRange,
   type TrendBucket,
 } from "@/features/usage/lib/trendAggregator";
 
@@ -54,6 +53,7 @@ type CacheEntry = {
 };
 
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const MAX_CACHE_ENTRIES = 50;
 const cache = new Map<string, CacheEntry>();
 
 function getCacheKey(body: RequestBody): string {
@@ -94,19 +94,18 @@ function buildAgentBreakdown(entries: SessionCostEntry[]): AgentBreakdown[] {
   return Array.from(map.values()).sort((a, b) => b.cost - a.cost);
 }
 
-function computeTimeRange(
+/** Filter entries by explicit from/to ISO dates (precise, no bucketing). */
+function filterByDateRange(
+  entries: SessionCostEntry[],
   from?: string,
   to?: string,
-): "today" | "7d" | "30d" | "all" {
-  if (!from && !to) return "all";
-  if (!from) return "all";
-  const fromMs = new Date(from).getTime();
-  const now = Date.now();
-  const diffDays = (now - fromMs) / (24 * 60 * 60 * 1000);
-  if (diffDays <= 1) return "today";
-  if (diffDays <= 7) return "7d";
-  if (diffDays <= 30) return "30d";
-  return "all";
+): SessionCostEntry[] {
+  if (!from && !to) return entries;
+  const fromMs = from ? new Date(from).getTime() : 0;
+  const toMs = to ? new Date(to).getTime() : Date.now();
+  return entries.filter(
+    (e) => e.updatedAt != null && e.updatedAt >= fromMs && e.updatedAt <= toMs,
+  );
 }
 
 // ─── Route Handler ──────────────────────────────────────────────────────────
@@ -135,9 +134,8 @@ export async function POST(request: NextRequest) {
     const raw = result.sessions ?? [];
     const { entries } = calculateSessionCosts(raw);
 
-    // Apply time range filter
-    const timeRange = computeTimeRange(body.from, body.to);
-    const filtered = filterByTimeRange(entries, timeRange);
+    // Apply time range filter (precise date-based)
+    const filtered = filterByDateRange(entries, body.from, body.to);
 
     // Filter by agentId if specified
     const agentFiltered = body.agentId
@@ -195,7 +193,11 @@ export async function POST(request: NextRequest) {
       cachedAt: new Date().toISOString(),
     };
 
-    // Store in cache
+    // Store in cache (evict oldest if over limit)
+    if (cache.size >= MAX_CACHE_ENTRIES) {
+      const oldest = cache.keys().next().value;
+      if (oldest !== undefined) cache.delete(oldest);
+    }
     cache.set(cacheKey, { data: response, expiry: Date.now() + CACHE_TTL_MS });
 
     return NextResponse.json(response);

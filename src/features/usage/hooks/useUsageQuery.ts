@@ -3,9 +3,6 @@
  *
  * Calls the `/api/usage/query` route (which proxies to the gateway
  * with server-side caching) instead of doing client-side aggregation.
- *
- * Falls back to the client-side `useUsageData` hook if the API route
- * is unavailable (e.g. network error).
  */
 
 import { useCallback, useMemo, useRef, useState } from "react";
