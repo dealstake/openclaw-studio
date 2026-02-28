@@ -60,7 +60,7 @@ export async function GET(request: Request) {
       },
     );
   } catch (err) {
-    return handleApiError(err, "personas");
+    return handleApiError(err, "personas-get");
   }
 }
 
@@ -87,19 +87,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: `Invalid category: ${category}` }, { status: 400 });
     }
 
+    // Pre-check for duplicate before entering sidecar fallback
+    const db = getDb();
+    const existing = personasRepo.getById(db, personaId);
+    if (existing) {
+      return NextResponse.json({ error: "Persona already exists" }, { status: 409 });
+    }
+
     return withSidecarMutateFallback(
       "/workspace/personas",
       "POST",
       body,
       () => {
-        const db = getDb();
-
-        // Check for duplicate
-        const existing = personasRepo.getById(db, personaId);
-        if (existing) {
-          throw new Error("Persona already exists");
-        }
-
         personasRepo.create(db, {
           personaId,
           displayName,
@@ -117,7 +116,7 @@ export async function POST(request: Request) {
       },
     );
   } catch (err) {
-    return handleApiError(err, "personas");
+    return handleApiError(err, "personas-post");
   }
 }
 
@@ -148,44 +147,55 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: `Invalid category: ${fields.category}` }, { status: 400 });
     }
 
+    // Pre-check existence
+    const db = getDb();
+    const existing = personasRepo.getById(db, personaId);
+    if (!existing) {
+      return NextResponse.json({ error: "Persona not found" }, { status: 404 });
+    }
+
+    // Validate status transition (throws on invalid)
+    if (fields.status) {
+      try {
+        validateStatusTransition(
+          existing.status as PersonaStatus,
+          fields.status as PersonaStatus,
+        );
+      } catch (e) {
+        return NextResponse.json(
+          { error: e instanceof Error ? e.message : "Invalid status transition" },
+          { status: 400 },
+        );
+      }
+    }
+
     return withSidecarMutateFallback(
       "/workspace/personas",
       "PATCH",
       body,
       () => {
-        const db = getDb();
-        const existing = personasRepo.getById(db, personaId);
-        if (!existing) {
-          throw new Error("Persona not found");
-        }
-
-        // Validate status transition (throws on invalid)
-        if (fields.status) {
-          validateStatusTransition(
-            existing.status as PersonaStatus,
-            fields.status as PersonaStatus,
-          );
-        }
-
-        // Build update fields
+        // Build update fields from whitelist
+        const updatable = [
+          "displayName", "category", "status", "templateKey",
+          "metricsJson", "practiceCount", "lastTrainedAt",
+        ] as const;
         const updateFields: Record<string, unknown> = {};
-        if (fields.displayName !== undefined) updateFields.displayName = fields.displayName;
-        if (fields.category !== undefined) updateFields.category = fields.category;
-        if (fields.status !== undefined) updateFields.status = fields.status;
-        if (fields.templateKey !== undefined) updateFields.templateKey = fields.templateKey;
+
+        for (const key of updatable) {
+          if (fields[key] !== undefined) {
+            updateFields[key] = fields[key];
+          }
+        }
         if (fields.optimizationGoals !== undefined) {
           updateFields.optimizationGoals = JSON.stringify(fields.optimizationGoals);
         }
-        if (fields.metricsJson !== undefined) updateFields.metricsJson = fields.metricsJson;
-        if (fields.practiceCount !== undefined) updateFields.practiceCount = fields.practiceCount;
-        if (fields.lastTrainedAt !== undefined) updateFields.lastTrainedAt = fields.lastTrainedAt;
 
         personasRepo.update(db, personaId, updateFields);
         return { ok: true, personaId };
       },
     );
   } catch (err) {
-    return handleApiError(err, "personas");
+    return handleApiError(err, "personas-patch");
   }
 }
 
@@ -205,22 +215,23 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "Missing required param: personaId" }, { status: 400 });
     }
 
+    // Pre-check existence
+    const db = getDb();
+    const existing = personasRepo.getById(db, personaId);
+    if (!existing) {
+      return NextResponse.json({ error: "Persona not found" }, { status: 404 });
+    }
+
     return withSidecarMutateFallback(
       "/workspace/personas",
       "DELETE",
       { agentId, personaId },
       () => {
-        const db = getDb();
-        const existing = personasRepo.getById(db, personaId);
-        if (!existing) {
-          throw new Error("Persona not found");
-        }
-
         personasRepo.remove(db, personaId);
         return { ok: true, personaId };
       },
     );
   } catch (err) {
-    return handleApiError(err, "personas");
+    return handleApiError(err, "personas-delete");
   }
 }
