@@ -418,6 +418,29 @@ export function findTemplateByConfigPath(
 
 /** Find a credential template that powers a given skill key.
  *  Matches when any configPathMap value includes `skills.entries.<skillKey>.` */
+/** Custom credential template for arbitrary services. */
+export const CUSTOM_TEMPLATE: CredentialTemplate = {
+  key: "custom",
+  serviceName: "Custom Service",
+  type: "api_key",
+  category: "custom",
+  serviceUrl: "",
+  apiKeyPageUrl: "",
+  instructions: "Enter the API key or secret for your custom service.",
+  fields: [
+    {
+      id: "apiKey",
+      label: "API Key / Secret",
+      placeholder: "paste your key here",
+      type: "password",
+      required: true,
+    },
+  ],
+  configPathMap: {
+    apiKey: [],
+  },
+};
+
 export function findTemplateForSkillKey(
   skillKey: string,
 ): CredentialTemplate | undefined {

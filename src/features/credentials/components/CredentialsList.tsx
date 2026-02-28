@@ -8,8 +8,8 @@ import { CredentialCategoryGroup } from "./CredentialCategoryGroup";
 export interface CredentialsListProps {
   credentials: Credential[];
   search: string;
-  onEdit: (id: string) => void;
-  onDelete: (id: string) => void;
+  onEdit: (credential: Credential) => void;
+  onDelete: (credential: Credential) => void;
 }
 
 export const CredentialsList = React.memo(function CredentialsList({

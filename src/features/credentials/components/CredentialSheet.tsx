@@ -22,7 +22,7 @@ import type {
 } from "../lib/types";
 import { TemplateGrid } from "./TemplateGrid";
 import { SetupForm } from "./SetupForm";
-import { findTemplate } from "../lib/templates";
+import { findTemplate, CUSTOM_TEMPLATE } from "../lib/templates";
 import { testConnection } from "../lib/testConnection";
 import { toggleSkill } from "@/features/skills/lib/skillService";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
@@ -55,28 +55,7 @@ export interface CredentialSheetProps {
 
 type Step = "select" | "setup" | "testing" | "next-steps";
 
-/** Custom credential template for arbitrary services. */
-const CUSTOM_TEMPLATE: CredentialTemplate = {
-  key: "custom",
-  serviceName: "Custom Service",
-  type: "api_key",
-  category: "custom",
-  serviceUrl: "",
-  apiKeyPageUrl: "",
-  instructions: "Enter the API key or secret for your custom service.",
-  fields: [
-    {
-      id: "apiKey",
-      label: "API Key / Secret",
-      placeholder: "paste your key here",
-      type: "password",
-      required: true,
-    },
-  ],
-  configPathMap: {
-    apiKey: [],
-  },
-};
+
 
 // ── Post-save sub-components ─────────────────────────────────────────────────
 

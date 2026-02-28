@@ -44,22 +44,18 @@ export const CredentialsPanel = React.memo(function CredentialsPanel({
   const [deleteTarget, setDeleteTarget] = useState<Credential | null>(null);
 
   const handleEdit = useCallback(
-    async (id: string) => {
-      const cred = credentials.find((c) => c.id === id);
-      if (cred) {
-        setEditingCredential(cred);
-        setSheetOpen(true);
-      }
+    (credential: Credential) => {
+      setEditingCredential(credential);
+      setSheetOpen(true);
     },
-    [credentials],
+    [],
   );
 
   const handleDelete = useCallback(
-    (id: string) => {
-      const cred = credentials.find((c) => c.id === id);
-      if (cred) setDeleteTarget(cred);
+    (credential: Credential) => {
+      setDeleteTarget(credential);
     },
-    [credentials],
+    [],
   );
 
   const confirmDelete = useCallback(async () => {

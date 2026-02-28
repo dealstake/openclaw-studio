@@ -491,7 +491,7 @@ export async function deleteCredential(
         return true;
       });
 
-      if (pathsToClear.length === 0 && existing.length === filtered.length) {
+      if (existing.length === filtered.length) {
         return { shouldPatch: false, result: undefined };
       }
 

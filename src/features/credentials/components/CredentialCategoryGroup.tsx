@@ -16,8 +16,8 @@ import { cn } from "@/lib/utils";
 export interface CredentialCategoryGroupProps {
   category: CredentialCategory;
   credentials: Credential[];
-  onEdit: (id: string) => void;
-  onDelete: (id: string) => void;
+  onEdit: (credential: Credential) => void;
+  onDelete: (credential: Credential) => void;
   defaultOpen?: boolean;
 }
 
@@ -51,8 +51,8 @@ export const CredentialCategoryGroup = React.memo(
               <CredentialCard
                 key={cred.id}
                 credential={cred}
-                onEdit={() => onEdit(cred.id)}
-                onDelete={() => onDelete(cred.id)}
+                onEdit={() => onEdit(cred)}
+                onDelete={() => onDelete(cred)}
                 style={{ animationDelay: `${Math.min(idx * 50, 300)}ms` }}
               />
             ))}
