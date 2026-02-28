@@ -169,7 +169,7 @@ export const ConfigureEngineForm = memo(function ConfigureEngineForm({
           type="button"
           onClick={onCancel}
           disabled={saving}
-          className="inline-flex h-9 min-w-[44px] items-center justify-center rounded-lg border border-border bg-card px-4 text-sm font-medium text-foreground transition hover:bg-muted disabled:opacity-50"
+          className="inline-flex h-11 min-w-[44px] items-center justify-center rounded-lg border border-border bg-card px-4 text-sm font-medium text-foreground transition hover:bg-muted disabled:opacity-50"
         >
           Cancel
         </button>
@@ -177,7 +177,7 @@ export const ConfigureEngineForm = memo(function ConfigureEngineForm({
           type="button"
           onClick={handleSave}
           disabled={saving}
-          className="inline-flex h-9 min-w-[44px] items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-white transition hover:bg-primary/90 disabled:opacity-50"
+          className="inline-flex h-11 min-w-[44px] items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-white transition hover:bg-primary/90 disabled:opacity-50"
         >
           {saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
           Save

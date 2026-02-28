@@ -55,7 +55,7 @@ export const SpecialistEnginesSection = memo(function SpecialistEnginesSection({
         <button
           type="button"
           onClick={handleAdd}
-          className="inline-flex min-h-[44px] items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-muted"
+          className="inline-flex min-h-[44px] items-center gap-1.5 rounded-md border border-border/40 bg-card px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
         >
           <Plus className="h-3.5 w-3.5" />
           Add Engine
