@@ -75,6 +75,7 @@ import { useStudioDataSync } from "@/features/studio/useStudioDataSync";
 import { useWizardInChat } from "@/features/wizards/hooks/useWizardInChat";
 import { buildTaskWizardPrompt, getDefaultWizardPrompt } from "@/features/wizards/lib/wizardPrompts";
 import type { WizardType } from "@/features/wizards/lib/wizardTypes";
+import { executeWizardCreation } from "@/features/wizards/lib/wizardCreation";
 
 export const AgentStudioPage = () => {
   const {
@@ -330,6 +331,7 @@ export const AgentStudioPage = () => {
   const handleWizardConfirm = useCallback(async () => {
     const extracted = wizard.extractedConfig;
     if (!extracted) return;
+
     if (extracted.type === "task") {
       try {
         await createTask(extracted.config as CreateTaskPayload);
@@ -338,11 +340,32 @@ export const AgentStudioPage = () => {
       } catch {
         // Error is shown by the task creation flow
       }
-    } else {
-      // Other wizard types land here — Phase 5 will implement creation APIs
-      void wizard.endWizard();
+      return;
     }
-  }, [wizard, createTask, loadTasks]);
+
+    // Skill, credential, project, agent — handled by wizardCreation
+    const agentId = focusedAgent?.agentId;
+    if (!agentId) return;
+
+    try {
+      const result = await executeWizardCreation(
+        extracted.type,
+        extracted.config,
+        client,
+        agentId,
+      );
+      if (result.success) {
+        void wizard.endWizard();
+        // Credential wizard signals UI to open setup sheet
+        if (result.openCredentialSetup) {
+          // Future: open credential sheet with pre-filled template
+          // For now, the user completes setup in the Credentials panel
+        }
+      }
+    } catch {
+      // Error handling — wizard stays open so user can retry
+    }
+  }, [wizard, createTask, loadTasks, focusedAgent, client]);
 
   // eslint-disable-next-line react-hooks/refs
   loadTasksRef.current = loadTasks;
