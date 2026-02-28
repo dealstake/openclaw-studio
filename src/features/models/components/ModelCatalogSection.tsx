@@ -56,6 +56,8 @@ export const ModelCatalogSection = memo(function ModelCatalogSection({
                   <span className="min-w-0 truncate text-foreground">
                     {model.name}
                   </span>
+                  {model.isDefault && <span className="sr-only">(Primary brain)</span>}
+                  {model.isFallback && !model.isDefault && <span className="sr-only">(Fallback)</span>}
 
                   {model.alias && (
                     <span className="shrink-0 text-muted-foreground">
