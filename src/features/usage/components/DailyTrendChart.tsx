@@ -31,11 +31,14 @@ function formatDateLabel(date: string): string {
 interface DailyTrendChartProps {
   trends: TrendBucket[];
   models: string[];
+  /** Called when a bar is clicked with the date key (YYYY-MM-DD). */
+  onBarClick?: (date: string) => void;
 }
 
 export const DailyTrendChart = memo(function DailyTrendChart({
   trends,
   models,
+  onBarClick,
 }: DailyTrendChartProps) {
   if (trends.length === 0) {
     return (
@@ -80,10 +83,13 @@ export const DailyTrendChart = memo(function DailyTrendChart({
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <div
-                      className="flex h-5 rounded-sm overflow-hidden cursor-default"
+                      className={`flex h-5 rounded-sm overflow-hidden ${onBarClick ? "cursor-pointer hover:opacity-80 transition-opacity" : "cursor-default"}`}
                       style={{ width: `${Math.max(widthPct, 2)}%` }}
-                      role="graphics-symbol"
+                      role={onBarClick ? "button" : "graphics-symbol"}
+                      tabIndex={onBarClick ? 0 : undefined}
                       aria-label={barLabel}
+                      onClick={onBarClick ? () => onBarClick(trend.date) : undefined}
+                      onKeyDown={onBarClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onBarClick(trend.date); } } : undefined}
                     >
                       {modelEntries.map((e) => {
                         const segPct = totalForBar > 0 ? (e.cost / totalForBar) * 100 : 0;

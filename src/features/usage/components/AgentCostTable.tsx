@@ -30,10 +30,13 @@ type SortKey = "agentId" | "sessions" | "totalCost" | "totalTokens" | "avgCost";
 
 interface AgentCostTableProps {
   entries: SessionCostEntry[];
+  /** Called when an agent row is clicked. */
+  onAgentClick?: (agentId: string) => void;
 }
 
 export const AgentCostTable = memo(function AgentCostTable({
   entries,
+  onAgentClick,
 }: AgentCostTableProps) {
   const [sortKey, setSortKey] = useState<SortKey>("totalCost");
   const [sortAsc, setSortAsc] = useState(false);
@@ -116,7 +119,14 @@ export const AgentCostTable = memo(function AgentCostTable({
         </thead>
         <tbody>
           {sorted.map((g) => (
-            <tr key={g.agentId} className="border-b border-border/50 last:border-0">
+            <tr
+              key={g.agentId}
+              className={`border-b border-border/50 last:border-0 ${onAgentClick ? "cursor-pointer hover:bg-muted/50 transition-colors" : ""}`}
+              onClick={onAgentClick ? () => onAgentClick(g.agentId) : undefined}
+              role={onAgentClick ? "button" : undefined}
+              tabIndex={onAgentClick ? 0 : undefined}
+              onKeyDown={onAgentClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onAgentClick(g.agentId); } } : undefined}
+            >
               <td className="px-3 py-2 font-medium text-foreground">{g.agentId}</td>
               <td className="px-3 py-2 text-right text-muted-foreground">{g.sessions}</td>
               <td className="px-3 py-2 text-right text-muted-foreground">

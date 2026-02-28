@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { BarChart3, RefreshCw } from "lucide-react";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { useUsageData, type TimeRange } from "@/features/usage/hooks/useUsageData";
@@ -16,6 +16,7 @@ import { DailyTrendChart } from "@/features/usage/components/DailyTrendChart";
 import { CronCostTable } from "@/features/usage/components/CronCostTable";
 import { AgentCostTable } from "@/features/usage/components/AgentCostTable";
 import { SummaryCard } from "@/features/usage/components/SummaryCard";
+import { SessionDrillDown } from "@/features/usage/components/SessionDrillDown";
 
 type BreakdownView = "model" | "agent" | "cron";
 
@@ -57,6 +58,12 @@ export const UsagePanel = memo(function UsagePanel({
   } = useUsageData(client, status);
 
   const [breakdownView, setBreakdownView] = useState<BreakdownView>("model");
+
+  // Drill-down state
+  const [drillDown, setDrillDown] = useState<{
+    title: string;
+    sessions: import("@/features/usage/lib/costCalculator").SessionCostEntry[];
+  } | null>(null);
 
   // Collect unique model names for the trend chart legend
   const models = useMemo(() => Array.from(costByModel.keys()), [costByModel]);
@@ -109,6 +116,40 @@ export const UsagePanel = memo(function UsagePanel({
     }
     return { topAgent: best, topAgentCost: bestCost };
   }, [entries]);
+
+  /** Open drill-down for a specific day */
+  const handleBarClick = useCallback(
+    (date: string) => {
+      const daySessions = entries.filter((e) => {
+        if (e.updatedAt == null) return false;
+        const d = new Date(e.updatedAt);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        return key === date;
+      });
+      const label = new Date(date + "T12:00:00").toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      });
+      setDrillDown({ title: label, sessions: daySessions });
+    },
+    [entries],
+  );
+
+  /** Open drill-down for a specific agent */
+  const handleAgentClick = useCallback(
+    (agentId: string) => {
+      const agentSessions = entries.filter((e) => {
+        if (e.key.startsWith("agent:")) {
+          const parts = e.key.split(":");
+          return parts.length >= 2 && parts[1] === agentId;
+        }
+        if (e.key.startsWith("cron-")) return agentId === "(cron)";
+        return agentId === "(direct)";
+      });
+      setDrillDown({ title: agentId, sessions: agentSessions });
+    },
+    [entries],
+  );
 
   return (
     <div className="flex h-full w-full flex-col overflow-y-auto px-3 pb-3 gap-4">
@@ -189,7 +230,7 @@ export const UsagePanel = memo(function UsagePanel({
       {dailyTrends.length > 0 && (
         <div>
           <SectionLabel className="mb-2">Daily Trend</SectionLabel>
-          <DailyTrendChart trends={dailyTrends} models={models} />
+          <DailyTrendChart trends={dailyTrends} models={models} onBarClick={handleBarClick} />
         </div>
       )}
 
@@ -243,13 +284,21 @@ export const UsagePanel = memo(function UsagePanel({
           </div>
         )}
 
-        {breakdownView === "agent" && <AgentCostTable entries={entries} />}
+        {breakdownView === "agent" && <AgentCostTable entries={entries} onAgentClick={handleAgentClick} />}
 
         {breakdownView === "cron" && hasCronEntries && <CronCostTable entries={entries} />}
         {breakdownView === "cron" && !hasCronEntries && (
           <p className="text-xs text-muted-foreground py-4 text-center">No cron sessions in this time range.</p>
         )}
       </div>
+
+      {/* Session drill-down side sheet */}
+      <SessionDrillDown
+        title={drillDown?.title ?? ""}
+        sessions={drillDown?.sessions ?? []}
+        open={drillDown !== null}
+        onClose={() => setDrillDown(null)}
+      />
     </div>
   );
 });
