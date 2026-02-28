@@ -66,11 +66,11 @@ export const WizardBanner = memo(function WizardBanner({
         </span>
         <button
           type="button"
-          className="ml-auto flex h-5 w-5 shrink-0 items-center justify-center rounded p-3 -m-3 text-muted-foreground transition hover:bg-muted hover:text-foreground"
+          className="ml-auto flex h-11 w-11 -m-3 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground"
           aria-label={`Exit ${theme.label}`}
           onClick={handleExit}
         >
-          <X className="h-3 w-3" />
+          <X className="h-4 w-4" />
         </button>
       </div>
 

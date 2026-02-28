@@ -37,12 +37,12 @@ export const WizardChatOverlay = memo(function WizardChatOverlay({
 }: WizardChatOverlayProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll on new content — deferred to after paint
+  // Auto-scroll on new content — deferred to after paint cycle
   useEffect(() => {
-    const raf = requestAnimationFrame(() => {
-      bottomRef.current?.scrollIntoView({ block: "nearest" });
-    });
-    return () => cancelAnimationFrame(raf);
+    const timer = setTimeout(() => {
+      bottomRef.current?.scrollIntoView({ block: "end", behavior: "auto" });
+    }, 50);
+    return () => clearTimeout(timer);
   }, [messages.length, streamText, thinkingTrace, extractedConfig]);
 
   return (
