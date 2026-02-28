@@ -313,7 +313,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
 
         {/* Streaming status bar — shown above input only when active */}
         {running && (
-          <div className="flex items-center gap-2 px-3 pt-1.5 pb-0.5">
+          <div className="flex items-center gap-2 rounded-t-xl bg-card px-3 pt-1.5 pb-0.5">
             <StreamingStatus
               running={running}
               messageParts={messageParts ?? []}
