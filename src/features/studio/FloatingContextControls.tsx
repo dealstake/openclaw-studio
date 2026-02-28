@@ -2,7 +2,7 @@
 
 import { memo } from "react";
 import { X } from "lucide-react";
-import { AgentBreadcrumb, type BreadcrumbAgent } from "@/features/agents/components/AgentBreadcrumb";
+import type { BreadcrumbAgent } from "@/features/agents/components/AgentBreadcrumb";
 import { CONTEXT_TAB_CONFIG } from "@/features/context/lib/tabs";
 import type { ContextTab } from "@/features/context/components/ContextPanel";
 
@@ -19,10 +19,7 @@ interface FloatingContextControlsProps {
 }
 
 export const FloatingContextControls = memo(function FloatingContextControls({
-  agents,
-  selectedAgentId,
-  onSelectAgent,
-  onCreateAgent,
+  // Agent props kept in interface for parent compat — agent picker moved to composer
   contextTab,
   contextPanelOpen,
   onContextTabClick,
@@ -35,25 +32,13 @@ export const FloatingContextControls = memo(function FloatingContextControls({
       : "opacity-0 -translate-y-4 pointer-events-none"
   }`;
 
-  // Panel CLOSED: single compact pill at top-right with agent selector + context icons
+  // Panel CLOSED: compact pill at top-right with context tab icons only
   if (!contextPanelOpen) {
     return (
       <div
         className={`fixed top-4 right-4 z-[var(--z-header)] flex min-w-0 items-center gap-1 rounded-full bg-background/95 p-1 shadow-lg ring-1 ring-border/20 backdrop-blur-xl ${baseTransition}`}
         data-testid="floating-context-controls"
       >
-        {agents.length > 0 && (
-          <>
-            <AgentBreadcrumb
-              agents={agents}
-              selectedAgentId={selectedAgentId}
-              onSelectAgent={onSelectAgent}
-              onCreateAgent={onCreateAgent}
-            />
-            <div className="mx-0.5 h-4 w-px bg-border/30" />
-          </>
-        )}
-
         {CONTEXT_TAB_CONFIG.map(({ value, label, Icon }) => (
           <button
             key={value}
@@ -70,28 +55,9 @@ export const FloatingContextControls = memo(function FloatingContextControls({
     );
   }
 
-  // Panel OPEN: split into two elements
-  // 1. Agent selector floats just left of the panel border
-  // 2. Context tab icons dock inside the panel's top area
+  // Panel OPEN: context tab icons docked inside the panel area
   return (
     <>
-      {/* Agent selector — positioned just left of the 360px context panel */}
-      {agents.length > 0 && (
-        <div
-          className={`fixed top-4 right-[calc(360px+1.5rem)] z-[var(--z-header)] ${baseTransition}`}
-          data-testid="floating-agent-selector"
-        >
-          <div className="flex items-center rounded-full bg-background/95 p-1 shadow-lg ring-1 ring-border/20 backdrop-blur-xl">
-            <AgentBreadcrumb
-              agents={agents}
-              selectedAgentId={selectedAgentId}
-              onSelectAgent={onSelectAgent}
-              onCreateAgent={onCreateAgent}
-            />
-          </div>
-        </div>
-      )}
-
       {/* Context tab icons — docked inside the panel area */}
       <div
         className={`fixed top-4 right-4 z-[var(--z-header)] flex items-center gap-0.5 rounded-full bg-background/95 p-1 shadow-lg ring-1 ring-border/20 backdrop-blur-xl ${baseTransition}`}

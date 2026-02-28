@@ -70,6 +70,7 @@ export const AgentChatPanel = memo(function AgentChatPanel({
   onDismissContinuationBanner,
   gatewayStatus,
   queueLength = 0,
+  onNewSession,
   wizard = null,
   onWizardConfirm,
   wizardConfirming = false,
@@ -322,6 +323,7 @@ export const AgentChatPanel = memo(function AgentChatPanel({
             wizardHasMessages={(wizard?.messages.length ?? 0) > 0}
             onWizardExit={handleWizardExit}
             onWizardStarterClick={handleWizardStarterClick}
+            onNewSession={onNewSession}
           />
         )}
       </div>

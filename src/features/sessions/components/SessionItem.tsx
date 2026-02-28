@@ -78,7 +78,7 @@ export const SessionItem = memo(function SessionItem({
       onKeyDown={handleKeyDown}
       className={`group flex w-full items-start gap-2.5 rounded-lg px-2.5 py-2.5 text-left transition-all duration-200 focus-ring min-h-[44px] ${
         active
-          ? "bg-accent text-accent-foreground"
+          ? "bg-accent text-accent-foreground border-l-2 border-l-primary ring-1 ring-primary/20"
           : focused
             ? "bg-muted/70 text-foreground ring-1 ring-primary/30"
             : "text-foreground/80 hover:bg-muted hover:translate-x-0.5"

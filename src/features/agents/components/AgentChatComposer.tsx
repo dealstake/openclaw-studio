@@ -13,8 +13,7 @@ import {
 import type { GatewayModelChoice } from "@/lib/gateway/models";
 import type { MessagePart } from "@/lib/chat/types";
 import type { GatewayStatus } from "@/lib/gateway/GatewayClient";
-import { AlertCircle, Paperclip, Send, Settings2, Square, UploadCloud, WifiOff } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { AlertCircle, Paperclip, Plus, Send, Square, UploadCloud, WifiOff } from "lucide-react";
 import { ChatAttachmentPreview } from "./ChatAttachmentPreview";
 import { ModelPicker } from "./ModelPicker";
 import { ThinkingToggle } from "./ThinkingToggle";
@@ -53,6 +52,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   wizardHasMessages,
   onWizardExit,
   onWizardStarterClick,
+  onNewSession,
 }: {
   onDraftChange: (value: string) => void;
   onSend: (message: string, attachments?: ChatAttachment[]) => void;
@@ -84,6 +84,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   wizardHasMessages?: boolean;
   onWizardExit?: () => void;
   onWizardStarterClick?: (message: string) => void;
+  onNewSession?: () => void;
 }) {
   const localRef = useRef<HTMLTextAreaElement | null>(null);
   const pendingResizeRef = useRef<number | null>(null);
@@ -332,9 +333,52 @@ export const AgentChatComposer = memo(function AgentChatComposer({
           </div>
         )}
 
-        {/* Single-row input: [attach] [settings] [textarea] [token] [send/stop] */}
+        {/* Row 1: Toolbar — model picker, thinking, token meter, new session */}
+        <div className="flex min-h-[36px] items-center gap-1 border-b border-border/20 px-2.5 py-1">
+          {/* Left: model picker + thinking toggle + token meter */}
+          <div className="flex min-w-0 flex-1 items-center gap-1.5">
+            {models.length > 0 && (
+              <ModelPicker models={models} value={modelValue} onChange={onModelChange} />
+            )}
+            {allowThinking && (
+              <>
+                <div className="h-3.5 w-px shrink-0 bg-border/30" />
+                <ThinkingToggle value={thinkingLevel} onChange={onThinkingChange} />
+              </>
+            )}
+            {tokenPct !== null && (
+              <>
+                <div className="h-3.5 w-px shrink-0 bg-border/30" />
+                <div className="flex items-center gap-1.5 opacity-70">
+                  <div className="h-1 w-8 overflow-hidden rounded-full bg-muted">
+                    <div
+                      className={`h-full rounded-full transition-all ${tokenPct >= 80 ? "bg-yellow-500" : "bg-primary/60"}`}
+                      style={{ width: `${Math.min(tokenPct, 100)}%` }}
+                    />
+                  </div>
+                  <span className="font-mono text-[10px] text-muted-foreground">{tokenPct}%</span>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Right: new session button */}
+          {onNewSession && (
+            <button
+              type="button"
+              onClick={onNewSession}
+              className="flex h-7 w-7 min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground"
+              aria-label="New session"
+              title="New session"
+            >
+              <Plus className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+
+        {/* Row 2: Input — [attach] [textarea] [send/stop] */}
         <div className="flex items-end gap-1 px-2 py-1.5">
-          {/* Left actions: attach + settings */}
+          {/* Attach button */}
           <div className="flex shrink-0 items-center">
             <button
               type="button"
@@ -352,28 +396,6 @@ export const AgentChatComposer = memo(function AgentChatComposer({
               multiple
               onChange={handleFileInputChange}
             />
-
-            {(models.length > 0 || allowThinking) && (
-              <Popover>
-                <PopoverTrigger asChild>
-                  <button
-                    type="button"
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground"
-                    aria-label="Model & thinking settings"
-                  >
-                    <Settings2 className="h-4 w-4" />
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent align="start" className="w-auto min-w-[200px] space-y-2 p-2" side="top">
-                  {models.length > 0 && (
-                    <ModelPicker models={models} value={modelValue} onChange={onModelChange} />
-                  )}
-                  {allowThinking && (
-                    <ThinkingToggle value={thinkingLevel} onChange={onThinkingChange} />
-                  )}
-                </PopoverContent>
-              </Popover>
-            )}
           </div>
 
           {/* Textarea — grows vertically */}
@@ -390,20 +412,8 @@ export const AgentChatComposer = memo(function AgentChatComposer({
             placeholder={wizardType && wizardTheme ? `Describe what you need...` : `Message ${agentName}...`}
           />
 
-          {/* Right side: token gauge (when idle) + send/stop */}
+          {/* Send/Stop */}
           <div className="flex shrink-0 items-center gap-1">
-            {!running && tokenPct !== null && (
-              <div className="hidden items-center gap-1.5 opacity-60 sm:flex">
-                <div className="h-1 w-10 overflow-hidden rounded-full bg-muted">
-                  <div
-                    className={`h-full rounded-full transition-all ${tokenPct >= 80 ? "bg-yellow-500" : "bg-primary/60"}`}
-                    style={{ width: `${Math.min(tokenPct, 100)}%` }}
-                  />
-                </div>
-                <span className="font-mono text-[10px] text-muted-foreground">{tokenPct}%</span>
-              </div>
-            )}
-
             {running ? (
               <button
                 className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-destructive text-destructive-foreground shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
