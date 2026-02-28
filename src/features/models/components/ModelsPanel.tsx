@@ -23,9 +23,14 @@ export const ModelsPanel = memo(function ModelsPanel({
   const {
     brainConfig,
     engines,
+    providers,
+    allModels,
     loading,
     error,
     refresh,
+    changeBrainModel,
+    saveEngine,
+    removeEngine,
   } = useModels(client, status);
 
   useEffect(() => {
@@ -57,8 +62,18 @@ export const ModelsPanel = memo(function ModelsPanel({
       {/* Content */}
       {!loading || brainConfig.primary ? (
         <>
-          <BrainModelSection config={brainConfig} />
-          <SpecialistEnginesSection engines={engines} />
+          <BrainModelSection
+            config={brainConfig}
+            providers={providers}
+            allModels={allModels}
+            onChangePrimary={changeBrainModel}
+            disabled={loading}
+          />
+          <SpecialistEnginesSection
+            engines={engines}
+            onSaveEngine={saveEngine}
+            onRemoveEngine={removeEngine}
+          />
         </>
       ) : null}
     </div>

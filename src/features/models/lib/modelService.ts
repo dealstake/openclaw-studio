@@ -8,6 +8,7 @@
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import type { GatewayConfigSnapshot } from "@/lib/gateway/agentConfigTypes";
 import type { GatewayModelChoice } from "@/lib/gateway/models";
+import { withGatewayConfigMutation } from "@/lib/gateway/configMutation";
 import { isRecord, parseString, parseStringList } from "@/lib/type-guards";
 import { findEngineTemplate, maskApiKey } from "./engineRegistry";
 import type {
@@ -234,4 +235,126 @@ export async function fetchModelsData(
   const { allModels, providers } = buildModelCatalog(catalog, brainConfig);
 
   return { brainConfig, engines, roles, providers, allModels };
+}
+
+// ── Write Operations (all via config.patch) ──────────────────────────────────
+
+/** Change primary brain model */
+export async function setBrainModel(
+  client: GatewayClient,
+  modelKey: string,
+): Promise<void> {
+  await withGatewayConfigMutation({
+    client,
+    mutate: ({ baseConfig }) => {
+      const agents = isRecord(baseConfig.agents) ? baseConfig.agents : {};
+      const defaults = isRecord(agents.defaults) ? agents.defaults : {};
+      const modelCfg = isRecord(defaults.model) ? defaults.model : {};
+      return {
+        shouldPatch: true,
+        patch: {
+          agents: {
+            defaults: {
+              model: { ...modelCfg, primary: modelKey },
+            },
+          },
+        },
+        result: undefined,
+      };
+    },
+  });
+}
+
+/** Update fallback models for brain */
+export async function setBrainFallbacks(
+  client: GatewayClient,
+  fallbacks: string[],
+): Promise<void> {
+  await withGatewayConfigMutation({
+    client,
+    mutate: ({ baseConfig }) => {
+      const agents = isRecord(baseConfig.agents) ? baseConfig.agents : {};
+      const defaults = isRecord(agents.defaults) ? agents.defaults : {};
+      const modelCfg = isRecord(defaults.model) ? defaults.model : {};
+      return {
+        shouldPatch: true,
+        patch: {
+          agents: {
+            defaults: {
+              model: { ...modelCfg, fallbacks },
+            },
+          },
+        },
+        result: undefined,
+      };
+    },
+  });
+}
+
+/** Add or update a specialist engine (writes to env.vars + skills.entries) */
+export async function saveSpecialistEngine(
+  client: GatewayClient,
+  type: EngineType,
+  apiKey: string,
+  model: string,
+  fallbackModel: string | null,
+): Promise<void> {
+  const template = findEngineTemplate(type);
+  const envKey = template?.primaryEnvKey ?? `${type.toUpperCase()}_API_KEY`;
+  await withGatewayConfigMutation({
+    client,
+    mutate: () => ({
+      shouldPatch: true,
+      patch: {
+        env: {
+          vars: {
+            [envKey]: apiKey,
+            [`${type.toUpperCase()}_PIPELINE_MODEL`]: model,
+            ...(fallbackModel
+              ? { [`${type.toUpperCase()}_PIPELINE_FALLBACK`]: fallbackModel }
+              : {}),
+          },
+        },
+        skills: {
+          entries: {
+            [`pipeline:${type}`]: {
+              enabled: true,
+              description: template?.bestFor ?? "",
+            },
+          },
+        },
+      },
+      result: undefined,
+    }),
+  });
+}
+
+/** Remove a specialist engine (clears env vars + disables metadata) */
+export async function removeSpecialistEngine(
+  client: GatewayClient,
+  type: EngineType,
+): Promise<void> {
+  const template = findEngineTemplate(type);
+  const envKey = template?.primaryEnvKey ?? `${type.toUpperCase()}_API_KEY`;
+  await withGatewayConfigMutation({
+    client,
+    mutate: () => ({
+      shouldPatch: true,
+      patch: {
+        env: {
+          vars: {
+            [envKey]: null,
+            [`${type.toUpperCase()}_PIPELINE_MODEL`]: null,
+            [`${type.toUpperCase()}_PIPELINE_FALLBACK`]: null,
+          },
+        },
+        skills: {
+          entries: {
+            [`pipeline:${type}`]: { enabled: false },
+          },
+        },
+      },
+      result: undefined,
+    }),
+  });
 }
