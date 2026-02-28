@@ -8,6 +8,7 @@ import { ErrorBanner } from "@/components/ErrorBanner";
 import { usePersonas, type PersonaStatusFilter, type PersonaListItem } from "../hooks/usePersonas";
 import { PersonaCard } from "./PersonaCard";
 import { PracticeSessionModal } from "./PracticeSessionModal";
+import { KnowledgePanel } from "./KnowledgePanel";
 import type { PracticeModeType } from "../lib/personaTypes";
 
 // ---------------------------------------------------------------------------
@@ -66,6 +67,8 @@ export const PersonasTab = React.memo(function PersonasTab({
 
   // Practice modal state
   const [practiceTarget, setPracticeTarget] = useState<PersonaListItem | null>(null);
+  // Knowledge panel state
+  const [knowledgeTarget, setKnowledgeTarget] = useState<PersonaListItem | null>(null);
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleSelect = useCallback((_persona: PersonaListItem) => {
@@ -74,6 +77,14 @@ export const PersonasTab = React.memo(function PersonasTab({
 
   const handlePractice = useCallback((persona: PersonaListItem) => {
     setPracticeTarget(persona);
+  }, []);
+
+  const handleKnowledge = useCallback((persona: PersonaListItem) => {
+    setKnowledgeTarget(persona);
+  }, []);
+
+  const handleKnowledgeClose = useCallback(() => {
+    setKnowledgeTarget(null);
   }, []);
 
   const handlePracticeClose = useCallback((open: boolean) => {
@@ -194,6 +205,7 @@ export const PersonasTab = React.memo(function PersonasTab({
                 persona={persona}
                 onSelect={handleSelect}
                 onPractice={handlePractice}
+                onKnowledge={handleKnowledge}
                 onStatusChange={onStatusChange}
                 onDelete={onDelete}
                 busy={busyId === persona.personaId}
@@ -212,6 +224,19 @@ export const PersonasTab = React.memo(function PersonasTab({
           personaName={practiceTarget.displayName}
           availableModes={ALL_PRACTICE_MODES}
         />
+      )}
+
+      {/* Knowledge panel overlay */}
+      {knowledgeTarget && (
+        <div className="absolute inset-0 z-10 bg-background">
+          <KnowledgePanel
+            agentId={agentId}
+            personaId={knowledgeTarget.personaId}
+            personaName={knowledgeTarget.displayName}
+            status={status}
+            onClose={handleKnowledgeClose}
+          />
+        </div>
       )}
     </div>
   );

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback } from "react";
-import { Play, Pause, Archive, Trash2, TrendingUp, TrendingDown, Dumbbell } from "lucide-react";
+import { Play, Pause, Archive, Trash2, TrendingUp, TrendingDown, Dumbbell, BookOpen } from "lucide-react";
 import { BaseCard, CardHeader, CardTitle, CardMeta } from "@/components/ui/BaseCard";
 import { cn } from "@/lib/utils";
 import type { PersonaListItem } from "../hooks/usePersonas";
@@ -53,6 +53,7 @@ export interface PersonaCardProps {
   persona: PersonaListItem;
   onSelect: (persona: PersonaListItem) => void;
   onPractice?: (persona: PersonaListItem) => void;
+  onKnowledge?: (persona: PersonaListItem) => void;
   onStatusChange: (personaId: string, status: PersonaStatus) => Promise<void>;
   onDelete: (personaId: string) => Promise<void>;
   busy: boolean;
@@ -62,6 +63,7 @@ export const PersonaCard = React.memo(function PersonaCard({
   persona,
   onSelect,
   onPractice,
+  onKnowledge,
   onStatusChange,
   onDelete,
   busy,
@@ -109,9 +111,18 @@ export const PersonaCard = React.memo(function PersonaCard({
     [busy, onDelete, persona.personaId],
   );
 
+  const handleKnowledge = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      onKnowledge?.(persona);
+    },
+    [onKnowledge, persona],
+  );
+
   const canToggle = persona.status === "active" || persona.status === "paused";
   const canArchive = persona.status !== "archived";
   const canPractice = onPractice && (persona.status === "active" || persona.status === "draft");
+  const canKnowledge = onKnowledge && persona.status !== "archived";
 
   return (
     <BaseCard
@@ -144,6 +155,16 @@ export const PersonaCard = React.memo(function PersonaCard({
               aria-label="Practice with persona"
             >
               <Dumbbell className="h-3.5 w-3.5" />
+            </button>
+          )}
+          {canKnowledge && (
+            <button
+              type="button"
+              onClick={handleKnowledge}
+              className="rounded p-1 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors min-h-[32px] min-w-[32px] flex items-center justify-center"
+              aria-label="Manage knowledge"
+            >
+              <BookOpen className="h-3.5 w-3.5" />
             </button>
           )}
           {canToggle && (
