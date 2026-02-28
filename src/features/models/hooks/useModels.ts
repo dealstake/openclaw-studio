@@ -14,6 +14,9 @@ import {
   setBrainFallbacks,
   saveSpecialistEngine,
   removeSpecialistEngine,
+  setModelRole,
+  setThinkingLevel,
+  setCronModel,
 } from "@/features/models/lib/modelService";
 import type { EngineType, ModelsData } from "@/features/models/lib/types";
 
@@ -32,6 +35,9 @@ export type UseModelsResult = ModelsData & {
     fallbackModel: string | null,
   ) => Promise<void>;
   removeEngine: (type: EngineType) => Promise<void>;
+  changeRole: (role: "subagent" | "heartbeat", modelKey: string) => Promise<void>;
+  changeThinking: (thinking: string) => Promise<void>;
+  changeCronModel: (cronId: string, modelKey: string | null) => Promise<void>;
 };
 
 const EMPTY_DATA: ModelsData = {
@@ -127,6 +133,23 @@ export const useModels = (
     [client, mutate],
   );
 
+  const changeRole = useCallback(
+    (role: "subagent" | "heartbeat", modelKey: string) =>
+      mutate(() => setModelRole(client, role, modelKey)),
+    [client, mutate],
+  );
+
+  const changeThinking = useCallback(
+    (thinking: string) => mutate(() => setThinkingLevel(client, thinking)),
+    [client, mutate],
+  );
+
+  const changeCronModel = useCallback(
+    (cronId: string, modelKey: string | null) =>
+      mutate(() => setCronModel(client, cronId, modelKey)),
+    [client, mutate],
+  );
+
   return {
     ...data,
     loading,
@@ -136,5 +159,8 @@ export const useModels = (
     changeBrainFallbacks,
     saveEngine,
     removeEngine,
+    changeRole,
+    changeThinking,
+    changeCronModel,
   };
 };

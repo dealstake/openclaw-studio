@@ -329,6 +329,49 @@ export async function saveSpecialistEngine(
   });
 }
 
+/** Change a model role (sub-agent or heartbeat) */
+export async function setModelRole(
+  client: GatewayClient,
+  role: "subagent" | "heartbeat",
+  modelKey: string,
+): Promise<void> {
+  const path =
+    role === "subagent"
+      ? { agents: { defaults: { subagents: { model: modelKey } } } }
+      : { agents: { defaults: { heartbeat: { model: modelKey } } } };
+  await withGatewayConfigMutation({
+    client,
+    mutate: () => ({ shouldPatch: true, patch: path, result: undefined }),
+  });
+}
+
+/** Change sub-agent thinking level */
+export async function setThinkingLevel(
+  client: GatewayClient,
+  thinking: string,
+): Promise<void> {
+  await withGatewayConfigMutation({
+    client,
+    mutate: () => ({
+      shouldPatch: true,
+      patch: { agents: { defaults: { subagents: { thinking } } } },
+      result: undefined,
+    }),
+  });
+}
+
+/** Change a cron job's model override */
+export async function setCronModel(
+  client: GatewayClient,
+  cronId: string,
+  modelKey: string | null,
+): Promise<void> {
+  await client.call("cron.edit", {
+    id: cronId,
+    model: modelKey ?? undefined,
+  });
+}
+
 /** Remove a specialist engine (clears env vars + disables metadata) */
 export async function removeSpecialistEngine(
   client: GatewayClient,
