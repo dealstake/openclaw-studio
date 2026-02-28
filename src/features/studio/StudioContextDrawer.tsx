@@ -178,7 +178,7 @@ export const StudioContextDrawer = React.memo(function StudioContextDrawer(props
         }
         skillsContent={
           <PanelErrorBoundary name="Skills">
-            <SkillsPanel client={client} status={status} onCreateSkill={onCreateSkill} />
+            <SkillsPanel client={client} status={status} onCreateSkill={onCreateSkill} focusedAgentId={focusedAgentId} />
           </PanelErrorBoundary>
         }
         activityContent={

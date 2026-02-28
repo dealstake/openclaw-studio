@@ -148,7 +148,7 @@ export const StudioExpandedPanel = memo(function StudioExpandedPanel({
           )}
           {expandedTab === "skills" && (
             <PanelErrorBoundary name="Skills">
-              <SkillsPanel client={client} status={status} onCreateSkill={onCreateSkill} />
+              <SkillsPanel client={client} status={status} onCreateSkill={onCreateSkill} focusedAgentId={focusedAgentId} />
             </PanelErrorBoundary>
           )}
           {expandedTab === "activity" && (
