@@ -334,9 +334,9 @@ export const AgentChatComposer = memo(function AgentChatComposer({
         )}
 
         {/* Row 1: Toolbar — model picker, thinking, token meter, new session */}
-        <div className="flex min-h-[36px] items-center gap-1 border-b border-border/20 px-2.5 py-1">
+        <div className="flex min-h-[36px] items-center gap-1 overflow-x-auto border-b border-border/20 px-2.5 py-1 scrollbar-none">
           {/* Left: model picker + thinking toggle + token meter */}
-          <div className="flex min-w-0 flex-1 items-center gap-1.5">
+          <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
             {models.length > 0 && (
               <ModelPicker models={models} value={modelValue} onChange={onModelChange} />
             )}
@@ -348,8 +348,8 @@ export const AgentChatComposer = memo(function AgentChatComposer({
             )}
             {tokenPct !== null && (
               <>
-                <div className="h-3.5 w-px shrink-0 bg-border/30" />
-                <div className="flex items-center gap-1.5 opacity-70">
+                <div className="hidden h-3.5 w-px shrink-0 bg-border/30 sm:block" />
+                <div className="hidden items-center gap-1.5 opacity-70 sm:flex">
                   <div className="h-1 w-8 overflow-hidden rounded-full bg-muted">
                     <div
                       className={`h-full rounded-full transition-all ${tokenPct >= 80 ? "bg-yellow-500" : "bg-primary/60"}`}

@@ -150,7 +150,7 @@ export function useStudioChatCallbacks({
           console.error("Failed to load transcript:", err);
           setViewingSessionHistory([{
             type: "text",
-            text: "Unable to load this sessionu2019s transcript. Please try again in a moment.",
+            text: "Unable to load this session's transcript. Please try again in a moment.",
           }]);
         })
         .finally(() => setViewingSessionLoading(false));
@@ -188,7 +188,7 @@ export function useStudioChatCallbacks({
           console.error("Failed to load transcript:", err);
           setViewingSessionHistory([{
             type: "text",
-            text: "Unable to load this sessionu2019s transcript. Please try again in a moment.",
+            text: "Unable to load this session's transcript. Please try again in a moment.",
           }]);
         })
         .finally(() => setViewingSessionLoading(false));
