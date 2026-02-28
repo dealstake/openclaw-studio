@@ -1,10 +1,12 @@
 "use client";
 
 import { memo, useEffect, useMemo } from "react";
-import { RefreshCw } from "lucide-react";
+import { BarChart3, RefreshCw } from "lucide-react";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { useUsageData, type TimeRange } from "@/features/usage/hooks/useUsageData";
 import { SectionLabel } from "@/components/SectionLabel";
+import { PanelHeader } from "@/components/ui/PanelHeader";
+import { FilterGroup, type FilterGroupOption } from "@/components/ui/FilterGroup";
 import { ErrorBanner } from "@/components/ErrorBanner";
 import { Skeleton } from "@/components/Skeleton";
 import { PanelIconButton } from "@/components/PanelIconButton";
@@ -14,7 +16,7 @@ import { DailyTrendChart } from "@/features/usage/components/DailyTrendChart";
 import { CronCostTable } from "@/features/usage/components/CronCostTable";
 import { SummaryCard } from "@/features/usage/components/SummaryCard";
 
-const TIME_RANGES: Array<{ value: TimeRange; label: string }> = [
+const TIME_RANGE_OPTIONS: FilterGroupOption<TimeRange>[] = [
   { value: "today", label: "Today" },
   { value: "7d", label: "7d" },
   { value: "30d", label: "30d" },
@@ -65,34 +67,27 @@ export const UsagePanel = memo(function UsagePanel({
   return (
     <div className="flex h-full w-full flex-col overflow-y-auto p-3 gap-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <SectionLabel>Usage & Cost</SectionLabel>
-        <PanelIconButton
-          aria-label="Refresh"
-          onClick={() => void refresh()}
-        >
-          <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-        </PanelIconButton>
-      </div>
-
-      {/* Time range toggle */}
-      <div className="flex items-center gap-1">
-        {TIME_RANGES.map((r) => (
-          <button
-            key={r.value}
-            type="button"
-            onClick={() => setTimeRange(r.value)}
-            aria-pressed={timeRange === r.value}
-            className={`rounded-md border px-3 py-1.5 text-xs font-medium transition ${
-              timeRange === r.value
-                ? "border-border bg-muted text-foreground shadow-xs"
-                : "border-border/80 bg-card/65 text-muted-foreground hover:border-border hover:bg-muted/70"
-            }`}
+      <PanelHeader
+        icon={<BarChart3 className="h-4 w-4" />}
+        title="Usage & Cost"
+        actions={
+          <PanelIconButton
+            aria-label="Refresh"
+            onClick={() => void refresh()}
           >
-            {r.label}
-          </button>
-        ))}
-      </div>
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+          </PanelIconButton>
+        }
+        filters={
+          <FilterGroup
+            options={TIME_RANGE_OPTIONS}
+            value={[timeRange]}
+            onChange={(v) => { if (v.length > 0) setTimeRange(v[v.length - 1]!); }}
+            allowEmpty={false}
+          />
+        }
+        className="px-0 pt-0 pb-0"
+      />
 
       {error && <ErrorBanner message={error} onRetry={() => void refresh()} />}
 

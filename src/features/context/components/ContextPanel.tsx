@@ -145,7 +145,7 @@ export const ContextPanel = memo(function ContextPanel({
     <div className="flex h-full w-full flex-col overflow-hidden">
       {/* Single tab bar — responsive via CSS, no duplication */}
       {!hideTabBar && (
-        <div className="flex items-center border-b border-border/20 px-3 pt-0">
+        <div className="flex items-center px-3 pt-0">
           {/* Scrollable tab buttons with overflow indicators */}
           <div className="relative min-w-0 flex-1 overflow-hidden">
             {showScrollLeft && (
@@ -173,10 +173,10 @@ export const ContextPanel = memo(function ContextPanel({
                   aria-selected={isActive}
                   tabIndex={isActive ? 0 : -1}
                   aria-controls={tabPanelId(tab.value)}
-                  className={`flex-shrink-0 items-center justify-center min-w-[44px] min-h-[44px] px-2.5 ${sectionLabelClass} transition-colors focus-ring rounded-md ${
+                  className={`flex-shrink-0 items-center justify-center min-w-[44px] min-h-[44px] px-2.5 ${sectionLabelClass} transition-all focus-ring rounded-full ${
                     isActive
-                      ? "text-foreground font-semibold border-b-2 border-primary"
-                      : "text-muted-foreground hover:text-foreground"
+                      ? "bg-primary/15 text-primary shadow-sm ring-1 ring-primary/25 font-semibold dark:bg-primary/20"
+                      : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                   }`}
                   onClick={() => handleTabClick(tab.value)}
                   data-testid={`context-tab-${tab.value}`}

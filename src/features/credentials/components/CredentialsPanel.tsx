@@ -5,7 +5,7 @@ import { KeyRound, Plus, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
-import { PanelToolbar } from "@/components/ui/PanelToolbar";
+import { PanelHeader } from "@/components/ui/PanelHeader";
 import { PanelSearchInput } from "@/components/ui/PanelSearchInput";
 import { PanelIconButton } from "@/components/PanelIconButton";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -117,7 +117,9 @@ export const CredentialsPanel = React.memo(function CredentialsPanel({
   return (
     <TooltipProvider>
     <div className="flex h-full flex-col">
-      <PanelToolbar
+      <PanelHeader
+        icon={<KeyRound className="h-4 w-4" />}
+        title="Credentials"
         actions={
           <>
             <PanelIconButton onClick={refresh} title="Refresh" aria-label="Refresh">
@@ -133,17 +135,18 @@ export const CredentialsPanel = React.memo(function CredentialsPanel({
             </PanelIconButton>
           </>
         }
-      >
-        <PanelSearchInput
-          value={search}
-          onChange={setSearch}
-          placeholder="Search services…"
-          className="flex-1"
-        />
-      </PanelToolbar>
+        filters={
+          <PanelSearchInput
+            value={search}
+            onChange={setSearch}
+            placeholder="Search services…"
+            className="flex-1"
+          />
+        }
+      />
 
       {stats.total > 0 && (
-        <div className="flex items-center gap-3 border-b border-border/20 px-3 py-1.5 text-xs text-muted-foreground/60">
+        <div className="flex items-center gap-3 px-3 py-1.5 text-xs text-muted-foreground/60">
           <span>{stats.connected} connected</span>
           <span>· {stats.total} total</span>
         </div>

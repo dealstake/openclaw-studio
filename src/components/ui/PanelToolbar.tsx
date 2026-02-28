@@ -27,7 +27,7 @@ export const PanelToolbar = React.memo(function PanelToolbar({
 }: PanelToolbarProps) {
   return (
     <div
-      className={`flex flex-wrap items-center gap-2 border-b border-border/30 px-4 py-2 ${className}`}
+      className={`flex flex-wrap items-center gap-2 px-4 py-2 ${className}`}
     >
       <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
         {children}

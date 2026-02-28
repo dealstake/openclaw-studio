@@ -5,9 +5,15 @@ import { FolderOpen } from "lucide-react";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import { WorkspaceExplorerPanel } from "./WorkspaceExplorerPanel";
 import { ArtifactsPanel } from "@/features/artifacts/components/ArtifactsPanel";
-import { SectionLabel } from "@/components/SectionLabel";
+import { PanelHeader } from "@/components/ui/PanelHeader";
+import { FilterGroup, type FilterGroupOption } from "@/components/ui/FilterGroup";
 
 type SubTab = "workspace" | "artifacts";
+
+const SUB_TAB_OPTIONS: FilterGroupOption<SubTab>[] = [
+  { value: "workspace", label: "Workspace" },
+  { value: "artifacts", label: "Artifacts" },
+];
 
 interface UnifiedFilesPanelProps {
   agentId: string | null | undefined;
@@ -31,50 +37,18 @@ export const UnifiedFilesPanel = memo(function UnifiedFilesPanel({
   return (
     <div className="flex h-full w-full flex-col overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-3 pt-3 pb-1">
-        <div className="flex items-center gap-2">
-          <FolderOpen className="h-4 w-4 text-muted-foreground" />
-          <SectionLabel as="span">Files</SectionLabel>
-        </div>
-      </div>
-
-      {/* Segmented control */}
-      <div
-        role="tablist"
-        aria-label="File views"
-        className="flex shrink-0 items-center gap-1 border-b border-border/50 px-3 pb-2"
-      >
-        <button
-          type="button"
-          role="tab"
-          id="workspace-tab"
-          aria-controls="workspace-tabpanel"
-          aria-selected={subTab === "workspace"}
-          onClick={() => handleTabChange("workspace")}
-          className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-            subTab === "workspace"
-              ? "bg-muted text-foreground"
-              : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-          }`}
-        >
-          Workspace
-        </button>
-        <button
-          type="button"
-          role="tab"
-          id="artifacts-tab"
-          aria-controls="artifacts-tabpanel"
-          aria-selected={subTab === "artifacts"}
-          onClick={() => handleTabChange("artifacts")}
-          className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-            subTab === "artifacts"
-              ? "bg-muted text-foreground"
-              : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-          }`}
-        >
-          Artifacts
-        </button>
-      </div>
+      <PanelHeader
+        icon={<FolderOpen className="h-4 w-4" />}
+        title="Files"
+        filters={
+          <FilterGroup
+            options={SUB_TAB_OPTIONS}
+            value={[subTab]}
+            onChange={(v) => { if (v.length > 0) handleTabChange(v[v.length - 1]!); }}
+            allowEmpty={false}
+          />
+        }
+      />
 
       {/* Panel content */}
       <div className="min-h-0 flex-1 overflow-hidden">

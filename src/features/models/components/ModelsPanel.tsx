@@ -1,10 +1,10 @@
 "use client";
 
 import { memo, useEffect } from "react";
-import { RefreshCw } from "lucide-react";
+import { Cpu, RefreshCw } from "lucide-react";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { useModels } from "@/features/models/hooks/useModels";
-import { SectionLabel } from "@/components/SectionLabel";
+import { PanelHeader } from "@/components/ui/PanelHeader";
 import { ErrorBanner } from "@/components/ErrorBanner";
 import { CardSkeleton } from "@/components/ui/CardSkeleton";
 import { PanelIconButton } from "@/components/PanelIconButton";
@@ -49,16 +49,20 @@ export const ModelsPanel = memo(function ModelsPanel({
   return (
     <div className="flex h-full w-full flex-col overflow-y-auto p-3 gap-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <SectionLabel>Models &amp; Brains</SectionLabel>
-        <PanelIconButton
-          aria-label="Refresh"
-          onClick={() => void refresh()}
-          disabled={loading}
-        >
-          <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-        </PanelIconButton>
-      </div>
+      <PanelHeader
+        icon={<Cpu className="h-4 w-4" />}
+        title="Models & Brains"
+        actions={
+          <PanelIconButton
+            aria-label="Refresh"
+            onClick={() => void refresh()}
+            disabled={loading}
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+          </PanelIconButton>
+        }
+        className="px-0 pt-0 pb-0"
+      />
 
       {/* Error */}
       {error && <ErrorBanner message={error} />}
