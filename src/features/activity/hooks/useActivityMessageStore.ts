@@ -32,7 +32,8 @@ export interface ActivityMessage {
   totalCost?: number | null;
 }
 
-const MAX_ENTRIES = 200;
+/** Maximum live activity entries before FIFO eviction. Override via NEXT_PUBLIC_ACTIVITY_MAX_ENTRIES. */
+const MAX_ENTRIES = Number(process.env.NEXT_PUBLIC_ACTIVITY_MAX_ENTRIES) || 200;
 
 // --- Module-level store ---
 let messages: ActivityMessage[] = [];
