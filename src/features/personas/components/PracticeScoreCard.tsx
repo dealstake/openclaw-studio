@@ -28,8 +28,8 @@ function ScoreRing({ score, size = 80 }: { score: number; size?: number }) {
         : "text-red-400";
 
   return (
-    <div className="relative" style={{ width: size, height: size }}>
-      <svg width={size} height={size} className="-rotate-90">
+    <div className="relative" style={{ width: size, height: size }} role="img" aria-label={`Overall score: ${score.toFixed(1)} out of 10`}>
+      <svg width={size} height={size} className="-rotate-90" aria-hidden="true">
         <circle
           cx={size / 2}
           cy={size / 2}

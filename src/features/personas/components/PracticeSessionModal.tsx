@@ -125,9 +125,9 @@ const ModeCard = React.memo(function ModeCard({
 type Difficulty = "easy" | "medium" | "hard";
 
 const DIFFICULTY_META: Record<Difficulty, { label: string; cls: string }> = {
-  easy: { label: "Easy", cls: "text-emerald-500 border-emerald-500/30" },
-  medium: { label: "Medium", cls: "text-amber-500 border-amber-500/30" },
-  hard: { label: "Hard", cls: "text-red-400 border-red-400/30" },
+  easy: { label: "Easy", cls: "text-emerald-700 dark:text-emerald-400 border-emerald-500/30" },
+  medium: { label: "Medium", cls: "text-amber-700 dark:text-amber-500 border-amber-500/30" },
+  hard: { label: "Hard", cls: "text-red-600 dark:text-red-400 border-red-400/30" },
 };
 
 // ---------------------------------------------------------------------------
@@ -316,6 +316,7 @@ export const PracticeSessionModal = React.memo(function PracticeSessionModal({
                       key={d}
                       type="button"
                       onClick={() => setDifficulty(d)}
+                      aria-pressed={difficulty === d}
                       className={cn(
                         "min-h-[44px] flex-1 rounded-lg border px-3 py-2 text-xs font-medium transition-colors",
                         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
@@ -384,7 +385,7 @@ export const PracticeSessionModal = React.memo(function PracticeSessionModal({
                   placeholder="Type your response…"
                   aria-label="Practice message input"
                   className={cn(
-                    "h-10 flex-1 rounded-lg border border-border/40 bg-background/50 px-3",
+                    "min-h-[44px] flex-1 rounded-lg border border-border/40 bg-background/50 px-3",
                     "text-sm text-foreground placeholder:text-muted-foreground/70",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
                   )}
@@ -395,7 +396,7 @@ export const PracticeSessionModal = React.memo(function PracticeSessionModal({
                   disabled={!input.trim()}
                   aria-label="Send message"
                   className={cn(
-                    "flex h-10 w-10 items-center justify-center rounded-lg transition-colors",
+                    "flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg transition-colors",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
                     input.trim()
                       ? "bg-primary text-primary-foreground hover:bg-primary/90"
@@ -409,7 +410,7 @@ export const PracticeSessionModal = React.memo(function PracticeSessionModal({
                   onClick={handleEnd}
                   aria-label="End practice session"
                   className={cn(
-                    "flex h-10 w-10 items-center justify-center rounded-lg",
+                    "flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg",
                     "border border-destructive/30 text-destructive transition-colors",
                     "hover:bg-destructive/10",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/60",
