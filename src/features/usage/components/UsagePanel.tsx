@@ -137,7 +137,7 @@ export const UsagePanel = memo(function UsagePanel({
       {error && <ErrorBanner message={error} onRetry={() => void refresh()} />}
 
       {/* Summary cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {loading && !totalSessions ? (
           <>
             <Skeleton className="h-20 rounded-lg" />
@@ -168,7 +168,7 @@ export const UsagePanel = memo(function UsagePanel({
       </div>
 
       {/* Secondary stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         <SummaryCard
           label="Tokens"
           value={formatTokens(totalInputTokens + totalOutputTokens)}

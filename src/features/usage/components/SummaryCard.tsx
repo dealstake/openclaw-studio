@@ -14,8 +14,8 @@ export const SummaryCard = memo(function SummaryCard({
   subValue,
 }: SummaryCardProps) {
   return (
-    <div className="rounded-xl border border-border bg-card p-3 shadow-lg">
-      <p className="text-xs font-medium text-muted-foreground">{label}</p>
+    <div className="rounded-xl border border-border bg-card p-3 shadow-lg" role="group" aria-label={label}>
+      <p className="text-xs font-medium text-muted-foreground" aria-hidden="true">{label}</p>
       <p className="mt-1 text-lg font-semibold text-foreground">{value}</p>
       {subValue && (
         <p className="mt-0.5 text-xs text-muted-foreground">{subValue}</p>
