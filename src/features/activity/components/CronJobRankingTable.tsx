@@ -127,7 +127,11 @@ const JobRow = memo(function JobRow({
               key={run.id}
               className="flex items-center gap-2 rounded-md bg-muted/20 px-2 py-1"
             >
-              <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${runStatusDot(run.status)}`} />
+              <span
+                role="img"
+                aria-label={`Status: ${run.status}`}
+                className={`h-1.5 w-1.5 shrink-0 rounded-full ${runStatusDot(run.status)}`}
+              />
               <span className="text-[10px] text-muted-foreground w-14 shrink-0">
                 {run.startedAtMs ? formatRelativeTime(run.startedAtMs) : "—"}
               </span>
