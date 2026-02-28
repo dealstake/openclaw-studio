@@ -1,12 +1,14 @@
 "use client";
 
-import React, { useCallback } from "react";
+import React, { useCallback, useState } from "react";
 import { Search, Users, Plus } from "lucide-react";
 import type { GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { cn } from "@/lib/utils";
 import { ErrorBanner } from "@/components/ErrorBanner";
 import { usePersonas, type PersonaStatusFilter, type PersonaListItem } from "../hooks/usePersonas";
 import { PersonaCard } from "./PersonaCard";
+import { PracticeSessionModal } from "./PracticeSessionModal";
+import type { PracticeModeType } from "../lib/personaTypes";
 
 // ---------------------------------------------------------------------------
 // Filter config
@@ -18,6 +20,17 @@ const FILTERS: { value: PersonaStatusFilter; label: string }[] = [
   { value: "draft", label: "Draft" },
   { value: "paused", label: "Paused" },
   { value: "archived", label: "Archived" },
+];
+
+/** All available practice modes (persona-specific filtering comes later) */
+const ALL_PRACTICE_MODES: PracticeModeType[] = [
+  "mock-call",
+  "task-delegation",
+  "ticket-simulation",
+  "content-review",
+  "interview",
+  "analysis",
+  "scenario",
 ];
 
 // ---------------------------------------------------------------------------
@@ -51,10 +64,20 @@ export const PersonasTab = React.memo(function PersonasTab({
     onStatusChange,
   } = usePersonas(agentId, status);
 
-  // TODO: Phase 7+ will open a detail sheet on select
+  // Practice modal state
+  const [practiceTarget, setPracticeTarget] = useState<PersonaListItem | null>(null);
+
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleSelect = useCallback((_persona: PersonaListItem) => {
-    // Future: Phase 7+ will open persona detail/practice sheet
+    // Future: open persona detail sheet
+  }, []);
+
+  const handlePractice = useCallback((persona: PersonaListItem) => {
+    setPracticeTarget(persona);
+  }, []);
+
+  const handlePracticeClose = useCallback((open: boolean) => {
+    if (!open) setPracticeTarget(null);
   }, []);
 
   return (
@@ -170,6 +193,7 @@ export const PersonasTab = React.memo(function PersonasTab({
                 key={persona.personaId}
                 persona={persona}
                 onSelect={handleSelect}
+                onPractice={handlePractice}
                 onStatusChange={onStatusChange}
                 onDelete={onDelete}
                 busy={busyId === persona.personaId}
@@ -178,6 +202,17 @@ export const PersonasTab = React.memo(function PersonasTab({
           </div>
         )}
       </div>
+
+      {/* Practice modal */}
+      {practiceTarget && (
+        <PracticeSessionModal
+          open={!!practiceTarget}
+          onOpenChange={handlePracticeClose}
+          personaId={practiceTarget.personaId}
+          personaName={practiceTarget.displayName}
+          availableModes={ALL_PRACTICE_MODES}
+        />
+      )}
     </div>
   );
 });

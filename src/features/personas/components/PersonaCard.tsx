@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback } from "react";
-import { Play, Pause, Archive, Trash2, TrendingUp, TrendingDown } from "lucide-react";
+import { Play, Pause, Archive, Trash2, TrendingUp, TrendingDown, Dumbbell } from "lucide-react";
 import { BaseCard, CardHeader, CardTitle, CardMeta } from "@/components/ui/BaseCard";
 import { cn } from "@/lib/utils";
 import type { PersonaListItem } from "../hooks/usePersonas";
@@ -52,6 +52,7 @@ const CATEGORY_LABELS: Record<PersonaCategory, string> = {
 export interface PersonaCardProps {
   persona: PersonaListItem;
   onSelect: (persona: PersonaListItem) => void;
+  onPractice?: (persona: PersonaListItem) => void;
   onStatusChange: (personaId: string, status: PersonaStatus) => Promise<void>;
   onDelete: (personaId: string) => Promise<void>;
   busy: boolean;
@@ -60,6 +61,7 @@ export interface PersonaCardProps {
 export const PersonaCard = React.memo(function PersonaCard({
   persona,
   onSelect,
+  onPractice,
   onStatusChange,
   onDelete,
   busy,
@@ -70,6 +72,14 @@ export const PersonaCard = React.memo(function PersonaCard({
   const handleSelect = useCallback(() => {
     onSelect(persona);
   }, [onSelect, persona]);
+
+  const handlePractice = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      onPractice?.(persona);
+    },
+    [onPractice, persona],
+  );
 
   const handleToggleActive = useCallback(
     (e: React.MouseEvent) => {
@@ -101,6 +111,7 @@ export const PersonaCard = React.memo(function PersonaCard({
 
   const canToggle = persona.status === "active" || persona.status === "paused";
   const canArchive = persona.status !== "archived";
+  const canPractice = onPractice && (persona.status === "active" || persona.status === "draft");
 
   return (
     <BaseCard
@@ -125,6 +136,16 @@ export const PersonaCard = React.memo(function PersonaCard({
 
         {/* Action buttons */}
         <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover/card:opacity-100">
+          {canPractice && (
+            <button
+              type="button"
+              onClick={handlePractice}
+              className="rounded p-1 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors min-h-[32px] min-w-[32px] flex items-center justify-center"
+              aria-label="Practice with persona"
+            >
+              <Dumbbell className="h-3.5 w-3.5" />
+            </button>
+          )}
           {canToggle && (
             <button
               type="button"
