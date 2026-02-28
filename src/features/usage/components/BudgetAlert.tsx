@@ -41,10 +41,10 @@ export const BudgetAlert = memo(function BudgetAlert({
 
   const barColor = useMemo(() => {
     switch (severity) {
-      case "exceeded": return "bg-red-500";
-      case "danger": return "bg-orange-500";
-      case "warning": return "bg-yellow-500";
-      default: return "bg-emerald-500";
+      case "exceeded": return "bg-destructive";
+      case "danger": return "bg-destructive/80";
+      case "warning": return "bg-primary";
+      default: return "bg-chart-2";
     }
   }, [severity]);
 
@@ -70,7 +70,7 @@ export const BudgetAlert = memo(function BudgetAlert({
       <button
         type="button"
         onClick={openEditor}
-        className="flex items-center gap-2 rounded-lg border border-dashed border-border px-3 py-2 text-xs text-muted-foreground hover:border-foreground/30 hover:text-foreground transition-colors w-full"
+        className="flex items-center gap-2 rounded-lg border border-dashed border-border px-3 py-3 text-xs text-muted-foreground hover:border-foreground/30 hover:text-foreground transition-colors w-full"
       >
         <Settings2 className="h-3.5 w-3.5 shrink-0" />
         <span>Set a monthly budget to track spending limits</span>
@@ -87,10 +87,10 @@ export const BudgetAlert = memo(function BudgetAlert({
           <button
             type="button"
             onClick={() => setEditing(false)}
-            className="p-1 rounded-md hover:bg-muted transition-colors"
+            className="p-2.5 -m-1 rounded-full hover:bg-muted transition-colors"
             aria-label="Close budget settings"
           >
-            <X className="h-3.5 w-3.5 text-muted-foreground" />
+            <X className="h-4 w-4 text-muted-foreground" />
           </button>
         </div>
         <div className="flex flex-col sm:flex-row gap-3">
@@ -148,7 +148,7 @@ export const BudgetAlert = memo(function BudgetAlert({
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           {severity !== "ok" && (
-            <AlertTriangle className={`h-3.5 w-3.5 shrink-0 ${severity === "exceeded" ? "text-red-500" : severity === "danger" ? "text-orange-500" : "text-yellow-500"}`} />
+            <AlertTriangle className={`h-3.5 w-3.5 shrink-0 ${severity === "exceeded" ? "text-destructive" : severity === "danger" ? "text-destructive/80" : "text-foreground"}`} />
           )}
           <p className="text-xs font-medium text-foreground">
             {severity === "exceeded"
@@ -163,10 +163,10 @@ export const BudgetAlert = memo(function BudgetAlert({
         <button
           type="button"
           onClick={openEditor}
-          className="p-1 rounded-md hover:bg-muted transition-colors"
+          className="p-2.5 -m-1 rounded-full hover:bg-muted transition-colors"
           aria-label="Edit budget settings"
         >
-          <Settings2 className="h-3.5 w-3.5 text-muted-foreground" />
+          <Settings2 className="h-4 w-4 text-muted-foreground" />
         </button>
       </div>
 
@@ -188,7 +188,7 @@ export const BudgetAlert = memo(function BudgetAlert({
       <p className="text-xs text-muted-foreground mt-1.5">
         Forecast: {formatCost(forecastedTotal)} by month end
         {percentProjected > 100 && monthlyBudget > 0 && (
-          <span className="text-orange-500 ml-1">
+          <span className="text-destructive ml-1">
             ({formatCost(forecastedTotal - monthlyBudget)} over budget)
           </span>
         )}
