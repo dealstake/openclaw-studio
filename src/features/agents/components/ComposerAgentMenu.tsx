@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useCallback, useEffect, useRef, useState } from "react";
-import { ChevronDown, Check, Brain, Zap, Sparkles, ChevronRight } from "lucide-react";
+import { ChevronDown, Check, Brain, Zap, Sparkles, ChevronRight, Plus } from "lucide-react";
 import { AgentAvatar } from "./AgentAvatar";
 import type { AgentStatus } from "@/features/agents/state/store";
 import type { GatewayModelChoice } from "@/lib/gateway/models";
@@ -29,6 +29,8 @@ type ComposerAgentMenuProps = {
   thinkingLevel: string;
   onThinkingChange: (value: string | null) => void;
   allowThinking: boolean;
+  tokenPct?: number | null;
+  onNewSession?: () => void;
 };
 
 /* ── Constants ─────────────────────────────────────────────────── */
@@ -65,6 +67,8 @@ export const ComposerAgentMenu = memo(function ComposerAgentMenu({
   thinkingLevel,
   onThinkingChange,
   allowThinking,
+  tokenPct,
+  onNewSession,
 }: ComposerAgentMenuProps) {
   const [open, setOpen] = useState(false);
   const [subMenu, setSubMenu] = useState<"model" | "thinking" | null>(null);
@@ -117,7 +121,7 @@ export const ComposerAgentMenu = memo(function ComposerAgentMenu({
       <button
         type="button"
         onClick={toggle}
-        className={`flex min-h-[44px] items-center gap-1.5 rounded-lg px-2 py-1 transition hover:bg-muted/60 ${open ? "bg-muted/60" : ""}`}
+        className={`flex h-9 items-center gap-1.5 rounded-xl px-2 transition hover:bg-muted/80 ${open ? "bg-muted/80" : "bg-muted/40"}`}
         aria-label={`Agent settings — ${selected.name}`}
         aria-expanded={open}
         aria-haspopup="menu"
@@ -128,10 +132,15 @@ export const ComposerAgentMenu = memo(function ComposerAgentMenu({
           avatarUrl={selected.avatarUrl}
           size={18}
         />
-        <div className="flex min-w-0 items-center gap-1">
-          <span className="max-w-[80px] truncate text-xs font-semibold text-foreground sm:max-w-[120px]">
+        <div className="flex min-w-0 items-center gap-1.5">
+          <span className="max-w-[60px] truncate text-xs font-semibold text-foreground sm:max-w-[100px]">
             {selected.name || selected.agentId}
           </span>
+          {tokenPct !== null && tokenPct !== undefined && (
+            <span className={`font-mono text-[10px] ${tokenPct >= 80 ? "font-bold text-yellow-500" : "text-muted-foreground"}`}>
+              {tokenPct}%
+            </span>
+          )}
           <span
             className={`h-1.5 w-1.5 shrink-0 rounded-full ${statusDotClass[selected.status]}`}
           />
@@ -144,10 +153,31 @@ export const ComposerAgentMenu = memo(function ComposerAgentMenu({
       {/* Dropdown menu */}
       {open && (
         <div
-          className="absolute bottom-full left-0 z-50 mb-1.5 min-w-[280px] max-w-[calc(100vw-2rem)] rounded-lg border border-border/80 bg-popover py-1 shadow-xl"
+          className="absolute bottom-full right-0 z-50 mb-2 min-w-[280px] max-w-[calc(100vw-2rem)] rounded-xl border border-border/80 bg-popover py-1.5 shadow-xl"
           role="menu"
           aria-label="Agent settings"
         >
+          {/* New Session */}
+          {onNewSession && (
+            <>
+              <button
+                type="button"
+                role="menuitem"
+                className="flex w-full min-h-[44px] items-center gap-3 px-3 py-2 text-left transition hover:bg-muted/60"
+                onClick={() => {
+                  onNewSession();
+                  setOpen(false);
+                }}
+              >
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                  <Plus className="h-4 w-4" />
+                </div>
+                <span className="text-sm font-medium text-foreground">New Session</span>
+              </button>
+              <div className="mx-3 my-1.5 border-t border-border/40" />
+            </>
+          )}
+
           {/* Agent switcher section (if multiple agents) */}
           {agents.length > 1 && (
             <>
