@@ -76,6 +76,7 @@ import { useWizardInChat } from "@/features/wizards/hooks/useWizardInChat";
 import { buildTaskWizardPrompt, getDefaultWizardPrompt } from "@/features/wizards/lib/wizardPrompts";
 import type { WizardType } from "@/features/wizards/lib/wizardTypes";
 import { executeWizardCreation } from "@/features/wizards/lib/wizardCreation";
+import { toast } from "sonner";
 
 export const AgentStudioPage = () => {
   const {
@@ -356,14 +357,18 @@ export const AgentStudioPage = () => {
       );
       if (result.success) {
         void wizard.endWizard();
+        toast.success(result.message);
         // Credential wizard signals UI to open setup sheet
         if (result.openCredentialSetup) {
           // Future: open credential sheet with pre-filled template
           // For now, the user completes setup in the Credentials panel
         }
+      } else {
+        toast.error(result.message);
       }
-    } catch {
-      // Error handling — wizard stays open so user can retry
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "An unknown error occurred.";
+      toast.error(`Wizard creation failed: ${msg}`);
     }
   }, [wizard, createTask, loadTasks, focusedAgent, client]);
 

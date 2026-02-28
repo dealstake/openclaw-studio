@@ -8,6 +8,20 @@
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import type { WizardType } from "./wizardTypes";
 
+// ── Helpers ────────────────────────────────────────────────────────────
+
+/** Sanitize string for safe embedding in agent system messages */
+function sanitize(str: string): string {
+  return str.replace(/[";&|`$()\\]/g, "\\$&");
+}
+
+/** Validate that an object has the expected string properties */
+function hasStringProps(obj: unknown, keys: string[]): obj is Record<string, unknown> {
+  if (!obj || typeof obj !== "object") return false;
+  const record = obj as Record<string, unknown>;
+  return keys.every((k) => typeof record[k] === "string" && record[k] !== "");
+}
+
 // ── Skill creation types ───────────────────────────────────────────────
 
 export interface SkillWizardConfig {
@@ -64,7 +78,7 @@ async function createSkill(
   agentId: string,
   config: SkillWizardConfig,
 ): Promise<WizardCreationResult> {
-  const skillDir = config.name.toLowerCase().replace(/[^a-z0-9-]/g, "-");
+  const skillDir = sanitize(config.name.toLowerCase().replace(/[^a-z0-9-]/g, "-"));
   const message = [
     `[system] Create a new skill in the workspace. Write the following SKILL.md file:`,
     "",
@@ -84,17 +98,22 @@ async function createSkill(
     .filter(Boolean)
     .join("\n");
 
-  await client.call("chat.send", {
-    sessionKey: `agent:${agentId}:main`,
-    message,
-    deliver: false,
-    idempotencyKey: crypto.randomUUID(),
-  });
+  try {
+    await client.call("chat.send", {
+      sessionKey: `agent:${agentId}:main`,
+      message,
+      deliver: false,
+      idempotencyKey: crypto.randomUUID(),
+    });
 
-  return {
-    success: true,
-    message: `Skill "${config.name}" creation delegated to agent. Check the chat for confirmation.`,
-  };
+    return {
+      success: true,
+      message: `Skill "${config.name}" creation delegated to agent. Check the chat for confirmation.`,
+    };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { success: false, message: `Failed to delegate skill creation: ${msg}` };
+  }
 }
 
 // ── Credential creation — signals UI to open setup sheet ───────────────
@@ -131,38 +150,43 @@ async function createProject(
   const phases = config.phases
     ?.map(
       (p) =>
-        `### ${p.name}\n${p.tasks.map((t) => `- [ ] ${t}`).join("\n")}`,
+        `### ${sanitize(p.name)}\n${p.tasks.map((t) => `- [ ] ${sanitize(t)}`).join("\n")}`,
     )
     .join("\n\n") ?? "";
 
   const message = [
     `[system] Create a new project file and register it:`,
     "",
-    `1. Create \`projects/${config.slug}.md\` with:`,
-    `   - Name: ${config.name}`,
-    `   - Status: ${config.status}`,
-    `   - Priority: ${config.priority}`,
-    `   - Description: ${config.description}`,
+    `1. Create \`projects/${sanitize(config.slug)}.md\` with:`,
+    `   - Name: ${sanitize(config.name)}`,
+    `   - Status: ${sanitize(config.status)}`,
+    `   - Priority: ${sanitize(config.priority)}`,
+    `   - Description: ${sanitize(config.description)}`,
     phases ? `   - Phases:\n${phases}` : "",
     "",
-    `2. Run: scripts/project-db.sh create "${config.name}" "${config.slug}.md" "${config.status}" "${config.priority}" "${config.description}"`,
+    `2. Run: scripts/project-db.sh create "${sanitize(config.name)}" "${sanitize(config.slug)}.md" "${sanitize(config.status)}" "${sanitize(config.priority)}" "${sanitize(config.description)}"`,
     "",
     `Confirm when done.`,
   ]
     .filter(Boolean)
     .join("\n");
 
-  await client.call("chat.send", {
-    sessionKey: `agent:${agentId}:main`,
-    message,
-    deliver: false,
-    idempotencyKey: crypto.randomUUID(),
-  });
+  try {
+    await client.call("chat.send", {
+      sessionKey: `agent:${agentId}:main`,
+      message,
+      deliver: false,
+      idempotencyKey: crypto.randomUUID(),
+    });
 
-  return {
-    success: true,
-    message: `Project "${config.name}" creation delegated to agent. Check the chat for confirmation.`,
-  };
+    return {
+      success: true,
+      message: `Project "${config.name}" creation delegated to agent. Check the chat for confirmation.`,
+    };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { success: false, message: `Failed to delegate project creation: ${msg}` };
+  }
 }
 
 // ── Dispatcher ─────────────────────────────────────────────────────────
@@ -180,11 +204,20 @@ export async function executeWizardCreation(
 ): Promise<WizardCreationResult> {
   switch (type) {
     case "skill":
-      return createSkill(client, agentId, config as SkillWizardConfig);
+      if (!hasStringProps(config, ["name", "skillContent"])) {
+        return { success: false, message: "Invalid skill configuration: missing name or content." };
+      }
+      return createSkill(client, agentId, config as unknown as SkillWizardConfig);
     case "credential":
-      return prepareCredentialSetup(config as CredentialWizardConfig);
+      if (!hasStringProps(config, ["name", "key", "service"])) {
+        return { success: false, message: "Invalid credential configuration: missing name, key, or service." };
+      }
+      return prepareCredentialSetup(config as unknown as CredentialWizardConfig);
     case "project":
-      return createProject(client, agentId, config as ProjectWizardConfig);
+      if (!hasStringProps(config, ["name", "slug", "description"])) {
+        return { success: false, message: "Invalid project configuration: missing name, slug, or description." };
+      }
+      return createProject(client, agentId, config as unknown as ProjectWizardConfig);
     case "agent":
       // Agent creation is complex (brain files, config) — kept in modal for now
       return {
