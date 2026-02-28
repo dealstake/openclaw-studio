@@ -113,7 +113,7 @@ export const SkillInstallSheet = React.memo(function SkillInstallSheet({
                 onChange={(e) => setSlug(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="e.g. weather, github, summarize"
-                aria-label="Skill slug to install"
+
                 disabled={installing}
                 className={cn(
                   "h-9 w-full rounded-md border border-border bg-background px-3",
