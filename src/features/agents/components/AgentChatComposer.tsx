@@ -275,7 +275,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
       <div className="pointer-events-none h-4 sm:h-8 bg-gradient-to-t from-background to-transparent" />
 
       {/* Glassmorphic composer card */}
-      <div className={`mx-auto flex max-w-3xl flex-col rounded-[24px] border transition-all duration-200 ${wizardType && wizardTheme ? `${wizardTheme.border} border-opacity-40 bg-popover` : "border-border/50 bg-background/70 shadow-2xl backdrop-blur-xl focus-within:border-border/80 dark:bg-background/40 dark:shadow-[0_8px_32px_rgba(0,0,0,0.3)]"}`}>
+      <div className={`mx-auto flex max-w-3xl flex-col rounded-[24px] border transition-all duration-200 ${wizardType && wizardTheme ? `${wizardTheme.border} border-opacity-40 bg-popover` : "border-border/50 bg-background/70 shadow-2xl ring-1 ring-white/[0.08] backdrop-blur-xl focus-within:border-border/80 dark:bg-background/40 dark:shadow-[0_8px_32px_rgba(0,0,0,0.3)]"}`}>
 
         {/* Wizard banner */}
         {wizardType && wizardTheme && onWizardExit && (

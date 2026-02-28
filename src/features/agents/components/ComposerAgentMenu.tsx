@@ -118,7 +118,7 @@ export const ComposerAgentMenu = memo(function ComposerAgentMenu({
       <button
         type="button"
         onClick={toggle}
-        className={`relative flex h-8 w-8 items-center justify-center rounded-full transition hover:ring-2 hover:ring-primary/30 ${open ? "ring-2 ring-primary/40" : ""}`}
+        className={`relative flex h-10 w-10 items-center justify-center rounded-full transition-all duration-150 hover:scale-110 hover:bg-muted/60 active:scale-95 ${open ? "scale-110 bg-muted/60 ring-2 ring-primary/40" : ""}`}
         aria-label={`Agent settings — ${selected.name}`}
         aria-expanded={open}
         aria-haspopup="menu"
