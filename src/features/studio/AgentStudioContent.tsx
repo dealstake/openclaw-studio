@@ -967,6 +967,11 @@ export const AgentStudioPage = () => {
               {focusedAgent ? (
                 <AgentChatPanel
                   agent={focusedAgent}
+                  composerAgents={breadcrumbAgents}
+                  onSelectAgent={(agentId) => {
+                    flushPendingDraft(focusedAgent?.agentId ?? null);
+                    dispatch({ type: "selectAgent", agentId });
+                  }}
                   canSend={status === "connected" || isOffline}
                   gatewayStatus={status}
                   queueLength={queueLength}

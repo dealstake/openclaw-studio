@@ -15,8 +15,7 @@ import type { MessagePart } from "@/lib/chat/types";
 import type { GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { AlertCircle, Paperclip, Plus, Send, Square, UploadCloud, WifiOff } from "lucide-react";
 import { ChatAttachmentPreview } from "./ChatAttachmentPreview";
-import { ModelPicker } from "./ModelPicker";
-import { ThinkingToggle } from "./ThinkingToggle";
+import { ComposerAgentMenu, type ComposerAgent } from "./ComposerAgentMenu";
 import { StreamingStatus } from "./StreamingStatus";
 import { useFileUpload, type ChatAttachment } from "../hooks/useFileUpload";
 import type { WizardType, WizardTheme, WizardStarter } from "@/features/wizards/lib/wizardTypes";
@@ -53,6 +52,9 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   onWizardExit,
   onWizardStarterClick,
   onNewSession,
+  composerAgents,
+  selectedAgentId,
+  onSelectAgent,
 }: {
   onDraftChange: (value: string) => void;
   onSend: (message: string, attachments?: ChatAttachment[]) => void;
@@ -85,6 +87,9 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   onWizardExit?: () => void;
   onWizardStarterClick?: (message: string) => void;
   onNewSession?: () => void;
+  composerAgents?: ComposerAgent[];
+  selectedAgentId?: string | null;
+  onSelectAgent?: (agentId: string) => void;
 }) {
   const localRef = useRef<HTMLTextAreaElement | null>(null);
   const pendingResizeRef = useRef<number | null>(null);
@@ -333,36 +338,40 @@ export const AgentChatComposer = memo(function AgentChatComposer({
           </div>
         )}
 
-        {/* Row 1: Toolbar — model picker, thinking, token meter, new session */}
-        <div className="flex min-h-[36px] items-center gap-1 overflow-x-auto border-b border-border/20 px-2.5 py-1 scrollbar-none">
-          {/* Left: model picker + thinking toggle + token meter */}
-          <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
-            {models.length > 0 && (
-              <ModelPicker models={models} value={modelValue} onChange={onModelChange} />
-            )}
-            {allowThinking && (
-              <>
-                <div className="h-3.5 w-px shrink-0 bg-border/30" />
-                <ThinkingToggle value={thinkingLevel} onChange={onThinkingChange} />
-              </>
-            )}
-            {tokenPct !== null && (
-              <>
-                <div className="hidden h-3.5 w-px shrink-0 bg-border/30 sm:block" />
-                <div className="hidden items-center gap-1.5 opacity-70 sm:flex">
-                  <div className="h-1 w-8 overflow-hidden rounded-full bg-muted">
-                    <div
-                      className={`h-full rounded-full transition-all ${tokenPct >= 80 ? "bg-yellow-500" : "bg-primary/60"}`}
-                      style={{ width: `${Math.min(tokenPct, 100)}%` }}
-                    />
-                  </div>
-                  <span className="font-mono text-[10px] text-muted-foreground">{tokenPct}%</span>
-                </div>
-              </>
-            )}
-          </div>
+        {/* Row 1: Toolbar — agent menu (model + thinking inside), token meter, new session */}
+        <div className="flex min-h-[36px] items-center gap-1 border-b border-border/20 px-1 py-0.5">
+          {/* Left: agent menu dropdown (contains model picker + thinking level) */}
+          {composerAgents && composerAgents.length > 0 && selectedAgentId && onSelectAgent ? (
+            <ComposerAgentMenu
+              agents={composerAgents}
+              selectedAgentId={selectedAgentId}
+              onSelectAgent={onSelectAgent}
+              models={models}
+              modelValue={modelValue}
+              onModelChange={onModelChange}
+              thinkingLevel={thinkingLevel}
+              onThinkingChange={onThinkingChange}
+              allowThinking={allowThinking}
+            />
+          ) : null}
 
-          {/* Right: new session button */}
+          {/* Spacer */}
+          <div className="flex-1" />
+
+          {/* Token meter (desktop only) */}
+          {tokenPct !== null && (
+            <div className="hidden items-center gap-1.5 opacity-70 sm:flex">
+              <div className="h-1 w-8 overflow-hidden rounded-full bg-muted">
+                <div
+                  className={`h-full rounded-full transition-all ${tokenPct >= 80 ? "bg-yellow-500" : "bg-primary/60"}`}
+                  style={{ width: `${Math.min(tokenPct, 100)}%` }}
+                />
+              </div>
+              <span className="font-mono text-[10px] text-muted-foreground">{tokenPct}%</span>
+            </div>
+          )}
+
+          {/* New session button */}
           {onNewSession && (
             <button
               type="button"

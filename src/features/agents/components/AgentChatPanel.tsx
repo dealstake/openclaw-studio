@@ -17,9 +17,13 @@ import { AgentChatTranscript } from "./AgentChatTranscript";
 import { AgentChatComposer } from "./AgentChatComposer";
 import type { UseWizardInChatReturn } from "@/features/wizards/hooks/useWizardInChat";
 import { WizardChatOverlay } from "@/features/wizards/components/WizardChatOverlay";
+import type { ComposerAgent } from "./ComposerAgentMenu";
 
 type AgentChatPanelProps = {
   agent: AgentRecord;
+  /** Agent list for composer agent menu */
+  composerAgents?: ComposerAgent[];
+  onSelectAgent?: (agentId: string) => void;
   canSend: boolean;
   models: GatewayModelChoice[];
   stopBusy: boolean;
@@ -52,6 +56,8 @@ type AgentChatPanelProps = {
 
 export const AgentChatPanel = memo(function AgentChatPanel({
   agent,
+  composerAgents,
+  onSelectAgent,
   canSend,
   models,
   stopBusy,
@@ -324,6 +330,9 @@ export const AgentChatPanel = memo(function AgentChatPanel({
             onWizardExit={handleWizardExit}
             onWizardStarterClick={handleWizardStarterClick}
             onNewSession={onNewSession}
+            composerAgents={composerAgents}
+            selectedAgentId={agent.agentId}
+            onSelectAgent={onSelectAgent}
           />
         )}
       </div>
