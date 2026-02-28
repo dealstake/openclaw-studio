@@ -55,7 +55,7 @@ const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: "auto", style: "na
 /** Success rate → text color class. Shared by CronJobRankingTable and any future job displays. */
 export function successRateColor(rate: number): string {
   if (rate >= 0.9) return "text-green-400";
-  if (rate >= 0.7) return "text-yellow-400";
+  if (rate >= 0.7) return "text-amber-300";
   return "text-red-400";
 }
 
