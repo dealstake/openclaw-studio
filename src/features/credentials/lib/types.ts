@@ -103,6 +103,24 @@ export interface CredentialValues {
   [fieldId: string]: string | undefined;
 }
 
+// ── Post-setup types ─────────────────────────────────────────────────────────
+
+/** A suggested task template shown after successful credential setup */
+export interface SuggestedTask {
+  name: string;
+  description: string;
+  /** Pre-filled prompt for the task wizard */
+  templatePrompt: string;
+  /** Suggested cron schedule (e.g., "0 8 * * 1-5") */
+  suggestedSchedule?: string;
+}
+
+/** Connection test result from the test API route */
+export interface ConnectionTestResult {
+  success: boolean;
+  message: string;
+}
+
 // ── Template for connecting a service ────────────────────────────────────────
 
 export interface CredentialTemplate {
@@ -117,4 +135,10 @@ export interface CredentialTemplate {
   fields: CredentialFieldDef[];
   /** Map of fieldId → openclaw.json config paths to write to */
   configPathMap: Record<string, string[]>;
+  /** Skills that should be auto-enabled when this credential is saved */
+  requiredSkills?: string[];
+  /** Suggested task templates shown after successful setup */
+  suggestedTasks?: SuggestedTask[];
+  /** Connection test configuration */
+  testConfig?: { handler: string };
 }

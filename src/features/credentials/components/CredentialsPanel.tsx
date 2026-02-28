@@ -188,6 +188,7 @@ export const CredentialsPanel = React.memo(function CredentialsPanel({
         editing={editingCredential}
         onEditSave={handleEditSave}
         readSecretValues={readSecretValues}
+        client={client}
       />
 
       <ConfirmDialog

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import {
   SideSheet,
   SideSheetContent,
@@ -10,15 +10,22 @@ import {
   SideSheetClose,
   SideSheetBody,
 } from "@/components/ui/SideSheet";
+import { SectionLabel } from "@/components/SectionLabel";
+import { cn } from "@/lib/utils";
 import type {
   Credential,
   CredentialMetadata,
   CredentialTemplate,
   CredentialValues,
+  ConnectionTestResult,
+  SuggestedTask,
 } from "../lib/types";
 import { TemplateGrid } from "./TemplateGrid";
 import { SetupForm } from "./SetupForm";
 import { findTemplate } from "../lib/templates";
+import { testConnection } from "../lib/testConnection";
+import { toggleSkill } from "@/features/skills/lib/skillService";
+import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 
 export interface CredentialSheetProps {
   open: boolean;
@@ -40,9 +47,13 @@ export interface CredentialSheetProps {
   readSecretValues?: (credential: Credential) => Promise<CredentialValues>;
   /** Pre-select a template by key, skipping the template selection step */
   initialTemplateKey?: string;
+  /** Gateway client for post-save skill auto-enable */
+  client?: GatewayClient;
+  /** Called when user wants to set up a suggested task */
+  onLaunchTaskWizard?: (task: SuggestedTask) => void;
 }
 
-type Step = "select" | "setup";
+type Step = "select" | "setup" | "testing" | "next-steps";
 
 /** Custom credential template for arbitrary services. */
 const CUSTOM_TEMPLATE: CredentialTemplate = {
@@ -67,6 +78,89 @@ const CUSTOM_TEMPLATE: CredentialTemplate = {
   },
 };
 
+// ── Post-save sub-components ─────────────────────────────────────────────────
+
+const ConnectionTestStep = React.memo(function ConnectionTestStep({
+  result,
+  testing,
+}: {
+  result: ConnectionTestResult | null;
+  testing: boolean;
+}) {
+  if (testing) {
+    return (
+      <div className="flex items-center gap-2 py-8 justify-center">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        <span className="text-sm text-muted-foreground">
+          Testing connection…
+        </span>
+      </div>
+    );
+  }
+  if (!result) return null;
+  return (
+    <div
+      className={cn(
+        "rounded-md px-3 py-2 text-sm",
+        result.success
+          ? "bg-emerald-500/10 text-emerald-500"
+          : "bg-red-500/10 text-red-500",
+      )}
+    >
+      {result.success ? (
+        <CheckCircle2 className="inline h-4 w-4 mr-1.5" />
+      ) : (
+        <AlertCircle className="inline h-4 w-4 mr-1.5" />
+      )}
+      {result.message}
+    </div>
+  );
+});
+
+const NextStepsStep = React.memo(function NextStepsStep({
+  tasks,
+  onSetupTask,
+  onFinish,
+}: {
+  tasks: SuggestedTask[];
+  onSetupTask: (task: SuggestedTask) => void;
+  onFinish: () => void;
+}) {
+  return (
+    <div className="flex flex-col gap-3 p-4">
+      <SectionLabel>What&apos;s next?</SectionLabel>
+      {tasks.map((task) => (
+        <div
+          key={task.name}
+          className="rounded-md border border-border/80 bg-card/75 p-3"
+        >
+          <p className="text-sm font-medium text-foreground">{task.name}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {task.description}
+          </p>
+          <button
+            type="button"
+            onClick={() => onSetupTask(task)}
+            className="mt-2 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 min-h-[44px]"
+            aria-label={`Set up ${task.name}`}
+          >
+            Set up now
+          </button>
+        </div>
+      ))}
+      <button
+        type="button"
+        onClick={onFinish}
+        className="mt-2 text-xs text-muted-foreground hover:text-foreground min-h-[44px]"
+      >
+        Done for now
+      </button>
+    </div>
+  );
+});
+
+// ── Main component ───────────────────────────────────────────────────────────
+
 export const CredentialSheet = React.memo(function CredentialSheet({
   open,
   onOpenChange,
@@ -75,6 +169,8 @@ export const CredentialSheet = React.memo(function CredentialSheet({
   onEditSave,
   readSecretValues,
   initialTemplateKey,
+  client,
+  onLaunchTaskWizard,
 }: CredentialSheetProps) {
   const isEditMode = !!editing;
   const [step, setStep] = useState<Step>("select");
@@ -82,8 +178,14 @@ export const CredentialSheet = React.memo(function CredentialSheet({
     useState<CredentialTemplate | null>(null);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
-  const [editInitialValues, setEditInitialValues] = useState<CredentialValues | undefined>(undefined);
+  const [editInitialValues, setEditInitialValues] = useState<
+    CredentialValues | undefined
+  >(undefined);
   const [loadingValues, setLoadingValues] = useState(false);
+  const [testResult, setTestResult] = useState<ConnectionTestResult | null>(
+    null,
+  );
+  const [testing, setTesting] = useState(false);
 
   // When opening with initialTemplateKey, skip to setup step
   useEffect(() => {
@@ -122,6 +224,8 @@ export const CredentialSheet = React.memo(function CredentialSheet({
     setSearch("");
     setEditInitialValues(undefined);
     setLoadingValues(false);
+    setTestResult(null);
+    setTesting(false);
   }, []);
 
   const handleOpenChange = useCallback(
@@ -143,6 +247,51 @@ export const CredentialSheet = React.memo(function CredentialSheet({
     setStep("setup");
     setSearch("");
   }, []);
+
+  const runPostSaveFlow = useCallback(
+    async (template: CredentialTemplate, values: CredentialValues) => {
+      // If template has testConfig, run the connection test
+      if (template.testConfig) {
+        setStep("testing");
+        setTesting(true);
+
+        const result = await testConnection(template.key, values);
+        setTestResult(result);
+        setTesting(false);
+
+        // Auto-enable required skills on success
+        if (result.success && template.requiredSkills && client) {
+          for (const skill of template.requiredSkills) {
+            try {
+              await toggleSkill(client, skill, true);
+            } catch {
+              // Skill enable is best-effort
+            }
+          }
+        }
+      } else if (template.requiredSkills && client) {
+        // No test but has required skills — enable them directly
+        for (const skill of template.requiredSkills) {
+          try {
+            await toggleSkill(client, skill, true);
+          } catch {
+            // Best-effort
+          }
+        }
+      }
+
+      // If template has suggested tasks, show next-steps
+      if (template.suggestedTasks?.length) {
+        setStep("next-steps");
+      } else if (template.testConfig) {
+        // Stay on testing step to show result, auto-close after delay
+        setTimeout(() => handleOpenChange(false), 2000);
+      } else {
+        handleOpenChange(false);
+      }
+    },
+    [client, handleOpenChange],
+  );
 
   const handleSave = useCallback(
     async (
@@ -170,6 +319,7 @@ export const CredentialSheet = React.memo(function CredentialSheet({
       try {
         if (isEditMode && onEditSave) {
           await onEditSave(values, overrides);
+          handleOpenChange(false);
         } else {
           await onSave(
             {
@@ -185,22 +335,44 @@ export const CredentialSheet = React.memo(function CredentialSheet({
             values,
             resolvedTemplate,
           );
+          // Run post-save flow instead of closing immediately
+          await runPostSaveFlow(resolvedTemplate, values);
         }
-        handleOpenChange(false);
       } catch {
         // Error handled by parent hook
       } finally {
         setSaving(false);
       }
     },
-    [selectedTemplate, isEditMode, onEditSave, onSave, handleOpenChange],
+    [
+      selectedTemplate,
+      isEditMode,
+      onEditSave,
+      onSave,
+      handleOpenChange,
+      runPostSaveFlow,
+    ],
+  );
+
+  const handleSetupTask = useCallback(
+    (task: SuggestedTask) => {
+      if (onLaunchTaskWizard) {
+        onLaunchTaskWizard(task);
+      }
+      handleOpenChange(false);
+    },
+    [onLaunchTaskWizard, handleOpenChange],
   );
 
   const sheetTitle = isEditMode
     ? `Edit — ${editing?.humanName}`
     : step === "select"
       ? "Add Service"
-      : selectedTemplate?.serviceName;
+      : step === "testing"
+        ? "Testing Connection…"
+        : step === "next-steps"
+          ? "What's Next?"
+          : selectedTemplate?.serviceName;
 
   return (
     <SideSheet open={open} onOpenChange={handleOpenChange}>
@@ -246,9 +418,30 @@ export const CredentialSheet = React.memo(function CredentialSheet({
               template={selectedTemplate}
               initialValues={isEditMode ? editInitialValues : undefined}
               onSave={handleSave}
-              onCancel={isEditMode ? () => handleOpenChange(false) : () => setStep("select")}
+              onCancel={
+                isEditMode ? () => handleOpenChange(false) : () => setStep("select")
+              }
               saving={saving}
             />
+          )}
+          {step === "testing" && (
+            <div className="p-4">
+              <ConnectionTestStep result={testResult} testing={testing} />
+            </div>
+          )}
+          {step === "next-steps" && selectedTemplate?.suggestedTasks && (
+            <>
+              {testResult && (
+                <div className="px-4 pt-4">
+                  <ConnectionTestStep result={testResult} testing={false} />
+                </div>
+              )}
+              <NextStepsStep
+                tasks={selectedTemplate.suggestedTasks}
+                onSetupTask={handleSetupTask}
+                onFinish={() => handleOpenChange(false)}
+              />
+            </>
           )}
           {loadingValues && (
             <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">

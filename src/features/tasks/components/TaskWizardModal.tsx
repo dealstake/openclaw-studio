@@ -67,6 +67,8 @@ interface TaskWizardModalProps {
   onClose: () => void;
   onCreateTask: (payload: CreateTaskPayload) => Promise<void>;
   onAgentCreated?: () => void;
+  /** Pre-filled prompt auto-sent after type selection (e.g., from integration setup) */
+  initialPrompt?: string;
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -78,6 +80,7 @@ export const TaskWizardModal = memo(function TaskWizardModal({
   onClose,
   onCreateTask,
   onAgentCreated,
+  initialPrompt,
 }: TaskWizardModalProps) {
   const wizard = useTaskWizard();
   const taskConfigExtractor = useMemo(
@@ -250,6 +253,7 @@ export const TaskWizardModal = memo(function TaskWizardModal({
                 starters={WIZARD_STARTERS[wizard.taskType]}
                 configExtractor={taskConfigExtractor}
                 onConfigExtracted={handleConfigExtracted}
+                initialPrompt={initialPrompt}
               />
             )}
           {wizard.step === "confirm" && !showAgentCreation && (

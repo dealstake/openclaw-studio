@@ -28,6 +28,8 @@ export type WizardChatProps = {
   onConfigExtracted?: (config: unknown) => void;
   configExtractor?: (text: string) => unknown | null;
   className?: string;
+  /** Pre-filled prompt auto-sent on mount (e.g., from integration setup) */
+  initialPrompt?: string;
 };
 
 // ── Component ──────────────────────────────────────────────────────────
@@ -48,6 +50,7 @@ export const WizardChat = React.memo(function WizardChat({
   onConfigExtracted,
   configExtractor,
   className,
+  initialPrompt,
 }: WizardChatProps) {
   const {
     messages,
@@ -81,6 +84,15 @@ export const WizardChat = React.memo(function WizardChat({
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, streamText, thinkingTrace]);
+
+  // Auto-send initialPrompt on mount
+  const initialPromptSentRef = useRef(false);
+  useEffect(() => {
+    if (initialPrompt && !initialPromptSentRef.current) {
+      initialPromptSentRef.current = true;
+      void sendMessage(initialPrompt);
+    }
+  }, [initialPrompt, sendMessage]);
 
   // Cleanup wizard session on unmount — abort streaming first to avoid race
   useEffect(() => {

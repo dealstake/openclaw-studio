@@ -30,6 +30,16 @@ export const CREDENTIAL_TEMPLATES: CredentialTemplate[] = [
     configPathMap: {
       apiKey: ["skills.entries.sag.apiKey", "talk.apiKey"],
     },
+    requiredSkills: ["sag"],
+    testConfig: { handler: "elevenlabs" },
+    suggestedTasks: [
+      {
+        name: "Voice Briefing",
+        description: "Read your morning digest aloud",
+        templatePrompt:
+          "Create a task that generates a spoken morning briefing using ElevenLabs text-to-speech.",
+      },
+    ],
   },
   {
     key: "gemini",
@@ -82,6 +92,16 @@ export const CREDENTIAL_TEMPLATES: CredentialTemplate[] = [
     configPathMap: {
       apiKey: ["skills.entries.notion.apiKey"],
     },
+    requiredSkills: ["notion"],
+    testConfig: { handler: "notion" },
+    suggestedTasks: [
+      {
+        name: "Meeting Notes Sync",
+        description: "Auto-create Notion pages from meeting transcripts",
+        templatePrompt:
+          "Create a task that monitors for new meetings and creates structured Notion pages with key takeaways and action items.",
+      },
+    ],
   },
   {
     key: "openai",
@@ -228,6 +248,23 @@ export const CREDENTIAL_TEMPLATES: CredentialTemplate[] = [
       username: ["skills.entries.himalaya.env.GMAIL_USERNAME"],
       password: ["skills.entries.himalaya.env.GMAIL_APP_PASSWORD"],
     },
+    requiredSkills: ["himalaya"],
+    testConfig: { handler: "gmail" },
+    suggestedTasks: [
+      {
+        name: "Morning Email Digest",
+        description: "Summarize unread emails every weekday at 8am",
+        templatePrompt:
+          "Create a scheduled task that runs every weekday at 8am to summarize my unread Gmail emails from the last 24 hours.",
+        suggestedSchedule: "0 8 * * 1-5",
+      },
+      {
+        name: "Auto-Reply Draft",
+        description: "Draft replies to important emails",
+        templatePrompt:
+          "Create a task that checks my Gmail every hour for emails from key contacts and drafts reply suggestions.",
+      },
+    ],
   },
   {
     key: "github",
@@ -255,6 +292,22 @@ export const CREDENTIAL_TEMPLATES: CredentialTemplate[] = [
     configPathMap: {
       apiKey: ["skills.entries.github.env.GITHUB_TOKEN"],
     },
+    requiredSkills: ["github"],
+    testConfig: { handler: "github" },
+    suggestedTasks: [
+      {
+        name: "PR Review Bot",
+        description: "Auto-review new pull requests",
+        templatePrompt:
+          "Create a task that checks my GitHub repos every 30 minutes for new PRs and posts code review comments.",
+      },
+      {
+        name: "Issue Triage",
+        description: "Categorize and prioritize new issues",
+        templatePrompt:
+          "Create a task that monitors GitHub issues and auto-labels and prioritizes them.",
+      },
+    ],
   },
   {
     key: "google_places",

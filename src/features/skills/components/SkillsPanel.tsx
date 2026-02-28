@@ -168,6 +168,7 @@ export const SkillsPanel = React.memo(function SkillsPanel({
         onOpenChange={handleCredSheetOpenChange}
         onSave={createCredential}
         initialTemplateKey={credTemplateKey}
+        client={client}
       />
     </div>
   );
