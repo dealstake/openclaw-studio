@@ -84,7 +84,7 @@ export const ActivityMessageCard = memo(function ActivityMessageCard({
                 <button
                   type="button"
                   onClick={() => setExpanded((v) => !v)}
-                  aria-label={expanded ? "Show less" : "Show more"}
+                  aria-label={expanded ? `Show less for ${entry.sourceName}` : `Show more for ${entry.sourceName}`}
                   className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-0.5 rounded-md px-1 py-0.5 text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
                 >
                   <ChevronRight
