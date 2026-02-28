@@ -341,7 +341,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
         {/* Single-line input row: [attach] [textarea] [agent pill] [send/stop] */}
         <div className="flex items-end gap-1.5 p-1.5">
           {/* Attach button */}
-          <div className="flex shrink-0 items-center">
+          <div className="mb-[1px] flex shrink-0 items-center">
             <button
               type="button"
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
