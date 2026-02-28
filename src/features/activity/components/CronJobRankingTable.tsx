@@ -9,21 +9,10 @@ import { Skeleton } from "@/components/Skeleton";
 import { formatDuration, formatRelativeTime } from "@/lib/text/time";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import type { JobStats } from "../lib/cronStatsCalculator";
+import { successRateColor, runStatusDot } from "../lib/activityDisplayUtils";
 import { TrendSparkline } from "./TrendSparkline";
 
 const compactNumber = new Intl.NumberFormat(undefined, { notation: "compact" });
-
-function successRateColor(rate: number): string {
-  if (rate >= 0.9) return "text-green-400";
-  if (rate >= 0.7) return "text-yellow-400";
-  return "text-red-400";
-}
-
-function runStatusDot(status: string): string {
-  if (status === "ok") return "bg-green-500";
-  if (status === "error") return "bg-red-500";
-  return "bg-muted-foreground";
-}
 
 const JobRow = memo(function JobRow({
   job,

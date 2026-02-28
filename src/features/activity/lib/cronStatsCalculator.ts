@@ -30,6 +30,13 @@ function matchRunTokens(
   sessionTokenMap: Map<number, number>,
   sessionsByKey: Map<string, { updatedAt?: number | null; totalTokens?: number | null }>
 ): number {
+  /**
+   * Timestamp matching window (±30s). Cron runs and sessions may not start/end
+   * at the exact same millisecond due to gateway scheduling jitter and network
+   * latency. 30s is generous enough to match concurrent runs while avoiding
+   * cross-matching jobs that run at different cron intervals (minimum 1 minute).
+   * Prefer key-based matching (Strategy 1) when possible.
+   */
   const WINDOW_MS = 30_000;
 
   // Strategy 1: key-based matching

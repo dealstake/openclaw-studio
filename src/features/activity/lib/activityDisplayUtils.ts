@@ -52,6 +52,20 @@ export function formatTime(timestamp: number): string {
 
 const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: "auto", style: "narrow" });
 
+/** Success rate → text color class. Shared by CronJobRankingTable and any future job displays. */
+export function successRateColor(rate: number): string {
+  if (rate >= 0.9) return "text-green-400";
+  if (rate >= 0.7) return "text-yellow-400";
+  return "text-red-400";
+}
+
+/** Run status → dot bg color class. Covers "ok", "error", and fallback. */
+export function runStatusDot(status: string): string {
+  if (status === "ok") return "bg-green-500";
+  if (status === "error") return "bg-red-500";
+  return "bg-muted-foreground";
+}
+
 /** Format an ISO timestamp string as relative time (e.g. "5 min. ago", "2 days ago", "Feb 12") */
 export function formatHistoryTime(ts: string): string {
   const d = new Date(ts);
