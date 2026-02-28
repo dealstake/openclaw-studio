@@ -142,7 +142,7 @@ export const ComposerAgentMenu = memo(function ComposerAgentMenu({
       <button
         type="button"
         onClick={toggle}
-        className={`relative flex h-8 w-8 items-center justify-center rounded-full transition-all duration-150 hover:scale-110 active:scale-95 ${glowClass} ${open ? "scale-110 ring-2 ring-primary/40" : ""}`}
+        className={`relative flex h-9 w-9 items-center justify-center rounded-full border border-border/50 bg-background/60 shadow-lg ring-1 ring-white/[0.08] backdrop-blur-xl transition-all duration-150 hover:scale-110 hover:shadow-xl active:scale-95 dark:bg-background/40 ${glowClass} ${open ? "scale-110 ring-2 ring-primary/40" : ""}`}
         aria-label={`Agent settings — ${selected.name}`}
         aria-expanded={open}
         aria-haspopup="menu"
@@ -158,7 +158,7 @@ export const ComposerAgentMenu = memo(function ComposerAgentMenu({
       {/* Dropdown */}
       {open && (
         <div
-          className="absolute bottom-full right-0 z-50 mb-2 min-w-[240px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-border/80 bg-popover/95 shadow-2xl backdrop-blur-xl dark:bg-popover/90"
+          className="absolute bottom-full left-0 z-50 mb-2 min-w-[240px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-border/80 bg-popover/95 shadow-2xl backdrop-blur-xl dark:bg-popover/90"
           role="menu"
           aria-label="Agent settings"
         >
