@@ -346,28 +346,8 @@ export const AgentChatComposer = memo(function AgentChatComposer({
           onChange={handleFileInputChange}
         />
 
-        {/* ═══ SPLIT FLOATING ROW: [Avatar ○] [━━ Input Pill ━━] [Send ○] ═══ */}
+        {/* ═══ FLOATING ROW: [━━ Glass Input Pill ━━] [Avatar↔Send ○] ═══ */}
         <div className="flex items-end gap-2 sm:gap-2.5">
-
-          {/* ── Floating Avatar Button ── */}
-          {composerAgents && composerAgents.length > 0 && selectedAgentId && onSelectAgent && (
-            <div className="mb-[1px] shrink-0">
-              <ComposerAgentMenu
-                agents={composerAgents}
-                selectedAgentId={selectedAgentId}
-                onSelectAgent={onSelectAgent}
-                models={models}
-                modelValue={modelValue}
-                onModelChange={onModelChange}
-                thinkingLevel={thinkingLevel}
-                onThinkingChange={onThinkingChange}
-                allowThinking={allowThinking}
-                tokenPct={tokenPct}
-                onNewSession={onNewSession}
-                onAttach={triggerAttach}
-              />
-            </div>
-          )}
 
           {/* ── Floating Glass Input Pill ── */}
           <div className="min-w-0 flex-1 rounded-[20px] border border-border/50 bg-background/70 shadow-xl ring-1 ring-white/[0.08] backdrop-blur-xl transition-all focus-within:border-border/80 focus-within:shadow-2xl dark:bg-background/40 dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)]">
@@ -385,11 +365,12 @@ export const AgentChatComposer = memo(function AgentChatComposer({
             />
           </div>
 
-          {/* ── Floating Send/Stop Button ── */}
+          {/* ── Morphing Action Button: Avatar (idle/empty) ↔ Send (has text) ↔ Stop (running) ── */}
           <div className="mb-[1px] shrink-0">
             {running ? (
+              /* Running → Stop button */
               <button
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-border/50 bg-destructive text-destructive-foreground shadow-lg ring-1 ring-white/[0.08] transition hover:brightness-110 disabled:cursor-not-allowed disabled:border-border/30 disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none disabled:ring-0"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-border/50 bg-destructive text-destructive-foreground shadow-lg ring-1 ring-white/[0.08] transition-all duration-200 hover:brightness-110 disabled:cursor-not-allowed disabled:border-border/30 disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none disabled:ring-0"
                 type="button"
                 aria-label="Stop agent"
                 onClick={onStop}
@@ -397,13 +378,40 @@ export const AgentChatComposer = memo(function AgentChatComposer({
               >
                 <Square className="h-3 w-3 fill-current" />
               </button>
-            ) : (
+            ) : !isEmpty || hasFiles ? (
+              /* Has text or files → Send button */
               <button
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition hover:brightness-110 disabled:cursor-not-allowed disabled:border disabled:border-border/30 disabled:bg-background/60 disabled:text-muted-foreground disabled:shadow-none disabled:ring-1 disabled:ring-white/[0.06] disabled:backdrop-blur-xl"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-all duration-200 hover:brightness-110 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
                 type="button"
                 aria-label="Send message"
                 onClick={handleClickSend}
                 disabled={sendDisabled}
+              >
+                <ArrowUp className="h-4 w-4" />
+              </button>
+            ) : composerAgents && composerAgents.length > 0 && selectedAgentId && onSelectAgent ? (
+              /* Empty → Avatar (opens dropdown) */
+              <ComposerAgentMenu
+                agents={composerAgents}
+                selectedAgentId={selectedAgentId}
+                onSelectAgent={onSelectAgent}
+                models={models}
+                modelValue={modelValue}
+                onModelChange={onModelChange}
+                thinkingLevel={thinkingLevel}
+                onThinkingChange={onThinkingChange}
+                allowThinking={allowThinking}
+                tokenPct={tokenPct}
+                onNewSession={onNewSession}
+                onAttach={triggerAttach}
+              />
+            ) : (
+              /* Fallback: disabled send */
+              <button
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-border/30 bg-background/60 text-muted-foreground shadow-none ring-1 ring-white/[0.06] backdrop-blur-xl"
+                type="button"
+                aria-label="Send message"
+                disabled
               >
                 <ArrowUp className="h-4 w-4" />
               </button>

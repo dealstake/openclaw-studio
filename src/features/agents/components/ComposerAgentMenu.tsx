@@ -158,7 +158,7 @@ export const ComposerAgentMenu = memo(function ComposerAgentMenu({
       {/* Dropdown */}
       {open && (
         <div
-          className="absolute bottom-full left-0 z-50 mb-2 min-w-[240px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-border/80 bg-popover/95 shadow-2xl backdrop-blur-xl dark:bg-popover/90"
+          className="absolute bottom-full right-0 z-50 mb-2 min-w-[240px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-border/80 bg-popover/95 shadow-2xl backdrop-blur-xl dark:bg-popover/90"
           role="menu"
           aria-label="Agent settings"
         >
