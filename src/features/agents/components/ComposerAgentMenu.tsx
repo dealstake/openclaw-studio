@@ -121,7 +121,7 @@ export const ComposerAgentMenu = memo(function ComposerAgentMenu({
       <button
         type="button"
         onClick={toggle}
-        className={`flex h-9 items-center gap-1.5 rounded-xl px-2 transition hover:bg-muted/80 ${open ? "bg-muted/80" : "bg-muted/40"}`}
+        className={`flex h-9 items-center gap-1 rounded-xl px-1.5 transition hover:bg-muted/80 sm:gap-1.5 sm:px-2 ${open ? "bg-muted/80" : "bg-muted/40"}`}
         aria-label={`Agent settings — ${selected.name}`}
         aria-expanded={open}
         aria-haspopup="menu"
@@ -132,8 +132,9 @@ export const ComposerAgentMenu = memo(function ComposerAgentMenu({
           avatarUrl={selected.avatarUrl}
           size={18}
         />
-        <div className="flex min-w-0 items-center gap-1.5">
-          <span className="max-w-[60px] truncate text-xs font-semibold text-foreground sm:max-w-[100px]">
+        {/* Desktop: name + % + status dot + chevron. Mobile: just chevron */}
+        <div className="hidden min-w-0 items-center gap-1.5 sm:flex">
+          <span className="max-w-[100px] truncate text-xs font-semibold text-foreground">
             {selected.name || selected.agentId}
           </span>
           {tokenPct !== null && tokenPct !== undefined && (
