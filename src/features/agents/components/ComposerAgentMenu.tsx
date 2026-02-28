@@ -207,7 +207,7 @@ export const ComposerAgentMenu = memo(function ComposerAgentMenu({
 
           {/* Model sub-menu (inline expand) */}
           {subMenu === "model" && (
-            <div className="border-t border-border/20 bg-muted/10 py-1" role="listbox" aria-label="Available models">
+            <div className="border-t border-border/20 bg-popover py-1" role="listbox" aria-label="Available models">
               {models.map((model) => {
                 const key = `${model.provider}/${model.id}`;
                 const isSelected = key === modelValue;
@@ -264,7 +264,7 @@ export const ComposerAgentMenu = memo(function ComposerAgentMenu({
               </button>
 
               {subMenu === "thinking" && (
-                <div className="border-t border-border/20 bg-muted/10 py-1" role="radiogroup" aria-label="Thinking level">
+                <div className="border-t border-border/20 bg-popover py-1" role="radiogroup" aria-label="Thinking level">
                   {THINKING_LEVELS.map((level) => {
                     const isActive = level.value === thinkingLevel;
                     return (
