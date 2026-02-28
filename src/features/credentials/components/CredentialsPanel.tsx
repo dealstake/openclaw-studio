@@ -132,7 +132,7 @@ export const CredentialsPanel = React.memo(function CredentialsPanel({
               <PanelIconButton
                 onClick={onStartCredentialWizard}
                 title="Create with AI"
-                aria-label="Create credential with AI wizard"
+                aria-label="Create with AI"
               >
                 <Sparkles className="h-4 w-4" />
               </PanelIconButton>

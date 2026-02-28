@@ -44,7 +44,7 @@ export const EmptyState = memo(function EmptyState({
             <button
               type="button"
               onClick={action.onClick}
-              className="text-xs text-primary hover:underline"
+              className="min-h-[44px] rounded-md px-3 text-xs text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
             >
               {action.label}
             </button>
@@ -53,7 +53,7 @@ export const EmptyState = memo(function EmptyState({
             <button
               type="button"
               onClick={secondaryAction.onClick}
-              className="text-xs text-muted-foreground hover:text-primary hover:underline"
+              className="min-h-[44px] rounded-md px-3 text-xs text-muted-foreground hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
             >
               {secondaryAction.label}
             </button>
