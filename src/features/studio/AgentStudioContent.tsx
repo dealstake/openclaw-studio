@@ -27,6 +27,7 @@ import { createGatewayRuntimeEventHandler } from "@/features/agents/state/gatewa
 // settingsCoordinator accessed via useGateway() context
 // TasksPanel + ProjectsPanel moved to StudioContextDrawer
 import { useAgentTasks } from "@/features/tasks/hooks/useAgentTasks";
+import type { CreateTaskPayload } from "@/features/tasks/types";
 // ContextPanel moved to StudioContextDrawer
 import type { ContextTab } from "@/features/context/components/ContextPanel";
 
@@ -71,6 +72,9 @@ import { useAppLayout } from "@/hooks/useAppLayout";
 
 import { useLoadAgents } from "@/features/studio/useLoadAgents";
 import { useStudioDataSync } from "@/features/studio/useStudioDataSync";
+import { useWizardInChat } from "@/features/wizards/hooks/useWizardInChat";
+import { buildTaskWizardPrompt, getDefaultWizardPrompt } from "@/features/wizards/lib/wizardPrompts";
+import type { WizardType } from "@/features/wizards/lib/wizardTypes";
 
 export const AgentStudioPage = () => {
   const {
@@ -151,11 +155,10 @@ export const AgentStudioPage = () => {
   }, []);
 
   // Listen for task wizard launch events from credential post-save flow
+  const handleStartWizardRef = useRef<((type: WizardType) => void) | null>(null);
   useEffect(() => {
-    const handler = (e: Event) => {
-      const detail = (e as CustomEvent<{ initialPrompt?: string }>).detail;
-      setTaskWizardInitialPrompt(detail?.initialPrompt);
-      setShowTaskWizard(true);
+    const handler = () => {
+      handleStartWizardRef.current?.("task");
     };
     window.addEventListener("openclaw:launch-task-wizard", handler);
     return () => window.removeEventListener("openclaw:launch-task-wizard", handler);
@@ -295,6 +298,52 @@ export const AgentStudioPage = () => {
     runTask,
     deleteTask,
   } = useAgentTasks(client, status, focusedAgentId);
+
+  // ── Wizard-in-chat ────────────────────────────────────────────────
+  const wizard = useWizardInChat({
+    client,
+    agentId: focusedAgentId ?? "default",
+  });
+
+  const handleStartWizard = useCallback(
+    (type: WizardType) => {
+      if (type === "task") {
+        const prompt = buildTaskWizardPrompt(
+          "periodic",
+          agents.map((a) => a.agentId),
+        );
+        wizard.startWizard("task", prompt);
+      } else {
+        // project, skill, credential, agent — use default prompts
+        wizard.startWizard(type, getDefaultWizardPrompt(type));
+      }
+      // Ensure we're on the chat pane (mobile)
+      if (isMobileLayout) {
+        setMobilePane("chat");
+      }
+    },
+    [agents, wizard, isMobileLayout, setMobilePane],
+  );
+  // eslint-disable-next-line react-hooks/refs
+  handleStartWizardRef.current = handleStartWizard;
+
+  const handleWizardConfirm = useCallback(async () => {
+    const extracted = wizard.extractedConfig;
+    if (!extracted) return;
+    if (extracted.type === "task") {
+      try {
+        await createTask(extracted.config as CreateTaskPayload);
+        void wizard.endWizard();
+        void loadTasks();
+      } catch {
+        // Error is shown by the task creation flow
+      }
+    } else {
+      // Other wizard types land here — Phase 5 will implement creation APIs
+      void wizard.endWizard();
+    }
+  }, [wizard, createTask, loadTasks]);
+
   // eslint-disable-next-line react-hooks/refs
   loadTasksRef.current = loadTasks;
   // eslint-disable-next-line react-hooks/refs
@@ -904,6 +953,8 @@ export const AgentStudioPage = () => {
                   onExitSessionView={stableChatOnExitSessionView}
                   sessionContinued={sessionContinuedAgents.has(focusedAgent.agentId)}
                   onDismissContinuationBanner={stableChatOnDismissContinuation}
+                  wizard={wizard}
+                  onWizardConfirm={() => void handleWizardConfirm()}
                 />
               ) : (
                 <div className="flex h-full w-full flex-col items-center justify-center gap-3 text-center text-muted-foreground">
@@ -941,7 +992,7 @@ export const AgentStudioPage = () => {
               onRunTask={runTask}
               onDeleteTask={deleteTask}
               onRefreshTasks={() => { void loadTasks(); }}
-              onNewTask={() => setShowTaskWizard(true)}
+              onNewTask={() => handleStartWizard("task")}
               cronMaxConcurrentRuns={cronMaxConcurrentRuns}
               agents={agents}
               selectedBrainAgentId={selectedBrainAgentId}
@@ -950,6 +1001,7 @@ export const AgentStudioPage = () => {
               brainPreviewMode={brainPreviewMode}
               onBrainPreviewModeChange={setBrainPreviewMode}
               onTranscriptClick={handleExpandedTranscriptClick}
+              onCreateSkill={() => handleStartWizard("skill")}
             />
             {/* Trace Viewer overlay */}
             {viewingTrace && (
@@ -993,7 +1045,7 @@ export const AgentStudioPage = () => {
               onRunTask={runTask}
               onDeleteTask={deleteTask}
               onRefreshTasks={() => { void loadTasks(); }}
-              onNewTask={() => setShowTaskWizard(true)}
+              onNewTask={() => handleStartWizard("task")}
               cronMaxConcurrentRuns={cronMaxConcurrentRuns}
               agents={agents}
               selectedBrainAgentId={selectedBrainAgentId}
@@ -1010,6 +1062,7 @@ export const AgentStudioPage = () => {
                 setMobilePane("chat");
               }}
               focusedAgent={focusedAgent}
+              onCreateSkill={() => handleStartWizard("skill")}
             />
           </div>
         ) : (

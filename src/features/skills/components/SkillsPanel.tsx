@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useState } from "react";
-import { Download } from "lucide-react";
+import { Download, Plus } from "lucide-react";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { SectionLabel } from "@/components/SectionLabel";
 import { ErrorBanner } from "@/components/ErrorBanner";
@@ -17,11 +17,14 @@ import type { Skill } from "../lib/types";
 export interface SkillsPanelProps {
   client: GatewayClient;
   status: GatewayStatus;
+  /** Optional callback to launch the skill creation wizard in the main chat */
+  onCreateSkill?: () => void;
 }
 
 export const SkillsPanel = React.memo(function SkillsPanel({
   client,
   status,
+  onCreateSkill,
 }: SkillsPanelProps) {
   const {
     report,
@@ -101,6 +104,17 @@ export const SkillsPanel = React.memo(function SkillsPanel({
       <div className="flex items-center justify-between px-3 pt-3 pb-1">
         <SectionLabel>Skills</SectionLabel>
         <div className="flex items-center gap-2">
+          {onCreateSkill && (
+            <button
+              type="button"
+              onClick={onCreateSkill}
+              aria-label="Create new skill"
+              className="flex h-6 items-center gap-1 rounded-md border border-amber-500/40 bg-amber-500/10 px-2 text-[11px] text-amber-400 transition-colors hover:bg-amber-500/20"
+            >
+              <Plus className="h-3 w-3" />
+              Create
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setInstallSheetOpen(true)}

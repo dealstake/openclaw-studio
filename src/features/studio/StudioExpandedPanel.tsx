@@ -52,6 +52,8 @@ interface StudioExpandedPanelProps {
   onBrainPreviewModeChange: (mode: boolean) => void;
   // Transcript
   onTranscriptClick: (sessionId: string, agentId: string | null) => void;
+  // Wizard entry points
+  onCreateSkill?: () => void;
 }
 
 export const StudioExpandedPanel = memo(function StudioExpandedPanel({
@@ -82,6 +84,7 @@ export const StudioExpandedPanel = memo(function StudioExpandedPanel({
   brainPreviewMode,
   onBrainPreviewModeChange,
   onTranscriptClick,
+  onCreateSkill,
 }: StudioExpandedPanelProps) {
   if (!expandedTab) return null;
 
@@ -145,7 +148,7 @@ export const StudioExpandedPanel = memo(function StudioExpandedPanel({
           )}
           {expandedTab === "skills" && (
             <PanelErrorBoundary name="Skills">
-              <SkillsPanel client={client} status={status} />
+              <SkillsPanel client={client} status={status} onCreateSkill={onCreateSkill} />
             </PanelErrorBoundary>
           )}
           {expandedTab === "activity" && (

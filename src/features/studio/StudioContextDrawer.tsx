@@ -67,6 +67,8 @@ interface StudioContextDrawerProps {
   onBrainClose: () => void;
   // Workspace
   focusedAgent: AgentState | null;
+  // Wizard entry points
+  onCreateSkill?: () => void;
 }
 
 export const StudioContextDrawer = React.memo(function StudioContextDrawer(props: StudioContextDrawerProps) {
@@ -82,6 +84,7 @@ export const StudioContextDrawer = React.memo(function StudioContextDrawer(props
     brainPreviewMode, onBrainPreviewModeChange,
     status, gatewayModels, modelValue, onModelChange, onBrainClose,
     focusedAgent,
+    onCreateSkill,
   } = props;
 
   return (
@@ -175,7 +178,7 @@ export const StudioContextDrawer = React.memo(function StudioContextDrawer(props
         }
         skillsContent={
           <PanelErrorBoundary name="Skills">
-            <SkillsPanel client={client} status={status} />
+            <SkillsPanel client={client} status={status} onCreateSkill={onCreateSkill} />
           </PanelErrorBoundary>
         }
         activityContent={
