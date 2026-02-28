@@ -17,6 +17,7 @@ import { CronCostTable } from "@/features/usage/components/CronCostTable";
 import { AgentCostTable } from "@/features/usage/components/AgentCostTable";
 import { SummaryCard } from "@/features/usage/components/SummaryCard";
 import { SessionDrillDown } from "@/features/usage/components/SessionDrillDown";
+import { BudgetAlert } from "@/features/usage/components/BudgetAlert";
 
 type BreakdownView = "model" | "agent" | "cron";
 
@@ -176,6 +177,9 @@ export const UsagePanel = memo(function UsagePanel({
       />
 
       {error && <ErrorBanner message={error} onRetry={() => void refresh()} />}
+
+      {/* Budget alert */}
+      <BudgetAlert currentSpend={totalCost} />
 
       {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
