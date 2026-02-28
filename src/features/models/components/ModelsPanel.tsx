@@ -10,6 +10,8 @@ import { CardSkeleton } from "@/components/ui/CardSkeleton";
 import { PanelIconButton } from "@/components/PanelIconButton";
 import { BrainModelSection } from "./BrainModelSection";
 import { SpecialistEnginesSection } from "./SpecialistEnginesSection";
+import { AdvancedConfigSection } from "./AdvancedConfigSection";
+import { ModelCatalogSection } from "./ModelCatalogSection";
 
 interface ModelsPanelProps {
   client: GatewayClient;
@@ -23,6 +25,7 @@ export const ModelsPanel = memo(function ModelsPanel({
   const {
     brainConfig,
     engines,
+    roles,
     providers,
     allModels,
     loading,
@@ -31,6 +34,9 @@ export const ModelsPanel = memo(function ModelsPanel({
     changeBrainModel,
     saveEngine,
     removeEngine,
+    changeRole,
+    changeThinking,
+    changeCronModel,
   } = useModels(client, status);
 
   useEffect(() => {
@@ -74,6 +80,15 @@ export const ModelsPanel = memo(function ModelsPanel({
             onSaveEngine={saveEngine}
             onRemoveEngine={removeEngine}
           />
+          <AdvancedConfigSection
+            roles={roles}
+            providers={providers}
+            onChangeRole={changeRole}
+            onChangeThinking={changeThinking}
+            onChangeCronModel={changeCronModel}
+            disabled={loading}
+          />
+          <ModelCatalogSection providers={providers} />
         </>
       ) : null}
     </div>
