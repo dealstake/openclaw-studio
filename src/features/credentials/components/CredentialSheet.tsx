@@ -359,6 +359,13 @@ export const CredentialSheet = React.memo(function CredentialSheet({
     (task: SuggestedTask) => {
       if (onLaunchTaskWizard) {
         onLaunchTaskWizard(task);
+      } else {
+        // Bubble up via custom event for panels that don't wire the callback
+        window.dispatchEvent(
+          new CustomEvent("openclaw:launch-task-wizard", {
+            detail: { initialPrompt: task.templatePrompt },
+          }),
+        );
       }
       handleOpenChange(false);
     },

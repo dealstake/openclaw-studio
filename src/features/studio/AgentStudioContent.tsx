@@ -102,6 +102,7 @@ export const AgentStudioPage = () => {
     swipeDy,
   } = layout;
   const [showTaskWizard, setShowTaskWizard] = useState(false);
+  const [taskWizardInitialPrompt, setTaskWizardInitialPrompt] = useState<string | undefined>();
   const [showAgentWizard, setShowAgentWizard] = useState(false);
   const [focusFilter, setFocusFilter] = useState<FocusFilter>("all");
   const [focusedPreferencesLoaded, setFocusedPreferencesLoaded] = useState(false);
@@ -144,7 +145,21 @@ export const AgentStudioPage = () => {
   const [cronEventTick, setCronEventTick] = useState(0);
 
   // Layout keyboard shortcuts, persistence, and swipe handled by useAppLayout
-  const closeTaskWizard = useCallback(() => setShowTaskWizard(false), []);
+  const closeTaskWizard = useCallback(() => {
+    setShowTaskWizard(false);
+    setTaskWizardInitialPrompt(undefined);
+  }, []);
+
+  // Listen for task wizard launch events from credential post-save flow
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ initialPrompt?: string }>).detail;
+      setTaskWizardInitialPrompt(detail?.initialPrompt);
+      setShowTaskWizard(true);
+    };
+    window.addEventListener("openclaw:launch-task-wizard", handler);
+    return () => window.removeEventListener("openclaw:launch-task-wizard", handler);
+  }, []);
 
   /** Context window utilization per agent — totalTokens = last turn's prompt size, contextTokens = model limit */
   const [agentContextWindow, setAgentContextWindow] = useState<Map<string, { totalTokens: number; contextTokens: number }>>(new Map());
@@ -1026,6 +1041,7 @@ export const AgentStudioPage = () => {
         onTaskAgentCreated={() => void loadAgents()}
         agents={agents}
         busyTaskId={busyTaskId}
+        taskWizardInitialPrompt={taskWizardInitialPrompt}
         commandPalette={commandPalette}
         createAgentBlock={createAgentBlock}
         createBlockStatusLine={createBlockStatusLine}

@@ -28,6 +28,7 @@ interface StudioModalsProps {
   onCreateTask: (payload: CreateTaskPayload) => Promise<void>;
   onTaskAgentCreated: () => void;
   agents: AgentState[];
+  taskWizardInitialPrompt?: string;
   busyTaskId: string | null;
   // Command palette
   commandPalette: ReturnType<typeof useCommandPalette>;
@@ -54,6 +55,7 @@ export const StudioModals = memo(function StudioModals({
   onTaskAgentCreated,
   agents,
   busyTaskId,
+  taskWizardInitialPrompt,
   commandPalette,
   createAgentBlock,
   createBlockStatusLine,
@@ -80,6 +82,7 @@ export const StudioModals = memo(function StudioModals({
         onClose={onCloseTaskWizard}
         onCreateTask={onCreateTask}
         onAgentCreated={onTaskAgentCreated}
+        initialPrompt={taskWizardInitialPrompt}
       />
       <CommandPalette
         open={commandPalette.open}
