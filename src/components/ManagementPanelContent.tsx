@@ -3,7 +3,11 @@
 import { lazy, memo, Suspense } from "react";
 import { PanelErrorBoundary } from "@/components/PanelErrorBoundary";
 import type { ManagementTab } from "@/layout/AppSidebar";
-import { ChannelsPanel } from "@/features/channels/components/ChannelsPanel";
+const ChannelsPanel = lazy(() =>
+  import("@/features/channels/components/ChannelsPanel").then((m) => ({
+    default: m.ChannelsPanel,
+  }))
+);
 import { useManagementPanel } from "@/components/management/ManagementPanelContext";
 
 const UsagePanel = lazy(() =>
@@ -57,13 +61,7 @@ export const ManagementPanelContent = memo(function ManagementPanelContent({
       )}
       {tab === "channels" && (
         <PanelErrorBoundary name="Channels">
-          <ChannelsPanel
-            snapshot={ctx.channelsSnapshot}
-            loading={ctx.channelsLoading}
-            error={ctx.channelsError}
-            onRefresh={ctx.onRefreshChannels}
-            hideHeader
-          />
+          <ChannelsPanel client={ctx.client} status={ctx.status} />
         </PanelErrorBoundary>
       )}
       {tab === "credentials" && (
