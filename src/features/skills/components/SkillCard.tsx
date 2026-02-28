@@ -17,11 +17,11 @@ function statusBadge(skill: Skill) {
   if (skill.blocked)
     return {
       label: "Blocked",
-      cls: "bg-amber-900/30 text-amber-300",
+      cls: "bg-amber-500/10 text-amber-600 dark:bg-amber-900/30 dark:text-amber-300 border border-amber-500/20",
     };
   return {
     label: "Ready",
-    cls: "bg-emerald-900/30 text-emerald-300",
+    cls: "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-300 border border-emerald-500/20",
   };
 }
 
@@ -127,7 +127,7 @@ export const SkillCard = React.memo(function SkillCard({
         </span>
       </CardMeta>
 
-      <div className="mt-1 flex items-center gap-2">
+      <div className="mt-2 flex items-center gap-2">
         <span className="text-[10px] text-muted-foreground/70">
           {sourceBadge(skill.source)}
         </span>
@@ -139,7 +139,7 @@ export const SkillCard = React.memo(function SkillCard({
                 e.stopPropagation();
                 onSetupCredential(skill);
               }}
-              className="flex items-center gap-1 text-[10px] text-amber-500 underline decoration-amber-500/40 transition-colors hover:text-amber-400"
+              className="flex items-center gap-1 rounded-sm p-1.5 -m-1.5 text-[10px] text-amber-600 dark:text-amber-400 underline decoration-amber-600/40 transition-colors hover:text-amber-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber-500"
               aria-label={`Set up API key for ${skill.name}`}
             >
               <AlertTriangle className="h-3 w-3" />
