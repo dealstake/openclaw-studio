@@ -90,7 +90,7 @@ export const AgentCostTable = memo(function AgentCostTable({
     <div className="overflow-x-auto rounded-lg border border-border">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-border bg-muted/50">
+          <tr className="border-b border-border">
             {(
               [
                 ["agentId", "Agent", "text-left"],
@@ -103,12 +103,12 @@ export const AgentCostTable = memo(function AgentCostTable({
               <th
                 key={key}
                 scope="col"
-                className={`px-3 py-2 font-medium text-muted-foreground ${align}`}
+                className={`px-3 py-3 font-medium text-foreground/80 ${align}`}
                 aria-sort={sortKey === key ? (sortAsc ? "ascending" : "descending") : "none"}
               >
                 <button
                   type="button"
-                  className={`bg-transparent border-0 p-0 font-medium text-muted-foreground cursor-pointer select-none hover:text-foreground transition-colors ${align}`}
+                  className={`bg-transparent border-0 p-0 font-medium text-inherit cursor-pointer select-none hover:text-foreground transition-colors ${align}`}
                   onClick={() => handleSort(key as SortKey)}
                 >
                   {label}{sortIndicator(key as SortKey)}
@@ -127,13 +127,13 @@ export const AgentCostTable = memo(function AgentCostTable({
               tabIndex={onAgentClick ? 0 : undefined}
               onKeyDown={onAgentClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onAgentClick(g.agentId); } } : undefined}
             >
-              <td className="px-3 py-2 font-medium text-foreground">{g.agentId}</td>
-              <td className="px-3 py-2 text-right text-muted-foreground">{g.sessions}</td>
-              <td className="px-3 py-2 text-right text-muted-foreground">
+              <td className="px-3 py-3 font-medium text-foreground">{g.agentId}</td>
+              <td className="px-3 py-3 text-right text-muted-foreground">{g.sessions}</td>
+              <td className="px-3 py-3 text-right text-muted-foreground">
                 {formatTokens(g.totalTokens)}
               </td>
-              <td className="px-3 py-2 text-right text-foreground">{formatCost(g.totalCost)}</td>
-              <td className="px-3 py-2 text-right text-muted-foreground">
+              <td className="px-3 py-3 text-right text-foreground">{formatCost(g.totalCost)}</td>
+              <td className="px-3 py-3 text-right text-muted-foreground">
                 {formatCost(g.avgCost)}
               </td>
             </tr>

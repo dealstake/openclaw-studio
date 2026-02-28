@@ -83,7 +83,7 @@ export const DailyTrendChart = memo(function DailyTrendChart({
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <div
-                      className={`flex h-5 rounded-sm overflow-hidden ${onBarClick ? "cursor-pointer hover:opacity-80 transition-opacity" : "cursor-default"}`}
+                      className={`flex h-11 items-center rounded-sm overflow-hidden ${onBarClick ? "cursor-pointer hover:opacity-80 transition-opacity" : "cursor-default"}`}
                       style={{ width: `${Math.max(widthPct, 2)}%` }}
                       role={onBarClick ? "button" : "graphics-symbol"}
                       tabIndex={onBarClick ? 0 : undefined}
@@ -96,7 +96,7 @@ export const DailyTrendChart = memo(function DailyTrendChart({
                         return (
                           <div
                             key={e.model}
-                            className={`${getModelColor(e.model, e.idx)} min-w-[2px]`}
+                            className={`${getModelColor(e.model, e.idx)} min-w-[2px] h-5`}
                             style={{ width: `${segPct}%` }}
                           />
                         );

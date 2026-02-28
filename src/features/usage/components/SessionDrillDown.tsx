@@ -83,7 +83,7 @@ export const SessionDrillDown = memo(function SessionDrillDown({
           <SideSheetClose />
         </SideSheetHeader>
 
-        <SideSheetBody className="p-0">
+        <SideSheetBody className="p-0 pt-0">
           {sessions.length === 0 ? (
             <p className="text-xs text-muted-foreground p-4 text-center">
               No sessions found.
@@ -92,7 +92,7 @@ export const SessionDrillDown = memo(function SessionDrillDown({
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-border bg-muted/50 sticky top-0">
+                  <tr className="border-b border-border sticky top-0 bg-background">
                     {(
                       [
                         ["displayName", "Session", "text-left"],
@@ -104,7 +104,7 @@ export const SessionDrillDown = memo(function SessionDrillDown({
                       <th
                         key={key}
                         scope="col"
-                        className={`px-3 py-2 font-medium text-muted-foreground ${align}`}
+                        className={`px-3 py-3 font-medium text-foreground/80 ${align}`}
                         aria-sort={
                           sortKey === key
                             ? sortAsc
