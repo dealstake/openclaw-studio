@@ -92,6 +92,27 @@ export interface ModelRoles {
   cronOverrides: CronModelOverride[];
 }
 
+// ── Auth Profile Types ───────────────────────────────────────────────────────
+
+/** Usage stats for an auth profile */
+export interface AuthProfileUsage {
+  lastUsed?: number;
+  errorCount?: number;
+  lastFailureAt?: number;
+}
+
+/** Auth profile as returned by the API (masked, never exposes full token) */
+export interface AuthProfileInfo {
+  id: string;
+  provider: string;
+  type: string;
+  maskedToken: string;
+  disabledUntil: number | null;
+  cooldownUntil: number | null;
+  isLastGood: boolean;
+  usage: AuthProfileUsage | null;
+}
+
 // ── Aggregate ────────────────────────────────────────────────────────────────
 
 /** Full models data returned by the hook */

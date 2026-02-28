@@ -73,7 +73,7 @@ export const ManagementPanelContent = memo(function ManagementPanelContent({
       )}
       {tab === "models" && (
         <PanelErrorBoundary name="Models">
-          <ModelsPanel client={ctx.client} status={ctx.status} />
+          <ModelsPanel client={ctx.client} status={ctx.status} agentId={ctx.focusedAgentId} />
         </PanelErrorBoundary>
       )}
       {tab === "settings" && ctx.settingsAgent && (

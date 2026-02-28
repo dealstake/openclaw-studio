@@ -9,6 +9,7 @@ import { ErrorBanner } from "@/components/ErrorBanner";
 import { CardSkeleton } from "@/components/ui/CardSkeleton";
 import { PanelIconButton } from "@/components/PanelIconButton";
 import { BrainModelSection } from "./BrainModelSection";
+import { BrainKeysSection } from "./BrainKeysSection";
 import { SpecialistEnginesSection } from "./SpecialistEnginesSection";
 import { AdvancedConfigSection } from "./AdvancedConfigSection";
 import { ModelCatalogSection } from "./ModelCatalogSection";
@@ -16,11 +17,13 @@ import { ModelCatalogSection } from "./ModelCatalogSection";
 interface ModelsPanelProps {
   client: GatewayClient;
   status: GatewayStatus;
+  agentId?: string | null;
 }
 
 export const ModelsPanel = memo(function ModelsPanel({
   client,
   status,
+  agentId,
 }: ModelsPanelProps) {
   const {
     brainConfig,
@@ -75,6 +78,7 @@ export const ModelsPanel = memo(function ModelsPanel({
             onChangePrimary={changeBrainModel}
             disabled={loading}
           />
+          <BrainKeysSection agentId={agentId ?? null} />
           <SpecialistEnginesSection
             engines={engines}
             onSaveEngine={saveEngine}
