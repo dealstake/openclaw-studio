@@ -120,8 +120,8 @@ export const ActivityActionMenu = memo(function ActivityActionMenu(
             type="button"
             onClick={(e) => e.stopPropagation()}
             disabled={loading}
-            aria-label="More actions"
-            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md px-1 py-0.5 text-muted-foreground opacity-0 transition-all group-hover/card:opacity-100 group-hover/card:text-foreground/80 hover:bg-muted/60 hover:text-foreground focus:opacity-100"
+            aria-label={`More actions for ${props.taskName || "activity"}`}
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md px-1 py-0.5 text-muted-foreground/40 transition-all hover:text-foreground hover:bg-muted/60 focus-visible:text-foreground focus-visible:opacity-100 md:opacity-0 md:text-muted-foreground md:group-hover/card:opacity-100 md:group-hover/card:text-foreground/80"
           >
             <MoreHorizontal size={14} />
           </button>
