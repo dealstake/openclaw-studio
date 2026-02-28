@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { isGatewayDisconnectLikeError } from "@/lib/gateway/GatewayClient";
 import type { CronJobSummary } from "@/lib/cron/types";
@@ -15,9 +15,16 @@ export const useCronAnalytics = (
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const loadingRef = useRef(false);
+  const abortRef = useRef<AbortController | null>(null);
 
   const refresh = useCallback(async () => {
     if (status !== "connected" || loadingRef.current) return;
+
+    // Abort any in-flight refresh before starting a new one
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     loadingRef.current = true;
     setLoading(true);
     setError(null);
@@ -29,6 +36,7 @@ export const useCronAnalytics = (
       const runsResults: { job: CronJobSummary; runs: Awaited<ReturnType<typeof fetchCronRuns>> }[] = [];
       const CONCURRENCY = 3;
       for (let i = 0; i < enabledJobs.length; i += CONCURRENCY) {
+        if (controller.signal.aborted) return;
         const batch = enabledJobs.slice(i, i + CONCURRENCY);
         const batchResults = await Promise.all(
           batch.map(async (job) => ({
@@ -39,6 +47,8 @@ export const useCronAnalytics = (
         runsResults.push(...batchResults);
       }
 
+      if (controller.signal.aborted) return;
+
       // Fetch cron sessions for token join.
       // Use kinds filter + higher limit to capture older cron runs that
       // would otherwise be crowded out by non-cron sessions.
@@ -46,6 +56,9 @@ export const useCronAnalytics = (
         "sessions.list",
         { kinds: ["cron"], limit: 500 }
       );
+
+      if (controller.signal.aborted) return;
+
       const cronSessions = sessionsResult.sessions ?? [];
 
       // Build lookup maps for robust run → session matching:
@@ -65,8 +78,10 @@ export const useCronAnalytics = (
         computeJobStats(job.id, job.name, runs, sessionTokenMap, sessionsByKey)
       );
 
+      if (controller.signal.aborted) return;
       setJobStats(rankJobsByTokens(stats));
     } catch (err) {
+      if (controller.signal.aborted) return;
       if (!isGatewayDisconnectLikeError(err)) {
         const message =
           err instanceof Error ? err.message : "Failed to load cron analytics.";
@@ -77,6 +92,13 @@ export const useCronAnalytics = (
       setLoading(false);
     }
   }, [client, status, cronJobs]);
+
+  // Abort in-flight fetches on unmount
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort();
+    };
+  }, []);
 
   return { jobStats, loading, error, refresh };
 };

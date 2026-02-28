@@ -37,11 +37,3 @@ export interface DisplayEvent extends ActivityEvent {
   formattedTokens: string | null;
 }
 
-/** Filter criteria for activity feed */
-export interface ActivityFilter {
-  types?: string[];
-  taskId?: string;
-  projectSlug?: string;
-  status?: string;
-  search?: string;
-}

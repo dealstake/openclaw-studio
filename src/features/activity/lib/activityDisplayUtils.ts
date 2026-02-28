@@ -18,19 +18,6 @@ export function taskIcon(taskName: string): { icon: LucideIcon; className: strin
   return { icon: Bot, className: "text-muted-foreground" };
 }
 
-/**
- * @deprecated Use `taskIcon()` instead — returns Lucide icon components per architecture policy.
- */
-export function taskEmoji(taskName: string): string {
-  const lower = taskName.toLowerCase();
-  if (lower.includes("continuation")) return "⚡";
-  if (lower.includes("auditor") || lower.includes("audit")) return "🔍";
-  if (lower.includes("research")) return "🔬";
-  if (lower.includes("visual qa") || lower.includes("visual-qa")) return "👁";
-  if (lower.includes("health") || lower.includes("gateway")) return "🏥";
-  return "🤖";
-}
-
 /** Status → dot color mapping. Keys match both store and TypeScript types. */
 export const STATUS_COLORS: Record<string, string> = {
   streaming: "bg-emerald-400",

@@ -40,6 +40,14 @@ const JobRow = memo(function JobRow({
   const [runError, setRunError] = useState<string | null>(null);
   const fetchedRef = useRef(false);
 
+  // Reset fetched state when row is collapsed so next expand gets fresh data
+  const handleOpenChange = useCallback((isOpen: boolean) => {
+    setOpen(isOpen);
+    if (!isOpen) {
+      fetchedRef.current = false;
+    }
+  }, []);
+
   const loadRuns = useCallback(async () => {
     if (fetchedRef.current) return;
     fetchedRef.current = true;
@@ -64,7 +72,7 @@ const JobRow = memo(function JobRow({
   const tokenPct = maxTokens > 0 ? (job.totalTokens / maxTokens) * 100 : 0;
 
   return (
-    <Collapsible open={open} onOpenChange={setOpen}>
+    <Collapsible open={open} onOpenChange={handleOpenChange}>
       <CollapsibleTrigger asChild>
         <button
           type="button"
