@@ -93,9 +93,10 @@ export function parseSkillsReport(response: unknown): SkillsReport {
   if (Array.isArray(response.skills)) {
     for (const raw of response.skills) {
       const key =
-        isRecord(raw) && typeof raw.key === "string"
+        isRecord(raw) && typeof raw.key === "string" && raw.key.trim()
           ? raw.key
-          : String(raw);
+          : null;
+      if (!key) continue; // skip malformed entries
       const skill = parseSkillEntry(key, raw);
       if (skill) {
         skills.push(skill);

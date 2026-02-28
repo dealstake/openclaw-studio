@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { isGatewayDisconnectLikeError } from "@/lib/gateway/GatewayClient";
 import type { SkillsReport, SkillStatusFilter } from "../lib/types";
@@ -79,25 +79,28 @@ export function useSkills(client: GatewayClient, status: GatewayStatus) {
     [client],
   );
 
-  // Filtered skills
-  const filteredSkills =
-    report?.skills.filter((s) => {
-      // Status filter
-      if (filter === "ready" && (s.blocked || !s.enabled)) return false;
-      if (filter === "blocked" && !s.blocked) return false;
-      if (filter === "disabled" && s.enabled) return false;
-      // Search filter
-      if (search) {
-        const q = search.toLowerCase();
-        if (
-          !s.name.toLowerCase().includes(q) &&
-          !s.description.toLowerCase().includes(q) &&
-          !s.key.toLowerCase().includes(q)
-        )
-          return false;
-      }
-      return true;
-    }) ?? [];
+  // Filtered skills — memoized to avoid recalculation on unrelated state changes
+  const filteredSkills = useMemo(
+    () =>
+      report?.skills.filter((s) => {
+        // Status filter
+        if (filter === "ready" && (s.blocked || !s.enabled)) return false;
+        if (filter === "blocked" && !s.blocked) return false;
+        if (filter === "disabled" && s.enabled) return false;
+        // Search filter
+        if (search) {
+          const q = search.toLowerCase();
+          if (
+            !s.name.toLowerCase().includes(q) &&
+            !s.description.toLowerCase().includes(q) &&
+            !s.key.toLowerCase().includes(q)
+          )
+            return false;
+        }
+        return true;
+      }) ?? [],
+    [report, filter, search],
+  );
 
   return {
     report,

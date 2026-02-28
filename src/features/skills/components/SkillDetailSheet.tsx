@@ -2,6 +2,7 @@
 
 import React, { useCallback, useState } from "react";
 import { AlertTriangle, Loader2 } from "lucide-react";
+import { ToggleSwitch } from "@/components/ui/ToggleSwitch";
 import {
   SideSheet,
   SideSheetContent,
@@ -36,14 +37,20 @@ export const SkillDetailSheet = React.memo(function SkillDetailSheet({
 }: SkillDetailSheetProps) {
   const [apiKey, setApiKey] = useState("");
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const handleSave = useCallback(async () => {
     if (!skill || !apiKey.trim()) return;
     setSaving(true);
+    setSaveError(null);
     try {
       await onSaveApiKey(skill.key, apiKey.trim());
       setApiKey("");
       onOpenChange(false);
+    } catch (err) {
+      setSaveError(
+        err instanceof Error ? err.message : "Failed to save API key.",
+      );
     } finally {
       setSaving(false);
     }
@@ -57,7 +64,10 @@ export const SkillDetailSheet = React.memo(function SkillDetailSheet({
   // Reset API key input when sheet opens/closes
   const handleOpenChange = useCallback(
     (o: boolean) => {
-      if (!o) setApiKey("");
+      if (!o) {
+        setApiKey("");
+        setSaveError(null);
+      }
       onOpenChange(o);
     },
     [onOpenChange],
@@ -88,35 +98,13 @@ export const SkillDetailSheet = React.memo(function SkillDetailSheet({
             {/* Enable/Disable */}
             <div className="flex items-center justify-between rounded-lg border border-border/30 bg-card/40 px-3 py-2.5">
               <span className="text-sm font-medium">Enabled</span>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={skill.enabled}
-                aria-label={`${skill.enabled ? "Disable" : "Enable"} ${skill.name}`}
+              <ToggleSwitch
+                checked={skill.enabled}
+                onChange={() => void handleToggle()}
                 disabled={busy}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  void handleToggle();
-                }}
-                className={cn(
-                  "relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors",
-                  "min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
-                  "disabled:cursor-not-allowed disabled:opacity-50",
-                  skill.enabled ? "bg-primary" : "bg-muted",
-                )}
-              >
-                {busy ? (
-                  <Loader2 className="mx-auto h-3 w-3 animate-spin text-foreground" />
-                ) : (
-                  <span
-                    className={cn(
-                      "pointer-events-none block h-4 w-4 rounded-full bg-white shadow-sm transition-transform",
-                      skill.enabled ? "translate-x-4" : "translate-x-0.5",
-                    )}
-                  />
-                )}
-              </button>
+                loading={busy}
+                label={`${skill.enabled ? "Disable" : "Enable"} ${skill.name}`}
+              />
             </div>
 
             {/* API Key section */}
@@ -191,6 +179,10 @@ export const SkillDetailSheet = React.memo(function SkillDetailSheet({
                     "Save API Key"
                   )}
                 </button>
+
+                {saveError && (
+                  <p className="mt-1 text-xs text-destructive">{saveError}</p>
+                )}
               </div>
             )}
 

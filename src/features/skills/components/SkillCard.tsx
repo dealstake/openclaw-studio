@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useCallback } from "react";
-import { AlertTriangle, Loader2 } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { BaseCard, CardHeader, CardTitle, CardMeta } from "@/components/ui/BaseCard";
+import { ToggleSwitch } from "@/components/ui/ToggleSwitch";
 import { cn } from "@/lib/utils";
 import type { Skill } from "../lib/types";
 
@@ -25,16 +26,16 @@ function statusBadge(skill: Skill) {
   };
 }
 
-function sourceBadge(source: string) {
+function sourceBadge(source: string): { label: string; cls: string } {
   switch (source) {
     case "managed":
-      return "ClawHub";
+      return { label: "ClawHub", cls: "bg-primary/10 text-primary border border-primary/20" };
     case "workspace":
-      return "Workspace";
+      return { label: "Workspace", cls: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20" };
     case "extra":
-      return "Extra";
+      return { label: "Extra", cls: "bg-muted text-muted-foreground" };
     default:
-      return "Bundled";
+      return { label: "Bundled", cls: "bg-muted text-muted-foreground" };
   }
 }
 
@@ -59,13 +60,9 @@ export const SkillCard = React.memo(function SkillCard({
   const needsApiKey =
     skill.envRequirements.some((e) => e.required && !e.hasValue) && !skill.hasApiKey;
 
-  const handleToggleClick = useCallback(
-    (e: React.MouseEvent) => {
-      e.stopPropagation();
-      if (!busy) void onToggle(skill.key, !skill.enabled);
-    },
-    [busy, onToggle, skill.key, skill.enabled],
-  );
+  const handleToggleClick = useCallback(() => {
+    if (!busy) void onToggle(skill.key, !skill.enabled);
+  }, [busy, onToggle, skill.key, skill.enabled]);
 
   const handleSelect = useCallback(() => {
     onSelect(skill);
@@ -93,32 +90,13 @@ export const SkillCard = React.memo(function SkillCard({
         </div>
 
         {/* Toggle button */}
-        <button
-          type="button"
-          role="switch"
-          aria-checked={skill.enabled}
-          aria-label={`${skill.enabled ? "Disable" : "Enable"} ${skill.name}`}
+        <ToggleSwitch
+          checked={skill.enabled}
+          onChange={handleToggleClick}
           disabled={busy}
-          onClick={handleToggleClick}
-          className={cn(
-            "relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors",
-            "min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
-            "disabled:cursor-not-allowed disabled:opacity-50",
-            skill.enabled ? "bg-primary" : "bg-muted",
-          )}
-        >
-          {busy ? (
-            <Loader2 className="mx-auto h-3 w-3 animate-spin text-foreground" />
-          ) : (
-            <span
-              className={cn(
-                "pointer-events-none block h-4 w-4 rounded-full bg-white shadow-sm transition-transform",
-                skill.enabled ? "translate-x-4" : "translate-x-0.5",
-              )}
-            />
-          )}
-        </button>
+          loading={busy}
+          label={`${skill.enabled ? "Disable" : "Enable"} ${skill.name}`}
+        />
       </CardHeader>
 
       <CardMeta>
@@ -128,8 +106,13 @@ export const SkillCard = React.memo(function SkillCard({
       </CardMeta>
 
       <div className="mt-2 flex items-center gap-2">
-        <span className="text-[10px] text-muted-foreground/70">
-          {sourceBadge(skill.source)}
+        <span
+          className={cn(
+            "rounded px-1.5 py-0.5 text-[10px] font-medium",
+            sourceBadge(skill.source).cls,
+          )}
+        >
+          {sourceBadge(skill.source).label}
         </span>
         {needsApiKey && (
           onSetupCredential ? (
