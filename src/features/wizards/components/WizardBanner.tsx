@@ -81,7 +81,7 @@ export const WizardBanner = memo(function WizardBanner({
             <button
               key={starter.label}
               type="button"
-              className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition hover:bg-muted/50 ${theme.border} ${theme.accent}`}
+              className={`rounded-full border px-3 py-1.5 text-xs font-medium transition hover:bg-muted/50 ${theme.border} ${theme.accent}`}
               onClick={() => onStarterClick(starter.message)}
             >
               {starter.label}

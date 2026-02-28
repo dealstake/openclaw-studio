@@ -98,7 +98,7 @@ export const WizardConfigCard = memo(function WizardConfigCard({
       <div className="flex items-center gap-2">
         <button
           type="button"
-          className="inline-flex items-center gap-1 rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
           onClick={handleConfirm}
           disabled={confirming}
           aria-label="Confirm and create"
@@ -108,7 +108,7 @@ export const WizardConfigCard = memo(function WizardConfigCard({
         </button>
         <button
           type="button"
-          className="inline-flex items-center gap-1 rounded-md border border-border px-2.5 py-1 text-xs font-medium text-foreground transition hover:bg-muted"
+          className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground transition hover:bg-muted"
           onClick={onRevise}
           aria-label="Revise configuration"
         >
@@ -117,7 +117,7 @@ export const WizardConfigCard = memo(function WizardConfigCard({
         </button>
         <button
           type="button"
-          className="inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs text-muted-foreground transition hover:bg-muted hover:text-foreground"
+          className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs text-muted-foreground transition hover:bg-muted hover:text-foreground"
           onClick={onCancel}
           aria-label="Cancel wizard"
         >

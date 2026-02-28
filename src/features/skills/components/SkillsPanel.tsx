@@ -109,7 +109,7 @@ export const SkillsPanel = React.memo(function SkillsPanel({
               type="button"
               onClick={onCreateSkill}
               aria-label="Create new skill"
-              className="flex h-6 items-center gap-1 rounded-md border border-amber-500/40 bg-amber-500/10 px-2 text-[11px] text-amber-400 transition-colors hover:bg-amber-500/20"
+              className="flex h-8 items-center gap-1.5 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 text-xs text-amber-400 transition-colors hover:bg-amber-500/20"
             >
               <Plus className="h-3 w-3" />
               Create
