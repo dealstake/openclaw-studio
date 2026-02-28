@@ -88,41 +88,30 @@ export const AgentCostTable = memo(function AgentCostTable({
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-border bg-muted/50">
-            <th
-              scope="col"
-              className="px-3 py-2 text-left font-medium text-muted-foreground cursor-pointer select-none"
-              onClick={() => handleSort("agentId")}
-            >
-              Agent{sortIndicator("agentId")}
-            </th>
-            <th
-              scope="col"
-              className="px-3 py-2 text-right font-medium text-muted-foreground cursor-pointer select-none"
-              onClick={() => handleSort("sessions")}
-            >
-              Sessions{sortIndicator("sessions")}
-            </th>
-            <th
-              scope="col"
-              className="px-3 py-2 text-right font-medium text-muted-foreground cursor-pointer select-none"
-              onClick={() => handleSort("totalTokens")}
-            >
-              Tokens{sortIndicator("totalTokens")}
-            </th>
-            <th
-              scope="col"
-              className="px-3 py-2 text-right font-medium text-muted-foreground cursor-pointer select-none"
-              onClick={() => handleSort("totalCost")}
-            >
-              Total{sortIndicator("totalCost")}
-            </th>
-            <th
-              scope="col"
-              className="px-3 py-2 text-right font-medium text-muted-foreground cursor-pointer select-none"
-              onClick={() => handleSort("avgCost")}
-            >
-              Avg/Session{sortIndicator("avgCost")}
-            </th>
+            {(
+              [
+                ["agentId", "Agent", "text-left"],
+                ["sessions", "Sessions", "text-right"],
+                ["totalTokens", "Tokens", "text-right"],
+                ["totalCost", "Total", "text-right"],
+                ["avgCost", "Avg/Session", "text-right"],
+              ] as const
+            ).map(([key, label, align]) => (
+              <th
+                key={key}
+                scope="col"
+                className={`px-3 py-2 font-medium text-muted-foreground ${align}`}
+                aria-sort={sortKey === key ? (sortAsc ? "ascending" : "descending") : "none"}
+              >
+                <button
+                  type="button"
+                  className={`bg-transparent border-0 p-0 font-medium text-muted-foreground cursor-pointer select-none hover:text-foreground transition-colors ${align}`}
+                  onClick={() => handleSort(key as SortKey)}
+                >
+                  {label}{sortIndicator(key as SortKey)}
+                </button>
+              </th>
+            ))}
           </tr>
         </thead>
         <tbody>
