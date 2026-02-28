@@ -39,7 +39,10 @@ export const ActivityMessageCard = memo(function ActivityMessageCard({
       raw.lastIndexOf("! "),
       raw.lastIndexOf("? "),
     );
-    return lastBoundary > 20 ? raw.slice(0, lastBoundary + 1) : raw;
+    if (lastBoundary > 20) return raw.slice(0, lastBoundary + 1);
+    // Fallback: truncate at last space to avoid mid-word cut
+    const lastSpace = raw.lastIndexOf(" ");
+    return lastSpace > 20 ? raw.slice(0, lastSpace) : raw;
   })();
 
   return (
@@ -57,6 +60,8 @@ export const ActivityMessageCard = memo(function ActivityMessageCard({
               {entry.sourceName || "Activity"}
             </span>
             <span
+              role="img"
+              aria-label={`Status: ${entry.status}`}
               className={`inline-block h-1.5 w-1.5 rounded-full flex-shrink-0 ${STATUS_COLORS[entry.status] ?? "bg-muted-foreground/30"} ${isStreaming ? "animate-pulse" : ""}`}
             />
             <div className="ml-auto flex items-center gap-1">

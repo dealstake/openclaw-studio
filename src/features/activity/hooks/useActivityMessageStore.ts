@@ -48,14 +48,11 @@ function emit() {
 
 // --- Internal helpers (DRY: shared by upsert + append) ---
 
-/** Replace entry at index with merged data, returning new array. */
+/** Replace entry at index with merged data, returning new array (single copy). */
 function replaceAt(idx: number, patch: Partial<ActivityMessage>): ActivityMessage[] {
-  const existing = messages[idx];
-  return [
-    ...messages.slice(0, idx),
-    { ...existing, ...patch },
-    ...messages.slice(idx + 1),
-  ];
+  const copy = [...messages];
+  copy[idx] = { ...copy[idx], ...patch };
+  return copy;
 }
 
 /** Create a new entry with defaults, append it, and apply FIFO eviction. */
@@ -120,11 +117,7 @@ export function finalizeActivityMessage(
 ): void {
   const idx = messages.findIndex((m) => m.sourceKey === sourceKey);
   if (idx < 0) return;
-  messages = [
-    ...messages.slice(0, idx),
-    { ...messages[idx], status },
-    ...messages.slice(idx + 1),
-  ];
+  messages = replaceAt(idx, { status });
   emit();
 }
 

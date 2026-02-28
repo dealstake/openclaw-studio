@@ -6,16 +6,26 @@
 import type { LucideIcon } from "lucide-react";
 import { Zap, Search, Microscope, Eye, HeartPulse, Bot, Activity } from "lucide-react";
 
-/** Lucide icon for a task name. Returns icon component + optional color class. */
+/** Icon config for task name keyword matching. Order matters — first match wins. */
+const TASK_ICON_MAP: { keyword: string; icon: LucideIcon; className: string }[] = [
+  { keyword: "continuation", icon: Zap, className: "text-amber-300" },
+  { keyword: "auditor", icon: Search, className: "text-blue-400" },
+  { keyword: "audit", icon: Search, className: "text-blue-400" },
+  { keyword: "research", icon: Microscope, className: "text-purple-400" },
+  { keyword: "visual qa", icon: Eye, className: "text-emerald-300" },
+  { keyword: "visual-qa", icon: Eye, className: "text-emerald-300" },
+  { keyword: "health", icon: HeartPulse, className: "text-red-300" },
+  { keyword: "gateway", icon: HeartPulse, className: "text-red-300" },
+  { keyword: "heartbeat", icon: Activity, className: "text-cyan-400" },
+];
+
+const DEFAULT_TASK_ICON = { icon: Bot, className: "text-muted-foreground" } as const;
+
+/** Lucide icon for a task name. Returns icon component + color class. */
 export function taskIcon(taskName: string): { icon: LucideIcon; className: string } {
   const lower = taskName.toLowerCase();
-  if (lower.includes("continuation")) return { icon: Zap, className: "text-amber-300" };
-  if (lower.includes("auditor") || lower.includes("audit")) return { icon: Search, className: "text-blue-400" };
-  if (lower.includes("research")) return { icon: Microscope, className: "text-purple-400" };
-  if (lower.includes("visual qa") || lower.includes("visual-qa")) return { icon: Eye, className: "text-emerald-300" };
-  if (lower.includes("health") || lower.includes("gateway")) return { icon: HeartPulse, className: "text-red-300" };
-  if (lower.includes("heartbeat")) return { icon: Activity, className: "text-cyan-400" };
-  return { icon: Bot, className: "text-muted-foreground" };
+  const match = TASK_ICON_MAP.find((entry) => lower.includes(entry.keyword));
+  return match ? { icon: match.icon, className: match.className } : DEFAULT_TASK_ICON;
 }
 
 /** Status → dot color mapping. Keys match both store and TypeScript types. */

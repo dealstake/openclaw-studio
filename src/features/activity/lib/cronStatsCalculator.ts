@@ -88,7 +88,9 @@ export function computeJobStats(
   for (const run of runs) {
     const matched = matchRunTokens(run, sessionTokenMap, sessionsByKey);
     totalTokens += matched;
-    tokenTrend.push(matched);
+    // Only include matched runs in trend — zeros from unmatched runs
+    // create misleading dips in the sparkline
+    if (matched > 0) tokenTrend.push(matched);
   }
 
   const avgTokens = totalRuns > 0 ? totalTokens / totalRuns : 0;
