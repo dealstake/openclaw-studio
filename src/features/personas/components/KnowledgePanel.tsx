@@ -204,7 +204,7 @@ const SourceCard = React.memo(function SourceCard({ source, onRemove, busy }: So
           "shrink-0 rounded p-1 text-muted-foreground/50 transition-colors",
           "opacity-0 group-hover:opacity-100",
           "hover:text-destructive hover:bg-destructive/10",
-          "min-h-[32px] min-w-[32px] flex items-center justify-center",
+          "min-h-[44px] min-w-[44px] flex items-center justify-center",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
         )}
         aria-label={`Remove ${source.title || source.sourceUri}`}
@@ -270,7 +270,7 @@ export const KnowledgePanel = React.memo(function KnowledgePanel({
             type="button"
             onClick={handleRefresh}
             disabled={loading}
-            className="rounded p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors min-h-[32px] min-w-[32px] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+            className="rounded p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
             aria-label="Refresh knowledge sources"
           >
             <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
@@ -278,7 +278,7 @@ export const KnowledgePanel = React.memo(function KnowledgePanel({
           <button
             type="button"
             onClick={onClose}
-            className="rounded p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors min-h-[32px] min-w-[32px] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+            className="rounded p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
             aria-label="Close knowledge panel"
           >
             <X className="h-3.5 w-3.5" />

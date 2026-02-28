@@ -495,3 +495,24 @@ summary:active {
 .overflow-y-auto {
   touch-action: pan-y;
 }
+
+/* Agent avatar glow states for composer trigger */
+@keyframes avatar-glow-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 var(--avatar-glow-color, oklch(0.65 0.2 250)); }
+  50% { box-shadow: 0 0 8px 3px var(--avatar-glow-color, oklch(0.65 0.2 250)); }
+}
+.avatar-glow-running {
+  --avatar-glow-color: oklch(0.65 0.2 250);
+  animation: avatar-glow-pulse 2s ease-in-out infinite;
+}
+.avatar-glow-thinking {
+  --avatar-glow-color: oklch(0.7 0.25 280);
+  animation: avatar-glow-pulse 1s ease-in-out infinite;
+}
+.avatar-glow-waiting {
+  --avatar-glow-color: oklch(0.7 0.18 85);
+  animation: avatar-glow-pulse 2.5s ease-in-out infinite;
+}
+.avatar-glow-error {
+  box-shadow: 0 0 6px 2px oklch(0.6 0.25 25);
+}

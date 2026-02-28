@@ -151,7 +151,7 @@ export const PersonaCard = React.memo(function PersonaCard({
             <button
               type="button"
               onClick={handlePractice}
-              className="rounded p-1 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors min-h-[32px] min-w-[32px] flex items-center justify-center"
+              className="rounded p-1 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
               aria-label="Practice with persona"
             >
               <Dumbbell className="h-3.5 w-3.5" />
@@ -161,7 +161,7 @@ export const PersonaCard = React.memo(function PersonaCard({
             <button
               type="button"
               onClick={handleKnowledge}
-              className="rounded p-1 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors min-h-[32px] min-w-[32px] flex items-center justify-center"
+              className="rounded p-1 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
               aria-label="Manage knowledge"
             >
               <BookOpen className="h-3.5 w-3.5" />
@@ -172,7 +172,7 @@ export const PersonaCard = React.memo(function PersonaCard({
               type="button"
               onClick={handleToggleActive}
               disabled={busy}
-              className="rounded p-1 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors min-h-[32px] min-w-[32px] flex items-center justify-center"
+              className="rounded p-1 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
               aria-label={persona.status === "active" ? "Pause persona" : "Activate persona"}
             >
               {persona.status === "active" ? (
@@ -187,7 +187,7 @@ export const PersonaCard = React.memo(function PersonaCard({
               type="button"
               onClick={handleArchive}
               disabled={busy}
-              className="rounded p-1 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors min-h-[32px] min-w-[32px] flex items-center justify-center"
+              className="rounded p-1 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
               aria-label="Archive persona"
             >
               <Archive className="h-3.5 w-3.5" />
@@ -198,7 +198,7 @@ export const PersonaCard = React.memo(function PersonaCard({
               type="button"
               onClick={handleDelete}
               disabled={busy}
-              className="rounded p-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors min-h-[32px] min-w-[32px] flex items-center justify-center"
+              className="rounded p-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
               aria-label="Delete persona"
             >
               <Trash2 className="h-3.5 w-3.5" />

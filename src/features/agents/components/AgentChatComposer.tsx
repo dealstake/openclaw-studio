@@ -355,7 +355,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
             ref={handleRef}
             rows={1}
             defaultValue={initialDraft}
-            className="max-h-[200px] min-h-[36px] flex-1 resize-none self-center bg-transparent px-2 py-2 text-sm leading-relaxed text-foreground outline-none placeholder:text-muted-foreground"
+            className="max-h-[200px] min-h-[36px] flex-1 resize-none self-center bg-transparent px-2 py-2 text-base leading-relaxed text-foreground outline-none placeholder:text-muted-foreground"
             aria-label="Message to agent"
             onChange={handleChange}
             onKeyDown={handleKeyDown}
@@ -377,7 +377,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
                 thinkingLevel={thinkingLevel}
                 onThinkingChange={onThinkingChange}
                 allowThinking={allowThinking}
-                tokenPct={running ? null : tokenPct}
+                tokenPct={tokenPct}
                 onNewSession={onNewSession}
                 onAttach={triggerAttach}
               />
