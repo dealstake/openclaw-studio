@@ -24,10 +24,10 @@ describe("database", () => {
   it("creates all 4 data tables via migrations", () => {
     const db = createTestDb();
     const result = db.all<{ name: string }>(
-      sql`SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE '%drizzle%' AND name != 'sqlite_sequence' ORDER BY name`
+      sql`SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE '%drizzle%' AND name != 'sqlite_sequence' AND name NOT LIKE '%_config' AND name NOT LIKE '%_data' AND name NOT LIKE '%_docsize' AND name NOT LIKE '%_idx' AND name NOT LIKE '%_content' ORDER BY name`
     );
     const tableNames = result.map((r) => r.name).sort();
-    expect(tableNames).toEqual(["activity_events", "project_details", "project_history", "project_plan_items", "projects_index", "task_state", "tasks"]);
+    expect(tableNames).toEqual(["activity_events", "knowledge_chunks", "knowledge_sources", "personas", "project_details", "project_history", "project_plan_items", "projects_index", "task_state", "tasks"]);
   });
 
   it("activity_events table accepts inserts", () => {
@@ -203,10 +203,10 @@ describe("database", () => {
 
       // Verify tables exist after recovery
       const result = db.all<{ name: string }>(
-        sql`SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE '%drizzle%' AND name != 'sqlite_sequence' ORDER BY name`
+        sql`SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE '%drizzle%' AND name != 'sqlite_sequence' AND name NOT LIKE '%_config' AND name NOT LIKE '%_data' AND name NOT LIKE '%_docsize' AND name NOT LIKE '%_idx' AND name NOT LIKE '%_content' ORDER BY name`
       );
       const tableNames = result.map((r) => r.name).sort();
-      expect(tableNames).toEqual(["activity_events", "project_details", "project_history", "project_plan_items", "projects_index", "task_state", "tasks"]);
+      expect(tableNames).toEqual(["activity_events", "knowledge_chunks", "knowledge_sources", "personas", "project_details", "project_history", "project_plan_items", "projects_index", "task_state", "tasks"]);
     });
 
     it("recovers from a corrupt (garbage bytes) database file", () => {
