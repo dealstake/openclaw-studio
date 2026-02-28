@@ -11,7 +11,7 @@ import {
   SideSheetDescription,
   SideSheetClose,
 } from "@/components/ui/SideSheet";
-import { SecureInput } from "@/features/credentials/components/SecureInput";
+import { SecureInput } from "@/components/ui/SecureInput";
 
 interface AddKeyDialogProps {
   open: boolean;
