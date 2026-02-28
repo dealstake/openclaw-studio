@@ -72,7 +72,7 @@ export const FilterGroup = React.memo(function FilterGroup<V extends string = st
               <span
                 className={`inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[8px] font-bold ${
                   active
-                    ? "bg-primary/40 text-primary-foreground dark:bg-primary/50 dark:text-primary"
+                    ? "bg-primary/40 text-primary-foreground dark:bg-primary/50 dark:text-primary-foreground"
                     : "bg-muted-foreground/25 text-muted-foreground"
                 }`}
               >

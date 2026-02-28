@@ -65,7 +65,7 @@ export const UsagePanel = memo(function UsagePanel({
   }
 
   return (
-    <div className="flex h-full w-full flex-col overflow-y-auto p-3 gap-4">
+    <div className="flex h-full w-full flex-col overflow-y-auto px-3 pb-3 gap-4">
       {/* Header */}
       <PanelHeader
         icon={<BarChart3 className="h-4 w-4" />}
@@ -86,7 +86,6 @@ export const UsagePanel = memo(function UsagePanel({
             allowEmpty={false}
           />
         }
-        className="px-0 pt-0 pb-0"
       />
 
       {error && <ErrorBanner message={error} onRetry={() => void refresh()} />}

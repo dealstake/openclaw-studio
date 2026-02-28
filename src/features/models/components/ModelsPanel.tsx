@@ -47,7 +47,7 @@ export const ModelsPanel = memo(function ModelsPanel({
   }, [refresh]);
 
   return (
-    <div className="flex h-full w-full flex-col overflow-y-auto p-3 gap-4">
+    <div className="flex h-full w-full flex-col overflow-y-auto px-3 pb-3 gap-4">
       {/* Header */}
       <PanelHeader
         icon={<Cpu className="h-4 w-4" />}
@@ -61,7 +61,6 @@ export const ModelsPanel = memo(function ModelsPanel({
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
           </PanelIconButton>
         }
-        className="px-0 pt-0 pb-0"
       />
 
       {/* Error */}
