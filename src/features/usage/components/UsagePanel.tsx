@@ -77,6 +77,39 @@ export const UsagePanel = memo(function UsagePanel({
     }
   }
 
+  // Phase 3: Enhanced KPI computations
+  const costPerSession = totalSessions > 0 ? totalCost / totalSessions : 0;
+
+  // Projected monthly cost: daily average × 30
+  const projectedMonthlyCost = useMemo(() => {
+    if (dailyTrends.length === 0) return 0;
+    const totalTrendCost = dailyTrends.reduce((sum, d) => sum + d.totalCost, 0);
+    const avgDaily = totalTrendCost / dailyTrends.length;
+    return avgDaily * 30;
+  }, [dailyTrends]);
+
+  // Top agent by cost
+  const { topAgent, topAgentCost } = useMemo(() => {
+    const agentCosts = new Map<string, number>();
+    for (const entry of entries) {
+      const key = entry.key;
+      let agentId = "(direct)";
+      if (key.startsWith("agent:")) {
+        const parts = key.split(":");
+        if (parts.length >= 2 && parts[1]) agentId = parts[1];
+      } else if (key.startsWith("cron-")) {
+        agentId = "(cron)";
+      }
+      agentCosts.set(agentId, (agentCosts.get(agentId) ?? 0) + (entry.cost ?? 0));
+    }
+    let best = "—";
+    let bestCost = 0;
+    for (const [id, cost] of agentCosts) {
+      if (cost > bestCost) { best = id; bestCost = cost; }
+    }
+    return { topAgent: best, topAgentCost: bestCost };
+  }, [entries]);
+
   return (
     <div className="flex h-full w-full flex-col overflow-y-auto px-3 pb-3 gap-4">
       {/* Header */}
@@ -104,7 +137,7 @@ export const UsagePanel = memo(function UsagePanel({
       {error && <ErrorBanner message={error} onRetry={() => void refresh()} />}
 
       {/* Summary cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
         {loading && !totalSessions ? (
           <>
             <Skeleton className="h-20 rounded-lg" />
@@ -116,14 +149,33 @@ export const UsagePanel = memo(function UsagePanel({
           <>
             <SummaryCard label="Total Cost" value={formatCost(totalCost)} />
             <SummaryCard
-              label="Tokens"
-              value={formatTokens(totalInputTokens + totalOutputTokens)}
-              subValue={`${formatTokens(totalInputTokens)} in / ${formatTokens(totalOutputTokens)} out`}
+              label="Projected Monthly"
+              value={formatCost(projectedMonthlyCost)}
+              subValue={`~${formatCost(projectedMonthlyCost / 30)}/day avg`}
             />
-            <SummaryCard label="Sessions" value={String(totalSessions)} />
-            <SummaryCard label="Top Model" value={topModel} subValue={topModelCost > 0 ? formatCost(topModelCost) : undefined} />
+            <SummaryCard
+              label="Cost / Session"
+              value={formatCost(costPerSession)}
+              subValue={`${totalSessions} sessions`}
+            />
+            <SummaryCard
+              label="Top Agent"
+              value={topAgent}
+              subValue={topAgentCost > 0 ? formatCost(topAgentCost) : undefined}
+            />
           </>
         )}
+      </div>
+
+      {/* Secondary stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
+        <SummaryCard
+          label="Tokens"
+          value={formatTokens(totalInputTokens + totalOutputTokens)}
+          subValue={`${formatTokens(totalInputTokens)} in / ${formatTokens(totalOutputTokens)} out`}
+        />
+        <SummaryCard label="Sessions" value={String(totalSessions)} />
+        <SummaryCard label="Top Model" value={topModel} subValue={topModelCost > 0 ? formatCost(topModelCost) : undefined} />
       </div>
 
       {/* Truncation warning */}
