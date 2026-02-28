@@ -786,12 +786,17 @@ export const AgentStudioPage = () => {
     onThinkingTracesToggle: (enabled: boolean) => { if (settingsAgent) handleThinkingTracesToggle(settingsAgent.agentId, enabled); },
     onNavigateToTasks: () => setContextTab("tasks"),
     onTranscriptClick: handleDrawerTranscriptClick,
+    onStartCredentialWizard: () => {
+      setManagementView(null);
+      handleStartWizard("credential");
+    },
   }), [
     client, status, focusedAgentId,
     focusedAgent?.sessionKey, handleViewTrace, handleDrawerTranscriptClick,
     channelsSnapshot, channelsLoading, channelsError, loadChannelsStatus,
     settingsAgent, handleBackToChat, handleRenameAgent, handleNewSession,
     handleDeleteAgent, handleToolCallingToggle, handleThinkingTracesToggle, setContextTab,
+    setManagementView, handleStartWizard,
   ]);
 
   const handleExportSession = useCallback(

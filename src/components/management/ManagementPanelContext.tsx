@@ -27,6 +27,7 @@ export interface ManagementPanelContextValue {
   onToolCallingToggle: (enabled: boolean) => void;
   onThinkingTracesToggle: (enabled: boolean) => void;
   onNavigateToTasks: () => void;
+  onStartCredentialWizard: (() => void) | null;
 }
 
 const ManagementPanelContext = createContext<ManagementPanelContextValue | null>(null);
@@ -51,6 +52,7 @@ export function ManagementPanelProvider({ children, ...value }: ManagementPanelP
     value.settingsAgent, value.onCloseSettings, value.onRenameAgent,
     value.onNewSession, value.onDeleteAgent, value.onToolCallingToggle,
     value.onThinkingTracesToggle, value.onNavigateToTasks,
+    value.onStartCredentialWizard,
   ]);
 
   return (

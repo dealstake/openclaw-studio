@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useCallback, useMemo, useState } from "react";
-import { KeyRound, Plus, RefreshCw } from "lucide-react";
+import { KeyRound, Plus, RefreshCw, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
+import { useManagementPanel } from "@/components/management/ManagementPanelContext";
 import { PanelHeader } from "@/components/ui/PanelHeader";
 import { PanelSearchInput } from "@/components/ui/PanelSearchInput";
 import { PanelIconButton } from "@/components/PanelIconButton";
@@ -37,6 +38,8 @@ export const CredentialsPanel = React.memo(function CredentialsPanel({
     remove,
     readSecretValues,
   } = useCredentials(client, status);
+
+  const { onStartCredentialWizard } = useManagementPanel();
 
   const [search, setSearch] = useState("");
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -125,6 +128,15 @@ export const CredentialsPanel = React.memo(function CredentialsPanel({
             <PanelIconButton onClick={refresh} title="Refresh" aria-label="Refresh">
               <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
             </PanelIconButton>
+            {onStartCredentialWizard && (
+              <PanelIconButton
+                onClick={onStartCredentialWizard}
+                title="Create with AI"
+                aria-label="Create credential with AI wizard"
+              >
+                <Sparkles className="h-4 w-4" />
+              </PanelIconButton>
+            )}
             <PanelIconButton
               onClick={handleAddNew}
               title="Add service"
@@ -167,6 +179,7 @@ export const CredentialsPanel = React.memo(function CredentialsPanel({
             title="No services connected"
             description="Add API keys and secrets to power your skills and integrations."
             action={{ label: "Add Service", onClick: handleAddNew }}
+            secondaryAction={onStartCredentialWizard ? { label: "Create with AI", onClick: onStartCredentialWizard } : undefined}
           />
         )}
 
