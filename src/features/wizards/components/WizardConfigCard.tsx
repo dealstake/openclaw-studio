@@ -15,15 +15,31 @@ type WizardConfigCardProps = {
 
 // ── Helpers ────────────────────────────────────────────────────────────
 
+/** Keys that should be masked to prevent accidental secret display */
+const SECRET_KEY_RE = /^(secret|password|token|key|apiKey|api_key|credential|auth)$/i;
+
 /**
  * Renders a config object as key-value pairs.
- * Handles nested objects shallowly and truncates long values.
+ * Handles nested objects shallowly, truncates long values,
+ * and masks sensitive keys (secret, password, token, key, etc.).
  */
 function configToEntries(config: unknown): { key: string; value: string }[] {
   if (!config || typeof config !== "object") return [];
   const entries: { key: string; value: string }[] = [];
   for (const [key, val] of Object.entries(config as Record<string, unknown>)) {
     if (val === null || val === undefined) continue;
+
+    // Mask sensitive values
+    if (SECRET_KEY_RE.test(key) && typeof val === "string" && val.length > 0) {
+      const label = key
+        .replace(/([A-Z])/g, " $1")
+        .replace(/_/g, " ")
+        .replace(/^\s/, "")
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+      entries.push({ key: label, value: "••••••••" });
+      continue;
+    }
+
     let display: string;
     if (typeof val === "string") {
       display = val.length > 120 ? val.slice(0, 117) + "…" : val;

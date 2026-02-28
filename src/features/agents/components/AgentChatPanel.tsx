@@ -248,7 +248,7 @@ export const AgentChatPanel = memo(function AgentChatPanel({
             <div className="mx-auto flex w-full min-w-0 max-w-3xl flex-col gap-5 px-4 text-sm leading-relaxed text-foreground sm:px-8 md:px-12">
               {/* Show existing main chat messages (dimmed) */}
               {agent.messageParts.length > 0 && (
-                <div className="opacity-40 pointer-events-none">
+                <div className="pointer-events-none opacity-40 blur-[0.5px] transition-all duration-300">
                   <AgentChatView parts={agent.messageParts} streaming={false} />
                 </div>
               )}

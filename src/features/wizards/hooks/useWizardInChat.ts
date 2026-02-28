@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { GatewayClient, EventFrame } from "@/lib/gateway/GatewayClient";
 import type { WizardContext, WizardType, WizardExtractedConfig } from "../lib/wizardTypes";
 import { getWizardTheme, getWizardStarters } from "../lib/wizardThemes";
-import { createConfigExtractor } from "@/components/chat/wizardConfigExtractor";
+import { extractJsonBlock } from "../lib/artifactExtractor";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -85,10 +85,28 @@ export function useWizardInChat({
     onConfigExtractedRef.current = onConfigExtracted;
   }, [onConfigExtracted]);
 
-  // Keep context ref in sync
+  // Keep context ref in sync and persist to localStorage for leak cleanup
   useEffect(() => {
     wizardContextRef.current = wizardContext;
-  }, [wizardContext]);
+    const STORAGE_KEY = `wizard-session:${agentId}`;
+    if (wizardContext) {
+      try {
+        localStorage.setItem(STORAGE_KEY, wizardContext.sessionKey);
+      } catch { /* quota exceeded — non-critical */ }
+    } else {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  }, [wizardContext, agentId]);
+
+  // On mount: clean up any leaked wizard session from a previous page load
+  useEffect(() => {
+    const STORAGE_KEY = `wizard-session:${agentId}`;
+    const leaked = localStorage.getItem(STORAGE_KEY);
+    if (leaked) {
+      localStorage.removeItem(STORAGE_KEY);
+      client.call("sessions.delete", { key: leaked }).catch(() => {});
+    }
+  }, [agentId, client]);
 
   // ── Event subscription ─────────────────────────────────────────────
 
@@ -177,9 +195,9 @@ export function useWizardInChat({
           setThinkingTrace(null);
           setIsStreaming(false);
 
-          // Config extraction
-          const extractor = createConfigExtractor(ctx.extractorType);
-          const config = extractor(finalText);
+          // Config extraction via unified artifact extractor
+          const configLabel = `${ctx.extractorType}-config`;
+          const config = extractJsonBlock(finalText, configLabel);
           if (config) {
             const extracted: WizardExtractedConfig = {
               type: wizardType,
