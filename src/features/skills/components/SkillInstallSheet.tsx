@@ -76,7 +76,7 @@ export const SkillInstallSheet = React.memo(function SkillInstallSheet({
     <SideSheet open={open} onOpenChange={handleOpenChange}>
       <SideSheetContent>
         <SideSheetHeader>
-          <SideSheetTitle className="text-sm font-semibold">
+          <SideSheetTitle className="text-base font-semibold">
             Install from ClawHub
           </SideSheetTitle>
           <SideSheetClose />
@@ -90,7 +90,7 @@ export const SkillInstallSheet = React.memo(function SkillInstallSheet({
                 href="https://clawhub.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-primary hover:underline"
+                className="inline-flex items-center gap-1 text-primary-text hover:underline"
               >
                 clawhub.com
                 <ExternalLink className="h-3 w-3" />
@@ -116,8 +116,8 @@ export const SkillInstallSheet = React.memo(function SkillInstallSheet({
                 aria-label="Skill slug to install"
                 disabled={installing}
                 className={cn(
-                  "h-9 w-full rounded-md border border-border/60 bg-background px-3",
-                  "text-sm text-foreground placeholder:text-muted-foreground/60",
+                  "h-9 w-full rounded-md border border-border bg-background px-3",
+                  "text-sm text-foreground placeholder:text-muted-foreground",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
                   "disabled:cursor-not-allowed disabled:opacity-50",
                 )}
@@ -162,18 +162,18 @@ export const SkillInstallSheet = React.memo(function SkillInstallSheet({
             )}
 
             {/* Help text */}
-            <div className="border-t border-border/20 pt-3">
+            <div className="border-t border-border pt-3">
               <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 How it works
               </h3>
-              <ul className="mt-2 flex flex-col gap-1.5 text-[11px] text-muted-foreground">
+              <ul className="mt-2 flex flex-col gap-1.5 text-xs text-muted-foreground">
                 <li>
                   1. Browse{" "}
                   <a
                     href="https://clawhub.com"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-primary hover:underline"
+                    className="text-primary-text hover:underline"
                   >
                     clawhub.com
                   </a>{" "}
