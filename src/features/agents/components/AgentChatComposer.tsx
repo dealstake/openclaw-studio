@@ -276,7 +276,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
       {/* Gradient fade above composer */}
       <div className="pointer-events-none h-3 sm:h-6 bg-gradient-to-t from-background to-transparent" />
       {/* Main composer card */}
-      <div className={`mx-auto flex max-w-3xl flex-col rounded-xl border shadow-lg transition ${wizardType && wizardTheme ? `${wizardTheme.border} border-opacity-40 bg-card` : "border-border/30 bg-card focus-within:border-border/60"}`}>
+      <div className={`mx-auto flex max-w-3xl flex-col rounded-xl border shadow-lg transition ${wizardType && wizardTheme ? `${wizardTheme.border} border-opacity-40 bg-popover` : "border-border/30 bg-popover focus-within:border-border/60"}`}>
         {/* Wizard banner */}
         {wizardType && wizardTheme && onWizardExit && (
           <WizardBanner
