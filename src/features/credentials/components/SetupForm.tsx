@@ -145,14 +145,14 @@ export const SetupForm = React.memo(function SetupForm({
           type="button"
           onClick={onCancel}
           disabled={saving}
-          className="h-9 rounded-md px-4 text-sm text-muted-foreground transition-colors hover:bg-muted/50"
+          className="h-11 rounded-md px-4 text-sm text-muted-foreground transition-colors hover:bg-muted/50"
         >
           Cancel
         </button>
         <button
           type="submit"
           disabled={saving || !allRequiredFilled}
-          className="h-9 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+          className="h-11 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
         >
           {saving ? "Saving…" : "Save"}
         </button>

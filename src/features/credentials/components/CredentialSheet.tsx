@@ -100,11 +100,12 @@ const ConnectionTestStep = React.memo(function ConnectionTestStep({
   if (!result) return null;
   return (
     <div
+      role="status"
       className={cn(
         "rounded-md px-3 py-2 text-sm",
         result.success
-          ? "bg-emerald-500/10 text-emerald-500"
-          : "bg-red-500/10 text-red-500",
+          ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+          : "bg-red-500/10 text-red-700 dark:text-red-400",
       )}
     >
       {result.success ? (
@@ -383,7 +384,7 @@ export const CredentialSheet = React.memo(function CredentialSheet({
               <button
                 type="button"
                 onClick={() => setStep("select")}
-                className="flex h-7 w-7 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground"
+                className="flex h-11 w-11 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground"
                 aria-label="Back to template selection"
               >
                 <ArrowLeft className="h-4 w-4" />
