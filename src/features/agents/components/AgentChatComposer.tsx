@@ -20,6 +20,8 @@ import { ModelPicker } from "./ModelPicker";
 import { ThinkingToggle } from "./ThinkingToggle";
 import { StreamingStatus } from "./StreamingStatus";
 import { useFileUpload, type ChatAttachment } from "../hooks/useFileUpload";
+import type { WizardType, WizardTheme, WizardStarter } from "@/features/wizards/lib/wizardTypes";
+import { WizardBanner } from "@/features/wizards/components/WizardBanner";
 
 export const AgentChatComposer = memo(function AgentChatComposer({
   onDraftChange,
@@ -44,6 +46,13 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   runStartedAt,
   gatewayStatus,
   queueLength,
+  wizardType,
+  wizardTheme,
+  wizardStarters,
+  wizardIsStreaming,
+  wizardHasMessages,
+  onWizardExit,
+  onWizardStarterClick,
 }: {
   onDraftChange: (value: string) => void;
   onSend: (message: string, attachments?: ChatAttachment[]) => void;
@@ -67,6 +76,14 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   runStartedAt?: number | null;
   gatewayStatus?: GatewayStatus;
   queueLength?: number;
+  /** Wizard mode props — when set, composer shows wizard banner */
+  wizardType?: WizardType | null;
+  wizardTheme?: WizardTheme | null;
+  wizardStarters?: WizardStarter[];
+  wizardIsStreaming?: boolean;
+  wizardHasMessages?: boolean;
+  onWizardExit?: () => void;
+  onWizardStarterClick?: (message: string) => void;
 }) {
   const localRef = useRef<HTMLTextAreaElement | null>(null);
   const pendingResizeRef = useRef<number | null>(null);
@@ -253,7 +270,19 @@ export const AgentChatComposer = memo(function AgentChatComposer({
       {/* Gradient fade above composer */}
       <div className="pointer-events-none h-3 sm:h-6 bg-gradient-to-t from-background to-transparent" />
       {/* Main composer card */}
-      <div className="mx-auto flex max-w-3xl flex-col rounded-xl border border-border/30 bg-card/80 shadow-lg backdrop-blur-md focus-within:border-border/60 focus-within:bg-card transition">
+      <div className={`mx-auto flex max-w-3xl flex-col rounded-xl border shadow-lg backdrop-blur-md focus-within:bg-card transition ${wizardType && wizardTheme ? `${wizardTheme.border} border-opacity-40 bg-card/80` : "border-border/30 bg-card/80 focus-within:border-border/60"}`}>
+        {/* Wizard banner */}
+        {wizardType && wizardTheme && onWizardExit && (
+          <WizardBanner
+            type={wizardType}
+            theme={wizardTheme}
+            starters={!wizardHasMessages ? wizardStarters : undefined}
+            onExit={onWizardExit}
+            onStarterClick={onWizardStarterClick}
+            isStreaming={wizardIsStreaming}
+          />
+        )}
+
         {/* Offline indicator */}
         {gatewayStatus && gatewayStatus !== "connected" && (
           <div className="flex items-center gap-1.5 rounded-t-xl bg-amber-500/10 px-3 py-1 text-xs text-amber-700 dark:text-amber-400" role="status">
@@ -358,7 +387,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
             onKeyDown={handleKeyDown}
             onFocus={handleFocus}
             onPaste={handlePaste}
-            placeholder={`Message ${agentName}...`}
+            placeholder={wizardType && wizardTheme ? `Describe what you need...` : `Message ${agentName}...`}
           />
 
           {/* Right side: token gauge (when idle) + send/stop */}

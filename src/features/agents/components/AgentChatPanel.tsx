@@ -15,6 +15,8 @@ import { AgentChatView } from "./AgentChatView";
 import { EmptyStatePanel } from "./EmptyStatePanel";
 import { AgentChatTranscript } from "./AgentChatTranscript";
 import { AgentChatComposer } from "./AgentChatComposer";
+import type { UseWizardInChatReturn } from "@/features/wizards/hooks/useWizardInChat";
+import { WizardChatOverlay } from "@/features/wizards/components/WizardChatOverlay";
 
 type AgentChatPanelProps = {
   agent: AgentRecord;
@@ -40,6 +42,12 @@ type AgentChatPanelProps = {
   gatewayStatus?: GatewayStatus;
   /** Number of messages queued for offline delivery */
   queueLength?: number;
+  /** Wizard-in-chat integration — pass from useWizardInChat hook */
+  wizard?: UseWizardInChatReturn | null;
+  /** Called when user confirms extracted wizard config */
+  onWizardConfirm?: () => void;
+  /** Whether wizard config confirmation is in progress */
+  wizardConfirming?: boolean;
 };
 
 export const AgentChatPanel = memo(function AgentChatPanel({
@@ -62,6 +70,9 @@ export const AgentChatPanel = memo(function AgentChatPanel({
   onDismissContinuationBanner,
   gatewayStatus,
   queueLength = 0,
+  wizard = null,
+  onWizardConfirm,
+  wizardConfirming = false,
 }: AgentChatPanelProps) {
   const draftRef = useRef<HTMLTextAreaElement | null>(null);
   const scrollToBottomNextOutputRef = useRef(false);
@@ -116,11 +127,47 @@ export const AgentChatPanel = memo(function AgentChatPanel({
     [onDraftChange]
   );
 
+  const isWizardActive = !!(wizard?.wizardContext);
+
+  const handleWizardSend = useCallback(
+    (text: string) => {
+      if (wizard?.wizardContext) {
+        void wizard.sendMessage(text);
+      }
+    },
+    [wizard],
+  );
+
+  const handleWizardExit = useCallback(() => {
+    if (wizard) {
+      void wizard.endWizard();
+    }
+  }, [wizard]);
+
+  const handleWizardRevise = useCallback(() => {
+    if (wizard?.wizardContext) {
+      void wizard.sendMessage("Please revise the configuration based on my feedback.");
+    }
+  }, [wizard]);
+
+  const handleWizardStarterClick = useCallback(
+    (message: string) => {
+      if (wizard?.wizardContext) {
+        void wizard.sendMessage(message);
+      }
+    },
+    [wizard],
+  );
+
   const handleComposerSend = useCallback(
     (message: string, attachments?: ChatAttachment[]) => {
+      if (isWizardActive) {
+        handleWizardSend(message);
+        return;
+      }
       handleSend(message, attachments);
     },
-    [handleSend]
+    [handleSend, handleWizardSend, isWizardActive]
   );
 
   return (
@@ -195,6 +242,41 @@ export const AgentChatPanel = memo(function AgentChatPanel({
               )}
             </div>
           </div>
+        ) : isWizardActive && wizard ? (
+          /* Wizard mode — show wizard messages inline */
+          <div className="h-full overflow-y-auto overflow-x-hidden pt-14 pb-20 sm:pt-16 sm:pb-24">
+            <div className="mx-auto flex w-full min-w-0 max-w-3xl flex-col gap-5 px-4 text-sm leading-relaxed text-foreground sm:px-8 md:px-12">
+              {/* Show existing main chat messages (dimmed) */}
+              {agent.messageParts.length > 0 && (
+                <div className="opacity-40 pointer-events-none">
+                  <AgentChatView parts={agent.messageParts} streaming={false} />
+                </div>
+              )}
+
+              {/* Wizard divider */}
+              <div className="my-2 flex items-center gap-2">
+                <div className="flex-1 border-t border-border/40" />
+                <span className={`text-[10px] font-medium uppercase tracking-wider ${wizard.wizardContext?.theme.accent ?? "text-muted-foreground"}`}>
+                  {wizard.wizardContext?.theme.label}
+                </span>
+                <div className="flex-1 border-t border-border/40" />
+              </div>
+
+              {/* Wizard messages */}
+              <WizardChatOverlay
+                messages={wizard.messages}
+                streamText={wizard.streamText}
+                thinkingTrace={wizard.thinkingTrace}
+                isStreaming={wizard.isStreaming}
+                wizardType={wizard.wizardContext!.type}
+                extractedConfig={wizard.extractedConfig}
+                onConfirmConfig={onWizardConfirm ?? handleWizardExit}
+                onReviseConfig={handleWizardRevise}
+                onCancelWizard={handleWizardExit}
+                confirming={wizardConfirming}
+              />
+            </div>
+          </div>
         ) : (
           <AgentChatTranscript
             messageParts={agent.messageParts}
@@ -233,6 +315,13 @@ export const AgentChatPanel = memo(function AgentChatPanel({
             runStartedAt={agent.runStartedAt}
             gatewayStatus={gatewayStatus}
             queueLength={queueLength}
+            wizardType={wizard?.wizardContext?.type ?? null}
+            wizardTheme={wizard?.wizardContext?.theme ?? null}
+            wizardStarters={wizard?.wizardContext?.starters}
+            wizardIsStreaming={wizard?.isStreaming}
+            wizardHasMessages={(wizard?.messages.length ?? 0) > 0}
+            onWizardExit={handleWizardExit}
+            onWizardStarterClick={handleWizardStarterClick}
           />
         )}
       </div>
