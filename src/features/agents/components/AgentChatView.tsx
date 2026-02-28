@@ -235,7 +235,7 @@ export const AgentChatView = memo(function AgentChatView({
   }
 
   return (
-    <div className={`flex w-full min-w-0 flex-col gap-3 ${className}`}>
+    <div className={`flex w-full min-w-0 flex-col gap-5 leading-relaxed ${className}`}>
       {groups.map((group, gi) => {
         if (group.kind === "user") {
           // User messages — render each text part
