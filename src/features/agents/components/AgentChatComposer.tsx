@@ -387,7 +387,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
                 thinkingLevel={thinkingLevel}
                 onThinkingChange={onThinkingChange}
                 allowThinking={allowThinking}
-                tokenPct={tokenPct}
+                tokenPct={running ? null : tokenPct}
                 onNewSession={onNewSession}
               />
             </div>
