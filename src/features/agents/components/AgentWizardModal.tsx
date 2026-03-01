@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Sparkles, X } from "lucide-react";
+import FocusTrap from "focus-trap-react";
 import { WizardChat } from "@/components/chat/WizardChat";
 import { createConfigExtractor } from "@/components/chat/wizardConfigExtractor";
 import {
@@ -214,15 +215,23 @@ export const AgentWizardModal = React.memo(function AgentWizardModal({
     <div
       data-state={visible ? "open" : "closed"}
       className="fixed inset-0 z-[var(--z-modal)] flex items-end justify-center bg-background/70 backdrop-blur-sm transition-opacity duration-300 ease-out data-[state=closed]:opacity-0 sm:items-center"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Agent Creation Wizard"
       onClick={(e) => {
         if (e.target === e.currentTarget) handleClose();
       }}
     >
+      <FocusTrap
+        focusTrapOptions={{
+          allowOutsideClick: true,
+          // Escape is handled by our own keydown listener
+          escapeDeactivates: false,
+          fallbackFocus: "[data-wizard-close]",
+        }}
+      >
       <div
         data-state={visible ? "open" : "closed"}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Agent Creation Wizard"
         className="flex h-full w-full flex-col overflow-hidden bg-card shadow-lg transition-all duration-300 ease-out data-[state=closed]:translate-y-full data-[state=closed]:opacity-0 sm:data-[state=closed]:scale-95 sm:data-[state=closed]:translate-y-0 sm:h-[min(85vh,680px)] sm:max-w-lg sm:rounded-lg sm:border sm:border-border"
       >
         {/* Header */}
@@ -247,6 +256,7 @@ export const AgentWizardModal = React.memo(function AgentWizardModal({
           </div>
           <button
             type="button"
+            data-wizard-close
             className="flex h-7 w-7 min-h-[44px] min-w-[44px] items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted/65"
             onClick={handleClose}
             aria-label="Close wizard"
@@ -293,6 +303,7 @@ export const AgentWizardModal = React.memo(function AgentWizardModal({
           )}
         </div>
       </div>
+      </FocusTrap>
     </div>
   );
 });
