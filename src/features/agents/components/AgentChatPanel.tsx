@@ -8,6 +8,9 @@ import {
 import type { AgentState as AgentRecord } from "@/features/agents/state/store";
 import type { MessagePart } from "@/lib/chat/types";
 import { AlertTriangle, ArrowLeft, RefreshCw, X, Zap } from "lucide-react";
+import { AutonomyLevelBadge } from "./AutonomyLevelSelector";
+import type { AutonomyLevel } from "@/features/agents/lib/autonomyService";
+import { DEFAULT_AUTONOMY_LEVEL } from "@/features/agents/lib/autonomyService";
 import type { GatewayModelChoice } from "@/lib/gateway/models";
 import type { GatewayStatus } from "@/lib/gateway/GatewayClient";
 import type { ChatAttachment } from "../hooks/useFileUpload";
@@ -57,6 +60,8 @@ type AgentChatPanelProps = {
    * The parent (page.tsx) opens the credential vault for the given templateKey.
    */
   onOpenCredentialVault?: (templateKey: string) => void;
+  /** Open agent settings panel — used by the autonomy badge click handler. */
+  onOpenSettings?: () => void;
 };
 
 export const AgentChatPanel = memo(function AgentChatPanel({
@@ -86,6 +91,7 @@ export const AgentChatPanel = memo(function AgentChatPanel({
   onWizardConfirm,
   wizardConfirming = false,
   onOpenCredentialVault,
+  onOpenSettings,
 }: AgentChatPanelProps) {
   const draftRef = useRef<HTMLTextAreaElement | null>(null);
   const scrollToBottomNextOutputRef = useRef(false);
@@ -304,6 +310,16 @@ export const AgentChatPanel = memo(function AgentChatPanel({
         </div>
       )}
 
+      {/* Session header — autonomy level badge (non-autonomous = prominent, autonomous = subtle) */}
+      {!viewingSessionKey && (
+        <div className="flex items-center justify-end px-4 pt-1.5 pb-0">
+          <AutonomyLevelBadge
+            level={(agent.autonomyLevel as AutonomyLevel | undefined) ?? DEFAULT_AUTONOMY_LEVEL}
+            onClick={onOpenSettings}
+          />
+        </div>
+      )}
+
       {/* Chat area — fills remaining space, relative for floating composer */}
       <div className="relative flex min-h-0 flex-1 flex-col">
         {viewingSessionKey ? (
@@ -389,6 +405,7 @@ export const AgentChatPanel = memo(function AgentChatPanel({
             scrollToBottomNextOutputRef={scrollToBottomNextOutputRef}
             agentName={agent.name}
             onSendStarter={handleComposerSend}
+            sessionKey={agent.sessionKey}
           />
         )}
 

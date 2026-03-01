@@ -17,6 +17,7 @@ import { ToolCallBlock } from "@/components/chat/ToolCallBlock";
 import { ToolCallGroup } from "@/components/chat/ToolCallGroup";
 import { ChatStatusBar } from "@/components/chat/ChatStatusBar";
 import { MessageActions } from "./MessageActions";
+import { FeedbackToolbar } from "@/features/feedback/components/FeedbackToolbar";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -25,6 +26,12 @@ export type AgentChatViewProps = {
   parts: MessagePart[];
   /** Whether the agent is currently streaming */
   streaming: boolean;
+  /**
+   * Session key for annotation scoping.
+   * When provided, FeedbackToolbar is rendered on each assistant message group.
+   * Omit for read-only transcript views (e.g., session history viewer).
+   */
+  sessionKey?: string;
   className?: string;
 };
 
@@ -68,6 +75,17 @@ function groupParts(parts: MessagePart[]): MessageGroup[] {
 
   if (current) groups.push(current);
   return groups;
+}
+
+/**
+ * Returns true if any text or reasoning part in the group is currently streaming.
+ * Used to suppress FeedbackToolbar on in-progress assistant turns.
+ */
+function isGroupStreaming(parts: MessagePart[]): boolean {
+  return parts.some(
+    (p) =>
+      (isTextPart(p) || isReasoningPart(p)) && p.streaming === true,
+  );
 }
 
 // ── Renderers ──────────────────────────────────────────────────────────
@@ -226,6 +244,7 @@ function renderGroupedParts(parts: MessagePart[], groupIndex: number) {
 export const AgentChatView = memo(function AgentChatView({
   parts,
   streaming,
+  sessionKey,
   className = "",
 }: AgentChatViewProps) {
   // Part-level streaming flags drive live rendering; top-level flag reserved
@@ -261,13 +280,22 @@ export const AgentChatView = memo(function AgentChatView({
         }
 
         // Assistant group — render parts, grouping consecutive tool calls
+        const groupStreaming = isGroupStreaming(group.parts);
         return (
-          <div key={`assistant-${gi}`} className="flex flex-col gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <div key={`assistant-${gi}`} className="group/turn flex flex-col gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
             {/* Turn separator if previous group was user */}
             {gi > 0 && groups[gi - 1]?.kind === "user" && (
               <div className="my-1 border-t border-border/30" role="separator" />
             )}
             {renderGroupedParts(group.parts, gi)}
+            {/* Inline feedback — hidden until hover (or when annotated) */}
+            {sessionKey && !groupStreaming && (
+              <FeedbackToolbar
+                sessionKey={sessionKey}
+                messageId={`g${gi}`}
+                className="opacity-0 transition-opacity group-hover/turn:opacity-100 data-[annotated]:opacity-100"
+              />
+            )}
           </div>
         );
       })}
