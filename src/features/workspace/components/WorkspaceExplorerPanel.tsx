@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useState } from "react";
 import { Folder } from "lucide-react";
 
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
@@ -9,11 +9,9 @@ import { ErrorBanner } from "@/components/ErrorBanner";
 import { FileEditorModal } from "@/components/FileEditorModal";
 
 import { useWorkspaceFiles } from "../hooks/useWorkspaceFiles";
-import { useProjectStatuses } from "../hooks/useProjectStatuses";
-import { classifyEntry, type WorkspaceEntry, type WorkspaceGroup } from "../types";
+import type { WorkspaceEntry } from "../types";
 import { WorkspaceBreadcrumbHeader } from "./WorkspaceBreadcrumbHeader";
-import { WorkspaceRootView } from "./WorkspaceRootView";
-import { WorkspaceFlatView } from "./WorkspaceFlatView";
+import { FileTreeView } from "./FileTreeView";
 import { WorkspaceLoadingSkeleton } from "./WorkspaceLoadingSkeleton";
 import { NewFileDialog } from "./NewFileDialog";
 import { FileViewer } from "./FileViewer";
@@ -49,6 +47,7 @@ export const WorkspaceExplorerPanel = memo(function WorkspaceExplorerPanel({
     saveFile,
     createFile,
     fileExists,
+    fetchDirChildren,
   } = useWorkspaceFiles({ agentId, client, isTabActive, eventTick });
 
   const [modalFile, setModalFile] = useState<string | null>(null);
@@ -59,36 +58,17 @@ export const WorkspaceExplorerPanel = memo(function WorkspaceExplorerPanel({
     name: string;
   }>({ open: false, path: "", name: "" });
 
-  const isRoot = currentPath === "";
-  const projectStatuses = useProjectStatuses(agentId, isRoot || currentPath === "projects");
-
-  // Group entries when at workspace root
-  const grouped = useMemo(() => {
-    if (!isRoot) return null;
-    const groups: Record<WorkspaceGroup, WorkspaceEntry[]> = {
-      projects: [],
-      memory: [],
-      brain: [],
-      other: [],
-    };
-    for (const entry of entries) {
-      groups[classifyEntry(entry)].push(entry);
-    }
-    groups.memory.sort((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0));
-    return groups;
-  }, [entries, isRoot]);
-
-  const handleEntryClick = useCallback(
+  // FileTreeView handles directory expansion internally.
+  // This handler is only called for file nodes.
+  const handleFileClick = useCallback(
     (entry: WorkspaceEntry) => {
-      if (entry.type === "directory") {
-        navigateToDir(entry.path);
-      } else if (entry.path.endsWith(".md")) {
+      if (entry.path.endsWith(".md")) {
         setModalFile(entry.path);
       } else {
         openFile(entry.path);
       }
     },
-    [navigateToDir, openFile]
+    [openFile]
   );
 
   const handleSaveFile = useCallback(
@@ -185,20 +165,11 @@ export const WorkspaceExplorerPanel = memo(function WorkspaceExplorerPanel({
           </div>
         )}
 
-        {!error && isRoot && grouped && (
-          <WorkspaceRootView
-            grouped={grouped}
-            onEntryClick={handleEntryClick}
-            projectStatuses={projectStatuses}
-          />
-        )}
-
-        {!error && !isRoot && entries.length > 0 && (
-          <WorkspaceFlatView
+        {!error && entries.length > 0 && (
+          <FileTreeView
             entries={entries}
-            currentPath={currentPath}
-            onEntryClick={handleEntryClick}
-            projectStatuses={projectStatuses}
+            fetchDirChildren={fetchDirChildren}
+            onFileClick={handleFileClick}
           />
         )}
       </div>
