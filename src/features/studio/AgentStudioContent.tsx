@@ -72,6 +72,7 @@ import { useAppLayout } from "@/hooks/useAppLayout";
 import { useLoadAgents } from "@/features/studio/useLoadAgents";
 import { useStudioDataSync } from "@/features/studio/useStudioDataSync";
 import { useWizardInChat } from "@/features/wizards/hooks/useWizardInChat";
+import { useWizardIntentBridge } from "@/features/wizards/hooks/useWizardIntentBridge";
 import { buildTaskWizardPrompt, buildAgentWizardPrompt, getDefaultWizardPrompt } from "@/features/wizards/lib/wizardPrompts";
 import type { WizardType } from "@/features/wizards/lib/wizardTypes";
 import type { PersonaTemplate } from "@/features/personas/lib/templateTypes";
@@ -301,6 +302,13 @@ export const AgentStudioPage = () => {
   const wizard = useWizardInChat({
     client,
     agentId: focusedAgentId ?? "default",
+  });
+
+  // Bridge: detect agent tool calls that trigger wizards
+  useWizardIntentBridge({
+    messageParts: focusedAgent?.messageParts ?? [],
+    isWizardActive: wizard.wizardContext != null,
+    startWizard: wizard.startWizard,
   });
 
   const handleStartWizard = useCallback(
