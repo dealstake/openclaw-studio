@@ -9,12 +9,34 @@
  * - ChatStatusBar, ThinkingBlock, ToolCallBlock, TokenCostDisplay
  */
 
+// ── Wizard Type ────────────────────────────────────────────────────────
+
+/**
+ * Wizard type identifier — defined here (in lib/) so MessagePart can carry
+ * wizard context without creating a circular dependency from lib → features.
+ *
+ * Re-exported by `@/features/wizards/lib/wizardTypes` for feature code to use.
+ */
+export type WizardType =
+  | "task"
+  | "agent"
+  | "project"
+  | "skill"
+  | "credential"
+  | "persona";
+
 // ── Message Parts ──────────────────────────────────────────────────────
 
 export type TextPart = {
   type: "text";
   text: string;
   streaming?: boolean;
+  /**
+   * When set, this part originated from a wizard session of the given type.
+   * Used for themed rendering when wizard messages are embedded in the main
+   * chat transcript (e.g., after wizard completion).
+   */
+  wizardType?: WizardType;
 };
 
 export type ReasoningPart = {
@@ -23,6 +45,8 @@ export type ReasoningPart = {
   startedAt?: number;
   completedAt?: number;
   streaming?: boolean;
+  /** Wizard session origin — see TextPart.wizardType */
+  wizardType?: WizardType;
 };
 
 export type ToolInvocationPhase = "pending" | "running" | "complete" | "error";
@@ -36,12 +60,16 @@ export type ToolInvocationPart = {
   result?: string;
   startedAt?: number;
   completedAt?: number;
+  /** Wizard session origin — see TextPart.wizardType */
+  wizardType?: WizardType;
 };
 
 export type ImagePart = {
   type: "image";
   src: string;
   alt?: string;
+  /** Wizard session origin — see TextPart.wizardType */
+  wizardType?: WizardType;
 };
 
 export type StatusPart = {
@@ -50,6 +78,8 @@ export type StatusPart = {
   model?: string;
   runStartedAt?: number;
   errorMessage?: string;
+  /** Wizard session origin — see TextPart.wizardType */
+  wizardType?: WizardType;
 };
 
 export type MessagePart =
@@ -81,6 +111,14 @@ export function isImagePart(part: MessagePart): part is ImagePart {
 
 export function isStatusPart(part: MessagePart): part is StatusPart {
   return part.type === "status";
+}
+
+/**
+ * Returns true if this part originated from a wizard session.
+ * Useful for filtering wizard content from exports or applying themed rendering.
+ */
+export function isWizardPart(part: MessagePart): part is MessagePart & { wizardType: WizardType } {
+  return part.wizardType !== undefined;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────

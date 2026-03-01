@@ -7,7 +7,13 @@
 
 // ── Wizard Types ───────────────────────────────────────────────────────
 
-export type WizardType = "task" | "agent" | "project" | "skill" | "credential" | "persona";
+/**
+ * Re-exported from @/lib/chat/types so that MessagePart can carry wizardType
+ * without a circular lib → features dependency.
+ * All feature code should import WizardType from this file as usual.
+ */
+import type { WizardType } from "@/lib/chat/types";
+export type { WizardType };
 
 export type WizardStarter = {
   label: string;

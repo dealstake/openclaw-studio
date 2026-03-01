@@ -1,10 +1,12 @@
 import { describe, it, expect } from "vitest";
 import {
   type MessagePart,
+  type WizardType,
   isTextPart,
   isReasoningPart,
   isToolInvocationPart,
   isStatusPart,
+  isWizardPart,
   filterParts,
 } from "@/lib/chat/types";
 
@@ -137,5 +139,74 @@ describe("MessagePart optional fields", () => {
   it("status part works without optional model/runStartedAt", () => {
     const part: MessagePart = { type: "status", state: "idle" };
     expect(isStatusPart(part)).toBe(true);
+  });
+});
+
+describe("wizardType optional field on MessagePart", () => {
+  const wizardTypes: WizardType[] = [
+    "task",
+    "agent",
+    "project",
+    "skill",
+    "credential",
+    "persona",
+  ];
+
+  it("text part accepts wizardType without breaking existing type guard", () => {
+    const part: MessagePart = { type: "text", text: "hello", wizardType: "task" };
+    expect(isTextPart(part)).toBe(true);
+  });
+
+  it("reasoning part accepts wizardType", () => {
+    const part: MessagePart = { type: "reasoning", text: "thinking", wizardType: "agent" };
+    expect(isReasoningPart(part)).toBe(true);
+  });
+
+  it("tool-invocation part accepts wizardType", () => {
+    const part: MessagePart = {
+      type: "tool-invocation",
+      toolCallId: "tc-wizard",
+      name: "exec",
+      phase: "complete",
+      wizardType: "skill",
+    };
+    expect(isToolInvocationPart(part)).toBe(true);
+  });
+
+  it("status part accepts wizardType", () => {
+    const part: MessagePart = { type: "status", state: "idle", wizardType: "project" };
+    expect(isStatusPart(part)).toBe(true);
+  });
+
+  it("isWizardPart returns true when wizardType is set", () => {
+    for (const wt of wizardTypes) {
+      const part: MessagePart = { type: "text", text: "wizard msg", wizardType: wt };
+      expect(isWizardPart(part)).toBe(true);
+    }
+  });
+
+  it("isWizardPart returns false when wizardType is absent", () => {
+    const part: MessagePart = { type: "text", text: "regular msg" };
+    expect(isWizardPart(part)).toBe(false);
+  });
+
+  it("isWizardPart narrows to MessagePart & { wizardType: WizardType }", () => {
+    const part: MessagePart = { type: "text", text: "wizard", wizardType: "credential" };
+    if (isWizardPart(part)) {
+      const wt: WizardType = part.wizardType;
+      expect(wt).toBe("credential");
+    }
+  });
+
+  it("parts without wizardType remain fully valid MessageParts", () => {
+    const parts: MessagePart[] = [
+      { type: "text", text: "a" },
+      { type: "reasoning", text: "b" },
+      { type: "tool-invocation", toolCallId: "c", name: "x", phase: "pending" },
+      { type: "status", state: "idle" },
+    ];
+    for (const part of parts) {
+      expect(isWizardPart(part)).toBe(false);
+    }
   });
 });
