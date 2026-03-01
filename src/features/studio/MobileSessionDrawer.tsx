@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useRef, useEffect } from "react";
+import { memo, useCallback, useMemo, useRef, useEffect } from "react";
 import { Plus } from "lucide-react";
 import type { BreadcrumbAgent } from "@/features/agents/components/AgentBreadcrumb";
 import type { ManagementTab } from "@/layout/AppSidebar";
@@ -11,6 +11,7 @@ import { NotificationBell } from "@/features/notifications/components/Notificati
 import { LogoutButton } from "@/components/brand/LogoutButton";
 import { SessionList } from "@/features/sessions/components/SessionList";
 import { useSessionHistory } from "@/features/sessions/hooks/useSessionHistory";
+import { useComparisonStore, toggleComparison } from "@/features/sessions/state/comparisonStore";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 
 interface MobileSessionDrawerProps {
@@ -67,6 +68,12 @@ export const MobileSessionDrawer = memo(function MobileSessionDrawer({
     deleteSession,
     renameSession,
   } = useSessionHistory(client, status, focusedAgentId);
+
+  const { comparisonSessionKeys } = useComparisonStore();
+  const comparisonKeysSet = useMemo(
+    () => new Set(comparisonSessionKeys),
+    [comparisonSessionKeys],
+  );
 
   const loadRef = useRef(load);
   useEffect(() => {
@@ -235,6 +242,7 @@ export const MobileSessionDrawer = memo(function MobileSessionDrawer({
           search={search}
           activeSessionKey={activeSessionKey}
           pinnedKeys={pinnedKeys}
+          comparisonKeys={comparisonKeysSet}
           onRetry={handleRetry}
           onSelect={(key) => {
             onSelectSession(key === `${focusedAgentId}:main` ? null : key);
@@ -245,6 +253,7 @@ export const MobileSessionDrawer = memo(function MobileSessionDrawer({
           onTogglePin={togglePin}
           onViewTrace={onViewTrace}
           onExport={onExport}
+          onToggleCompare={toggleComparison}
         />
       </div>
     </div>
