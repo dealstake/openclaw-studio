@@ -21,7 +21,7 @@ describe("database", () => {
     expect(rows).toEqual([]);
   });
 
-  it("creates all 4 data tables via migrations", () => {
+  it("creates all data tables via migrations", () => {
     const db = createTestDb();
     const result = db.all<{ name: string }>(
       sql`SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE '%drizzle%' AND name != 'sqlite_sequence' AND name NOT LIKE '%_config' AND name NOT LIKE '%_data' AND name NOT LIKE '%_docsize' AND name NOT LIKE '%_idx' AND name NOT LIKE '%_content' ORDER BY name`
