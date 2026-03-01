@@ -111,7 +111,7 @@ export function useContextBudget(agentId: string | null | undefined): ContextBud
       const cats = emptyCategories();
 
       for (const entry of entries) {
-        const bytes = entry.size ?? 0;
+        const bytes = Math.max(0, entry.size ?? 0);
         const tokens = estimateTokens(bytes);
         const category = classifyFile(entry);
         const fe: FileBudgetEntry = { name: entry.name, path: entry.path, bytes, tokens, category };

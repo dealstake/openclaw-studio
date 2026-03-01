@@ -75,8 +75,8 @@ export const DonutChart = memo(function DonutChart({
 
   const total = segments.reduce((sum, s) => sum + s.value, 0);
 
-  // Render empty circle if total is 0
-  if (total === 0) {
+  // Render empty circle if total is 0 or negative
+  if (total <= 0) {
     return (
       <svg
         viewBox={`0 0 ${size} ${size}`}

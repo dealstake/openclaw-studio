@@ -135,7 +135,7 @@ export const FeedbackToolbar = memo(function FeedbackToolbar({
                 "flex h-6 w-6 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 sm:h-6 sm:w-6 items-center justify-center rounded-md transition-colors",
                 isActive
                   ? activeClass
-                  : "text-muted-foreground/40 hover:text-muted-foreground",
+                  : "text-muted-foreground/70 hover:text-muted-foreground",
               )}
             >
               <Icon
@@ -157,7 +157,7 @@ export const FeedbackToolbar = memo(function FeedbackToolbar({
               "flex h-6 w-6 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 sm:h-6 sm:w-6 items-center justify-center rounded-md transition-colors",
               annotation?.comment
                 ? "text-blue-400"
-                : "text-muted-foreground/40 hover:text-muted-foreground",
+                : "text-muted-foreground/70 hover:text-muted-foreground",
             )}
           >
             <MessageSquare
