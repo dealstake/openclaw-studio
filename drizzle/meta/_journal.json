@@ -92,6 +92,13 @@
       "when": 1772344800000,
       "tag": "0012_knowledge_chunks_fts5",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "6",
+      "when": 1772431200000,
+      "tag": "0013_contacts_interactions",
+      "breakpoints": true
     }
   ]
 }

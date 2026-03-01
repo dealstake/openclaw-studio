@@ -198,7 +198,85 @@ export type NewKnowledgeChunkRow = {
   content: string;
 };
 
+// ─── Contacts ────────────────────────────────────────────────────────────────
+
+export const contacts = sqliteTable("contacts", {
+  id: text("id").primaryKey(),
+  agentId: text("agent_id").notNull(),
+  personaId: text("persona_id"),           // NULL = shared, set = persona-specific
+  name: text("name").notNull(),
+  email: text("email"),
+  phone: text("phone"),
+  company: text("company"),
+  title: text("title"),
+  tags: text("tags"),                      // JSON array: ["prospect", "cto", "saas"]
+  stage: text("stage"),                    // "lead" | "contacted" | "qualified" | "meeting" | "closed"
+  notes: text("notes"),
+  metadata: text("metadata"),              // JSON: custom fields per persona type
+  createdAt: text("created_at")
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+  updatedAt: text("updated_at")
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+  deletedAt: text("deleted_at"),           // NULL = active, ISO date = soft deleted
+});
+
+// ─── Interactions ─────────────────────────────────────────────────────────────
+
+export const interactions = sqliteTable("interactions", {
+  id: text("id").primaryKey(),
+  contactId: text("contact_id")
+    .notNull()
+    .references(() => contacts.id),
+  agentId: text("agent_id").notNull(),
+  personaId: text("persona_id").notNull(),
+  type: text("type").notNull(),            // "call" | "email" | "meeting" | "note" | "task"
+  channel: text("channel"),               // "phone" | "email" | "whatsapp" | "in-person"
+  summary: text("summary"),
+  content: text("content"),               // Full content (email body, call transcript, etc.)
+  outcome: text("outcome"),               // "positive" | "neutral" | "negative" | "no-answer"
+  artifactLink: text("artifact_link"),    // Link to generated doc, recording, etc.
+  createdAt: text("created_at")
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+});
+
+// ─── contacts_search FTS5 virtual table ──────────────────────────────────────
+// NOTE: FTS5 virtual tables are not supported by drizzle-orm schema.
+// Created via raw SQL in migration 0013. Queried via raw SQL in contactsRepo.
+//
+// Schema (for reference):
+//   CREATE VIRTUAL TABLE contacts_search USING fts5(
+//     contact_id UNINDEXED,
+//     agent_id   UNINDEXED,
+//     name,
+//     email,
+//     company,
+//     notes,
+//     tokenize = 'porter unicode61'
+//   );
+
+/** A row returned from a contacts_search FTS5 query. */
+export type ContactSearchRow = {
+  /** rowid from the FTS5 virtual table */
+  rowid: number;
+  contactId: string;
+  agentId: string;
+  name: string;
+  email: string;
+  company: string;
+  notes: string;
+  /** BM25 relevance score (negative — lower = more relevant) */
+  rank: number;
+};
+
 // ─── Type exports ────────────────────────────────────────────────────────────
+
+export type ContactRow = typeof contacts.$inferSelect;
+export type NewContactRow = typeof contacts.$inferInsert;
+export type InteractionRow = typeof interactions.$inferSelect;
+export type NewInteractionRow = typeof interactions.$inferInsert;
 
 export type ProjectIndexRow = typeof projectsIndex.$inferSelect;
 export type NewProjectIndexRow = typeof projectsIndex.$inferInsert;
