@@ -3,7 +3,6 @@ import { memo, useMemo } from "react";
 import { TridentLogo } from "@/components/brand/TridentLogo";
 
 type AgentAvatarProps = {
-  seed: string;
   name: string;
   avatarUrl?: string | null;
   size?: number;
@@ -11,8 +10,6 @@ type AgentAvatarProps = {
 };
 
 export const AgentAvatar = memo(function AgentAvatar({
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- seed kept for API compat
-  seed,
   name,
   avatarUrl,
   size = 112,

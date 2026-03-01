@@ -90,7 +90,6 @@ export const AgentBreadcrumb = memo(function AgentBreadcrumb({
         aria-haspopup="listbox"
       >
         <AgentAvatar
-          seed={selected.avatarSeed ?? selected.agentId}
           name={selected.name || selected.agentId}
           avatarUrl={selected.avatarUrl}
           size={20}
@@ -128,7 +127,6 @@ export const AgentBreadcrumb = memo(function AgentBreadcrumb({
               }}
             >
               <AgentAvatar
-                seed={agent.avatarSeed ?? agent.agentId}
                 name={agent.name || agent.agentId}
                 avatarUrl={agent.avatarUrl}
                 size={24}

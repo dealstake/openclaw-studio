@@ -148,7 +148,6 @@ export const ComposerAgentMenu = memo(function ComposerAgentMenu({
         aria-haspopup="menu"
       >
         <AgentAvatar
-          seed={selected.avatarSeed ?? selected.agentId}
           name={selected.name || selected.agentId}
           avatarUrl={selected.avatarUrl}
           size={40}
@@ -223,7 +222,6 @@ export const ComposerAgentMenu = memo(function ComposerAgentMenu({
                   onClick={() => { onSelectAgent(agent.agentId); setOpen(false); }}
                 >
                   <AgentAvatar
-                    seed={agent.avatarSeed ?? agent.agentId}
                     name={agent.name || agent.agentId}
                     avatarUrl={agent.avatarUrl}
                     size={20}
