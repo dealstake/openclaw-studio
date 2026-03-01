@@ -213,7 +213,7 @@ export const UsagePanel = memo(function UsagePanel({
       </div>
 
       {/* Secondary stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <SummaryCard
           label="Tokens"
           value={formatTokens(totalInputTokens + totalOutputTokens)}
@@ -252,43 +252,50 @@ export const UsagePanel = memo(function UsagePanel({
 
         {breakdownView === "model" && costByModel.size > 0 && (
           <div className="overflow-x-auto rounded-lg border border-border">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border bg-muted/50">
-                  <th scope="col" className="px-3 py-2 text-left font-medium text-muted-foreground">Model</th>
-                  <th scope="col" className="px-3 py-2 text-right font-medium text-muted-foreground">Sessions</th>
-                  <th scope="col" className="px-3 py-2 text-right font-medium text-muted-foreground">Tokens</th>
-                  <th scope="col" className="px-3 py-2 text-right font-medium text-muted-foreground">Cost</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[...costByModel.entries()]
-                  .sort(([, a], [, b]) => b.cost - a.cost)
-                  .map(([model, data]) => (
-                    <tr key={model} className="border-b border-border/50 last:border-0">
-                      <td className="px-3 py-2 font-medium text-foreground max-w-[120px]">
-                        <TooltipProvider>
+            <TooltipProvider>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border bg-muted/50">
+                    <th scope="col" className="px-3 py-3 text-left font-medium text-muted-foreground">Model</th>
+                    <th scope="col" className="px-3 py-3 text-right font-medium text-muted-foreground">Sessions</th>
+                    <th scope="col" className="px-3 py-3 text-right font-medium text-muted-foreground">Tokens</th>
+                    <th scope="col" className="px-3 py-3 text-right font-medium text-muted-foreground">Cost</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...costByModel.entries()]
+                    .sort(([, a], [, b]) => b.cost - a.cost)
+                    .map(([model, data]) => (
+                      <tr key={model} className="border-b border-border/50 last:border-0">
+                        <td className="px-3 py-3 font-medium text-foreground max-w-[120px]">
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <span className="block truncate">{model}</span>
                             </TooltipTrigger>
                             <TooltipContent side="right">{model}</TooltipContent>
                           </Tooltip>
-                        </TooltipProvider>
-                      </td>
-                      <td className="px-3 py-2 text-right text-muted-foreground">{data.requests}</td>
-                      <td className="px-3 py-2 text-right text-muted-foreground">
-                        {formatTokens(data.inputTokens + data.outputTokens)}
-                      </td>
-                      <td className="px-3 py-2 text-right text-foreground">{formatCost(data.cost)}</td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
+                        </td>
+                        <td className="px-3 py-3 text-right text-muted-foreground">{data.requests}</td>
+                        <td className="px-3 py-3 text-right text-muted-foreground">
+                          {formatTokens(data.inputTokens + data.outputTokens)}
+                        </td>
+                        <td className="px-3 py-3 text-right text-foreground">{formatCost(data.cost)}</td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </TooltipProvider>
           </div>
         )}
 
-        {breakdownView === "agent" && <AgentCostTable entries={entries} onAgentClick={handleAgentClick} />}
+        {breakdownView === "model" && costByModel.size === 0 && (
+          <p className="text-xs text-muted-foreground py-4 text-center">No model sessions in this time range.</p>
+        )}
+
+        {breakdownView === "agent" && entries.length > 0 && <AgentCostTable entries={entries} onAgentClick={handleAgentClick} />}
+        {breakdownView === "agent" && entries.length === 0 && (
+          <p className="text-xs text-muted-foreground py-4 text-center">No agent sessions in this time range.</p>
+        )}
 
         {breakdownView === "cron" && hasCronEntries && <CronCostTable entries={entries} />}
         {breakdownView === "cron" && !hasCronEntries && (

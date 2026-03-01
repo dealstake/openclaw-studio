@@ -138,6 +138,7 @@ export async function gatewayRpc<T = unknown>(
     ws.addEventListener("error", () => {
       settle(() => {
         cleanup();
+        ws.close();
         reject(new Error("Gateway WebSocket error"));
       });
     });

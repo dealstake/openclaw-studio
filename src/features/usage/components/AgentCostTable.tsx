@@ -1,6 +1,7 @@
 "use client";
 
 import { memo, useMemo, useState } from "react";
+import { ArrowUp, ArrowDown } from "lucide-react";
 import { formatTokens, formatCost } from "@/lib/text/format";
 import type { SessionCostEntry } from "@/features/usage/lib/costCalculator";
 
@@ -84,7 +85,7 @@ export const AgentCostTable = memo(function AgentCostTable({
   if (sorted.length === 0) return null;
 
   const sortIndicator = (key: SortKey) =>
-    sortKey === key ? (sortAsc ? " ↑" : " ↓") : "";
+    sortKey === key ? (sortAsc ? <ArrowUp className="inline h-3 w-3" /> : <ArrowDown className="inline h-3 w-3" />) : null;
 
   return (
     <div className="overflow-x-auto rounded-lg border border-border">
@@ -108,7 +109,7 @@ export const AgentCostTable = memo(function AgentCostTable({
               >
                 <button
                   type="button"
-                  className={`bg-transparent border-0 p-0 font-medium text-inherit cursor-pointer select-none hover:text-foreground transition-colors ${align}`}
+                  className={`flex w-full items-center gap-0.5 bg-transparent border-0 p-0 font-medium text-inherit cursor-pointer select-none hover:text-foreground transition-colors ${align === "text-right" ? "justify-end" : "justify-start"}`}
                   onClick={() => handleSort(key as SortKey)}
                 >
                   {label}{sortIndicator(key as SortKey)}

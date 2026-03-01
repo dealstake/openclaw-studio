@@ -42,23 +42,7 @@ type UsageQueryResponse = {
   dailyTrends: TrendBucket[];
   agentBreakdown: AgentBreakdown[];
   projectedMonthlyCost: number;
-  cachedAt: string;
 };
-
-// ─── Cache ──────────────────────────────────────────────────────────────────
-
-type CacheEntry = {
-  data: UsageQueryResponse;
-  expiry: number;
-};
-
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-const MAX_CACHE_ENTRIES = 50;
-const cache = new Map<string, CacheEntry>();
-
-function getCacheKey(body: RequestBody): string {
-  return `${body.from ?? ""}|${body.to ?? ""}|${body.groupBy ?? ""}|${body.agentId ?? ""}`;
-}
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -113,13 +97,6 @@ function filterByDateRange(
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as RequestBody;
-
-    // Check cache
-    const cacheKey = getCacheKey(body);
-    const cached = cache.get(cacheKey);
-    if (cached && cached.expiry > Date.now()) {
-      return NextResponse.json(cached.data);
-    }
 
     // Fetch sessions from gateway
     const result = await gatewayRpc<{ sessions?: RawSessionEntry[] }>(
@@ -190,15 +167,7 @@ export async function POST(request: NextRequest) {
       dailyTrends,
       agentBreakdown,
       projectedMonthlyCost,
-      cachedAt: new Date().toISOString(),
     };
-
-    // Store in cache (evict oldest if over limit)
-    if (cache.size >= MAX_CACHE_ENTRIES) {
-      const oldest = cache.keys().next().value;
-      if (oldest !== undefined) cache.delete(oldest);
-    }
-    cache.set(cacheKey, { data: response, expiry: Date.now() + CACHE_TTL_MS });
 
     return NextResponse.json(response);
   } catch (err) {
