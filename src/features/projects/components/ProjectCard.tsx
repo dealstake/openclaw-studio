@@ -105,7 +105,7 @@ export const ProjectCard = memo(function ProjectCard({
         <div className="flex shrink-0 items-center gap-1.5">
           {linkedTasks.length > 0 && (
             <span
-              className="inline-flex items-center gap-0.5 rounded-full border border-border/60 bg-muted/40 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground"
+              className="inline-flex items-center gap-0.5 rounded-full border border-border/60 bg-muted/40 px-1.5 py-0.5 text-[11px] text-muted-foreground"
               title={`${linkedTasks.length} linked task${linkedTasks.length > 1 ? "s" : ""}`}
             >
               <LinkIcon className="h-2.5 w-2.5" />
@@ -117,7 +117,7 @@ export const ProjectCard = memo(function ProjectCard({
             <Popover.Trigger asChild>
               <button
                 type="button"
-                className={`inline-flex min-h-[44px] sm:min-h-0 items-center justify-center gap-1 rounded border px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.08em] transition hover:brightness-125 ${statusColors}`}
+                className={`inline-flex min-h-[44px] sm:min-h-0 items-center justify-center gap-1 rounded border px-1.5 py-0.5 text-[11px] font-semibold transition hover:brightness-125 ${statusColors}`}
                 onClick={(e) => { e.stopPropagation(); }}
                 aria-label={`Change status (current: ${statusLabel})`}
               >
@@ -203,7 +203,7 @@ export const ProjectCard = memo(function ProjectCard({
 
       {/* Dates */}
       {(project.createdAt || project.updatedAt) && (
-        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] font-mono text-muted-foreground/80">
+        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
           {project.createdAt && (
             <span title={`Created: ${new Date(project.createdAt).toLocaleString()}`}>
               Created {formatRelativeTime(new Date(project.createdAt).getTime())}

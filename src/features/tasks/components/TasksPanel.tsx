@@ -265,7 +265,7 @@ export const TasksPanel = memo(function TasksPanel({
             onClick={onNewTask}
           >
             <Plus className="h-3.5 w-3.5" />
-            <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em]">
+            <span className="text-xs font-medium">
               New
             </span>
           </button>
