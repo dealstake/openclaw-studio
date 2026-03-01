@@ -13,13 +13,14 @@ import { SkillsPanel } from "@/features/skills/components/SkillsPanel";
 import { ContextBudgetCard } from "@/features/context-budget";
 import { RoutingPanel } from "@/features/routing/components/RoutingPanel";
 import { PlaygroundPanel } from "@/features/playground/components/PlaygroundPanel";
+import { OrchestratorPanel } from "@/features/orchestrator/components/OrchestratorPanel";
 import type { PersonaTemplate } from "@/features/personas/lib/templateTypes";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import type { AgentState } from "@/features/agents/state/store";
 import type { GatewayModelChoice } from "@/lib/gateway/models";
 import type { AgentFileName } from "@/lib/agents/agentFiles";
 
-export type ExpandableTab = "projects" | "tasks" | "brain" | "workspace" | "skills" | "activity" | "budget" | "router" | "playground";
+export type ExpandableTab = "projects" | "tasks" | "brain" | "workspace" | "skills" | "activity" | "budget" | "router" | "playground" | "orchestrator";
 
 interface StudioContextDrawerProps {
   isMobileLayout: boolean;
@@ -216,6 +217,16 @@ export const StudioContextDrawer = React.memo(function StudioContextDrawer(props
               status={status}
               models={gatewayModels}
               agents={agents}
+            />
+          </PanelErrorBoundary>
+        }
+        orchestratorContent={
+          <PanelErrorBoundary name="Swarm Orchestrator">
+            <OrchestratorPanel
+              client={client}
+              status={status}
+              agentId={focusedAgentId}
+              isTabActive={contextTab === "orchestrator"}
             />
           </PanelErrorBoundary>
         }

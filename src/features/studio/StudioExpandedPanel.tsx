@@ -25,6 +25,7 @@ import type { AgentFileName } from "@/lib/agents/agentFiles";
 import type { GatewayModelChoice } from "@/lib/gateway/models";
 import { PlaygroundPanel } from "@/features/playground/components/PlaygroundPanel";
 import { RoutingPanel } from "@/features/routing/components/RoutingPanel";
+import { OrchestratorPanel } from "@/features/orchestrator/components/OrchestratorPanel";
 
 interface StudioExpandedPanelProps {
   expandedTab: ContextTab | ManagementTab | null;
@@ -192,6 +193,16 @@ export const StudioExpandedPanel = memo(function StudioExpandedPanel({
                 status={status}
                 models={gatewayModels}
                 agents={agents}
+              />
+            </PanelErrorBoundary>
+          )}
+          {expandedTab === "orchestrator" && (
+            <PanelErrorBoundary name="Swarm Orchestrator">
+              <OrchestratorPanel
+                client={client}
+                status={status}
+                agentId={focusedAgentId}
+                isTabActive
               />
             </PanelErrorBoundary>
           )}
