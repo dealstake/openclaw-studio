@@ -9,6 +9,8 @@ import { usePersonas, type PersonaStatusFilter, type PersonaListItem } from "../
 import { PersonaCard } from "./PersonaCard";
 import { PracticeSessionModal } from "./PracticeSessionModal";
 import { KnowledgePanel } from "./KnowledgePanel";
+import { TemplateBrowserModal } from "./TemplateBrowserModal";
+import type { PersonaTemplate } from "../lib/templateTypes";
 import type { PracticeModeType } from "../lib/personaTypes";
 
 // ---------------------------------------------------------------------------
@@ -41,14 +43,17 @@ const ALL_PRACTICE_MODES: PracticeModeType[] = [
 export interface PersonasTabProps {
   agentId: string | null;
   status: GatewayStatus;
-  /** Callback to launch persona creation wizard */
+  /** Callback to launch persona creation wizard (legacy — modal now self-managed) */
   onCreatePersona?: () => void;
+  /** Called when user selects a template → should start inline wizard */
+  onSelectTemplate?: (template: PersonaTemplate) => void;
 }
 
 export const PersonasTab = React.memo(function PersonasTab({
   agentId,
   status,
   onCreatePersona,
+  onSelectTemplate,
 }: PersonasTabProps) {
   const {
     personas,
@@ -65,10 +70,27 @@ export const PersonasTab = React.memo(function PersonasTab({
     onStatusChange,
   } = usePersonas(agentId, status);
 
+  // Template browser modal state
+  const [templateBrowserOpen, setTemplateBrowserOpen] = useState(false);
   // Practice modal state
   const [practiceTarget, setPracticeTarget] = useState<PersonaListItem | null>(null);
   // Knowledge panel state
   const [knowledgeTarget, setKnowledgeTarget] = useState<PersonaListItem | null>(null);
+
+  const handleOpenTemplateBrowser = useCallback(() => {
+    if (onCreatePersona) {
+      onCreatePersona();
+    }
+    setTemplateBrowserOpen(true);
+  }, [onCreatePersona]);
+
+  const handleSelectTemplate = useCallback(
+    (template: PersonaTemplate) => {
+      setTemplateBrowserOpen(false);
+      onSelectTemplate?.(template);
+    },
+    [onSelectTemplate],
+  );
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleSelect = useCallback((_persona: PersonaListItem) => {
@@ -95,17 +117,15 @@ export const PersonasTab = React.memo(function PersonasTab({
     <div className="flex h-full flex-col gap-2">
       {/* Header with count + create */}
       <div className="flex items-center justify-between px-3 pt-1">
-        {onCreatePersona && (
-          <button
-            type="button"
-            onClick={onCreatePersona}
-            aria-label="Create new persona"
-            className="flex h-8 items-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-3 text-xs text-primary transition-colors hover:bg-primary/20"
-          >
-            <Plus className="h-3 w-3" />
-            New Persona
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={handleOpenTemplateBrowser}
+          aria-label="Create new persona"
+          className="flex h-8 items-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-3 text-xs text-primary transition-colors hover:bg-primary/20"
+        >
+          <Plus className="h-3 w-3" />
+          New Persona
+        </button>
         {allPersonas.length > 0 && (
           <span className="text-[11px] text-muted-foreground">
             {allPersonas.length} persona{allPersonas.length !== 1 ? "s" : ""}
@@ -186,10 +206,10 @@ export const PersonasTab = React.memo(function PersonasTab({
                   ? "Try a different search term"
                   : "Try a different filter"}
             </p>
-            {allPersonas.length === 0 && onCreatePersona && (
+            {allPersonas.length === 0 && (
               <button
                 type="button"
-                onClick={onCreatePersona}
+                onClick={handleOpenTemplateBrowser}
                 className="mt-2 flex h-9 items-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-4 text-xs text-primary transition-colors hover:bg-primary/20"
               >
                 <Plus className="h-3.5 w-3.5" />
@@ -238,6 +258,13 @@ export const PersonasTab = React.memo(function PersonasTab({
           />
         </div>
       )}
+
+      {/* Template browser modal */}
+      <TemplateBrowserModal
+        open={templateBrowserOpen}
+        onOpenChange={setTemplateBrowserOpen}
+        onSelectTemplate={handleSelectTemplate}
+      />
     </div>
   );
 });
