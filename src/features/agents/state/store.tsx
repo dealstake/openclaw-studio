@@ -406,22 +406,22 @@ export const getAttentionForAgent = (
   return "normal";
 };
 
+// Module-level comparator — not recreated on every `getFilteredAgents` call.
+const compareByMostRecentAssistant = (a: AgentState, b: AgentState): number =>
+  (b.lastAssistantMessageAt ?? 0) - (a.lastAssistantMessageAt ?? 0);
+
+const sortByMostRecentAssistant = (agents: AgentState[]): AgentState[] =>
+  [...agents].sort(compareByMostRecentAssistant);
+
 export const getFilteredAgents = (state: AgentStoreState, filter: FocusFilter): AgentState[] => {
-  const byMostRecentAssistant = (agents: AgentState[]) =>
-    [...agents].sort((a, b) => {
-      const aTs = a.lastAssistantMessageAt ?? 0;
-      const bTs = b.lastAssistantMessageAt ?? 0;
-      if (aTs !== bTs) return bTs - aTs;
-      return 0;
-    });
-  if (filter === "all") return byMostRecentAssistant(state.agents);
+  if (filter === "all") return sortByMostRecentAssistant(state.agents);
   if (filter === "running") {
-    return byMostRecentAssistant(state.agents.filter((agent) => agent.status === "running"));
+    return sortByMostRecentAssistant(state.agents.filter((agent) => agent.status === "running"));
   }
   if (filter === "idle") {
-    return byMostRecentAssistant(state.agents.filter((agent) => agent.status === "idle"));
+    return sortByMostRecentAssistant(state.agents.filter((agent) => agent.status === "idle"));
   }
-  return byMostRecentAssistant(
+  return sortByMostRecentAssistant(
     state.agents.filter(
       (agent) => getAttentionForAgent(agent, state.selectedAgentId) === "needs-attention"
     )
