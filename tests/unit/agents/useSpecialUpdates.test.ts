@@ -25,6 +25,7 @@ const makeAgent = (overrides: Partial<AgentState> = {}): AgentState => ({
   hasUnseenActivity: false,
   toolCallingEnabled: true,
   showThinkingTraces: true,
+  autonomyLevel: "autonomous",
   wizardContext: null,
   messageParts: [],
   latestOverride: null,

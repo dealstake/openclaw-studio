@@ -301,6 +301,25 @@ export const agentFileVersions = sqliteTable("agent_file_versions", {
 export type AgentFileVersionRow = typeof agentFileVersions.$inferSelect;
 export type NewAgentFileVersionRow = typeof agentFileVersions.$inferInsert;
 
+// ─── Shared Artifacts ────────────────────────────────────────────────────────
+
+/**
+ * Persists agent-produced outputs that can be shared/consumed across sessions.
+ * Phase 1 of the Inter-Agent Data Sharing feature.
+ */
+export const sharedArtifacts = sqliteTable("shared_artifacts", {
+  id: text("id").primaryKey(),
+  sourceAgentId: text("source_agent_id").notNull(),
+  sourceSessionKey: text("source_session_key").notNull(),
+  name: text("name").notNull(),
+  mimeType: text("mime_type").notNull().default("text/plain"),
+  content: text("content").notNull().default(""),
+  metadataJson: text("metadata_json").notNull().default("{}"),
+  createdAt: text("created_at")
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+});
+
 // ─── Type exports ────────────────────────────────────────────────────────────
 
 export type ContactRow = typeof contacts.$inferSelect;
@@ -326,3 +345,5 @@ export type PersonaRow = typeof personas.$inferSelect;
 export type NewPersonaRow = typeof personas.$inferInsert;
 export type KnowledgeSourceRow = typeof knowledgeSources.$inferSelect;
 export type NewKnowledgeSourceRow = typeof knowledgeSources.$inferInsert;
+export type SharedArtifactRow = typeof sharedArtifacts.$inferSelect;
+export type NewSharedArtifactRow = typeof sharedArtifacts.$inferInsert;
