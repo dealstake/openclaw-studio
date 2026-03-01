@@ -11,13 +11,15 @@ import { UnifiedFilesPanel } from "@/features/workspace/components/UnifiedFilesP
 import { ActivityPanel } from "@/features/activity/components/ActivityPanel";
 import { SkillsPanel } from "@/features/skills/components/SkillsPanel";
 import { ContextBudgetCard } from "@/features/context-budget";
+import { RoutingPanel } from "@/features/routing/components/RoutingPanel";
+import { PlaygroundPanel } from "@/features/playground/components/PlaygroundPanel";
 import type { PersonaTemplate } from "@/features/personas/lib/templateTypes";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import type { AgentState } from "@/features/agents/state/store";
 import type { GatewayModelChoice } from "@/lib/gateway/models";
 import type { AgentFileName } from "@/lib/agents/agentFiles";
 
-export type ExpandableTab = "projects" | "tasks" | "brain" | "workspace" | "skills" | "activity" | "budget";
+export type ExpandableTab = "projects" | "tasks" | "brain" | "workspace" | "skills" | "activity" | "budget" | "router" | "playground";
 
 interface StudioContextDrawerProps {
   isMobileLayout: boolean;
@@ -193,6 +195,28 @@ export const StudioContextDrawer = React.memo(function StudioContextDrawer(props
         budgetContent={
           <PanelErrorBoundary name="Budget">
             <ContextBudgetCard agentId={focusedAgentId} />
+          </PanelErrorBoundary>
+        }
+        playgroundContent={
+          <PanelErrorBoundary name="Playground">
+            <PlaygroundPanel
+              client={client}
+              status={status}
+              agentId={focusedAgentId}
+              models={gatewayModels}
+              defaultModel={undefined}
+              isTabActive={contextTab === "playground"}
+            />
+          </PanelErrorBoundary>
+        }
+        routerContent={
+          <PanelErrorBoundary name="Router">
+            <RoutingPanel
+              client={client}
+              status={status}
+              models={gatewayModels}
+              agents={agents}
+            />
           </PanelErrorBoundary>
         }
       />

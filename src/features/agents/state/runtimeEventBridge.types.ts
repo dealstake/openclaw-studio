@@ -134,4 +134,5 @@ export type GatewayEventKind =
   | "nodes-update"
   | "config-update"
   | "prompt-error"
+  | "log-stream"
   | "ignore";

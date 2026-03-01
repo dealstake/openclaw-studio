@@ -11,6 +11,7 @@ import { fetchTranscriptMessages } from "@/features/sessions/hooks/useTranscript
 import type { Action as AgentStoreAction, AgentState as AgentEntry } from "@/features/agents/state/store";
 import type { ManagementTab } from "@/layout/AppSidebar";
 import { useTraceViewStore, openTrace as openTraceAction, closeTrace as closeTraceAction } from "@/features/sessions/state/traceViewStore";
+import { useReplayViewStore, openReplay as openReplayAction, closeReplay as closeReplayAction } from "@/features/sessions/state/replayViewStore";
 
 export interface StudioChatCallbacksParams {
   focusedAgentRef: MutableRefObject<AgentEntry | null>;
@@ -55,6 +56,8 @@ export function useStudioChatCallbacks({
   const [viewingSessionHistory, setViewingSessionHistory] = useState<MessagePart[]>([]);
   const { trace: viewingTrace } = useTraceViewStore();
   const clearViewingTrace = closeTraceAction;
+  const { replay: viewingReplay } = useReplayViewStore();
+  const clearViewingReplay = closeReplayAction;
   const [viewingSessionLoading, setViewingSessionLoading] = useState(false);
 
   const stableChatOnModelChange = useCallback((value: string | null) => {
@@ -112,6 +115,13 @@ export function useStudioChatCallbacks({
     const prefix = `agent:${agentId}:`;
     const sessionId = sessionKey.startsWith(prefix) ? sessionKey.slice(prefix.length) : sessionKey;
     openTraceAction(agentId, sessionId);
+  }, []);
+
+  const handleViewReplay = useCallback((sessionKey: string, agentId: string | null) => {
+    if (!agentId) return;
+    const prefix = `agent:${agentId}:`;
+    const sessionId = sessionKey.startsWith(prefix) ? sessionKey.slice(prefix.length) : sessionKey;
+    openReplayAction(agentId, sessionId);
   }, []);
 
   const stableChatOnDismissContinuation = useCallback(() => {
@@ -218,6 +228,8 @@ export function useStudioChatCallbacks({
     viewingTrace,
     viewingSessionLoading,
     clearViewingTrace,
+    viewingReplay,
+    clearViewingReplay,
     // Stable chat callbacks
     stableChatOnModelChange,
     stableChatOnThinkingChange,
@@ -230,6 +242,7 @@ export function useStudioChatCallbacks({
     stableChatTokenUsed,
     // Trace/transcript handlers
     handleViewTrace,
+    handleViewReplay,
     handleSidebarSessionSelect,
     handleDrawerTranscriptClick,
     handleExpandedTranscriptClick,

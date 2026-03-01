@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, real } from "drizzle-orm/sqlite-core";
 
 // ─── Projects Index ──────────────────────────────────────────────────────────
 
@@ -320,6 +320,43 @@ export const sharedArtifacts = sqliteTable("shared_artifacts", {
     .$defaultFn(() => new Date().toISOString()),
 });
 
+// ─── Agent Baselines (Anomaly Detection) ─────────────────────────────────────
+
+/**
+ * Per-(agent, task) behavioral baseline computed from the last N days of
+ * activity events. Stores mean + stdDev + sampleCount for each tracked metric.
+ *
+ * Used by Phase 2 anomaly detection to flag deviations via Z-score comparison.
+ */
+export const agentBaselines = sqliteTable("agent_baselines", {
+  /** Composite key: "<agentId>:<taskId>" */
+  id: text("id").primaryKey(),
+  agentId: text("agent_id").notNull(),
+  taskId: text("task_id").notNull(),
+  taskName: text("task_name").notNull().default(""),
+  // Total tokens per run
+  tokensMean: real("tokens_mean").notNull().default(0),
+  tokensStdDev: real("tokens_std_dev").notNull().default(0),
+  tokensSampleCount: integer("tokens_sample_count").notNull().default(0),
+  // Estimated cost per run (USD)
+  costMean: real("cost_mean").notNull().default(0),
+  costStdDev: real("cost_std_dev").notNull().default(0),
+  costSampleCount: integer("cost_sample_count").notNull().default(0),
+  // Duration per run (ms)
+  durationMean: real("duration_mean").notNull().default(0),
+  durationStdDev: real("duration_std_dev").notNull().default(0),
+  durationSampleCount: integer("duration_sample_count").notNull().default(0),
+  // Error rate (0.0–1.0)
+  errorRateMean: real("error_rate_mean").notNull().default(0),
+  errorRateStdDev: real("error_rate_std_dev").notNull().default(0),
+  errorRateSampleCount: integer("error_rate_sample_count").notNull().default(0),
+  computedAt: text("computed_at").notNull(),
+  windowDays: integer("window_days").notNull().default(7),
+});
+
+export type AgentBaselineRow = typeof agentBaselines.$inferSelect;
+export type NewAgentBaselineRow = typeof agentBaselines.$inferInsert;
+
 // ─── Type exports ────────────────────────────────────────────────────────────
 
 export type ContactRow = typeof contacts.$inferSelect;
@@ -347,3 +384,34 @@ export type KnowledgeSourceRow = typeof knowledgeSources.$inferSelect;
 export type NewKnowledgeSourceRow = typeof knowledgeSources.$inferInsert;
 export type SharedArtifactRow = typeof sharedArtifacts.$inferSelect;
 export type NewSharedArtifactRow = typeof sharedArtifacts.$inferInsert;
+
+// ─── Orchestrations ───────────────────────────────────────────────────────────
+
+/**
+ * Persists orchestration graph definitions for the Visual Swarm Orchestrator.
+ * Each row stores the full graph JSON plus execution metadata.
+ * Phase 1 of the Visual Swarm Orchestrator feature.
+ */
+export const orchestrations = sqliteTable("orchestrations", {
+  id: text("id").primaryKey(),
+  agentId: text("agent_id").notNull(),
+  name: text("name").notNull(),
+  description: text("description").notNull().default(""),
+  /** JSON-serialized OrchestrationGraph (nodes + edges) */
+  graphJson: text("graph_json").notNull().default('{"nodes":[],"edges":[]}'),
+  /** "idle" | "running" | "paused" */
+  status: text("status").notNull().default("idle"),
+  runCount: integer("run_count").notNull().default(0),
+  lastRunAt: text("last_run_at"),
+  /** "success" | "error" | "partial" | "cancelled" */
+  lastRunStatus: text("last_run_status"),
+  createdAt: text("created_at")
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+  updatedAt: text("updated_at")
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+});
+
+export type OrchestrationRow = typeof orchestrations.$inferSelect;
+export type NewOrchestrationRow = typeof orchestrations.$inferInsert;

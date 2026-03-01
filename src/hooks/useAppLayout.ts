@@ -91,7 +91,7 @@ export function useAppLayout() {
 
       // Tab shortcuts: Cmd+Shift+{P,T,B,A}
       const tabShortcuts: Record<string, typeof contextPanel.contextTab> = {
-        p: "projects", t: "tasks", b: "brain", a: "activity",
+        p: "projects", t: "tasks", b: "brain", a: "activity", g: "playground",
       };
       if (mod && e.shiftKey) {
         const tab = tabShortcuts[e.key.toLowerCase()];

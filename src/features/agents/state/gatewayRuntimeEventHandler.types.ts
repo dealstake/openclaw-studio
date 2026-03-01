@@ -46,6 +46,8 @@ export type GatewayRuntimeEventHandlerDeps = {
     parts: import("@/lib/chat/types").MessagePart[];
     status: "streaming" | "complete" | "error";
   }) => void;
+  /** Route log.line gateway events to the agent log store. */
+  onLogLine?: (agentId: string, line: import("@/features/agents/lib/logTypes").LogLine) => void;
 };
 
 export type GatewayRuntimeEventHandler = {
