@@ -254,6 +254,23 @@ export const CAPABILITY_SKILL_MAP: Record<string, SkillRequirement> = {
   },
 
   // -------------------------------------------------------------------------
+  // Contact & CRM
+  // -------------------------------------------------------------------------
+
+  /**
+   * Built-in capability — no skill install or external credential required.
+   * Powered by the `contacts` and `interactions` tables in studio.db.
+   * Always resolves to "ready" as long as the database is accessible.
+   */
+  contacts: {
+    skillKey: "__builtin__",
+    capability: "Contact & Interaction CRM",
+    required: false,
+    credentialHowTo:
+      "Automatic — uses the built-in contacts database (no external dependencies required)",
+  },
+
+  // -------------------------------------------------------------------------
   // Feeds & Monitoring
   // -------------------------------------------------------------------------
 
