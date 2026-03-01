@@ -107,6 +107,8 @@ export const ManagementPanelContent = memo(function ManagementPanelContent({
             onToolCallingToggle={ctx.onToolCallingToggle}
             onThinkingTracesToggle={ctx.onThinkingTracesToggle}
             onAutonomyChange={ctx.onAutonomyChange}
+            client={ctx.client}
+            status={ctx.status}
           />
           <div className="mt-4 border-t border-border/40 px-4 pt-4">
             <LogoutButton />
