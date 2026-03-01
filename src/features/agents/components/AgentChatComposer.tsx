@@ -16,7 +16,6 @@ import type { GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { AlertCircle, ArrowUp, Square, UploadCloud, WifiOff } from "lucide-react";
 import { ChatAttachmentPreview } from "./ChatAttachmentPreview";
 import { ComposerAgentMenu, type ComposerAgent } from "./ComposerAgentMenu";
-import { StreamingStatus } from "./StreamingStatus";
 import { useFileUpload, type ChatAttachment } from "../hooks/useFileUpload";
 import type { WizardType, WizardTheme, WizardStarter } from "@/features/wizards/lib/wizardTypes";
 import { WizardBanner } from "@/features/wizards/components/WizardBanner";
@@ -289,10 +288,9 @@ export const AgentChatComposer = memo(function AgentChatComposer({
           </div>
         )}
 
-        {/* Floating status bar — above the split row */}
-        {(running || (gatewayStatus && gatewayStatus !== "connected") || fileError || hasFiles) && (
+        {/* Minimal status strip — only offline/errors/attachments, no streaming chrome */}
+        {((gatewayStatus && gatewayStatus !== "connected") || fileError || hasFiles) && (
           <div className="mb-2 rounded-2xl border border-border/50 bg-background/70 px-4 py-2 shadow-lg ring-1 ring-white/[0.06] backdrop-blur-xl dark:bg-background/40 animate-in slide-in-from-bottom-2 fade-in duration-200">
-            {/* Offline */}
             {gatewayStatus && gatewayStatus !== "connected" && (
               <div className="flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400" role="status">
                 <WifiOff className="h-3.5 w-3.5 shrink-0" aria-hidden />
@@ -302,37 +300,13 @@ export const AgentChatComposer = memo(function AgentChatComposer({
                 </span>
               </div>
             )}
-            {/* File error */}
             {fileError && (
               <div className="flex items-center gap-1.5 text-xs text-destructive">
                 <AlertCircle className="h-3.5 w-3.5 shrink-0" />
                 <span className="truncate">{fileError}</span>
               </div>
             )}
-            {/* Attachments */}
             {hasFiles && <ChatAttachmentPreview files={files} onRemove={removeFile} />}
-            {/* Streaming status + progress */}
-            {running && (
-              <div className="flex items-center gap-3">
-                <StreamingStatus
-                  running={running}
-                  messageParts={messageParts ?? []}
-                  runStartedAt={runStartedAt}
-                />
-                <div className="flex-1" />
-                {tokenPct !== null && (
-                  <div className="flex items-center gap-2 opacity-80">
-                    <div className="h-1.5 w-16 overflow-hidden rounded-full bg-muted/50 sm:w-24">
-                      <div
-                        className={`h-full rounded-full transition-all duration-500 ${tokenPct >= 80 ? "bg-yellow-500" : "bg-primary/70"}`}
-                        style={{ width: `${Math.min(tokenPct, 100)}%` }}
-                      />
-                    </div>
-                    <span className="font-mono text-[10px] text-muted-foreground">{tokenPct}%</span>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
         )}
 
@@ -365,12 +339,38 @@ export const AgentChatComposer = memo(function AgentChatComposer({
             />
           </div>
 
-          {/* ── Morphing Action Button: Avatar (idle/empty) ↔ Send (has text) ↔ Stop (running) ── */}
-          <div className="shrink-0">
+          {/* ── Morphing Action Button with circular progress ring ── */}
+          <div className="relative shrink-0">
+            {/* SVG progress ring — visible when running and tokenPct available */}
+            {running && tokenPct !== null && (
+              <svg
+                className="pointer-events-none absolute inset-0 -rotate-90"
+                viewBox="0 0 52 52"
+                width="52"
+                height="52"
+                aria-hidden
+              >
+                {/* Track */}
+                <circle cx="26" cy="26" r="23" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-muted/30" />
+                {/* Progress */}
+                <circle
+                  cx="26" cy="26" r="23" fill="none"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  className={`transition-all duration-700 ${tokenPct >= 80 ? "text-yellow-500" : "text-primary"}`}
+                  stroke="currentColor"
+                  strokeDasharray={`${2 * Math.PI * 23}`}
+                  strokeDashoffset={`${2 * Math.PI * 23 * (1 - Math.min(tokenPct, 100) / 100)}`}
+                />
+              </svg>
+            )}
+            {/* Pulsing ring for thinking/running (no token data) */}
+            {running && tokenPct === null && (
+              <div className="absolute inset-[-3px] rounded-full border-2 border-primary/50 animate-pulse" aria-hidden />
+            )}
             {running ? (
-              /* Running → Stop button */
               <button
-                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-border/50 bg-destructive text-destructive-foreground shadow-lg ring-1 ring-white/[0.08] transition-all duration-300 ease-out hover:brightness-110 active:scale-90 disabled:cursor-not-allowed disabled:border-border/30 disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none disabled:ring-0"
+                className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-lg transition-all duration-300 ease-out hover:brightness-110 active:scale-90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
                 type="button"
                 aria-label="Stop agent"
                 onClick={onStop}
@@ -379,9 +379,8 @@ export const AgentChatComposer = memo(function AgentChatComposer({
                 <Square className="h-3.5 w-3.5 fill-current" />
               </button>
             ) : !isEmpty || hasFiles ? (
-              /* Has text or files → Send button */
               <button
-                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-all duration-300 ease-out hover:brightness-110 active:scale-90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
+                className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-all duration-300 ease-out hover:brightness-110 active:scale-90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
                 type="button"
                 aria-label="Send message"
                 onClick={handleClickSend}
@@ -390,7 +389,6 @@ export const AgentChatComposer = memo(function AgentChatComposer({
                 <ArrowUp className="h-[18px] w-[18px]" />
               </button>
             ) : composerAgents && composerAgents.length > 0 && selectedAgentId && onSelectAgent ? (
-              /* Empty → Avatar (opens dropdown) */
               <ComposerAgentMenu
                 agents={composerAgents}
                 selectedAgentId={selectedAgentId}
@@ -406,9 +404,8 @@ export const AgentChatComposer = memo(function AgentChatComposer({
                 onAttach={triggerAttach}
               />
             ) : (
-              /* Fallback: disabled send */
               <button
-                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-border/30 bg-background/60 text-muted-foreground shadow-none ring-1 ring-white/[0.06] backdrop-blur-xl"
+                className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-border/30 bg-background/60 text-muted-foreground shadow-none ring-1 ring-white/[0.06] backdrop-blur-xl"
                 type="button"
                 aria-label="Send message"
                 disabled
