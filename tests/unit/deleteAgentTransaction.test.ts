@@ -121,7 +121,7 @@ describe("delete agent transaction", () => {
     expect(deps.restoreAgentState).not.toHaveBeenCalled();
   });
 
-  it("logs_restore_failure_and_still_throws_original_error", async () => {
+  it("throws AggregateError containing both errors when restore also fails", async () => {
     const originalErr = new Error("boom");
     const restoreErr = new Error("restore-failed");
     const logError = vi.fn();
@@ -140,9 +140,17 @@ describe("delete agent transaction", () => {
       logError,
     };
 
-    await expect(runDeleteAgentTransaction(deps, "agent-1")).rejects.toBe(originalErr);
+    const thrown = await runDeleteAgentTransaction(deps, "agent-1").catch((e: unknown) => e);
+    expect(thrown).toBeInstanceOf(AggregateError);
+    const agg = thrown as AggregateError;
+    expect(agg.errors).toContain(originalErr);
+    expect(agg.errors).toContain(restoreErr);
+    expect(agg.message).toMatch(/corrupted/i);
     expect(logError).toHaveBeenCalledTimes(1);
-    expect(logError).toHaveBeenCalledWith("Failed to restore trashed agent state.", restoreErr);
+    expect(logError).toHaveBeenCalledWith(
+      expect.stringContaining("corrupted"),
+      restoreErr
+    );
   });
 });
 

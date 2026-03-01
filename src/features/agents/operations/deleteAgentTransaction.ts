@@ -42,10 +42,18 @@ export async function runDeleteAgentTransaction(
       try {
         await deps.restoreAgentState(trimmedAgentId, trashed.trashDir);
       } catch (restoreErr) {
-        deps.logError?.("Failed to restore trashed agent state.", restoreErr);
+        // Surface both errors — silently swallowing restoreErr would leave
+        // agent state files corrupted with no signal to the caller.
+        deps.logError?.(
+          "Failed to restore trashed agent state after delete failure. Agent state may be corrupted.",
+          restoreErr
+        );
+        throw new AggregateError(
+          [err, restoreErr],
+          "Agent delete failed and rollback also failed — agent state may be corrupted."
+        );
       }
     }
     throw err;
   }
 }
-

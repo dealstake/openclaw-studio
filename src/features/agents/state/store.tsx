@@ -286,15 +286,37 @@ const reducer = (state: AgentStoreState, action: Action): AgentStoreState => {
 export const agentStoreReducer = reducer;
 export const initialAgentStoreState = initialState;
 
-type AgentStoreContextValue = {
-  state: AgentStoreState;
+/**
+ * Context is split into two providers to prevent unnecessary re-renders:
+ *
+ * - AgentDispatchContext: stable — dispatch + action helpers never change.
+ *   Components that only dispatch actions can use `useAgentDispatch()` and
+ *   will never re-render due to state changes.
+ *
+ * - AgentStateContext: changes on every dispatch (expected). Components that
+ *   read state subscribe here. Use `useAgentState()` directly, or use
+ *   `useAgentStore()` for backward-compatible combined access.
+ *
+ * Migration path: replace `const { dispatch } = useAgentStore()` with
+ * `const { dispatch } = useAgentDispatch()` in action-only components.
+ */
+
+type AgentDispatchContextValue = {
   dispatch: React.Dispatch<Action>;
   hydrateAgents: (agents: AgentStoreSeed[]) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
 };
 
-const AgentStoreContext = createContext<AgentStoreContextValue | null>(null);
+type AgentStateContextValue = {
+  state: AgentStoreState;
+};
+
+// Kept for backward compatibility — consumers that use useAgentStore() still work.
+type AgentStoreContextValue = AgentDispatchContextValue & AgentStateContextValue;
+
+const AgentDispatchContext = createContext<AgentDispatchContextValue | null>(null);
+const AgentStateContext = createContext<AgentStateContextValue | null>(null);
 
 export const AgentStoreProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(reducer, initialState);
@@ -316,22 +338,55 @@ export const AgentStoreProvider = ({ children }: { children: ReactNode }) => {
     [dispatch]
   );
 
-  const value = useMemo(
-    () => ({ state, dispatch, hydrateAgents, setLoading, setError }),
-    [dispatch, hydrateAgents, setError, setLoading, state]
+  // Stable: dispatch and helpers never change after mount.
+  // Components that only call actions avoid state-change re-renders.
+  const dispatchValue = useMemo<AgentDispatchContextValue>(
+    () => ({ dispatch, hydrateAgents, setLoading, setError }),
+    [dispatch, hydrateAgents, setLoading, setError]
   );
 
+  // Changes every dispatch — intentional. State consumers expect this.
+  const stateValue = useMemo<AgentStateContextValue>(() => ({ state }), [state]);
+
   return (
-    <AgentStoreContext.Provider value={value}>{children}</AgentStoreContext.Provider>
+    <AgentDispatchContext.Provider value={dispatchValue}>
+      <AgentStateContext.Provider value={stateValue}>
+        {children}
+      </AgentStateContext.Provider>
+    </AgentDispatchContext.Provider>
   );
 };
 
-export const useAgentStore = () => {
-  const ctx = useContext(AgentStoreContext);
+/** Action-only hook — stable, never re-renders due to state changes. */
+export const useAgentDispatch = (): AgentDispatchContextValue => {
+  const ctx = useContext(AgentDispatchContext);
   if (!ctx) {
     throw new Error("AgentStoreProvider is missing.");
   }
   return ctx;
+};
+
+/** State-only hook — re-renders whenever agent state changes. */
+export const useAgentState = (): AgentStateContextValue => {
+  const ctx = useContext(AgentStateContext);
+  if (!ctx) {
+    throw new Error("AgentStoreProvider is missing.");
+  }
+  return ctx;
+};
+
+/**
+ * Combined hook for backward compatibility.
+ * Prefer `useAgentDispatch()` in action-only components to avoid
+ * unnecessary re-renders.
+ */
+export const useAgentStore = (): AgentStoreContextValue => {
+  const dispatchCtx = useContext(AgentDispatchContext);
+  const stateCtx = useContext(AgentStateContext);
+  if (!dispatchCtx || !stateCtx) {
+    throw new Error("AgentStoreProvider is missing.");
+  }
+  return { ...dispatchCtx, ...stateCtx };
 };
 
 export const getSelectedAgent = (state: AgentStoreState): AgentState | null => {
