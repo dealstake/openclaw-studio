@@ -4,6 +4,7 @@ import {
   type AgentEventPayload,
 } from "@/features/agents/state/runtimeEventBridge";
 import type { EventFrame } from "@/lib/gateway/GatewayClient";
+import { makeDebouncer } from "@/lib/time/debounce";
 
 import type {
   GatewayRuntimeEventHandlerDeps,
@@ -12,7 +13,7 @@ import type {
 import { RuntimeTrackingState } from "./runtimeTrackingState";
 import { handleRuntimeChatEvent } from "./chatEventHandler";
 import { handleRuntimeAgentEvent } from "./agentEventHandler";
-import { findAgentBySessionKey } from "./agentLookup";
+import { findAgentByRunId, findAgentBySessionKey } from "./agentLookup";
 
 // Re-export types for backward compatibility
 export type { GatewayRuntimeEventHandlerDeps, GatewayRuntimeEventHandler } from "./gatewayRuntimeEventHandler.types";
@@ -30,27 +31,19 @@ export function createGatewayRuntimeEventHandler(
 ): GatewayRuntimeEventHandler {
   const state = new RuntimeTrackingState(deps);
 
-  let summaryRefreshTimer: number | null = null;
-  let sessionsRefreshTimer: number | null = null;
-  let cronRefreshTimer: number | null = null;
+  // Debounced refreshers — each collapses rapid bursts into a single action
+  const summaryDebouncer = makeDebouncer(deps.setTimeout, deps.clearTimeout);
+  const sessionsDebouncer = makeDebouncer(deps.setTimeout, deps.clearTimeout);
+  const cronDebouncer = makeDebouncer(deps.setTimeout, deps.clearTimeout);
 
   const clearRunTracking = (runId?: string | null) => {
     state.clearRunTracking(runId);
   };
 
   const dispose = () => {
-    if (summaryRefreshTimer !== null) {
-      deps.clearTimeout(summaryRefreshTimer);
-      summaryRefreshTimer = null;
-    }
-    if (sessionsRefreshTimer !== null) {
-      deps.clearTimeout(sessionsRefreshTimer);
-      sessionsRefreshTimer = null;
-    }
-    if (cronRefreshTimer !== null) {
-      deps.clearTimeout(cronRefreshTimer);
-      cronRefreshTimer = null;
-    }
+    summaryDebouncer.cancel();
+    sessionsDebouncer.cancel();
+    cronDebouncer.cancel();
     state.dispose();
   };
 
@@ -63,13 +56,9 @@ export function createGatewayRuntimeEventHandler(
         deps.bumpHeartbeatTick();
         deps.refreshHeartbeatLatestUpdate();
       }
-      if (summaryRefreshTimer !== null) {
-        deps.clearTimeout(summaryRefreshTimer);
-      }
-      summaryRefreshTimer = deps.setTimeout(() => {
-        summaryRefreshTimer = null;
+      summaryDebouncer.schedule(750, () => {
         void deps.loadSummarySnapshot();
-      }, 750);
+      });
       return;
     }
 
@@ -131,11 +120,9 @@ export function createGatewayRuntimeEventHandler(
         subtitle: "",
       });
       // Removed onActivityMessage — low-value noise that floods the LIVE tab
-      if (sessionsRefreshTimer !== null) deps.clearTimeout(sessionsRefreshTimer);
-      sessionsRefreshTimer = deps.setTimeout(() => {
-        sessionsRefreshTimer = null;
+      sessionsDebouncer.schedule(750, () => {
         deps.onSessionsUpdate?.();
-      }, 750);
+      });
       return;
     }
 
@@ -146,11 +133,9 @@ export function createGatewayRuntimeEventHandler(
         subtitle: "",
       });
       // Removed onActivityMessage — low-value noise that floods the LIVE tab
-      if (cronRefreshTimer !== null) deps.clearTimeout(cronRefreshTimer);
-      cronRefreshTimer = deps.setTimeout(() => {
-        cronRefreshTimer = null;
+      cronDebouncer.schedule(750, () => {
         deps.onCronUpdate?.();
-      }, 750);
+      });
       return;
     }
 
@@ -162,7 +147,7 @@ export function createGatewayRuntimeEventHandler(
         : typeof payload?.message === "string" ? payload.message
         : "Agent run failed";
 
-      // Always clear run tracking if runId is present, regardless of agent match
+      // Always clear run tracking if runId is present
       if (runId) {
         state.clearRunTracking(runId);
       }
@@ -173,33 +158,36 @@ export function createGatewayRuntimeEventHandler(
         subtitle: errorMsg,
       });
 
-      // If we can identify the agent, surface the error in their chat
-      if (sessionKey) {
-        const agentsSnapshot = deps.getAgents();
-        const agentId = findAgentBySessionKey(agentsSnapshot, sessionKey);
-        if (agentId) {
-          deps.clearPendingLivePatch(agentId);
-          deps.dispatch({
-            type: "appendPart",
-            agentId,
-            part: {
-              type: "status",
-              state: "error",
-              errorMessage: `❌ ${errorMsg}`,
-            },
-          });
-          deps.dispatch({
-            type: "updateAgent",
-            agentId,
-            patch: {
-              status: "error",
-              runId: null,
-              runStartedAt: null,
-              streamText: null,
-              thinkingTrace: null,
-            },
-          });
-        }
+      // Identify the agent via sessionKey first, then fall back to runId.
+      // This surfaces the error in the correct agent's chat even when
+      // sessionKey is absent from the prompt-error payload.
+      const agentsSnapshot = deps.getAgents();
+      const agentId =
+        (sessionKey ? findAgentBySessionKey(agentsSnapshot, sessionKey) : null) ??
+        (runId ? findAgentByRunId(agentsSnapshot, runId) : null);
+
+      if (agentId) {
+        deps.clearPendingLivePatch(agentId);
+        deps.dispatch({
+          type: "appendPart",
+          agentId,
+          part: {
+            type: "status",
+            state: "error",
+            errorMessage: `❌ ${errorMsg}`,
+          },
+        });
+        deps.dispatch({
+          type: "updateAgent",
+          agentId,
+          patch: {
+            status: "error",
+            runId: null,
+            runStartedAt: null,
+            streamText: null,
+            thinkingTrace: null,
+          },
+        });
       }
 
       // Also route to activity feed
