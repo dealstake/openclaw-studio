@@ -169,6 +169,20 @@ export const coldCallerTemplate: PersonaTemplate = {
       credentialHowTo:
         "Automatic — uses the built-in contacts database. Log every call, track objections, and update pipeline stages.",
     },
+    {
+      skillKey: "__builtin__",
+      capability: "Document Generation (Templates, PDF, DOCX)",
+      required: false,
+      credentialHowTo:
+        "Automatic — powered by the built-in Handlebars template engine. No external dependencies required.",
+    },
+    {
+      skillKey: "gog",
+      capability: "Google Drive Sharing",
+      required: false,
+      credentialHowTo:
+        "Authenticate via the built-in Google OAuth flow to enable Drive upload and sharing.",
+    },
   ],
 
   brainFileTemplates: [
@@ -236,6 +250,12 @@ I am a consultative sales professional at {{company_name}}, selling {{product_na
 - **Update contact stage** after meaningful outcomes: lead → contacted → qualified → meeting → closed. Use \`POST /workspace/contact\` to patch the stage field.
 - Use \`POST /workspace/interaction\` to log every call with agentId, contactId, type, channel, outcome, and summary.
 - Write down everything the prospect mentions — challenges, timelines, budget signals, decision-maker names. Future-you will need it.
+
+## Document Generation
+- When asked to produce documents (call summaries, prospect briefs, outreach emails), use the document generation service.
+- Available templates: call-summary.md.hbs, prospect-brief.md.hbs, outreach-email.md.hbs.
+- Generate via \`POST /api/artifacts/generate\` with \`{ personaTemplateKey: "cold-caller", templateFilename, data, format, title }\`.
+- After generating, the document is auto-uploaded to Google Drive. Always offer to share it via \`POST /api/artifacts/share\` with \`{ fileId }\`.
 `,
     },
     {

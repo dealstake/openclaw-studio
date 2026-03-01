@@ -35,7 +35,17 @@
 import { renderDocTemplate } from "./documentTemplates";
 import { toPrintHtml } from "@/lib/document/toPrintHtml";
 import { toWordHtml } from "@/lib/document/toWordHtml";
-import { uploadFile, type DriveFile } from "@/lib/google/drive";
+import {
+  uploadFile,
+  GENERATED_APP_PROPERTY_KEY,
+  GENERATED_APP_PROPERTY_VALUE,
+  type DriveFile,
+} from "@/lib/google/drive";
+
+/** AppProperties applied to all document-service-generated files */
+const GENERATED_APP_PROPERTIES: Record<string, string> = {
+  [GENERATED_APP_PROPERTY_KEY]: GENERATED_APP_PROPERTY_VALUE,
+};
 
 // ---------------------------------------------------------------------------
 // Types
@@ -238,8 +248,8 @@ export async function generateDocument(
   const buffer = Buffer.from(content, "utf-8");
   const filename = sanitizeFilename(docTitle, extension);
 
-  // ── 3. Upload to Google Drive ──────────────────────────────────────────
-  const driveFile = await uploadFile(filename, buffer, mimeType, driveFolderId);
+  // ── 3. Upload to Google Drive (tag as generated for Artifacts panel separation) ─
+  const driveFile = await uploadFile(filename, buffer, mimeType, driveFolderId, GENERATED_APP_PROPERTIES);
 
   return { buffer, mimeType, filename, driveFile };
 }
@@ -271,7 +281,7 @@ export async function uploadToDrive(
 
   const buffer = typeof content === "string" ? Buffer.from(content, "utf-8") : content;
 
-  const driveFile = await uploadFile(filename, buffer, mimeType, folderId);
+  const driveFile = await uploadFile(filename, buffer, mimeType, folderId, GENERATED_APP_PROPERTIES);
 
   return { driveFile };
 }

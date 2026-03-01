@@ -35,7 +35,22 @@
 import Handlebars from "handlebars";
 
 import type { DocTemplate } from "./templateTypes";
-import { getTemplate } from "./templateRegistry";
+import { getTemplate, listTemplates } from "./templateRegistry";
+
+// ---------------------------------------------------------------------------
+// Extended Types (exported for API routes + frontend)
+// ---------------------------------------------------------------------------
+
+/**
+ * A DocTemplate enriched with its parent persona template info.
+ * Used by the Artifacts panel "New from Template" picker.
+ */
+export interface DocTemplateEntry extends DocTemplate {
+  /** The persona template key this template belongs to (e.g. "executive-assistant") */
+  personaTemplateKey: string;
+  /** Human-readable persona template name (e.g. "Executive Assistant") */
+  personaTemplateName: string;
+}
 
 // ---------------------------------------------------------------------------
 // Built-in Helpers
@@ -230,4 +245,44 @@ export function renderDocTemplate(
   const template = getDocTemplate(personaTemplateKey, filename);
   if (!template) return null;
   return renderTemplate(template.content, data);
+}
+
+/**
+ * List ALL document templates across all registered persona Starter Kits.
+ *
+ * Returns a flat array of `DocTemplateEntry` objects — each entry includes the
+ * parent persona's `personaTemplateKey` and `personaTemplateName` so the caller
+ * can identify which persona a template belongs to.
+ *
+ * Used by `GET /api/artifacts/templates` to power the "New from Template" picker
+ * in the Artifacts panel.
+ *
+ * @returns Flat array of enriched DocTemplateEntry objects, in registry order.
+ *
+ * @example
+ *   const all = listAllDocTemplates();
+ *   // → [
+ *   //     { personaTemplateKey: "cold-caller", personaTemplateName: "Cold Caller", filename: "call-summary.md.hbs", ... },
+ *   //     { personaTemplateKey: "executive-assistant", personaTemplateName: "Executive Assistant", filename: "meeting-brief.md.hbs", ... },
+ *   //     ...
+ *   //   ]
+ */
+export function listAllDocTemplates(): DocTemplateEntry[] {
+  const allPersonaTemplates = listTemplates();
+  const entries: DocTemplateEntry[] = [];
+
+  for (const personaTemplate of allPersonaTemplates) {
+    if (!personaTemplate.documentTemplates || personaTemplate.documentTemplates.length === 0) {
+      continue;
+    }
+    for (const docTemplate of personaTemplate.documentTemplates) {
+      entries.push({
+        ...docTemplate,
+        personaTemplateKey: personaTemplate.key,
+        personaTemplateName: personaTemplate.name,
+      });
+    }
+  }
+
+  return entries;
 }

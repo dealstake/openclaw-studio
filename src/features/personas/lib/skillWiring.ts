@@ -281,6 +281,42 @@ export const CAPABILITY_SKILL_MAP: Record<string, SkillRequirement> = {
     credentialHowTo: "No credential required — configure feeds in blogwatcher",
     clawhubPackage: "blogwatcher",
   },
+
+  // -------------------------------------------------------------------------
+  // Document Generation
+  // -------------------------------------------------------------------------
+
+  /**
+   * Built-in capability — document generation is powered by the Handlebars
+   * template engine (bundled with studio) + server-side HTML rendering.
+   * No external skill install or credential required.
+   *
+   * Personas with this capability can:
+   *   - Render Handlebars document templates with variable substitution
+   *   - Export to PDF-optimized HTML or Word-compatible HTML (.doc)
+   *   - Produce raw Markdown documents
+   * Always resolves to "ready" as long as studio is running.
+   */
+  "document-generation": {
+    skillKey: "__builtin__",
+    capability: "Document Generation (Templates, PDF, DOCX)",
+    required: false,
+    credentialHowTo:
+      "Automatic — powered by the built-in Handlebars template engine. No external dependencies required.",
+  },
+
+  /**
+   * Drive sharing requires Google OAuth via the gog skill.
+   * Generated documents are uploaded to Google Drive and a shareable link is returned.
+   * Optional — personas can generate documents locally without Drive sharing.
+   */
+  "drive-sharing": {
+    skillKey: "gog",
+    capability: "Google Drive Sharing",
+    required: false,
+    credentialHowTo: "Authenticate via the built-in Google OAuth flow",
+    clawhubPackage: "gog",
+  },
 } as const;
 
 // ---------------------------------------------------------------------------

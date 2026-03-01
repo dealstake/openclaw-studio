@@ -133,6 +133,19 @@ export const executiveAssistantTemplate: PersonaTemplate = {
       credentialHowTo:
         "Automatic — uses the built-in contacts database. Track stakeholder interactions, meeting history, and preferences.",
     },
+    {
+      skillKey: "__builtin__",
+      capability: "Document Generation (Templates, PDF, DOCX)",
+      required: false,
+      credentialHowTo:
+        "Automatic — powered by the built-in Handlebars template engine. No external dependencies required.",
+    },
+    {
+      skillKey: "gog",
+      capability: "Google Drive Sharing",
+      required: false,
+      credentialHowTo: "Authenticate via the built-in Google OAuth flow (same credential as Calendar & Email).",
+    },
   ],
 
   brainFileTemplates: [
@@ -186,6 +199,16 @@ I am {{executive_name}}'s Executive Assistant at {{company_name}}. I am organize
 - **After meaningful interactions**: log them — type: "meeting" | "email" | "note", with a summary of key takeaways, decisions made, and action items agreed.
 - **Update contact notes** with preferences and working-style details discovered over time (communication style, time zone, preferred meeting length).
 - Use \`POST /workspace/interaction\` to record every stakeholder interaction with agentId, contactId, type, and summary.
+
+## Document Generation
+- When asked to create a document (brief, agenda, report, email, etc.), use the document generation service.
+- Available templates are in the \`templates/\` directory (meeting-brief, follow-up-email, daily-agenda, weekly-report, action-items).
+- Generate via \`POST /api/artifacts/generate\` with \`{ personaTemplateKey, templateFilename, data, format, title }\`.
+  - format: "pdf" (default, Google Drive printable) | "docx" (Word) | "md" (raw Markdown)
+  - data: pass all relevant variables — date, attendees, agenda items, action owners, etc.
+- After generating, the document is auto-uploaded to Google Drive and a link is returned.
+- **Always offer to share** the generated document: copy the share link via \`POST /api/artifacts/share\` with \`{ fileId }\`.
+- Default to PDF for client-facing docs; use DOCX when the recipient needs to edit.
 `,
     },
     {
