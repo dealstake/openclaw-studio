@@ -35,6 +35,7 @@ const MANAGEMENT_ITEMS: { value: ManagementTab; label: string }[] = [
   { value: "channels", label: "Channels" },
   { value: "credentials", label: "Credentials" },
   { value: "models", label: "Models" },
+  { value: "gateway", label: "Gateway" },
   { value: "settings", label: "Settings" },
 ];
 

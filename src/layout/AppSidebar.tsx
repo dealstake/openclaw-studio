@@ -7,6 +7,7 @@ import {
   Radio,
   KeyRound,
   Cpu,
+  Settings2,
   Plus,
   ChevronLeft,
   Loader2,
@@ -26,13 +27,14 @@ import { SearchResultCard } from "@/features/sessions/components/SearchResultCar
 import { exportConversationAsMarkdown } from "@/features/sessions/lib/exportConversation";
 
 /** Management nav items that open in expanded modal */
-export type ManagementTab = "usage" | "channels" | "credentials" | "models" | "settings";
+export type ManagementTab = "usage" | "channels" | "credentials" | "models" | "gateway" | "settings";
 
 const NAV_ITEMS: Array<{ value: ManagementTab; label: string; icon: typeof MessageSquare }> = [
   { value: "usage", label: "Usage", icon: BarChart3 },
   { value: "channels", label: "Channels", icon: Radio },
   { value: "credentials", label: "Credentials", icon: KeyRound },
   { value: "models", label: "Models", icon: Cpu },
+  { value: "gateway", label: "Gateway", icon: Settings2 },
 ];
 
 /* ─── Shared nav icon button ─── */
