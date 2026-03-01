@@ -1,11 +1,12 @@
 "use client";
 
 import { memo } from "react";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Star } from "lucide-react";
 
 import { formatRelativeTime } from "@/lib/text/time";
 
 import { getFileIcon } from "../lib/file-icons";
+import type { PinnedEntry } from "../hooks/usePinnedFiles";
 import type { WorkspaceEntry } from "../types";
 
 // ── Types ───────────────────────────────────────────────────────────────────
@@ -36,6 +37,14 @@ export interface FileTreeNodeProps {
   onToggleExpand: (path: string) => void;
   /** Called when a file node is clicked to open it */
   onClick: (entry: WorkspaceEntry) => void;
+  /**
+   * Returns true if the given path is pinned.
+   * Passed as a function so recursive children can look up their own pin state.
+   * When omitted, the pin action is hidden entirely.
+   */
+  isPinned?: (path: string) => boolean;
+  /** Called when the user clicks the pin/unpin star button */
+  onTogglePin?: (entry: PinnedEntry) => void;
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -48,10 +57,14 @@ export const FileTreeNode = memo(function FileTreeNode({
   childrenCache,
   onToggleExpand,
   onClick,
+  isPinned,
+  onTogglePin,
 }: FileTreeNodeProps) {
   const isDir = node.type === "directory";
   const isExpanded = isDir && expandedDirs.has(node.path);
   const isLoading = isDir && loadingDirs.has(node.path);
+  // Compute pin state for *this* node — children will compute their own
+  const nodePinned = isPinned?.(node.path) ?? false;
 
   // Indent 16px per level, with 8px base left padding
   const paddingLeft = level * 16 + 8;
@@ -68,6 +81,19 @@ export const FileTreeNode = memo(function FileTreeNode({
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       handleClick();
+    }
+  };
+
+  const handlePinClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onTogglePin?.({ name: node.name, path: node.path, type: node.type });
+  };
+
+  const handlePinKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      e.stopPropagation();
+      onTogglePin?.({ name: node.name, path: node.path, type: node.type });
     }
   };
 
@@ -113,9 +139,33 @@ export const FileTreeNode = memo(function FileTreeNode({
           {node.name}
         </span>
 
-        {/* Relative timestamp */}
-        {node.updatedAt ? (
-          <span className="flex-shrink-0 text-[10px] text-muted-foreground">
+        {/* Pin/unpin button — visible on hover, or always visible when already pinned */}
+        {onTogglePin && (
+          <button
+            type="button"
+            onClick={handlePinClick}
+            onKeyDown={handlePinKeyDown}
+            aria-label={nodePinned ? `Unpin ${node.name}` : `Pin ${node.name}`}
+            aria-pressed={nodePinned}
+            className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded transition-opacity hover:bg-muted focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring ${
+              nodePinned
+                ? "opacity-100" // always visible when pinned
+                : "opacity-0 group-hover:opacity-100" // reveal on row hover
+            }`}
+          >
+            <Star
+              className={`h-3 w-3 transition-colors ${
+                nodePinned
+                  ? "fill-current text-amber-400"
+                  : "text-muted-foreground hover:text-amber-400"
+              }`}
+            />
+          </button>
+        )}
+
+        {/* Relative timestamp — fades on hover to avoid crowding actions */}
+        {node.updatedAt && !isLoading ? (
+          <span className="flex-shrink-0 text-[10px] text-muted-foreground transition-opacity group-hover:opacity-0">
             {formatRelativeTime(node.updatedAt)}
           </span>
         ) : null}
@@ -147,6 +197,8 @@ export const FileTreeNode = memo(function FileTreeNode({
               childrenCache={childrenCache}
               onToggleExpand={onToggleExpand}
               onClick={onClick}
+              isPinned={isPinned}
+              onTogglePin={onTogglePin}
             />
           ))}
         </div>
