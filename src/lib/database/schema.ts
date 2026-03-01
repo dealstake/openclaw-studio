@@ -357,6 +357,45 @@ export const agentBaselines = sqliteTable("agent_baselines", {
 
 export type AgentBaselineRow = typeof agentBaselines.$inferSelect;
 export type NewAgentBaselineRow = typeof agentBaselines.$inferInsert;
+// ─── Agent Anomalies (Phase 2 — Anomaly Scoring) ──────────────────────────────────────
+
+/**
+ * Each row is a single metric deviation >3σ from the stored baseline for a
+ * given (agentId, taskId) pair.
+ *
+ * Created by scoreEventAgainstBaseline() in anomalyDetector.ts.
+ * Queried by GET /api/activity/alerts.
+ *
+ * severity:
+ *   "warning"  → |Z| ≥ 3σ
+ *   "critical" → |Z| ≥ 5σ
+ */
+export const agentAnomalies = sqliteTable("agent_anomalies", {
+  /** UUID primary key */
+  id: text("id").primaryKey(),
+  agentId: text("agent_id").notNull(),
+  taskId: text("task_id").notNull(),
+  taskName: text("task_name").notNull().default(""),
+  /** FK to activity_events.id */
+  eventId: text("event_id").notNull(),
+  /** ISO timestamp of the triggering event */
+  eventTimestamp: text("event_timestamp").notNull(),
+  /** "totalTokens" | "costUsd" | "durationMs" | "errorRate" */
+  metric: text("metric").notNull(),
+  observedValue: real("observed_value").notNull(),
+  baselineMean: real("baseline_mean").notNull(),
+  baselineStdDev: real("baseline_std_dev").notNull(),
+  zScore: real("z_score").notNull(),
+  /** "warning" | "critical" */
+  severity: text("severity").notNull().default("warning"),
+  explanation: text("explanation").notNull().default(""),
+  /** 0 = active, 1 = dismissed */
+  dismissed: integer("dismissed").notNull().default(0),
+  detectedAt: text("detected_at").notNull(),
+});
+
+export type AgentAnomalyRow = typeof agentAnomalies.$inferSelect;
+export type NewAgentAnomalyRow = typeof agentAnomalies.$inferInsert;
 
 // ─── Type exports ────────────────────────────────────────────────────────────
 
