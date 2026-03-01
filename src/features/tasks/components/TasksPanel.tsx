@@ -286,6 +286,7 @@ export const TasksPanel = memo(function TasksPanel({
             options={filterOptionsWithCounts}
             value={filter}
             onChange={setFilter}
+            controlsId="tasks-list"
           />
 
         </PanelToolbar>
@@ -315,6 +316,7 @@ export const TasksPanel = memo(function TasksPanel({
         {filtered.length > 0 ? (
           <div
             ref={listRef}
+            id="tasks-list"
             className="flex flex-col gap-2 outline-none animate-in fade-in duration-300"
             tabIndex={0}
             role="listbox"

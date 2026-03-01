@@ -20,6 +20,8 @@ export interface FilterGroupProps<V extends string = string> {
   allowEmpty?: boolean;
   /** Extra className on wrapper */
   className?: string;
+  /** ID of the list/region this filter controls (for aria-controls) */
+  controlsId?: string;
 }
 
 /**
@@ -34,6 +36,7 @@ export const FilterGroup = React.memo(function FilterGroup<V extends string = st
   onChange,
   allowEmpty = false,
   className = "",
+  controlsId,
 }: FilterGroupProps<V>) {
   const handleClick = (optValue: V) => {
     const isActive = value.includes(optValue);
@@ -50,6 +53,7 @@ export const FilterGroup = React.memo(function FilterGroup<V extends string = st
     <div
       role="group"
       aria-label="Filters"
+      aria-controls={controlsId}
       className={`flex flex-wrap items-center gap-1 ${className}`}
     >
       {options.map((opt) => {

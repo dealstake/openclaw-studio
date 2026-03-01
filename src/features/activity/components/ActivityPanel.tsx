@@ -68,6 +68,7 @@ export const ActivityPanel = memo(function ActivityPanel() {
           options={tabOptions}
           value={[activeTab]}
           onChange={handleTabChange}
+          controlsId={`activity-tabpanel-${activeTab}`}
         />
       </div>
 

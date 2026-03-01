@@ -321,7 +321,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
         />
 
         {/* ═══ FLOATING ROW: [━━ Glass Input Pill ━━] [Avatar↔Send ○] ═══ */}
-        <div className="flex items-end gap-2 sm:gap-2.5">
+        <div className="flex items-end gap-3 sm:gap-2.5">
 
           {/* ── Floating Glass Input Pill ── */}
           <div className="min-w-0 flex-1 rounded-[20px] border-0 bg-background/50 backdrop-blur-xl sm:border sm:border-border/50 sm:bg-background/70 sm:shadow-xl sm:ring-1 sm:ring-white/[0.08] sm:focus-within:border-border/80 sm:focus-within:shadow-2xl sm:dark:bg-background/40 sm:dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)] transition-all">

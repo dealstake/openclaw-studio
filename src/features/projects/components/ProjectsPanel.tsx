@@ -169,6 +169,7 @@ export const ProjectsPanel = memo(function ProjectsPanel({
             options={filterOptions}
             value={statusFilter}
             onChange={handleFilterChange}
+            controlsId="projects-list"
           />
         </PanelToolbar>
       )}
@@ -203,7 +204,7 @@ export const ProjectsPanel = memo(function ProjectsPanel({
       )}
 
       {/* All projects — flat list, sorted by status */}
-      <div className="flex flex-col gap-3 animate-in fade-in duration-300">
+      <div id="projects-list" className="flex flex-col gap-3 animate-in fade-in duration-300">
         {filteredProjects.map((project, i) => (
           <div
             key={project.doc}

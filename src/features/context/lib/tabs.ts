@@ -2,17 +2,17 @@ import { FolderKanban, ListChecks, Brain, FolderOpen, Activity, Puzzle, PieChart
 
 /** Canonical tab configuration — single source of truth for all context panel components. */
 export const CONTEXT_TAB_CONFIG = [
-  { value: "projects", label: "Projects", shortLabel: "P", Icon: FolderKanban },
-  { value: "tasks", label: "Tasks", shortLabel: "T", Icon: ListChecks },
-  { value: "brain", label: "Brain", shortLabel: "B", Icon: Brain },
-  { value: "workspace", label: "Files", shortLabel: "F", Icon: FolderOpen },
-  { value: "skills", label: "Skills", shortLabel: "S", Icon: Puzzle },
-  { value: "activity", label: "Activity", shortLabel: "A", Icon: Activity },
+  { value: "projects", label: "Projects", shortLabel: "Proj", Icon: FolderKanban },
+  { value: "tasks", label: "Tasks", shortLabel: "Tasks", Icon: ListChecks },
+  { value: "brain", label: "Brain", shortLabel: "Brain", Icon: Brain },
+  { value: "workspace", label: "Files", shortLabel: "Files", Icon: FolderOpen },
+  { value: "skills", label: "Skills", shortLabel: "Skills", Icon: Puzzle },
+  { value: "activity", label: "Activity", shortLabel: "Act", Icon: Activity },
   { value: "budget", label: "Budget", shortLabel: "\u20ac", Icon: PieChart },
-  { value: "router", label: "Routing", shortLabel: "R", Icon: Route },
-  { value: "playground", label: "Playground", shortLabel: "G", Icon: FlaskConical },
-  { value: "orchestrator", label: "Swarm", shortLabel: "O", Icon: Network },
-  { value: "memory-graph", label: "Memory", shortLabel: "M", Icon: Share2 },
+  { value: "router", label: "Routing", shortLabel: "Route", Icon: Route },
+  { value: "playground", label: "Playground", shortLabel: "Play", Icon: FlaskConical },
+  { value: "orchestrator", label: "Swarm", shortLabel: "Swarm", Icon: Network },
+  { value: "memory-graph", label: "Memory", shortLabel: "Mem", Icon: Share2 },
 ] as const satisfies ReadonlyArray<{
   value: string;
   label: string;
