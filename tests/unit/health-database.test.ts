@@ -79,7 +79,7 @@ describe("health-database", () => {
     it("all 14 migrations applied on fresh DB", () => {
       const db = createTestDb();
       const count = getMigrationCount(db);
-      expect(count).toBe(14);
+      expect(count).toBe(16);
     });
   });
 
