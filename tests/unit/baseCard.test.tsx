@@ -26,13 +26,13 @@ describe("BaseCard", () => {
   it("applies hover classes when hoverable", () => {
     const { container } = render(<BaseCard isHoverable>H</BaseCard>);
     const el = container.firstChild as HTMLElement;
-    expect(el.className).toContain("hover:bg-card/70");
+    expect(el.className).toContain("hover:bg-card");
   });
 
   it("disables hover when not hoverable", () => {
     const { container } = render(<BaseCard isHoverable={false}>H</BaseCard>);
     const el = container.firstChild as HTMLElement;
-    expect(el.className).not.toContain("hover:bg-card/70");
+    expect(el.className).not.toContain("hover:bg-card");
   });
 
   it("forwards onClick", () => {

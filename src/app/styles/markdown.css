@@ -135,6 +135,7 @@
   border: 1px solid var(--border);
   padding: 0.3rem 0.5rem;
   text-align: left;
+  white-space: nowrap;
 }
 
 .agent-markdown a {
