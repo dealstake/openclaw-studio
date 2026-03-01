@@ -75,6 +75,8 @@ import { useStudioDataSync } from "@/features/studio/useStudioDataSync";
 import { useWizardInChat } from "@/features/wizards/hooks/useWizardInChat";
 import { buildTaskWizardPrompt, buildAgentWizardPrompt, getDefaultWizardPrompt } from "@/features/wizards/lib/wizardPrompts";
 import type { WizardType } from "@/features/wizards/lib/wizardTypes";
+import type { PersonaTemplate } from "@/features/personas/lib/templateTypes";
+import { buildPersonaBuilderPrompt } from "@/features/personas/lib/personaBuilderPrompt";
 import { executeWizardCreation } from "@/features/wizards/lib/wizardCreation";
 import { toast } from "sonner";
 
@@ -315,6 +317,11 @@ export const AgentStudioPage = () => {
           agents.map((a) => ({ id: a.agentId, name: a.name ?? a.agentId })),
         );
         wizard.startWizard("agent", prompt);
+      } else if (type === "persona") {
+        const prompt = buildPersonaBuilderPrompt({
+          existingAgents: agents.map((a) => ({ id: a.agentId, name: a.name ?? a.agentId })),
+        });
+        wizard.startWizard("persona", prompt);
       } else {
         // project, skill, credential — use default prompts
         wizard.startWizard(type, getDefaultWizardPrompt(type));
@@ -329,6 +336,21 @@ export const AgentStudioPage = () => {
   // eslint-disable-next-line react-hooks/refs
   handleStartWizardRef.current = handleStartWizard;
 
+  /** Start the persona wizard with a specific template pre-loaded */
+  const handleSelectTemplate = useCallback(
+    (template: PersonaTemplate) => {
+      const prompt = buildPersonaBuilderPrompt({
+        template,
+        existingAgents: agents.map((a) => ({ id: a.agentId, name: a.name ?? a.agentId })),
+      });
+      wizard.startWizard("persona", prompt);
+      if (isMobileLayout) {
+        setMobilePane("chat");
+      }
+    },
+    [agents, wizard, isMobileLayout, setMobilePane],
+  );
+
   const handleWizardConfirm = useCallback(async () => {
     const extracted = wizard.extractedConfig;
     if (!extracted) return;
@@ -340,6 +362,44 @@ export const AgentStudioPage = () => {
         void loadTasks();
       } catch {
         // Error is shown by the task creation flow
+      }
+      return;
+    }
+
+    // Persona creation — uses artifact extraction for brain + knowledge files
+    if (extracted.type === "persona") {
+      try {
+        const { extractBrainFiles, extractKnowledgeFiles, extractJsonBlock } = await import("@/features/wizards/lib/artifactExtractor");
+        const personaConfig = extractJsonBlock<{ personaId: string; displayName: string; purpose: string }>(extracted.sourceText, "persona-config");
+        const brainFiles = extractBrainFiles(extracted.sourceText);
+        const knowledgeFiles = extractKnowledgeFiles(extracted.sourceText);
+
+        if (!personaConfig?.personaId || !personaConfig?.displayName) {
+          toast.error("Persona configuration incomplete — missing personaId or displayName");
+          return;
+        }
+
+        const res = await fetch("/api/agents/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            agentId: personaConfig.personaId,
+            name: personaConfig.displayName,
+            purpose: personaConfig.purpose ?? "AI persona",
+            brainFiles,
+            knowledgeFiles,
+          }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ error: "Unknown error" }));
+          toast.error(`Persona creation failed: ${(err as { error?: string }).error ?? res.statusText}`);
+          return;
+        }
+        void wizard.endWizard();
+        toast.success(`Persona "${personaConfig.displayName}" created successfully`);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Unknown error";
+        toast.error(`Persona creation failed: ${msg}`);
       }
       return;
     }
@@ -1040,6 +1100,7 @@ export const AgentStudioPage = () => {
               onBrainPreviewModeChange={setBrainPreviewMode}
               onTranscriptClick={handleExpandedTranscriptClick}
               onCreateSkill={() => handleStartWizard("skill")}
+              onSelectTemplate={handleSelectTemplate}
             />
             {/* Trace Viewer overlay */}
             {viewingTrace && (
@@ -1101,6 +1162,7 @@ export const AgentStudioPage = () => {
               }}
               focusedAgent={focusedAgent}
               onCreateSkill={() => handleStartWizard("skill")}
+              onSelectTemplate={handleSelectTemplate}
             />
           </div>
         ) : (

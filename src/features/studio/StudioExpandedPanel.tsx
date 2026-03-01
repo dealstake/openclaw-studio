@@ -15,6 +15,7 @@ import {
 import { UnifiedFilesPanel } from "@/features/workspace/components/UnifiedFilesPanel";
 import { ActivityPanel } from "@/features/activity/components/ActivityPanel";
 import { SkillsPanel } from "@/features/skills/components/SkillsPanel";
+import type { PersonaTemplate } from "@/features/personas/lib/templateTypes";
 import type { ManagementTab } from "@/layout/AppSidebar";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import type { StudioTask, UpdateTaskPayload, TaskSchedule } from "@/features/tasks/types";
@@ -54,6 +55,7 @@ interface StudioExpandedPanelProps {
   onTranscriptClick: (sessionId: string, agentId: string | null) => void;
   // Wizard entry points
   onCreateSkill?: () => void;
+  onSelectTemplate?: (template: PersonaTemplate) => void;
 }
 
 export const StudioExpandedPanel = memo(function StudioExpandedPanel({
@@ -85,6 +87,7 @@ export const StudioExpandedPanel = memo(function StudioExpandedPanel({
   onBrainPreviewModeChange,
   onTranscriptClick,
   onCreateSkill,
+  onSelectTemplate,
 }: StudioExpandedPanelProps) {
   if (!expandedTab) return null;
 
@@ -148,7 +151,7 @@ export const StudioExpandedPanel = memo(function StudioExpandedPanel({
           )}
           {expandedTab === "skills" && (
             <PanelErrorBoundary name="Skills">
-              <SkillsPanel client={client} status={status} onCreateSkill={onCreateSkill} focusedAgentId={focusedAgentId} />
+              <SkillsPanel client={client} status={status} onCreateSkill={onCreateSkill} focusedAgentId={focusedAgentId} onSelectTemplate={onSelectTemplate} />
             </PanelErrorBoundary>
           )}
           {expandedTab === "activity" && (

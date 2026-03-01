@@ -14,6 +14,7 @@ import { SkillsList } from "./SkillsList";
 import { SkillDetailSheet } from "./SkillDetailSheet";
 import { SkillInstallSheet } from "./SkillInstallSheet";
 import { PersonasTab } from "@/features/personas/components/PersonasTab";
+import type { PersonaTemplate } from "@/features/personas/lib/templateTypes";
 import type { Skill } from "../lib/types";
 
 type SubTab = "personas" | "system";
@@ -27,6 +28,8 @@ export interface SkillsPanelProps {
   focusedAgentId?: string | null;
   /** Callback to launch persona creation wizard */
   onCreatePersona?: () => void;
+  /** Called when user selects a template → starts inline persona wizard */
+  onSelectTemplate?: (template: PersonaTemplate) => void;
 }
 
 export const SkillsPanel = React.memo(function SkillsPanel({
@@ -35,6 +38,7 @@ export const SkillsPanel = React.memo(function SkillsPanel({
   onCreateSkill,
   focusedAgentId,
   onCreatePersona,
+  onSelectTemplate,
 }: SkillsPanelProps) {
   const [subTab, setSubTab] = useState<SubTab>("personas");
 
@@ -184,6 +188,7 @@ export const SkillsPanel = React.memo(function SkillsPanel({
           agentId={focusedAgentId ?? null}
           status={status}
           onCreatePersona={onCreatePersona}
+          onSelectTemplate={onSelectTemplate}
         />
       ) : (
         <>
