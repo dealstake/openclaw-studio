@@ -350,7 +350,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
         <div className="flex items-end gap-2 sm:gap-2.5">
 
           {/* ── Floating Glass Input Pill ── */}
-          <div className="min-w-0 flex-1 rounded-[20px] border border-border/50 bg-background/70 shadow-xl ring-1 ring-white/[0.08] backdrop-blur-xl transition-all focus-within:border-border/80 focus-within:shadow-2xl dark:bg-background/40 dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)]">
+          <div className="min-w-0 flex-1 rounded-[20px] border border-transparent sm:border-border/50 bg-background/70 shadow-none sm:shadow-xl ring-0 sm:ring-1 sm:ring-white/[0.08] backdrop-blur-xl transition-all focus-within:sm:border-border/80 focus-within:sm:shadow-2xl dark:bg-background/40 dark:sm:shadow-[0_4px_20px_rgba(0,0,0,0.3)]">
             <textarea
               ref={handleRef}
               rows={1}
@@ -366,28 +366,28 @@ export const AgentChatComposer = memo(function AgentChatComposer({
           </div>
 
           {/* ── Morphing Action Button: Avatar (idle/empty) ↔ Send (has text) ↔ Stop (running) ── */}
-          <div className="mb-[1px] shrink-0">
+          <div className="shrink-0">
             {running ? (
               /* Running → Stop button */
               <button
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-border/50 bg-destructive text-destructive-foreground shadow-lg ring-1 ring-white/[0.08] transition-all duration-200 hover:brightness-110 disabled:cursor-not-allowed disabled:border-border/30 disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none disabled:ring-0"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border/50 bg-destructive text-destructive-foreground shadow-lg ring-1 ring-white/[0.08] transition-all duration-300 ease-out hover:brightness-110 active:scale-90 disabled:cursor-not-allowed disabled:border-border/30 disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none disabled:ring-0"
                 type="button"
                 aria-label="Stop agent"
                 onClick={onStop}
                 disabled={!canSend || stopBusy}
               >
-                <Square className="h-3 w-3 fill-current" />
+                <Square className="h-3.5 w-3.5 fill-current" />
               </button>
             ) : !isEmpty || hasFiles ? (
               /* Has text or files → Send button */
               <button
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-all duration-200 hover:brightness-110 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-all duration-300 ease-out hover:brightness-110 active:scale-90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
                 type="button"
                 aria-label="Send message"
                 onClick={handleClickSend}
                 disabled={sendDisabled}
               >
-                <ArrowUp className="h-4 w-4" />
+                <ArrowUp className="h-[18px] w-[18px]" />
               </button>
             ) : composerAgents && composerAgents.length > 0 && selectedAgentId && onSelectAgent ? (
               /* Empty → Avatar (opens dropdown) */
@@ -408,12 +408,12 @@ export const AgentChatComposer = memo(function AgentChatComposer({
             ) : (
               /* Fallback: disabled send */
               <button
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-border/30 bg-background/60 text-muted-foreground shadow-none ring-1 ring-white/[0.06] backdrop-blur-xl"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border/30 bg-background/60 text-muted-foreground shadow-none ring-1 ring-white/[0.06] backdrop-blur-xl"
                 type="button"
                 aria-label="Send message"
                 disabled
               >
-                <ArrowUp className="h-4 w-4" />
+                <ArrowUp className="h-[18px] w-[18px]" />
               </button>
             )}
           </div>
