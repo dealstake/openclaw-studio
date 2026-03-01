@@ -342,9 +342,13 @@ export const AgentChatComposer = memo(function AgentChatComposer({
                 onAttach={triggerAttach}
               />
             ) : (
-              <div className="flex h-11 w-11 items-center justify-center rounded-full border border-border/30 bg-background/60 shadow-lg ring-1 ring-white/[0.06] backdrop-blur-xl dark:bg-background/40">
+              <button
+                type="button"
+                aria-label={`Agent: ${agentName}`}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border/30 bg-background/60 shadow-lg ring-1 ring-white/[0.06] backdrop-blur-xl dark:bg-background/40"
+              >
                 <AgentAvatar name={agentName} size={36} />
-              </div>
+              </button>
             )}
           </div>
 
@@ -354,7 +358,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
               ref={handleRef}
               rows={1}
               defaultValue={initialDraft}
-              className="max-h-[200px] min-h-[36px] w-full resize-none bg-transparent px-4 py-2.5 text-base leading-relaxed text-foreground outline-none placeholder:text-muted-foreground/90"
+              className="max-h-[200px] min-h-[36px] w-full resize-none bg-transparent px-4 py-2.5 text-base leading-relaxed text-foreground outline-none placeholder:text-muted-foreground"
               aria-label="Message to agent"
               onChange={handleChange}
               onKeyDown={handleKeyDown}

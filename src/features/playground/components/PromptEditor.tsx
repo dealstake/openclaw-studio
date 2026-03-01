@@ -59,7 +59,7 @@ export const PromptEditor = memo(function PromptEditor({
           rows={4}
           placeholder="You are a helpful assistant…"
           className="w-full resize-y rounded-lg border border-border bg-background px-3 py-2 text-xs
-            text-foreground placeholder:text-muted-foreground/50 transition-colors
+            text-foreground placeholder:text-muted-foreground transition-colors
             focus:outline-none focus:ring-1 focus:ring-primary/50
             disabled:cursor-not-allowed disabled:opacity-50 font-mono leading-relaxed"
           spellCheck={false}
@@ -82,7 +82,7 @@ export const PromptEditor = memo(function PromptEditor({
             rows={3}
             placeholder="Enter your test prompt…"
             className="w-full resize-y rounded-lg border border-border bg-background px-3 py-2 pr-10 text-xs
-              text-foreground placeholder:text-muted-foreground/50 transition-colors
+              text-foreground placeholder:text-muted-foreground transition-colors
               focus:outline-none focus:ring-1 focus:ring-primary/50
               disabled:cursor-not-allowed disabled:opacity-50 leading-relaxed"
             spellCheck={false}
