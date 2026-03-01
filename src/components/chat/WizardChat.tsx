@@ -15,8 +15,8 @@ import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 // ── Types ──────────────────────────────────────────────────────────────
 
 export type WizardStarter = {
-  prompt: string;
-  text: string;
+  message: string;
+  label: string;
 };
 
 export type WizardChatProps = {
@@ -167,12 +167,12 @@ export const WizardChat = React.memo(function WizardChat({
             >
               {starters.map((s) => (
                 <button
-                  key={s.text}
+                  key={s.label}
                   type="button"
-                  onClick={() => handleStarterClick(s.prompt)}
+                  onClick={() => handleStarterClick(s.message)}
                   className="rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
                 >
-                  {s.text}
+                  {s.label}
                 </button>
               ))}
             </div>

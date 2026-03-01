@@ -73,7 +73,7 @@ import { useAppLayout } from "@/hooks/useAppLayout";
 import { useLoadAgents } from "@/features/studio/useLoadAgents";
 import { useStudioDataSync } from "@/features/studio/useStudioDataSync";
 import { useWizardInChat } from "@/features/wizards/hooks/useWizardInChat";
-import { buildTaskWizardPrompt, getDefaultWizardPrompt } from "@/features/wizards/lib/wizardPrompts";
+import { buildTaskWizardPrompt, buildAgentWizardPrompt, getDefaultWizardPrompt } from "@/features/wizards/lib/wizardPrompts";
 import type { WizardType } from "@/features/wizards/lib/wizardTypes";
 import { executeWizardCreation } from "@/features/wizards/lib/wizardCreation";
 import { toast } from "sonner";
@@ -107,9 +107,7 @@ export const AgentStudioPage = () => {
     swipeHandlers,
     swipeDy,
   } = layout;
-  const [showTaskWizard, setShowTaskWizard] = useState(false);
-  const [taskWizardInitialPrompt, setTaskWizardInitialPrompt] = useState<string | undefined>();
-  const [showAgentWizard, setShowAgentWizard] = useState(false);
+  // Legacy wizard modals removed — all wizards now render inline via useWizardInChat
   const [focusFilter, setFocusFilter] = useState<FocusFilter>("all");
   const [focusedPreferencesLoaded, setFocusedPreferencesLoaded] = useState(false);
   const stateRef = useRef(state);
@@ -151,10 +149,7 @@ export const AgentStudioPage = () => {
   const [cronEventTick, setCronEventTick] = useState(0);
 
   // Layout keyboard shortcuts, persistence, and swipe handled by useAppLayout
-  const closeTaskWizard = useCallback(() => {
-    setShowTaskWizard(false);
-    setTaskWizardInitialPrompt(undefined);
-  }, []);
+
 
   // Listen for task wizard launch events from credential post-save flow
   const handleStartWizardRef = useRef<((type: WizardType) => void) | null>(null);
@@ -315,8 +310,13 @@ export const AgentStudioPage = () => {
           agents.map((a) => a.agentId),
         );
         wizard.startWizard("task", prompt);
+      } else if (type === "agent") {
+        const prompt = buildAgentWizardPrompt(
+          agents.map((a) => ({ id: a.agentId, name: a.name ?? a.agentId })),
+        );
+        wizard.startWizard("agent", prompt);
       } else {
-        // project, skill, credential, agent — use default prompts
+        // project, skill, credential — use default prompts
         wizard.startWizard(type, getDefaultWizardPrompt(type));
       }
       // Ensure we're on the chat pane (mobile)
@@ -856,7 +856,7 @@ export const AgentStudioPage = () => {
                 flushPendingDraft(focusedAgent?.agentId ?? null);
                 dispatch({ type: "selectAgent", agentId });
               }}
-              onCreateAgent={() => setShowAgentWizard(true)}
+              onCreateAgent={() => handleStartWizard("agent")}
               contextTab={contextTab}
               contextPanelOpen={contextPanelOpen}
               onContextTabClick={(tab) => {
@@ -1118,22 +1118,8 @@ export const AgentStudioPage = () => {
 	      </div>
       {/* ExecApprovalOverlay is now rendered by ExecApprovalProvider */}
       <StudioModals
-        showAgentWizard={showAgentWizard}
-        onCloseAgentWizard={() => setShowAgentWizard(false)}
-        onAgentCreated={(agentId) => {
-          setShowAgentWizard(false);
-          void loadAgents();
-          dispatch({ type: "selectAgent", agentId });
-        }}
-        client={client}
-        showTaskWizard={showTaskWizard}
-        onCloseTaskWizard={closeTaskWizard}
-        onCreateTask={createTask}
-        onTaskAgentCreated={() => void loadAgents()}
-        agents={agents}
-        busyTaskId={busyTaskId}
-        taskWizardInitialPrompt={taskWizardInitialPrompt}
         commandPalette={commandPalette}
+        agents={agents}
         createAgentBlock={createAgentBlock}
         createBlockStatusLine={createBlockStatusLine}
         renameAgentBlock={renameAgentBlock}

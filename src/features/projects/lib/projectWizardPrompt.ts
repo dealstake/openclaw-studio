@@ -1,4 +1,4 @@
-import type { WizardStarter } from "@/components/chat/WizardChat";
+import type { WizardStarter } from "@/features/wizards/lib/wizardTypes";
 
 // ─── Project Config JSON Schema ─────────────────────────────────────────────
 
@@ -176,20 +176,20 @@ export function getTypeGuide(projectType: string): string {
 export function getProjectWizardStarters(): WizardStarter[] {
   return [
     {
-      prompt: "I want to build a new panel for managing...",
-      text: "I want to build a new panel",
+      message: "I want to build a new panel for managing...",
+      label: "I want to build a new panel",
     },
     {
-      prompt: "There's a performance issue with...",
-      text: "Fix a performance issue",
+      message: "There's a performance issue with...",
+      label: "Fix a performance issue",
     },
     {
-      prompt: "I need to refactor and clean up...",
-      text: "Refactor & cleanup",
+      message: "I need to refactor and clean up...",
+      label: "Refactor & cleanup",
     },
     {
-      prompt: "I want to research the best approach for...",
-      text: "Research a solution",
+      message: "I want to research the best approach for...",
+      label: "Research a solution",
     },
   ];
 }

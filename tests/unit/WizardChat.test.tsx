@@ -55,8 +55,8 @@ const mockClient = {
 } as unknown as import("@/lib/gateway/GatewayClient").GatewayClient;
 
 const starters: WizardStarter[] = [
-  { prompt: "Create a daily summary task", text: "Daily summary" },
-  { prompt: "Monitor my inbox", text: "Monitor inbox" },
+  { message: "Create a daily summary task", label: "Daily summary" },
+  { message: "Monitor my inbox", label: "Monitor inbox" },
 ];
 
 function renderChat(overrides?: Partial<React.ComponentProps<typeof WizardChat>>) {

@@ -54,8 +54,8 @@ describe("getProjectWizardStarters", () => {
   it("each starter has prompt and text", () => {
     const starters = getProjectWizardStarters();
     for (const s of starters) {
-      expect(s.prompt).toBeTruthy();
-      expect(s.text).toBeTruthy();
+      expect(s.message).toBeTruthy();
+      expect(s.label).toBeTruthy();
     }
   });
 });
