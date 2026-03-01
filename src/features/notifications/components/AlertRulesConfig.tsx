@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { ArrowLeft, RotateCcw } from "lucide-react";
 import { formatRuleThreshold } from "../lib/formatRuleThreshold";
 import { SectionLabel } from "@/components/SectionLabel";
@@ -10,10 +10,40 @@ type AlertRulesConfigProps = {
   onBack: () => void;
 };
 
+function getInitialPermission(): NotificationPermission {
+  if (typeof window === "undefined" || !("Notification" in window)) return "denied";
+  return Notification.permission;
+}
+
 export const AlertRulesConfig = React.memo(function AlertRulesConfig({
   onBack,
 }: AlertRulesConfigProps) {
   const { rules, updateRule, resetDefaults } = useAlertRules();
+  const [permission, setPermission] = useState<NotificationPermission>(getInitialPermission);
+
+  // Keep permission state reactive — catch external changes
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !("permissions" in navigator)) return;
+    let permStatus: PermissionStatus | null = null;
+    navigator.permissions
+      .query({ name: "notifications" as PermissionName })
+      .then((status) => {
+        permStatus = status;
+        const map = (s: PermissionState): NotificationPermission =>
+          s === "granted" ? "granted" : s === "denied" ? "denied" : "default";
+        setPermission(map(status.state));
+        status.onchange = () => setPermission(map(status.state));
+      })
+      .catch(() => {});
+    return () => {
+      if (permStatus) permStatus.onchange = null;
+    };
+  }, []);
+
+  const handleEnableNotifications = useCallback(async () => {
+    const result = await requestNotificationPermission();
+    setPermission(result);
+  }, []);
 
   return (
     <div className="flex flex-col">
@@ -60,13 +90,23 @@ export const AlertRulesConfig = React.memo(function AlertRulesConfig({
       </div>
 
       <div className="border-t border-border/60 p-3">
-        <button
-          type="button"
-          onClick={() => requestNotificationPermission()}
-          className="w-full rounded-lg border border-border bg-card px-3 py-2 text-xs font-medium text-foreground transition hover:bg-muted"
-        >
-          Enable Browser Notifications
-        </button>
+        {permission === "granted" ? (
+          <p className="text-center text-xs text-muted-foreground">
+            ✓ Browser notifications are enabled
+          </p>
+        ) : permission === "denied" ? (
+          <p className="text-center text-xs text-muted-foreground">
+            Notifications are blocked — enable them in your browser settings.
+          </p>
+        ) : (
+          <button
+            type="button"
+            onClick={handleEnableNotifications}
+            className="w-full min-h-[44px] rounded-lg border border-border bg-card px-3 py-2 text-xs font-medium text-foreground transition hover:bg-muted"
+          >
+            Enable Browser Notifications
+          </button>
+        )}
       </div>
     </div>
   );
