@@ -31,16 +31,9 @@ export function inferTranscriptType(entry: TranscriptEntry): TranscriptType {
     if (preview.includes("sub-agent") || preview.includes("subagent")) return "subagent";
     return "unknown";
   }
-  // Delegate key-based inference to the canonical implementation
-  const result = inferSessionType(key);
-  if (result !== "unknown") return result;
-
-  // Fallback for non-standard key formats (e.g., "name:cron:id" without agent prefix)
-  const lower = key.toLowerCase();
-  if (/:cron:/i.test(key) || lower.includes("-cron-")) return "cron";
-  if (/:subagent:/i.test(key) || lower.includes("-subagent")) return "subagent";
-  if (/:main$/i.test(key) || lower.endsWith("-main")) return "main";
-  return "unknown";
+  // Delegate key-based inference to the canonical implementation.
+  // inferSessionType handles standard, gateway, and non-standard key formats.
+  return inferSessionType(key);
 }
 
 export const TRANSCRIPT_TYPE_LABELS: Record<TranscriptType, string> = {

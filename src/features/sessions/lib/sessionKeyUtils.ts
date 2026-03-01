@@ -112,6 +112,12 @@ export function inferSessionType(key: string): "main" | "cron" | "subagent" | "c
     if (lower.startsWith(ch + ":")) return "channel";
   }
 
+  // Non-standard key formats (e.g. "name:cron:id" without full agent prefix,
+  // or gateway-generated keys like "agent-name-main")
+  if (/:cron:/i.test(key) || lower.includes("-cron-")) return "cron";
+  if (/:subagent:/i.test(key) || lower.includes("-subagent")) return "subagent";
+  if (/:main$/i.test(key) || lower.endsWith("-main")) return "main";
+
   return "unknown";
 }
 
