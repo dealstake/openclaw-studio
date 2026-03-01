@@ -51,11 +51,15 @@ export const DangerZoneSection = memo(function DangerZoneSection({
       </div>
       {showDeleteConfirm ? (
         <div className="mt-3 space-y-2">
-          <label className="block text-[11px] text-muted-foreground">
+          <label
+            htmlFor={`danger-zone-confirm-${agentId}`}
+            className="block text-[11px] text-muted-foreground"
+          >
             Type{" "}
             <span className="font-mono font-semibold text-foreground">{agentId}</span>{" "}
             to confirm:
             <input
+              id={`danger-zone-confirm-${agentId}`}
               className="mt-1 block h-8 w-full rounded-md border border-destructive/50 bg-card/75 px-3 text-xs font-mono text-foreground outline-none focus:border-destructive"
               value={deleteConfirmText}
               onChange={(e) => setDeleteConfirmText(e.target.value)}

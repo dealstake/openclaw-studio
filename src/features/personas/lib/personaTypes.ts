@@ -90,10 +90,36 @@ export interface SkillRequirement {
   capability: string;
   /** Whether the persona is usable without this */
   required: boolean;
-  /** Credential env var needed (if any) */
+  /** Credential env var needed (if any) — legacy, prefer credentialTemplateKey */
   credentialKey?: string;
+  /** Key into CREDENTIAL_TEMPLATES — used by preflightService for validation */
+  credentialTemplateKey?: string;
   /** Human-readable instructions to obtain credential */
   credentialHowTo?: string;
+  /**
+   * ClawHub package name for auto-install (e.g. "sag", "gog").
+   * When present the preflight engine can offer to install the skill from ClawHub.
+   */
+  clawhubPackage?: string;
+  /**
+   * MCP servers this capability requires.
+   * name — mcporter server name; package — npm package for auto-install;
+   * requiredTools — tool names that must be present in the server schema.
+   */
+  mcpServers?: Array<{
+    name: string;
+    package?: string;
+    requiredTools?: string[];
+  }>;
+  /**
+   * System binary dependencies, keyed by platform package manager.
+   * The preflight engine uses whichever key matches the host platform.
+   */
+  systemDeps?: {
+    brew?: string;
+    apt?: string;
+    winget?: string;
+  };
 }
 
 // ---------------------------------------------------------------------------

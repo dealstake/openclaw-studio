@@ -3,6 +3,7 @@
 import { memo, useMemo } from "react";
 import { formatTokens, formatCost } from "@/lib/text/format";
 import type { SessionCostEntry } from "@/features/usage/lib/costCalculator";
+import type { CronBreakdown } from "@/features/usage/hooks/useUsageQuery";
 
 /** UUID v4 pattern: 8-4-4-4-12 hex chars */
 const UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
@@ -24,15 +25,34 @@ type CronJobGroup = {
 };
 
 interface CronCostTableProps {
-  entries: SessionCostEntry[];
+  /**
+   * Raw session entries for client-side aggregation.
+   * Used when server-side breakdown is not available.
+   */
+  entries?: SessionCostEntry[];
+  /**
+   * Pre-aggregated server-side cron breakdown.
+   * When provided, skips client-side aggregation of `entries`.
+   */
+  serverGroups?: CronBreakdown[];
 }
 
 export const CronCostTable = memo(function CronCostTable({
   entries,
+  serverGroups,
 }: CronCostTableProps) {
-  const cronEntries = useMemo(() => entries.filter((e) => e.isCron), [entries]);
+  const groups = useMemo<CronJobGroup[]>(() => {
+    if (serverGroups) {
+      return serverGroups.map((g) => ({
+        jobId: g.jobId,
+        runs: g.runs,
+        totalCost: g.cost,
+        totalTokens: g.totalTokens,
+      }));
+    }
 
-  const groups = useMemo(() => {
+    // Fall back to client-side aggregation from entries
+    const cronEntries = (entries ?? []).filter((e) => e.isCron);
     const map = new Map<string, CronJobGroup>();
     for (const entry of cronEntries) {
       const jobId = extractCronJobId(entry.key);
@@ -51,7 +71,7 @@ export const CronCostTable = memo(function CronCostTable({
       }
     }
     return Array.from(map.values()).sort((a, b) => b.totalCost - a.totalCost);
-  }, [cronEntries]);
+  }, [serverGroups, entries]);
 
   if (groups.length === 0) return null;
 

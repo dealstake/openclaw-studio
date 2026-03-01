@@ -46,18 +46,26 @@ function savePinnedKeys(keys: Set<string>): void {
 
 // --- Grouping ---
 
-function groupByDate(sessions: SessionHistoryEntry[], pinnedKeys: Set<string>): SessionHistoryGroup[] {
+function groupByDate(
+  sessions: SessionHistoryEntry[],
+  pinnedKeys: Set<string>,
+  activeSessionKey?: string | null,
+): SessionHistoryGroup[] {
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
   const yesterdayStart = todayStart - 86_400_000;
 
+  const current: SessionHistoryEntry[] = [];
   const pinned: SessionHistoryEntry[] = [];
   const today: SessionHistoryEntry[] = [];
   const yesterday: SessionHistoryEntry[] = [];
   const older: SessionHistoryEntry[] = [];
 
   for (const s of sessions) {
-    if (pinnedKeys.has(s.key)) {
+    // Active/current session always pinned to very top
+    if (activeSessionKey && s.key === activeSessionKey) {
+      current.push(s);
+    } else if (pinnedKeys.has(s.key)) {
       pinned.push(s);
     } else if (s.updatedAt >= todayStart) {
       today.push(s);
@@ -69,6 +77,7 @@ function groupByDate(sessions: SessionHistoryEntry[], pinnedKeys: Set<string>): 
   }
 
   const groups: SessionHistoryGroup[] = [];
+  if (current.length) groups.push({ label: "Current", sessions: current });
   if (pinned.length) groups.push({ label: "Pinned", sessions: pinned });
   if (today.length) groups.push({ label: "Today", sessions: today });
   if (yesterday.length) groups.push({ label: "Yesterday", sessions: yesterday });
@@ -76,7 +85,12 @@ function groupByDate(sessions: SessionHistoryEntry[], pinnedKeys: Set<string>): 
   return groups;
 }
 
-export function useSessionHistory(client: GatewayClient, status: GatewayStatus, agentId: string | null) {
+export function useSessionHistory(
+  client: GatewayClient,
+  status: GatewayStatus,
+  agentId: string | null,
+  activeSessionKey?: string | null,
+) {
   const [sessions, setSessions] = useState<SessionHistoryEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -185,7 +199,10 @@ export function useSessionHistory(client: GatewayClient, status: GatewayStatus, 
     return sessions.filter((s) => s.displayName.toLowerCase().includes(q));
   }, [sessions, search]);
 
-  const groups = useMemo(() => groupByDate(filtered, pinnedKeys), [filtered, pinnedKeys]);
+  const groups = useMemo(
+    () => groupByDate(filtered, pinnedKeys, activeSessionKey),
+    [filtered, pinnedKeys, activeSessionKey],
+  );
 
   return {
     sessions: filtered,

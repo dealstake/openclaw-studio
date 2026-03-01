@@ -1,7 +1,8 @@
 "use client";
 
-import { memo, useCallback, useEffect, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { Download, X } from "lucide-react";
+import FocusTrap from "focus-trap-react";
 
 // ── Inline Image ───────────────────────────────────────────────────────
 
@@ -62,6 +63,8 @@ const ImageLightbox = memo(function ImageLightbox({
   alt?: string;
   onClose: () => void;
 }) {
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -82,44 +85,54 @@ const ImageLightbox = memo(function ImageLightbox({
   }, [src, alt]);
 
   return (
-    <div
-      className="fixed inset-0 z-[var(--z-popover)] flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm animate-in fade-in"
-      onClick={onClose}
-      role="dialog"
-      aria-modal="true"
-      aria-label="Image viewer"
+    <FocusTrap
+      focusTrapOptions={{
+        initialFocus: () => closeButtonRef.current ?? false,
+        allowOutsideClick: true,
+        // Escape is handled by our own keydown listener above
+        escapeDeactivates: false,
+      }}
     >
-      {/* Controls */}
-      <div className="absolute right-4 top-4 flex gap-2 z-[calc(var(--z-popover)+1)]">
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            handleDownload();
-          }}
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
-          aria-label="Download image"
-        >
-          <Download className="h-5 w-5" />
-        </button>
-        <button
-          type="button"
-          onClick={onClose}
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
-          aria-label="Close viewer"
-        >
-          <X className="h-5 w-5" />
-        </button>
-      </div>
+      <div
+        className="fixed inset-0 z-[var(--z-popover)] flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm animate-in fade-in"
+        onClick={onClose}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Image viewer"
+      >
+        {/* Controls */}
+        <div className="absolute right-4 top-4 flex gap-2 z-[calc(var(--z-popover)+1)]">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDownload();
+            }}
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
+            aria-label="Download image"
+          >
+            <Download className="h-5 w-5" />
+          </button>
+          <button
+            ref={closeButtonRef}
+            type="button"
+            onClick={onClose}
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
+            aria-label="Close viewer"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
 
-      {/* Image */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={src}
-        alt={alt ?? "Full size image"}
-        className="max-h-[90vh] max-w-[90vw] rounded-md object-contain shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      />
-    </div>
+        {/* Image */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={src}
+          alt={alt ?? "Full size image"}
+          className="max-h-[90vh] max-w-[90vw] rounded-md object-contain shadow-2xl"
+          onClick={(e) => e.stopPropagation()}
+        />
+      </div>
+    </FocusTrap>
   );
 });

@@ -7,8 +7,19 @@
 
 // ── Engine Types ─────────────────────────────────────────────────────────────
 
-/** Available specialist engine types (extensible) */
-export type EngineType = "gemini" | "openai" | "anthropic" | "mistral";
+/**
+ * Canonical list of specialist engine type identifiers.
+ * Derive EngineType from this — do not hardcode the union.
+ */
+export const ENGINE_TYPES = [
+  "gemini",
+  "openai",
+  "anthropic",
+  "mistral",
+] as const;
+
+/** Available specialist engine types (derived from ENGINE_TYPES) */
+export type EngineType = (typeof ENGINE_TYPES)[number];
 
 /** Registry entry for an available engine type (static template) */
 export interface EngineTemplate {
@@ -31,7 +42,7 @@ export interface SpecialistEngine {
   displayName: string;
   enabled: boolean;
   hasApiKey: boolean;
-  maskedApiKey: string;
+  maskedApiKey: string | null;
   model: string;
   fallbackModel: string | null;
   purpose: string;

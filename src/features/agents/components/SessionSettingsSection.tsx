@@ -44,11 +44,12 @@ export const SessionSettingsSection = memo(function SessionSettingsSection({
         <SectionLabel>Display</SectionLabel>
         <div className="mt-3 grid gap-3 md:grid-cols-2">
           <label
+            htmlFor="session-settings-tool-calls"
             className={`flex items-center justify-between gap-3 rounded-md border border-border/80 bg-card/75 px-3 py-2 ${sectionLabelClass} text-muted-foreground`}
           >
             <span>Show tool calls</span>
             <input
-              aria-label="Show tool calls"
+              id="session-settings-tool-calls"
               type="checkbox"
               className="h-4 w-4 rounded border-input text-foreground"
               checked={toolCallingEnabled}
@@ -56,11 +57,12 @@ export const SessionSettingsSection = memo(function SessionSettingsSection({
             />
           </label>
           <label
+            htmlFor="session-settings-thinking"
             className={`flex items-center justify-between gap-3 rounded-md border border-border/80 bg-card/75 px-3 py-2 ${sectionLabelClass} text-muted-foreground`}
           >
             <span>Show thinking</span>
             <input
-              aria-label="Show thinking"
+              id="session-settings-thinking"
               type="checkbox"
               className="h-4 w-4 rounded border-input text-foreground"
               checked={showThinkingTraces}

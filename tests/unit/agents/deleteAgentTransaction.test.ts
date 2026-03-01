@@ -52,16 +52,23 @@ describe("runDeleteAgentTransaction", () => {
     expect(deps.restoreAgentState).toHaveBeenCalledWith("agent-1", "/tmp/trash");
   });
 
-  it("logs error when restore itself fails", async () => {
+  it("throws AggregateError with both errors when restore also fails", async () => {
+    const gwErr = new Error("gw fail");
+    const restoreErr = new Error("restore fail");
     const deps = makeDeps({
-      deleteGatewayAgent: vi.fn().mockRejectedValue(new Error("gw fail")),
-      restoreAgentState: vi.fn().mockRejectedValue(new Error("restore fail")),
+      deleteGatewayAgent: vi.fn().mockRejectedValue(gwErr),
+      restoreAgentState: vi.fn().mockRejectedValue(restoreErr),
     });
 
-    await expect(runDeleteAgentTransaction(deps, "agent-1")).rejects.toThrow("gw fail");
+    const thrown = await runDeleteAgentTransaction(deps, "agent-1").catch((e: unknown) => e);
+    expect(thrown).toBeInstanceOf(AggregateError);
+    const agg = thrown as AggregateError;
+    expect(agg.errors).toContain(gwErr);
+    expect(agg.errors).toContain(restoreErr);
+    expect(agg.message).toMatch(/corrupted/i);
     expect(deps.logError).toHaveBeenCalledWith(
-      "Failed to restore trashed agent state.",
-      expect.any(Error)
+      expect.stringContaining("corrupted"),
+      restoreErr
     );
   });
 

@@ -4,6 +4,7 @@ import { validateAgentId, handleApiError } from "@/lib/api/helpers";
 import { getDb } from "@/lib/database";
 import * as personasRepo from "@/lib/database/repositories/personasRepo";
 import { validateStatusTransition } from "@/features/personas/lib/personaService";
+import { indexKnowledgeDir } from "@/features/personas/lib/knowledgeService";
 import type { PersonaStatus, PersonaCategory } from "@/features/personas/lib/personaTypes";
 
 export const runtime = "nodejs";
@@ -191,6 +192,18 @@ export async function PATCH(request: Request) {
         }
 
         personasRepo.update(db, personaId, updateFields);
+
+        // Auto-index knowledge files when persona transitions to "active"
+        if (fields.status === "active") {
+          // Fire-and-forget: index knowledge dir asynchronously after response
+          indexKnowledgeDir(validation.agentId, personaId).catch((err) => {
+            console.error(
+              `[personas] Auto-index knowledge for ${personaId} failed:`,
+              err instanceof Error ? err.message : err,
+            );
+          });
+        }
+
         return { ok: true, personaId };
       },
     );

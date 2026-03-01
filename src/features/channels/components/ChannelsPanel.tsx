@@ -13,6 +13,7 @@ import { ErrorBanner } from "@/components/ErrorBanner";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { useChannels } from "../hooks/useChannels";
 import { ChannelCard } from "./ChannelCard";
+import { ChannelSheet } from "./ChannelSheet";
 import type { ChannelEntry } from "../lib/types";
 
 export interface ChannelsPanelProps {
@@ -29,16 +30,37 @@ export const ChannelsPanel = memo(function ChannelsPanel({
     loading,
     error,
     refresh,
+    create,
+    update,
     remove,
     disconnect,
     reconnect,
+    readConfig,
   } = useChannels(client, status);
 
   const [deleteTarget, setDeleteTarget] = useState<ChannelEntry | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [editingChannel, setEditingChannel] = useState<ChannelEntry | null>(null);
 
-  const handleEdit = useCallback((channelId: string) => {
-    // TODO: Phase 3 — open ChannelSheet in edit mode
-    void channelId;
+  const handleEdit = useCallback(
+    (channelId: string) => {
+      const entry = channels.find((c) => c.channelId === channelId);
+      if (entry) {
+        setEditingChannel(entry);
+        setSheetOpen(true);
+      }
+    },
+    [channels],
+  );
+
+  const handleAddNew = useCallback(() => {
+    setEditingChannel(null);
+    setSheetOpen(true);
+  }, []);
+
+  const handleSheetOpenChange = useCallback((open: boolean) => {
+    setSheetOpen(open);
+    if (!open) setEditingChannel(null);
   }, []);
 
   const handleDelete = useCallback(
@@ -69,10 +91,6 @@ export const ChannelsPanel = memo(function ChannelsPanel({
     [reconnect],
   );
 
-  const handleAddNew = useCallback(() => {
-    // TODO: Phase 3 — open ChannelSheet in add mode
-  }, []);
-
   return (
     <TooltipProvider>
       <div className="flex h-full flex-col">
@@ -100,6 +118,12 @@ export const ChannelsPanel = memo(function ChannelsPanel({
               {channels.filter((c) => c.connectionStatus === "connected").length} connected
             </span>
             <span>· {channels.length} total</span>
+            {channels.some((c) => c.connectionStatus === "connecting") && (
+              <span className="ml-auto flex items-center gap-1 text-amber-400/80">
+                <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-amber-400" />
+                Connecting…
+              </span>
+            )}
           </div>
         )}
 
@@ -153,6 +177,16 @@ export const ChannelsPanel = memo(function ChannelsPanel({
           confirmLabel="Delete"
           destructive
           onConfirm={confirmDelete}
+        />
+
+        <ChannelSheet
+          open={sheetOpen}
+          onOpenChange={handleSheetOpenChange}
+          onCreate={create}
+          onUpdate={update}
+          readConfig={readConfig}
+          client={client}
+          editingChannel={editingChannel}
         />
       </div>
     </TooltipProvider>

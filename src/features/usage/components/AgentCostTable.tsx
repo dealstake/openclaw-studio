@@ -4,6 +4,7 @@ import { memo, useMemo, useState } from "react";
 import { ArrowUp, ArrowDown } from "lucide-react";
 import { formatTokens, formatCost } from "@/lib/text/format";
 import type { SessionCostEntry } from "@/features/usage/lib/costCalculator";
+import type { AgentBreakdown } from "@/features/usage/hooks/useUsageQuery";
 
 /**
  * Extract agent ID from session key.
@@ -30,21 +31,43 @@ type AgentGroup = {
 type SortKey = "agentId" | "sessions" | "totalCost" | "totalTokens" | "avgCost";
 
 interface AgentCostTableProps {
-  entries: SessionCostEntry[];
+  /**
+   * Raw session entries for client-side aggregation.
+   * Used when server-side breakdown is not available.
+   */
+  entries?: SessionCostEntry[];
+  /**
+   * Pre-aggregated server-side breakdown.
+   * When provided, skips client-side aggregation of `entries`.
+   */
+  serverGroups?: AgentBreakdown[];
   /** Called when an agent row is clicked. */
   onAgentClick?: (agentId: string) => void;
 }
 
 export const AgentCostTable = memo(function AgentCostTable({
   entries,
+  serverGroups,
   onAgentClick,
 }: AgentCostTableProps) {
   const [sortKey, setSortKey] = useState<SortKey>("totalCost");
   const [sortAsc, setSortAsc] = useState(false);
 
-  const groups = useMemo(() => {
+  // If serverGroups is provided, map it to AgentGroup directly
+  const groups = useMemo<AgentGroup[]>(() => {
+    if (serverGroups) {
+      return serverGroups.map((g) => ({
+        agentId: g.agentId,
+        sessions: g.sessions,
+        totalCost: g.cost,
+        totalTokens: g.inputTokens + g.outputTokens,
+        avgCost: g.sessions > 0 ? g.cost / g.sessions : 0,
+      }));
+    }
+
+    // Fall back to client-side aggregation from entries
     const map = new Map<string, AgentGroup>();
-    for (const entry of entries) {
+    for (const entry of entries ?? []) {
       const agentId = extractAgentId(entry.key);
       const existing = map.get(agentId);
       if (existing) {
@@ -63,7 +86,7 @@ export const AgentCostTable = memo(function AgentCostTable({
       }
     }
     return Array.from(map.values());
-  }, [entries]);
+  }, [serverGroups, entries]);
 
   const sorted = useMemo(() => {
     const dir = sortAsc ? 1 : -1;

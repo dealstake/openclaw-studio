@@ -33,6 +33,13 @@ type AgentBreakdown = {
   outputTokens: number;
 };
 
+type CronBreakdown = {
+  jobId: string;
+  runs: number;
+  cost: number;
+  totalTokens: number;
+};
+
 type UsageQueryResponse = {
   totalCost: number;
   totalSessions: number;
@@ -41,6 +48,7 @@ type UsageQueryResponse = {
   costByModel: Record<string, ModelCostBreakdown>;
   dailyTrends: TrendBucket[];
   agentBreakdown: AgentBreakdown[];
+  cronBreakdown: CronBreakdown[];
   projectedMonthlyCost: number;
 };
 
@@ -53,6 +61,17 @@ function extractAgentId(sessionKey: string): string {
   }
   if (sessionKey.startsWith("cron-")) return "(cron)";
   return "(direct)";
+}
+
+/** UUID v4 pattern used in cron session keys: "cron-<uuid>-<timestamp>" */
+const UUID_RE =
+  /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+
+function extractCronJobId(key: string): string {
+  const match = UUID_RE.exec(key);
+  if (match) return match[0];
+  const parts = key.split("-");
+  return parts.slice(1, -1).join("-") || key;
 }
 
 function buildAgentBreakdown(entries: SessionCostEntry[]): AgentBreakdown[] {
@@ -72,6 +91,28 @@ function buildAgentBreakdown(entries: SessionCostEntry[]): AgentBreakdown[] {
         cost: entry.cost ?? 0,
         inputTokens: entry.inputTokens,
         outputTokens: entry.outputTokens,
+      });
+    }
+  }
+  return Array.from(map.values()).sort((a, b) => b.cost - a.cost);
+}
+
+function buildCronBreakdown(entries: SessionCostEntry[]): CronBreakdown[] {
+  const map = new Map<string, CronBreakdown>();
+  for (const entry of entries) {
+    if (!entry.isCron) continue;
+    const jobId = extractCronJobId(entry.key);
+    const existing = map.get(jobId);
+    if (existing) {
+      existing.runs += 1;
+      existing.cost += entry.cost ?? 0;
+      existing.totalTokens += entry.inputTokens + entry.outputTokens;
+    } else {
+      map.set(jobId, {
+        jobId,
+        runs: 1,
+        cost: entry.cost ?? 0,
+        totalTokens: entry.inputTokens + entry.outputTokens,
       });
     }
   }
@@ -149,6 +190,7 @@ export async function POST(request: NextRequest) {
 
     const dailyTrends = aggregateByDay(agentFiltered);
     const agentBreakdown = buildAgentBreakdown(agentFiltered);
+    const cronBreakdown = buildCronBreakdown(agentFiltered);
 
     // Projected monthly cost
     const projectedMonthlyCost =
@@ -166,6 +208,7 @@ export async function POST(request: NextRequest) {
       costByModel,
       dailyTrends,
       agentBreakdown,
+      cronBreakdown,
       projectedMonthlyCost,
     };
 

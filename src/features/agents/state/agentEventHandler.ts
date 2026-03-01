@@ -17,6 +17,17 @@ import {
 import { findAgentByRunId, findAgentBySessionKey } from "./agentLookup";
 import type { RuntimeTrackingState } from "./runtimeTrackingState";
 
+// ── Helpers ────────────────────────────────────────────────────────────
+
+/**
+ * Safely cast any value to a plain object record, or return null.
+ * Centralises the repeated inline casts throughout this file.
+ */
+const toRecord = (value: unknown): Record<string, unknown> | null =>
+  value != null && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+
 // ── Activity feed helpers ──────────────────────────────────────────────
 
 type ActivitySourceType = "cron" | "subagent";
@@ -71,227 +82,240 @@ const resolveThinkingFromAgentStream = (
   return tagged || null;
 };
 
-export function handleRuntimeAgentEvent(
+// ── Unmatched-agent routing ─────────────────────────────────────────────
+
+/** Route events for cron/subagent sessions that don't match any known agent. */
+function handleUnmatchedAgentEvent(
   payload: AgentEventPayload,
   state: RuntimeTrackingState
 ): void {
-  if (!payload.runId) return;
   const deps = state.deps;
-  const agentsSnapshot = deps.getAgents();
-  const directMatch = payload.sessionKey ? findAgentBySessionKey(agentsSnapshot, payload.sessionKey) : null;
-  const match = directMatch ?? findAgentByRunId(agentsSnapshot, payload.runId);
+  const pData = toRecord(payload.data);
 
-  if (!match) {
-    // Sub-agent lifecycle events
-    if (payload.stream === "lifecycle" && payload.sessionKey && /^agent:[^:]+:subagent:/.test(payload.sessionKey)) {
-      const pData = payload.data && typeof payload.data === "object" ? (payload.data as Record<string, unknown>) : null;
-      const phase = typeof pData?.phase === "string" ? pData.phase : "";
-      deps.onSubAgentLifecycle?.(payload.sessionKey, phase);
-      deps.onSessionsUpdate?.();
-    }
-    // Route cron/subagent agent events to activity message store
-    if (deps.onActivityMessage && payload.sessionKey) {
-      const sourceType = resolveActivitySource(payload.sessionKey);
-      if (sourceType) {
-        const pData = payload.data && typeof payload.data === "object" ? (payload.data as Record<string, unknown>) : null;
-        const stream = typeof payload.stream === "string" ? payload.stream : "";
-        if (stream === "tool") {
-          const toolName = typeof pData?.name === "string" ? pData.name : "";
-          const toolPhase = typeof pData?.phase === "string" ? pData.phase : "";
-          if (toolName) {
-            const toolCallId = typeof pData?.toolCallId === "string" ? pData.toolCallId : "";
-            const args = pData?.arguments ?? pData?.args ?? pData?.input ?? null;
-            const result = toolPhase === "result" ? pData?.result : undefined;
-            dispatchActivityMessage(deps, payload.sessionKey, sourceType, [{
-              type: "tool-invocation",
-              toolCallId: toolCallId || `${payload.runId}-${toolName}`,
-              name: toolName,
-              phase: toolPhase === "result" ? "complete" : "running",
-              args: args ? (typeof args === "string" ? args : JSON.stringify(args)) : undefined,
-              result: result != null ? (typeof result === "string" ? result : JSON.stringify(result)) : undefined,
-            }], "streaming");
-          }
-        } else if (stream === "lifecycle") {
-          const phase = typeof pData?.phase === "string" ? pData.phase : "";
-          if (phase === "start") {
-            dispatchActivityMessage(deps, payload.sessionKey, sourceType, [{ type: "status", state: "running" }], "streaming");
-          } else if (phase === "end") {
-            dispatchActivityMessage(deps, payload.sessionKey, sourceType, [{ type: "status", state: "complete" }], "complete");
-          } else if (phase === "error") {
-            dispatchActivityMessage(deps, payload.sessionKey, sourceType, [{ type: "status", state: "error" }], "error");
-          }
-        }
-      }
-    }
-    return;
+  // Sub-agent lifecycle events
+  if (
+    payload.stream === "lifecycle" &&
+    payload.sessionKey &&
+    /^agent:[^:]+:subagent:/.test(payload.sessionKey)
+  ) {
+    const phase = typeof pData?.phase === "string" ? pData.phase : "";
+    deps.onSubAgentLifecycle?.(payload.sessionKey, phase);
+    deps.onSessionsUpdate?.();
   }
 
-  const agent = agentsSnapshot.find((entry) => entry.agentId === match);
-  if (!agent) return;
+  // Route cron/subagent events to activity message store
+  if (!deps.onActivityMessage || !payload.sessionKey) return;
+  const sourceType = resolveActivitySource(payload.sessionKey);
+  if (!sourceType) return;
 
-  // Suppress ALL agent events (tool invocations, lifecycle, etc.) while the
-  // agent is in heartbeat mode. The chatEventHandler sets this flag when an
-  // isHeartbeat delta arrives. Without this, tool invocation cards ("cron
-  // Running...", "browser Running...") still appear in the main chat during
-  // heartbeats even though the chat text is suppressed.
-  if (state.heartbeatActiveAgents.has(match)) {
-    return;
-  }
-
-  state.markActivityThrottled(match);
   const stream = typeof payload.stream === "string" ? payload.stream : "";
-  const data =
-    payload.data && typeof payload.data === "object" ? (payload.data as Record<string, unknown>) : null;
-  const hasChatEvents = state.chatRunSeen.has(payload.runId);
-
-  if (isReasoningRuntimeAgentStream(stream)) {
-    const rawText = typeof data?.text === "string" ? (data.text as string) : "";
-    const rawDelta = typeof data?.delta === "string" ? (data.delta as string) : "";
-    const previousRaw = state.thinkingStreamByRun.get(payload.runId) ?? "";
-    let mergedRaw = previousRaw;
-    if (rawText) {
-      mergedRaw = rawText;
-    } else if (rawDelta) {
-      mergedRaw = mergeRuntimeStream(previousRaw, rawDelta);
-    }
-    if (mergedRaw) {
-      state.thinkingStreamByRun.set(payload.runId, mergedRaw);
-    }
-    const liveThinking =
-      resolveThinkingFromAgentStream(data, mergedRaw, { treatPlainTextAsThinking: true }) ??
-      (mergedRaw.trim() ? mergedRaw.trim() : null);
-    if (liveThinking) {
-      deps.queueLivePatch(match, {
-        status: "running",
-        runId: payload.runId,
-        sessionCreated: true,
-        lastActivityAt: state.now(),
-        thinkingTrace: liveThinking,
-      });
-      const reasoningKey = state.getPartKey(match, payload.runId, "reasoning");
-      state.appendOrUpdatePart(match, reasoningKey, {
-        type: "reasoning",
-        text: liveThinking,
-        streaming: true,
-        startedAt: state.partIndexByKey.has(reasoningKey) ? undefined : state.now(),
-      });
-    }
-    return;
-  }
-
-  if (stream === "assistant") {
-    const rawText = typeof data?.text === "string" ? data.text : "";
-    const rawDelta = typeof data?.delta === "string" ? data.delta : "";
-    const previousRaw = state.assistantStreamByRun.get(payload.runId) ?? "";
-    let mergedRaw = previousRaw;
-    if (rawText) {
-      mergedRaw = rawText;
-    } else if (rawDelta) {
-      mergedRaw = mergeRuntimeStream(previousRaw, rawDelta);
-    }
-    if (mergedRaw) {
-      state.assistantStreamByRun.set(payload.runId, mergedRaw);
-    }
-    const liveThinking = resolveThinkingFromAgentStream(data, mergedRaw);
-    const patch: Partial<AgentState> = {
-      status: "running",
-      runId: payload.runId,
-      lastActivityAt: state.now(),
-      sessionCreated: true,
-    };
-    if (liveThinking) {
-      patch.thinkingTrace = liveThinking;
-    }
-    if (mergedRaw && (!rawText || !isUiMetadataPrefix(rawText.trim()))) {
-      const visibleText = extractText({ role: "assistant", content: mergedRaw }) ?? mergedRaw;
-      const cleaned = stripUiMetadata(visibleText);
-      if (
-        cleaned &&
-        shouldPublishAssistantStream({
-          mergedRaw,
-          rawText,
-          hasChatEvents,
-          currentStreamText: agent.streamText ?? null,
-        })
-      ) {
-        patch.streamText = cleaned;
-      }
-    }
-    deps.queueLivePatch(match, patch);
-    if (patch.streamText) {
-      const textKey = state.getPartKey(match, payload.runId, "text");
-      state.appendOrUpdatePart(match, textKey, {
-        type: "text",
-        text: patch.streamText,
-        streaming: true,
-      });
-    }
-    if (liveThinking) {
-      const reasoningKey = state.getPartKey(match, payload.runId, "reasoning");
-      state.appendOrUpdatePart(match, reasoningKey, {
-        type: "reasoning",
-        text: liveThinking,
-        streaming: true,
-        startedAt: state.partIndexByKey.has(reasoningKey) ? undefined : state.now(),
-      });
-    }
-    return;
-  }
 
   if (stream === "tool") {
-    const phase = typeof data?.phase === "string" ? data.phase : "";
-    const name = typeof data?.name === "string" ? data.name : "tool";
-    const toolCallId = typeof data?.toolCallId === "string" ? data.toolCallId : "";
-    if (phase && phase !== "result") {
-      const args =
-        (data?.arguments as unknown) ??
-        (data?.args as unknown) ??
-        (data?.input as unknown) ??
-        (data?.parameters as unknown) ??
-        null;
-      const toolKey = state.getPartKey(match, payload.runId, `tool:${toolCallId || name}`);
-      const toolPhase = phase === "start" ? "pending" : "running";
-      state.appendOrUpdatePart(match, toolKey, {
-        type: "tool-invocation",
-        toolCallId: toolCallId || `${payload.runId}-${name}`,
-        name,
-        phase: toolPhase,
-        args: args ? (typeof args === "string" ? args : JSON.stringify(args)) : undefined,
-        startedAt: state.partIndexByKey.has(toolKey) ? undefined : state.now(),
-      });
-      return;
+    const toolName = typeof pData?.name === "string" ? pData.name : "";
+    const toolPhase = typeof pData?.phase === "string" ? pData.phase : "";
+    if (!toolName) return;
+    const toolCallId = typeof pData?.toolCallId === "string" ? pData.toolCallId : "";
+    const args = pData?.arguments ?? pData?.args ?? pData?.input ?? null;
+    const result = toolPhase === "result" ? pData?.result : undefined;
+    dispatchActivityMessage(deps, payload.sessionKey, sourceType, [{
+      type: "tool-invocation",
+      toolCallId: toolCallId || `${payload.runId}-${toolName}`,
+      name: toolName,
+      phase: toolPhase === "result" ? "complete" : "running",
+      args: args ? (typeof args === "string" ? args : JSON.stringify(args)) : undefined,
+      result: result != null ? (typeof result === "string" ? result : JSON.stringify(result)) : undefined,
+    }], "streaming");
+    return;
+  }
+
+  if (stream === "lifecycle") {
+    const phase = typeof pData?.phase === "string" ? pData.phase : "";
+    if (phase === "start") {
+      dispatchActivityMessage(deps, payload.sessionKey, sourceType, [{ type: "status", state: "running" }], "streaming");
+    } else if (phase === "end") {
+      dispatchActivityMessage(deps, payload.sessionKey, sourceType, [{ type: "status", state: "complete" }], "complete");
+    } else if (phase === "error") {
+      dispatchActivityMessage(deps, payload.sessionKey, sourceType, [{ type: "status", state: "error" }], "error");
     }
-    if (phase !== "result") return;
-    const result = data?.result;
-    const isError = typeof data?.isError === "boolean" ? data.isError : undefined;
-    const resultRecord =
-      result && typeof result === "object" ? (result as Record<string, unknown>) : null;
-    let content: unknown = result;
-    if (resultRecord) {
-      if (Array.isArray(resultRecord.content)) {
-        content = resultRecord.content;
-      } else if (typeof resultRecord.text === "string") {
-        content = resultRecord.text;
-      }
+  }
+}
+
+// ── Stream sub-handlers ────────────────────────────────────────────────
+
+function handleReasoningStream(
+  payload: AgentEventPayload,
+  state: RuntimeTrackingState,
+  agentId: string,
+  data: Record<string, unknown> | null
+): void {
+  const rawText = typeof data?.text === "string" ? (data.text as string) : "";
+  const rawDelta = typeof data?.delta === "string" ? (data.delta as string) : "";
+  const previousRaw = state.thinkingStreamByRun.get(payload.runId) ?? "";
+  let mergedRaw = previousRaw;
+  if (rawText) {
+    mergedRaw = rawText;
+  } else if (rawDelta) {
+    mergedRaw = mergeRuntimeStream(previousRaw, rawDelta);
+  }
+  if (mergedRaw) {
+    state.thinkingStreamByRun.set(payload.runId, mergedRaw);
+  }
+  const liveThinking =
+    resolveThinkingFromAgentStream(data, mergedRaw, { treatPlainTextAsThinking: true }) ??
+    (mergedRaw.trim() ? mergedRaw.trim() : null);
+  if (!liveThinking) return;
+
+  state.deps.queueLivePatch(agentId, {
+    status: "running",
+    runId: payload.runId,
+    sessionCreated: true,
+    lastActivityAt: state.now(),
+    thinkingTrace: liveThinking,
+  });
+  const reasoningKey = state.getPartKey(agentId, payload.runId, "reasoning");
+  state.appendOrUpdatePart(agentId, reasoningKey, {
+    type: "reasoning",
+    text: liveThinking,
+    streaming: true,
+    startedAt: state.partIndexByKey.has(reasoningKey) ? undefined : state.now(),
+  });
+}
+
+function handleAssistantStream(
+  payload: AgentEventPayload,
+  state: RuntimeTrackingState,
+  agentId: string,
+  agent: AgentState,
+  data: Record<string, unknown> | null,
+  hasChatEvents: boolean
+): void {
+  const rawText = typeof data?.text === "string" ? data.text : "";
+  const rawDelta = typeof data?.delta === "string" ? data.delta : "";
+  const previousRaw = state.assistantStreamByRun.get(payload.runId) ?? "";
+  let mergedRaw = previousRaw;
+  if (rawText) {
+    mergedRaw = rawText;
+  } else if (rawDelta) {
+    mergedRaw = mergeRuntimeStream(previousRaw, rawDelta);
+  }
+  if (mergedRaw) {
+    state.assistantStreamByRun.set(payload.runId, mergedRaw);
+  }
+  const liveThinking = resolveThinkingFromAgentStream(data, mergedRaw);
+  const patch: Partial<AgentState> = {
+    status: "running",
+    runId: payload.runId,
+    lastActivityAt: state.now(),
+    sessionCreated: true,
+  };
+  if (liveThinking) {
+    patch.thinkingTrace = liveThinking;
+  }
+  if (mergedRaw && (!rawText || !isUiMetadataPrefix(rawText.trim()))) {
+    const visibleText = extractText({ role: "assistant", content: mergedRaw }) ?? mergedRaw;
+    const cleaned = stripUiMetadata(visibleText);
+    if (
+      cleaned &&
+      shouldPublishAssistantStream({
+        mergedRaw,
+        rawText,
+        hasChatEvents,
+        currentStreamText: agent.streamText ?? null,
+      })
+    ) {
+      patch.streamText = cleaned;
     }
-    const toolResultKey = state.getPartKey(match, payload.runId, `tool:${toolCallId || name}`);
-    const resultStr = typeof content === "string" ? content : JSON.stringify(content);
-    state.appendOrUpdatePart(match, toolResultKey, {
+  }
+  state.deps.queueLivePatch(agentId, patch);
+  if (patch.streamText) {
+    const textKey = state.getPartKey(agentId, payload.runId, "text");
+    state.appendOrUpdatePart(agentId, textKey, {
+      type: "text",
+      text: patch.streamText,
+      streaming: true,
+    });
+  }
+  if (liveThinking) {
+    const reasoningKey = state.getPartKey(agentId, payload.runId, "reasoning");
+    state.appendOrUpdatePart(agentId, reasoningKey, {
+      type: "reasoning",
+      text: liveThinking,
+      streaming: true,
+      startedAt: state.partIndexByKey.has(reasoningKey) ? undefined : state.now(),
+    });
+  }
+}
+
+function handleToolStream(
+  payload: AgentEventPayload,
+  state: RuntimeTrackingState,
+  agentId: string,
+  data: Record<string, unknown> | null
+): void {
+  const phase = typeof data?.phase === "string" ? data.phase : "";
+  const name = typeof data?.name === "string" ? data.name : "tool";
+  const toolCallId = typeof data?.toolCallId === "string" ? data.toolCallId : "";
+
+  if (phase && phase !== "result") {
+    const args =
+      (data?.arguments as unknown) ??
+      (data?.args as unknown) ??
+      (data?.input as unknown) ??
+      (data?.parameters as unknown) ??
+      null;
+    const toolKey = state.getPartKey(agentId, payload.runId, `tool:${toolCallId || name}`);
+    const toolPhase = phase === "start" ? "pending" : "running";
+    state.appendOrUpdatePart(agentId, toolKey, {
       type: "tool-invocation",
       toolCallId: toolCallId || `${payload.runId}-${name}`,
       name,
-      phase: isError ? "error" : "complete",
-      result: resultStr,
-      completedAt: state.now(),
+      phase: toolPhase,
+      args: args ? (typeof args === "string" ? args : JSON.stringify(args)) : undefined,
+      startedAt: state.partIndexByKey.has(toolKey) ? undefined : state.now(),
     });
     return;
   }
 
-  if (stream !== "lifecycle") return;
+  if (phase !== "result") return;
+
+  const result = data?.result;
+  const isError = typeof data?.isError === "boolean" ? data.isError : undefined;
+  const resultRecord = result && typeof result === "object" ? (result as Record<string, unknown>) : null;
+  let content: unknown = result;
+  if (resultRecord) {
+    if (Array.isArray(resultRecord.content)) {
+      content = resultRecord.content;
+    } else if (typeof resultRecord.text === "string") {
+      content = resultRecord.text;
+    }
+  }
+  const toolResultKey = state.getPartKey(agentId, payload.runId, `tool:${toolCallId || name}`);
+  const resultStr = typeof content === "string" ? content : JSON.stringify(content);
+  state.appendOrUpdatePart(agentId, toolResultKey, {
+    type: "tool-invocation",
+    toolCallId: toolCallId || `${payload.runId}-${name}`,
+    name,
+    phase: isError ? "error" : "complete",
+    result: resultStr,
+    completedAt: state.now(),
+  });
+}
+
+function handleLifecycleStream(
+  payload: AgentEventPayload,
+  state: RuntimeTrackingState,
+  agentId: string,
+  agent: AgentState,
+  data: Record<string, unknown> | null,
+  hasChatEvents: boolean
+): void {
+  const deps = state.deps;
   const summaryPatch = getAgentSummaryPatch(payload, state.now());
   if (!summaryPatch) return;
+
   const phase = typeof data?.phase === "string" ? data.phase : "";
   if (phase !== "start" && phase !== "end" && phase !== "error") return;
+
   const transition = resolveLifecyclePatch({
     phase,
     incomingRunId: payload.runId,
@@ -299,12 +323,13 @@ export function handleRuntimeAgentEvent(
     lastActivityAt: summaryPatch.lastActivityAt ?? state.now(),
   });
   if (transition.kind === "ignore") return;
+
   if (phase === "end" && !hasChatEvents) {
     const finalText = agent.streamText?.trim();
     if (finalText) {
       deps.dispatch({
         type: "updateAgent",
-        agentId: match,
+        agentId,
         patch: {
           lastResult: finalText,
           lastAssistantMessageAt: state.now(),
@@ -312,15 +337,16 @@ export function handleRuntimeAgentEvent(
       });
     }
   }
-  // Finalize streaming messageParts on lifecycle end
+
+  // Finalize streaming messageParts on lifecycle end/error
   if (phase === "end" || phase === "error") {
-    const currentAgent = deps.getAgents().find((a) => a.agentId === match);
+    const currentAgent = deps.getAgents().find((a) => a.agentId === agentId);
     if (currentAgent) {
       currentAgent.messageParts.forEach((part, idx) => {
         if ((part.type === "text" || part.type === "reasoning") && part.streaming) {
           deps.dispatch({
             type: "updatePart",
-            agentId: match,
+            agentId,
             index: idx,
             patch: {
               streaming: false,
@@ -332,7 +358,7 @@ export function handleRuntimeAgentEvent(
       const model = typeof data?.model === "string" ? data.model : undefined;
       deps.dispatch({
         type: "appendPart",
-        agentId: match,
+        agentId,
         part: {
           type: "status",
           state: phase === "end" ? "complete" : "error",
@@ -341,13 +367,66 @@ export function handleRuntimeAgentEvent(
       });
     }
   }
+
   if (transition.clearRunTracking) {
     state.clearRunTracking(payload.runId);
-    deps.clearPendingLivePatch(match);
+    deps.clearPendingLivePatch(agentId);
   }
   deps.dispatch({
     type: "updateAgent",
-    agentId: match,
+    agentId,
     patch: transition.patch,
   });
+}
+
+// ── Public entry point ─────────────────────────────────────────────────
+
+export function handleRuntimeAgentEvent(
+  payload: AgentEventPayload,
+  state: RuntimeTrackingState
+): void {
+  if (!payload.runId) return;
+
+  const deps = state.deps;
+  const agentsSnapshot = deps.getAgents();
+  const directMatch = payload.sessionKey
+    ? findAgentBySessionKey(agentsSnapshot, payload.sessionKey)
+    : null;
+  const match = directMatch ?? findAgentByRunId(agentsSnapshot, payload.runId);
+
+  if (!match) {
+    handleUnmatchedAgentEvent(payload, state);
+    return;
+  }
+
+  const agent = agentsSnapshot.find((entry) => entry.agentId === match);
+  if (!agent) return;
+
+  // Suppress ALL events while the agent is in heartbeat mode.
+  if (state.heartbeatActiveAgents.has(match)) return;
+
+  state.markActivityThrottled(match);
+
+  const stream = typeof payload.stream === "string" ? payload.stream : "";
+  const data = toRecord(payload.data);
+  const hasChatEvents = state.chatRunSeen.has(payload.runId);
+
+  if (isReasoningRuntimeAgentStream(stream)) {
+    handleReasoningStream(payload, state, match, data);
+    return;
+  }
+
+  if (stream === "assistant") {
+    handleAssistantStream(payload, state, match, agent, data, hasChatEvents);
+    return;
+  }
+
+  if (stream === "tool") {
+    handleToolStream(payload, state, match, data);
+    return;
+  }
+
+  if (stream === "lifecycle") {
+    handleLifecycleStream(payload, state, match, agent, data, hasChatEvents);
+  }
 }

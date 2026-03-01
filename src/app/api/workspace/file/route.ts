@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { handleApiError, validateAgentId } from "@/lib/api/helpers";
 import { withSidecarGetFallback, withSidecarMutateFallback } from "@/lib/api/sidecar-proxy";
 import {
+  deleteWorkspaceFile,
   isTextFile,
   readWorkspaceFile,
   writeWorkspaceFile,
@@ -112,5 +113,54 @@ export async function PUT(request: Request) {
     );
   } catch (err) {
     return handleApiError(err, "workspace/file PUT", "Failed to write workspace file.");
+  }
+}
+
+/**
+ * DELETE /api/workspace/file
+ *
+ * Permanently delete a file from an agent's workspace.
+ * Body: { agentId, path }
+ *
+ * Returns { ok: true } on success. Only files may be deleted via this
+ * endpoint — directories are not supported.
+ */
+export async function DELETE(request: Request) {
+  try {
+    const body = (await request.json()) as unknown;
+    if (!body || typeof body !== "object") {
+      return NextResponse.json(
+        { error: "Invalid request payload." },
+        { status: 400 }
+      );
+    }
+
+    const { agentId, path: filePath } = body as {
+      agentId?: string;
+      path?: string;
+    };
+
+    const validation = validateAgentId(agentId);
+    if (!validation.ok) return validation.error;
+
+    const trimmedPath = typeof filePath === "string" ? filePath.trim() : "";
+    if (!trimmedPath) {
+      return NextResponse.json(
+        { error: "Missing required field: path" },
+        { status: 400 }
+      );
+    }
+
+    return await withSidecarMutateFallback(
+      "/file",
+      "DELETE",
+      { agentId: validation.agentId, path: trimmedPath },
+      () => {
+        deleteWorkspaceFile(validation.agentId, trimmedPath);
+        return { ok: true };
+      }
+    );
+  } catch (err) {
+    return handleApiError(err, "workspace/file DELETE", "Failed to delete workspace file.");
   }
 }

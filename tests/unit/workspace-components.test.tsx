@@ -68,6 +68,8 @@ function defaultHookReturn() {
     saveFile: vi.fn(),
     createFile: vi.fn(),
     fileExists: vi.fn(),
+    fetchDirChildren: vi.fn().mockResolvedValue([]),
+    deleteFile: vi.fn().mockResolvedValue(true),
   };
 }
 

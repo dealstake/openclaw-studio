@@ -90,10 +90,13 @@ export const IdentitySettingsSection = memo(function IdentitySettingsSection({
         </Tooltip>
       </div>
 
-      <label className={`mt-3 flex flex-col gap-2 ${sectionLabelClass} text-muted-foreground`}>
+      <label
+        htmlFor={`agent-name-${agentId}`}
+        className={`mt-3 flex flex-col gap-2 ${sectionLabelClass} text-muted-foreground`}
+      >
         <span>Agent name</span>
         <input
-          aria-label="Agent name"
+          id={`agent-name-${agentId}`}
           className="h-10 rounded-md border border-border bg-card/75 px-3 text-xs font-semibold text-foreground outline-none"
           value={nameDraft}
           disabled={renameSaving}

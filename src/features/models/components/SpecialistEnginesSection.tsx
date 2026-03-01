@@ -47,7 +47,7 @@ export const SpecialistEnginesSection = memo(function SpecialistEnginesSection({
     <section>
       <div className="mb-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Wrench className="h-4 w-4 text-muted-foreground" />
+          <Wrench className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
           <h3 className="text-sm font-medium text-foreground">
             Specialist Engines
           </h3>

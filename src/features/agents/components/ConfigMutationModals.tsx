@@ -1,5 +1,8 @@
-import { memo } from "react";
+"use client";
+
+import { memo, useRef } from "react";
 import type { FC } from "react";
+import FocusTrap from "focus-trap-react";
 import { SectionLabel } from "@/components/SectionLabel";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 
@@ -14,32 +17,50 @@ type RestartBlockingModalProps = {
 };
 
 const RestartBlockingModal: FC<RestartBlockingModalProps> = memo(
-  ({ title, entityName, statusLine, testId, ariaLabel }) => (
-    <div
-      className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center bg-background/70 backdrop-blur-sm"
-      data-testid={testId}
-      role="dialog"
-      aria-modal="true"
-      aria-label={ariaLabel}
-    >
-      <div className="w-full max-w-md rounded-lg border border-border bg-card/95 p-6 shadow-lg">
-        <SectionLabel>
-          {title}
-        </SectionLabel>
-        <div className="mt-2 text-base font-semibold text-foreground">
-          {entityName}
-        </div>
-        <div className="mt-3 text-sm text-muted-foreground">
-          Studio is temporarily locked until the gateway restarts.
-        </div>
-        {statusLine ? (
-          <div className="mt-4 rounded-md border border-border/70 bg-muted/40 px-3 py-2 font-mono text-[11px] uppercase tracking-[0.12em] text-foreground">
-            {statusLine}
+  function RestartBlockingModal({ title, entityName, statusLine, testId, ariaLabel }) {
+    // cardRef provides FocusTrap a fallback focusable element since this modal
+    // contains no interactive controls (it's a blocking progress indicator).
+    const cardRef = useRef<HTMLDivElement>(null);
+    return (
+      <FocusTrap
+        focusTrapOptions={{
+          fallbackFocus: () => cardRef.current ?? document.body,
+          allowOutsideClick: false,
+          escapeDeactivates: false,
+        }}
+      >
+        <div
+          className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center bg-background/70 backdrop-blur-sm"
+          data-testid={testId}
+          role="dialog"
+          aria-modal="true"
+          aria-label={ariaLabel}
+        >
+          {/* tabIndex={-1} makes the card programmatically focusable */}
+          <div
+            ref={cardRef}
+            tabIndex={-1}
+            className="w-full max-w-md rounded-lg border border-border bg-card/95 p-6 shadow-lg outline-none"
+          >
+            <SectionLabel>
+              {title}
+            </SectionLabel>
+            <div className="mt-2 text-base font-semibold text-foreground">
+              {entityName}
+            </div>
+            <div className="mt-3 text-sm text-muted-foreground">
+              Studio is temporarily locked until the gateway restarts.
+            </div>
+            {statusLine ? (
+              <div className="mt-4 rounded-md border border-border/70 bg-muted/40 px-3 py-2 font-mono text-[11px] uppercase tracking-[0.12em] text-foreground">
+                {statusLine}
+              </div>
+            ) : null}
           </div>
-        ) : null}
-      </div>
-    </div>
-  ),
+        </div>
+      </FocusTrap>
+    );
+  },
 );
 RestartBlockingModal.displayName = "RestartBlockingModal";
 

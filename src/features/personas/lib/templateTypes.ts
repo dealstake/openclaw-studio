@@ -69,6 +69,31 @@ export interface KnowledgeFileTemplate {
 }
 
 // ---------------------------------------------------------------------------
+// Document Templates
+// ---------------------------------------------------------------------------
+
+/**
+ * A Handlebars document template that ships with a persona Starter Kit.
+ *
+ * The `content` field is a Handlebars template string (Markdown + {{tokens}}).
+ * Rendered output is Markdown, which can be converted to PDF/DOCX by Phase 2.
+ *
+ * Filename convention: `<name>.md.hbs` (e.g. "meeting-brief.md.hbs")
+ */
+export interface DocTemplate {
+  /** Filename within the persona's `templates/` directory, e.g. "meeting-brief.md.hbs" */
+  filename: string;
+  /** Human-readable display name, e.g. "Meeting Brief" */
+  label: string;
+  /** Short description shown in the "New from Template" picker */
+  description: string;
+  /** Handlebars template content (Markdown with {{token}} placeholders) */
+  content: string;
+  /** Variable names expected by this template (for documentation / UI hints) */
+  variables?: string[];
+}
+
+// ---------------------------------------------------------------------------
 // Persona Template (a Starter Kit package)
 // ---------------------------------------------------------------------------
 
@@ -106,6 +131,12 @@ export interface PersonaTemplate {
   brainFileTemplates: BrainFileTemplate[];
   /** Knowledge file templates */
   knowledgeFileTemplates: KnowledgeFileTemplate[];
+  /**
+   * Document templates (Handlebars .md.hbs files) that ship with this persona.
+   * Rendered by the document generation service when the persona produces documents.
+   * Optional — personas without document workflows may omit this.
+   */
+  documentTemplates?: DocTemplate[];
 
   /** Estimated setup time in minutes */
   estimatedSetupMinutes: number;

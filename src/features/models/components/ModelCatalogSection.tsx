@@ -42,15 +42,15 @@ export const ModelCatalogSection = memo(function ModelCatalogSection({
                   key={model.fullKey}
                   className="flex items-center gap-2 rounded-md px-2 py-1.5 text-xs"
                 >
-                  {/* Status indicators */}
+                  {/* Status indicators (decorative — sr-only labels below provide text equivalent) */}
                   {model.isDefault && (
-                    <span className="h-2 w-2 shrink-0 rounded-full bg-primary" title="Primary brain" />
+                    <span className="h-2 w-2 shrink-0 rounded-full bg-primary" aria-hidden="true" />
                   )}
                   {model.isFallback && !model.isDefault && (
-                    <span className="h-2 w-2 shrink-0 rounded-full bg-yellow-500" title="Fallback" />
+                    <span className="h-2 w-2 shrink-0 rounded-full bg-yellow-500" aria-hidden="true" />
                   )}
                   {!model.isDefault && !model.isFallback && (
-                    <span className="h-2 w-2 shrink-0 rounded-full bg-border" />
+                    <span className="h-2 w-2 shrink-0 rounded-full bg-border" aria-hidden="true" />
                   )}
 
                   <span className="min-w-0 truncate text-foreground">

@@ -11,12 +11,19 @@ import type { TrendBucket } from "@/features/usage/lib/trendAggregator";
 
 export type TimeRange = "today" | "7d" | "30d" | "all";
 
-type AgentBreakdown = {
+export type AgentBreakdown = {
   agentId: string;
   sessions: number;
   cost: number;
   inputTokens: number;
   outputTokens: number;
+};
+
+export type CronBreakdown = {
+  jobId: string;
+  runs: number;
+  cost: number;
+  totalTokens: number;
 };
 
 type UsageQueryResponse = {
@@ -27,6 +34,7 @@ type UsageQueryResponse = {
   costByModel: Record<string, ModelCostBreakdown>;
   dailyTrends: TrendBucket[];
   agentBreakdown: AgentBreakdown[];
+  cronBreakdown: CronBreakdown[];
   projectedMonthlyCost: number;
   cachedAt: string;
   error?: string;
@@ -40,6 +48,7 @@ export type UsageQueryData = {
   costByModel: Map<string, ModelCostBreakdown>;
   dailyTrends: TrendBucket[];
   agentBreakdown: AgentBreakdown[];
+  cronBreakdown: CronBreakdown[];
   projectedMonthlyCost: number;
   loading: boolean;
   error: string | null;
@@ -128,6 +137,7 @@ export function useUsageQuery(): UsageQueryData {
     costByModel,
     dailyTrends: data?.dailyTrends ?? [],
     agentBreakdown: data?.agentBreakdown ?? [],
+    cronBreakdown: data?.cronBreakdown ?? [],
     projectedMonthlyCost: data?.projectedMonthlyCost ?? 0,
     loading,
     error,

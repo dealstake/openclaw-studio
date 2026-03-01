@@ -1,18 +1,22 @@
 /**
- * Template Registry — in-memory store for persona Starter Kit templates.
- * Templates register at import time via `registerTemplate()`.
+ * Template Registry — lookup helpers for persona Starter Kit templates.
+ *
+ * Templates are compiled into a static array by `scripts/build-templates.ts`.
+ * This module is the single import point for all consumer code.
+ *
+ * Usage:
+ *   import { listTemplates, getTemplate } from "@/features/personas/lib/templateRegistry";
  */
 
 import type { PersonaCategory } from "./personaTypes";
 import type { PersonaTemplate, TemplateCategory } from "./templateTypes";
+import { PERSONA_TEMPLATES } from "./generatedTemplates";
 
 // ---------------------------------------------------------------------------
-// Internal store
+// Category metadata (source of truth — not derived from templates)
 // ---------------------------------------------------------------------------
 
-const templates = new Map<string, PersonaTemplate>();
-
-const categories: TemplateCategory[] = [
+const CATEGORIES: TemplateCategory[] = [
   {
     key: "sales",
     label: "Sales & Revenue",
@@ -64,41 +68,46 @@ const categories: TemplateCategory[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// Public API
+// Lookup helpers (project-spec API)
 // ---------------------------------------------------------------------------
 
-/** Register a template in the registry. Throws on duplicate key. */
-export function registerTemplate(template: PersonaTemplate): void {
-  if (templates.has(template.key)) {
-    throw new Error(`Template "${template.key}" is already registered`);
-  }
-  templates.set(template.key, template);
+/** List all templates, optionally filtered by category. */
+export function listTemplates(category?: PersonaCategory): PersonaTemplate[] {
+  if (!category) return PERSONA_TEMPLATES;
+  return PERSONA_TEMPLATES.filter((t) => t.category === category);
 }
 
 /** Get a single template by key. Returns undefined if not found. */
 export function getTemplate(key: string): PersonaTemplate | undefined {
-  return templates.get(key);
+  return PERSONA_TEMPLATES.find((t) => t.key === key);
 }
 
-/** List all registered templates, optionally filtered by category. */
-export function listTemplates(category?: PersonaCategory): PersonaTemplate[] {
-  const all = Array.from(templates.values());
-  if (!category) return all;
-  return all.filter((t) => t.category === category);
+/** Get all templates in a given category (alias for listTemplates with required arg). */
+export function getTemplatesByCategory(category: PersonaCategory): PersonaTemplate[] {
+  return PERSONA_TEMPLATES.filter((t) => t.category === category);
 }
 
-/** Get all defined categories (including those with no templates yet). */
+/** List all defined category keys (including those with no templates yet). */
+export function listCategories(): PersonaCategory[] {
+  return CATEGORIES.map((c) => c.key);
+}
+
+// ---------------------------------------------------------------------------
+// Extended helpers (used by TemplateBrowserModal and other UI)
+// ---------------------------------------------------------------------------
+
+/** Get full category metadata for all defined categories. */
 export function getCategories(): TemplateCategory[] {
-  return categories;
+  return CATEGORIES;
 }
 
-/** Get categories that have at least one registered template. */
+/** Get category metadata for categories that have at least one template. */
 export function getActiveCategories(): TemplateCategory[] {
-  const activeKeys = new Set(Array.from(templates.values()).map((t) => t.category));
-  return categories.filter((c) => activeKeys.has(c.key));
+  const activeKeys = new Set(PERSONA_TEMPLATES.map((t) => t.category));
+  return CATEGORIES.filter((c) => activeKeys.has(c.key));
 }
 
-/** Get template count. */
+/** Total number of registered templates. */
 export function getTemplateCount(): number {
-  return templates.size;
+  return PERSONA_TEMPLATES.length;
 }

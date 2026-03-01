@@ -1,9 +1,8 @@
 "use client";
 
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { BarChart3, RefreshCw } from "lucide-react";
-import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
-import { useUsageData, type TimeRange } from "@/features/usage/hooks/useUsageData";
+import { useUsageQuery, type TimeRange } from "@/features/usage/hooks/useUsageQuery";
 import { SectionLabel } from "@/components/SectionLabel";
 import { PanelHeader } from "@/components/ui/PanelHeader";
 import { FilterGroup, type FilterGroupOption } from "@/components/ui/FilterGroup";
@@ -16,7 +15,6 @@ import { DailyTrendChart } from "@/features/usage/components/DailyTrendChart";
 import { CronCostTable } from "@/features/usage/components/CronCostTable";
 import { AgentCostTable } from "@/features/usage/components/AgentCostTable";
 import { SummaryCard } from "@/features/usage/components/SummaryCard";
-import { SessionDrillDown } from "@/features/usage/components/SessionDrillDown";
 import { BudgetAlert } from "@/features/usage/components/BudgetAlert";
 
 type BreakdownView = "model" | "agent" | "cron";
@@ -34,48 +32,42 @@ const TIME_RANGE_OPTIONS: FilterGroupOption<TimeRange>[] = [
   { value: "all", label: "All" },
 ];
 
-interface UsagePanelProps {
-  client: GatewayClient;
-  status: GatewayStatus;
-}
-
-export const UsagePanel = memo(function UsagePanel({
-  client,
-  status,
-}: UsagePanelProps) {
+// UsagePanel uses server-side aggregation via useUsageQuery and does not
+// require a GatewayClient or GatewayStatus — the /api/usage/query route
+// handles gateway communication server-side.
+export const UsagePanel = memo(function UsagePanel() {
   const {
-    entries,
     totalCost,
     costByModel,
     dailyTrends,
     totalInputTokens,
     totalOutputTokens,
     totalSessions,
+    agentBreakdown,
+    cronBreakdown,
+    projectedMonthlyCost,
     loading,
     error,
     timeRange,
     setTimeRange,
     refresh,
-  } = useUsageData(client, status);
+    cachedAt,
+  } = useUsageQuery();
 
   const [breakdownView, setBreakdownView] = useState<BreakdownView>("model");
-
-  // Drill-down state
-  const [drillDown, setDrillDown] = useState<{
-    title: string;
-    sessions: import("@/features/usage/lib/costCalculator").SessionCostEntry[];
-  } | null>(null);
 
   // Collect unique model names for the trend chart legend
   const models = useMemo(() => Array.from(costByModel.keys()), [costByModel]);
 
-  const hasCronEntries = useMemo(() => entries.some((e) => e.isCron), [entries]);
-
+  // Trigger initial fetch; re-fetches automatically when timeRange changes
   useEffect(() => {
     void refresh();
   }, [refresh]);
 
-  // Find top model by cost
+  // Cost per session
+  const costPerSession = totalSessions > 0 ? totalCost / totalSessions : 0;
+
+  // Top model by cost
   let topModel = "—";
   let topModelCost = 0;
   for (const [model, data] of costByModel) {
@@ -85,72 +77,15 @@ export const UsagePanel = memo(function UsagePanel({
     }
   }
 
-  // Phase 3: Enhanced KPI computations
-  const costPerSession = totalSessions > 0 ? totalCost / totalSessions : 0;
+  // Top agent by cost — agentBreakdown is already sorted desc by cost from server
+  const topAgent = agentBreakdown[0]?.agentId ?? "—";
+  const topAgentCost = agentBreakdown[0]?.cost ?? 0;
 
-  // Projected monthly cost: daily average × 30
-  const projectedMonthlyCost = useMemo(() => {
-    if (dailyTrends.length === 0) return 0;
-    const totalTrendCost = dailyTrends.reduce((sum, d) => sum + d.totalCost, 0);
-    const avgDaily = totalTrendCost / dailyTrends.length;
-    return avgDaily * 30;
-  }, [dailyTrends]);
+  // Whether any cron sessions exist in the current time range
+  const hasCronEntries = cronBreakdown.length > 0;
 
-  // Top agent by cost
-  const { topAgent, topAgentCost } = useMemo(() => {
-    const agentCosts = new Map<string, number>();
-    for (const entry of entries) {
-      const key = entry.key;
-      let agentId = "(direct)";
-      if (key.startsWith("agent:")) {
-        const parts = key.split(":");
-        if (parts.length >= 2 && parts[1]) agentId = parts[1];
-      } else if (key.startsWith("cron-")) {
-        agentId = "(cron)";
-      }
-      agentCosts.set(agentId, (agentCosts.get(agentId) ?? 0) + (entry.cost ?? 0));
-    }
-    let best = "—";
-    let bestCost = 0;
-    for (const [id, cost] of agentCosts) {
-      if (cost > bestCost) { best = id; bestCost = cost; }
-    }
-    return { topAgent: best, topAgentCost: bestCost };
-  }, [entries]);
-
-  /** Open drill-down for a specific day */
-  const handleBarClick = useCallback(
-    (date: string) => {
-      const daySessions = entries.filter((e) => {
-        if (e.updatedAt == null) return false;
-        const d = new Date(e.updatedAt);
-        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-        return key === date;
-      });
-      const label = new Date(date + "T12:00:00").toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-      });
-      setDrillDown({ title: label, sessions: daySessions });
-    },
-    [entries],
-  );
-
-  /** Open drill-down for a specific agent */
-  const handleAgentClick = useCallback(
-    (agentId: string) => {
-      const agentSessions = entries.filter((e) => {
-        if (e.key.startsWith("agent:")) {
-          const parts = e.key.split(":");
-          return parts.length >= 2 && parts[1] === agentId;
-        }
-        if (e.key.startsWith("cron-")) return agentId === "(cron)";
-        return agentId === "(direct)";
-      });
-      setDrillDown({ title: agentId, sessions: agentSessions });
-    },
-    [entries],
-  );
+  // Show a simple "cached" indicator when data was fetched from server cache
+  const hasCachedData = cachedAt !== null;
 
   return (
     <div className="flex h-full w-full flex-col overflow-y-auto px-3 pb-3 gap-4">
@@ -159,12 +94,19 @@ export const UsagePanel = memo(function UsagePanel({
         icon={<BarChart3 className="h-4 w-4" />}
         title="Usage & Cost"
         actions={
-          <PanelIconButton
-            aria-label="Refresh"
-            onClick={() => void refresh()}
-          >
-            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-          </PanelIconButton>
+          <div className="flex items-center gap-2">
+            {hasCachedData && !loading && (
+              <span className="text-xs text-muted-foreground hidden sm:block" aria-label="Data from server cache">
+                cached
+              </span>
+            )}
+            <PanelIconButton
+              aria-label="Refresh"
+              onClick={() => void refresh()}
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+            </PanelIconButton>
+          </div>
         }
         filters={
           <FilterGroup
@@ -223,7 +165,7 @@ export const UsagePanel = memo(function UsagePanel({
         <SummaryCard label="Top Model" value={topModel} subValue={topModelCost > 0 ? formatCost(topModelCost) : undefined} />
       </div>
 
-      {/* Truncation warning */}
+      {/* Truncation notice */}
       {totalSessions >= 2000 && (
         <p className="text-xs text-muted-foreground bg-muted/50 rounded-md px-3 py-2">
           Showing data from 2,000 most recent sessions. Older sessions are excluded from totals.
@@ -234,7 +176,7 @@ export const UsagePanel = memo(function UsagePanel({
       {dailyTrends.length > 0 && (
         <div>
           <SectionLabel className="mb-2">Daily Trend</SectionLabel>
-          <DailyTrendChart trends={dailyTrends} models={models} onBarClick={handleBarClick} />
+          <DailyTrendChart trends={dailyTrends} models={models} />
         </div>
       )}
 
@@ -292,24 +234,20 @@ export const UsagePanel = memo(function UsagePanel({
           <p className="text-xs text-muted-foreground py-4 text-center">No model sessions in this time range.</p>
         )}
 
-        {breakdownView === "agent" && entries.length > 0 && <AgentCostTable entries={entries} onAgentClick={handleAgentClick} />}
-        {breakdownView === "agent" && entries.length === 0 && (
+        {breakdownView === "agent" && agentBreakdown.length > 0 && (
+          <AgentCostTable serverGroups={agentBreakdown} />
+        )}
+        {breakdownView === "agent" && agentBreakdown.length === 0 && (
           <p className="text-xs text-muted-foreground py-4 text-center">No agent sessions in this time range.</p>
         )}
 
-        {breakdownView === "cron" && hasCronEntries && <CronCostTable entries={entries} />}
+        {breakdownView === "cron" && hasCronEntries && (
+          <CronCostTable serverGroups={cronBreakdown} />
+        )}
         {breakdownView === "cron" && !hasCronEntries && (
           <p className="text-xs text-muted-foreground py-4 text-center">No cron sessions in this time range.</p>
         )}
       </div>
-
-      {/* Session drill-down side sheet */}
-      <SessionDrillDown
-        title={drillDown?.title ?? ""}
-        sessions={drillDown?.sessions ?? []}
-        open={drillDown !== null}
-        onClose={() => setDrillDown(null)}
-      />
     </div>
   );
 });

@@ -162,6 +162,27 @@ export const coldCallerTemplate: PersonaTemplate = {
       credentialHowTo:
         "Get an ElevenLabs API key at https://elevenlabs.io → Profile → API Key. Optional — text-only practice works without it.",
     },
+    {
+      skillKey: "__builtin__",
+      capability: "Contact & Interaction CRM",
+      required: false,
+      credentialHowTo:
+        "Automatic — uses the built-in contacts database. Log every call, track objections, and update pipeline stages.",
+    },
+    {
+      skillKey: "__builtin__",
+      capability: "Document Generation (Templates, PDF, DOCX)",
+      required: false,
+      credentialHowTo:
+        "Automatic — powered by the built-in Handlebars template engine. No external dependencies required.",
+    },
+    {
+      skillKey: "gog",
+      capability: "Google Drive Sharing",
+      required: false,
+      credentialHowTo:
+        "Authenticate via the built-in Google OAuth flow to enable Drive upload and sharing.",
+    },
   ],
 
   brainFileTemplates: [
@@ -222,6 +243,19 @@ I am a consultative sales professional at {{company_name}}, selling {{product_na
 - Propose specific meeting time: "How's Thursday at 2pm for a 20-minute deep dive?"
 - Confirm attendees: "Should anyone else join?"
 - Send calendar invite immediately
+
+## Contact CRM (MANDATORY)
+- **Before every call**: look up the contact — check interaction history for previous calls, objections raised, and promised follow-ups. Use \`GET /workspace/contact?agentId=<id>&id=<contactId>\` or search by name/email.
+- **After every call**: log the interaction immediately — type: "call", channel: "phone", outcome (positive/neutral/negative/no-answer), and a summary including key points discussed and objections.
+- **Update contact stage** after meaningful outcomes: lead → contacted → qualified → meeting → closed. Use \`POST /workspace/contact\` to patch the stage field.
+- Use \`POST /workspace/interaction\` to log every call with agentId, contactId, type, channel, outcome, and summary.
+- Write down everything the prospect mentions — challenges, timelines, budget signals, decision-maker names. Future-you will need it.
+
+## Document Generation
+- When asked to produce documents (call summaries, prospect briefs, outreach emails), use the document generation service.
+- Available templates: call-summary.md.hbs, prospect-brief.md.hbs, outreach-email.md.hbs.
+- Generate via \`POST /api/artifacts/generate\` with \`{ personaTemplateKey: "cold-caller", templateFilename, data, format, title }\`.
+- After generating, the document is auto-uploaded to Google Drive. Always offer to share it via \`POST /api/artifacts/share\` with \`{ fileId }\`.
 `,
     },
     {
@@ -294,6 +328,140 @@ I am a consultative sales professional at {{company_name}}, selling {{product_na
 
 ### Direct
 "Hi {{prospect_name}}, I help {{target_title}}s in {{target_industry}} [solve specific problem]. I'll be brief — is that something you're working on?"
+`,
+    },
+  ],
+
+  documentTemplates: [
+    {
+      filename: "call-summary.md.hbs",
+      label: "Call Summary",
+      description: "Post-call notes capturing outcome, key info, objections, and next steps.",
+      variables: ["prospect_name", "prospect_title", "prospect_company", "date", "duration_minutes", "outcome", "pain_points", "objections", "next_step", "notes"],
+      content: `# Call Summary — {{prospect_name}}, {{prospect_company}}
+
+**Date:** {{formatDate date "long"}}{{#if duration_minutes}} · {{duration_minutes}} min{{/if}}
+**Contact:** {{prospect_name}}, {{prospect_title}} @ {{prospect_company}}
+**Outcome:** {{outcome}}
+
+---
+
+## Pain Points Uncovered
+
+{{#if pain_points}}
+{{list pain_points}}
+{{else}}
+_(None identified — consider deeper discovery on next call)_
+{{/if}}
+
+---
+
+## Objections & Responses
+
+{{#if objections}}
+{{#each objections}}
+- **{{this.objection}}** → {{this.response}}
+{{/each}}
+{{else}}
+_(No major objections raised)_
+{{/if}}
+
+---
+
+## Next Step
+
+**{{next_step.action}}**{{#if next_step.date}} — {{formatDate next_step.date "long"}}{{#if next_step.time}} at {{next_step.time}}{{/if}}{{/if}}
+
+{{#if next_step.notes}}{{next_step.notes}}{{/if}}
+
+---
+
+## Additional Notes
+
+{{notes}}
+
+---
+
+*Call log by {{persona_name}} · {{company_name}}*
+`,
+    },
+    {
+      filename: "prospect-brief.md.hbs",
+      label: "Prospect Brief",
+      description: "Pre-call research brief with company context, prospect background, and talking points.",
+      variables: ["prospect_name", "prospect_title", "prospect_company", "call_date", "company_overview", "recent_news", "pain_points", "opening_hook", "discovery_questions"],
+      content: `# Prospect Brief — {{prospect_name}}
+
+**Call Date:** {{formatDate call_date "long"}}
+**Contact:** {{prospect_name}}, {{prospect_title}}
+**Company:** {{prospect_company}}
+
+---
+
+## Company Overview
+
+{{company_overview}}
+
+---
+
+{{#if recent_news}}
+## Recent News / Triggers
+
+{{list recent_news}}
+
+{{/if}}
+## Likely Pain Points
+
+{{list pain_points}}
+
+---
+
+## Opening Hook
+
+> {{opening_hook}}
+
+---
+
+## Discovery Questions
+
+{{#each discovery_questions}}
+{{@index_plus_one}}. {{this}}
+{{/each}}
+
+---
+
+## Value Proposition (tailored)
+
+{{value_prop}}
+
+---
+
+*Researched by {{persona_name}} before call on {{formatDate call_date "long"}}*
+`,
+    },
+    {
+      filename: "outreach-email.md.hbs",
+      label: "Outreach Email",
+      description: "Personalised cold outreach email based on prospect research.",
+      variables: ["prospect_name", "prospect_title", "prospect_company", "trigger", "value_prop", "call_to_action"],
+      content: `**To:** {{prospect_name}}
+**Subject:** Quick question for {{prospect_company}}'s {{prospect_title}}
+
+---
+
+Hi {{prospect_name}},
+
+{{trigger}}
+
+That's exactly why I reached out — {{value_prop}}
+
+{{call_to_action}}
+
+Happy to keep it to 15 minutes.
+
+Best,
+{{persona_name}}
+{{company_name}}
 `,
     },
   ],

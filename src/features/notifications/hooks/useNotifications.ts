@@ -56,6 +56,19 @@ function subscribe(cb: () => void): () => void {
 }
 
 // ---------------------------------------------------------------------------
+// Phase 1.5: Cross-tab sync — reload + emit when another tab writes storage
+// ---------------------------------------------------------------------------
+
+if (typeof window !== "undefined") {
+  window.addEventListener("storage", (e: StorageEvent) => {
+    if (e.key === STORAGE_KEY) {
+      state = loadFromStorage();
+      emit();
+    }
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Actions (callable from anywhere — no React context needed)
 // ---------------------------------------------------------------------------
 

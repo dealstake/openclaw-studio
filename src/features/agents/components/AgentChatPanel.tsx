@@ -52,6 +52,11 @@ type AgentChatPanelProps = {
   onWizardConfirm?: () => void;
   /** Whether wizard config confirmation is in progress */
   wizardConfirming?: boolean;
+  /**
+   * Called when the wizard's preflight check identifies a missing credential.
+   * The parent (page.tsx) opens the credential vault for the given templateKey.
+   */
+  onOpenCredentialVault?: (templateKey: string) => void;
 };
 
 export const AgentChatPanel = memo(function AgentChatPanel({
@@ -80,6 +85,7 @@ export const AgentChatPanel = memo(function AgentChatPanel({
   wizard = null,
   onWizardConfirm,
   wizardConfirming = false,
+  onOpenCredentialVault,
 }: AgentChatPanelProps) {
   const draftRef = useRef<HTMLTextAreaElement | null>(null);
   const scrollToBottomNextOutputRef = useRef(false);
@@ -165,6 +171,92 @@ export const AgentChatPanel = memo(function AgentChatPanel({
     },
     [wizard],
   );
+
+  // ── Preflight action handlers ──────────────────────────────────────
+
+  /**
+   * Install a missing skill — sends the capability to the remediate API with
+   * user confirmation, then prompts the LLM to re-run the preflight check.
+   * Security mandate: user clicked "Install skill" explicitly → confirmed.
+   */
+  const handleInstallSkill = useCallback(
+    async (capability: string, clawhubPackage: string) => {
+      const preflightResult = wizard?.preflightResult;
+      if (!preflightResult) return;
+      try {
+        await fetch("/api/personas/preflight/remediate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            preflightResult,
+            confirmedCapabilities: [capability],
+          }),
+        });
+        // Prompt LLM to recheck — it will output another json:run_preflight block
+        void wizard?.sendMessage(
+          `I've initiated the installation of the ${clawhubPackage} skill. Please re-run the preflight check to confirm.`,
+        );
+      } catch {
+        // Non-fatal — LLM will handle gracefully
+      }
+    },
+    [wizard],
+  );
+
+  /**
+   * Enable a disabled skill — safe auto-fix, no confirmation required.
+   * Sends to remediate API then asks LLM to recheck.
+   */
+  const handleEnableSkill = useCallback(
+    async (capability: string) => {
+      const preflightResult = wizard?.preflightResult;
+      if (!preflightResult) return;
+      try {
+        await fetch("/api/personas/preflight/remediate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            preflightResult,
+            confirmedCapabilities: [],
+          }),
+        });
+        void wizard?.sendMessage(
+          `I've enabled the skill for ${capability}. Please re-run the preflight check to confirm.`,
+        );
+      } catch {
+        // Non-fatal
+      }
+    },
+    [wizard],
+  );
+
+  /** Open the credential vault via parent callback */
+  const handleSetupCredential = useCallback(
+    (templateKey: string) => {
+      onOpenCredentialVault?.(templateKey);
+    },
+    [onOpenCredentialVault],
+  );
+
+  /** Open OAuth URL in a new tab */
+  const handleOAuthFlow = useCallback((authUrl: string) => {
+    window.open(authUrl, "_blank", "noopener,noreferrer");
+  }, []);
+
+  /** Prompt the LLM to re-run the preflight check */
+  const handlePrefightRecheck = useCallback(() => {
+    if (!wizard?.wizardContext) return;
+    const caps = wizard.preflightResult?.capabilities.map((c) => c.capability) ?? [];
+    if (caps.length === 0) {
+      void wizard.sendMessage(
+        "Please re-run the preflight check to verify all capabilities are ready.",
+      );
+      return;
+    }
+    void wizard.sendMessage(
+      `Please re-run the preflight check for these capabilities: ${caps.join(", ")}.`,
+    );
+  }, [wizard]);
 
   const handleComposerSend = useCallback(
     (message: string, attachments?: ChatAttachment[]) => {
@@ -281,6 +373,12 @@ export const AgentChatPanel = memo(function AgentChatPanel({
                 onReviseConfig={handleWizardRevise}
                 onCancelWizard={handleWizardExit}
                 confirming={wizardConfirming}
+                preflightResult={wizard.preflightResult}
+                onInstallSkill={handleInstallSkill}
+                onEnableSkill={handleEnableSkill}
+                onSetupCredential={handleSetupCredential}
+                onOAuthFlow={handleOAuthFlow}
+                onRecheck={handlePrefightRecheck}
               />
             </div>
           </div>

@@ -47,6 +47,17 @@ type UseWorkspaceFilesResult = {
   createFile: (relativePath: string, content: string) => Promise<boolean>;
   /** Check if a file exists at the given path */
   fileExists: (relativePath: string) => Promise<boolean>;
+  /**
+   * Fetch the children of a directory without modifying global `entries` state.
+   * Used by FileTreeView to lazy-load directory contents when expanded.
+   * Returns the children array, or throws on failure.
+   */
+  fetchDirChildren: (dirPath: string) => Promise<WorkspaceEntry[]>;
+  /**
+   * Permanently delete a file from the workspace and refresh the listing.
+   * Returns true on success, false on failure.
+   */
+  deleteFile: (relativePath: string) => Promise<boolean>;
 };
 
 /**
@@ -325,6 +336,53 @@ export const useWorkspaceFiles = ({
     setError(null);
   }, []);
 
+  /**
+   * Fetch children for a directory path without touching global `entries` state.
+   * Used by `FileTreeView` to lazy-load sub-directories when expanded.
+   */
+  const fetchDirChildren = useCallback(async (dirPath: string): Promise<WorkspaceEntry[]> => {
+    const id = agentIdRef.current?.trim();
+    if (!id) throw new Error("No agent selected");
+
+    const result = await fetchWithFallback<{ entries: WorkspaceEntry[] }>(
+      () => {
+        const params = new URLSearchParams({ agentId: id });
+        if (dirPath) params.set("path", dirPath);
+        return fetch(`/api/workspace/files?${params.toString()}`);
+      },
+      async (res) => res.json() as Promise<{ entries: WorkspaceEntry[] }>,
+      null
+    );
+
+    if (!result) throw new Error(`Failed to fetch children for ${dirPath}`);
+    return result.data.entries;
+  }, []);
+
+  /**
+   * Permanently delete a file from the workspace.
+   * Refreshes the current directory listing on success.
+   */
+  const deleteFile = useCallback(
+    async (relativePath: string): Promise<boolean> => {
+      const id = agentIdRef.current?.trim();
+      if (!id) return false;
+      try {
+        const res = await fetch("/api/workspace/file", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ agentId: id, path: relativePath }),
+        });
+        if (!res.ok) return false;
+        // Refresh directory listing after successful delete
+        await fetchDir(currentPathRef.current);
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    [fetchDir]
+  );
+
   const refresh = useCallback(() => {
     if (viewingFileRef.current) {
       void fetchFile(viewingFileRef.current.path);
@@ -351,5 +409,7 @@ export const useWorkspaceFiles = ({
     saveFile,
     createFile,
     fileExists,
+    fetchDirChildren,
+    deleteFile,
   };
 };

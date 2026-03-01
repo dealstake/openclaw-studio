@@ -38,9 +38,13 @@ export const ENGINE_TEMPLATES: EngineTemplate[] = [
   },
 ];
 
-/** Mask an API key for display: show last 3 chars only */
-export function maskApiKey(key: string | null | undefined): string {
-  if (!key || key.length < 8) return "Not set";
+/**
+ * Mask an API key for display: show last 3 chars only.
+ * Returns null when the key is absent/too-short (presentation layer
+ * decides how to render the missing state, e.g. "Not set").
+ */
+export function maskApiKey(key: string | null | undefined): string | null {
+  if (!key || key.length < 8) return null;
   return `••••••${key.slice(-3)}`;
 }
 

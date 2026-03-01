@@ -4,6 +4,8 @@ export type WorkspaceEntry = {
   type: "file" | "directory";
   size?: number;
   updatedAt?: number;
+  /** Lazy-loaded directory contents (populated when a directory is expanded in FileTreeView) */
+  children?: WorkspaceEntry[];
 };
 
 export type WorkspaceFileContent = {

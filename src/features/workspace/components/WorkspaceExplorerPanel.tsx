@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useState } from "react";
 import { Folder } from "lucide-react";
 
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
@@ -9,14 +9,14 @@ import { ErrorBanner } from "@/components/ErrorBanner";
 import { FileEditorModal } from "@/components/FileEditorModal";
 
 import { useWorkspaceFiles } from "../hooks/useWorkspaceFiles";
-import { useProjectStatuses } from "../hooks/useProjectStatuses";
-import { classifyEntry, type WorkspaceEntry, type WorkspaceGroup } from "../types";
+import { usePinnedFiles } from "../hooks/usePinnedFiles";
+import type { WorkspaceEntry } from "../types";
 import { WorkspaceBreadcrumbHeader } from "./WorkspaceBreadcrumbHeader";
-import { WorkspaceRootView } from "./WorkspaceRootView";
-import { WorkspaceFlatView } from "./WorkspaceFlatView";
+import { FileTreeView } from "./FileTreeView";
 import { WorkspaceLoadingSkeleton } from "./WorkspaceLoadingSkeleton";
 import { NewFileDialog } from "./NewFileDialog";
 import { FileViewer } from "./FileViewer";
+import { MemorySearchView } from "./MemorySearchView";
 
 // ── Main Panel ──
 
@@ -49,7 +49,12 @@ export const WorkspaceExplorerPanel = memo(function WorkspaceExplorerPanel({
     saveFile,
     createFile,
     fileExists,
+    fetchDirChildren,
+    deleteFile,
   } = useWorkspaceFiles({ agentId, client, isTabActive, eventTick });
+
+  const [searchMode, setSearchMode] = useState(false);
+  const { pinnedEntries, isPinned, togglePin } = usePinnedFiles(agentId);
 
   const [modalFile, setModalFile] = useState<string | null>(null);
   const [showNewFile, setShowNewFile] = useState(false);
@@ -58,37 +63,23 @@ export const WorkspaceExplorerPanel = memo(function WorkspaceExplorerPanel({
     path: string;
     name: string;
   }>({ open: false, path: "", name: "" });
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    open: boolean;
+    path: string;
+    name: string;
+  }>({ open: false, path: "", name: "" });
 
-  const isRoot = currentPath === "";
-  const projectStatuses = useProjectStatuses(agentId, isRoot || currentPath === "projects");
-
-  // Group entries when at workspace root
-  const grouped = useMemo(() => {
-    if (!isRoot) return null;
-    const groups: Record<WorkspaceGroup, WorkspaceEntry[]> = {
-      projects: [],
-      memory: [],
-      brain: [],
-      other: [],
-    };
-    for (const entry of entries) {
-      groups[classifyEntry(entry)].push(entry);
-    }
-    groups.memory.sort((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0));
-    return groups;
-  }, [entries, isRoot]);
-
-  const handleEntryClick = useCallback(
+  // FileTreeView handles directory expansion internally.
+  // This handler is only called for file nodes.
+  const handleFileClick = useCallback(
     (entry: WorkspaceEntry) => {
-      if (entry.type === "directory") {
-        navigateToDir(entry.path);
-      } else if (entry.path.endsWith(".md")) {
+      if (entry.path.endsWith(".md")) {
         setModalFile(entry.path);
       } else {
         openFile(entry.path);
       }
     },
-    [navigateToDir, openFile]
+    [openFile]
   );
 
   const handleSaveFile = useCallback(
@@ -128,16 +119,52 @@ export const WorkspaceExplorerPanel = memo(function WorkspaceExplorerPanel({
     void doCreateFile(overwriteConfirm.path);
   }, [overwriteConfirm.path, doCreateFile]);
 
-  // Keyboard shortcut: Escape goes back from file viewer
+  /** Open a file from a search result and exit search mode. */
+  const handleSearchOpen = useCallback(
+    (path: string) => {
+      setSearchMode(false);
+      openFile(path);
+    },
+    [openFile]
+  );
+
+  const handleToggleSearch = useCallback(() => {
+    setSearchMode((prev) => !prev);
+  }, []);
+
+  /** Open a file in the editor modal (triggered by the Edit hover action). */
+  const handleEditFile = useCallback((entry: WorkspaceEntry) => {
+    setModalFile(entry.path);
+  }, []);
+
+  /** Show delete confirmation for a file path. */
+  const handleDeleteFile = useCallback((path: string) => {
+    const name = path.split("/").pop() ?? path;
+    setDeleteConfirm({ open: true, path, name });
+  }, []);
+
+  /** Execute delete after user confirms. */
+  const handleDeleteConfirm = useCallback(() => {
+    setDeleteConfirm((prev) => ({ ...prev, open: false }));
+    void deleteFile(deleteConfirm.path);
+  }, [deleteFile, deleteConfirm.path]);
+
+  // Keyboard shortcut: Escape closes search mode or goes back from file viewer
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && viewingFile) closeFile();
+      if (e.key === "Escape") {
+        if (searchMode) {
+          setSearchMode(false);
+        } else if (viewingFile) {
+          closeFile();
+        }
+      }
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [viewingFile, closeFile]);
+  }, [viewingFile, closeFile, searchMode]);
 
-  // File viewer mode
+  // File viewer mode (full-height, no header chrome)
   if (viewingFile) {
     return (
       <div className="flex h-full w-full flex-col overflow-hidden" data-testid="workspace-panel">
@@ -160,49 +187,64 @@ export const WorkspaceExplorerPanel = memo(function WorkspaceExplorerPanel({
         onNavigate={navigateToDir}
         onNewFile={() => setShowNewFile((p) => !p)}
         onRefresh={refresh}
+        onSearch={agentId ? handleToggleSearch : undefined}
+        searchActive={searchMode}
       />
 
-      {showNewFile && (
-        <NewFileDialog
-          currentPath={currentPath}
-          onSubmit={(name) => { void handleNewFile(name); }}
-          onCancel={() => setShowNewFile(false)}
-          saving={saving}
-        />
+      {/* ── Memory search mode — replaces file tree ── */}
+      {searchMode && agentId && (
+        <div className="min-h-0 flex-1 overflow-hidden">
+          <MemorySearchView
+            agentId={agentId}
+            onOpenFile={handleSearchOpen}
+            onClose={() => setSearchMode(false)}
+          />
+        </div>
       )}
 
-      <div className="min-h-0 flex-1 overflow-y-auto py-1">
-        {error && <ErrorBanner message={error} onRetry={refresh} className="mx-3 mt-2" />}
+      {/* ── Normal file browser ── */}
+      {!searchMode && (
+        <>
+          {showNewFile && (
+            <NewFileDialog
+              currentPath={currentPath}
+              onSubmit={(name) => { void handleNewFile(name); }}
+              onCancel={() => setShowNewFile(false)}
+              saving={saving}
+            />
+          )}
 
-        {loading && entries.length === 0 && <WorkspaceLoadingSkeleton />}
+          <div className="min-h-0 flex-1 overflow-hidden">
+            {error && <ErrorBanner message={error} onRetry={refresh} className="mx-3 mt-2" />}
 
-        {!error && entries.length === 0 && !loading && (
-          <div className="flex flex-col items-center justify-center gap-2 py-8 text-center">
-            <Folder className="h-8 w-8 text-muted-foreground/40" />
-            <span className="text-xs text-muted-foreground">
-              {agentId ? "Empty directory" : "Select an agent to browse workspace files"}
-            </span>
+            {loading && entries.length === 0 && <WorkspaceLoadingSkeleton />}
+
+            {!error && entries.length === 0 && !loading && (
+              <div className="flex flex-col items-center justify-center gap-2 py-8 text-center">
+                <Folder className="h-8 w-8 text-muted-foreground/40" />
+                <span className="text-xs text-muted-foreground">
+                  {agentId ? "Empty directory" : "Select an agent to browse workspace files"}
+                </span>
+              </div>
+            )}
+
+            {!error && entries.length > 0 && (
+              <FileTreeView
+                entries={entries}
+                fetchDirChildren={fetchDirChildren}
+                onFileClick={handleFileClick}
+                isPinned={isPinned}
+                onTogglePin={togglePin}
+                pinnedEntries={pinnedEntries}
+                onEdit={handleEditFile}
+                onDelete={handleDeleteFile}
+              />
+            )}
           </div>
-        )}
+        </>
+      )}
 
-        {!error && isRoot && grouped && (
-          <WorkspaceRootView
-            grouped={grouped}
-            onEntryClick={handleEntryClick}
-            projectStatuses={projectStatuses}
-          />
-        )}
-
-        {!error && !isRoot && entries.length > 0 && (
-          <WorkspaceFlatView
-            entries={entries}
-            currentPath={currentPath}
-            onEntryClick={handleEntryClick}
-            projectStatuses={projectStatuses}
-          />
-        )}
-      </div>
-
+      {/* ── Shared dialogs (rendered in both modes) ── */}
       <ConfirmDialog
         open={overwriteConfirm.open}
         onOpenChange={(open) => setOverwriteConfirm((prev) => ({ ...prev, open }))}
@@ -211,6 +253,15 @@ export const WorkspaceExplorerPanel = memo(function WorkspaceExplorerPanel({
         confirmLabel="Overwrite"
         destructive
         onConfirm={handleOverwriteConfirm}
+      />
+      <ConfirmDialog
+        open={deleteConfirm.open}
+        onOpenChange={(open) => setDeleteConfirm((prev) => ({ ...prev, open }))}
+        title="Delete file?"
+        description={`"${deleteConfirm.name}" will be permanently deleted. This cannot be undone.`}
+        confirmLabel="Delete"
+        destructive
+        onConfirm={handleDeleteConfirm}
       />
       {agentId && (
         <FileEditorModal
