@@ -38,6 +38,8 @@ function makeAgent(overrides: Partial<AgentState> = {}): AgentState {
     showThinkingTraces: false,
   autonomyLevel: "autonomous",
     wizardContext: null,
+    group: null,
+    tags: [],
     ...overrides,
   };
 }

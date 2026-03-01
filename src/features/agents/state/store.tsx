@@ -28,6 +28,10 @@ export type AgentStoreSeed = {
   toolCallingEnabled?: boolean;
   showThinkingTraces?: boolean;
   autonomyLevel?: AutonomyLevel;
+  /** Optional group/team category (e.g. "ops", "dev", "data"). */
+  group?: string | null;
+  /** Optional flexible labels for filtering (e.g. ["monitoring", "critical"]). */
+  tags?: string[];
 };
 
 export type AgentState = AgentStoreSeed & {
@@ -54,6 +58,10 @@ export type AgentState = AgentStoreSeed & {
   toolCallingEnabled: boolean;
   showThinkingTraces: boolean;
   autonomyLevel: AutonomyLevel;
+  /** Optional group/team category (e.g. "ops", "dev", "data"). */
+  group: string | null;
+  /** Optional flexible labels for filtering (e.g. ["monitoring", "critical"]). */
+  tags: string[];
   /** Active wizard context — null when no wizard is running */
   wizardContext: WizardContext | null;
 };
@@ -145,6 +153,8 @@ const createRuntimeAgentState = (
     toolCallingEnabled: seed.toolCallingEnabled ?? existing?.toolCallingEnabled ?? false,
     showThinkingTraces: seed.showThinkingTraces ?? existing?.showThinkingTraces ?? true,
     autonomyLevel: seed.autonomyLevel ?? existing?.autonomyLevel ?? DEFAULT_AUTONOMY_LEVEL,
+    group: seed.group ?? existing?.group ?? null,
+    tags: seed.tags ?? existing?.tags ?? [],
     // Session-scoped fields (reset when session changes)
     status: keep(existing?.status, "idle"),
     sessionCreated: keep(existing?.sessionCreated, false),

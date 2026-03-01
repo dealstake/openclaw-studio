@@ -193,6 +193,22 @@ export function useLoadAgents(params: UseLoadAgentsParams) {
           typeof mainSession?.thinkingLevel === "string" ? mainSession.thinkingLevel : null;
         const configEntry = configEntryByAgentId.get(agent.id) ?? null;
         const autonomyLevel = parseAutonomyLevel(configEntry?.autonomyLevel);
+        // group: prefer agents.list value, fall back to config entry
+        const group: string | null =
+          typeof agent.group === "string" && agent.group.trim()
+            ? agent.group.trim()
+            : typeof configEntry?.group === "string" && (configEntry.group as string).trim()
+            ? (configEntry.group as string).trim()
+            : null;
+        // tags: prefer agents.list value, fall back to config entry
+        const rawTags = Array.isArray(agent.tags)
+          ? agent.tags
+          : Array.isArray(configEntry?.tags)
+          ? (configEntry.tags as unknown[])
+          : [];
+        const tags: string[] = rawTags
+          .filter((t): t is string => typeof t === "string" && t.trim().length > 0)
+          .map((t) => t.trim());
         return {
           agentId: agent.id,
           name,
@@ -202,6 +218,8 @@ export function useLoadAgents(params: UseLoadAgentsParams) {
           model,
           thinkingLevel,
           autonomyLevel,
+          group,
+          tags,
         };
       });
       hydrateAgents(seeds);

@@ -35,6 +35,8 @@ const createAgent = (overrides?: Partial<AgentState>): AgentState => ({
   thinkingLevel: "medium",
   avatarSeed: "seed-1",
   avatarUrl: null,
+  group: null,
+  tags: [],
   ...(overrides ?? {}),
 });
 

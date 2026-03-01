@@ -34,6 +34,8 @@ const makeAgent = (overrides: Partial<AgentState> = {}): AgentState => ({
   draft: "",
   sessionSettingsSynced: false,
   historyLoadedAt: null,
+  group: null,
+  tags: [],
   ...overrides,
 });
 

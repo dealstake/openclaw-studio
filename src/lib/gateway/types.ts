@@ -47,6 +47,10 @@ export type GatewayFrame = ReqFrame | ResFrame | EventFrame;
 export type AgentsListAgent = {
   id: string;
   name?: string;
+  /** Optional group/team category (e.g. "ops", "dev", "data"). */
+  group?: string | null;
+  /** Optional flexible labels for filtering (e.g. ["monitoring", "critical"]). */
+  tags?: string[];
   identity?: {
     name?: string;
     theme?: string;

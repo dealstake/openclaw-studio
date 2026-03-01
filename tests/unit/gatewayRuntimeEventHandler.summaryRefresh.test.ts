@@ -36,6 +36,8 @@ const createAgent = (): AgentState =>
     thinkingLevel: "medium",
     avatarSeed: "seed-1",
     avatarUrl: null,
+    group: null,
+    tags: [],
   }) as AgentState;
 
 describe("gateway runtime event handler (summary refresh)", () => {

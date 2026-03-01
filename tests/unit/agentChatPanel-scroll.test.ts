@@ -37,6 +37,8 @@ const createAgent = (): AgentState => ({
   thinkingLevel: null,
   avatarSeed: "seed-1",
   avatarUrl: null,
+  group: null,
+  tags: [],
 });
 
 describe("AgentChatPanel scrolling", () => {

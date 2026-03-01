@@ -36,6 +36,8 @@ const createAgent = (agentId: string, name: string, sessionKey: string): AgentSt
   thinkingLevel: null,
   avatarSeed: `seed-${agentId}`,
   avatarUrl: null,
+  group: null,
+  tags: [],
 });
 
 const createMockClient = () => {

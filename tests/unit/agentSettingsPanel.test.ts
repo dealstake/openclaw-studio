@@ -35,6 +35,8 @@ const createAgent = (): AgentState => ({
   thinkingLevel: "medium",
   avatarSeed: "seed-1",
   avatarUrl: null,
+  group: null,
+  tags: [],
 });
 
 function defaultProps(overrides: Record<string, unknown> = {}) {

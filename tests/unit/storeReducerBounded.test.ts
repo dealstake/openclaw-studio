@@ -37,6 +37,8 @@ function stateWithParts(count: number): AgentStoreState {
         showThinkingTraces: true,
   autonomyLevel: "autonomous",
   wizardContext: null,
+  group: null,
+  tags: [],
       },
     ],
     selectedAgentId: "test",
