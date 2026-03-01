@@ -19,7 +19,7 @@ describe("MarkdownViewer", () => {
     const { container } = render(<MarkdownViewer content="test" />);
     const wrapper = container.firstElementChild!;
     expect(wrapper.className).toContain("agent-markdown");
-    expect(wrapper.className).toContain("text-xs");
+    expect(wrapper.className).toContain("text-sm");
   });
 
   it("merges custom className", () => {
