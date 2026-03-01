@@ -6,6 +6,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ErrorBanner } from "@/components/ErrorBanner";
 import { useActivityHistory } from "@/features/activity/hooks/useActivityHistory";
+import { FeedbackSummary } from "@/features/feedback/components/FeedbackSummary";
 import { HistoryEventCard } from "./HistoryEventCard";
 
 /** Virtualized, paginated feed of completed activity events */
@@ -70,6 +71,9 @@ export const HistoryFeed = memo(function HistoryFeed() {
           Refresh
         </button>
       </div>
+
+      {/* Feedback aggregate summary — only visible when annotations exist */}
+      <FeedbackSummary />
 
       <div ref={parentRef} className="min-h-0 flex-1 overflow-y-auto">
         <div

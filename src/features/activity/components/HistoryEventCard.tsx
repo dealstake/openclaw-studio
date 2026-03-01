@@ -7,6 +7,7 @@ import type { ActivityEvent } from "@/features/activity/lib/activityTypes";
 import { taskIcon, STATUS_PILL, formatHistoryTime } from "@/features/activity/lib/activityDisplayUtils";
 import { formatTokens } from "@/lib/text/format";
 import { openTraceFromKey } from "@/features/sessions/state/traceViewStore";
+import { FeedbackToolbar } from "@/features/feedback/components/FeedbackToolbar";
 import { ActivityActionMenu } from "./ActivityActionMenu";
 
 /** Card for a completed activity history event */
@@ -17,6 +18,15 @@ export const HistoryEventCard = memo(function HistoryEventCard({
 }) {
   const [expanded, setExpanded] = useState(false);
   const canViewTrace = !!(event.sessionKey || event.agentId);
+
+  /**
+   * Stable session key for feedback annotations.
+   * Prefers the event's own sessionKey; falls back to agent: prefix or
+   * a generic "activity" namespace so the messageId (taskId) remains unique.
+   */
+  const feedbackSessionKey =
+    event.sessionKey ??
+    (event.agentId ? `agent:${event.agentId}` : "activity");
   const handleViewTrace = useCallback(() => {
     if (event.sessionKey) {
       openTraceFromKey(event.sessionKey, event.agentId);
@@ -52,6 +62,12 @@ export const HistoryEventCard = memo(function HistoryEventCard({
                 taskName={event.taskName}
                 sessionKey={event.sessionKey}
                 status={event.status}
+              />
+              {/* Inline feedback — hover-reveal, stays visible when annotated */}
+              <FeedbackToolbar
+                sessionKey={feedbackSessionKey}
+                messageId={event.taskId}
+                className="opacity-0 transition-opacity group-hover/card:opacity-100 data-[annotated]:opacity-100"
               />
               {canViewTrace && (
                 <button
