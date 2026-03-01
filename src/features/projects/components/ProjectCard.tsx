@@ -105,7 +105,7 @@ export const ProjectCard = memo(function ProjectCard({
         <div className="flex shrink-0 items-center gap-1.5">
           {linkedTasks.length > 0 && (
             <span
-              className="inline-flex items-center gap-0.5 rounded-full border border-border/60 bg-muted/40 px-1.5 py-0.5 text-[11px] text-muted-foreground"
+              className="inline-flex items-center gap-0.5 rounded-full border border-border/60 bg-muted/40 px-1.5 py-0.5 text-xs text-muted-foreground"
               title={`${linkedTasks.length} linked task${linkedTasks.length > 1 ? "s" : ""}`}
             >
               <LinkIcon className="h-2.5 w-2.5" />
@@ -117,7 +117,7 @@ export const ProjectCard = memo(function ProjectCard({
             <Popover.Trigger asChild>
               <button
                 type="button"
-                className={`inline-flex min-h-[44px] sm:min-h-0 items-center justify-center gap-1 rounded border px-1.5 py-0.5 text-[11px] font-semibold transition hover:brightness-125 ${statusColors}`}
+                className={`inline-flex min-h-[44px] sm:min-h-0 items-center justify-center gap-1 rounded border px-1.5 py-0.5 text-xs font-semibold transition hover:brightness-125 ${statusColors}`}
                 onClick={(e) => { e.stopPropagation(); }}
                 aria-label={`Change status (current: ${statusLabel})`}
               >
@@ -161,7 +161,7 @@ export const ProjectCard = memo(function ProjectCard({
                       }}
                     >
                       <Icon className={`h-3 w-3 shrink-0 ${cfg.colors.split(" ").pop() ?? ""}`} />
-                      <span className="flex-1 font-mono text-xs font-semibold uppercase tracking-[0.1em]">
+                      <span className="flex-1 text-xs font-medium">
                         {label}
                       </span>
                       {wouldQueue && (
@@ -181,7 +181,7 @@ export const ProjectCard = memo(function ProjectCard({
                   }}
                 >
                   <Archive className="h-3 w-3 shrink-0" />
-                  <span className="flex-1 font-mono text-xs font-semibold uppercase tracking-[0.1em]">
+                  <span className="flex-1 text-xs font-medium">
                     Archive
                   </span>
                 </button>
