@@ -82,7 +82,7 @@ export function SideSheetClose(
 ) {
   return (
     <DialogPrimitive.Close
-      className="flex h-7 w-7 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground"
+      className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground sm:min-h-0 sm:min-w-0 sm:h-7 sm:w-7"
       {...props}
     >
       <X className="h-4 w-4" />

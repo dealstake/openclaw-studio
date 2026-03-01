@@ -63,13 +63,23 @@ export const SpecialistEngineCard = memo(function SpecialistEngineCard({
               </span>
             </div>
 
-            <p className="text-xs text-muted-foreground line-clamp-1">
+            <p
+              className="text-xs text-muted-foreground line-clamp-1"
+              title={engine.purpose}
+            >
               {engine.purpose}
             </p>
 
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
               <span>Model: {engine.model}</span>
-              <span className="font-mono">Key: {engine.maskedApiKey}</span>
+              <span className="font-mono">
+                Key:{" "}
+                {engine.maskedApiKey ?? (
+                  <span className="not-italic text-muted-foreground/70">
+                    Not set
+                  </span>
+                )}
+              </span>
             </div>
           </div>
 

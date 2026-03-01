@@ -97,6 +97,7 @@ export const useModels = (
         const message =
           err instanceof Error ? err.message : "Failed to load models data.";
         setError(message);
+        setData(EMPTY_DATA);
       }
     } finally {
       if (mountedRef.current) {
