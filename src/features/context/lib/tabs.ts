@@ -8,7 +8,7 @@ export const CONTEXT_TAB_CONFIG = [
   { value: "workspace", label: "Files", shortLabel: "Files", Icon: FolderOpen },
   { value: "skills", label: "Skills", shortLabel: "Skills", Icon: Puzzle },
   { value: "activity", label: "Activity", shortLabel: "Act", Icon: Activity },
-  { value: "budget", label: "Budget", shortLabel: "\u20ac", Icon: PieChart },
+  { value: "budget", label: "Budget", shortLabel: "Cost", Icon: PieChart },
   { value: "router", label: "Routing", shortLabel: "Route", Icon: Route },
   { value: "playground", label: "Playground", shortLabel: "Play", Icon: FlaskConical },
   { value: "orchestrator", label: "Swarm", shortLabel: "Swarm", Icon: Network },
