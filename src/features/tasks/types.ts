@@ -65,6 +65,8 @@ export interface StudioTask {
   model: string;
   /** Thinking level for the model (e.g. "low", "medium", "high") */
   thinking: string | null;
+  /** Prompt cache retention preference: "none" | "short" | "long" | null (inherit from agent). */
+  cacheRetention: string | null;
   deliveryChannel: string | null;
   deliveryTarget: string | null;
 
@@ -94,6 +96,7 @@ export interface CreateTaskPayload {
   prompt: string;
   model: string;
   thinking?: string | null;
+  cacheRetention?: string | null;
   deliveryChannel?: string | null;
   deliveryTarget?: string | null;
 }
@@ -112,6 +115,7 @@ export interface UpdateTaskPayload {
   prompt?: string;
   model?: string;
   thinking?: string | null;
+  cacheRetention?: string | null;
   deliveryChannel?: string | null;
   deliveryTarget?: string | null;
 }
@@ -135,6 +139,24 @@ export interface WizardTaskConfig {
   agentId: string;
   deliveryChannel?: string | null;
 }
+
+// ─── Cache retention options ─────────────────────────────────────────────────
+
+/**
+ * Per-task prompt cache retention preference.
+ * Maps to OpenClaw params.cacheRetention (v2026.2.24+).
+ * "inherit" means use the agent default (cacheRetention = null in DB).
+ *
+ * - none  → no caching (best for high-churn agents like Visual QA)
+ * - short → 5 min  (best for medium-churn agents like Continuation Agent)
+ * - long  → 1 hour (best for low-churn agents like Codebase Auditor)
+ */
+export const CACHE_RETENTION_OPTIONS = [
+  { label: "Inherit from agent", value: "" },
+  { label: "None (no cache)", value: "none" },
+  { label: "Short (5 min)", value: "short" },
+  { label: "Long (1 hour)", value: "long" },
+] as const;
 
 // ─── Thinking level options ───────────────────────────────────────────────────
 

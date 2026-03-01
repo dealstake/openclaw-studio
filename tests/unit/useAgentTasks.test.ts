@@ -73,6 +73,7 @@ function makeTask(overrides: Partial<StudioTask> = {}): StudioTask {
     prompt: "Do something",
     model: "anthropic/claude-sonnet-4-6",
     thinking: null,
+    cacheRetention: null,
     deliveryChannel: null,
     deliveryTarget: null,
     enabled: true,

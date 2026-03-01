@@ -5,6 +5,7 @@ import { Megaphone } from "lucide-react";
 import type { StudioTask } from "@/features/tasks/types";
 import {
   THINKING_OPTIONS,
+  CACHE_RETENTION_OPTIONS,
   DELIVERY_MODE_OPTIONS,
 } from "@/features/tasks/types";
 import { sectionLabelClass } from "@/components/SectionLabel";
@@ -18,10 +19,11 @@ interface TaskAdvancedSectionProps {
   editing: boolean;
   editModel: string;
   editThinking: string;
+  editCacheRetention: string;
   editDeliveryChannel: string;
   editDeliveryTarget: string;
   onFieldChange: (
-    field: "model" | "thinking" | "deliveryChannel" | "deliveryTarget",
+    field: "model" | "thinking" | "cacheRetention" | "deliveryChannel" | "deliveryTarget",
     value: string
   ) => void;
 }
@@ -33,6 +35,7 @@ export const TaskAdvancedSection = memo(function TaskAdvancedSection({
   editing,
   editModel,
   editThinking,
+  editCacheRetention,
   editDeliveryChannel,
   editDeliveryTarget,
   onFieldChange,
@@ -73,6 +76,25 @@ export const TaskAdvancedSection = memo(function TaskAdvancedSection({
             </div>
           ) : task.thinking ? (
             <span>Thinking: {task.thinking}</span>
+          ) : null}
+          {editing ? (
+            <div className="flex items-center gap-1.5">
+              <span>Cache:</span>
+              <select
+                aria-label="Cache retention"
+                className="h-6 rounded-md border border-border/80 bg-card/70 px-1.5 font-mono text-[11px] text-foreground outline-none transition hover:border-border focus:border-primary/60"
+                value={editCacheRetention}
+                onChange={(e) => onFieldChange("cacheRetention", e.target.value)}
+              >
+                {CACHE_RETENTION_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : task.cacheRetention ? (
+            <span>Cache: {task.cacheRetention}</span>
           ) : null}
           <span>Agent: {task.agentId}</span>
           <span>Runs: {task.runCount}</span>

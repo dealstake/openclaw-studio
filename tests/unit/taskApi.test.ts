@@ -19,6 +19,7 @@ const mockTask: StudioTask = {
   prompt: "test",
   model: "default",
   thinking: null,
+  cacheRetention: null,
   deliveryChannel: null,
   deliveryTarget: null,
   enabled: true,

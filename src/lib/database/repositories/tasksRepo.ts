@@ -20,6 +20,7 @@ function rowToTask(row: typeof tasks.$inferSelect): StudioTask {
     thinking: null, // Thinking level is cron-owned, enriched from gateway at read time
     deliveryChannel: row.deliveryChannel ?? null,
     deliveryTarget: row.deliveryTarget ?? null,
+    cacheRetention: row.cacheRetention ?? null,
     enabled: row.enabled,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -70,6 +71,7 @@ export function upsert(db: StudioDb, task: StudioTask): void {
       model: task.model,
       deliveryChannel: task.deliveryChannel,
       deliveryTarget: task.deliveryTarget,
+      cacheRetention: task.cacheRetention ?? null,
       enabled: task.enabled,
       createdAt: task.createdAt || now,
       updatedAt: now,
@@ -89,6 +91,7 @@ export function upsert(db: StudioDb, task: StudioTask): void {
         model: task.model,
         deliveryChannel: task.deliveryChannel,
         deliveryTarget: task.deliveryTarget,
+        cacheRetention: task.cacheRetention ?? null,
         enabled: task.enabled,
         updatedAt: now,
         lastRunAt: task.lastRunAt,
@@ -111,7 +114,7 @@ export function upsert(db: StudioDb, task: StudioTask): void {
 export function update(
   db: StudioDb,
   id: string,
-  patch: Partial<Pick<StudioTask, "name" | "description" | "prompt" | "model" | "deliveryChannel" | "deliveryTarget">>,
+  patch: Partial<Pick<StudioTask, "name" | "description" | "prompt" | "model" | "deliveryChannel" | "deliveryTarget" | "cacheRetention">>,
 ): boolean {
   const set: Record<string, unknown> = { updatedAt: new Date().toISOString() };
 
@@ -121,6 +124,7 @@ export function update(
   if (patch.model !== undefined) set.model = patch.model;
   if (patch.deliveryChannel !== undefined) set.deliveryChannel = patch.deliveryChannel;
   if (patch.deliveryTarget !== undefined) set.deliveryTarget = patch.deliveryTarget;
+  if (patch.cacheRetention !== undefined) set.cacheRetention = patch.cacheRetention;
 
   const result = db
     .update(tasks)

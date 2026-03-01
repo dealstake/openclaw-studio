@@ -115,6 +115,8 @@ describe("TestSet CRUD", () => {
   it("updates a test set", async () => {
     const { createTestSet, updateTestSet, getTestSetById } = await getStorage();
     const ts = createTestSet({ name: "Old Name", description: "", cases: [] });
+    // Ensure updatedAt differs by waiting 1ms
+    await new Promise((r) => setTimeout(r, 5));
     const updated = updateTestSet(ts.id, { name: "New Name" });
     expect(updated?.name).toBe("New Name");
     expect(updated?.id).toBe(ts.id); // ID unchanged

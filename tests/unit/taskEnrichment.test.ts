@@ -47,6 +47,7 @@ function makeTask(overrides: Partial<StudioTask> = {}): StudioTask {
     prompt: "Do stuff",
     model: "default",
     thinking: null,
+    cacheRetention: null,
     deliveryChannel: null,
     deliveryTarget: null,
     enabled: false,

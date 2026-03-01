@@ -35,6 +35,7 @@ export const tasks = sqliteTable("tasks", {
   model: text("model").notNull().default(""),
   deliveryChannel: text("delivery_channel"),
   deliveryTarget: text("delivery_target"),
+  cacheRetention: text("cache_retention"),
   enabled: integer("enabled", { mode: "boolean" }).notNull().default(true),
   createdAt: text("created_at")
     .notNull()

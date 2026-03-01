@@ -18,6 +18,7 @@ function makeTask(overrides: Partial<StudioTask> = {}): StudioTask {
     prompt: "Check health",
     model: "claude-opus-4",
     thinking: null,
+    cacheRetention: null,
     deliveryChannel: null,
     deliveryTarget: null,
     enabled: true,

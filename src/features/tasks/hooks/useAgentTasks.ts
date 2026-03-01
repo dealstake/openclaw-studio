@@ -138,6 +138,7 @@ export const useAgentTasks = (
           prompt: resolvedPrompt,
           model: payload.model,
           thinking: payload.thinking ?? null,
+          cacheRetention: payload.cacheRetention ?? null,
           deliveryChannel: payload.deliveryChannel ?? null,
           deliveryTarget: payload.deliveryTarget ?? null,
           enabled: true,

@@ -30,7 +30,7 @@ export function buildDelivery(payload: CreateTaskPayload) {
  * - runtime state (lastRunAt, lastRunStatus, runCount, nextRunAtMs, etc.)
  *
  * Studio DB only stores UI metadata: name, description, prompt, model,
- * delivery preferences, and type classification.
+ * cacheRetention, delivery preferences, and type classification.
  */
 export function enrichTasksWithCronData(
   tasks: StudioTask[],
@@ -108,6 +108,7 @@ export function enrichTasksWithCronData(
       job.payload.kind === "agentTurn" ? job.payload.model ?? "default" : "default",
     thinking:
       job.payload.kind === "agentTurn" ? job.payload.thinking ?? null : null,
+    cacheRetention: null,
     deliveryChannel: job.delivery?.channel ?? null,
     deliveryTarget: job.delivery?.to ?? null,
     enabled: job.enabled,

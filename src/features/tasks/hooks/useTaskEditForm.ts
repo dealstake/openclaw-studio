@@ -10,6 +10,7 @@ interface EditFormState {
   prompt: string;
   model: string;
   thinking: string;
+  cacheRetention: string;
   deliveryChannel: string;
   deliveryTarget: string;
 }
@@ -26,6 +27,7 @@ const initialState: EditFormState = {
   prompt: "",
   model: "",
   thinking: "",
+  cacheRetention: "",
   deliveryChannel: "",
   deliveryTarget: "",
 };
@@ -40,6 +42,7 @@ function editFormReducer(state: EditFormState, action: EditFormAction): EditForm
         prompt: action.task.prompt,
         model: action.task.model,
         thinking: action.task.thinking ?? "",
+        cacheRetention: action.task.cacheRetention ?? "",
         deliveryChannel: action.task.deliveryChannel ?? "",
         deliveryTarget: action.task.deliveryTarget ?? "",
       };
@@ -85,6 +88,8 @@ export function useTaskEditForm({ task, onUpdateTask }: UseTaskEditFormOptions) 
     if (state.model.trim() && state.model.trim() !== task.model) updates.model = state.model.trim();
     const newThinking = state.thinking || null;
     if (newThinking !== (task.thinking ?? null)) updates.thinking = newThinking;
+    const newCacheRetention = state.cacheRetention || null;
+    if (newCacheRetention !== (task.cacheRetention ?? null)) updates.cacheRetention = newCacheRetention;
     const newDeliveryChannel = state.deliveryChannel || null;
     if (newDeliveryChannel !== task.deliveryChannel) updates.deliveryChannel = newDeliveryChannel;
     const newDeliveryTarget = state.deliveryTarget || null;
@@ -96,7 +101,7 @@ export function useTaskEditForm({ task, onUpdateTask }: UseTaskEditFormOptions) 
     }
     onUpdateTask(task.id, updates);
     dispatch({ type: "cancel" });
-  }, [task, state.name, state.description, state.prompt, state.model, state.thinking, state.deliveryChannel, state.deliveryTarget, onUpdateTask]);
+  }, [task, state.name, state.description, state.prompt, state.model, state.thinking, state.cacheRetention, state.deliveryChannel, state.deliveryTarget, onUpdateTask]);
 
   return {
     editing: state.editing,
@@ -105,6 +110,7 @@ export function useTaskEditForm({ task, onUpdateTask }: UseTaskEditFormOptions) 
     editPrompt: state.prompt,
     editModel: state.model,
     editThinking: state.thinking,
+    editCacheRetention: state.cacheRetention,
     editDeliveryChannel: state.deliveryChannel,
     editDeliveryTarget: state.deliveryTarget,
     startEditing,

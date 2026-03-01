@@ -28,6 +28,7 @@ function makeTask(id: string): StudioTask {
     prompt: "",
     model: "",
     thinking: null,
+    cacheRetention: null,
     deliveryChannel: null,
     deliveryTarget: null,
     enabled: true,
