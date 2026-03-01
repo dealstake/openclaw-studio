@@ -40,15 +40,32 @@ describe("withSidecarGetFallback", () => {
     expect(mockSidecarGet).toHaveBeenCalledWith("/file", { agentId: "a", path: "b" });
   });
 
-  it("preserves sidecar error status codes", async () => {
+  it("preserves sidecar error status codes (non-404)", async () => {
+    mockIsSidecarConfigured.mockReturnValue(true);
+    mockSidecarGet.mockResolvedValue({
+      json: () => Promise.resolve({ error: "forbidden" }),
+      status: 403,
+    });
+
+    const res = await withSidecarGetFallback("/file", {}, () => ({}));
+    expect(res.status).toBe(403);
+  });
+
+  it("falls back to local when sidecar returns 404", async () => {
     mockIsSidecarConfigured.mockReturnValue(true);
     mockSidecarGet.mockResolvedValue({
       json: () => Promise.resolve({ error: "not found" }),
       status: 404,
     });
 
-    const res = await withSidecarGetFallback("/file", {}, () => ({}));
-    expect(res.status).toBe(404);
+    const res = await withSidecarGetFallback(
+      "/file",
+      {},
+      () => ({ data: "local-fallback" }),
+    );
+    const body = await res.json();
+    expect(res.status).toBe(200);
+    expect(body).toEqual({ data: "local-fallback" });
   });
 
   it("falls back to local when sidecar is not configured", async () => {
