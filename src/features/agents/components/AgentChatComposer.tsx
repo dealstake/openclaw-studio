@@ -256,8 +256,8 @@ export const AgentChatComposer = memo(function AgentChatComposer({
 
   return (
     <div
-      className="absolute inset-x-0 bottom-0 z-10 px-2 sm:px-4 overflow-hidden"
-      style={{ paddingBottom: `calc(0.75rem + var(--mobile-nav-height, 0px) + env(safe-area-inset-bottom))` }}
+      className="absolute inset-x-0 bottom-0 z-10 px-2 sm:px-4"
+      style={{ paddingBottom: `calc(1.25rem + var(--mobile-nav-height, 0px) + env(safe-area-inset-bottom))` }}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDragOver={handleDragOver}
