@@ -76,12 +76,12 @@ export const TemplateBrowserModal = React.memo(function TemplateBrowserModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="max-h-[85vh] max-w-2xl overflow-hidden flex flex-col sm:max-w-2xl"
+        className="max-h-[85vh] max-w-2xl overflow-hidden flex flex-col gap-4 sm:max-w-2xl"
         aria-describedby="template-browser-desc"
       >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
+            <Sparkles className="h-5 w-5 text-primary-text" />
             Starter Kits
           </DialogTitle>
           <DialogDescription id="template-browser-desc">
@@ -100,7 +100,7 @@ export const TemplateBrowserModal = React.memo(function TemplateBrowserModal({
             placeholder="Search templates…"
             aria-label="Search templates"
             className={cn(
-              "h-9 w-full rounded-md border border-border/40 bg-background/50 pl-9 pr-3",
+              "h-11 w-full rounded-md border border-border/40 bg-background/50 pl-9 pr-3",
               "text-sm text-foreground placeholder:text-muted-foreground/70",
               "transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
             )}
@@ -156,7 +156,7 @@ export const TemplateBrowserModal = React.memo(function TemplateBrowserModal({
             type="button"
             disabled
             className={cn(
-              "flex h-10 w-full items-center justify-center gap-2 rounded-md",
+              "flex h-11 w-full items-center justify-center gap-2 rounded-md",
               "border border-dashed border-border/40 text-xs text-muted-foreground/60",
               "cursor-not-allowed",
             )}

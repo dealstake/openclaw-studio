@@ -90,7 +90,7 @@ export const TemplateCard = React.memo(function TemplateCard({
         <div
           className={cn(
             "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg",
-            "bg-primary/10 text-primary transition-colors",
+            "bg-primary/10 text-primary-text transition-colors",
             "group-hover/tpl:bg-primary/20",
           )}
         >
@@ -104,7 +104,7 @@ export const TemplateCard = React.memo(function TemplateCard({
             </span>
             <span
               className={cn(
-                "shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium",
+                "shrink-0 rounded px-1.5 py-0.5 text-xs font-medium",
                 diff.cls,
               )}
             >
