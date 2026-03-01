@@ -159,6 +159,14 @@ Each session, I wake up fresh. Memory files are my continuity:
 ## [Role-Specific Section]
 [Domain-specific operational instructions — NOT generic filler]
 
+## Knowledge Search
+Before answering questions about your domain, search your knowledge base first:
+1. Use the knowledge search API with a relevant query
+2. Incorporate the top results into your response
+3. Cite sources when referencing specific knowledge chunks
+
+This ensures your answers draw on indexed documents, research, and training materials.
+
 ## Memory
 - \`memory/YYYY-MM-DD.md\` — daily logs
 - \`MEMORY.md\` — curated long-term memory

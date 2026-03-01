@@ -498,3 +498,59 @@ export async function refreshIndex(
 
   return { refreshed, failed };
 }
+
+// ─── Staleness Check ───────────────────────────────────────────────────────
+
+/** Result of a knowledge staleness check. */
+export interface StalenessCheckResult {
+  /** Total number of indexed sources */
+  totalSources: number;
+  /** Sources whose indexed date exceeds the threshold */
+  staleSources: Array<{
+    id: number;
+    title: string;
+    sourceType: string;
+    fetchedAt: string;
+    ageMs: number;
+  }>;
+  /** True if the persona has no indexed knowledge at all */
+  empty: boolean;
+}
+
+/**
+ * Check for stale knowledge sources. A source is considered stale if it was
+ * indexed more than `maxAgeDays` ago (default 30 days).
+ *
+ * This is designed to be called during persona health checks / preflight.
+ *
+ * @param agentId    Agent workspace identifier
+ * @param personaId  Target persona
+ * @param maxAgeDays Maximum age in days before a source is flagged stale
+ */
+export async function checkStaleness(
+  agentId: string,
+  personaId: string,
+  maxAgeDays = 30
+): Promise<StalenessCheckResult> {
+  const sources = await getSourceList(agentId, personaId);
+  if (sources.length === 0) {
+    return { totalSources: 0, staleSources: [], empty: true };
+  }
+
+  const now = Date.now();
+  const maxAgeMs = maxAgeDays * 24 * 60 * 60 * 1000;
+  const staleSources = sources
+    .filter((s) => {
+      const fetchedMs = new Date(s.fetchedAt).getTime();
+      return now - fetchedMs > maxAgeMs;
+    })
+    .map((s) => ({
+      id: s.id,
+      title: s.title,
+      sourceType: s.sourceType,
+      fetchedAt: s.fetchedAt,
+      ageMs: now - new Date(s.fetchedAt).getTime(),
+    }));
+
+  return { totalSources: sources.length, staleSources, empty: false };
+}
