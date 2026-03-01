@@ -52,8 +52,8 @@ export const BaseCard = React.memo(function BaseCard({
         "focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-1 focus-visible:ring-offset-background",
         variantClasses[variant],
         isHoverable && !isSelected && variant === "flush"
-          ? "hover:bg-muted/30"
-          : isHoverable && !isSelected && "hover:bg-card/70 hover:border-border/80 hover:shadow-sm",
+          ? "hover:bg-muted/30 hover:translate-x-0.5"
+          : isHoverable && !isSelected && "hover:bg-card/70 hover:border-border/80 hover:shadow-sm hover:translate-x-0.5",
         isSelected && "ring-1 ring-primary/30 border-primary/30 bg-primary/5",
         isInteractive && "cursor-pointer",
         className,
@@ -128,7 +128,7 @@ export const CardMeta = React.memo(function CardMeta({
   ...props
 }: CardMetaProps) {
   return (
-    <div className={cn("flex items-center gap-2 text-xs text-muted-foreground/80", className)} {...props}>
+    <div className={cn("flex items-center gap-2 text-xs text-muted-foreground", className)} {...props}>
       {children}
     </div>
   );

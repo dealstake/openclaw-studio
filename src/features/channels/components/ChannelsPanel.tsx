@@ -13,6 +13,7 @@ import { ErrorBanner } from "@/components/ErrorBanner";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { useChannels } from "../hooks/useChannels";
 import { ChannelCard } from "./ChannelCard";
+import { ChannelSheet } from "./ChannelSheet";
 import type { ChannelEntry } from "../lib/types";
 
 export interface ChannelsPanelProps {
@@ -29,16 +30,37 @@ export const ChannelsPanel = memo(function ChannelsPanel({
     loading,
     error,
     refresh,
+    create,
+    update,
     remove,
     disconnect,
     reconnect,
+    readConfig,
   } = useChannels(client, status);
 
   const [deleteTarget, setDeleteTarget] = useState<ChannelEntry | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [editingChannel, setEditingChannel] = useState<ChannelEntry | null>(null);
 
-  const handleEdit = useCallback((channelId: string) => {
-    // TODO: Phase 3 — open ChannelSheet in edit mode
-    void channelId;
+  const handleEdit = useCallback(
+    (channelId: string) => {
+      const entry = channels.find((c) => c.channelId === channelId);
+      if (entry) {
+        setEditingChannel(entry);
+        setSheetOpen(true);
+      }
+    },
+    [channels],
+  );
+
+  const handleAddNew = useCallback(() => {
+    setEditingChannel(null);
+    setSheetOpen(true);
+  }, []);
+
+  const handleSheetOpenChange = useCallback((open: boolean) => {
+    setSheetOpen(open);
+    if (!open) setEditingChannel(null);
   }, []);
 
   const handleDelete = useCallback(
@@ -68,10 +90,6 @@ export const ChannelsPanel = memo(function ChannelsPanel({
     },
     [reconnect],
   );
-
-  const handleAddNew = useCallback(() => {
-    // TODO: Phase 3 — open ChannelSheet in add mode
-  }, []);
 
   return (
     <TooltipProvider>
@@ -153,6 +171,16 @@ export const ChannelsPanel = memo(function ChannelsPanel({
           confirmLabel="Delete"
           destructive
           onConfirm={confirmDelete}
+        />
+
+        <ChannelSheet
+          open={sheetOpen}
+          onOpenChange={handleSheetOpenChange}
+          onCreate={create}
+          onUpdate={update}
+          readConfig={readConfig}
+          client={client}
+          editingChannel={editingChannel}
         />
       </div>
     </TooltipProvider>
