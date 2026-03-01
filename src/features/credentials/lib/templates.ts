@@ -128,6 +128,7 @@ export const CREDENTIAL_TEMPLATES: CredentialTemplate[] = [
     configPathMap: {
       apiKey: ["skills.entries.openai.apiKey"],
     },
+    testConfig: { handler: "openai" },
   },
   {
     key: "brave_search",
@@ -154,6 +155,7 @@ export const CREDENTIAL_TEMPLATES: CredentialTemplate[] = [
     configPathMap: {
       apiKey: ["tools.web.search.apiKey"],
     },
+    testConfig: { handler: "brave_search" },
   },
   {
     key: "twilio",
@@ -338,6 +340,7 @@ export const CREDENTIAL_TEMPLATES: CredentialTemplate[] = [
         "skills.entries.local-places.apiKey",
       ],
     },
+    testConfig: { handler: "google_places" },
   },
   {
     key: "eightctl",
