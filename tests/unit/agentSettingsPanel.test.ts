@@ -29,6 +29,7 @@ const createAgent = (): AgentState => ({
   historyLoadedAt: null,
   toolCallingEnabled: true,
   showThinkingTraces: true,
+  autonomyLevel: "autonomous",
   wizardContext: null,
   model: "openai/gpt-5",
   thinkingLevel: "medium",
@@ -45,6 +46,7 @@ function defaultProps(overrides: Record<string, unknown> = {}) {
     onDelete: vi.fn(),
     onToolCallingToggle: vi.fn(),
     onThinkingTracesToggle: vi.fn(),
+    onAutonomyChange: vi.fn(),
     ...overrides,
   };
 }

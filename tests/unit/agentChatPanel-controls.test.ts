@@ -31,6 +31,7 @@ const createAgent = (): AgentState => ({
   historyLoadedAt: null,
   toolCallingEnabled: true,
   showThinkingTraces: true,
+  autonomyLevel: "autonomous",
   wizardContext: null,
   model: null,
   thinkingLevel: null,

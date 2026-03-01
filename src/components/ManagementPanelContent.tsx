@@ -106,6 +106,7 @@ export const ManagementPanelContent = memo(function ManagementPanelContent({
             canDelete={ctx.settingsAgent.agentId !== RESERVED_MAIN_AGENT_ID}
             onToolCallingToggle={ctx.onToolCallingToggle}
             onThinkingTracesToggle={ctx.onThinkingTracesToggle}
+            onAutonomyChange={ctx.onAutonomyChange}
           />
           <div className="mt-4 border-t border-border/40 px-4 pt-4">
             <LogoutButton />

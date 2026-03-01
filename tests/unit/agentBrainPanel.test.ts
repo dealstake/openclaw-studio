@@ -30,6 +30,7 @@ const createAgent = (agentId: string, name: string, sessionKey: string): AgentSt
   historyLoadedAt: null,
   toolCallingEnabled: true,
   showThinkingTraces: true,
+  autonomyLevel: "autonomous",
   wizardContext: null,
   model: null,
   thinkingLevel: null,

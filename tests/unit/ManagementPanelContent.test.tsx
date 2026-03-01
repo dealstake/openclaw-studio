@@ -49,6 +49,7 @@ function defaultContext(overrides: Partial<ManagementPanelContextValue> = {}): M
     onDeleteAgent: vi.fn(),
     onToolCallingToggle: vi.fn(),
     onThinkingTracesToggle: vi.fn(),
+    onAutonomyChange: vi.fn(),
     onNavigateToTasks: vi.fn(),
     onStartCredentialWizard: null,
     ...overrides,

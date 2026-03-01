@@ -1056,6 +1056,7 @@ export const AgentStudioPage = () => {
                   wizard={wizard}
                   onWizardConfirm={() => void handleWizardConfirm()}
                   onOpenCredentialVault={() => setManagementView("credentials")}
+                  onOpenSettings={() => handleManagementNav("settings")}
                 />
               ) : (
                 <div className="flex h-full w-full flex-col items-center justify-center gap-3 text-center text-muted-foreground">

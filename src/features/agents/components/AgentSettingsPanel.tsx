@@ -7,7 +7,9 @@ import { AgentInspectHeader } from "./AgentInspectHeader";
 import { IdentitySettingsSection } from "./IdentitySettingsSection";
 import { SessionSettingsSection } from "./SessionSettingsSection";
 import { DangerZoneSection } from "./DangerZoneSection";
+import { AutonomyLevelSelector } from "./AutonomyLevelSelector";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import type { AutonomyLevel } from "@/features/agents/lib/autonomyService";
 
 type AgentSettingsPanelProps = {
   agent: AgentState;
@@ -18,6 +20,7 @@ type AgentSettingsPanelProps = {
   canDelete?: boolean;
   onToolCallingToggle: (enabled: boolean) => void;
   onThinkingTracesToggle: (enabled: boolean) => void;
+  onAutonomyChange: (level: AutonomyLevel) => void;
 };
 
 export const AgentSettingsPanel = memo(function AgentSettingsPanel({
@@ -29,6 +32,7 @@ export const AgentSettingsPanel = memo(function AgentSettingsPanel({
   canDelete = true,
   onToolCallingToggle,
   onThinkingTracesToggle,
+  onAutonomyChange,
 }: AgentSettingsPanelProps) {
   return (
     <TooltipProvider>
@@ -57,6 +61,11 @@ export const AgentSettingsPanel = memo(function AgentSettingsPanel({
             onToolCallingToggle={onToolCallingToggle}
             onThinkingTracesToggle={onThinkingTracesToggle}
             onNewSession={onNewSession}
+          />
+
+          <AutonomyLevelSelector
+            value={agent.autonomyLevel}
+            onChange={onAutonomyChange}
           />
 
           <DangerZoneSection
