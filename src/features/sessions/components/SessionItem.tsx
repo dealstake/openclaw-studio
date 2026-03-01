@@ -26,6 +26,7 @@ type SessionItemProps = {
   onDelete: (key: string) => void;
   onTogglePin: (key: string) => void;
   onViewTrace?: (key: string) => void;
+  onViewReplay?: (key: string) => void;
   onExport?: (key: string) => void;
   onToggleCompare?: (key: string) => void;
 };
@@ -46,6 +47,7 @@ export const SessionItem = memo(function SessionItem({
   onDelete,
   onTogglePin,
   onViewTrace,
+  onViewReplay,
   onExport,
   onToggleCompare,
 }: SessionItemProps) {
@@ -144,6 +146,7 @@ export const SessionItem = memo(function SessionItem({
             onDelete={onDelete}
             onTogglePin={onTogglePin}
             onViewTrace={onViewTrace}
+            onViewReplay={onViewReplay}
             onExport={onExport}
             onToggleCompare={onToggleCompare}
           />

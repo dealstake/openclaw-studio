@@ -6,6 +6,7 @@ import {
   Pin,
   PinOff,
   Pencil,
+  Play,
   Trash2,
   FileSearch,
   Download,
@@ -32,6 +33,7 @@ type SessionItemMenuProps = {
   onDelete: (key: string) => void;
   onTogglePin: (key: string) => void;
   onViewTrace?: (key: string) => void;
+  onViewReplay?: (key: string) => void;
   onExport?: (key: string) => void;
   onToggleCompare?: (key: string) => void;
 };
@@ -46,6 +48,7 @@ export const SessionItemMenu = memo(function SessionItemMenu({
   onDelete,
   onTogglePin,
   onViewTrace,
+  onViewReplay,
   onExport,
   onToggleCompare,
 }: SessionItemMenuProps) {
@@ -123,7 +126,18 @@ export const SessionItemMenu = memo(function SessionItemMenu({
               {compareLabel}
             </DropdownMenuItem>
           )}
-          {(onViewTrace || onExport) && <DropdownMenuSeparator />}
+          {(onViewTrace || onViewReplay || onExport) && <DropdownMenuSeparator />}
+          {onViewReplay && (
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onViewReplay(sessionKey);
+              }}
+            >
+              <Play className="mr-2 h-3.5 w-3.5" />
+              Replay
+            </DropdownMenuItem>
+          )}
           {onViewTrace && (
             <DropdownMenuItem
               onClick={(e) => {

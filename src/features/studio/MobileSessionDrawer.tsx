@@ -28,6 +28,7 @@ interface MobileSessionDrawerProps {
   onSelectSession: (key: string | null) => void;
   onNewSession: () => void;
   onViewTrace?: (key: string) => void;
+  onViewReplay?: (key: string) => void;
   onExport?: (key: string) => void;
 }
 
@@ -54,6 +55,7 @@ export const MobileSessionDrawer = memo(function MobileSessionDrawer({
   onSelectSession,
   onNewSession,
   onViewTrace,
+  onViewReplay,
   onExport,
 }: MobileSessionDrawerProps) {
   const {
@@ -252,6 +254,7 @@ export const MobileSessionDrawer = memo(function MobileSessionDrawer({
           onDelete={handleDelete}
           onTogglePin={togglePin}
           onViewTrace={onViewTrace}
+          onViewReplay={onViewReplay}
           onExport={onExport}
           onToggleCompare={toggleComparison}
         />

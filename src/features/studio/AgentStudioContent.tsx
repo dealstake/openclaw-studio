@@ -40,6 +40,7 @@ import { useCommandPalette } from "@/features/command-palette/hooks/useCommandPa
 // UnifiedFilesPanel + ActivityPanel moved to StudioContextDrawer
 // Heartbeat entries now routed exclusively via onActivityMessage to useActivityMessageStore
 import { TraceViewer } from "@/features/sessions/components/TraceViewer";
+import { ReplayView } from "@/features/sessions/components/ReplayView";
 import { useChannelsStatus } from "@/features/channels/hooks/useChannelsStatus";
 
 import { EmergencyProvider } from "@/features/emergency/EmergencyProvider";
@@ -234,7 +235,7 @@ export const AgentStudioPage = () => {
   }, [focusedAgent, settingsAgentId, setSettingsAgentId, setManagementView]);
 
   const handleCmdNavTab = useCallback((tab: ContextTab | "usage" | "channels" | "settings") => {
-    const contextTabs = new Set<string>(["projects", "tasks", "brain", "workspace", "activity"]);
+    const contextTabs = new Set<string>(["projects", "tasks", "brain", "workspace", "activity", "router", "playground"]);
     if (contextTabs.has(tab)) {
       setContextTab(tab as ContextTab);
       setContextPanelOpen(true);
@@ -794,6 +795,8 @@ export const AgentStudioPage = () => {
     viewingTrace,
     viewingSessionLoading,
     clearViewingTrace,
+    viewingReplay,
+    clearViewingReplay,
     stableChatOnModelChange,
     stableChatOnThinkingChange,
     stableChatOnDraftChange,
@@ -804,6 +807,7 @@ export const AgentStudioPage = () => {
     stableChatOnDismissContinuation,
     stableChatTokenUsed,
     handleViewTrace,
+    handleViewReplay,
     handleSidebarSessionSelect,
     handleDrawerTranscriptClick,
     handleExpandedTranscriptClick,
@@ -989,6 +993,7 @@ export const AgentStudioPage = () => {
                 onSelectSession={handleSidebarSessionSelect}
                 onNewSession={stableChatOnNewSession}
                 onViewTrace={(key) => handleViewTrace(key, focusedAgentId)}
+                onViewReplay={(key) => handleViewReplay(key, focusedAgentId)}
                 onExport={handleExportSession}
               />
             ) : null}
@@ -1006,6 +1011,7 @@ export const AgentStudioPage = () => {
                 onManagementNav={handleManagementNav}
                 activeManagementTab={managementView}
                 onViewTrace={(key) => handleViewTrace(key, focusedAgentId)}
+                onViewReplay={(key) => handleViewReplay(key, focusedAgentId)}
               />
             </div>
             {/* ── Chat canvas: base layer filling viewport ─────────── */}
@@ -1103,6 +1109,8 @@ export const AgentStudioPage = () => {
               brainPreviewMode={brainPreviewMode}
               onBrainPreviewModeChange={setBrainPreviewMode}
               onTranscriptClick={handleExpandedTranscriptClick}
+              gatewayModels={gatewayModels}
+              defaultModel={focusedAgent?.model ?? (gatewayModels.length > 0 ? `${gatewayModels[0].provider}/${gatewayModels[0].id}` : undefined)}
               onCreateSkill={() => handleStartWizard("skill")}
               onSelectTemplate={handleSelectTemplate}
             />
@@ -1118,6 +1126,18 @@ export const AgentStudioPage = () => {
                 </div>
               </div>
             )}
+            {/* Replay View overlay */}
+            {viewingReplay && (
+              <div className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+                <div className="h-[90vh] w-full max-w-6xl">
+                  <ReplayView
+                    agentId={viewingReplay.agentId}
+                    sessionId={viewingReplay.sessionId}
+                    onClose={clearViewingReplay}
+                  />
+                </div>
+              </div>
+            )}
             {/* Context tab cluster is now integrated into HeaderBar on wide viewports */}
             {/* Context Panel: floating overlay — bottom sheet on mobile, right panel on desktop */}
             <StudioContextDrawer
@@ -1127,7 +1147,7 @@ export const AgentStudioPage = () => {
               swipeDy={swipeDy}
               swipeHandlers={swipeHandlers}
               contextTab={contextTab}
-              expandedTab={expandedTab as "projects" | "tasks" | "brain" | "workspace" | "skills" | "activity" | "budget" | null}
+              expandedTab={expandedTab as "projects" | "tasks" | "brain" | "workspace" | "skills" | "activity" | "budget" | "router" | "playground" | null}
               onExpandToggle={handleExpandToggle}
               onClose={() => setContextPanelOpen(false)}
               onTabChange={setContextTab}
