@@ -9,6 +9,12 @@
   margin: 0;
 }
 
+.agent-markdown p,
+.agent-markdown ul,
+.agent-markdown ol {
+  max-width: 80ch;
+}
+
 .agent-markdown p + p,
 .agent-markdown ul,
 .agent-markdown ol,
@@ -80,7 +86,7 @@
 }
 
 .agent-markdown li {
-  margin-top: 0.15rem;
+  margin-top: 0.25rem;
 }
 
 .agent-markdown code {

@@ -86,7 +86,7 @@ export const CYCLE_STATUSES: Array<{ emoji: string; label: string }> = [
 export const QUEUED_CONFIG: StatusConfig = {
   label: "Queued",
   icon: ListOrdered,
-  colors: "border-orange-300 bg-orange-100 text-orange-800 dark:border-orange-500/30 dark:bg-orange-500/10 dark:text-orange-300",
+  colors: "border-orange-300 bg-orange-100 text-orange-900 dark:border-orange-500/30 dark:bg-orange-500/10 dark:text-orange-200",
 };
 
 // ─── Priority ────────────────────────────────────────────────────────────────

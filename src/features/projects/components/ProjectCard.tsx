@@ -143,7 +143,7 @@ export const ProjectCard = memo(function ProjectCard({
                     <button
                       key={emoji}
                       type="button"
-                      className={`flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs transition ${
+                      className={`flex w-full min-h-[44px] items-center gap-2 rounded px-2 py-1.5 text-left text-xs transition ${
                         isCurrent
                           ? "bg-muted/50 text-foreground"
                           : "text-muted-foreground hover:bg-muted/30 hover:text-foreground"
@@ -174,7 +174,7 @@ export const ProjectCard = memo(function ProjectCard({
                 <div className="my-1 border-t border-border/40" />
                 <button
                   type="button"
-                  className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs text-red-400 transition hover:bg-red-500/10"
+                  className="flex w-full min-h-[44px] items-center gap-2 rounded px-2 py-1.5 text-left text-xs text-red-400 transition hover:bg-red-500/10"
                   onClick={() => {
                     setStatusOpen(false);
                     onArchive();
