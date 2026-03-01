@@ -61,7 +61,7 @@ export const ManagementPanelContent = memo(function ManagementPanelContent({
     <Suspense fallback={null}>
       {tab === "usage" && (
         <PanelErrorBoundary name="Usage">
-          <UsagePanel client={ctx.client} status={ctx.status} />
+          <UsagePanel />
         </PanelErrorBoundary>
       )}
       {tab === "channels" && (

@@ -1,10 +1,9 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
-import type { UsageData } from "@/features/usage/hooks/useUsageData";
+import type { UsageQueryData } from "@/features/usage/hooks/useUsageQuery";
 
 // Mock the hook before importing the component
-const mockUsageData: UsageData = {
-  entries: [],
+const mockUsageData: UsageQueryData = {
   totalCost: 12.5,
   costByModel: new Map([
     [
@@ -20,15 +19,23 @@ const mockUsageData: UsageData = {
   totalInputTokens: 70000,
   totalOutputTokens: 15000,
   totalSessions: 8,
+  agentBreakdown: [
+    { agentId: "alex", sessions: 5, cost: 10, inputTokens: 50000, outputTokens: 10000 },
+  ],
+  cronBreakdown: [],
+  projectedMonthlyCost: 45.0,
   loading: false,
   error: null,
   timeRange: "7d",
   setTimeRange: vi.fn(),
+  agentIdFilter: null,
+  setAgentIdFilter: vi.fn(),
   refresh: vi.fn().mockResolvedValue(undefined),
+  cachedAt: null,
 };
 
-vi.mock("@/features/usage/hooks/useUsageData", () => ({
-  useUsageData: () => mockUsageData,
+vi.mock("@/features/usage/hooks/useUsageQuery", () => ({
+  useUsageQuery: () => mockUsageData,
 }));
 
 // Mock chart component to avoid canvas/SVG issues in jsdom
@@ -42,26 +49,23 @@ vi.mock("@/features/usage/components/CronCostTable", () => ({
 
 import { UsagePanel } from "@/features/usage/components/UsagePanel";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const mockClient = { call: vi.fn() } as any;
-
 describe("UsagePanel", () => {
   afterEach(cleanup);
 
   it("renders header", () => {
-    render(<UsagePanel client={mockClient} status="connected" />);
+    render(<UsagePanel />);
     expect(screen.getByText("Usage & Cost")).toBeInTheDocument();
   });
 
   it("renders time range buttons", () => {
-    render(<UsagePanel client={mockClient} status="connected" />);
+    render(<UsagePanel />);
     for (const label of ["Today", "7d", "30d", "All"]) {
       expect(screen.getByText(label)).toBeInTheDocument();
     }
   });
 
   it("renders summary cards with formatted values", () => {
-    render(<UsagePanel client={mockClient} status="connected" />);
+    render(<UsagePanel />);
     expect(screen.getAllByText("Total Cost").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("Tokens").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("Sessions").length).toBeGreaterThanOrEqual(1);
@@ -70,7 +74,7 @@ describe("UsagePanel", () => {
   });
 
   it("renders model breakdown table", () => {
-    render(<UsagePanel client={mockClient} status="connected" />);
+    render(<UsagePanel />);
     expect(screen.getByText("By Model")).toBeInTheDocument();
     // claude-opus-4 appears in both summary and table; just check table exists
     expect(screen.getAllByText("claude-opus-4").length).toBeGreaterThanOrEqual(1);
@@ -78,14 +82,14 @@ describe("UsagePanel", () => {
   });
 
   it("renders refresh button", () => {
-    render(<UsagePanel client={mockClient} status="connected" />);
+    render(<UsagePanel />);
     expect(screen.getByLabelText("Refresh")).toBeInTheDocument();
   });
 
   it("shows loading skeletons when loading with no data", () => {
     mockUsageData.loading = true;
     mockUsageData.totalSessions = 0;
-    render(<UsagePanel client={mockClient} status="connected" />);
+    render(<UsagePanel />);
     // Summary cards should not render (loading state shows skeletons)
     expect(screen.queryByText("Total Cost")).not.toBeInTheDocument();
     // Restore
@@ -95,7 +99,7 @@ describe("UsagePanel", () => {
 
   it("shows error banner when error exists", () => {
     mockUsageData.error = "Something went wrong";
-    render(<UsagePanel client={mockClient} status="connected" />);
+    render(<UsagePanel />);
     expect(screen.getByText("Something went wrong")).toBeInTheDocument();
     mockUsageData.error = null;
   });
