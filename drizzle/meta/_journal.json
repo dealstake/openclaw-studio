@@ -85,6 +85,13 @@
       "when": 1772258400000,
       "tag": "0011_personas",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1772344800000,
+      "tag": "0012_knowledge_chunks_fts5",
+      "breakpoints": true
     }
   ]
 }

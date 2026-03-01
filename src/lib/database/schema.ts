@@ -163,7 +163,40 @@ export const knowledgeSources = sqliteTable("knowledge_sources", {
 
 // ─── Knowledge Chunks (FTS5) ─────────────────────────────────────────────────
 // NOTE: FTS5 virtual tables are not supported by drizzle-orm schema.
-// Created via raw SQL in migration. Queried via raw SQL in repo.
+// Created via raw SQL in migration 0012. Queried via raw SQL in repo.
+//
+// Schema (for reference):
+//   CREATE VIRTUAL TABLE knowledge_chunks USING fts5(
+//     persona_id UNINDEXED,
+//     source_id  UNINDEXED,
+//     chunk_index UNINDEXED,
+//     content,
+//     tokenize = 'porter unicode61'
+//   );
+
+/** A row returned from a knowledge_chunks FTS5 search. */
+export type KnowledgeChunkSearchRow = {
+  /** rowid from the FTS5 virtual table */
+  rowid: number;
+  /** The persona this chunk belongs to */
+  personaId: string;
+  /** FK to knowledge_sources.id */
+  sourceId: number;
+  /** Zero-based index of this chunk within the source */
+  chunkIndex: number;
+  /** The chunk text content */
+  content: string;
+  /** BM25 relevance score (negative — lower = more relevant) */
+  rank: number;
+};
+
+/** A row to insert into knowledge_chunks. */
+export type NewKnowledgeChunkRow = {
+  personaId: string;
+  sourceId: number;
+  chunkIndex: number;
+  content: string;
+};
 
 // ─── Type exports ────────────────────────────────────────────────────────────
 
