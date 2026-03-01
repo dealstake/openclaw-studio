@@ -2,18 +2,16 @@
  * Wizard creation handlers — executes the "Create" action for each wizard type.
  *
  * Each handler takes the extracted config from the wizard conversation
- * and creates the corresponding resource via gateway RPCs.
+ * and creates the corresponding resource via gateway RPCs or API routes.
+ *
+ * SECURITY: Project creation uses a structured API call (POST /api/workspace/project)
+ * with server-side parsing and parameterized DB writes — never shell-interpolated strings.
  */
 
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import type { WizardType } from "./wizardTypes";
 
-// ── Helpers ────────────────────────────────────────────────────────────
-
-/** Sanitize string for safe embedding in agent system messages */
-function sanitize(str: string): string {
-  return str.replace(/[";&|`$()\\]/g, "\\$&");
-}
+// ── Validation ─────────────────────────────────────────────────────────
 
 /** Validate that an object has the expected string properties */
 function hasStringProps(obj: unknown, keys: string[]): obj is Record<string, unknown> {
@@ -78,7 +76,8 @@ async function createSkill(
   agentId: string,
   config: SkillWizardConfig,
 ): Promise<WizardCreationResult> {
-  const skillDir = sanitize(config.name.toLowerCase().replace(/[^a-z0-9-]/g, "-"));
+  // Safe slug: only lowercase alphanumeric and hyphens — no sanitize() needed
+  const skillDir = config.name.toLowerCase().replace(/[^a-z0-9-]/g, "-");
   const message = [
     `[system] Create a new skill in the workspace. Write the following SKILL.md file:`,
     "",
@@ -136,56 +135,104 @@ function prepareCredentialSetup(
   };
 }
 
-// ── Project creation via agent message ─────────────────────────────────
+// ── Project markdown generator ─────────────────────────────────────────
 
 /**
- * Creates a project by sending a message to the agent asking it to
- * create the project file and register it in the project DB.
+ * Generates a project .md file from wizard config.
+ * Values are written verbatim — no shell interpolation occurs.
+ */
+function generateProjectMarkdown(config: ProjectWizardConfig): string {
+  const today = new Date().toISOString().split("T")[0];
+
+  const phaseSection =
+    config.phases && config.phases.length > 0
+      ? [
+          "## Implementation Plan",
+          "",
+          ...config.phases.flatMap((p) => [
+            `### ${p.name}`,
+            ...p.tasks.map((t) => `- [ ] ${t}`),
+            "",
+          ]),
+        ].join("\n")
+      : "";
+
+  return [
+    `# ${config.name}`,
+    "",
+    `**Status**: ${config.status}`,
+    `**Priority**: ${config.priority}`,
+    `**Created**: ${today}`,
+    "",
+    "## Problem",
+    "",
+    config.description,
+    "",
+    phaseSection,
+    phaseSection ? "" : null,
+    "## Continuation Context",
+    `- **Last worked on**: ${today}`,
+    "- **Immediate next step**: Begin implementation",
+    "- **Blocked by**: Nothing",
+    "- **Context needed**: Nothing",
+  ]
+    .filter((line) => line !== null)
+    .join("\n");
+}
+
+// ── Project creation via API route ────────────────────────────────────
+//
+// SECURITY FIX: Previously this function built a chat message instructing the
+// agent to run `scripts/project-db.sh create "..."` with interpolated config
+// values. That pattern — pseudo-sanitization + LLM-proxied shell execution —
+// is an injection vector. The fix: parse ProjectWizardConfig here, generate
+// the .md content directly, and POST to /api/workspace/project with
+// parameterized fields. The server-side route uses the projectsRepo with
+// prepared statements — no shell execution.
+
+/**
+ * Creates a project by posting directly to the workspace project API.
+ * Config values are passed as structured JSON — never interpolated into
+ * a shell command or LLM prompt.
  */
 async function createProject(
-  client: GatewayClient,
+  _client: GatewayClient,
   agentId: string,
   config: ProjectWizardConfig,
 ): Promise<WizardCreationResult> {
-  const phases = config.phases
-    ?.map(
-      (p) =>
-        `### ${sanitize(p.name)}\n${p.tasks.map((t) => `- [ ] ${sanitize(t)}`).join("\n")}`,
-    )
-    .join("\n\n") ?? "";
-
-  const message = [
-    `[system] Create a new project file and register it:`,
-    "",
-    `1. Create \`projects/${sanitize(config.slug)}.md\` with:`,
-    `   - Name: ${sanitize(config.name)}`,
-    `   - Status: ${sanitize(config.status)}`,
-    `   - Priority: ${sanitize(config.priority)}`,
-    `   - Description: ${sanitize(config.description)}`,
-    phases ? `   - Phases:\n${phases}` : "",
-    "",
-    `2. Run: scripts/project-db.sh create "${sanitize(config.name)}" "${sanitize(config.slug)}.md" "${sanitize(config.status)}" "${sanitize(config.priority)}" "${sanitize(config.description)}"`,
-    "",
-    `Confirm when done.`,
-  ]
-    .filter(Boolean)
-    .join("\n");
+  const doc = `${config.slug}.md`;
+  const content = generateProjectMarkdown(config);
 
   try {
-    await client.call("chat.send", {
-      sessionKey: `agent:${agentId}:main`,
-      message,
-      deliver: false,
-      idempotencyKey: crypto.randomUUID(),
+    const res = await fetch("/api/workspace/project", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        agentId,
+        name: config.name,
+        doc,
+        status: config.status,
+        priority: config.priority,
+        oneLiner: config.description,
+        content,
+      }),
     });
+
+    if (!res.ok) {
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      return {
+        success: false,
+        message: data.error ?? `Failed to create project (HTTP ${res.status})`,
+      };
+    }
 
     return {
       success: true,
-      message: `Project "${config.name}" creation delegated to agent. Check the chat for confirmation.`,
+      message: `Project "${config.name}" created successfully.`,
     };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    return { success: false, message: `Failed to delegate project creation: ${msg}` };
+    return { success: false, message: `Failed to create project: ${msg}` };
   }
 }
 

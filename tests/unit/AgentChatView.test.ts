@@ -102,7 +102,7 @@ describe("AgentChatView groupParts logic", () => {
     expect(screen.getByText("Complete")).toBeTruthy();
   });
 
-  it("renders status part as ChatStatusBar", async () => {
+  it("does not render inline for non-error status parts (shown via composer ring)", async () => {
     const { render, screen } = await import("@testing-library/react");
     const { AgentChatView } = await import(
       "@/features/agents/components/AgentChatView"
@@ -118,7 +118,29 @@ describe("AgentChatView groupParts logic", () => {
     ];
 
     render(createElement(AgentChatView, { parts, streaming: false }));
-    expect(screen.getByText("Thinking…")).toBeTruthy();
+    // Non-error status parts are now shown via the composer button progress ring,
+    // not rendered inline in the chat transcript.
+    expect(screen.queryByText("Thinking…")).toBeNull();
+  });
+
+  it("renders error status parts inline via ChatStatusBar", async () => {
+    const { render, screen } = await import("@testing-library/react");
+    const { AgentChatView } = await import(
+      "@/features/agents/components/AgentChatView"
+    );
+    const { createElement } = await import("react");
+
+    const parts: MessagePart[] = [
+      {
+        type: "status",
+        state: "error",
+        model: "claude-opus-4-6",
+        errorMessage: "Connection lost",
+      },
+    ];
+
+    render(createElement(AgentChatView, { parts, streaming: false }));
+    expect(screen.getByText("Connection lost")).toBeTruthy();
   });
 
   it("renders mixed user + assistant groups with separators", async () => {

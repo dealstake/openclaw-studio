@@ -8,6 +8,8 @@
  * Single source of truth — replaces distributed regex extraction.
  */
 
+import type { ZodType } from "zod";
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -37,7 +39,7 @@ export interface ExtractedArtifacts {
 // ---------------------------------------------------------------------------
 
 /**
- * Regex to match fenced code blocks with typed labels.
+ * Pattern to match fenced code blocks with typed labels.
  *
  * Matches patterns like:
  * ```json:persona-config
@@ -52,11 +54,11 @@ export interface ExtractedArtifacts {
  * Group 2: label (persona-config, soul, etc.)
  * Group 3: content (everything between the fences)
  */
-const ARTIFACT_BLOCK_RE =
-  /```(json|md):([a-z][a-z0-9-]*)\s*\n([\s\S]*?)```/g;
+const ARTIFACT_BLOCK_PATTERN = /```(json|md):([a-z][a-z0-9-]*)\s*\n([\s\S]*?)```/g;
 
 /**
  * Extract all typed artifact blocks from AI-generated text.
+ * Uses `matchAll` to avoid shared global regex state.
  *
  * @param text - Complete or partial AI response text
  * @returns Grouped artifacts with parsed JSON and raw markdown
@@ -66,11 +68,7 @@ export function extractArtifacts(text: string): ExtractedArtifacts {
   const json = new Map<string, unknown>();
   const markdown = new Map<string, string>();
 
-  let match: RegExpExecArray | null;
-  // Reset lastIndex for safety (global regex)
-  ARTIFACT_BLOCK_RE.lastIndex = 0;
-
-  while ((match = ARTIFACT_BLOCK_RE.exec(text)) !== null) {
+  for (const match of text.matchAll(ARTIFACT_BLOCK_PATTERN)) {
     const format = match[1] as "json" | "md";
     const label = match[2];
     const content = match[3].trim();
@@ -99,16 +97,36 @@ export function extractArtifacts(text: string): ExtractedArtifacts {
 // ---------------------------------------------------------------------------
 
 /**
- * Extract a single JSON block by label, parsed and typed.
- * Returns undefined if not found or unparseable.
+ * Extract a single JSON block by label, parsed and optionally validated.
+ *
+ * When a Zod `schema` is provided the parsed value is run through
+ * `schema.safeParse`. If validation fails, `undefined` is returned so
+ * callers never receive a structurally-invalid object typed as `T`.
+ *
+ * Without a schema the function falls back to an unchecked `as T` cast
+ * (backward-compatible, but callers should prefer the schema overload).
+ *
+ * @example
+ * // With validation (preferred)
+ * const cfg = extractJsonBlock(text, "project-config", ProjectConfigSchema);
+ *
+ * // Without validation (legacy — avoids breaking existing callers)
+ * const raw = extractJsonBlock(text, "project-config");
  */
 export function extractJsonBlock<T = unknown>(
   text: string,
   label: string,
+  schema?: ZodType<T>,
 ): T | undefined {
   const artifacts = extractArtifacts(text);
   const value = artifacts.json.get(label);
   if (value === undefined || typeof value === "string") return undefined;
+
+  if (schema) {
+    const result = schema.safeParse(value);
+    return result.success ? result.data : undefined;
+  }
+
   return value as T;
 }
 

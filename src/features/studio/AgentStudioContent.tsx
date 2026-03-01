@@ -1053,6 +1053,7 @@ export const AgentStudioPage = () => {
                   onDismissContinuationBanner={stableChatOnDismissContinuation}
                   wizard={wizard}
                   onWizardConfirm={() => void handleWizardConfirm()}
+                  onOpenCredentialVault={() => setManagementView("credentials")}
                 />
               ) : (
                 <div className="flex h-full w-full flex-col items-center justify-center gap-3 text-center text-muted-foreground">
