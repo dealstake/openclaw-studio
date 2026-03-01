@@ -1,4 +1,4 @@
-import { FolderKanban, ListChecks, Brain, FolderOpen, Activity, Puzzle, PieChart, Route, FlaskConical, Network, type LucideIcon } from "lucide-react";
+import { FolderKanban, ListChecks, Brain, FolderOpen, Activity, Puzzle, PieChart, Route, FlaskConical, Network, Share2, type LucideIcon } from "lucide-react";
 
 /** Canonical tab configuration — single source of truth for all context panel components. */
 export const CONTEXT_TAB_CONFIG = [
@@ -12,6 +12,7 @@ export const CONTEXT_TAB_CONFIG = [
   { value: "router", label: "Routing", shortLabel: "R", Icon: Route },
   { value: "playground", label: "Playground", shortLabel: "G", Icon: FlaskConical },
   { value: "orchestrator", label: "Swarm", shortLabel: "O", Icon: Network },
+  { value: "memory-graph", label: "Memory", shortLabel: "M", Icon: Share2 },
 ] as const satisfies ReadonlyArray<{
   value: string;
   label: string;
