@@ -1,16 +1,18 @@
 "use client";
 
-import { memo } from "react";
-import { Settings2, RefreshCw } from "lucide-react";
-import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
-import { PanelHeader } from "@/components/ui/PanelHeader";
-import { PanelIconButton } from "@/components/PanelIconButton";
+import { memo, useEffect, useState } from "react";
+import { RefreshCw, Settings2 } from "lucide-react";
 import { ErrorBanner } from "@/components/ErrorBanner";
+import { PanelIconButton } from "@/components/PanelIconButton";
 import { CardSkeleton } from "@/components/ui/CardSkeleton";
+import { PanelHeader } from "@/components/ui/PanelHeader";
+import { fetchModelsData } from "@/features/models/lib/modelService";
+import type { ProviderSummary } from "@/features/models/lib/types";
+import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { useGatewaySettings } from "../hooks/useGatewaySettings";
 import { ModelDefaultsSection } from "./ModelDefaultsSection";
-import { SessionDefaultsSection } from "./SessionDefaultsSection";
 import { SecuritySection } from "./SecuritySection";
+import { SessionDefaultsSection } from "./SessionDefaultsSection";
 
 export interface GatewaySettingsPanelProps {
   client: GatewayClient;
@@ -22,6 +24,15 @@ export const GatewaySettingsPanel = memo(function GatewaySettingsPanel({
   status,
 }: GatewaySettingsPanelProps) {
   const { settings, loading, error, reload } = useGatewaySettings(client, status);
+  const [providers, setProviders] = useState<ProviderSummary[]>([]);
+
+  // Load available providers for ModelPicker (once per connection)
+  useEffect(() => {
+    if (status !== "connected") return;
+    void fetchModelsData(client).then((data) => {
+      setProviders(data.providers);
+    });
+  }, [client, status]);
 
   return (
     <div className="flex h-full flex-col">
@@ -66,7 +77,12 @@ export const GatewaySettingsPanel = memo(function GatewaySettingsPanel({
 
         {settings && (
           <div className="space-y-4">
-            <ModelDefaultsSection config={settings} />
+            <ModelDefaultsSection
+              config={settings}
+              client={client}
+              providers={providers}
+              onSaved={reload}
+            />
             <SessionDefaultsSection config={settings} />
             <SecuritySection config={settings} />
           </div>
