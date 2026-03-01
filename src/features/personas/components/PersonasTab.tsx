@@ -12,6 +12,8 @@ import { KnowledgePanel } from "./KnowledgePanel";
 import { TemplateBrowserModal } from "./TemplateBrowserModal";
 import type { PersonaTemplate } from "../lib/templateTypes";
 import type { PracticeModeType } from "../lib/personaTypes";
+import type { OverallPreflightStatus } from "../lib/preflightTypes";
+import { usePersonaHealth } from "../hooks/usePersonaHealth";
 
 // ---------------------------------------------------------------------------
 // Filter config
@@ -76,6 +78,11 @@ export const PersonasTab = React.memo(function PersonasTab({
   const [practiceTarget, setPracticeTarget] = useState<PersonaListItem | null>(null);
   // Knowledge panel state
   const [knowledgeTarget, setKnowledgeTarget] = useState<PersonaListItem | null>(null);
+  // Health check state: personaId → status
+  const [healthStatuses, setHealthStatuses] = useState<
+    Record<string, OverallPreflightStatus | "checking">
+  >({});
+  const { checkHealth } = usePersonaHealth();
 
   const handleOpenTemplateBrowser = useCallback(() => {
     if (onCreatePersona) {
@@ -104,6 +111,23 @@ export const PersonasTab = React.memo(function PersonasTab({
   const handleKnowledge = useCallback((persona: PersonaListItem) => {
     setKnowledgeTarget(persona);
   }, []);
+
+  const handleHealthCheck = useCallback(
+    async (persona: PersonaListItem) => {
+      setHealthStatuses((prev) => ({ ...prev, [persona.personaId]: "checking" }));
+      const result = await checkHealth(persona.personaId);
+      setHealthStatuses((prev) => {
+        if (!result) {
+          // Remove entry on error so we don't show a stale status
+          const next = { ...prev };
+          delete next[persona.personaId];
+          return next;
+        }
+        return { ...prev, [persona.personaId]: result.overall };
+      });
+    },
+    [checkHealth],
+  );
 
   const handleKnowledgeClose = useCallback(() => {
     setKnowledgeTarget(null);
@@ -229,6 +253,8 @@ export const PersonasTab = React.memo(function PersonasTab({
                 onStatusChange={onStatusChange}
                 onDelete={onDelete}
                 busy={busyId === persona.personaId}
+                onHealthCheck={handleHealthCheck}
+                healthStatus={healthStatuses[persona.personaId]}
               />
             ))}
           </div>

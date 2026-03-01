@@ -24,11 +24,16 @@ import {
   Users,
   BarChart3,
   Crosshair,
+  ShieldCheck,
+  ShieldAlert,
+  RefreshCw,
 } from "lucide-react";
 import type { PracticeModeType } from "../lib/personaTypes";
 import type { PracticeConfig, PracticeTranscriptEntry } from "../lib/practiceTypes";
+import type { PreflightResult } from "../lib/preflightTypes";
 import { PRACTICE_MODE_LABELS } from "../lib/personaConstants";
 import { usePracticeSession } from "../hooks/usePracticeSession";
+import { usePersonaHealth } from "../hooks/usePersonaHealth";
 import { PracticeScoreCard } from "./PracticeScoreCard";
 
 // ---------------------------------------------------------------------------
@@ -131,6 +136,143 @@ const DIFFICULTY_META: Record<Difficulty, { label: string; cls: string }> = {
 };
 
 // ---------------------------------------------------------------------------
+// Preflight banner — shown in pre-session mode
+// ---------------------------------------------------------------------------
+
+interface PreflightBannerProps {
+  checking: boolean;
+  result: PreflightResult | null;
+  error: string | null;
+  onRecheck: () => void;
+}
+
+const PreflightBanner = React.memo(function PreflightBanner({
+  checking,
+  result,
+  error,
+  onRecheck,
+}: PreflightBannerProps) {
+  if (checking) {
+    return (
+      <div className="flex items-center gap-2 rounded-lg border border-border/20 bg-muted/20 px-3 py-2.5">
+        <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-muted-foreground" />
+        <span className="text-xs text-muted-foreground">Checking system readiness…</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-between gap-2 rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2.5">
+        <span className="text-xs text-amber-600 dark:text-amber-400">
+          Health check unavailable — practice may still proceed.
+        </span>
+        <button
+          type="button"
+          onClick={onRecheck}
+          aria-label="Retry health check"
+          className="flex shrink-0 items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
+        >
+          <RefreshCw className="h-3 w-3" />
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  if (!result) return null;
+
+  if (result.overall === "ready") {
+    return (
+      <div className="flex items-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-3 py-2.5">
+        <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-emerald-500 dark:text-emerald-400" />
+        <span className="text-xs text-emerald-700 dark:text-emerald-300">
+          All systems ready
+        </span>
+      </div>
+    );
+  }
+
+  if (result.overall === "action_needed") {
+    const missing = result.capabilities.filter((c) => c.status !== "ready");
+    return (
+      <div className="flex flex-col gap-1.5 rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2.5">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <ShieldAlert className="h-3.5 w-3.5 shrink-0 text-amber-500" />
+            <span className="text-xs font-medium text-amber-700 dark:text-amber-400">
+              Some optional capabilities need setup
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={onRecheck}
+            aria-label="Re-check readiness"
+            className="flex shrink-0 items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
+          >
+            <RefreshCw className="h-3 w-3" />
+          </button>
+        </div>
+        {missing.length > 0 && (
+          <ul className="ml-5 flex flex-col gap-0.5">
+            {missing.slice(0, 3).map((cap) => (
+              <li key={cap.capability} className="text-[11px] text-muted-foreground">
+                {cap.displayName}
+              </li>
+            ))}
+            {missing.length > 3 && (
+              <li className="text-[11px] text-muted-foreground">
+                +{missing.length - 3} more
+              </li>
+            )}
+          </ul>
+        )}
+        <span className="text-[11px] text-muted-foreground">
+          Practice can still proceed. Set up capabilities in the persona settings.
+        </span>
+      </div>
+    );
+  }
+
+  // blocked
+  const blockedCaps = result.capabilities.filter(
+    (c) => c.status !== "ready" && c.required,
+  );
+  return (
+    <div className="flex flex-col gap-1.5 rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2.5">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <ShieldAlert className="h-3.5 w-3.5 shrink-0 text-red-500" />
+          <span className="text-xs font-medium text-red-700 dark:text-red-400">
+            Required capabilities are missing
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={onRecheck}
+          aria-label="Re-check readiness"
+          className="flex shrink-0 items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
+        >
+          <RefreshCw className="h-3 w-3" />
+        </button>
+      </div>
+      {blockedCaps.length > 0 && (
+        <ul className="ml-5 flex flex-col gap-0.5">
+          {blockedCaps.slice(0, 3).map((cap) => (
+            <li key={cap.capability} className="text-[11px] text-red-600 dark:text-red-400">
+              {cap.displayName}: {cap.details || "Not configured"}
+            </li>
+          ))}
+        </ul>
+      )}
+      <span className="text-[11px] text-muted-foreground">
+        Set up the required capabilities before starting practice.
+      </span>
+    </div>
+  );
+});
+
+// ---------------------------------------------------------------------------
 // PracticeSessionModal
 // ---------------------------------------------------------------------------
 
@@ -169,6 +311,10 @@ export const PracticeSessionModal = React.memo(function PracticeSessionModal({
   );
   const [difficulty, setDifficulty] = useState<Difficulty>("medium");
 
+  // Preflight health check — runs automatically when modal opens in pre-session state
+  const { checkHealth, checking: healthChecking, healthResult, error: healthError, reset: resetHealth } =
+    usePersonaHealth();
+
   // Chat input
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -188,20 +334,35 @@ export const PracticeSessionModal = React.memo(function PracticeSessionModal({
     }
   }, [session?.status]);
 
+  // Auto-run preflight when modal opens in pre-session state.
+  // checkHealth is stable (useCallback with no deps in the hook).
+  const personaIdRef = useRef(personaId);
+  personaIdRef.current = personaId;
+  useEffect(() => {
+    if (open && !session) {
+      void checkHealth(personaIdRef.current);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
   // Reset on close
   const handleOpenChange = useCallback(
     (nextOpen: boolean) => {
       if (!nextOpen) {
         if (session?.status === "active") abandonSession();
         reset();
+        resetHealth();
         setInput("");
       }
       onOpenChange(nextOpen);
     },
-    [onOpenChange, reset, abandonSession, session?.status],
+    [onOpenChange, reset, abandonSession, resetHealth, session?.status],
   );
 
   const handleStart = useCallback(() => {
+    // Block start if required capabilities are missing
+    if (healthResult?.overall === "blocked") return;
+
     const config: PracticeConfig = {
       personaId,
       mode: selectedMode,
@@ -225,7 +386,7 @@ export const PracticeSessionModal = React.memo(function PracticeSessionModal({
 
     const opening = openingMessages[selectedMode] ?? "Let's begin.";
     setTimeout(() => addPersonaMessage(opening), 100);
-  }, [personaId, selectedMode, difficulty, startSession, addPersonaMessage]);
+  }, [personaId, selectedMode, difficulty, startSession, addPersonaMessage, healthResult]);
 
   const handleSend = useCallback(() => {
     const trimmed = input.trim();
@@ -271,6 +432,7 @@ export const PracticeSessionModal = React.memo(function PracticeSessionModal({
 
   const isActive = session?.status === "active";
   const isCompleted = session?.status === "completed" && session.score;
+  const isBlocked = healthResult?.overall === "blocked";
 
   return (
     <SideSheet open={open} onOpenChange={handleOpenChange}>
@@ -331,18 +493,33 @@ export const PracticeSessionModal = React.memo(function PracticeSessionModal({
                 </div>
               </div>
 
+              {/* Preflight readiness banner */}
+              <PreflightBanner
+                checking={healthChecking}
+                result={healthResult}
+                error={healthError}
+                onRecheck={() => void checkHealth(personaId)}
+              />
+
               <button
                 type="button"
                 onClick={handleStart}
+                disabled={healthChecking || isBlocked}
+                aria-disabled={healthChecking || isBlocked}
                 className={cn(
                   "mt-2 flex min-h-[44px] items-center justify-center gap-2 rounded-lg",
                   "bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground",
                   "transition-colors hover:bg-primary/90",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
+                  (healthChecking || isBlocked) && "cursor-not-allowed opacity-50",
                 )}
               >
-                <Play className="h-4 w-4" />
-                Start Practice
+                {healthChecking ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Play className="h-4 w-4" />
+                )}
+                {healthChecking ? "Checking readiness…" : "Start Practice"}
               </button>
             </>
           )}

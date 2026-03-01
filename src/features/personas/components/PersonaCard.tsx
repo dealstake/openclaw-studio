@@ -1,11 +1,25 @@
 "use client";
 
 import React, { useCallback } from "react";
-import { Play, Pause, Archive, Trash2, TrendingUp, TrendingDown, Dumbbell, BookOpen } from "lucide-react";
+import {
+  Play,
+  Pause,
+  Archive,
+  Trash2,
+  TrendingUp,
+  TrendingDown,
+  Dumbbell,
+  BookOpen,
+  ShieldCheck,
+  ShieldAlert,
+  Shield,
+  Loader2,
+} from "lucide-react";
 import { BaseCard, CardHeader, CardTitle, CardMeta } from "@/components/ui/BaseCard";
 import { cn } from "@/lib/utils";
 import type { PersonaListItem } from "../hooks/usePersonas";
 import type { PersonaStatus, PersonaCategory } from "../lib/personaTypes";
+import type { OverallPreflightStatus } from "../lib/preflightTypes";
 
 // ---------------------------------------------------------------------------
 // Badge helpers
@@ -46,6 +60,51 @@ const CATEGORY_LABELS: Record<PersonaCategory, string> = {
 };
 
 // ---------------------------------------------------------------------------
+// Health status icon component
+// ---------------------------------------------------------------------------
+
+/** Maps overall preflight status to icon + colour */
+const HEALTH_STATUS_META: Record<
+  OverallPreflightStatus | "checking",
+  { Icon: React.ElementType; cls: string; label: string }
+> = {
+  ready: {
+    Icon: ShieldCheck,
+    cls: "text-emerald-500 dark:text-emerald-400",
+    label: "All systems ready",
+  },
+  action_needed: {
+    Icon: ShieldAlert,
+    cls: "text-amber-500 dark:text-amber-400",
+    label: "Some setup needed",
+  },
+  blocked: {
+    Icon: ShieldAlert,
+    cls: "text-red-500 dark:text-red-400",
+    label: "Required setup missing",
+  },
+  checking: {
+    Icon: Loader2,
+    cls: "text-muted-foreground animate-spin",
+    label: "Checking…",
+  },
+};
+
+const HealthStatusIcon = React.memo(function HealthStatusIcon({
+  status,
+}: {
+  status: OverallPreflightStatus | "checking";
+}) {
+  const meta = HEALTH_STATUS_META[status];
+  const { Icon, cls, label } = meta;
+  return (
+    <span title={label} aria-label={label} className="shrink-0">
+      <Icon className={cn("h-3 w-3", cls)} />
+    </span>
+  );
+});
+
+// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
@@ -57,6 +116,13 @@ export interface PersonaCardProps {
   onStatusChange: (personaId: string, status: PersonaStatus) => Promise<void>;
   onDelete: (personaId: string) => Promise<void>;
   busy: boolean;
+  /** Run a health-check preflight for this persona. */
+  onHealthCheck?: (persona: PersonaListItem) => void;
+  /**
+   * Last known health status for this persona.
+   * Displayed as a small icon badge on the card.
+   */
+  healthStatus?: OverallPreflightStatus | "checking";
 }
 
 export const PersonaCard = React.memo(function PersonaCard({
@@ -67,6 +133,8 @@ export const PersonaCard = React.memo(function PersonaCard({
   onStatusChange,
   onDelete,
   busy,
+  onHealthCheck,
+  healthStatus,
 }: PersonaCardProps) {
   const badge = STATUS_BADGES[persona.status];
   const { metrics } = persona;
@@ -119,10 +187,20 @@ export const PersonaCard = React.memo(function PersonaCard({
     [onKnowledge, persona],
   );
 
+  const handleHealthCheck = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      onHealthCheck?.(persona);
+    },
+    [onHealthCheck, persona],
+  );
+
   const canToggle = persona.status === "active" || persona.status === "paused";
   const canArchive = persona.status !== "archived";
   const canPractice = onPractice && (persona.status === "active" || persona.status === "draft");
   const canKnowledge = onKnowledge && persona.status !== "archived";
+  const canHealthCheck =
+    onHealthCheck && persona.status !== "archived" && healthStatus !== "checking";
 
   return (
     <BaseCard
@@ -143,10 +221,29 @@ export const PersonaCard = React.memo(function PersonaCard({
           >
             {badge.label}
           </span>
+          {/* Health status icon — shown when a result exists */}
+          {healthStatus && <HealthStatusIcon status={healthStatus} />}
         </div>
 
         {/* Action buttons */}
         <div className="flex items-center gap-1 opacity-100 md:opacity-0 transition-opacity group-hover/card:opacity-100 focus-within:opacity-100">
+          {/* Health check button */}
+          {(canHealthCheck || healthStatus === "checking") && (
+            <button
+              type="button"
+              onClick={handleHealthCheck}
+              disabled={healthStatus === "checking"}
+              className="rounded p-1 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+              aria-label="Run health check"
+              title="Run health check"
+            >
+              {healthStatus === "checking" ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Shield className="h-3.5 w-3.5" />
+              )}
+            </button>
+          )}
           {canPractice && (
             <button
               type="button"
@@ -225,16 +322,23 @@ export const PersonaCard = React.memo(function PersonaCard({
       {metrics.sessionCount > 0 && (
         <div className="mt-2 flex items-center gap-3 text-[11px] text-muted-foreground">
           <span>
-            Score: <span className="font-medium text-foreground">{metrics.averageScore.toFixed(1)}</span>/10
+            Score:{" "}
+            <span className="font-medium text-foreground">
+              {metrics.averageScore.toFixed(1)}
+            </span>
+            /10
           </span>
           <span>
-            Sessions: <span className="font-medium text-foreground">{metrics.sessionCount}</span>
+            Sessions:{" "}
+            <span className="font-medium text-foreground">{metrics.sessionCount}</span>
           </span>
           {metrics.trend !== 0 && (
-            <span className={cn(
-              "flex items-center gap-0.5",
-              metrics.trend > 0 ? "text-emerald-500" : "text-red-400",
-            )}>
+            <span
+              className={cn(
+                "flex items-center gap-0.5",
+                metrics.trend > 0 ? "text-emerald-500" : "text-red-400",
+              )}
+            >
               {metrics.trend > 0 ? (
                 <TrendingUp className="h-3 w-3" />
               ) : (
