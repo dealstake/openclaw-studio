@@ -11,7 +11,7 @@ import type { HTMLAttributes, ReactNode } from "react";
 
 /** Canonical class string — use on any element that needs the section-label look. */
 export const sectionLabelClass =
-  "font-mono text-xs font-medium uppercase tracking-[0.08em]";
+  "font-mono text-sm font-semibold uppercase tracking-[0.08em]";
 
 type SectionLabelProps = HTMLAttributes<HTMLDivElement> & {
   children?: ReactNode;

@@ -48,7 +48,7 @@ export const FloatingContextControls = memo(function FloatingContextControls({
             aria-label={label}
             title={label}
           >
-            <Icon className="h-3.5 w-3.5" />
+            <Icon className="h-5 w-5" />
           </button>
         ))}
       </div>
@@ -62,7 +62,7 @@ export const FloatingContextControls = memo(function FloatingContextControls({
       <div
         className={`fixed top-4 right-4 z-[var(--z-header)] flex items-center gap-0.5 rounded-full bg-background/95 p-1 shadow-lg ring-1 ring-border/20 backdrop-blur-xl ${baseTransition}`}
         data-testid="context-panel-tabs"
-        /* 5 icons × 36px + close + gaps ≈ ~280px — fits within 360px panel */
+        /* 5 icons × 44px + close + gaps ≈ ~310px — fits within 360px panel */
       >
         {CONTEXT_TAB_CONFIG.map(({ value, label, Icon }) => {
           const isActive = contextTab === value;
@@ -79,7 +79,7 @@ export const FloatingContextControls = memo(function FloatingContextControls({
               aria-label={label}
               title={label}
             >
-              <Icon className="h-3.5 w-3.5" />
+              <Icon className="h-5 w-5" />
             </button>
           );
         })}
@@ -91,7 +91,7 @@ export const FloatingContextControls = memo(function FloatingContextControls({
           aria-label="Close panel"
           title="Close panel (⌘\)"
         >
-          <X className="h-3.5 w-3.5" />
+          <X className="h-5 w-5" />
         </button>
       </div>
     </>
