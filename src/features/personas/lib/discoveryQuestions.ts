@@ -461,6 +461,9 @@ export const CATEGORY_QUESTION_BANKS: Record<PersonaCategory, CategoryQuestionBa
  */
 export function getEssentialQuestionCount(category: PersonaCategory): number {
   const bank = CATEGORY_QUESTION_BANKS[category];
+  if (!bank) {
+    throw new Error(`[discoveryQuestions] No question bank found for category: "${category}"`);
+  }
   return bank.phases.reduce(
     (count, phase) => count + phase.questions.filter((q) => q.essential).length,
     0,
@@ -471,5 +474,9 @@ export function getEssentialQuestionCount(category: PersonaCategory): number {
  * Get phase titles for a category (used in progress indicators).
  */
 export function getPhaseLabels(category: PersonaCategory): string[] {
-  return CATEGORY_QUESTION_BANKS[category].phases.map((p) => p.title);
+  const bank = CATEGORY_QUESTION_BANKS[category];
+  if (!bank) {
+    throw new Error(`[discoveryQuestions] No question bank found for category: "${category}"`);
+  }
+  return bank.phases.map((p) => p.title);
 }

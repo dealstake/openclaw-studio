@@ -342,6 +342,9 @@ function buildTemplatePrompt(
 ): string {
   const category = template.category;
   const bank = CATEGORY_QUESTION_BANKS[category];
+  if (!bank) {
+    throw new Error(`[personaBuilderPrompt] No question bank found for category: "${category}"`);
+  }
 
   return `You are a Persona Configuration Wizard specializing in **${template.name}** personas.
 
@@ -495,6 +498,9 @@ Choose the practice mode that best matches the persona's primary function:
 
 function buildCategorySection(category: PersonaCategory): string {
   const bank = CATEGORY_QUESTION_BANKS[category];
+  if (!bank) {
+    throw new Error(`[personaBuilderPrompt] No question bank found for category: "${category}"`);
+  }
   const categoryLabel = PERSONA_CATEGORIES.find((c) => c.key === category)?.label ?? category;
 
   return `The user has already indicated they want a **${categoryLabel}** persona. Use this question bank:

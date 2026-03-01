@@ -254,13 +254,16 @@ ${dimensions.map((d) => `    "${d.key}": <number 1-10>`).join(",\n")}
 export function buildSimulationPrompt(profile: ScenarioProfile): string {
   switch (profile.mode) {
     case "mock-call":
-      return mockCallSimulationPrompt(profile as ProspectProfile);
+      // TypeScript narrows profile to ProspectProfile via discriminated union
+      return mockCallSimulationPrompt(profile);
     case "task-delegation":
       return taskDelegationSimulationPrompt(profile);
     case "ticket-simulation":
-      return ticketSimulationPrompt(profile as TicketProfile);
+      // TypeScript narrows profile to TicketProfile via discriminated union
+      return ticketSimulationPrompt(profile);
     case "content-review":
-      return contentReviewSimulationPrompt(profile as ContentReviewProfile);
+      // TypeScript narrows profile to ContentReviewProfile via discriminated union
+      return contentReviewSimulationPrompt(profile);
     case "interview":
       return interviewSimulationPrompt(profile);
     case "analysis":

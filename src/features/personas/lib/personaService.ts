@@ -4,7 +4,7 @@
  * Server-side only. Uses filesystem + DB for persona management.
  */
 
-import * as fs from "node:fs";
+import { promises as fsPromises } from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
 
@@ -13,9 +13,9 @@ import type {
   PersonaStatus,
   PersonaBrainFiles,
   KnowledgeFiles,
-  PracticeMetrics,
   PersonaRow,
 } from "./personaTypes";
+import { computePracticeMetrics } from "./practiceScoring";
 import { generateDefaultBrainFiles } from "@/features/agents/lib/brainFileGenerator";
 
 // ---------------------------------------------------------------------------
@@ -65,6 +65,16 @@ function validateFilename(filename: string): void {
   }
 }
 
+/** Async file existence check — avoids sync `existsSync` blocking the event loop */
+async function fileExists(p: string): Promise<boolean> {
+  try {
+    await fsPromises.access(p);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Create Persona
 // ---------------------------------------------------------------------------
@@ -88,10 +98,10 @@ export interface CreatePersonaOptions {
  * Does NOT insert DB row — that's handled by the API route
  * which has access to the DB connection.
  */
-export function createPersonaAgent(options: CreatePersonaOptions): {
+export async function createPersonaAgent(options: CreatePersonaOptions): Promise<{
   agentDir: string;
   filesCreated: string[];
-} {
+}> {
   const { config, brainFiles, knowledgeFiles } = options;
 
   validatePersonaId(config.personaId);
@@ -99,10 +109,10 @@ export function createPersonaAgent(options: CreatePersonaOptions): {
   const dir = agentDir(config.personaId);
 
   // Create directory structure
-  fs.mkdirSync(dir, { recursive: true });
-  fs.mkdirSync(path.join(dir, "memory"), { recursive: true });
-  fs.mkdirSync(path.join(dir, "knowledge"), { recursive: true });
-  fs.mkdirSync(path.join(dir, "training"), { recursive: true });
+  await fsPromises.mkdir(dir, { recursive: true });
+  await fsPromises.mkdir(path.join(dir, "memory"), { recursive: true });
+  await fsPromises.mkdir(path.join(dir, "knowledge"), { recursive: true });
+  await fsPromises.mkdir(path.join(dir, "training"), { recursive: true });
 
   // Generate default brain files, then overlay AI-generated ones
   const defaults = generateDefaultBrainFiles(config);
@@ -121,8 +131,8 @@ export function createPersonaAgent(options: CreatePersonaOptions): {
   // Write brain files (don't overwrite existing)
   for (const [filename, content] of Object.entries(finalBrainFiles)) {
     const filePath = path.join(dir, filename);
-    if (!fs.existsSync(filePath)) {
-      fs.writeFileSync(filePath, content, "utf-8");
+    if (!(await fileExists(filePath))) {
+      await fsPromises.writeFile(filePath, content, "utf-8");
       filesCreated.push(filename);
     }
   }
@@ -132,8 +142,8 @@ export function createPersonaAgent(options: CreatePersonaOptions): {
     for (const [filename, content] of Object.entries(knowledgeFiles)) {
       validateFilename(filename);
       const filePath = path.join(dir, "knowledge", filename);
-      if (!fs.existsSync(filePath)) {
-        fs.writeFileSync(filePath, content, "utf-8");
+      if (!(await fileExists(filePath))) {
+        await fsPromises.writeFile(filePath, content, "utf-8");
         filesCreated.push(`knowledge/${filename}`);
       }
     }
@@ -151,14 +161,14 @@ export function createPersonaAgent(options: CreatePersonaOptions): {
  * Scans agent directories for PERSONA.md as the marker file.
  * Returns basic info; full config comes from DB.
  */
-export function listPersonaAgents(): Array<{
+export async function listPersonaAgents(): Promise<Array<{
   personaId: string;
   hasPersonaMd: boolean;
   hasSoulMd: boolean;
-}> {
-  if (!fs.existsSync(AGENTS_ROOT)) return [];
+}>> {
+  if (!(await fileExists(AGENTS_ROOT))) return [];
 
-  const entries = fs.readdirSync(AGENTS_ROOT, { withFileTypes: true });
+  const entries = await fsPromises.readdir(AGENTS_ROOT, { withFileTypes: true });
   const results: Array<{
     personaId: string;
     hasPersonaMd: boolean;
@@ -170,11 +180,11 @@ export function listPersonaAgents(): Array<{
     const personaMdPath = path.join(AGENTS_ROOT, entry.name, "PERSONA.md");
     const soulMdPath = path.join(AGENTS_ROOT, entry.name, "SOUL.md");
 
-    if (fs.existsSync(personaMdPath)) {
+    if (await fileExists(personaMdPath)) {
       results.push({
         personaId: entry.name,
         hasPersonaMd: true,
-        hasSoulMd: fs.existsSync(soulMdPath),
+        hasSoulMd: await fileExists(soulMdPath),
       });
     }
   }
@@ -203,72 +213,6 @@ export function validateStatusTransition(
 }
 
 // ---------------------------------------------------------------------------
-// Metrics
-// ---------------------------------------------------------------------------
-
-/**
- * Compute aggregate practice metrics from a list of scores.
- * Returns empty metrics if no scores provided.
- */
-export function computePracticeMetrics(
-  scores: Array<{ timestamp: string; overall: number; dimensions: Record<string, number> }>,
-): PracticeMetrics {
-  if (scores.length === 0) {
-    return {
-      sessionCount: 0,
-      averageScore: 0,
-      bestScore: 0,
-      trend: 0,
-      dimensionAverages: {},
-      lastPracticedAt: null,
-    };
-  }
-
-  const sorted = [...scores].sort(
-    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
-  );
-
-  const overalls = sorted.map((s) => s.overall);
-  const sum = overalls.reduce((a, b) => a + b, 0);
-  const avg = sum / overalls.length;
-  const best = Math.max(...overalls);
-
-  // Trend: average of last 3 minus average of first 3 (or fewer)
-  const windowSize = Math.min(3, Math.floor(sorted.length / 2));
-  let trend = 0;
-  if (windowSize > 0) {
-    const early = overalls.slice(0, windowSize);
-    const late = overalls.slice(-windowSize);
-    const earlyAvg = early.reduce((a, b) => a + b, 0) / early.length;
-    const lateAvg = late.reduce((a, b) => a + b, 0) / late.length;
-    trend = Math.round((lateAvg - earlyAvg) * 100) / 100;
-  }
-
-  // Dimension averages
-  const dimSums: Record<string, { sum: number; count: number }> = {};
-  for (const score of sorted) {
-    for (const [key, val] of Object.entries(score.dimensions)) {
-      if (!dimSums[key]) dimSums[key] = { sum: 0, count: 0 };
-      dimSums[key].sum += val;
-      dimSums[key].count += 1;
-    }
-  }
-  const dimensionAverages: Record<string, number> = {};
-  for (const [key, { sum: s, count }] of Object.entries(dimSums)) {
-    dimensionAverages[key] = Math.round((s / count) * 100) / 100;
-  }
-
-  return {
-    sessionCount: scores.length,
-    averageScore: Math.round(avg * 100) / 100,
-    bestScore: best,
-    trend,
-    dimensionAverages,
-    lastPracticedAt: sorted[sorted.length - 1].timestamp,
-  };
-}
-
-// ---------------------------------------------------------------------------
 // DB Row Helpers
 // ---------------------------------------------------------------------------
 
@@ -283,7 +227,7 @@ export function configToRow(config: PersonaConfig): PersonaRow {
     category: config.category,
     status: config.status,
     optimization_goals: JSON.stringify(config.optimizationGoals),
-    metrics_json: JSON.stringify(computePracticeMetrics([])),
+    metrics_json: JSON.stringify(computePracticeMetrics([], [])),
     created_at: config.createdAt,
     last_trained_at: config.lastTrainedAt,
     practice_count: config.practiceCount,
@@ -301,8 +245,8 @@ export function rowToPartialConfig(row: PersonaRow): Pick<
   let goals: string[] = [];
   try {
     goals = JSON.parse(row.optimization_goals);
-  } catch {
-    // ignore
+  } catch (e) {
+    console.error(`[personaService] Failed to parse optimization_goals for persona "${row.persona_id}":`, e);
   }
 
   return {
