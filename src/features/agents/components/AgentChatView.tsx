@@ -149,15 +149,18 @@ function renderPart(part: MessagePart, index: number) {
   }
 
   if (isStatusPart(part)) {
-    return (
-      <ChatStatusBar
-        key={`status-${index}`}
-        state={part.state}
-        model={part.model}
-        runStartedAt={part.runStartedAt}
-        errorMessage={part.errorMessage}
-      />
-    );
+    // Status is now shown via the circular progress ring on the composer button.
+    // Only render error states inline — everything else is handled by the button.
+    if (part.state === "error" && part.errorMessage) {
+      return (
+        <ChatStatusBar
+          key={`status-${index}`}
+          state={part.state}
+          errorMessage={part.errorMessage}
+        />
+      );
+    }
+    return null;
   }
 
   return null;
