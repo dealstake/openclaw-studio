@@ -140,8 +140,8 @@ describe("sortFiles", () => {
 // ─── context/tabs ────────────────────────────────────────────────────────────
 
 describe("context tabs", () => {
-  it("has 9 tabs", () => {
-    expect(CONTEXT_TAB_CONFIG).toHaveLength(9);
+  it("has 10 tabs", () => {
+    expect(CONTEXT_TAB_CONFIG).toHaveLength(10);
   });
 
   it("tabPanelId formats correctly", () => {
