@@ -5,7 +5,7 @@
  * Provides add/remove mutations with optimistic refresh.
  */
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   fetchAuthProfiles,
   addAuthProfile,
@@ -31,6 +31,14 @@ export function useAuthProfiles(agentId: string | null): UseAuthProfilesResult {
 
   const loadingRef = useRef(false);
   const lastCallRef = useRef(0);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const refresh = useCallback(async () => {
     if (!agentId || loadingRef.current) return;
@@ -41,15 +49,21 @@ export function useAuthProfiles(agentId: string | null): UseAuthProfilesResult {
     setLoading(true);
     try {
       const result = await fetchAuthProfiles(agentId);
+      if (!mountedRef.current) return;
       setProfiles(result);
       setError(null);
     } catch (err) {
+      if (!mountedRef.current) return;
       const message =
         err instanceof Error ? err.message : "Failed to load auth profiles.";
       setError(message);
     } finally {
-      loadingRef.current = false;
-      setLoading(false);
+      if (mountedRef.current) {
+        loadingRef.current = false;
+        setLoading(false);
+      } else {
+        loadingRef.current = false;
+      }
     }
   }, [agentId]);
 

@@ -58,7 +58,7 @@ export const SpecialistEngineCard = memo(function SpecialistEngineCard({
                 className={`h-2 w-2 shrink-0 rounded-full ${statusColor}`}
                 aria-hidden="true"
               />
-              <span className="text-xs text-muted-foreground" role="status">
+              <span className="text-xs text-muted-foreground">
                 {statusLabel}
               </span>
             </div>

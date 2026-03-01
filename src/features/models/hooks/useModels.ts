@@ -5,7 +5,7 @@
  * Phase 2: adds mutation functions for brain model + specialist engines.
  */
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { isGatewayDisconnectLikeError } from "@/lib/gateway/GatewayClient";
 import {
@@ -70,6 +70,14 @@ export const useModels = (
 
   const loadingRef = useRef(false);
   const lastCallRef = useRef(0);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const refresh = useCallback(async () => {
     if (status !== "connected" || loadingRef.current) return;
@@ -80,17 +88,23 @@ export const useModels = (
     setLoading(true);
     try {
       const result = await fetchModelsData(client);
+      if (!mountedRef.current) return;
       setData(result);
       setError(null);
     } catch (err) {
+      if (!mountedRef.current) return;
       if (!isGatewayDisconnectLikeError(err)) {
         const message =
           err instanceof Error ? err.message : "Failed to load models data.";
         setError(message);
       }
     } finally {
-      loadingRef.current = false;
-      setLoading(false);
+      if (mountedRef.current) {
+        loadingRef.current = false;
+        setLoading(false);
+      } else {
+        loadingRef.current = false;
+      }
     }
   }, [client, status]);
 

@@ -45,10 +45,10 @@ function humanizeModelId(id: string): string {
 
 function resolveModelName(
   fullKey: string | null,
-  catalog: GatewayModelChoice[],
+  catalogMap: Map<string, GatewayModelChoice>,
 ): string {
   if (!fullKey) return "Not set";
-  const entry = catalog.find((m) => `${m.provider}/${m.id}` === fullKey);
+  const entry = catalogMap.get(fullKey);
   if (entry) return entry.name || humanizeModelId(entry.id);
   const parts = fullKey.split("/");
   return humanizeModelId(parts[parts.length - 1] ?? fullKey);
@@ -58,7 +58,7 @@ function resolveModelName(
 
 function parseBrainConfig(
   config: Record<string, unknown>,
-  catalog: GatewayModelChoice[],
+  catalogMap: Map<string, GatewayModelChoice>,
 ): BrainModelConfig {
   const agents = isRecord(config.agents) ? config.agents : {};
   const defaults = isRecord(agents.defaults) ? agents.defaults : {};
@@ -76,9 +76,9 @@ function parseBrainConfig(
 
   return {
     primary,
-    primaryName: resolveModelName(primary, catalog),
+    primaryName: resolveModelName(primary, catalogMap),
     fallbacks,
-    fallbackNames: fallbacks.map((f) => resolveModelName(f, catalog)),
+    fallbackNames: fallbacks.map((f) => resolveModelName(f, catalogMap)),
   };
 }
 
@@ -124,7 +124,7 @@ function parseSpecialistEngines(
 
 function parseModelRoles(
   config: Record<string, unknown>,
-  catalog: GatewayModelChoice[],
+  catalogMap: Map<string, GatewayModelChoice>,
   cronJobs: CronJobEntry[],
 ): ModelRoles {
   const agents = isRecord(config.agents) ? config.agents : {};
@@ -139,15 +139,15 @@ function parseModelRoles(
     cronId: job.id,
     cronName: job.name ?? job.id,
     model: job.model ?? null,
-    modelName: resolveModelName(job.model ?? null, catalog),
+    modelName: resolveModelName(job.model ?? null, catalogMap),
   }));
 
   return {
     subagentModel,
-    subagentModelName: resolveModelName(subagentModel, catalog),
+    subagentModelName: resolveModelName(subagentModel, catalogMap),
     subagentThinking: parseString(subagents.thinking),
     heartbeatModel,
-    heartbeatModelName: resolveModelName(heartbeatModel, catalog),
+    heartbeatModelName: resolveModelName(heartbeatModel, catalogMap),
     cronOverrides,
   };
 }
@@ -229,9 +229,14 @@ export async function fetchModelsData(
   const config = isRecord(configSnapshot.config) ? configSnapshot.config : {};
   const cronJobs = Array.isArray(cronResult.jobs) ? cronResult.jobs : [];
 
-  const brainConfig = parseBrainConfig(config, catalog);
+  // Build Map once for O(1) lookups in parseBrainConfig and parseModelRoles
+  const catalogMap = new Map<string, GatewayModelChoice>(
+    catalog.map((m) => [`${m.provider}/${m.id}`, m]),
+  );
+
+  const brainConfig = parseBrainConfig(config, catalogMap);
   const engines = parseSpecialistEngines(config);
-  const roles = parseModelRoles(config, catalog, cronJobs);
+  const roles = parseModelRoles(config, catalogMap, cronJobs);
   const { allModels, providers } = buildModelCatalog(catalog, brainConfig);
 
   return { brainConfig, engines, roles, providers, allModels };
@@ -308,7 +313,8 @@ export async function saveSpecialistEngine(
       patch: {
         env: {
           vars: {
-            [envKey]: apiKey,
+            // Only write the API key if one was provided — blank = keep existing
+            ...(apiKey ? { [envKey]: apiKey } : {}),
             [`${type.toUpperCase()}_PIPELINE_MODEL`]: model,
             ...(fallbackModel
               ? { [`${type.toUpperCase()}_PIPELINE_FALLBACK`]: fallbackModel }
