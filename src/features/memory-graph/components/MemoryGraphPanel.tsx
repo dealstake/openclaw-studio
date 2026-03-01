@@ -94,12 +94,12 @@ export function MemoryGraphPanel({ agentId, className }: MemoryGraphPanelProps) 
         {error && <div className="absolute inset-0 flex items-center justify-center z-10"><div className="text-sm text-destructive p-4 text-center"><p>{error}</p><button onClick={reload} className="mt-2 px-3 py-1.5 text-xs border border-border rounded hover:bg-muted">Retry</button></div></div>}
         {!loading && !error && graphData.nodes.length === 0 && data && <div className="absolute inset-0 flex items-center justify-center z-10"><div className="text-sm text-muted-foreground">{search ? "No matches." : "No entities found."}</div></div>}
         {graphData.nodes.length > 0 && <ForceGraph2D width={dimensions.width} height={dimensions.height} graphData={graphData}
-          nodeCanvasObject={paintNode as any}
-          nodePointerAreaPaint={(node: any, color: string, ctx: CanvasRenderingContext2D) => { const s = Math.max(4, Math.min(16, (node as GraphNode).mentions * 2)); ctx.beginPath(); ctx.arc(node.x ?? 0, node.y ?? 0, s + 4, 0, 2 * Math.PI); ctx.fillStyle = color; ctx.fill(); }}
-          onNodeClick={((node: any) => setSelected((p: GraphNode | null) => (p?.id === (node as GraphNode).id ? null : node as GraphNode))) as any}
-          linkColor={() => "rgba(100, 116, 139, 0.3)"} linkWidth={(link: any) => Math.max(0.5, (link as GraphLink).weight * 0.5)}
+          nodeCanvasObject={paintNode as any} // eslint-disable-line @typescript-eslint/no-explicit-any
+          nodePointerAreaPaint={(node: object, color: string, ctx: CanvasRenderingContext2D) => { const n = node as GraphNode & { x?: number; y?: number }; const s = Math.max(4, Math.min(16, n.mentions * 2)); ctx.beginPath(); ctx.arc(n.x ?? 0, n.y ?? 0, s + 4, 0, 2 * Math.PI); ctx.fillStyle = color; ctx.fill(); }}
+          onNodeClick={((node: object) => setSelected((p: GraphNode | null) => (p?.id === (node as GraphNode).id ? null : node as GraphNode))) as unknown as ((node: object) => void)}
+          linkColor={() => "rgba(100, 116, 139, 0.3)"} linkWidth={(link: object) => Math.max(0.5, (link as GraphLink).weight * 0.5)}
           backgroundColor="transparent" cooldownTicks={100}
-          nodeLabel={(node: any) => `${(node as GraphNode).label} (${(node as GraphNode).type}, ${(node as GraphNode).mentions} mentions)`} />}
+          nodeLabel={(node: object) => `${(node as GraphNode).label} (${(node as GraphNode).type}, ${(node as GraphNode).mentions} mentions)`} />}
       </div>
       {selected && <div className="border-t border-border p-3 max-h-48 overflow-y-auto">
         <div className="flex items-center justify-between mb-2">
