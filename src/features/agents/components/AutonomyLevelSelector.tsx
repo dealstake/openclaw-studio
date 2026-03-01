@@ -65,7 +65,7 @@ const AutonomyOption = memo(function AutonomyOption({
 const AUTONOMY_BADGE_COLORS: Record<AutonomyLevel, string> = {
   manual: "border-orange-500/40 bg-orange-500/10 text-orange-400",
   plan: "border-blue-500/40 bg-blue-500/10 text-blue-400",
-  autonomous: "border-emerald-500/30 bg-emerald-500/8 text-emerald-400/80",
+  autonomous: "border-emerald-500/30 bg-emerald-500/8 text-emerald-300",
 };
 
 /**
