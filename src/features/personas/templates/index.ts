@@ -1,11 +1,9 @@
 /**
- * Template index — imports and registers all Starter Kit templates.
- * Import this module once at app startup to populate the registry.
+ * Template barrel export — re-exports all Starter Kit template objects.
+ *
+ * Consumer code should import from templateRegistry.ts, not here directly.
+ * This barrel exists for build script consumption and testing.
  */
 
-import { registerTemplate } from "../lib/templateRegistry";
-import { coldCallerTemplate } from "./cold-caller/template";
-import { executiveAssistantTemplate } from "./executive-assistant/template";
-
-registerTemplate(executiveAssistantTemplate);
-registerTemplate(coldCallerTemplate);
+export { coldCallerTemplate } from "./cold-caller/template";
+export { executiveAssistantTemplate } from "./executive-assistant/template";
