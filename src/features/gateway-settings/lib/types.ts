@@ -36,7 +36,8 @@ export type CompactionConfig = {
 export type SecurityDisplayConfig = {
   authMode: string; // "token" | "none" | "password" | "trusted-proxy"
   hasToken: boolean; // whether a token is configured
-  tokenMasked: string | null; // "••••••abc" or null
+  /** Raw token string from config — passed directly to SecureInput (which handles its own masking) */
+  tokenRaw: string | null;
   dangerouslyDisableDeviceAuth: boolean; // display only
   trustedProxies: string[]; // display only
 };

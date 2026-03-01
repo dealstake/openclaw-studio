@@ -80,12 +80,13 @@ export function parseGatewaySettings(
   };
 
   // Security (read-only display)
+  // Store raw token — SecureInput handles its own masking (P2 audit fix: do not pre-mask)
   const tokenValue =
     typeof auth.token === "string" ? auth.token : null;
   const security: SecurityDisplayConfig = {
     authMode: typeof auth.mode === "string" ? auth.mode : "token",
     hasToken: !!tokenValue,
-    tokenMasked: tokenValue ? `••••••${tokenValue.slice(-3)}` : null,
+    tokenRaw: tokenValue,
     dangerouslyDisableDeviceAuth: controlUi.dangerouslyDisableDeviceAuth === true,
     trustedProxies: Array.isArray(gateway.trustedProxies)
       ? gateway.trustedProxies.filter((p): p is string => typeof p === "string")

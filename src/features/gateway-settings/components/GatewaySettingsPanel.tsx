@@ -88,7 +88,7 @@ export const GatewaySettingsPanel = memo(function GatewaySettingsPanel({
               client={client}
               onSaved={reload}
             />
-            <SecuritySection config={settings} />
+            <SecuritySection config={settings} client={client} />
           </div>
         )}
       </div>
