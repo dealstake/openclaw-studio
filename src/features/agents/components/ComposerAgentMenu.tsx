@@ -142,7 +142,7 @@ export const ComposerAgentMenu = memo(function ComposerAgentMenu({
       <button
         type="button"
         onClick={toggle}
-        className={`relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border/50 bg-background/60 shadow-lg ring-1 ring-white/[0.08] backdrop-blur-xl transition-all duration-300 ease-out hover:scale-110 hover:shadow-xl active:scale-90 dark:bg-background/40 ${glowClass} ${open ? "scale-110 ring-2 ring-primary/40" : ""}`}
+        className={`relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-border/50 bg-background/60 shadow-lg ring-1 ring-white/[0.08] backdrop-blur-xl transition-all duration-300 ease-out hover:scale-110 hover:shadow-xl active:scale-90 dark:bg-background/40 ${glowClass} ${open ? "scale-110 ring-2 ring-primary/40" : ""}`}
         aria-label={`Agent settings — ${selected.name}`}
         aria-expanded={open}
         aria-haspopup="menu"
@@ -151,7 +151,7 @@ export const ComposerAgentMenu = memo(function ComposerAgentMenu({
           seed={selected.avatarSeed ?? selected.agentId}
           name={selected.name || selected.agentId}
           avatarUrl={selected.avatarUrl}
-          size={36}
+          size={40}
         />
       </button>
 
