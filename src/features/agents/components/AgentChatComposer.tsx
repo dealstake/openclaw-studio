@@ -15,6 +15,7 @@ import type { MessagePart } from "@/lib/chat/types";
 import type { GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { AlertCircle, ArrowUp, Square, UploadCloud, WifiOff } from "lucide-react";
 import { ChatAttachmentPreview } from "./ChatAttachmentPreview";
+import { AgentAvatar } from "./AgentAvatar";
 import { ComposerAgentMenu, type ComposerAgent } from "./ComposerAgentMenu";
 import { useFileUpload, type ChatAttachment } from "../hooks/useFileUpload";
 import type { WizardType, WizardTheme, WizardStarter } from "@/features/wizards/lib/wizardTypes";
@@ -320,75 +321,12 @@ export const AgentChatComposer = memo(function AgentChatComposer({
           onChange={handleFileInputChange}
         />
 
-        {/* ═══ FLOATING ROW: [━━ Glass Input Pill ━━] [Avatar↔Send ○] ═══ */}
-        <div className="flex items-end gap-3 sm:gap-2.5">
+        {/* ═══ FLOATING ROW: [Avatar ○] [━━ Glass Input Pill ━━] [Send ○] ═══ */}
+        <div className="flex items-end gap-2 sm:gap-2.5">
 
-          {/* ── Floating Glass Input Pill ── */}
-          <div className="min-w-0 flex-1 rounded-[20px] border-0 bg-background/50 backdrop-blur-xl sm:border sm:border-border/50 sm:bg-background/70 sm:shadow-xl sm:ring-1 sm:ring-white/[0.08] sm:focus-within:border-border/80 sm:focus-within:shadow-2xl sm:dark:bg-background/40 sm:dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)] transition-all">
-            <textarea
-              ref={handleRef}
-              rows={1}
-              defaultValue={initialDraft}
-              className="max-h-[200px] min-h-[36px] w-full resize-none bg-transparent px-4 py-2.5 text-base leading-relaxed text-foreground outline-none placeholder:text-muted-foreground/90"
-              aria-label="Message to agent"
-              onChange={handleChange}
-              onKeyDown={handleKeyDown}
-              onFocus={handleFocus}
-              onPaste={handlePaste}
-              placeholder={wizardType && wizardTheme ? "Describe what you need..." : `Message ${agentName}...`}
-            />
-          </div>
-
-          {/* ── Morphing Action Button with circular progress ring ── */}
-          <div className="relative shrink-0">
-            {/* SVG progress ring — visible when running and tokenPct available */}
-            {running && tokenPct !== null && (
-              <svg
-                className="pointer-events-none absolute inset-0 -rotate-90"
-                viewBox="0 0 52 52"
-                width="52"
-                height="52"
-                aria-hidden
-              >
-                {/* Track */}
-                <circle cx="26" cy="26" r="23" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-muted/30" />
-                {/* Progress */}
-                <circle
-                  cx="26" cy="26" r="23" fill="none"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  className={`transition-all duration-700 ${tokenPct >= 80 ? "text-yellow-500" : "text-primary"}`}
-                  stroke="currentColor"
-                  strokeDasharray={`${2 * Math.PI * 23}`}
-                  strokeDashoffset={`${2 * Math.PI * 23 * (1 - Math.min(tokenPct, 100) / 100)}`}
-                />
-              </svg>
-            )}
-            {/* Pulsing ring for thinking/running (no token data) */}
-            {running && tokenPct === null && (
-              <div className="absolute inset-[-3px] rounded-full border-2 border-primary/50 animate-pulse" aria-hidden />
-            )}
-            {running ? (
-              <button
-                className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-lg transition-all duration-300 ease-out hover:brightness-110 active:scale-90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
-                type="button"
-                aria-label="Stop agent"
-                onClick={onStop}
-                disabled={!canSend || stopBusy}
-              >
-                <Square className="h-3.5 w-3.5 fill-current" />
-              </button>
-            ) : !isEmpty || hasFiles ? (
-              <button
-                className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-all duration-300 ease-out hover:brightness-110 active:scale-90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
-                type="button"
-                aria-label="Send message"
-                onClick={handleClickSend}
-                disabled={sendDisabled}
-              >
-                <ArrowUp className="h-[18px] w-[18px]" />
-              </button>
-            ) : composerAgents && composerAgents.length > 0 && selectedAgentId && onSelectAgent ? (
+          {/* ── Floating Avatar Button (left) ── */}
+          <div className="shrink-0">
+            {composerAgents && composerAgents.length > 0 && selectedAgentId && onSelectAgent ? (
               <ComposerAgentMenu
                 agents={composerAgents}
                 selectedAgentId={selectedAgentId}
@@ -404,8 +342,77 @@ export const AgentChatComposer = memo(function AgentChatComposer({
                 onAttach={triggerAttach}
               />
             ) : (
+              <div className="flex h-11 w-11 items-center justify-center rounded-full border border-border/30 bg-background/60 shadow-lg ring-1 ring-white/[0.06] backdrop-blur-xl dark:bg-background/40">
+                <AgentAvatar name={agentName} size={36} />
+              </div>
+            )}
+          </div>
+
+          {/* ── Floating Glass Input Pill (center) ── */}
+          <div className="min-w-0 flex-1 rounded-[20px] border border-border/50 bg-background/70 shadow-xl ring-1 ring-white/[0.08] backdrop-blur-xl transition-all focus-within:border-border/80 focus-within:shadow-2xl dark:bg-background/40 dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)]">
+            <textarea
+              ref={handleRef}
+              rows={1}
+              defaultValue={initialDraft}
+              className="max-h-[200px] min-h-[36px] w-full resize-none bg-transparent px-4 py-2.5 text-base leading-relaxed text-foreground outline-none placeholder:text-muted-foreground/90"
+              aria-label="Message to agent"
+              onChange={handleChange}
+              onKeyDown={handleKeyDown}
+              onFocus={handleFocus}
+              onPaste={handlePaste}
+              placeholder={wizardType && wizardTheme ? "Describe what you need..." : `Message ${agentName}...`}
+            />
+          </div>
+
+          {/* ── Floating Send/Stop Button (right) ── */}
+          <div className="relative shrink-0">
+            {/* SVG progress ring — visible when running and tokenPct available */}
+            {running && tokenPct !== null && (
+              <svg
+                className="pointer-events-none absolute inset-0 -rotate-90"
+                viewBox="0 0 48 48"
+                width="48"
+                height="48"
+                aria-hidden
+              >
+                <circle cx="24" cy="24" r="21" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-muted/30" />
+                <circle
+                  cx="24" cy="24" r="21" fill="none"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  className={`transition-all duration-700 ${tokenPct >= 80 ? "text-yellow-500" : "text-primary"}`}
+                  stroke="currentColor"
+                  strokeDasharray={`${2 * Math.PI * 21}`}
+                  strokeDashoffset={`${2 * Math.PI * 21 * (1 - Math.min(tokenPct, 100) / 100)}`}
+                />
+              </svg>
+            )}
+            {running && tokenPct === null && (
+              <div className="absolute inset-[-3px] rounded-full border-2 border-primary/50 animate-pulse" aria-hidden />
+            )}
+            {running ? (
               <button
-                className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-border/30 bg-background/60 text-muted-foreground shadow-none ring-1 ring-white/[0.06] backdrop-blur-xl"
+                className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-lg ring-1 ring-white/[0.06] backdrop-blur-xl transition-all duration-300 ease-out hover:brightness-110 active:scale-90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
+                type="button"
+                aria-label="Stop agent"
+                onClick={onStop}
+                disabled={!canSend || stopBusy}
+              >
+                <Square className="h-3.5 w-3.5 fill-current" />
+              </button>
+            ) : !isEmpty || hasFiles ? (
+              <button
+                className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg ring-1 ring-white/[0.06] backdrop-blur-xl transition-all duration-300 ease-out hover:brightness-110 active:scale-90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
+                type="button"
+                aria-label="Send message"
+                onClick={handleClickSend}
+                disabled={sendDisabled}
+              >
+                <ArrowUp className="h-[18px] w-[18px]" />
+              </button>
+            ) : (
+              <button
+                className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border/30 bg-background/60 text-muted-foreground shadow-lg ring-1 ring-white/[0.06] backdrop-blur-xl dark:bg-background/40"
                 type="button"
                 aria-label="Send message"
                 disabled
