@@ -516,3 +516,8 @@ summary:active {
 .avatar-glow-error {
   box-shadow: 0 0 6px 2px oklch(0.6 0.25 25);
 }
+
+/* Safe area utilities for bottom-fixed elements */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}

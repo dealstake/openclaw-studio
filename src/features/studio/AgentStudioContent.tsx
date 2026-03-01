@@ -11,7 +11,7 @@ import { AgentChatPanel } from "@/features/agents/components/AgentChatPanel";
 import { AppSidebar, type ManagementTab } from "@/layout/AppSidebar";
 import type { BreadcrumbAgent } from "@/features/agents/components/AgentBreadcrumb";
 import { FloatingContextControls } from "@/features/studio/FloatingContextControls";
-import { FloatingMobileHeader } from "@/features/studio/FloatingMobileHeader";
+import { MobileBottomNav } from "@/features/studio/MobileBottomNav";
 import { EmptyStatePanel } from "@/features/agents/components/EmptyStatePanel";
 // BrandMark moved to StudioLoadingScreen
 // GatewayStatusBanner moved to StudioStatusBanners
@@ -938,10 +938,10 @@ export const AgentStudioPage = () => {
             />
           </div>
         )}
-        {/* ── Floating mobile header — hamburger + context menu ──────── */}
+        {/* ── Mobile bottom nav — unified thumb-reachable navigation ──────── */}
         {!isWide(breakpoint) && (
-          <FloatingMobileHeader
-            onOpenSessionHistory={() => setMobileSessionDrawerOpen(true)}
+          <MobileBottomNav
+            onOpenSessionDrawer={() => setMobileSessionDrawerOpen(true)}
             contextTab={contextTab}
             contextPanelOpen={contextPanelOpen}
             onContextTabClick={(tab) => {
