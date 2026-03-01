@@ -190,7 +190,7 @@ export const ContextPanel = memo(function ContextPanel({
                   aria-controls={tabPanelId(tab.value)}
                   className={`flex-shrink-0 items-center justify-center min-h-[44px] lg:h-7 px-3 ${sectionLabelClass} transition-all focus-ring rounded-full ${
                     isActive
-                      ? "bg-primary/15 text-primary shadow-sm ring-1 ring-primary/25 font-semibold dark:bg-primary/20"
+                      ? "bg-primary text-primary-foreground font-semibold"
                       : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                   }`}
                   onClick={() => handleTabClick(tab.value)}

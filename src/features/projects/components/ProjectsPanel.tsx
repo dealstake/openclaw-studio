@@ -129,7 +129,7 @@ export const ProjectsPanel = memo(function ProjectsPanel({
   if (!agentId) return null;
 
   return (
-    <div className="flex flex-col gap-3 px-3 py-3">
+    <div className="flex flex-col gap-4 px-3 py-3">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -204,7 +204,7 @@ export const ProjectsPanel = memo(function ProjectsPanel({
       )}
 
       {/* All projects — flat list, sorted by status */}
-      <div id="projects-list" className="flex flex-col gap-3 animate-in fade-in duration-300">
+      <div id="projects-list" className="flex flex-col gap-4 animate-in fade-in duration-300">
         {filteredProjects.map((project, i) => (
           <div
             key={project.doc}

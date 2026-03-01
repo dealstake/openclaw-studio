@@ -10,7 +10,7 @@ describe("BaseCard", () => {
 
   it("applies variant classes", () => {
     const { container } = render(<BaseCard variant="compact">C</BaseCard>);
-    expect(container.firstChild).toHaveClass("p-3");
+    expect(container.firstChild).toHaveClass("p-4");
   });
 
   it("applies flush variant classes", () => {

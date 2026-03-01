@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 
 const variantClasses = {
   default: "rounded-lg border border-border/15 bg-card p-4",
-  compact: "rounded-lg border border-border/15 bg-card p-3",
+  compact: "rounded-lg border border-border/15 bg-card p-4",
   flush: "rounded-none border-x-0 border-t-0 border-b border-border/15 bg-transparent p-3",
 } as const;
 

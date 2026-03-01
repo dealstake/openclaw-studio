@@ -255,7 +255,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
 
   return (
     <div
-      className="absolute inset-x-0 bottom-0 z-10 px-2 sm:px-4"
+      className="absolute inset-x-0 bottom-0 z-10 px-2 sm:px-4 overflow-hidden"
       style={{ paddingBottom: `calc(0.75rem + var(--mobile-nav-height, 0px) + env(safe-area-inset-bottom))` }}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
@@ -329,7 +329,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
               ref={handleRef}
               rows={1}
               defaultValue={initialDraft}
-              className="max-h-[200px] min-h-[36px] w-full resize-none bg-transparent px-4 py-2.5 text-base leading-relaxed text-foreground outline-none placeholder:text-muted-foreground"
+              className="max-h-[200px] min-h-[36px] w-full resize-none bg-transparent px-4 py-2.5 text-base leading-relaxed text-foreground outline-none placeholder:text-muted-foreground/90"
               aria-label="Message to agent"
               onChange={handleChange}
               onKeyDown={handleKeyDown}
