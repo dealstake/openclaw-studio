@@ -58,7 +58,9 @@ const NavIconButton = memo(function NavIconButton({
   onKeyDown,
 }: NavIconButtonProps) {
   const Icon = item.icon;
-  const sizeClass = "h-11 w-11";
+  // sm (expanded row): h-10 w-10 = 40px — 6 items × 40 + 5 gaps × 4 + 16 pad = 276px < w-72 (288px)
+  // md (collapsed rail): h-11 w-11 = 44px — fine in the narrow icon column
+  const sizeClass = size === "sm" ? "h-10 w-10" : "h-11 w-11";
   const iconSize = size === "sm" ? "h-4 w-4" : "h-5 w-5";
 
   return (
