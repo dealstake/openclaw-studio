@@ -11,8 +11,8 @@
  * - All config mutations delegated to credentialService / skillService via
  *   their exported helpers — never touches config.patch directly.
  * - checkMcpServer uses mcporter CLI via child_process (server-side only).
- * - validateCredential calls testConnection which is also server-side; callers
- *   should only pass validate:true from server contexts (Phase 3 hardens this).
+ * - validateCredential calls connectionTestHandlers directly (no HTTP fetch).
+ *   Raw secrets never leave the server process (Phase 3 security hardening).
  */
 
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
@@ -26,7 +26,7 @@ import {
   listCredentials,
   readSecretValues,
 } from "@/features/credentials/lib/credentialService";
-import { testConnection } from "@/features/credentials/lib/testConnection";
+import { runConnectionTest } from "@/features/credentials/lib/connectionTestHandlers";
 import type { Credential } from "@/features/credentials/lib/types";
 import { CAPABILITY_SKILL_MAP } from "./skillWiring";
 import type { SkillRequirement } from "./personaTypes";
@@ -149,9 +149,9 @@ export async function checkCredentialStatus(
 
 /**
  * Read secret values for a credential and run a live connection test.
- * Delegates to testConnection (which calls /api/integrations/test).
- * Only called when the caller explicitly passes validate:true — Phase 3 will
- * harden server-side URL handling so fetch resolves correctly.
+ *
+ * Calls shared connectionTestHandlers directly — no HTTP round-trip needed.
+ * Raw secret values never leave the server process.
  */
 export async function validateCredential(
   client: GatewayClient,
@@ -163,7 +163,14 @@ export async function validateCredential(
   for (const [k, v] of Object.entries(values)) {
     if (v) creds[k] = v;
   }
-  return testConnection(templateKey, creds);
+
+  const result = runConnectionTest(templateKey, creds);
+  if (!result) {
+    // No handler registered for this template — treat as untestable (not failed)
+    return { success: true, message: "No validator available — skipping live test." };
+  }
+
+  return result;
 }
 
 // ---------------------------------------------------------------------------
