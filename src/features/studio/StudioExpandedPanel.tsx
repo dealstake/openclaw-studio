@@ -22,6 +22,9 @@ import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import type { StudioTask, UpdateTaskPayload, TaskSchedule } from "@/features/tasks/types";
 import type { AgentState } from "@/features/agents/state/store";
 import type { AgentFileName } from "@/lib/agents/agentFiles";
+import type { GatewayModelChoice } from "@/lib/gateway/models";
+import { PlaygroundPanel } from "@/features/playground/components/PlaygroundPanel";
+import { RoutingPanel } from "@/features/routing/components/RoutingPanel";
 
 interface StudioExpandedPanelProps {
   expandedTab: ContextTab | ManagementTab | null;
@@ -54,6 +57,9 @@ interface StudioExpandedPanelProps {
   onBrainPreviewModeChange: (mode: boolean) => void;
   // Transcript
   onTranscriptClick: (sessionId: string, agentId: string | null) => void;
+  // Playground
+  gatewayModels: GatewayModelChoice[];
+  defaultModel?: string;
   // Wizard entry points
   onCreateSkill?: () => void;
   onSelectTemplate?: (template: PersonaTemplate) => void;
@@ -87,6 +93,8 @@ export const StudioExpandedPanel = memo(function StudioExpandedPanel({
   brainPreviewMode,
   onBrainPreviewModeChange,
   onTranscriptClick,
+  gatewayModels = [],
+  defaultModel,
   onCreateSkill,
   onSelectTemplate,
 }: StudioExpandedPanelProps) {
@@ -163,6 +171,28 @@ export const StudioExpandedPanel = memo(function StudioExpandedPanel({
           {expandedTab === "budget" && (
             <PanelErrorBoundary name="Budget">
               <ContextBudgetCard agentId={focusedAgentId} />
+            </PanelErrorBoundary>
+          )}
+          {expandedTab === "playground" && (
+            <PanelErrorBoundary name="Playground">
+              <PlaygroundPanel
+                client={client}
+                status={status}
+                agentId={focusedAgentId}
+                models={gatewayModels}
+                defaultModel={defaultModel}
+                isTabActive
+              />
+            </PanelErrorBoundary>
+          )}
+          {expandedTab === "router" && (
+            <PanelErrorBoundary name="Router">
+              <RoutingPanel
+                client={client}
+                status={status}
+                models={gatewayModels}
+                agents={agents}
+              />
             </PanelErrorBoundary>
           )}
           <ManagementPanelContent

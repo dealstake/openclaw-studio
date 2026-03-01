@@ -25,6 +25,8 @@ interface ContextPanelProps {
   skillsContent?: ReactNode;
   activityContent?: ReactNode;
   budgetContent?: ReactNode;
+  routerContent?: ReactNode;
+  playgroundContent?: ReactNode;
 }
 
 export const ContextPanel = memo(function ContextPanel({
@@ -41,6 +43,8 @@ export const ContextPanel = memo(function ContextPanel({
   skillsContent,
   activityContent,
   budgetContent,
+  routerContent,
+  playgroundContent,
 }: ContextPanelProps) {
   const handleTabClick = useCallback(
     (tab: ContextTab) => {
@@ -142,7 +146,9 @@ export const ContextPanel = memo(function ContextPanel({
     skills: skillsContent,
     activity: activityContent,
     budget: budgetContent,
-  }), [projectsContent, tasksContent, brainContent, workspaceContent, skillsContent, activityContent, budgetContent]);
+    router: routerContent,
+    playground: playgroundContent,
+  }), [projectsContent, tasksContent, brainContent, workspaceContent, skillsContent, activityContent, budgetContent, routerContent, playgroundContent]);
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden">
