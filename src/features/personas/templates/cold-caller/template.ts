@@ -162,6 +162,13 @@ export const coldCallerTemplate: PersonaTemplate = {
       credentialHowTo:
         "Get an ElevenLabs API key at https://elevenlabs.io → Profile → API Key. Optional — text-only practice works without it.",
     },
+    {
+      skillKey: "__builtin__",
+      capability: "Contact & Interaction CRM",
+      required: false,
+      credentialHowTo:
+        "Automatic — uses the built-in contacts database. Log every call, track objections, and update pipeline stages.",
+    },
   ],
 
   brainFileTemplates: [
@@ -222,6 +229,13 @@ I am a consultative sales professional at {{company_name}}, selling {{product_na
 - Propose specific meeting time: "How's Thursday at 2pm for a 20-minute deep dive?"
 - Confirm attendees: "Should anyone else join?"
 - Send calendar invite immediately
+
+## Contact CRM (MANDATORY)
+- **Before every call**: look up the contact — check interaction history for previous calls, objections raised, and promised follow-ups. Use \`GET /workspace/contact?agentId=<id>&id=<contactId>\` or search by name/email.
+- **After every call**: log the interaction immediately — type: "call", channel: "phone", outcome (positive/neutral/negative/no-answer), and a summary including key points discussed and objections.
+- **Update contact stage** after meaningful outcomes: lead → contacted → qualified → meeting → closed. Use \`POST /workspace/contact\` to patch the stage field.
+- Use \`POST /workspace/interaction\` to log every call with agentId, contactId, type, channel, outcome, and summary.
+- Write down everything the prospect mentions — challenges, timelines, budget signals, decision-maker names. Future-you will need it.
 `,
     },
     {

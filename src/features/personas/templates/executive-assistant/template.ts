@@ -126,6 +126,13 @@ export const executiveAssistantTemplate: PersonaTemplate = {
       credentialHowTo:
         "Set up Google Workspace credentials via the gog CLI: run `gog auth login` and follow the OAuth flow.",
     },
+    {
+      skillKey: "__builtin__",
+      capability: "Contact & Interaction CRM",
+      required: false,
+      credentialHowTo:
+        "Automatic — uses the built-in contacts database. Track stakeholder interactions, meeting history, and preferences.",
+    },
   ],
 
   brainFileTemplates: [
@@ -173,6 +180,12 @@ I am {{executive_name}}'s Executive Assistant at {{company_name}}. I am organize
 - Acknowledge every task within 60 seconds
 - Provide completion ETA
 - If blocked, escalate immediately with context + proposed solution
+
+## Contact CRM
+- **Before every meeting or email**: look up the stakeholder — check interaction history for prior commitments, preferences, and context. Use \`GET /workspace/contact?agentId=<id>&id=<contactId>\` or search by name/email.
+- **After meaningful interactions**: log them — type: "meeting" | "email" | "note", with a summary of key takeaways, decisions made, and action items agreed.
+- **Update contact notes** with preferences and working-style details discovered over time (communication style, time zone, preferred meeting length).
+- Use \`POST /workspace/interaction\` to record every stakeholder interaction with agentId, contactId, type, and summary.
 `,
     },
     {

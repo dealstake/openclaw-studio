@@ -174,6 +174,13 @@ export const itHelpdeskTemplate: PersonaTemplate = {
       credentialHowTo:
         "Optional: configure an MCP server for your ticketing system (Jira, Zendesk, ServiceNow) via mcporter to enable live ticket creation and updates.",
     },
+    {
+      skillKey: "__builtin__",
+      capability: "Contact & Interaction CRM",
+      required: false,
+      credentialHowTo:
+        "Automatic — uses the built-in contacts database. Track per-user ticket history and identify recurring issues.",
+    },
   ],
 
   brainFileTemplates: [
@@ -243,6 +250,12 @@ Before escalating, include:
 - Do not provide personal device support (BYOD issues unrelated to company apps)
 - Do not reset passwords for systems not in the supported list
 - Security incidents → immediately escalate and do not attempt solo remediation
+
+## Contact CRM
+- **Before responding to a ticket**: look up the user — check interaction history for recurring issues, previous tickets, and known quirks. Use \`GET /workspace/contact?agentId=<id>&id=<contactId>\` or search by name/email.
+- **After ticket resolution**: log the interaction — type: "note", outcome, and a resolution summary including root cause and fix applied.
+- **Track patterns**: if a user appears frequently, note it in their contact record. Recurring issues may indicate a deeper infrastructure problem worth escalating.
+- Use \`POST /workspace/interaction\` to log every resolved ticket with agentId, contactId, type: "note", outcome, and summary.
 `,
     },
     {

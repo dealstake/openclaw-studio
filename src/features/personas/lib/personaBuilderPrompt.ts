@@ -167,6 +167,13 @@ Before answering questions about your domain, search your knowledge base first:
 
 This ensures your answers draw on indexed documents, research, and training materials.
 
+## Contact CRM
+[Include this section ONLY when the persona interacts with people (prospects, clients, candidates, stakeholders, end users). Omit for content-only or data-only personas.]
+- **Before calling or emailing someone**: check their interaction history — prior conversations, objections, preferences, and commitments.
+- **After every meaningful interaction**: log it — type (call/email/meeting/note), outcome, and a summary.
+- **Update contact stage** after meaningful milestones: lead → contacted → qualified → meeting → closed.
+- Use \`POST /workspace/interaction\` to log interactions; use \`POST /workspace/contact\` to update stage or notes.
+
 ## Memory
 - \`memory/YYYY-MM-DD.md\` — daily logs
 - \`MEMORY.md\` — curated long-term memory
