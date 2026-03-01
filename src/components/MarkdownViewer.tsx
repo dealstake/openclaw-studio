@@ -19,7 +19,7 @@ export const MarkdownViewer = memo(function MarkdownViewer({
   className?: string;
 }) {
   return (
-    <div className={cn("agent-markdown text-xs text-foreground", className)}>
+    <div className={cn("agent-markdown text-sm text-foreground", className)}>
       <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
     </div>
   );

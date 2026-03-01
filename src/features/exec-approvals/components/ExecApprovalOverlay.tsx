@@ -28,7 +28,7 @@ const MetaRow = ({ label, value }: { label: string; value: string | null | undef
   if (!value) return null;
   return (
     <div className="flex items-baseline gap-2">
-      <SectionLabel as="span">
+      <SectionLabel as="span" className="w-16 shrink-0">
         {label}
       </SectionLabel>
       <span className="truncate text-[11px] text-foreground">{value}</span>
@@ -90,7 +90,7 @@ export const ExecApprovalOverlay = ({
         </div>
 
         <div className="mt-4 rounded-md border border-border/80 bg-background/80 px-3 py-2">
-          <code className="block whitespace-pre-wrap break-all font-mono text-xs text-foreground">
+          <code className="block max-h-[40vh] overflow-y-auto whitespace-pre-wrap break-words font-mono text-xs text-foreground">
             {current.request.command}
           </code>
         </div>
@@ -104,8 +104,11 @@ export const ExecApprovalOverlay = ({
         </div>
 
         {current.request.ask ? (
-          <div className="mt-3 rounded-md border border-border/80 bg-muted/40 px-3 py-2 text-[11px] text-muted-foreground">
-            {current.request.ask}
+          <div className="mt-3">
+            <SectionLabel className="mb-1">Reason</SectionLabel>
+            <div className="rounded-md border border-border/80 bg-muted/40 px-3 py-2 text-[11px] text-muted-foreground">
+              {current.request.ask}
+            </div>
           </div>
         ) : null}
 
@@ -125,7 +128,7 @@ export const ExecApprovalOverlay = ({
           </div>
         ) : null}
 
-        <div className="mt-4 flex items-center gap-2">
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
           <button
             className={`flex-1 rounded-md border border-transparent bg-primary/90 px-4 py-2 ${sectionLabelClass} text-primary-foreground transition hover:bg-primary disabled:cursor-not-allowed disabled:border-border disabled:bg-muted disabled:text-muted-foreground`}
             type="button"
