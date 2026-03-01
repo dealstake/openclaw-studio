@@ -35,6 +35,8 @@ import type {
   CapabilityPreflightResult,
   OverallPreflightStatus,
   ManualRemediationAction,
+  RemediationResult,
+  RemediationOutcome,
 } from "./preflightTypes";
 
 // ---------------------------------------------------------------------------
@@ -77,6 +79,56 @@ function setCached(
     result,
     expiresAt: Date.now() + CACHE_TTL_MS,
   });
+}
+
+// ---------------------------------------------------------------------------
+// Credential validation rate-limit cache (Phase 4b)
+// ---------------------------------------------------------------------------
+// Separate from the capability result cache above.
+// Prevents hammering third-party APIs when runPreflight is called repeatedly
+// with validate=true (e.g. during practice pre-flight or health checks).
+
+const CRED_VALIDATION_TTL_MS = 5 * 60 * 1_000; // 5 minutes
+
+interface CredValidationEntry {
+  success: boolean;
+  message: string;
+  validatedAt: string;
+  expiresAt: number;
+}
+
+const credValidationCache = new Map<string, CredValidationEntry>();
+
+function credValidationKey(templateKey: string, agentId?: string): string {
+  return agentId ? `${agentId}:cred:${templateKey}` : `cred:${templateKey}`;
+}
+
+function getCachedValidation(
+  templateKey: string,
+  agentId?: string,
+): CredValidationEntry | null {
+  const key = credValidationKey(templateKey, agentId);
+  const entry = credValidationCache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) {
+    credValidationCache.delete(key);
+    return null;
+  }
+  return entry;
+}
+
+function setCachedValidation(
+  templateKey: string,
+  result: { success: boolean; message: string },
+  agentId?: string,
+): string {
+  const validatedAt = new Date().toISOString();
+  credValidationCache.set(credValidationKey(templateKey, agentId), {
+    ...result,
+    validatedAt,
+    expiresAt: Date.now() + CRED_VALIDATION_TTL_MS,
+  });
+  return validatedAt;
 }
 
 // ---------------------------------------------------------------------------
@@ -334,6 +386,7 @@ export async function runPreflight(
       skillsReport,
       credentials,
       validate,
+      agentId,
     );
 
     setCached(capKey, result, agentId);
@@ -360,6 +413,7 @@ async function checkSingleCapability(
   skillsReport: SkillsReport,
   credentials: Credential[],
   validate: boolean,
+  agentId?: string,
 ): Promise<CapabilityPreflightResult> {
   // ── 1. Skill check (skip builtins / MCP markers) ────────────────────────
   if (!req.skillKey.startsWith("__")) {
@@ -455,26 +509,60 @@ async function checkSingleCapability(
 
     // Live validation — only when caller requests it
     if (validate && credential.status === "connected") {
-      try {
-        const testResult = await validateCredential(
-          client,
-          credential,
-          req.credentialTemplateKey,
-        );
-        if (!testResult.success) {
-          return {
-            capability: capKey,
-            displayName: req.capability,
-            required: req.required,
-            status: "credential_invalid",
-            details: testResult.message || "Credential validation failed.",
-            manualFix: buildCredentialFix("fix_credential", req),
-            validatedAt: new Date().toISOString(),
-          };
+      // Check the per-credential validation cache first (Phase 4b rate limiting).
+      // This prevents hammering third-party APIs on repeated preflight calls
+      // (e.g. every practice-session gate check hitting ElevenLabs/OpenAI).
+      const cachedValidation = getCachedValidation(
+        req.credentialTemplateKey,
+        agentId,
+      );
+
+      let testResult: { success: boolean; message: string };
+      let validatedAt: string;
+
+      if (cachedValidation) {
+        // Serve from cache — no API call needed
+        testResult = {
+          success: cachedValidation.success,
+          message: cachedValidation.message,
+        };
+        validatedAt = cachedValidation.validatedAt;
+      } else {
+        try {
+          testResult = await validateCredential(
+            client,
+            credential,
+            req.credentialTemplateKey,
+          );
+          // Cache the result (success or failure) to prevent hammering
+          validatedAt = setCachedValidation(
+            req.credentialTemplateKey,
+            testResult,
+            agentId,
+          );
+        } catch (err) {
+          // Network/timeout error — treat as inconclusive, not failure.
+          // The credential still exists; we just can't confirm right now.
+          // Return a safe result rather than a generic error.
+          const errorMsg =
+            err instanceof Error && err.message.includes("AbortError")
+              ? "Validation timed out — will retry later."
+              : "Could not reach validation endpoint — treating credential as valid.";
+          testResult = { success: true, message: errorMsg };
+          validatedAt = new Date().toISOString();
         }
-      } catch {
-        // Validation error (e.g. network) — treat as inconclusive, not failure.
-        // The credential still exists; we just can't confirm it's valid right now.
+      }
+
+      if (!testResult.success) {
+        return {
+          capability: capKey,
+          displayName: req.capability,
+          required: req.required,
+          status: "credential_invalid",
+          details: testResult.message || "Credential validation failed.",
+          manualFix: buildCredentialFix("fix_credential", req),
+          validatedAt,
+        };
       }
     }
   }
@@ -648,5 +736,225 @@ function buildSystemDepFix(
   };
 }
 
+// ---------------------------------------------------------------------------
+// Phase 4: Auto-Remediation Orchestrator
+// ---------------------------------------------------------------------------
+
+export interface AutoRemediateOptions {
+  /**
+   * Capability keys the user has explicitly confirmed for installation.
+   *
+   * Security mandate: `install_skill` and `install_mcp` actions MUST be in
+   * this list before the engine will attempt them. The UI is responsible for
+   * presenting an explicit "Install" button (WizardConfigCard) and only sending
+   * confirmed capability keys here. enable_skill is always safe and does NOT
+   * require user confirmation.
+   */
+  confirmedCapabilities?: string[];
+  agentId?: string;
+}
+
+/**
+ * Attempt all auto-fixable issues found in a PreflightResult.
+ *
+ * - `enable_skill`  → always attempted (toggling a disabled skill is safe).
+ * - `install_skill` → only attempted if the capability is in `confirmedCapabilities`.
+ * - `install_mcp`   → only attempted if the capability is in `confirmedCapabilities`.
+ *
+ * After remediation, the cache is invalidated for affected capabilities and
+ * runPreflight() is re-run to return an up-to-date PreflightResult.
+ */
+export async function autoRemediate(
+  client: GatewayClient,
+  preflightResult: PreflightResult,
+  options: AutoRemediateOptions = {},
+): Promise<RemediationResult> {
+  const { confirmedCapabilities = [], agentId } = options;
+  const confirmedSet = new Set(confirmedCapabilities);
+  const outcomes: RemediationOutcome[] = [];
+  const remediatedCapabilities: string[] = [];
+
+  for (const cap of preflightResult.capabilities) {
+    // Nothing to do for ready capabilities or those without an autoFix
+    if (cap.status === "ready" || !cap.autoFix) continue;
+
+    const req = CAPABILITY_SKILL_MAP[cap.capability];
+
+    // ── enable_skill ────────────────────────────────────────────────────────
+    if (cap.autoFix.type === "enable_skill") {
+      if (!req) {
+        outcomes.push({
+          capability: cap.capability,
+          displayName: cap.displayName,
+          action: "enable_skill",
+          success: false,
+          message: `Capability "${cap.capability}" not found in registry.`,
+        });
+        continue;
+      }
+
+      try {
+        await autoEnableSkill(client, req.skillKey);
+        outcomes.push({
+          capability: cap.capability,
+          displayName: cap.displayName,
+          action: "enable_skill",
+          success: true,
+          message: `Skill "${req.skillKey}" enabled successfully.`,
+        });
+        remediatedCapabilities.push(cap.capability);
+      } catch (err) {
+        const msg =
+          err instanceof Error ? err.message : "Unknown error enabling skill.";
+        outcomes.push({
+          capability: cap.capability,
+          displayName: cap.displayName,
+          action: "enable_skill",
+          success: false,
+          message: `Failed to enable "${req.skillKey}": ${msg}`,
+        });
+      }
+      continue;
+    }
+
+    // ── install_skill ───────────────────────────────────────────────────────
+    if (cap.autoFix.type === "install_skill") {
+      if (!confirmedSet.has(cap.capability)) {
+        // Not yet confirmed — skip; the UI will present the Install button.
+        outcomes.push({
+          capability: cap.capability,
+          displayName: cap.displayName,
+          action: "install_skill",
+          success: false,
+          message: "Awaiting user confirmation to install skill.",
+        });
+        continue;
+      }
+
+      if (!req) {
+        outcomes.push({
+          capability: cap.capability,
+          displayName: cap.displayName,
+          action: "install_skill",
+          success: false,
+          message: `Capability "${cap.capability}" not found in registry.`,
+        });
+        continue;
+      }
+
+      try {
+        await autoInstallSkill(client, req.skillKey, req.clawhubPackage);
+        outcomes.push({
+          capability: cap.capability,
+          displayName: cap.displayName,
+          action: "install_skill",
+          success: true,
+          message: `Skill "${cap.autoFix.clawhubPackage ?? req.skillKey}" installed from ClawHub.`,
+        });
+        remediatedCapabilities.push(cap.capability);
+      } catch (err) {
+        const msg =
+          err instanceof Error ? err.message : "Unknown error during install.";
+        outcomes.push({
+          capability: cap.capability,
+          displayName: cap.displayName,
+          action: "install_skill",
+          success: false,
+          message: `Failed to install "${req.clawhubPackage ?? req.skillKey}": ${msg}`,
+        });
+      }
+      continue;
+    }
+
+    // ── install_mcp ─────────────────────────────────────────────────────────
+    if (cap.autoFix.type === "install_mcp") {
+      if (!confirmedSet.has(cap.capability)) {
+        outcomes.push({
+          capability: cap.capability,
+          displayName: cap.displayName,
+          action: "install_mcp",
+          success: false,
+          message: "Awaiting user confirmation to install MCP server.",
+        });
+        continue;
+      }
+
+      // Resolve the MCP package from the registry (don't trust autoFix.action string)
+      const mcpServer = req?.mcpServers?.[0];
+      if (!mcpServer?.package) {
+        outcomes.push({
+          capability: cap.capability,
+          displayName: cap.displayName,
+          action: "install_mcp",
+          success: false,
+          message: "No installable MCP package found for this capability.",
+        });
+        continue;
+      }
+
+      try {
+        const { exec } = await import("child_process");
+        const { promisify } = await import("util");
+        const execAsync = promisify(exec);
+
+        // 60s timeout for mcporter installs (npm package download can be slow)
+        await execAsync(`mcporter add ${mcpServer.package}`, {
+          timeout: 60_000,
+        });
+
+        outcomes.push({
+          capability: cap.capability,
+          displayName: cap.displayName,
+          action: "install_mcp",
+          success: true,
+          message: `MCP server "${mcpServer.name}" installed via mcporter.`,
+        });
+        remediatedCapabilities.push(cap.capability);
+      } catch (err) {
+        const msg =
+          err instanceof Error ? err.message : "Unknown error during install.";
+        outcomes.push({
+          capability: cap.capability,
+          displayName: cap.displayName,
+          action: "install_mcp",
+          success: false,
+          message: `Failed to install MCP server "${mcpServer.name}": ${msg}`,
+        });
+      }
+      continue;
+    }
+
+    // Unknown autoFix type — record as skipped
+    outcomes.push({
+      capability: cap.capability,
+      displayName: cap.displayName,
+      action: "skipped",
+      success: false,
+      message: `Unknown autoFix type: ${(cap.autoFix as { type: string }).type}`,
+    });
+  }
+
+  // Invalidate capability cache and credential validation cache for anything
+  // that was successfully remediated, so the re-run sees fresh state.
+  for (const capKey of remediatedCapabilities) {
+    validationCache.delete(cacheKey(capKey, agentId));
+
+    const req = CAPABILITY_SKILL_MAP[capKey];
+    if (req?.credentialTemplateKey) {
+      credValidationCache.delete(credValidationKey(req.credentialTemplateKey, agentId));
+    }
+  }
+
+  // Re-run preflight for the full set to return accurate updated statuses
+  const capabilityKeys = preflightResult.capabilities.map((c) => c.capability);
+  const updatedPreflight = await runPreflight(client, capabilityKeys, { agentId });
+
+  return { outcomes, updatedPreflight };
+}
+
 // Re-export types used by the API route
-export type { PreflightResult, RunPreflightOptions as PreflightOptions };
+export type {
+  PreflightResult,
+  RunPreflightOptions as PreflightOptions,
+  RemediationResult,
+};

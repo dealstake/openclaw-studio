@@ -188,3 +188,57 @@ export function summarizePreflight(result: PreflightResult): PreflightSummary {
     ...counts,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Phase 4: Auto-Remediation Types
+// ---------------------------------------------------------------------------
+
+/**
+ * The outcome of a single remediation action on one capability.
+ */
+export interface RemediationOutcome {
+  /** Capability key that was acted upon */
+  capability: string;
+  /** Human-readable capability name */
+  displayName: string;
+  /** Which auto-fix action was attempted */
+  action: "enable_skill" | "install_skill" | "install_mcp" | "skipped";
+  /** Whether the action succeeded */
+  success: boolean;
+  /** Human-readable result message */
+  message: string;
+}
+
+/**
+ * Request body for POST /api/personas/preflight/remediate.
+ *
+ * Security mandate: for `install_skill` and `install_mcp` actions, the client
+ * MUST include the capability key in `confirmedCapabilities`. This ensures the
+ * user has explicitly clicked "Install" in the UI before any ClawHub or mcporter
+ * install command runs.
+ *
+ * `enable_skill` actions (toggling a disabled-but-installed skill) are always
+ * safe and do not require explicit confirmation.
+ */
+export interface RemediationRequest {
+  /** The PreflightResult to remediate — prevents double-fetching */
+  preflightResult: PreflightResult;
+  /**
+   * Capabilities the user has explicitly confirmed for installation.
+   * Only `install_skill` and `install_mcp` actions require confirmation.
+   * Capabilities absent from this list will have their install actions skipped.
+   */
+  confirmedCapabilities: string[];
+  /** Persona agent ID — scopes cache invalidation */
+  agentId?: string;
+}
+
+/**
+ * Result returned by autoRemediate() and POST /api/personas/preflight/remediate.
+ */
+export interface RemediationResult {
+  /** Outcome per capability that had an autoFix defined */
+  outcomes: RemediationOutcome[];
+  /** Re-run preflight result after all remediation actions have been applied */
+  updatedPreflight: PreflightResult;
+}
