@@ -1,6 +1,6 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useDeferredValue } from "react";
 import { useShallowArrayMemo } from "@/lib/hooks/useShallowMemo";
 import type { MessagePart } from "@/lib/chat/types";
 import {
@@ -231,9 +231,14 @@ export const AgentChatView = memo(function AgentChatView({
   // Part-level streaming flags drive live rendering; top-level flag reserved
   // for future global indicators (e.g. pulsing cursor at end of stream).
   void streaming;
-  const groups = useShallowArrayMemo(() => groupParts(parts), parts);
 
-  if (parts.length === 0) {
+  // Defer grouping so high-frequency streaming updates don't block the
+  // composer or other interactive UI. React renders the deferred value
+  // in a lower-priority pass, keeping the page responsive during long streams.
+  const deferredParts = useDeferredValue(parts);
+  const groups = useShallowArrayMemo(() => groupParts(deferredParts), deferredParts);
+
+  if (deferredParts.length === 0) {
     return null;
   }
 

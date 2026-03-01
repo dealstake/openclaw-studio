@@ -4,6 +4,7 @@ import {
   forwardRef,
   memo,
   useCallback,
+  useDeferredValue,
   useEffect,
   useImperativeHandle,
   useMemo,
@@ -259,14 +260,19 @@ export const AgentBrainPanel = memo(function AgentBrainPanel({
   const [searchQuery, setSearchQuery] = useState("");
   const searchInputRef = useRef<HTMLInputElement>(null);
 
+  // Defer the query used for match counting so typing stays responsive.
+  // The deferred value lags one render behind the live input value,
+  // keeping the regex scan off the critical keystroke path.
+  const deferredSearchQuery = useDeferredValue(searchQuery);
+
   const searchMatchCount = useMemo(() => {
-    if (!searchQuery.trim()) return 0;
+    if (!deferredSearchQuery.trim()) return 0;
     const regex = new RegExp(
-      searchQuery.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+      deferredSearchQuery.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
       "gi"
     );
     return (currentContent.match(regex) ?? []).length;
-  }, [currentContent, searchQuery]);
+  }, [currentContent, deferredSearchQuery]);
 
   const closeSearch = useCallback(() => {
     setSearchOpen(false);
