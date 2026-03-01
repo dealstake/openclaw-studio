@@ -83,8 +83,8 @@ export const TemplateCard = React.memo(function TemplateCard({
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
         "min-h-[44px]", // touch target
       )}
-      aria-label={`Use ${template.name} template`}
     >
+      <span className="sr-only">Use template: </span>
       {/* Icon + title row */}
       <div className="flex w-full items-start gap-3">
         <div
@@ -118,7 +118,7 @@ export const TemplateCard = React.memo(function TemplateCard({
       </div>
 
       {/* Meta row */}
-      <div className="flex w-full items-center gap-3 text-[11px] text-muted-foreground">
+      <div className="flex w-full items-center gap-3 text-xs text-muted-foreground">
         <span>~{template.estimatedSetupMinutes} min setup</span>
         <span className="text-muted-foreground/30">·</span>
         <span>

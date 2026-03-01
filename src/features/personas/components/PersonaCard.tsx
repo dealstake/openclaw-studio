@@ -208,7 +208,6 @@ export const PersonaCard = React.memo(function PersonaCard({
       isHoverable
       onClick={handleSelect}
       className="animate-in fade-in slide-in-from-bottom-1 fill-mode-both duration-200"
-      aria-label={`${persona.displayName} — ${badge.label}`}
     >
       <CardHeader>
         <div className="flex min-w-0 flex-1 items-center gap-2">
@@ -305,13 +304,13 @@ export const PersonaCard = React.memo(function PersonaCard({
       </CardHeader>
 
       <CardMeta>
-        <span className="text-[11px] text-muted-foreground">
+        <span className="text-xs text-muted-foreground">
           {CATEGORY_LABELS[persona.category]}
         </span>
         {persona.templateKey && (
           <>
             <span className="text-muted-foreground/30">·</span>
-            <span className="text-[11px] text-muted-foreground/70">
+            <span className="text-xs text-muted-foreground/70">
               {persona.templateKey}
             </span>
           </>
@@ -320,7 +319,7 @@ export const PersonaCard = React.memo(function PersonaCard({
 
       {/* Metrics row */}
       {metrics.sessionCount > 0 && (
-        <div className="mt-2 flex items-center gap-3 text-[11px] text-muted-foreground">
+        <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
           <span>
             Score:{" "}
             <span className="font-medium text-foreground">

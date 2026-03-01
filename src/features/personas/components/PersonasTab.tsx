@@ -145,7 +145,7 @@ export const PersonasTab = React.memo(function PersonasTab({
           type="button"
           onClick={handleOpenTemplateBrowser}
           aria-label="Create new persona"
-          className="flex h-8 items-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-3 text-xs text-primary transition-colors hover:bg-primary/20"
+          className="flex min-h-[44px] items-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-3 text-xs text-primary transition-colors hover:bg-primary/20 md:min-h-8"
         >
           <Plus className="h-3 w-3" />
           New Persona
@@ -174,7 +174,7 @@ export const PersonasTab = React.memo(function PersonasTab({
           placeholder="Search personas…"
           aria-label="Search personas"
           className={cn(
-            "h-8 w-full rounded-md border border-border/40 bg-background/50 pl-8 pr-3",
+            "min-h-[44px] w-full rounded-md border border-border/40 bg-background/50 pl-8 pr-3 md:min-h-8",
             "text-sm text-foreground placeholder:text-muted-foreground/70",
             "transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
           )}

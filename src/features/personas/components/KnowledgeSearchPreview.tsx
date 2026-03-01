@@ -219,7 +219,7 @@ export const KnowledgeSearchPreview = React.memo(
             disabled={status !== "connected"}
             aria-label="Knowledge search preview query"
             className={cn(
-              "h-9 w-full rounded-md border border-border/40 bg-background/50 pl-9 pr-9",
+              "min-h-[44px] w-full rounded-md border border-border/40 bg-background/50 pl-9 pr-9 md:min-h-9",
               "text-sm text-foreground placeholder:text-muted-foreground/70",
               "transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
               "disabled:opacity-50",

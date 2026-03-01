@@ -472,7 +472,7 @@ export const KnowledgePanel = React.memo(function KnowledgePanel({
                   type="button"
                   onClick={() => handleOpenAddForm("web")}
                   className={cn(
-                    "flex h-8 items-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-3",
+                    "flex min-h-[44px] items-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-3",
                     "text-xs text-primary transition-colors hover:bg-primary/20",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
                   )}
@@ -484,7 +484,7 @@ export const KnowledgePanel = React.memo(function KnowledgePanel({
                   type="button"
                   onClick={() => handleOpenAddForm("file")}
                   className={cn(
-                    "flex h-8 items-center gap-1.5 rounded-md border border-border/40 px-3",
+                    "flex min-h-[44px] items-center gap-1.5 rounded-md border border-border/40 px-3",
                     "text-xs text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
                   )}
@@ -498,7 +498,7 @@ export const KnowledgePanel = React.memo(function KnowledgePanel({
                     onClick={handleRefreshAll}
                     disabled={busy}
                     className={cn(
-                      "flex h-8 items-center gap-1.5 rounded-md border border-border/40 px-3",
+                      "flex min-h-[44px] items-center gap-1.5 rounded-md border border-border/40 px-3",
                       "text-xs text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground",
                       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
                       "disabled:cursor-not-allowed disabled:opacity-50",
