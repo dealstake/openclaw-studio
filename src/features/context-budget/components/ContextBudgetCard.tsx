@@ -7,13 +7,22 @@ import { PanelIconButton } from "@/components/PanelIconButton";
 import { sectionLabelClass } from "@/components/SectionLabel";
 import { formatTokenEstimate } from "@/lib/text/tokens";
 import { formatSize } from "@/lib/text/format";
+import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { useContextBudget } from "../hooks/useContextBudget";
 import { DonutChart, type DonutSegment } from "./DonutChart";
+import { ContextProfileEditor } from "./ContextProfileEditor";
 import { BUDGET_CATEGORY_ORDER, CATEGORY_META, type BudgetCategory } from "../types";
 
 interface ContextBudgetCardProps {
   /** The agent whose workspace files are being analyzed */
   agentId: string | null | undefined;
+  /**
+   * Active gateway client — when provided, enables Phase 2 per-file
+   * context mode controls via the ContextProfileEditor.
+   */
+  client?: GatewayClient;
+  /** Current gateway connection status — required when `client` is provided. */
+  status?: GatewayStatus;
 }
 
 /** Expandable category row in the file breakdown */
@@ -53,7 +62,7 @@ const CategoryRow = memo(function CategoryRow({
     <div>
       <button
         type="button"
-        className="flex w-full items-center gap-2 px-4 py-2 text-left transition hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="flex w-full items-center gap-2 px-4 py-2 min-h-[44px] text-left transition hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         onClick={() => setExpanded((v) => !v)}
         aria-expanded={expanded}
         aria-label={`${label}: ${formatTokenEstimate(tokens)} tokens — ${expanded ? "collapse" : "expand"} file list`}
@@ -121,7 +130,11 @@ const CategoryRow = memo(function CategoryRow({
  * for an agent's workspace files. All data is based on file sizes;
  * actual tokens injected depend on gateway context policy.
  */
-export const ContextBudgetCard = memo(function ContextBudgetCard({ agentId }: ContextBudgetCardProps) {
+export const ContextBudgetCard = memo(function ContextBudgetCard({
+  agentId,
+  client,
+  status,
+}: ContextBudgetCardProps) {
   const { categories, totalTokens, loading, error, refresh } = useContextBudget(agentId);
 
   // Build donut segments from categories
@@ -234,7 +247,7 @@ export const ContextBudgetCard = memo(function ContextBudgetCard({ agentId }: Co
           <div className="mx-4 rounded-lg border border-border/40 bg-muted/30 px-3 py-2">
             <p className="text-[9px] leading-relaxed text-muted-foreground/70">
               Estimates based on file size (~4 bytes/token). Actual tokens injected
-              depend on gateway context policy. Phase 2 will add per-file controls.
+              depend on gateway context policy and per-file mode overrides below.
             </p>
           </div>
 
@@ -246,6 +259,14 @@ export const ContextBudgetCard = memo(function ContextBudgetCard({ agentId }: Co
           )}
         </div>
       ) : null}
+
+      {/* Phase 2: Per-file context mode controls */}
+      {agentId && client && status && (
+        <>
+          <div className="mx-4 my-2 border-t border-border/50" />
+          <ContextProfileEditor agentId={agentId} client={client} status={status} />
+        </>
+      )}
     </div>
   );
 });

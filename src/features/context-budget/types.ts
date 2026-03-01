@@ -72,3 +72,34 @@ export const CATEGORY_META: Record<BudgetCategory, CategoryMeta> = {
 
 /** Ordered list of categories for display */
 export const BUDGET_CATEGORY_ORDER: BudgetCategory[] = ["brain", "memory", "projects", "other"];
+
+// ── Phase 2: Per-file context mode controls ───────────────────────────────────
+
+/**
+ * Per-file context injection mode.
+ *
+ * - `always` — always inject this file regardless of gateway smart-selection
+ * - `auto`   — gateway decides (default smart context behavior)
+ * - `never`  — exclude this file from context injection entirely
+ */
+export type ContextMode = "always" | "auto" | "never";
+
+/** Map from workspace-relative file path → ContextMode override. Only non-auto entries are stored. */
+export type ContextProfile = Record<string, ContextMode>;
+
+export const CONTEXT_MODES: ContextMode[] = ["always", "auto", "never"];
+
+export const CONTEXT_MODE_LABELS: Record<ContextMode, string> = {
+  always: "Always",
+  auto: "Auto",
+  never: "Never",
+};
+
+export const CONTEXT_MODE_DESCRIPTIONS: Record<ContextMode, string> = {
+  always: "Always inject this file — even if the gateway would skip it",
+  auto: "Gateway decides — default smart context behavior",
+  never: "Exclude this file from context injection",
+};
+
+/** Default context mode for files with no explicit override */
+export const DEFAULT_CONTEXT_MODE: ContextMode = "auto";

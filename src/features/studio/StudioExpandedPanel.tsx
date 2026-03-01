@@ -170,7 +170,7 @@ export const StudioExpandedPanel = memo(function StudioExpandedPanel({
           )}
           {expandedTab === "budget" && (
             <PanelErrorBoundary name="Budget">
-              <ContextBudgetCard agentId={focusedAgentId} />
+              <ContextBudgetCard agentId={focusedAgentId} client={client} status={status} />
             </PanelErrorBoundary>
           )}
           {expandedTab === "playground" && (

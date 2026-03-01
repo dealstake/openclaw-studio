@@ -194,7 +194,7 @@ export const StudioContextDrawer = React.memo(function StudioContextDrawer(props
         }
         budgetContent={
           <PanelErrorBoundary name="Budget">
-            <ContextBudgetCard agentId={focusedAgentId} />
+            <ContextBudgetCard agentId={focusedAgentId} client={client} status={status} />
           </PanelErrorBoundary>
         }
         playgroundContent={
