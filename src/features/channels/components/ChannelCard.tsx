@@ -76,6 +76,7 @@ export const ChannelCard = React.memo(function ChannelCard({
                     className={cn(
                       "h-2 w-2 shrink-0 rounded-full",
                       CHANNEL_STATUS_COLORS[connectionStatus],
+                      connectionStatus === "connecting" && "animate-pulse",
                     )}
                     aria-label={CHANNEL_STATUS_LABELS[connectionStatus]}
                   />

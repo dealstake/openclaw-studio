@@ -93,6 +93,19 @@ export function useChannels(client: GatewayClient, status: GatewayStatus) {
     void loadRef.current();
   }, [status]);
 
+  // Auto-poll when any channel is in "connecting" state.
+  // Stops when all channels have resolved (connected/error/disconnected) or gateway disconnects.
+  useEffect(() => {
+    const hasConnecting = channels.some((c) => c.connectionStatus === "connecting");
+    if (!hasConnecting || status !== "connected") return;
+
+    const id = setInterval(() => {
+      void loadRef.current();
+    }, 10_000);
+
+    return () => clearInterval(id);
+  }, [channels, status]);
+
   const create = useCallback(
     async (channelId: string, config: ChannelConfig) => {
       try {

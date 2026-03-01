@@ -118,6 +118,12 @@ export const ChannelsPanel = memo(function ChannelsPanel({
               {channels.filter((c) => c.connectionStatus === "connected").length} connected
             </span>
             <span>· {channels.length} total</span>
+            {channels.some((c) => c.connectionStatus === "connecting") && (
+              <span className="ml-auto flex items-center gap-1 text-amber-400/80">
+                <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-amber-400" />
+                Connecting…
+              </span>
+            )}
           </div>
         )}
 
