@@ -30,6 +30,11 @@ const GatewaySettingsPanel = lazy(() =>
     default: m.GatewaySettingsPanel,
   }))
 );
+const ContactsPanel = lazy(() =>
+  import("@/features/contacts/components/ContactsPanel").then((m) => ({
+    default: m.ContactsPanel,
+  }))
+);
 import {
   AgentSettingsPanel,
 } from "@/features/agents/components/AgentInspectPanels";
@@ -82,6 +87,11 @@ export const ManagementPanelContent = memo(function ManagementPanelContent({
       {tab === "gateway" && (
         <PanelErrorBoundary name="Gateway">
           <GatewaySettingsPanel client={ctx.client} status={ctx.status} />
+        </PanelErrorBoundary>
+      )}
+      {tab === "contacts" && (
+        <PanelErrorBoundary name="Contacts">
+          <ContactsPanel />
         </PanelErrorBoundary>
       )}
       {tab === "settings" && ctx.settingsAgent && (

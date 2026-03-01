@@ -1016,7 +1016,7 @@ export const AgentStudioPage = () => {
               <ManagementDrawer
                 open={managementView !== null}
                 onOpenChange={(open) => { if (!open) setManagementView(null); }}
-                title={managementView ? ({ usage: "Usage", channels: "Channels", credentials: "Credentials", models: "Models", gateway: "Gateway", cron: "Cron", settings: "Settings" } as Record<ManagementTab, string>)[managementView] : ""}
+                title={managementView ? ({ usage: "Usage", channels: "Channels", credentials: "Credentials", models: "Models", gateway: "Gateway", cron: "Cron", settings: "Settings", contacts: "Contacts" } as Record<ManagementTab, string>)[managementView] : ""}
                 sidebarOffsetPx={sessionSidebarCollapsed ? 56 : 288}
               >
                 <ManagementPanelContent
