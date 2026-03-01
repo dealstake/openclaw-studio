@@ -128,7 +128,7 @@ export const AppSidebar = memo(function AppSidebar({
     togglePin,
     deleteSession,
     renameSession,
-  } = useSessionHistory(client, status, agentId);
+  } = useSessionHistory(client, status, agentId, activeSessionKey);
 
   // Server-side search across ALL sessions (active + archived)
   const {
