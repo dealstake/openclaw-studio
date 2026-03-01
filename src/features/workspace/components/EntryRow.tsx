@@ -13,6 +13,7 @@ import {
 
 import { formatSize } from "@/lib/text/format";
 import { formatRelativeTime } from "@/lib/text/time";
+import { estimateTokens, formatTokenEstimate } from "@/lib/text/tokens";
 
 import { useCopyToClipboard } from "@/hooks/useCopyToClipboard";
 
@@ -77,6 +78,14 @@ export const EntryRow = memo(function EntryRow({
         </div>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           {entry.size !== undefined && <span>{formatSize(entry.size)}</span>}
+          {entry.type === "file" && entry.size !== undefined && entry.size > 0 && (
+            <span
+              className="text-[10px] text-muted-foreground/60"
+              title={`~${estimateTokens(entry.size).toLocaleString()} estimated tokens`}
+            >
+              {formatTokenEstimate(estimateTokens(entry.size))} tok
+            </span>
+          )}
           {entry.updatedAt ? <span>{formatRelativeTime(entry.updatedAt)}</span> : null}
         </div>
       </div>

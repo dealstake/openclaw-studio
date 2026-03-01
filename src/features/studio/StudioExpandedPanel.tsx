@@ -15,6 +15,7 @@ import {
 import { UnifiedFilesPanel } from "@/features/workspace/components/UnifiedFilesPanel";
 import { ActivityPanel } from "@/features/activity/components/ActivityPanel";
 import { SkillsPanel } from "@/features/skills/components/SkillsPanel";
+import { ContextBudgetCard } from "@/features/context-budget";
 import type { PersonaTemplate } from "@/features/personas/lib/templateTypes";
 import type { ManagementTab } from "@/layout/AppSidebar";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
@@ -157,6 +158,11 @@ export const StudioExpandedPanel = memo(function StudioExpandedPanel({
           {expandedTab === "activity" && (
             <PanelErrorBoundary name="Activity">
               <ActivityPanel />
+            </PanelErrorBoundary>
+          )}
+          {expandedTab === "budget" && (
+            <PanelErrorBoundary name="Budget">
+              <ContextBudgetCard agentId={focusedAgentId} />
             </PanelErrorBoundary>
           )}
           <ManagementPanelContent
