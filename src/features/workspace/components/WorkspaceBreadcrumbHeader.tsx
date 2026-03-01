@@ -1,7 +1,7 @@
 "use client";
 
 import { memo } from "react";
-import { ChevronRight, FilePlus, RefreshCw } from "lucide-react";
+import { ChevronRight, FilePlus, RefreshCw, Search } from "lucide-react";
 
 import { PanelIconButton } from "@/components/PanelIconButton";
 import { PanelToolbar } from "@/components/ui/PanelToolbar";
@@ -13,6 +13,10 @@ type WorkspaceBreadcrumbHeaderProps = {
   onNavigate: (path: string) => void;
   onNewFile: () => void;
   onRefresh: () => void;
+  /** Toggle memory search mode */
+  onSearch?: () => void;
+  /** Whether search mode is currently active */
+  searchActive?: boolean;
 };
 
 export const WorkspaceBreadcrumbHeader = memo(function WorkspaceBreadcrumbHeader({
@@ -21,6 +25,8 @@ export const WorkspaceBreadcrumbHeader = memo(function WorkspaceBreadcrumbHeader
   onNavigate,
   onNewFile,
   onRefresh,
+  onSearch,
+  searchActive = false,
 }: WorkspaceBreadcrumbHeaderProps) {
   const total = breadcrumbs.length;
 
@@ -28,6 +34,16 @@ export const WorkspaceBreadcrumbHeader = memo(function WorkspaceBreadcrumbHeader
     <PanelToolbar
       actions={
         <>
+          {onSearch && (
+            <PanelIconButton
+              onClick={onSearch}
+              aria-label={searchActive ? "Close memory search" : "Search memory files"}
+              data-testid="ws-search"
+              className={searchActive ? "text-primary" : undefined}
+            >
+              <Search className="h-3.5 w-3.5" />
+            </PanelIconButton>
+          )}
           <PanelIconButton
             onClick={onNewFile}
             aria-label="New file"
