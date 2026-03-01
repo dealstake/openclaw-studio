@@ -284,7 +284,7 @@ export const AgentChatPanel = memo(function AgentChatPanel({
           <span className="text-yellow-200/90">
             Approaching context limit
           </span>
-          <span className="ml-auto shrink-0 font-mono text-[10px] text-yellow-500/80">
+          <span className="ml-auto shrink-0 font-mono text-[10px] text-yellow-300">
             {Math.round((tokenUsed / tokenLimit) * 100)}%
           </span>
         </div>
