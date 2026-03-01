@@ -28,11 +28,13 @@ import {
 } from "@/features/credentials/lib/credentialService";
 import { runConnectionTest } from "@/features/credentials/lib/connectionTestHandlers";
 import type { Credential } from "@/features/credentials/lib/types";
+import { checkStaleness } from "./knowledgeService";
 import { CAPABILITY_SKILL_MAP } from "./skillWiring";
 import type { SkillRequirement } from "./personaTypes";
 import type {
   PreflightResult,
   CapabilityPreflightResult,
+  KnowledgeStalenessInfo,
   OverallPreflightStatus,
   ManualRemediationAction,
   RemediationResult,
@@ -332,6 +334,11 @@ export interface RunPreflightOptions {
   validate?: boolean;
   /** Agent ID — scopes cache and result. */
   agentId?: string;
+  /**
+   * Persona ID — when provided alongside agentId, enables knowledge staleness check.
+   * Typically the same as agentId for personas (their agent dir IS their persona dir).
+   */
+  personaId?: string;
 }
 
 /**
@@ -340,19 +347,36 @@ export interface RunPreflightOptions {
  * Fetches skills + credentials once, then processes each capability,
  * returning a structured PreflightResult with per-capability statuses
  * and remediation instructions.
+ *
+ * When `options.personaId` is provided, also runs a knowledge staleness
+ * check and includes the result in `knowledgeStaleness`. This enables the
+ * persona health UI to surface a "Refresh knowledge base" recommendation
+ * for sources that haven't been re-indexed in > 30 days.
  */
 export async function runPreflight(
   client: GatewayClient,
   capabilities: string[],
   options: RunPreflightOptions = {},
 ): Promise<PreflightResult> {
-  const { validate = false, agentId } = options;
+  const { validate = false, agentId, personaId } = options;
   const checkedAt = new Date().toISOString();
 
-  // Fetch shared state once — avoids N gateway round-trips
-  const [skillsReport, credentials] = await Promise.all([
+  // Fetch shared state once — avoids N gateway round-trips.
+  // Knowledge staleness check runs in parallel (independent from skills/creds).
+  const [skillsReport, credentials, stalenessResult] = await Promise.all([
     fetchSkillsStatus(client),
     listCredentials(client),
+    // Only check staleness when we have both agentId and personaId context.
+    agentId && personaId
+      ? checkStaleness(agentId, personaId).catch((err) => {
+          // Non-fatal: log and return null so preflight still completes.
+          console.error(
+            `[preflight] Knowledge staleness check failed for persona ${personaId}:`,
+            err instanceof Error ? err.message : err,
+          );
+          return null;
+        })
+      : Promise.resolve(null),
   ]);
 
   const capabilityResults: CapabilityPreflightResult[] = [];
@@ -393,12 +417,32 @@ export async function runPreflight(
     capabilityResults.push(result);
   }
 
+  // Build knowledge staleness summary for the result
+  let knowledgeStaleness: KnowledgeStalenessInfo | undefined;
+  if (stalenessResult) {
+    const oldestSource = stalenessResult.staleSources.length > 0
+      ? stalenessResult.staleSources.reduce((oldest, s) =>
+          s.fetchedAt < oldest.fetchedAt ? s : oldest
+        ).fetchedAt
+      : null;
+
+    knowledgeStaleness = {
+      totalSources: stalenessResult.totalSources,
+      staleCount: stalenessResult.staleSources.length,
+      oldestSourceDate: oldestSource,
+      empty: stalenessResult.empty,
+      hasStale: stalenessResult.staleSources.length > 0,
+      maxAgeDays: 30,
+    };
+  }
+
   return {
     overall: computeOverall(capabilityResults),
     capabilities: capabilityResults,
     checkedAt,
     expiresIn: CACHE_TTL_MS,
     agentId: agentId ?? null,
+    ...(knowledgeStaleness !== undefined && { knowledgeStaleness }),
   };
 }
 

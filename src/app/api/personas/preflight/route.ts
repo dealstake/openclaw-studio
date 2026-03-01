@@ -82,11 +82,16 @@ export async function POST(
       ? body.agentId.trim()
       : undefined;
 
+  const personaId =
+    typeof body.personaId === "string" && body.personaId.trim()
+      ? body.personaId.trim()
+      : undefined;
+
   const validate = body.validate === true;
 
   try {
     const client = makeServerClient();
-    const result = await runPreflight(client, capabilities, { validate, agentId });
+    const result = await runPreflight(client, capabilities, { validate, agentId, personaId });
 
     // Serve cached result with appropriate Cache-Control
     // The result itself contains expiresIn (ms) — map that to seconds for HTTP.

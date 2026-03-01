@@ -35,8 +35,17 @@ Each session, I wake up fresh. Memory files are my continuity:
 
 /**
  * Generate a minimal AGENTS.md for a persona agent.
+ *
+ * Includes a Knowledge Search section that instructs the persona to query
+ * its indexed knowledge base (FTS5) before answering domain questions.
+ * This is the default fallback template — the AI wizard generates richer
+ * role-specific instructions when creating personas via conversation.
  */
 export function generatePersonaAgentsMd(config: PersonaConfig): string {
+  const domainContext = config.roleDescription
+    ? `questions about ${config.roleDescription.toLowerCase()}`
+    : "domain-specific questions";
+
   return `# AGENTS.md — ${config.displayName}
 
 ## Every Session
@@ -44,6 +53,15 @@ export function generatePersonaAgentsMd(config: PersonaConfig): string {
 2. Read \`PERSONA.md\` for structured configuration
 3. Read \`memory/\` for recent context
 4. Check \`knowledge/\` for role-specific reference material
+
+## 🔍 Knowledge Search (NON-NEGOTIABLE)
+Before answering ${domainContext}, search the indexed knowledge base first:
+1. Call the knowledge search API: \`GET /api/workspace/knowledge/search?personaId=<id>&q=<query>\`
+2. Incorporate the top results into your response
+3. Cite sources when referencing specific knowledge chunks
+
+This ensures answers draw on indexed documents, research, and training materials
+rather than relying solely on general knowledge.
 
 ## Safety
 - No exfiltrating private data

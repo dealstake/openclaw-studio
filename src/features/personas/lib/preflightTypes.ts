@@ -120,6 +120,33 @@ export interface CapabilityPreflightResult {
 // Top-Level Preflight Result
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Knowledge Staleness
+// ---------------------------------------------------------------------------
+
+/**
+ * Summary of knowledge source freshness for a persona.
+ * Populated by runPreflight when agentId + personaId are both provided.
+ * Absent (undefined) when no persona/knowledge context is available.
+ */
+export interface KnowledgeStalenessInfo {
+  /** Total number of indexed knowledge sources */
+  totalSources: number;
+  /** Number of sources older than the staleness threshold */
+  staleCount: number;
+  /** Oldest source's fetchedAt ISO timestamp, or null if no sources */
+  oldestSourceDate: string | null;
+  /** True if the persona has no indexed knowledge at all */
+  empty: boolean;
+  /**
+   * True when at least one source is stale.
+   * Callers should surface a "Refresh knowledge base" recommendation.
+   */
+  hasStale: boolean;
+  /** Staleness threshold used (in days) */
+  maxAgeDays: number;
+}
+
 /** Full preflight result returned by POST /api/personas/preflight */
 export interface PreflightResult {
   /** Aggregate status — determined by worst status across required capabilities */
@@ -138,6 +165,11 @@ export interface PreflightResult {
    * Null when called without an agentId.
    */
   agentId?: string | null;
+  /**
+   * Knowledge base staleness summary — populated when personaId is provided.
+   * Use this to surface a "Refresh knowledge" warning in the persona health UI.
+   */
+  knowledgeStaleness?: KnowledgeStalenessInfo;
 }
 
 // ---------------------------------------------------------------------------
@@ -149,6 +181,11 @@ export interface PreflightRequest {
   capabilities: string[];
   /** Persona agent ID — when provided, result is scoped to that agent */
   agentId?: string;
+  /**
+   * Persona ID — when provided alongside agentId, enables knowledge staleness check.
+   * Typically the same as agentId for personas (their agent directory IS their persona dir).
+   */
+  personaId?: string;
   /**
    * Whether to run live credential validation (hits third-party APIs).
    * Defaults to false — skips live validation, only checks key existence.
