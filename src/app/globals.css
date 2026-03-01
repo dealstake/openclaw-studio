@@ -517,6 +517,16 @@ summary:active {
   box-shadow: 0 0 6px 2px oklch(0.6 0.25 25);
 }
 
+/* Mobile bottom nav height — used by composer and chat scroll area */
+:root {
+  --mobile-nav-height: 52px;
+}
+@media (min-width: 1024px) {
+  :root {
+    --mobile-nav-height: 0px;
+  }
+}
+
 /* Safe area utilities for bottom-fixed elements */
 .safe-area-bottom {
   padding-bottom: env(safe-area-inset-bottom, 0px);
