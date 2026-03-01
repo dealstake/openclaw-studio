@@ -158,5 +158,8 @@ export function getDefaultWizardPrompt(type: WizardType): string {
       return buildSkillWizardPrompt();
     case "credential":
       return buildCredentialWizardPrompt();
+    case "persona":
+      // Caller should use personaBuilderPrompt with template context instead
+      return "You are a Persona Builder. Help the user create a custom AI persona from a Starter Kit template.";
   }
 }

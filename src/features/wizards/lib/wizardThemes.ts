@@ -45,6 +45,13 @@ export const WIZARD_THEMES: Record<WizardType, WizardTheme> = {
     label: "Credential Wizard",
     icon: "KeyRound",
   },
+  persona: {
+    accent: "text-teal-400",
+    bg: "bg-teal-500/10",
+    border: "border-teal-500/60",
+    label: "Persona Builder",
+    icon: "UserCog",
+  },
 };
 
 // ── Default Starters ───────────────────────────────────────────────────
@@ -74,6 +81,11 @@ export const WIZARD_STARTERS: Record<WizardType, WizardStarter[]> = {
     { label: "API key", message: "I need to add an API key" },
     { label: "OAuth setup", message: "Set up OAuth credentials" },
     { label: "Service account", message: "Configure a service account" },
+  ],
+  persona: [
+    { label: "Executive Assistant", message: "I want to create an Executive Assistant persona" },
+    { label: "Cold Caller", message: "I want to build a Cold Caller for my sales team" },
+    { label: "Browse templates", message: "Show me the available persona templates" },
   ],
 };
 

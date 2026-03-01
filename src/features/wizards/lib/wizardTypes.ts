@@ -7,7 +7,7 @@
 
 // ── Wizard Types ───────────────────────────────────────────────────────
 
-export type WizardType = "task" | "agent" | "project" | "skill" | "credential";
+export type WizardType = "task" | "agent" | "project" | "skill" | "credential" | "persona";
 
 export type WizardStarter = {
   label: string;
