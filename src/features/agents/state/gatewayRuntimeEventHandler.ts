@@ -139,6 +139,14 @@ export function createGatewayRuntimeEventHandler(
       return;
     }
 
+    if (eventKind === "log-stream") {
+      const payload = event.payload as { agentId?: string; line?: import("@/features/agents/lib/logTypes").LogLine } | undefined;
+      if (payload?.agentId && payload.line && deps.onLogLine) {
+        deps.onLogLine(payload.agentId, payload.line);
+      }
+      return;
+    }
+
     if (eventKind === "prompt-error") {
       const payload = event.payload as Record<string, unknown> | undefined;
       const sessionKey = typeof payload?.sessionKey === "string" ? payload.sessionKey : null;

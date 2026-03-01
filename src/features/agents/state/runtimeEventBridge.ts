@@ -69,6 +69,7 @@ export const classifyGatewayEventKind = (event: string): GatewayEventKind => {
   if (event === "nodes" || event === "node") return "nodes-update";
   if (event === "config") return "config-update";
   if (event === "openclaw:prompt-error" || event === "prompt-error") return "prompt-error";
+  if (event === "log.line") return "log-stream";
   return "ignore";
 };
 
