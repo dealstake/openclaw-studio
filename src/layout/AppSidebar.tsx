@@ -40,7 +40,6 @@ type NavIconButtonProps = {
   item: { value: ManagementTab; label: string; icon: typeof MessageSquare };
   isActive: boolean;
   size: "sm" | "md";
-  indicatorPosition: "left" | "bottom";
   tooltipSide: "right" | "bottom";
   onClick: (tab: ManagementTab) => void;
   onKeyDown?: (e: React.KeyboardEvent) => void;
@@ -50,7 +49,6 @@ const NavIconButton = memo(function NavIconButton({
   item,
   isActive,
   size,
-  indicatorPosition,
   tooltipSide,
   onClick,
   onKeyDown,
@@ -58,10 +56,6 @@ const NavIconButton = memo(function NavIconButton({
   const Icon = item.icon;
   const sizeClass = "h-11 w-11";
   const iconSize = size === "sm" ? "h-4 w-4" : "h-5 w-5";
-  const indicatorClass =
-    indicatorPosition === "left"
-      ? "before:absolute before:inset-y-1 before:-left-1 before:w-0.5 before:rounded-full before:bg-primary"
-      : "before:absolute before:-bottom-2 before:left-1.5 before:right-1.5 before:h-0.5 before:rounded-full before:bg-primary";
 
   return (
     <Tooltip>
@@ -71,10 +65,10 @@ const NavIconButton = memo(function NavIconButton({
           data-nav-item
           onClick={() => onClick(item.value)}
           onKeyDown={onKeyDown}
-          className={`relative flex ${sizeClass} items-center justify-center rounded-md transition-all duration-150 ${
+          className={`relative flex ${sizeClass} items-center justify-center rounded-md transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
             isActive
-              ? `bg-accent text-accent-foreground ${indicatorClass}`
-              : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              ? "bg-primary/15 text-primary ring-1 ring-primary/25 shadow-sm dark:bg-primary/20"
+              : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
           }`}
           aria-label={item.label}
           aria-current={isActive ? "page" : undefined}
@@ -220,18 +214,16 @@ export const AppSidebar = memo(function AppSidebar({
                   item={item}
                   isActive={activeManagementTab === item.value}
                   size="md"
-                  indicatorPosition="left"
                   tooltipSide="right"
                   onClick={onManagementNav}
                   onKeyDown={(e) => handleNavKeyDown(e, index)}
                 />
               ))}
             </div>
-            <div className="my-2 h-px w-5 bg-border/40" />
             <button
               type="button"
               onClick={onToggleCollapse}
-              className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="mt-2 flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               aria-label="Expand sidebar"
             >
               <MessageSquare className="h-4 w-4" />
@@ -248,14 +240,13 @@ export const AppSidebar = memo(function AppSidebar({
         /* ── Expanded: nav icons + session history ── */
         <>
           {/* Management nav */}
-          <div ref={navContainerRef} className="flex items-center gap-1 border-b border-border/20 px-2 py-2 shrink-0" role="navigation" aria-label="Management navigation">
+          <div ref={navContainerRef} className="flex items-center gap-1 px-2 py-2 shrink-0" role="navigation" aria-label="Management navigation">
             {NAV_ITEMS.map((item, index) => (
               <NavIconButton
                 key={item.value}
                 item={item}
                 isActive={activeManagementTab === item.value}
                 size="sm"
-                indicatorPosition="bottom"
                 tooltipSide="bottom"
                 onClick={onManagementNav}
                 onKeyDown={(e) => handleNavKeyDown(e, index)}
@@ -264,7 +255,7 @@ export const AppSidebar = memo(function AppSidebar({
           </div>
 
           {/* Session history header */}
-          <div className="flex items-center gap-2 px-3 py-2.5 shrink-0">
+          <div className="flex items-center gap-2 px-3 py-2 shrink-0">
             <button
               type="button"
               onClick={onToggleCollapse}
