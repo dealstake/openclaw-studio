@@ -68,7 +68,7 @@ export const MobileBottomNav = memo(function MobileBottomNav({
 
       {/* Primary context tabs */}
       {CONTEXT_TAB_CONFIG.filter((t) => PRIMARY_TAB_SET.has(t.value)).map(
-        ({ value, shortLabel, Icon }) => {
+        ({ value, label, Icon }) => {
           const isActive = contextPanelOpen && contextTab === value;
           return (
             <button
@@ -80,15 +80,13 @@ export const MobileBottomNav = memo(function MobileBottomNav({
                   ? "text-accent-foreground"
                   : "text-muted-foreground"
               }`}
-              aria-label={
-                CONTEXT_TAB_CONFIG.find((c) => c.value === value)?.label ?? value
-              }
+              aria-label={label}
             >
               <Icon
                 className={`h-5 w-5 ${isActive ? "text-primary" : ""}`}
               />
-              <span className="text-[10px] font-medium leading-none">
-                {shortLabel}
+              <span className="text-[10px] font-medium leading-none truncate max-w-[56px]">
+                {label}
               </span>
             </button>
           );

@@ -145,7 +145,7 @@ const AnomalyCard = memo(function AnomalyCard({ anomaly, onDismiss }: AnomalyCar
           </p>
 
           {/* Timestamp */}
-          <p className="mt-1 text-[10px] text-muted-foreground/60">
+          <p className="mt-1 text-[10px] text-muted-foreground/80">
             {new Date(anomaly.detectedAt).toLocaleString(undefined, {
               month: "short",
               day: "numeric",
