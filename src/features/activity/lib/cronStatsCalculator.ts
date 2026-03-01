@@ -30,6 +30,13 @@ function matchRunTokens(
   sessionTokenMap: Map<number, number>,
   sessionsByKey: Map<string, { updatedAt?: number | null; totalTokens?: number | null }>
 ): number {
+  /**
+   * Timestamp matching window (±30s). Cron runs and sessions may not start/end
+   * at the exact same millisecond due to gateway scheduling jitter and network
+   * latency. 30s is generous enough to match concurrent runs while avoiding
+   * cross-matching jobs that run at different cron intervals (minimum 1 minute).
+   * Prefer key-based matching (Strategy 1) when possible.
+   */
   const WINDOW_MS = 30_000;
 
   // Strategy 1: key-based matching
@@ -88,7 +95,9 @@ export function computeJobStats(
   for (const run of runs) {
     const matched = matchRunTokens(run, sessionTokenMap, sessionsByKey);
     totalTokens += matched;
-    tokenTrend.push(matched);
+    // Only include matched runs in trend — zeros from unmatched runs
+    // create misleading dips in the sparkline
+    if (matched > 0) tokenTrend.push(matched);
   }
 
   const avgTokens = totalRuns > 0 ? totalTokens / totalRuns : 0;

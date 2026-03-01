@@ -1,6 +1,6 @@
 /**
  * Shared types for sessions list RPC responses.
- * Used by useAllSessions and useSessionHistory hooks.
+ * Used by useSessionHistory hook.
  */
 
 export type SessionsListEntry = {

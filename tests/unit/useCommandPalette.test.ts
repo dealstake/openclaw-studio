@@ -24,9 +24,9 @@ describe("useCommandPalette", () => {
   it("returns navigation commands for all tabs", () => {
     const { result } = renderHook(() => useCommandPalette(makeProps()));
     const navActions = result.current.actions.filter((a) => a.group === "navigation");
-    expect(navActions.length).toBe(8);
+    expect(navActions.length).toBe(7);
     expect(navActions.map((a) => a.id)).toContain("nav-projects");
-    expect(navActions.map((a) => a.id)).toContain("nav-sessions");
+    expect(navActions.map((a) => a.id)).not.toContain("nav-sessions");
   });
 
   it("returns agent switch commands for non-current agents", () => {
@@ -71,14 +71,14 @@ describe("useCommandPalette", () => {
     expect(result.current.open).toBe(false);
   });
 
-  it("selecting a nav action calls onNavigateTab and onOpenContextPanel", () => {
+  it("selecting a nav action calls onNavigateTab (parent handles panel open)", () => {
     const props = makeProps();
     const { result } = renderHook(() => useCommandPalette(props));
     const projectsAction = result.current.actions.find((a) => a.id === "nav-projects");
     expect(projectsAction).toBeDefined();
     act(() => projectsAction!.onSelect());
     expect(props.onNavigateTab).toHaveBeenCalledWith("projects");
-    expect(props.onOpenContextPanel).toHaveBeenCalled();
+    // onOpenContextPanel is no longer called — parent's onNavigateTab handles it
   });
 
   it("selecting restart gateway action calls client.call", () => {

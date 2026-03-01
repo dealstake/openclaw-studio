@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { isGatewayDisconnectLikeError } from "@/lib/gateway/GatewayClient";
 
@@ -8,6 +8,8 @@ export type SessionHistoryEntry = {
   updatedAt: number;
   messageCount: number;
   isMain: boolean;
+  /** First-message preview (truncated to 60 chars) */
+  summary?: string;
 };
 
 export type SessionHistoryGroup = {
@@ -16,6 +18,8 @@ export type SessionHistoryGroup = {
 };
 
 import type { SessionsListResult } from "@/features/sessions/lib/types";
+import type { TranscriptEntry } from "./useTranscripts";
+import { filterAgentSessions } from "../lib/filterAgentSessions";
 
 // --- Pin storage (localStorage) ---
 
@@ -91,27 +95,33 @@ export function useSessionHistory(client: GatewayClient, status: GatewayStatus, 
         limit: 200,
       });
       const raw = result.sessions ?? [];
-      const mainKey = `agent:${agentId}:main`;
-      const agentPrefix = `agent:${agentId}:`;
-      const agentSessions = raw
-        .filter((s) => {
-          const key = s.key;
-          return key.startsWith(agentPrefix);
-        })
-        .filter((s) => {
-          const key = s.key;
-          return !key.includes(":cron:") && !key.includes(":sub:");
-        })
-        .map((s): SessionHistoryEntry => ({
-          key: s.key,
-          displayName: s.displayName || (s.key === mainKey ? "Main Session" : s.key.slice(agentPrefix.length) || s.key),
-          updatedAt: s.updatedAt ?? 0,
-          messageCount: s.messageCount ?? 0,
-          isMain: s.key === mainKey,
-        }))
-        .sort((a, b) => b.updatedAt - a.updatedAt);
+      const agentSessions = filterAgentSessions(raw, agentId);
 
       setSessions(agentSessions);
+
+      // Fetch previews from transcripts API and merge as summaries
+      try {
+        const params = new URLSearchParams({ agentId, page: "1", perPage: "200" });
+        const resp = await fetch(`/api/sessions/transcripts?${params}`);
+        if (resp.ok) {
+          const data = await resp.json();
+          const transcripts: TranscriptEntry[] = data.transcripts ?? [];
+          const previewMap = new Map<string, string>();
+          for (const t of transcripts) {
+            if (t.sessionKey && t.preview) {
+              previewMap.set(t.sessionKey, t.preview.length > 60 ? t.preview.slice(0, 57) + "…" : t.preview);
+            }
+          }
+          if (previewMap.size > 0) {
+            setSessions(prev => prev.map(s => {
+              const preview = previewMap.get(s.key);
+              return preview ? { ...s, summary: preview } : s;
+            }));
+          }
+        }
+      } catch {
+        // Non-critical — previews are a nice-to-have enhancement
+      }
     } catch (err) {
       if (!isGatewayDisconnectLikeError(err)) {
         setError(err instanceof Error ? err.message : "Failed to load sessions");
@@ -159,6 +169,15 @@ export function useSessionHistory(client: GatewayClient, status: GatewayStatus, 
       console.error("Failed to rename session:", err);
     }
   }, [client]);
+
+  // Auto-refresh every 30s for cross-tab freshness
+  const loadRef = useRef(load);
+  loadRef.current = load;
+  useEffect(() => {
+    if (status !== "connected") return;
+    const id = window.setInterval(() => { void loadRef.current(); }, 30_000);
+    return () => window.clearInterval(id);
+  }, [status]);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return sessions;

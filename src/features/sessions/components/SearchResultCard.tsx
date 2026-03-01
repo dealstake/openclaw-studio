@@ -44,7 +44,8 @@ export const SearchResultCard = memo(function SearchResultCard({
       variant="compact"
       isHoverable
       className="cursor-pointer"
-      role="button"
+      role="option"
+      aria-selected={false}
       tabIndex={0}
       onClick={onClick}
       onKeyDown={(e) => {
@@ -56,7 +57,7 @@ export const SearchResultCard = memo(function SearchResultCard({
     >
       <CardHeader>
         <Search className="h-3 w-3 flex-shrink-0 text-muted-foreground/60" />
-        <span className={`truncate ${sectionLabelClass} text-foreground`}>
+        <span className={`truncate ${sectionLabelClass} text-foreground transition-colors duration-150 group-hover/card:text-primary`}>
           {displayName}
         </span>
         {result.archived && (
@@ -77,9 +78,9 @@ export const SearchResultCard = memo(function SearchResultCard({
         {result.matches.slice(0, 2).map((match, i) => (
           <div
             key={i}
-            className="line-clamp-2 rounded bg-muted/30 px-2 py-1 text-[11px] leading-relaxed text-muted-foreground/80"
+            className="line-clamp-2 rounded bg-muted/30 px-2 py-1 text-xs leading-relaxed text-muted-foreground"
           >
-            <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/60">
+            <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
               {match.role}:{" "}
             </span>
             <HighlightedSnippet text={match.snippet} query={query ?? ""} />

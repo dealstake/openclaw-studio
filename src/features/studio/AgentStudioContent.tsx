@@ -1,17 +1,20 @@
 "use client";
 
+// TODO: Navigation architecture debt — three overlapping navigation surfaces
+// (SessionHistorySidebar, FloatingContextControls, MobileContextMenu/overlay drawer)
+// create fragmented UX on tablet breakpoints. Consolidate into a single responsive
+// navigation model. See projects/mobile-ux-polish-sprint.md Phase 1 #3.
+
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AgentChatPanel } from "@/features/agents/components/AgentChatPanel";
-import {
-  AgentBrainPanel,
-} from "@/features/agents/components/AgentInspectPanels";
+// AgentBrainPanel moved to StudioContextDrawer
 import { AppSidebar, type ManagementTab } from "@/layout/AppSidebar";
 import type { BreadcrumbAgent } from "@/features/agents/components/AgentBreadcrumb";
-import { HeaderBar } from "@/features/agents/components/HeaderBar";
-import { ConnectionPanel } from "@/features/agents/components/ConnectionPanel";
+import { FloatingContextControls } from "@/features/studio/FloatingContextControls";
+import { FloatingMobileHeader } from "@/features/studio/FloatingMobileHeader";
 import { EmptyStatePanel } from "@/features/agents/components/EmptyStatePanel";
-import { BrandMark } from "@/components/brand/BrandMark";
-import { GatewayStatusBanner } from "@/components/GatewayStatusBanner";
+// BrandMark moved to StudioLoadingScreen
+// GatewayStatusBanner moved to StudioStatusBanners
 import { Users } from "lucide-react";
 import { useGateway } from "@/lib/gateway/GatewayProvider";
 import {
@@ -22,26 +25,23 @@ import {
 } from "@/features/agents/state/store";
 import { createGatewayRuntimeEventHandler } from "@/features/agents/state/gatewayRuntimeEventHandler";
 // settingsCoordinator accessed via useGateway() context
-import { ArtifactsPanel } from "@/features/artifacts/components/ArtifactsPanel";
-import { TasksPanel } from "@/features/tasks/components/TasksPanel";
-import { ProjectsPanel } from "@/features/projects/components/ProjectsPanel";
+// TasksPanel + ProjectsPanel moved to StudioContextDrawer
 import { useAgentTasks } from "@/features/tasks/hooks/useAgentTasks";
-import { ContextPanel } from "@/features/context/components/ContextPanel";
+import type { CreateTaskPayload } from "@/features/tasks/types";
+// ContextPanel moved to StudioContextDrawer
 import type { ContextTab } from "@/features/context/components/ContextPanel";
 
-// ContextTabCluster is now integrated into HeaderBar on wide viewports
-import { PanelErrorBoundary } from "@/components/PanelErrorBoundary";
+// PanelErrorBoundary moved to StudioContextDrawer
 import { ManagementPanelContent } from "@/components/ManagementPanelContent";
 import { ManagementDrawer } from "@/components/ManagementDrawer";
 import { ManagementPanelProvider } from "@/components/management/ManagementPanelContext";
 import { useExecApprovalContext } from "@/features/exec-approvals/ExecApprovalProvider";
 import { useCommandPalette } from "@/features/command-palette/hooks/useCommandPalette";
-import { WorkspaceExplorerPanel } from "@/features/workspace/components/WorkspaceExplorerPanel";
-import { ActivityPanel } from "@/features/activity/components/ActivityPanel";
+// UnifiedFilesPanel + ActivityPanel moved to StudioContextDrawer
 // Heartbeat entries now routed exclusively via onActivityMessage to useActivityMessageStore
 import { TraceViewer } from "@/features/sessions/components/TraceViewer";
 import { useChannelsStatus } from "@/features/channels/hooks/useChannelsStatus";
-import { useAllSessions } from "@/features/sessions/hooks/useAllSessions";
+
 import { EmergencyProvider } from "@/features/emergency/EmergencyProvider";
 import { useNotificationEvaluator } from "@/features/notifications/hooks/useNotificationEvaluator";
 import { useSessionUsage } from "@/features/sessions/hooks/useSessionUsage";
@@ -59,27 +59,33 @@ import { useGatewayModels } from "@/features/agents/hooks/useGatewayModels";
 import { useRuntimeEventSubscription } from "@/features/studio/useRuntimeEventSubscription";
 import { useStudioChatCallbacks } from "@/features/studio/useStudioChatCallbacks";
 import { MobileSessionDrawer } from "@/features/studio/MobileSessionDrawer";
+import { exportConversationAsMarkdown } from "@/features/sessions/lib/exportConversation";
 import { StudioExpandedPanel } from "@/features/studio/StudioExpandedPanel";
 import { StudioModals } from "@/features/studio/StudioModals";
+import { StudioLoadingScreen } from "@/features/studio/StudioLoadingScreen";
+import { StudioStatusBanners } from "@/features/studio/StudioStatusBanners";
+import { StudioContextDrawer } from "@/features/studio/StudioContextDrawer";
 import { useSettingsPanel } from "@/features/agents/hooks/useSettingsPanel";
 import { useChatCallbacks } from "@/features/agents/hooks/useChatCallbacks";
 import { isWide } from "@/hooks/useBreakpoint";
 import { useAppLayout } from "@/hooks/useAppLayout";
-import { useWorkspaceHealth } from "@/features/workspace/hooks/useWorkspaceHealth";
+
 import { useLoadAgents } from "@/features/studio/useLoadAgents";
 import { useStudioDataSync } from "@/features/studio/useStudioDataSync";
+import { useWizardInChat } from "@/features/wizards/hooks/useWizardInChat";
+import { buildTaskWizardPrompt, buildAgentWizardPrompt, getDefaultWizardPrompt } from "@/features/wizards/lib/wizardPrompts";
+import type { WizardType } from "@/features/wizards/lib/wizardTypes";
+import type { PersonaTemplate } from "@/features/personas/lib/templateTypes";
+import { buildPersonaBuilderPrompt } from "@/features/personas/lib/personaBuilderPrompt";
+import { executeWizardCreation } from "@/features/wizards/lib/wizardCreation";
+import { toast } from "sonner";
 
 export const AgentStudioPage = () => {
   const {
     client,
     status,
     gatewayUrl,
-    token,
-    error: gatewayError,
     connect,
-    disconnect,
-    setGatewayUrl,
-    setToken,
     settingsCoordinator,
   } = useGateway();
 
@@ -91,20 +97,19 @@ export const AgentStudioPage = () => {
     sessionSidebarCollapsed, setSessionSidebarCollapsed,
     mobileSessionDrawerOpen, setMobileSessionDrawerOpen,
     contextPanelOpen, setContextPanelOpen,
-    contextMode, setContextMode,
+    setContextMode,
     contextTab, setContextTab,
     expandedTab,
     brainFileTab, setBrainFileTab,
     brainPreviewMode, setBrainPreviewMode,
     managementView, setManagementView,
-    headerVisible, onHoverZoneEnter, onHoverZoneLeave,
+    headerVisible, onHoverZoneEnter, onHoverZoneLeave, onFocusZoneEnter, onFocusZoneLeave,
     handleExpandToggle, clearExpandedTab, switchToChat,
-    handleFilesToggle, handleBackToChat,
+    handleFilesToggle: _handleFilesToggle, handleBackToChat,
     swipeHandlers,
+    swipeDy,
   } = layout;
-  const [showConnectionPanel, setShowConnectionPanel] = useState(false);
-  const [showTaskWizard, setShowTaskWizard] = useState(false);
-  const [showAgentWizard, setShowAgentWizard] = useState(false);
+  // Legacy wizard modals removed — all wizards now render inline via useWizardInChat
   const [focusFilter, setFocusFilter] = useState<FocusFilter>("all");
   const [focusedPreferencesLoaded, setFocusedPreferencesLoaded] = useState(false);
   const stateRef = useRef(state);
@@ -118,8 +123,6 @@ export const AgentStudioPage = () => {
   const loadTasksRef = useRef<() => Promise<any>>(() => Promise.resolve());
   /** Resolve a cron job ID to its display name via enriched tasks data. */
   const cronJobNameResolverRef = useRef<(cronJobId: string) => string | undefined>(() => undefined);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const loadAllSessionsRef = useRef<() => Promise<any>>(() => Promise.resolve());
   const loadChannelsStatusRef = useRef<() => Promise<void>>(() => Promise.resolve());
   // loadCumulativeUsageRef removed — sessions.usage aggregate eliminated (P0 perf fix)
   // loadSummarySnapshotRef + refreshContextWindowRef provided by useStudioDataSync
@@ -148,7 +151,17 @@ export const AgentStudioPage = () => {
   const [cronEventTick, setCronEventTick] = useState(0);
 
   // Layout keyboard shortcuts, persistence, and swipe handled by useAppLayout
-  const closeTaskWizard = useCallback(() => setShowTaskWizard(false), []);
+
+
+  // Listen for task wizard launch events from credential post-save flow
+  const handleStartWizardRef = useRef<((type: WizardType) => void) | null>(null);
+  useEffect(() => {
+    const handler = () => {
+      handleStartWizardRef.current?.("task");
+    };
+    window.addEventListener("openclaw:launch-task-wizard", handler);
+    return () => window.removeEventListener("openclaw:launch-task-wizard", handler);
+  }, []);
 
   /** Context window utilization per agent — totalTokens = last turn's prompt size, contextTokens = model limit */
   const [agentContextWindow, setAgentContextWindow] = useState<Map<string, { totalTokens: number; contextTokens: number }>>(new Map());
@@ -168,32 +181,22 @@ export const AgentStudioPage = () => {
   } = useChannelsStatus(client, status);
 
   const {
-    gatewayVersion, gatewayUptime,
     loadGatewayStatus, parsePresenceFromStatus, resetPresence,
   } = useGatewayStatus(client, status);
 
-  const { health: sidecarHealth, error: sidecarError } = useWorkspaceHealth();
-
   const {
-    sessionUsage, sessionUsageLoading,
+    sessionUsage,
     loadSessionUsage, resetSessionUsage,
   } = useSessionUsage(client, status);
 
   // P0: sessions.usage aggregate RPC eliminated — use aggregateTokensFromList instead
   // (sessions.usage was taking 1-8 seconds and causing slow consumer disconnects)
 
-  const {
-    allSessions, allSessionsLoading, allSessionsError,
-    aggregateUsageFromList, usageByType, loadAllSessions,
-  } = useAllSessions(client, status);
-
   // Emergency state moved to EmergencyProvider
 
   useNotificationEvaluator(client, status);
 
   // Keep load-function refs current (avoids stale closures)
-  // eslint-disable-next-line react-hooks/refs
-  loadAllSessionsRef.current = loadAllSessions;
   // eslint-disable-next-line react-hooks/refs
   loadChannelsStatusRef.current = loadChannelsStatus;
   // loadCumulativeUsageRef removed — sessions.usage aggregate eliminated (P0 perf fix)
@@ -230,7 +233,7 @@ export const AgentStudioPage = () => {
     setManagementView((prev) => (prev === tab ? null : tab));
   }, [focusedAgent, settingsAgentId, setSettingsAgentId, setManagementView]);
 
-  const handleCmdNavTab = useCallback((tab: ContextTab | "sessions" | "usage" | "channels" | "settings") => {
+  const handleCmdNavTab = useCallback((tab: ContextTab | "usage" | "channels" | "settings") => {
     const contextTabs = new Set<string>(["projects", "tasks", "brain", "workspace", "activity"]);
     if (contextTabs.has(tab)) {
       setContextTab(tab as ContextTab);
@@ -294,6 +297,141 @@ export const AgentStudioPage = () => {
     runTask,
     deleteTask,
   } = useAgentTasks(client, status, focusedAgentId);
+
+  // ── Wizard-in-chat ────────────────────────────────────────────────
+  const wizard = useWizardInChat({
+    client,
+    agentId: focusedAgentId ?? "default",
+  });
+
+  const handleStartWizard = useCallback(
+    (type: WizardType) => {
+      if (type === "task") {
+        const prompt = buildTaskWizardPrompt(
+          "periodic",
+          agents.map((a) => a.agentId),
+        );
+        wizard.startWizard("task", prompt);
+      } else if (type === "agent") {
+        const prompt = buildAgentWizardPrompt(
+          agents.map((a) => ({ id: a.agentId, name: a.name ?? a.agentId })),
+        );
+        wizard.startWizard("agent", prompt);
+      } else if (type === "persona") {
+        const prompt = buildPersonaBuilderPrompt({
+          existingAgents: agents.map((a) => ({ id: a.agentId, name: a.name ?? a.agentId })),
+        });
+        wizard.startWizard("persona", prompt);
+      } else {
+        // project, skill, credential — use default prompts
+        wizard.startWizard(type, getDefaultWizardPrompt(type));
+      }
+      // Ensure we're on the chat pane (mobile)
+      if (isMobileLayout) {
+        setMobilePane("chat");
+      }
+    },
+    [agents, wizard, isMobileLayout, setMobilePane],
+  );
+  // eslint-disable-next-line react-hooks/refs
+  handleStartWizardRef.current = handleStartWizard;
+
+  /** Start the persona wizard with a specific template pre-loaded */
+  const handleSelectTemplate = useCallback(
+    (template: PersonaTemplate) => {
+      const prompt = buildPersonaBuilderPrompt({
+        template,
+        existingAgents: agents.map((a) => ({ id: a.agentId, name: a.name ?? a.agentId })),
+      });
+      wizard.startWizard("persona", prompt);
+      if (isMobileLayout) {
+        setMobilePane("chat");
+      }
+    },
+    [agents, wizard, isMobileLayout, setMobilePane],
+  );
+
+  const handleWizardConfirm = useCallback(async () => {
+    const extracted = wizard.extractedConfig;
+    if (!extracted) return;
+
+    if (extracted.type === "task") {
+      try {
+        await createTask(extracted.config as CreateTaskPayload);
+        void wizard.endWizard();
+        void loadTasks();
+      } catch {
+        // Error is shown by the task creation flow
+      }
+      return;
+    }
+
+    // Persona creation — uses artifact extraction for brain + knowledge files
+    if (extracted.type === "persona") {
+      try {
+        const { extractBrainFiles, extractKnowledgeFiles, extractJsonBlock } = await import("@/features/wizards/lib/artifactExtractor");
+        const personaConfig = extractJsonBlock<{ personaId: string; displayName: string; purpose: string }>(extracted.sourceText, "persona-config");
+        const brainFiles = extractBrainFiles(extracted.sourceText);
+        const knowledgeFiles = extractKnowledgeFiles(extracted.sourceText);
+
+        if (!personaConfig?.personaId || !personaConfig?.displayName) {
+          toast.error("Persona configuration incomplete — missing personaId or displayName");
+          return;
+        }
+
+        const res = await fetch("/api/agents/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            agentId: personaConfig.personaId,
+            name: personaConfig.displayName,
+            purpose: personaConfig.purpose ?? "AI persona",
+            brainFiles,
+            knowledgeFiles,
+          }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ error: "Unknown error" }));
+          toast.error(`Persona creation failed: ${(err as { error?: string }).error ?? res.statusText}`);
+          return;
+        }
+        void wizard.endWizard();
+        toast.success(`Persona "${personaConfig.displayName}" created successfully`);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Unknown error";
+        toast.error(`Persona creation failed: ${msg}`);
+      }
+      return;
+    }
+
+    // Skill, credential, project, agent — handled by wizardCreation
+    const agentId = focusedAgent?.agentId;
+    if (!agentId) return;
+
+    try {
+      const result = await executeWizardCreation(
+        extracted.type,
+        extracted.config,
+        client,
+        agentId,
+      );
+      if (result.success) {
+        void wizard.endWizard();
+        toast.success(result.message);
+        // Credential wizard signals UI to open setup sheet
+        if (result.openCredentialSetup) {
+          // Future: open credential sheet with pre-filled template
+          // For now, the user completes setup in the Credentials panel
+        }
+      } else {
+        toast.error(result.message);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "An unknown error occurred.";
+      toast.error(`Wizard creation failed: ${msg}`);
+    }
+  }, [wizard, createTask, loadTasks, focusedAgent, client]);
+
   // eslint-disable-next-line react-hooks/refs
   loadTasksRef.current = loadTasks;
   // eslint-disable-next-line react-hooks/refs
@@ -350,19 +488,6 @@ export const AgentStudioPage = () => {
   // Connect/disconnect resets, context window refresh, session usage loading,
   // session key change detection, and turn-complete reloads handled by useStudioDataSync
 
-  // Aggregate usage: use the focused session's usage as the primary data source
-  // (per-session usage loads lazily in SessionsPanel cards)
-  const aggregateUsage = useMemo(() => {
-    if (!sessionUsage) return null;
-    return {
-      inputTokens: sessionUsage.inputTokens,
-      outputTokens: sessionUsage.outputTokens,
-      totalCost: sessionUsage.totalCost,
-      messageCount: sessionUsage.messageCount,
-    };
-  }, [sessionUsage]);
-  const aggregateUsageLoading = sessionUsageLoading;
-
   // Favicon effect handled by useStudioDataSync
   // resolveAgentName + resolveAgentAvatarUrl extracted to useLoadAgents
 
@@ -393,7 +518,6 @@ export const AgentStudioPage = () => {
     focusedAgentStatus: focusedAgent?.status ?? null,
     hasRunningAgents,
     selectedBrainAgentId,
-    loadAllSessionsRef,
     loadSessionUsageRef,
     loadGatewayStatus,
     parsePresenceFromStatus,
@@ -419,7 +543,7 @@ export const AgentStudioPage = () => {
     expandedTab,
     managementView,
     contextTab,
-    contextMode,
+    contextMode: "agent" as const,
     setContextTab,
   });
 
@@ -537,7 +661,6 @@ export const AgentStudioPage = () => {
     void loadAgents();
     const deferTimer = window.setTimeout(() => {
       void loadChannelsStatusRef.current();
-      void loadAllSessionsRef.current();
       void loadTasksRef.current();
     }, client.connectedForMs < 3_000 ? 2_000 : 0);
     return () => window.clearTimeout(deferTimer);
@@ -607,7 +730,6 @@ export const AgentStudioPage = () => {
     loadAgentHistoryRef,
     refreshHeartbeatLatestUpdateRef,
     loadChannelsStatusRef,
-    loadAllSessionsRef,
     loadTasksRef,
     cronJobNameResolverRef,
     bumpHeartbeatTick,
@@ -616,7 +738,6 @@ export const AgentStudioPage = () => {
     setCronEventTick,
   });
 
-  const connectionPanelVisible = showConnectionPanel;
   const hasAnyAgents = agents.length > 0;
   const showFleetLayout = hasAnyAgents || status === "connected";
 
@@ -668,7 +789,6 @@ export const AgentStudioPage = () => {
   // ── Stable callbacks extracted to useStudioChatCallbacks ──
   const {
     viewingSessionKey,
-    setViewingSessionKey,
     viewingSessionHistory,
     viewingTrace,
     viewingSessionLoading,
@@ -683,6 +803,7 @@ export const AgentStudioPage = () => {
     stableChatOnDismissContinuation,
     stableChatTokenUsed,
     handleViewTrace,
+    handleSidebarSessionSelect,
     handleDrawerTranscriptClick,
     handleExpandedTranscriptClick,
   } = useStudioChatCallbacks({
@@ -710,21 +831,7 @@ export const AgentStudioPage = () => {
     client,
     status,
     focusedAgentId,
-    allSessions,
-    allSessionsLoading,
-    allSessionsError,
-    onRefreshSessions: () => { void loadAllSessions(); },
     activeSessionKey: focusedAgent?.sessionKey ?? null,
-    aggregateUsage,
-    aggregateUsageLoading,
-    cumulativeUsage: aggregateUsageFromList ? {
-      inputTokens: aggregateUsageFromList.inputTokens,
-      outputTokens: aggregateUsageFromList.outputTokens,
-      totalCost: null,
-      messageCount: aggregateUsageFromList.messageCount,
-    } : null,
-    cumulativeUsageLoading: allSessionsLoading,
-    usageByType,
     onViewTrace: handleViewTrace,
     channelsSnapshot,
     channelsLoading,
@@ -739,14 +846,28 @@ export const AgentStudioPage = () => {
     onThinkingTracesToggle: (enabled: boolean) => { if (settingsAgent) handleThinkingTracesToggle(settingsAgent.agentId, enabled); },
     onNavigateToTasks: () => setContextTab("tasks"),
     onTranscriptClick: handleDrawerTranscriptClick,
+    onStartCredentialWizard: () => {
+      setManagementView(null);
+      handleStartWizard("credential");
+    },
   }), [
-    client, status, focusedAgentId, allSessions, allSessionsLoading, allSessionsError,
-    loadAllSessions, focusedAgent?.sessionKey, aggregateUsage, aggregateUsageLoading,
-    aggregateUsageFromList, usageByType, handleViewTrace, handleDrawerTranscriptClick,
+    client, status, focusedAgentId,
+    focusedAgent?.sessionKey, handleViewTrace, handleDrawerTranscriptClick,
     channelsSnapshot, channelsLoading, channelsError, loadChannelsStatus,
     settingsAgent, handleBackToChat, handleRenameAgent, handleNewSession,
     handleDeleteAgent, handleToolCallingToggle, handleThinkingTracesToggle, setContextTab,
+    setManagementView, handleStartWizard,
   ]);
+
+  const handleExportSession = useCallback(
+    (key: string) => {
+      if (!focusedAgentId) return;
+      void exportConversationAsMarkdown(focusedAgentId, key, key).catch((err) =>
+        console.error("Export failed:", err),
+      );
+    },
+    [focusedAgentId],
+  );
 
   const stableChatTokenLimit = useMemo(() => {
     if (!focusedAgent) return undefined;
@@ -756,21 +877,7 @@ export const AgentStudioPage = () => {
   }, [focusedAgent, agentContextWindow, findModelMatch]);
 
   if (status === "connecting" || (status === "connected" && !agentsLoadedOnce)) {
-    return (
-      <div className="relative w-screen overflow-hidden bg-background" style={{ minHeight: '100svh' }}>
-        <div className="flex items-center justify-center px-6" style={{ minHeight: '100svh' }}>
-          <div className="bg-card rounded-lg w-full max-w-md px-6 py-8 flex flex-col items-center gap-4">
-            <BrandMark size="lg" />
-            <div className="text-sm text-muted-foreground">
-              {status === "connecting" ? "Connecting to gateway…" : "Loading agents…"}
-            </div>
-            <div className="typing-dots mt-1">
-              <span /><span /><span />
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return <StudioLoadingScreen status={status} />;
   }
 
   return (
@@ -786,52 +893,49 @@ export const AgentStudioPage = () => {
         </div>
       ) : null}
       <div className="relative w-full overflow-hidden bg-background" style={{ height: '100svh' }}>
-        {/* ── Header hover zone: reveals header on mouse enter ──────── */}
+        {/* ── Header hover zone: reveals floating controls on mouse enter ──────── */}
         <div
           className="fixed inset-x-0 top-0 z-30 h-3"
           onMouseEnter={onHoverZoneEnter}
           onMouseLeave={onHoverZoneLeave}
-          aria-hidden="true"
+          onFocus={onFocusZoneEnter}
+          onBlur={onFocusZoneLeave}
         />
-        {/* ── Header: fixed glassmorphic bar with auto-hide ──────────── */}
-        <div
-          className={`fixed inset-x-0 top-0 z-30 transform-gpu transition-transform duration-300 ease-out ${headerVisible ? "translate-y-0" : "-translate-y-full"}`}
-          onMouseEnter={onHoverZoneEnter}
-          onMouseLeave={onHoverZoneLeave}
-        >
-          <HeaderBar
-            status={status}
-            running={focusedAgentRunning}
-            onConnectionSettings={() => setShowConnectionPanel((prev) => !prev)}
-            onFilesToggle={handleFilesToggle}
-            filesActive={contextMode === "files"}
-            onOpenContext={() => {
-              if (isWide(breakpoint)) {
-                setContextPanelOpen(true);
-              } else {
-                setMobilePane("context");
-              }
-            }}
+        {/* ── Floating context controls — desktop (replaces HeaderBar) ──────── */}
+        {isWide(breakpoint) && (
+          <div
+            onMouseEnter={onHoverZoneEnter}
+            onMouseLeave={onHoverZoneLeave}
+            onFocus={onFocusZoneEnter}
+            onBlur={onFocusZoneLeave}
+          >
+            <FloatingContextControls
+              agents={breadcrumbAgents}
+              selectedAgentId={focusedAgentId}
+              onSelectAgent={(agentId) => {
+                flushPendingDraft(focusedAgent?.agentId ?? null);
+                dispatch({ type: "selectAgent", agentId });
+              }}
+              onCreateAgent={() => handleStartWizard("agent")}
+              contextTab={contextTab}
+              contextPanelOpen={contextPanelOpen}
+              onContextTabClick={(tab) => {
+                if (contextPanelOpen && contextTab === tab) {
+                  setContextPanelOpen(false);
+                } else {
+                  setContextTab(tab);
+                  setContextPanelOpen(true);
+                }
+              }}
+              onContextClose={() => setContextPanelOpen(false)}
+              visible={headerVisible}
+            />
+          </div>
+        )}
+        {/* ── Floating mobile header — hamburger + context menu ──────── */}
+        {!isWide(breakpoint) && (
+          <FloatingMobileHeader
             onOpenSessionHistory={() => setMobileSessionDrawerOpen(true)}
-            onNewSession={stableChatOnNewSession}
-            onOpenSettings={() => {
-              if (focusedAgent && !settingsAgentId) {
-                setSettingsAgentId(focusedAgent.agentId);
-              }
-              setManagementView("settings");
-            }}
-            agents={breadcrumbAgents}
-            selectedAgentId={focusedAgentId}
-            onSelectAgent={(agentId) => {
-              flushPendingDraft(focusedAgent?.agentId ?? null);
-              dispatch({ type: "selectAgent", agentId });
-            }}
-            onCreateAgent={() => setShowAgentWizard(true)}
-            gatewayVersion={gatewayVersion}
-            gatewayUptime={gatewayUptime}
-            sidecarHealth={sidecarHealth}
-            sidecarError={sidecarError}
-            showContextTabs={isWide(breakpoint)}
             contextTab={contextTab}
             contextPanelOpen={contextPanelOpen}
             onContextTabClick={(tab) => {
@@ -841,56 +945,22 @@ export const AgentStudioPage = () => {
                 setContextTab(tab);
                 setContextPanelOpen(true);
               }
+              if (mobilePane !== "context") setMobilePane("context");
             }}
-            onContextClose={() => setContextPanelOpen(false)}
+            visible={headerVisible}
           />
-        </div>
+        )}
 
-        {/* ── Status banners: fixed below header ───────────────────── */}
-        {connectionPanelVisible ? (
-          <div className="fixed inset-x-0 top-12 z-30">
-            <div className="rounded-lg bg-card px-4 py-4 sm:px-6 sm:py-6">
-              <ConnectionPanel
-                gatewayUrl={gatewayUrl}
-                token={token}
-                status={status}
-                error={gatewayError}
-                onGatewayUrlChange={setGatewayUrl}
-                onTokenChange={setToken}
-                onConnect={() => void connect()}
-                onDisconnect={disconnect}
-              />
-            </div>
-          </div>
-        ) : null}
-
-        {errorMessage ? (
-          <div className="fixed inset-x-0 top-12 z-30">
-            <div className="rounded-md border border-destructive bg-destructive px-4 py-2 text-sm text-destructive-foreground">
-              {errorMessage}
-            </div>
-          </div>
-        ) : null}
-        {configMutationStatusLine ? (
-          <div className="fixed inset-x-0 top-12 z-30">
-            <div className="rounded-md border border-border/80 bg-card/80 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.11em] text-muted-foreground">
-              {configMutationStatusLine}
-            </div>
-          </div>
-        ) : null}
-
-        {/* ── Gateway connection banner: shown when disconnected ──── */}
-        {status !== "connected" && !connectionPanelVisible ? (
-          <div className="fixed inset-x-0 top-12 z-30">
-            <GatewayStatusBanner
-              status={status}
-              onReconnect={() => void connect()}
-            />
-          </div>
-        ) : null}
+        {/* ── Status banners: fixed below floating controls ─────────── */}
+        <StudioStatusBanners
+          errorMessage={errorMessage}
+          configMutationStatusLine={configMutationStatusLine}
+          status={status}
+          onReconnect={() => void connect()}
+        />
 
         {showFleetLayout ? (
-          <div className="absolute inset-0 pt-12">
+          <div className="absolute inset-0">
             {/* Backdrop for mobile context drawer */}
             {mobilePane !== "chat" && !showContextInline ? (
               <div
@@ -914,28 +984,31 @@ export const AgentStudioPage = () => {
                 client={client}
                 status={status}
                 viewingSessionKey={viewingSessionKey}
-                onSelectSession={setViewingSessionKey}
+                onSelectSession={handleSidebarSessionSelect}
                 onNewSession={stableChatOnNewSession}
+                onViewTrace={(key) => handleViewTrace(key, focusedAgentId)}
+                onExport={handleExportSession}
               />
             ) : null}
             {/* App sidebar — desktop only, collapsible: floating overlay */}
-            <div className={`${showSidebarInline ? "fixed inset-y-0 left-0 top-12 z-20 flex" : "hidden"}`}>
+            <div className={`${showSidebarInline ? "fixed inset-y-0 left-0 z-20 flex" : "hidden"}`}>
               <AppSidebar
                 client={client}
                 status={status}
                 agentId={focusedAgentId}
                 activeSessionKey={viewingSessionKey ?? (focusedAgent ? `${focusedAgent.agentId}:main` : null)}
-                onSelectSession={(key) => setViewingSessionKey(key === `${focusedAgentId}:main` ? null : key)}
+                onSelectSession={(key) => key === `${focusedAgentId}:main` ? handleSidebarSessionSelect(null) : handleSidebarSessionSelect(key)}
                 onNewSession={stableChatOnNewSession}
                 collapsed={sessionSidebarCollapsed}
                 onToggleCollapse={() => setSessionSidebarCollapsed((p) => !p)}
                 onManagementNav={handleManagementNav}
                 activeManagementTab={managementView}
+                onViewTrace={(key) => handleViewTrace(key, focusedAgentId)}
               />
             </div>
             {/* ── Chat canvas: base layer filling viewport ─────────── */}
             <div
-              className="absolute inset-0 z-0 flex overflow-hidden"
+              className="absolute inset-0 z-0 flex overflow-hidden pt-16 lg:pt-0"
               data-testid="focused-agent-panel"
               {...swipeHandlers}
             >
@@ -943,7 +1016,7 @@ export const AgentStudioPage = () => {
               <ManagementDrawer
                 open={managementView !== null}
                 onOpenChange={(open) => { if (!open) setManagementView(null); }}
-                title={managementView ? ({ sessions: "Sessions", usage: "Usage", channels: "Channels", cron: "Cron", settings: "Settings" } as Record<ManagementTab, string>)[managementView] : ""}
+                title={managementView ? ({ usage: "Usage", channels: "Channels", credentials: "Credentials", models: "Models", cron: "Cron", settings: "Settings" } as Record<ManagementTab, string>)[managementView] : ""}
                 sidebarOffsetPx={sessionSidebarCollapsed ? 56 : 288}
               >
                 <ManagementPanelContent
@@ -954,6 +1027,11 @@ export const AgentStudioPage = () => {
               {focusedAgent ? (
                 <AgentChatPanel
                   agent={focusedAgent}
+                  composerAgents={breadcrumbAgents}
+                  onSelectAgent={(agentId) => {
+                    flushPendingDraft(focusedAgent?.agentId ?? null);
+                    dispatch({ type: "selectAgent", agentId });
+                  }}
                   canSend={status === "connected" || isOffline}
                   gatewayStatus={status}
                   queueLength={queueLength}
@@ -973,6 +1051,8 @@ export const AgentStudioPage = () => {
                   onExitSessionView={stableChatOnExitSessionView}
                   sessionContinued={sessionContinuedAgents.has(focusedAgent.agentId)}
                   onDismissContinuationBanner={stableChatOnDismissContinuation}
+                  wizard={wizard}
+                  onWizardConfirm={() => void handleWizardConfirm()}
                 />
               ) : (
                 <div className="flex h-full w-full flex-col items-center justify-center gap-3 text-center text-muted-foreground">
@@ -996,6 +1076,7 @@ export const AgentStudioPage = () => {
               onClose={clearExpandedTab}
               focusedAgentId={focusedAgent?.agentId ?? null}
               client={client}
+              status={status}
               cronEventTick={cronEventTick}
               createProjectTick={createProjectTick}
               agentTasks={agentTasks}
@@ -1009,7 +1090,7 @@ export const AgentStudioPage = () => {
               onRunTask={runTask}
               onDeleteTask={deleteTask}
               onRefreshTasks={() => { void loadTasks(); }}
-              onNewTask={() => setShowTaskWizard(true)}
+              onNewTask={() => handleStartWizard("task")}
               cronMaxConcurrentRuns={cronMaxConcurrentRuns}
               agents={agents}
               selectedBrainAgentId={selectedBrainAgentId}
@@ -1018,6 +1099,8 @@ export const AgentStudioPage = () => {
               brainPreviewMode={brainPreviewMode}
               onBrainPreviewModeChange={setBrainPreviewMode}
               onTranscriptClick={handleExpandedTranscriptClick}
+              onCreateSkill={() => handleStartWizard("skill")}
+              onSelectTemplate={handleSelectTemplate}
             />
             {/* Trace Viewer overlay */}
             {viewingTrace && (
@@ -1033,109 +1116,57 @@ export const AgentStudioPage = () => {
             )}
             {/* Context tab cluster is now integrated into HeaderBar on wide viewports */}
             {/* Context Panel: floating overlay — bottom sheet on mobile, right panel on desktop */}
-            <div
-              className={
-                isMobileLayout
-                  ? `fixed inset-x-0 bottom-0 z-40 h-[85vh] rounded-t-3xl transform-gpu transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${mobilePane === "context" ? "translate-y-0" : "translate-y-full"} bg-background/95 backdrop-blur-xl ring-1 ring-white/[0.06] border-t border-border/50 min-h-0 overflow-hidden p-0 shadow-[0_-4px_24px_-6px_rgba(0,0,0,0.3)]`
-                  : `fixed top-12 right-0 bottom-0 z-20 w-[360px] transform-gpu transition-transform duration-300 ease-out ${showContextInline ? "translate-x-0" : "translate-x-full"} bg-background/60 backdrop-blur-xl ring-1 ring-white/[0.06] min-h-0 overflow-hidden p-0 shadow-[-4px_0_24px_-6px_rgba(0,0,0,0.3)]`
-              }
-            >
-              {/* Bottom sheet drag handle — mobile only, swipe down to dismiss */}
-              {isMobileLayout && (
-                <div
-                  className="flex justify-center py-3 cursor-grab active:cursor-grabbing"
-                  aria-hidden="true"
-                  onTouchStart={swipeHandlers.onTouchStart}
-                  onTouchEnd={swipeHandlers.onTouchEnd}
-                >
-                  <div className="h-1 w-10 rounded-full bg-muted-foreground/30" />
-                </div>
-              )}
-              {contextMode === "files" ? (
-                <ArtifactsPanel isSelected />
-              ) : (
-                <ContextPanel
-                  activeTab={contextTab}
-                  expandedTab={expandedTab === "projects" || expandedTab === "tasks" || expandedTab === "brain" || expandedTab === "workspace" || expandedTab === "activity" ? expandedTab : null}
-                  onExpandToggle={handleExpandToggle}
-                  onClose={showContextInline ? () => setContextPanelOpen(false) : undefined}
-                  onTabChange={setContextTab}
-                  hideTabBar={isWide(breakpoint)}
-                  projectsContent={
-                    <PanelErrorBoundary name="Projects">
-                      <div className="flex h-full w-full flex-col overflow-y-auto">
-                        <ProjectsPanel
-                          agentId={focusedAgent?.agentId ?? null}
-                          client={client}
-                          isTabActive={contextTab === "projects"}
-                          eventTick={cronEventTick}
-                          requestCreateProject={createProjectTick}
-                        />
-                      </div>
-                    </PanelErrorBoundary>
-                  }
-                  tasksContent={
-                    <PanelErrorBoundary name="Tasks">
-                      <div className="flex h-full w-full flex-col overflow-y-auto">
-                        <TasksPanel
-                          isSelected
-                          client={client}
-                          tasks={agentTasks}
-                          loading={tasksLoading}
-                          error={tasksError}
-                          busyTaskId={busyTaskId}
-                          busyAction={busyAction}
-                          onToggle={toggleTask}
-                          onUpdateTask={updateTask}
-                          onUpdateSchedule={updateTaskSchedule}
-                          onRun={runTask}
-                          onDelete={deleteTask}
-                          onRefresh={() => { void loadTasks(); }}
-                          onNewTask={() => setShowTaskWizard(true)}
-                          maxConcurrentRuns={cronMaxConcurrentRuns}
-                        />
-                      </div>
-                    </PanelErrorBoundary>
-                  }
-                  brainContent={
-                    <PanelErrorBoundary name="Brain">
-                      <AgentBrainPanel
-                        client={client}
-                        agents={agents}
-                        selectedAgentId={selectedBrainAgentId}
-                        activeTab={brainFileTab}
-                        onTabChange={setBrainFileTab}
-                        previewMode={brainPreviewMode}
-                        onPreviewModeChange={setBrainPreviewMode}
-                        onClose={() => {
-                          setContextMode("agent");
-                          setMobilePane("chat");
-                        }}
-                      />
-                    </PanelErrorBoundary>
-                  }
-                  workspaceContent={
-                    <PanelErrorBoundary name="Workspace">
-                      <WorkspaceExplorerPanel
-                        key={focusedAgent?.agentId ?? "none"}
-                        agentId={focusedAgent?.agentId ?? null}
-                        client={client}
-                        isTabActive={contextTab === "workspace"}
-                        eventTick={cronEventTick}
-                      />
-                    </PanelErrorBoundary>
-                  }
-                  activityContent={
-                    <PanelErrorBoundary name="Activity">
-                      <ActivityPanel />
-                    </PanelErrorBoundary>
-                  }
-                />
-              )}
-            </div>
+            <StudioContextDrawer
+              isMobileLayout={isMobileLayout}
+              showContextInline={showContextInline}
+              mobilePane={mobilePane}
+              swipeDy={swipeDy}
+              swipeHandlers={swipeHandlers}
+              contextTab={contextTab}
+              expandedTab={expandedTab as "projects" | "tasks" | "brain" | "workspace" | "skills" | "activity" | null}
+              onExpandToggle={handleExpandToggle}
+              onClose={() => setContextPanelOpen(false)}
+              onTabChange={setContextTab}
+              switchToChat={switchToChat}
+              hideTabBar={isWide(breakpoint)}
+              focusedAgentId={focusedAgent?.agentId ?? null}
+              client={client}
+              cronEventTick={cronEventTick}
+              createProjectTick={createProjectTick}
+              agentTasks={agentTasks}
+              tasksLoading={tasksLoading}
+              tasksError={tasksError}
+              busyTaskId={busyTaskId}
+              busyAction={busyAction}
+              onToggleTask={toggleTask}
+              onUpdateTask={updateTask}
+              onUpdateTaskSchedule={updateTaskSchedule}
+              onRunTask={runTask}
+              onDeleteTask={deleteTask}
+              onRefreshTasks={() => { void loadTasks(); }}
+              onNewTask={() => handleStartWizard("task")}
+              cronMaxConcurrentRuns={cronMaxConcurrentRuns}
+              agents={agents}
+              selectedBrainAgentId={selectedBrainAgentId}
+              brainFileTab={brainFileTab}
+              onBrainFileTabChange={setBrainFileTab}
+              brainPreviewMode={brainPreviewMode}
+              onBrainPreviewModeChange={setBrainPreviewMode}
+              status={status}
+              gatewayModels={gatewayModels}
+              modelValue={focusedAgent?.model ?? (gatewayModels.length > 0 ? `${gatewayModels[0].provider}/${gatewayModels[0].id}` : "")}
+              onModelChange={stableChatOnModelChange}
+              onBrainClose={() => {
+                setContextMode("agent");
+                setMobilePane("chat");
+              }}
+              focusedAgent={focusedAgent}
+              onCreateSkill={() => handleStartWizard("skill")}
+              onSelectTemplate={handleSelectTemplate}
+            />
           </div>
         ) : (
-          <div className="absolute inset-0 pt-12 bg-background rounded-lg fade-up-delay flex flex-col overflow-hidden p-5 sm:p-6">
+          <div className="absolute inset-0 bg-background rounded-lg fade-up-delay flex flex-col overflow-hidden p-5 sm:p-6">
             <EmptyStatePanel
               label="Fleet"
               title="No agents available"
@@ -1149,21 +1180,8 @@ export const AgentStudioPage = () => {
 	      </div>
       {/* ExecApprovalOverlay is now rendered by ExecApprovalProvider */}
       <StudioModals
-        showAgentWizard={showAgentWizard}
-        onCloseAgentWizard={() => setShowAgentWizard(false)}
-        onAgentCreated={(agentId) => {
-          setShowAgentWizard(false);
-          void loadAgents();
-          dispatch({ type: "selectAgent", agentId });
-        }}
-        client={client}
-        showTaskWizard={showTaskWizard}
-        onCloseTaskWizard={closeTaskWizard}
-        onCreateTask={createTask}
-        onTaskAgentCreated={() => void loadAgents()}
-        agents={agents}
-        busyTaskId={busyTaskId}
         commandPalette={commandPalette}
+        agents={agents}
         createAgentBlock={createAgentBlock}
         createBlockStatusLine={createBlockStatusLine}
         renameAgentBlock={renameAgentBlock}

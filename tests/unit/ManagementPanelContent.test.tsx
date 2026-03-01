@@ -8,11 +8,6 @@ import type { ManagementPanelContentProps } from "@/components/ManagementPanelCo
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 
 // Mock lazy-loaded panels
-vi.mock("@/features/sessions/components/SessionsPanel", () => ({
-  SessionsPanel: (props: Record<string, unknown>) =>
-    createElement("div", { "data-testid": "sessions-panel", "data-agent": props.agentId }, "Sessions"),
-}));
-
 vi.mock("@/features/cron/components/CronPanel", () => ({
   CronPanel: () => createElement("div", { "data-testid": "cron-panel" }, "Cron"),
 }));
@@ -40,16 +35,7 @@ function defaultContext(overrides: Partial<ManagementPanelContextValue> = {}): M
     client: makeClient(),
     status: "connected" as GatewayStatus,
     focusedAgentId: "agent-1",
-    allSessions: [],
-    allSessionsLoading: false,
-    allSessionsError: null,
-    onRefreshSessions: vi.fn(),
     activeSessionKey: null,
-    aggregateUsage: null,
-    aggregateUsageLoading: false,
-    cumulativeUsage: null,
-    cumulativeUsageLoading: false,
-    usageByType: null,
     onViewTrace: vi.fn(),
     onTranscriptClick: vi.fn(),
     channelsSnapshot: null,
@@ -64,6 +50,7 @@ function defaultContext(overrides: Partial<ManagementPanelContextValue> = {}): M
     onToolCallingToggle: vi.fn(),
     onThinkingTracesToggle: vi.fn(),
     onNavigateToTasks: vi.fn(),
+    onStartCredentialWizard: null,
     ...overrides,
   };
 }
@@ -82,11 +69,6 @@ describe("ManagementPanelContent", () => {
   it("renders nothing when tab is null", () => {
     const { container } = renderWithProvider({ tab: null });
     expect(container.innerHTML).toBe("");
-  });
-
-  it("renders SessionsPanel when tab is sessions", async () => {
-    renderWithProvider({ tab: "sessions" });
-    expect(await screen.findByTestId("sessions-panel")).toBeInTheDocument();
   });
 
   it("renders UsagePanel when tab is usage", async () => {

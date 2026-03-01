@@ -5,7 +5,8 @@ import { Search, X } from "lucide-react";
 import { MarkdownViewer } from "@/components/MarkdownViewer";
 
 import type { AgentState } from "@/features/agents/state/store";
-import type { GatewayClient } from "@/lib/gateway/GatewayClient";
+import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
+import type { GatewayModelChoice } from "@/lib/gateway/models";
 import {
   AGENT_FILE_META,
   AGENT_FILE_NAMES,
@@ -15,6 +16,9 @@ import {
 import { useAgentFilesEditor } from "@/features/agents/hooks/useAgentFilesEditor";
 import { AgentInspectHeader } from "./AgentInspectHeader";
 import { SectionLabel, sectionLabelClass} from "@/components/SectionLabel";
+import { HeartbeatsSettingsSection } from "./HeartbeatsSettingsSection";
+import { ModelPicker } from "./ModelPicker";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 /* ── Line-numbered editor ──────────────────────────────────── */
 
@@ -87,6 +91,14 @@ type AgentBrainPanelProps = {
   previewMode?: boolean;
   /** Callback when preview/edit toggle changes */
   onPreviewModeChange?: (preview: boolean) => void;
+  /** Gateway connection status — needed for heartbeats */
+  status?: GatewayStatus;
+  /** Available models for model picker */
+  models?: GatewayModelChoice[];
+  /** Current model value (provider/id) */
+  modelValue?: string;
+  /** Callback when model changes */
+  onModelChange?: (value: string | null) => void;
 };
 
 export const AgentBrainPanel = memo(function AgentBrainPanel({
@@ -98,6 +110,10 @@ export const AgentBrainPanel = memo(function AgentBrainPanel({
   onTabChange,
   previewMode: controlledPreview,
   onPreviewModeChange,
+  status,
+  models,
+  modelValue,
+  onModelChange,
 }: AgentBrainPanelProps) {
   const selectedAgent = useMemo(
     () =>
@@ -389,6 +405,29 @@ export const AgentBrainPanel = memo(function AgentBrainPanel({
             </div>
           </div>
         </section>
+
+        <div className="flex flex-col gap-4">
+          {/* ── Model & Thinking ── */}
+          {models && models.length > 0 && modelValue && onModelChange && (
+            <div className="rounded-md border border-border/80 bg-card/70 p-4" data-testid="brain-model-picker">
+              <SectionLabel>Model &amp; Thinking</SectionLabel>
+              <div className="mt-3">
+                <ModelPicker models={models} value={modelValue} onChange={onModelChange} />
+              </div>
+            </div>
+          )}
+
+          {/* ── Heartbeats ── */}
+          {status && selectedAgent && (
+            <TooltipProvider>
+              <HeartbeatsSettingsSection
+                client={client}
+                agentId={selectedAgent.agentId}
+                status={status}
+              />
+            </TooltipProvider>
+          )}
+        </div>
       </div>
     </div>
   );

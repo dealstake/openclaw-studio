@@ -21,6 +21,8 @@ type SessionItemProps = {
   onRenameCancel: () => void;
   onDelete: (key: string) => void;
   onTogglePin: (key: string) => void;
+  onViewTrace?: (key: string) => void;
+  onExport?: (key: string) => void;
 };
 
 export const SessionItem = memo(function SessionItem({
@@ -36,8 +38,11 @@ export const SessionItem = memo(function SessionItem({
   onRenameCancel,
   onDelete,
   onTogglePin,
+  onViewTrace,
+  onExport,
 }: SessionItemProps) {
   const itemRef = useRef<HTMLButtonElement>(null);
+  const itemId = `session-item-${session.key.replace(/:/g, "-")}`;
   const handleClick = useCallback(() => onSelect(session.key), [onSelect, session.key]);
   const handleDoubleClick = useCallback(
     () => onRenameStart(session.key),
@@ -47,6 +52,15 @@ export const SessionItem = memo(function SessionItem({
     (name: string) => onRename(session.key, name),
     [onRename, session.key],
   );
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "F2" && !renaming) {
+        e.preventDefault();
+        onRenameStart(session.key);
+      }
+    },
+    [renaming, onRenameStart, session.key],
+  );
 
   useEffect(() => {
     if (focused) itemRef.current?.scrollIntoView({ block: "nearest" });
@@ -54,15 +68,17 @@ export const SessionItem = memo(function SessionItem({
 
   return (
     <button
+      id={itemId}
       ref={itemRef}
       type="button"
       role="option"
       aria-selected={active}
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
+      onKeyDown={handleKeyDown}
       className={`group flex w-full items-start gap-2.5 rounded-lg px-2.5 py-2.5 text-left transition-all duration-200 focus-ring min-h-[44px] ${
         active
-          ? "bg-accent text-accent-foreground"
+          ? "bg-accent text-accent-foreground border-l-2 border-l-primary ring-1 ring-primary/20"
           : focused
             ? "bg-muted/70 text-foreground ring-1 ring-primary/30"
             : "text-foreground/80 hover:bg-muted hover:translate-x-0.5"
@@ -85,6 +101,11 @@ export const SessionItem = memo(function SessionItem({
             {highlightMatch(session.displayName, searchQuery)}
           </p>
         )}
+        {session.summary && (
+          <p className="mt-0.5 truncate text-[11px] text-muted-foreground/70">
+            {session.summary}
+          </p>
+        )}
         <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
           {formatRelativeTime(session.updatedAt)}
           {session.messageCount > 0 ? ` · ${session.messageCount} msgs` : ""}
@@ -99,6 +120,8 @@ export const SessionItem = memo(function SessionItem({
             onRename={onRenameStart}
             onDelete={onDelete}
             onTogglePin={onTogglePin}
+            onViewTrace={onViewTrace}
+            onExport={onExport}
           />
         </div>
       )}

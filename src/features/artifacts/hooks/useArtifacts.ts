@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { DriveFile } from "../types";
+import { isArtifactsListResponse, parseApiError } from "../lib/api";
 
 /**
  * Data-fetching hook for Google Drive artifacts.
@@ -24,12 +25,12 @@ export function useArtifacts(isSelected: boolean) {
     try {
       const res = await fetch("/api/artifacts");
       if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(
-          (body as { error?: string }).error || `HTTP ${res.status}`,
-        );
+        throw new Error(await parseApiError(res, "Failed to load artifacts"));
       }
-      const data = (await res.json()) as { files: DriveFile[] };
+      const data: unknown = await res.json();
+      if (!isArtifactsListResponse(data)) {
+        throw new Error("Unexpected response format from artifacts API");
+      }
       setFiles(data.files);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load artifacts.");
@@ -46,21 +47,36 @@ export function useArtifacts(isSelected: boolean) {
       setUploadError(null);
 
       try {
-        for (const file of Array.from(fileList)) {
-          const formData = new FormData();
-          formData.append("file", file);
-          const res = await fetch("/api/artifacts/upload", {
-            method: "POST",
-            body: formData,
-          });
-          if (!res.ok) {
-            const body = await res.json().catch(() => ({}));
-            throw new Error(
-              (body as { error?: string }).error ||
-                `Upload failed (${res.status})`,
-            );
-          }
+        const results = await Promise.allSettled(
+          Array.from(fileList).map(async (file) => {
+            const formData = new FormData();
+            formData.append("file", file);
+            const res = await fetch("/api/artifacts/upload", {
+              method: "POST",
+              body: formData,
+            });
+            if (!res.ok) {
+              throw new Error(
+                await parseApiError(res, `Upload failed for ${file.name}`),
+              );
+            }
+          }),
+        );
+
+        const failures = results.filter(
+          (r): r is PromiseRejectedResult => r.status === "rejected",
+        );
+        if (failures.length > 0) {
+          const msgs = failures.map((f) =>
+            f.reason instanceof Error ? f.reason.message : "Upload failed",
+          );
+          setUploadError(
+            failures.length === fileList.length
+              ? `All uploads failed: ${msgs[0]}`
+              : `${failures.length}/${fileList.length} failed: ${msgs.join("; ")}`,
+          );
         }
+
         await fetchFiles(true);
       } catch (err) {
         setUploadError(err instanceof Error ? err.message : "Upload failed.");

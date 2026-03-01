@@ -1,4 +1,4 @@
-import type { WizardStarter } from "@/components/chat/WizardChat";
+import type { WizardStarter } from "@/features/wizards/lib/wizardTypes";
 
 // ─── Agent Config JSON Schema ────────────────────────────────────────────────
 
@@ -218,20 +218,20 @@ Based on purpose, suggest relevant tools:
 export function getAgentWizardStarters(): WizardStarter[] {
   return [
     {
-      prompt: "I need an agent that monitors my systems and alerts me when...",
-      text: "Build a monitoring agent",
+      message: "I need an agent that monitors my systems and alerts me when...",
+      label: "Build a monitoring agent",
     },
     {
-      prompt: "I want a research agent that can search the web and summarize findings about...",
-      text: "Create a research agent",
+      message: "I want a research agent that can search the web and summarize findings about...",
+      label: "Create a research agent",
     },
     {
-      prompt: "I need an agent to help with customer support by...",
-      text: "Design a support agent",
+      message: "I need an agent to help with customer support by...",
+      label: "Design a support agent",
     },
     {
-      prompt: "Build me an agent that automates...",
-      text: "Automate a workflow",
+      message: "Build me an agent that automates...",
+      label: "Automate a workflow",
     },
   ];
 }

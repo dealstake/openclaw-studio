@@ -68,7 +68,7 @@ export const SettingsListItem = memo(function SettingsListItem({
 }: SettingsListItemProps) {
   const busy = runBusy || deleteBusy;
   return (
-    <div
+    <li
       className={`group/${groupName} flex items-start justify-between gap-2 rounded-md border border-border/80 bg-card/75 px-3 py-2${!enabled ? " opacity-60" : ""}`}
     >
       <div className="min-w-0 flex-1">
@@ -136,6 +136,6 @@ export const SettingsListItem = memo(function SettingsListItem({
           </PanelIconButton>
         )}
       </div>
-    </div>
+    </li>
   );
 });

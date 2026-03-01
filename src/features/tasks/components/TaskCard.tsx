@@ -1,13 +1,28 @@
 "use client";
 
 import { memo, useCallback } from "react";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Clock, Play, CheckCircle2, XCircle, AlertCircle, Minus } from "lucide-react";
 import type { StudioTask } from "@/features/tasks/types";
 import { humanReadableSchedule } from "@/features/tasks/lib/schedule";
-import { formatRelativeTime } from "@/lib/text/time";
-import { formatDurationCompact as formatDuration } from "@/lib/text/time";
-import { TYPE_CONFIG, STATUS_DOT_CLASS, getTaskStatusKey } from "@/features/tasks/lib/taskTypeConfig";
-import { BaseCard, CardHeader, CardBadge, CardMeta } from "@/components/ui/BaseCard";
+import { formatRelativeTime, formatDuration } from "@/lib/text/time";
+import { STATUS_DOT_CLASS, getTaskStatusKey, STATUS_LABEL } from "@/features/tasks/lib/taskTypeConfig";
+import { BaseCard, CardHeader } from "@/components/ui/BaseCard";
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+/** Abbreviate model name: "anthropic/claude-opus-4-6" → "opus" */
+function abbreviateModel(model: string): string {
+  if (!model || model === "default") return "default";
+  const name = model.split("/").pop() ?? model;
+  // Common abbreviations
+  if (name.includes("opus")) return "opus";
+  if (name.includes("sonnet")) return "sonnet";
+  if (name.includes("haiku")) return "haiku";
+  if (name.includes("gpt-4")) return "gpt-4";
+  if (name.includes("gpt-3")) return "gpt-3.5";
+  if (name.includes("gemini")) return "gemini";
+  return name.length > 16 ? `${name.slice(0, 14)}…` : name;
+}
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -25,24 +40,15 @@ interface TaskCardProps {
 
 export const TaskCard = memo(function TaskCard({
   task,
-  busy,
   selected,
   focused,
   onSelect,
-  onToggle,
-  busyAction,
 }: TaskCardProps) {
-  const typeConfig = TYPE_CONFIG[task.type];
-  const TypeIcon = typeConfig.icon;
   const isOrphan = task.managementStatus === "orphan";
-
   const statusKey = getTaskStatusKey(task);
   const dotClass = STATUS_DOT_CLASS[statusKey];
-
-  const handleToggle = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    onToggle(task.id, !task.enabled);
-  }, [onToggle, task.id, task.enabled]);
+  const isRunning = statusKey === "running";
+  const hasErrors = (task.consecutiveErrors ?? 0) > 0;
 
   const handleSelect = useCallback(() => {
     onSelect(task.id);
@@ -57,103 +63,88 @@ export const TaskCard = memo(function TaskCard({
         focused && !selected
           ? "border-primary/30 bg-card/90 ring-1 ring-primary/10"
           : ""
-      }${isOrphan ? " border-dashed border-b-destructive/30 opacity-70" : ""}`}
+      }${isOrphan ? " opacity-70" : ""}`}
       onClick={handleSelect}
       role="option"
       aria-selected={selected || focused}
+      aria-label={`${task.name} — ${STATUS_LABEL[statusKey]}`}
       tabIndex={-1}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") handleSelect(); }}
       data-task-card
     >
-      {/* Title row: status dot + name + management badge + toggle */}
+      {/* Row 1: status dot + name + model badge */}
       <CardHeader>
         {isOrphan ? (
           <AlertTriangle className="h-3 w-3 shrink-0 text-destructive" />
         ) : (
           <span className={`h-2 w-2 shrink-0 rounded-full ${dotClass}`} />
         )}
-        <span className="min-w-0 flex-1 truncate text-xs font-medium text-foreground" title={task.name}>
+        <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground transition-colors duration-150 group-hover/card:text-primary" title={task.name}>
           {task.name}
+          {isRunning && <span className="ml-1.5 text-xs font-normal text-purple-300">Running…</span>}
         </span>
-        {isOrphan ? (
-          <CardBadge className="border-destructive/30 bg-destructive/10 text-destructive gap-1">
-            <AlertTriangle className="h-2.5 w-2.5" />
-            Orphan
-          </CardBadge>
-        ) : null}
-        {/* Persistent toggle — green when enabled, grey when disabled */}
-        {!isOrphan ? (
-          <button
-            type="button"
-            aria-label={task.enabled ? "Pause task" : "Resume task"}
-            disabled={busy || busyAction === "toggle"}
-            className={`relative h-6 w-11 shrink-0 cursor-pointer rounded-full border transition disabled:opacity-50 disabled:cursor-not-allowed ${
-              task.enabled
-                ? "border-emerald-500/50 bg-emerald-500/30"
-                : "border-border bg-muted/50"
-            }`}
-            onClick={handleToggle}
-          >
-            <span
-              className={`pointer-events-none absolute top-0.5 left-0.5 h-5 w-5 rounded-full transition-all shadow-sm ${
-                task.enabled
-                  ? "translate-x-5 bg-emerald-400"
-                  : "bg-muted-foreground/70"
-              }`}
-            />
-          </button>
-        ) : null}
+        <span
+          className="ml-2 shrink-0 rounded bg-muted/50 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground"
+          title={task.model}
+        >
+          {abbreviateModel(task.model)}
+        </span>
       </CardHeader>
 
-      {/* Type badge + schedule */}
-      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-        <CardBadge className={typeConfig.className}>
-          <TypeIcon className="h-2.5 w-2.5" />
-          {typeConfig.label}
-        </CardBadge>
-        <span className="text-[10px] text-muted-foreground">
-          {humanReadableSchedule(task.schedule)}
-        </span>
-      </div>
-
-      {/* Description */}
-      {task.description ? (
-        <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-muted-foreground">
+      {/* Row 2: description (one line, only if meaningful) */}
+      {task.description && !task.description.startsWith("This task exists in the gateway") ? (
+        <p className="mt-0.5 truncate text-xs leading-relaxed text-muted-foreground">
           {task.description}
         </p>
       ) : null}
 
-      {/* Orphan warning */}
-      {isOrphan ? (
-        <p className="mt-1 text-[10px] font-medium text-destructive">
-          Cron job missing — metadata only
-        </p>
-      ) : null}
+      {/* Row 3: Metadata — frequency, next run, last run, errors */}
+      {!isOrphan ? (
+        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+          {/* Frequency */}
+          <div className="flex items-center gap-1" title="Schedule frequency">
+            <Clock className="h-3 w-3 shrink-0 opacity-60" />
+            <span>{humanReadableSchedule(task.schedule, { compact: true })}</span>
+          </div>
 
-      {/* Runtime info */}
-      <CardMeta className="mt-1 flex-wrap gap-x-2 gap-y-0.5 text-[10px]">
-        {task.runningAtMs ? (
-          <span className="font-semibold text-purple-300">Running…</span>
-        ) : task.nextRunAtMs ? (
-          <span>
-            Next: {formatRelativeTime(task.nextRunAtMs)}
-          </span>
-        ) : null}
-        {task.lastRunAt ? (
-          <span>
-            Last: {formatRelativeTime(new Date(task.lastRunAt).getTime())}
-            {task.lastDurationMs ? ` · ${formatDuration(task.lastDurationMs)}` : ""}
-          </span>
-        ) : null}
-        {task.lastRunStatus === "error" ? (
-          <span className="font-semibold text-destructive">Failed</span>
-        ) : task.lastRunStatus === "success" ? (
-          <span className="font-semibold text-emerald-300">OK</span>
-        ) : null}
-        {task.runCount > 0 ? (
-          <span>Runs: {task.runCount}</span>
-        ) : null}
-      </CardMeta>
+          {/* Next Run */}
+          <div className="flex items-center gap-1" title={task.nextRunAtMs ? `Next run: ${new Date(task.nextRunAtMs).toLocaleString()}` : "No next run"}>
+            <Play className="h-3 w-3 shrink-0 opacity-60" />
+            <span>
+              {statusKey === "paused"
+                ? "Paused"
+                : task.nextRunAtMs
+                  ? formatRelativeTime(task.nextRunAtMs)
+                  : "—"}
+            </span>
+          </div>
+
+          {/* Last Run */}
+          <div
+            className="flex items-center gap-1"
+            title={task.lastRunAt ? `Last run: ${new Date(task.lastRunAt).toLocaleString()}${task.lastDurationMs ? ` (${formatDuration(task.lastDurationMs)})` : ""}` : "Never run"}
+          >
+            {task.lastRunStatus === "success" && <CheckCircle2 className="h-3 w-3 shrink-0 text-emerald-400" />}
+            {task.lastRunStatus === "error" && <XCircle className="h-3 w-3 shrink-0 text-destructive" />}
+            {!task.lastRunStatus && <Minus className="h-3 w-3 shrink-0 opacity-40" />}
+            <span>
+              {task.lastRunAt
+                ? `${formatRelativeTime(new Date(task.lastRunAt).getTime())}${task.lastDurationMs ? ` · ${formatDuration(task.lastDurationMs)}` : ""}`
+                : "Never run"}
+            </span>
+          </div>
+
+          {/* Consecutive Errors Badge */}
+          {hasErrors && (
+            <div className="ml-auto flex items-center gap-1 rounded-full bg-destructive/10 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-destructive">
+              <AlertCircle className="h-3 w-3" />
+              {task.consecutiveErrors}
+            </div>
+          )}
+        </div>
+      ) : (
+        <p className="mt-1 text-xs text-destructive/80">Cron job missing — metadata only</p>
+      )}
     </BaseCard>
   );
 });

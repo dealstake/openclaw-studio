@@ -36,6 +36,7 @@ function makeAgent(overrides: Partial<AgentState> = {}): AgentState {
     historyLoadedAt: null,
     toolCallingEnabled: true,
     showThinkingTraces: false,
+    wizardContext: null,
     ...overrides,
   };
 }

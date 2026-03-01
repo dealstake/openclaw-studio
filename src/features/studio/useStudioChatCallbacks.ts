@@ -10,6 +10,7 @@ import { transformMessagesToMessageParts } from "@/features/sessions/lib/transfo
 import { fetchTranscriptMessages } from "@/features/sessions/hooks/useTranscripts";
 import type { Action as AgentStoreAction, AgentState as AgentEntry } from "@/features/agents/state/store";
 import type { ManagementTab } from "@/layout/AppSidebar";
+import { useTraceViewStore, openTrace as openTraceAction, closeTrace as closeTraceAction } from "@/features/sessions/state/traceViewStore";
 
 export interface StudioChatCallbacksParams {
   focusedAgentRef: MutableRefObject<AgentEntry | null>;
@@ -52,10 +53,9 @@ export function useStudioChatCallbacks({
 }: StudioChatCallbacksParams) {
   const [viewingSessionKey, setViewingSessionKey] = useState<string | null>(null);
   const [viewingSessionHistory, setViewingSessionHistory] = useState<MessagePart[]>([]);
-  const [viewingTrace, setViewingTrace] = useState<{ agentId: string; sessionId: string } | null>(null);
+  const { trace: viewingTrace } = useTraceViewStore();
+  const clearViewingTrace = closeTraceAction;
   const [viewingSessionLoading, setViewingSessionLoading] = useState(false);
-
-  const clearViewingTrace = useCallback(() => setViewingTrace(null), []);
 
   const stableChatOnModelChange = useCallback((value: string | null) => {
     const fa = focusedAgentRef.current;
@@ -111,7 +111,7 @@ export function useStudioChatCallbacks({
     if (!agentId) return;
     const prefix = `agent:${agentId}:`;
     const sessionId = sessionKey.startsWith(prefix) ? sessionKey.slice(prefix.length) : sessionKey;
-    setViewingTrace({ agentId, sessionId });
+    openTraceAction(agentId, sessionId);
   }, []);
 
   const stableChatOnDismissContinuation = useCallback(() => {
@@ -150,7 +150,45 @@ export function useStudioChatCallbacks({
           console.error("Failed to load transcript:", err);
           setViewingSessionHistory([{
             type: "text",
-            text: `Failed to load transcript: ${err instanceof Error ? err.message : "Unknown error"}`,
+            text: "Unable to load this session's transcript. Please try again in a moment.",
+          }]);
+        })
+        .finally(() => setViewingSessionLoading(false));
+    },
+    [focusedAgent?.agentId, setMobilePane],
+  );
+
+  // Sidebar session select — parses composite key (agent:id:session) and fetches transcript
+  const handleSidebarSessionSelect = useCallback(
+    (compositeKey: string | null) => {
+      if (!compositeKey) {
+        setViewingSessionKey(null);
+        return;
+      }
+      // Extract agentId and sessionId from composite key format "agent:<agentId>:<sessionId>"
+      const parts = compositeKey.split(":");
+      let agentId: string | null = null;
+      let sessionId = compositeKey;
+      if (parts.length >= 3 && parts[0] === "agent") {
+        agentId = parts[1];
+        sessionId = parts.slice(2).join(":");
+      }
+      const effectiveAgentId = agentId || focusedAgent?.agentId || "";
+      if (!effectiveAgentId) return;
+      // Set viewing key to the composite key (for sidebar highlight matching)
+      setViewingSessionKey(compositeKey);
+      setViewingSessionLoading(true);
+      setViewingSessionHistory([]);
+      setMobilePane("chat");
+      fetchTranscriptMessages(effectiveAgentId, sessionId, 0, 200)
+        .then((result) => {
+          setViewingSessionHistory(transformMessagesToMessageParts(result.messages));
+        })
+        .catch((err) => {
+          console.error("Failed to load transcript:", err);
+          setViewingSessionHistory([{
+            type: "text",
+            text: "Unable to load this session's transcript. Please try again in a moment.",
           }]);
         })
         .finally(() => setViewingSessionLoading(false));
@@ -192,6 +230,7 @@ export function useStudioChatCallbacks({
     stableChatTokenUsed,
     // Trace/transcript handlers
     handleViewTrace,
+    handleSidebarSessionSelect,
     handleDrawerTranscriptClick,
     handleExpandedTranscriptClick,
   };

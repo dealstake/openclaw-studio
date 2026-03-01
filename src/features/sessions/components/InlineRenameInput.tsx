@@ -37,7 +37,7 @@ export const InlineRenameInput = memo(function InlineRenameInput({
     <input
       ref={inputRef}
       type="text"
-      className="w-full rounded border border-primary/40 bg-card px-1 py-0 text-[13px] font-medium leading-tight text-foreground outline-none ring-1 ring-primary/20"
+      className="w-full rounded border border-primary/40 bg-card px-1 py-0 text-base md:text-[13px] font-medium leading-tight text-foreground outline-none ring-1 ring-primary/20"
       value={value}
       onChange={(e) => setValue(e.target.value)}
       onKeyDown={handleKeyDown}

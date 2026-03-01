@@ -12,6 +12,7 @@ type EmptyStateProps = {
   title: string;
   description?: string;
   action?: EmptyStateAction;
+  secondaryAction?: EmptyStateAction;
   className?: string;
 };
 
@@ -20,6 +21,7 @@ export const EmptyState = memo(function EmptyState({
   title,
   description,
   action,
+  secondaryAction,
   className,
 }: EmptyStateProps) {
   return (
@@ -36,14 +38,27 @@ export const EmptyState = memo(function EmptyState({
           {description}
         </p>
       )}
-      {action && (
-        <button
-          type="button"
-          onClick={action.onClick}
-          className="text-xs text-primary hover:underline"
-        >
-          {action.label}
-        </button>
+      {(action || secondaryAction) && (
+        <div className="flex items-center gap-3">
+          {action && (
+            <button
+              type="button"
+              onClick={action.onClick}
+              className="min-h-[44px] rounded-md px-3 text-xs text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+            >
+              {action.label}
+            </button>
+          )}
+          {secondaryAction && (
+            <button
+              type="button"
+              onClick={secondaryAction.onClick}
+              className="min-h-[44px] rounded-md px-3 text-xs text-muted-foreground hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+            >
+              {secondaryAction.label}
+            </button>
+          )}
+        </div>
       )}
     </div>
   );

@@ -78,6 +78,13 @@
       "when": 1771977679758,
       "tag": "0010_tense_cobalt_man",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1772258400000,
+      "tag": "0011_personas",
+      "breakpoints": true
     }
   ]
 }

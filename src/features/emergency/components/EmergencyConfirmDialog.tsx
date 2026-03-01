@@ -76,18 +76,18 @@ export const EmergencyConfirmDialog = memo(function EmergencyConfirmDialog({
                 if (e.key === "Enter" && matches) handleConfirm();
               }}
               placeholder={confirmWord}
-              className={`w-full rounded-md border border-border bg-background px-3 py-2 text-sm font-mono text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 ${destructive ? "focus:ring-red-500/50" : "focus:ring-amber-500/50"}`}
+              className={`w-full rounded-md border border-border bg-background px-3 py-2 text-sm font-mono text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 ${destructive ? "focus:ring-red-500/50" : "focus:ring-amber-500/50"}`}
             />
           </div>
 
           <div className="mt-5 flex justify-end gap-2">
-            <AlertDialog.Cancel className="inline-flex h-9 items-center rounded-lg border border-border bg-card px-4 text-sm font-medium text-foreground transition hover:bg-muted">
+            <AlertDialog.Cancel className="inline-flex h-11 items-center rounded-lg border border-border bg-card px-4 text-sm font-medium text-foreground transition hover:bg-muted">
               Cancel
             </AlertDialog.Cancel>
             <button
               disabled={!matches}
               onClick={handleConfirm}
-              className={`inline-flex h-9 items-center rounded-lg px-4 text-sm font-medium text-white transition disabled:opacity-30 disabled:cursor-not-allowed ${
+              className={`inline-flex h-11 items-center rounded-lg px-4 text-sm font-medium text-white transition disabled:opacity-30 disabled:cursor-not-allowed ${
                 destructive
                   ? "bg-destructive hover:bg-destructive/90"
                   : "bg-red-600 hover:bg-red-700"

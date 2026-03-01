@@ -3,22 +3,32 @@
 import { lazy, memo, Suspense } from "react";
 import { PanelErrorBoundary } from "@/components/PanelErrorBoundary";
 import type { ManagementTab } from "@/layout/AppSidebar";
-import { ChannelsPanel } from "@/features/channels/components/ChannelsPanel";
-import { useManagementPanel } from "@/components/management/ManagementPanelContext";
-
-const SessionsPanel = lazy(() =>
-  import("@/features/sessions/components/SessionsPanel").then((m) => ({
-    default: m.SessionsPanel,
+const ChannelsPanel = lazy(() =>
+  import("@/features/channels/components/ChannelsPanel").then((m) => ({
+    default: m.ChannelsPanel,
   }))
 );
+import { useManagementPanel } from "@/components/management/ManagementPanelContext";
+
 const UsagePanel = lazy(() =>
   import("@/features/usage/components/UsagePanel").then((m) => ({
     default: m.UsagePanel,
   }))
 );
+const CredentialsPanel = lazy(() =>
+  import("@/features/credentials/components/CredentialsPanel").then((m) => ({
+    default: m.CredentialsPanel,
+  }))
+);
+const ModelsPanel = lazy(() =>
+  import("@/features/models/components/ModelsPanel").then((m) => ({
+    default: m.ModelsPanel,
+  }))
+);
 import {
   AgentSettingsPanel,
 } from "@/features/agents/components/AgentInspectPanels";
+import { LogoutButton } from "@/components/brand/LogoutButton";
 
 const RESERVED_MAIN_AGENT_ID = "main";
 
@@ -44,26 +54,6 @@ export const ManagementPanelContent = memo(function ManagementPanelContent({
 
   return (
     <Suspense fallback={null}>
-      {tab === "sessions" && (
-        <PanelErrorBoundary name="Sessions">
-          <SessionsPanel
-            client={ctx.client}
-            agentId={ctx.focusedAgentId}
-            sessions={ctx.allSessions}
-            loading={ctx.allSessionsLoading}
-            error={ctx.allSessionsError}
-            onRefresh={ctx.onRefreshSessions}
-            activeSessionKey={ctx.activeSessionKey}
-            aggregateUsage={ctx.aggregateUsage}
-            aggregateUsageLoading={ctx.aggregateUsageLoading}
-            cumulativeUsage={ctx.cumulativeUsage}
-            cumulativeUsageLoading={ctx.cumulativeUsageLoading}
-            usageByType={ctx.usageByType}
-            onViewTrace={ctx.onViewTrace}
-            onTranscriptClick={onTranscriptClick}
-          />
-        </PanelErrorBoundary>
-      )}
       {tab === "usage" && (
         <PanelErrorBoundary name="Usage">
           <UsagePanel client={ctx.client} status={ctx.status} />
@@ -71,13 +61,17 @@ export const ManagementPanelContent = memo(function ManagementPanelContent({
       )}
       {tab === "channels" && (
         <PanelErrorBoundary name="Channels">
-          <ChannelsPanel
-            snapshot={ctx.channelsSnapshot}
-            loading={ctx.channelsLoading}
-            error={ctx.channelsError}
-            onRefresh={ctx.onRefreshChannels}
-            hideHeader
-          />
+          <ChannelsPanel client={ctx.client} status={ctx.status} />
+        </PanelErrorBoundary>
+      )}
+      {tab === "credentials" && (
+        <PanelErrorBoundary name="Credentials">
+          <CredentialsPanel client={ctx.client} status={ctx.status} />
+        </PanelErrorBoundary>
+      )}
+      {tab === "models" && (
+        <PanelErrorBoundary name="Models">
+          <ModelsPanel client={ctx.client} status={ctx.status} agentId={ctx.focusedAgentId} />
         </PanelErrorBoundary>
       )}
       {tab === "settings" && ctx.settingsAgent && (
@@ -85,8 +79,6 @@ export const ManagementPanelContent = memo(function ManagementPanelContent({
           <AgentSettingsPanel
             key={ctx.settingsAgent.agentId}
             agent={ctx.settingsAgent}
-            client={ctx.client}
-            status={ctx.status}
             onClose={onCloseSettings}
             onRename={ctx.onRenameAgent}
             onNewSession={ctx.onNewSession}
@@ -94,8 +86,10 @@ export const ManagementPanelContent = memo(function ManagementPanelContent({
             canDelete={ctx.settingsAgent.agentId !== RESERVED_MAIN_AGENT_ID}
             onToolCallingToggle={ctx.onToolCallingToggle}
             onThinkingTracesToggle={ctx.onThinkingTracesToggle}
-            onNavigateToTasks={ctx.onNavigateToTasks}
           />
+          <div className="mt-4 border-t border-border/40 px-4 pt-4">
+            <LogoutButton />
+          </div>
         </PanelErrorBoundary>
       )}
     </Suspense>

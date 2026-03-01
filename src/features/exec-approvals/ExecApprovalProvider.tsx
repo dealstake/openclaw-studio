@@ -4,6 +4,7 @@ import {
   createContext,
   memo,
   useContext,
+  useMemo,
   type Dispatch,
   type ReactNode,
   type SetStateAction,
@@ -55,14 +56,17 @@ export const ExecApprovalProvider = memo(function ExecApprovalProvider({
     resetExecApprovals,
   } = useExecApprovals(client);
 
-  const value: ExecApprovalContextValue = {
-    queue: execApprovalQueue,
-    setQueue: setExecApprovalQueue,
-    busy: execApprovalBusy,
-    error: execApprovalError,
-    decide: handleExecApprovalDecision,
-    reset: resetExecApprovals,
-  };
+  const value = useMemo<ExecApprovalContextValue>(
+    () => ({
+      queue: execApprovalQueue,
+      setQueue: setExecApprovalQueue,
+      busy: execApprovalBusy,
+      error: execApprovalError,
+      decide: handleExecApprovalDecision,
+      reset: resetExecApprovals,
+    }),
+    [execApprovalQueue, setExecApprovalQueue, execApprovalBusy, execApprovalError, handleExecApprovalDecision, resetExecApprovals]
+  );
 
   return (
     <ExecApprovalContext.Provider value={value}>

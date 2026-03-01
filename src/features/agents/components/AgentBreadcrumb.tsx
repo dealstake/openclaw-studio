@@ -4,6 +4,7 @@ import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { ChevronDown, Check, Plus } from "lucide-react";
 import { AgentAvatar } from "./AgentAvatar";
 import type { AgentStatus } from "@/features/agents/state/store";
+import { formatModelDisplayName } from "@/lib/models/utils";
 
 export type BreadcrumbAgent = {
   agentId: string;
@@ -39,19 +40,7 @@ const statusLabelClass: Record<AgentStatus, string> = {
   error: "text-destructive",
 };
 
-/** Extract short model name from full qualified id (e.g. "anthropic/claude-opus-4-6" → "Opus 4.6") */
-function formatModelShort(model: string): string {
-  const id = model.includes("/") ? model.split("/").pop()! : model;
-  if (id.includes("opus")) return "Opus " + extractVersion(id);
-  if (id.includes("sonnet")) return "Sonnet " + extractVersion(id);
-  if (id.includes("haiku")) return "Haiku " + extractVersion(id);
-  return id;
-}
-
-function extractVersion(id: string): string {
-  const m = id.match(/(\d+)[.-](\d+)/);
-  return m ? `${m[1]}.${m[2]}` : "";
-}
+/* Model display formatting delegated to @/lib/models/utils */
 
 export const AgentBreadcrumb = memo(function AgentBreadcrumb({
   agents,
@@ -90,16 +79,16 @@ export const AgentBreadcrumb = memo(function AgentBreadcrumb({
   if (!selected) return null;
 
   return (
-    <div ref={containerRef} className="relative">
+    <div ref={containerRef} className="relative min-w-0">
       <button
         type="button"
         onClick={toggle}
         className={`flex min-h-[44px] items-center gap-2 rounded-lg px-2 py-1.5 transition hover:bg-muted/60 ${open ? "bg-muted/60" : ""}`}
         data-testid="agent-breadcrumb-trigger"
+        aria-label={`Switch agent — current: ${selected.name || selected.agentId}`}
         aria-expanded={open}
         aria-haspopup="listbox"
       >
-        <span className="text-muted-foreground/60 select-none" aria-hidden="true">/</span>
         <AgentAvatar
           seed={selected.avatarSeed ?? selected.agentId}
           name={selected.name || selected.agentId}
@@ -156,7 +145,7 @@ export const AgentBreadcrumb = memo(function AgentBreadcrumb({
                 </div>
                 {agent.model ? (
                   <span className="truncate text-xs text-muted-foreground">
-                    {formatModelShort(agent.model)}
+                    {formatModelDisplayName(agent.model)}
                   </span>
                 ) : null}
               </div>

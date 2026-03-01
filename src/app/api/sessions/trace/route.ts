@@ -75,32 +75,49 @@ export async function GET(request: Request) {
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
- * Resolve a sessionId that might be a key suffix (e.g., "main", "cron:fb40...")
- * into the actual UUID used for the JSONL file.
+ * Resolve a sessionId that might be a full composite key (e.g., "agent:alex:main"),
+ * a key suffix (e.g., "main", "cron:fb40..."), or already a UUID.
+ * Returns the actual UUID used for the JSONL file.
  */
 async function resolveSessionId(agentId: string, sessionId: string): Promise<string> {
   // If it's already a UUID, use it directly
   if (UUID_RE.test(sessionId)) return sessionId;
 
+  // Strip full composite key prefix if present (e.g., "agent:alex:main" → "main")
+  const compositePrefix = `agent:${agentId}:`;
+  const normalizedId = sessionId.startsWith(compositePrefix)
+    ? sessionId.slice(compositePrefix.length)
+    : sessionId;
+
+  // If stripping revealed a UUID, return it
+  if (UUID_RE.test(normalizedId)) return normalizedId;
+
   // Otherwise, look up from sessions.json
   const workspace = resolveAgentWorkspace(agentId);
   const sessionsPath = path.join(workspace, "sessions", "sessions.json");
-  if (!fs.existsSync(sessionsPath)) return sessionId;
+  if (!fs.existsSync(sessionsPath)) return normalizedId;
 
   try {
     const raw = fs.readFileSync(sessionsPath, "utf-8");
     const data = JSON.parse(raw) as Record<string, { sessionId?: string }>;
-    // Try exact key: "agent:<agentId>:<sessionId>"
-    const fullKey = `agent:${agentId}:${sessionId}`;
+
+    // Try the original sessionId as a direct key (handles full composite keys)
+    if (data[sessionId]?.sessionId) return data[sessionId].sessionId;
+
+    // Try constructed full key: "agent:<agentId>:<normalizedId>"
+    const fullKey = `agent:${agentId}:${normalizedId}`;
     if (data[fullKey]?.sessionId) return data[fullKey].sessionId;
-    // Fallback: scan for matching key suffix
+
+    // Fallback: scan for matching key suffix (scoped to this agent to avoid cross-agent conflicts)
     for (const [key, val] of Object.entries(data)) {
-      if (key.endsWith(`:${sessionId}`) && val?.sessionId) return val.sessionId;
+      if (key.startsWith(compositePrefix) && key.endsWith(`:${normalizedId}`) && val?.sessionId) {
+        return val.sessionId;
+      }
     }
   } catch {
     // Fall through
   }
-  return sessionId;
+  return normalizedId;
 }
 
 async function readJsonlLocal(
@@ -120,7 +137,9 @@ async function readJsonlLocal(
     if (fs.existsSync(archivePath)) {
       filePath = archivePath;
     } else {
-      throw new Error(`Session transcript not found: ${sessionId}`);
+      throw new Error(
+        `Session transcript not found for "${sessionId}". The session may have been archived or deleted.`,
+      );
     }
   }
 
@@ -182,7 +201,9 @@ async function readJsonlViaSidecar(
   }
 
   if (content === null) {
-    throw new Error(`Session transcript not found: ${sessionId}`);
+    throw new Error(
+      `Session transcript not found for "${sessionId}". The session may have been archived or deleted.`,
+    );
   }
 
   // Guard against OOM: reject files that exceed the size limit

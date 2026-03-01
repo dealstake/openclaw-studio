@@ -10,12 +10,13 @@ import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import type { StudioTask, TaskType, TaskSchedule, UpdateTaskPayload } from "@/features/tasks/types";
 import { TaskCard } from "./TaskCard";
 import { TaskDetailDrawer } from "./TaskDetailDrawer";
+import { TaskActionsProvider } from "@/features/tasks/context/TaskActionsContext";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { PanelIconButton } from "@/components/PanelIconButton";
 import { SectionLabel } from "@/components/SectionLabel";
 import { PanelToolbar } from "@/components/ui/PanelToolbar";
-import { FilterPillGroup, type FilterOption } from "@/components/ui/FilterPillGroup";
-import { SearchInput } from "@/components/SearchInput";
+import { FilterGroup, type FilterGroupOption } from "@/components/ui/FilterGroup";
+
 
 // ─── Filter tabs ─────────────────────────────────────────────────────────────
 
@@ -23,7 +24,7 @@ type FilterTab = "all" | TaskType | "orphan";
 
 const MGMT_STATUS_FILTERS: FilterTab[] = ["orphan"];
 
-const FILTER_OPTIONS: FilterOption<FilterTab>[] = [
+const FILTER_OPTIONS: FilterGroupOption<FilterTab>[] = [
   { value: "all", label: "All" },
   { value: "constant", label: "Constant" },
   { value: "periodic", label: "Periodic" },
@@ -70,22 +71,24 @@ export const TasksPanel = memo(function TasksPanel({
   onNewTask,
   maxConcurrentRuns,
 }: TasksPanelProps) {
-  const [filter, setFilterRaw] = useState<FilterTab>("all");
-  const [search, setSearchRaw] = useState("");
+  const [filter, setFilterRaw] = useState<FilterTab[]>(["all"]);
+
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [focusIndex, setFocusIndex] = useState(-1);
   const listRef = useRef<HTMLDivElement>(null);
 
-  const setFilter = useCallback((f: FilterTab) => {
-    setFilterRaw(f);
+  const setFilter = useCallback((next: FilterTab[]) => {
+    if (next.length === 0) { setFilterRaw(["all"]); setFocusIndex(-1); return; }
+    const hadAll = filter.includes("all");
+    const hasAll = next.includes("all");
+    if (hasAll && !hadAll) { setFilterRaw(["all"]); }
+    else if (hasAll && next.length > 1) { setFilterRaw(next.filter((v) => v !== "all") as FilterTab[]); }
+    else { setFilterRaw(next); }
     setFocusIndex(-1);
-  }, []);
+  }, [filter]);
 
-  const setSearch = useCallback((s: string) => {
-    setSearchRaw(s);
-    setFocusIndex(-1);
-  }, []);
+
 
   const handleSelect = useCallback((taskId: string) => {
     setSelectedTaskId((prev) => (prev === taskId ? null : taskId));
@@ -115,7 +118,9 @@ export const TasksPanel = memo(function TasksPanel({
   }, [handleDeleteCancel]);
 
 
-  const filterOptionsWithCounts = useMemo<FilterOption<FilterTab>[]>(() => {
+  const isAllSelected = filter.includes("all");
+
+  const filterOptionsWithCounts = useMemo<FilterGroupOption<FilterTab>[]>(() => {
     const counts: Partial<Record<FilterTab, number>> = {
       all: tasks.length,
       constant: tasks.filter((t) => t.type === "constant").length,
@@ -124,7 +129,7 @@ export const TasksPanel = memo(function TasksPanel({
 
       orphan: tasks.filter((t) => t.managementStatus === "orphan").length,
     };
-    // Only show unmanaged/orphan pills if count > 0
+    // Only show orphan pills if count > 0
     return FILTER_OPTIONS.filter(
       (opt) => !MGMT_STATUS_FILTERS.includes(opt.value) || (counts[opt.value] ?? 0) > 0
     ).map((opt) => ({ ...opt, count: counts[opt.value] ?? 0 }));
@@ -132,23 +137,19 @@ export const TasksPanel = memo(function TasksPanel({
 
   const filtered = useMemo(() => {
     let result: StudioTask[];
-    if (filter === "all") {
+    if (isAllSelected) {
       result = tasks;
-    } else if (MGMT_STATUS_FILTERS.includes(filter)) {
-      result = tasks.filter((t) => t.managementStatus === filter);
     } else {
-      result = tasks.filter((t) => t.type === filter);
-    }
-    if (search.trim()) {
-      const q = search.trim().toLowerCase();
-      result = result.filter(
-        (t) =>
-          t.name.toLowerCase().includes(q) ||
-          (t.description ?? "").toLowerCase().includes(q),
-      );
+      result = tasks.filter((t) => {
+        for (const f of filter) {
+          if (MGMT_STATUS_FILTERS.includes(f) && t.managementStatus === f) return true;
+          if (!MGMT_STATUS_FILTERS.includes(f) && t.type === f) return true;
+        }
+        return false;
+      });
     }
     return result;
-  }, [tasks, filter, search]);
+  }, [tasks, filter, isAllSelected]);
 
   // Keyboard navigation
   const handleListKeyDown = useCallback(
@@ -210,17 +211,20 @@ export const TasksPanel = memo(function TasksPanel({
   // When a task is selected, show the detail drawer instead of the list
   if (selectedTask) {
     return (
-      <TaskDetailDrawer
-        task={selectedTask}
-        client={client}
-        busy={busyTaskId === selectedTask.id}
-        onClose={handleCloseDrawer}
+      <TaskActionsProvider
         onToggle={onToggle}
         onUpdateTask={onUpdateTask}
         onUpdateSchedule={onUpdateSchedule}
         onRun={onRun}
         onDelete={handleDeleteRequest}
-      />
+      >
+        <TaskDetailDrawer
+          task={selectedTask}
+          client={client}
+          busy={busyTaskId === selectedTask.id}
+          onClose={handleCloseDrawer}
+        />
+      </TaskActionsProvider>
     );
   }
 
@@ -238,7 +242,7 @@ export const TasksPanel = memo(function TasksPanel({
             </span>
           ) : null}
           {maxConcurrentRuns != null && (
-            <TooltipProvider delayDuration={300}>
+            <TooltipProvider >
               <Tooltip>
                 <TooltipTrigger asChild>
                   <span className="flex items-center gap-1 rounded-full bg-muted/60 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
@@ -278,18 +282,12 @@ export const TasksPanel = memo(function TasksPanel({
       {/* Toolbar: filters + search */}
       {tasks.length > 0 ? (
         <PanelToolbar>
-          <FilterPillGroup<FilterTab>
+          <FilterGroup<FilterTab>
             options={filterOptionsWithCounts}
             value={filter}
             onChange={setFilter}
           />
-          <SearchInput
-            variant="compact"
-            value={search}
-            onChange={setSearch}
-            placeholder="Search tasks…"
-            className="max-w-[200px] sm:max-w-[160px]"
-          />
+
         </PanelToolbar>
       ) : null}
 

@@ -33,6 +33,8 @@ interface RunHistorySectionProps {
   runs: CronRunEntry[];
   loading: boolean;
   error: string | null;
+  /** When true, shows a "triggered, waiting for result…" banner */
+  pendingTrigger?: boolean;
   onRetry: () => void;
 }
 
@@ -42,11 +44,19 @@ export const RunHistorySection = memo(function RunHistorySection({
   runs,
   loading,
   error,
+  pendingTrigger,
   onRetry,
 }: RunHistorySectionProps) {
   return (
     <div className="px-4 py-3">
       <SectionLabel>Run History</SectionLabel>
+
+      {pendingTrigger ? (
+        <div className="mt-2 flex items-center gap-2 rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-primary-text">
+          <span className="h-2 w-2 animate-pulse rounded-full bg-primary" />
+          <span>Triggered — waiting for result…</span>
+        </div>
+      ) : null}
 
       {loading ? (
         <div className="mt-2 flex flex-col gap-1.5">

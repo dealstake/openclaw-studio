@@ -3,8 +3,11 @@
  * and dispatches them through the runtime event handler.
  *
  * Extracted from AgentStudioContent to reduce component size.
+ *
+ * All callback params are accessed via refs so the effect only re-runs
+ * when `client` or `status` change — preventing spurious WS reconnects.
  */
-import { useEffect, type MutableRefObject, type Dispatch, type SetStateAction } from "react";
+import { useEffect, useRef, type MutableRefObject, type Dispatch, type SetStateAction } from "react";
 import type { createGatewayRuntimeEventHandler as CreateHandler } from "@/features/agents/state/gatewayRuntimeEventHandler";
 import { createGatewayRuntimeEventHandler as createHandler } from "@/features/agents/state/gatewayRuntimeEventHandler";
 import {
@@ -36,7 +39,6 @@ export interface RuntimeEventSubscriptionParams {
   loadAgentHistoryRef: MutableRefObject<(agentId: string) => Promise<any>>;
   refreshHeartbeatLatestUpdateRef: MutableRefObject<() => void>;
   loadChannelsStatusRef: MutableRefObject<() => Promise<void>>;
-  loadAllSessionsRef: MutableRefObject<() => Promise<unknown>>;
   loadTasksRef: MutableRefObject<() => Promise<unknown>>;
   /** Resolve a cron job ID to a display name (used for activity messages). */
   cronJobNameResolverRef: MutableRefObject<(cronJobId: string) => string | undefined>;
@@ -60,7 +62,6 @@ export function useRuntimeEventSubscription({
   loadAgentHistoryRef,
   refreshHeartbeatLatestUpdateRef,
   loadChannelsStatusRef,
-  loadAllSessionsRef,
   loadTasksRef,
   cronJobNameResolverRef,
   bumpHeartbeatTick,
@@ -68,45 +69,73 @@ export function useRuntimeEventSubscription({
   setExecApprovalQueue,
   setCronEventTick,
 }: RuntimeEventSubscriptionParams): void {
+  // Stabilize all callback params via refs so the effect only depends
+  // on `client` and `status` — the only values that should trigger
+  // a WS reconnect.
+  const dispatchRef = useRef(dispatch);
+  const queueLivePatchRef = useRef(queueLivePatch);
+  const clearPendingLivePatchRef = useRef(clearPendingLivePatch);
+  const bumpHeartbeatTickRef = useRef(bumpHeartbeatTick);
+  const updateSpecialLatestUpdateRef = useRef(updateSpecialLatestUpdate);
+  const setExecApprovalQueueRef = useRef(setExecApprovalQueue);
+  const setCronEventTickRef = useRef(setCronEventTick);
+
+  // Keep refs current without triggering the subscription effect.
+  // eslint-disable-next-line react-hooks/refs -- intentional: refs store latest callbacks for stable effect closures
+  dispatchRef.current = dispatch;
+  // eslint-disable-next-line react-hooks/refs -- intentional: refs store latest callbacks for stable effect closures
+  queueLivePatchRef.current = queueLivePatch;
+  // eslint-disable-next-line react-hooks/refs -- intentional: refs store latest callbacks for stable effect closures
+  clearPendingLivePatchRef.current = clearPendingLivePatch;
+  // eslint-disable-next-line react-hooks/refs -- intentional: refs store latest callbacks for stable effect closures
+  bumpHeartbeatTickRef.current = bumpHeartbeatTick;
+  // eslint-disable-next-line react-hooks/refs -- intentional: refs store latest callbacks for stable effect closures
+  updateSpecialLatestUpdateRef.current = updateSpecialLatestUpdate;
+  // eslint-disable-next-line react-hooks/refs -- intentional: refs store latest callbacks for stable effect closures
+  setExecApprovalQueueRef.current = setExecApprovalQueue;
+  // eslint-disable-next-line react-hooks/refs -- intentional: refs store latest callbacks for stable effect closures
+  setCronEventTickRef.current = setCronEventTick;
+
   useEffect(() => {
     const handler = createHandler({
       getStatus: () => status,
       getAgents: () => stateRef.current.agents,
-      dispatch,
-      queueLivePatch,
-      clearPendingLivePatch,
+      dispatch: (...args) => dispatchRef.current(...args),
+      queueLivePatch: (...args) => queueLivePatchRef.current(...args),
+      clearPendingLivePatch: (...args) => clearPendingLivePatchRef.current(...args),
       loadSummarySnapshot: () => loadSummarySnapshotRef.current(),
       loadAgentHistory: (agentId: string) => loadAgentHistoryRef.current(agentId),
       refreshHeartbeatLatestUpdate: () => refreshHeartbeatLatestUpdateRef.current(),
-      bumpHeartbeatTick,
+      bumpHeartbeatTick: () => bumpHeartbeatTickRef.current(),
       setTimeout: (fn, delayMs) => window.setTimeout(fn, delayMs),
       clearTimeout: (id) => window.clearTimeout(id),
       isDisconnectLikeError: isGatewayDisconnectLikeError,
       logWarn: (message, meta) => console.warn(message, meta),
       updateSpecialLatestUpdate: (agentId, agent, message) => {
-        void updateSpecialLatestUpdate(agentId, agent, message);
+        void updateSpecialLatestUpdateRef.current(agentId, agent, message);
       },
       onExecApprovalRequested: (payload) => {
         const parsed = parseExecApprovalRequested(payload);
         if (parsed) {
-          setExecApprovalQueue((prev) => pruneExpired([...prev, parsed]));
+          setExecApprovalQueueRef.current((prev) => pruneExpired([...prev, parsed]));
         }
       },
       onExecApprovalResolved: (payload) => {
         const parsed = parseExecApprovalResolved(payload);
         if (parsed) {
-          setExecApprovalQueue((prev) => prev.filter((r) => r.id !== parsed.id));
+          setExecApprovalQueueRef.current((prev) => prev.filter((r) => r.id !== parsed.id));
         }
       },
       onChannelsUpdate: () => {
         void loadChannelsStatusRef.current();
       },
       onSessionsUpdate: () => {
-        void loadAllSessionsRef.current();
+        // Refresh summary snapshot on session events — replaces 30s polling
+        void loadSummarySnapshotRef.current();
       },
       onCronUpdate: () => {
         void loadTasksRef.current();
-        setCronEventTick((prev) => prev + 1);
+        setCronEventTickRef.current((prev) => prev + 1);
       },
       onSystemEvent: () => {
         // System events routed via onActivityMessage to useActivityMessageStore
@@ -157,15 +186,5 @@ export function useRuntimeEventSubscription({
         cronUpdateTimerRef.current = null;
       }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- refs are stable, intentionally omitted to match original
-  }, [
-    bumpHeartbeatTick,
-    clearPendingLivePatch,
-    client,
-    dispatch,
-    queueLivePatch,
-    setExecApprovalQueue,
-    status,
-    updateSpecialLatestUpdate,
-  ]);
+  }, [client, status, stateRef, runtimeEventHandlerRef, sessionsUpdateTimerRef, cronUpdateTimerRef, loadSummarySnapshotRef, loadAgentHistoryRef, refreshHeartbeatLatestUpdateRef, loadChannelsStatusRef, loadTasksRef, cronJobNameResolverRef]);
 }

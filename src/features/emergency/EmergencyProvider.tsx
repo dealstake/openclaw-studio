@@ -5,6 +5,7 @@ import {
   memo,
   useCallback,
   useContext,
+  useMemo,
   useState,
   type ReactNode,
 } from "react";
@@ -54,16 +55,19 @@ export const EmergencyProvider = memo(function EmergencyProvider({
 
   useEmergencyShortcut(toggle);
 
-  const value: EmergencyContextValue = {
-    open,
-    setOpen,
-    toggle,
-    status: emergency.status,
-    lastResult: emergency.lastResult,
-    pausedJobIds: emergency.pausedJobIds,
-    executeAction: emergency.executeAction,
-    restoreCron: emergency.restoreCron,
-  };
+  const value = useMemo<EmergencyContextValue>(
+    () => ({
+      open,
+      setOpen,
+      toggle,
+      status: emergency.status,
+      lastResult: emergency.lastResult,
+      pausedJobIds: emergency.pausedJobIds,
+      executeAction: emergency.executeAction,
+      restoreCron: emergency.restoreCron,
+    }),
+    [open, setOpen, toggle, emergency.status, emergency.lastResult, emergency.pausedJobIds, emergency.executeAction, emergency.restoreCron]
+  );
 
   return (
     <EmergencyContext.Provider value={value}>

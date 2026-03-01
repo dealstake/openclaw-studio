@@ -21,7 +21,7 @@ export const LinkedTaskRow = memo(function LinkedTaskRow({
       />
       <span className={`truncate ${isPaused ? "line-through" : ""}`}>{task.name}</span>
       {isPaused && (
-        <span className="shrink-0 rounded border border-amber-500/30 bg-amber-500/10 px-1 py-px font-mono text-[8px] text-amber-400">
+        <span className="shrink-0 rounded border border-amber-500/30 bg-amber-500/10 px-1 py-px font-mono text-[8px] text-amber-300">
           paused
         </span>
       )}

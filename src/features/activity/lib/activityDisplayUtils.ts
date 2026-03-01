@@ -6,29 +6,26 @@
 import type { LucideIcon } from "lucide-react";
 import { Zap, Search, Microscope, Eye, HeartPulse, Bot, Activity } from "lucide-react";
 
-/** Lucide icon for a task name. Returns icon component + optional color class. */
+/** Icon config for task name keyword matching. Order matters — first match wins. */
+const TASK_ICON_MAP: { keyword: string; icon: LucideIcon; className: string }[] = [
+  { keyword: "continuation", icon: Zap, className: "text-amber-300" },
+  { keyword: "auditor", icon: Search, className: "text-blue-400" },
+  { keyword: "audit", icon: Search, className: "text-blue-400" },
+  { keyword: "research", icon: Microscope, className: "text-purple-400" },
+  { keyword: "visual qa", icon: Eye, className: "text-emerald-300" },
+  { keyword: "visual-qa", icon: Eye, className: "text-emerald-300" },
+  { keyword: "health", icon: HeartPulse, className: "text-red-300" },
+  { keyword: "gateway", icon: HeartPulse, className: "text-red-300" },
+  { keyword: "heartbeat", icon: Activity, className: "text-cyan-400" },
+];
+
+const DEFAULT_TASK_ICON = { icon: Bot, className: "text-muted-foreground" } as const;
+
+/** Lucide icon for a task name. Returns icon component + color class. */
 export function taskIcon(taskName: string): { icon: LucideIcon; className: string } {
   const lower = taskName.toLowerCase();
-  if (lower.includes("continuation")) return { icon: Zap, className: "text-amber-300" };
-  if (lower.includes("auditor") || lower.includes("audit")) return { icon: Search, className: "text-blue-400" };
-  if (lower.includes("research")) return { icon: Microscope, className: "text-purple-400" };
-  if (lower.includes("visual qa") || lower.includes("visual-qa")) return { icon: Eye, className: "text-emerald-300" };
-  if (lower.includes("health") || lower.includes("gateway")) return { icon: HeartPulse, className: "text-red-300" };
-  if (lower.includes("heartbeat")) return { icon: Activity, className: "text-cyan-400" };
-  return { icon: Bot, className: "text-muted-foreground" };
-}
-
-/**
- * @deprecated Use `taskIcon()` instead — returns Lucide icon components per architecture policy.
- */
-export function taskEmoji(taskName: string): string {
-  const lower = taskName.toLowerCase();
-  if (lower.includes("continuation")) return "⚡";
-  if (lower.includes("auditor") || lower.includes("audit")) return "🔍";
-  if (lower.includes("research")) return "🔬";
-  if (lower.includes("visual qa") || lower.includes("visual-qa")) return "👁";
-  if (lower.includes("health") || lower.includes("gateway")) return "🏥";
-  return "🤖";
+  const match = TASK_ICON_MAP.find((entry) => lower.includes(entry.keyword));
+  return match ? { icon: match.icon, className: match.className } : DEFAULT_TASK_ICON;
 }
 
 /** Status → dot color mapping. Keys match both store and TypeScript types. */
@@ -54,6 +51,20 @@ export function formatTime(timestamp: number): string {
 }
 
 const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: "auto", style: "narrow" });
+
+/** Success rate → text color class. Shared by CronJobRankingTable and any future job displays. */
+export function successRateColor(rate: number): string {
+  if (rate >= 0.9) return "text-green-400";
+  if (rate >= 0.7) return "text-amber-300";
+  return "text-red-400";
+}
+
+/** Run status → dot bg color class. Covers "ok", "error", and fallback. */
+export function runStatusDot(status: string): string {
+  if (status === "ok") return "bg-green-500";
+  if (status === "error") return "bg-red-500";
+  return "bg-muted-foreground";
+}
 
 /** Format an ISO timestamp string as relative time (e.g. "5 min. ago", "2 days ago", "Feb 12") */
 export function formatHistoryTime(ts: string): string {

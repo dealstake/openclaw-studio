@@ -59,7 +59,7 @@ export const useUsageData = (
       const result = await client.call<SessionsListResult>("sessions.list", {
         includeGlobal: true,
         includeUnknown: true,
-        limit: 200,
+        limit: 2000,
       });
       const raw = result.sessions ?? [];
       const { entries } = calculateSessionCosts(raw);

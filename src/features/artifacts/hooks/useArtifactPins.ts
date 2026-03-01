@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import type { SortDirection } from "../types";
-import { loadPins, savePins, loadSort, saveSort } from "../lib/storage";
+import { loadPins, savePins, loadSort, saveSort, pruneStale } from "../lib/storage";
 
 /**
  * Manages pin state and sort direction for artifacts.
@@ -31,5 +31,10 @@ export function useArtifactPins() {
     });
   }, []);
 
-  return { pins, sortDir, toggleSort, togglePin };
+  /** Remove pins for file IDs that no longer exist in the fetched file list. */
+  const pruneWith = useCallback((validIds: Set<string>) => {
+    setPins((prev) => pruneStale(prev, validIds));
+  }, []);
+
+  return { pins, sortDir, toggleSort, togglePin, pruneWith };
 }

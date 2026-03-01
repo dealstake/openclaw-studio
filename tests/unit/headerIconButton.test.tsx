@@ -32,12 +32,12 @@ describe("HeaderIconButton", () => {
     expect(screen.getByRole("button", { name: "dis-btn" })).toBeDisabled();
   });
 
-  it("uses title from aria-label when no title provided", () => {
+  it("does not set title when only aria-label provided", () => {
     render(<HeaderIconButton aria-label="my label">T</HeaderIconButton>);
-    expect(screen.getByRole("button", { name: "my label" })).toHaveAttribute("title", "my label");
+    expect(screen.getByRole("button", { name: "my label" })).not.toHaveAttribute("title");
   });
 
-  it("prefers explicit title over aria-label", () => {
+  it("sets title when explicitly provided", () => {
     render(<HeaderIconButton aria-label="label" title="explicit">T</HeaderIconButton>);
     expect(screen.getByRole("button", { name: "label" })).toHaveAttribute("title", "explicit");
   });

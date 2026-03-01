@@ -13,6 +13,7 @@ export const LiveActivityFeed = memo(function LiveActivityFeed({
 }) {
   const parentRef = useRef<HTMLDivElement>(null);
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
     count: timeline.length,
     getScrollElement: () => parentRef.current,

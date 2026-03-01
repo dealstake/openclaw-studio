@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useSyncExternalStore } from "react";
-import type { RecentItem } from "../lib/types";
+import type { RecentItem, RecentItemType } from "../lib/types";
 
 const STORAGE_KEY = "studio:command-palette-recent";
 const MAX_RECENT = 5;
@@ -13,14 +13,34 @@ function notify() {
   for (const fn of listeners) fn();
 }
 
+const VALID_TYPES = new Set(["navigation", "agent", "action"]);
+
+/** Type guard for RecentItem to safely validate localStorage data */
+function isRecentItem(v: unknown): v is RecentItem {
+  return (
+    typeof v === "object" &&
+    v !== null &&
+    typeof (v as RecentItem).id === "string" &&
+    typeof (v as RecentItem).label === "string" &&
+    typeof (v as RecentItem).accessedAt === "number" &&
+    VALID_TYPES.has((v as RecentItem).type)
+  );
+}
+
+function parseRecentItems(raw: string | null): RecentItem[] {
+  if (!raw) return [];
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(isRecentItem);
+  } catch {
+    return [];
+  }
+}
+
 function readFromStorage(): RecentItem[] {
   if (cachedItems) return cachedItems;
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    cachedItems = raw ? (JSON.parse(raw) as RecentItem[]) : [];
-  } catch {
-    cachedItems = [];
-  }
+  cachedItems = parseRecentItems(localStorage.getItem(STORAGE_KEY));
   return cachedItems;
 }
 
@@ -32,6 +52,16 @@ function writeToStorage(items: RecentItem[]) {
     // Storage full — silently ignore
   }
   notify();
+}
+
+// Cross-tab sync: listen for storage changes from other tabs
+if (typeof window !== "undefined") {
+  window.addEventListener("storage", (e) => {
+    if (e.key === STORAGE_KEY) {
+      cachedItems = parseRecentItems(e.newValue);
+      notify();
+    }
+  });
 }
 
 function getSnapshot(): RecentItem[] {
@@ -50,10 +80,10 @@ function subscribe(cb: () => void): () => void {
 export function useRecentItems() {
   const items = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
-  const trackRecent = useCallback((id: string, label: string) => {
+  const trackRecent = useCallback((id: string, label: string, type: RecentItemType = "action") => {
     const current = readFromStorage();
     const filtered = current.filter((item) => item.id !== id);
-    const updated = [{ id, label, accessedAt: Date.now() }, ...filtered].slice(
+    const updated = [{ id, label, type, accessedAt: Date.now() }, ...filtered].slice(
       0,
       MAX_RECENT,
     );

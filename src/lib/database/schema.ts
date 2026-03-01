@@ -129,6 +129,42 @@ export const taskState = sqliteTable("task_state", {
     .$defaultFn(() => new Date().toISOString()),
 });
 
+// ─── Personas ────────────────────────────────────────────────────────────────
+
+export const personas = sqliteTable("personas", {
+  personaId: text("persona_id").primaryKey(),
+  displayName: text("display_name").notNull(),
+  templateKey: text("template_key"),
+  category: text("category").notNull(),
+  status: text("status").notNull().default("draft"),
+  optimizationGoals: text("optimization_goals").notNull().default("[]"),
+  metricsJson: text("metrics_json").notNull().default("{}"),
+  createdAt: text("created_at")
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+  lastTrainedAt: text("last_trained_at"),
+  practiceCount: integer("practice_count").notNull().default(0),
+});
+
+// ─── Knowledge Sources ───────────────────────────────────────────────────────
+
+export const knowledgeSources = sqliteTable("knowledge_sources", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  personaId: text("persona_id")
+    .notNull()
+    .references(() => personas.personaId, { onDelete: "cascade" }),
+  sourceType: text("source_type").notNull(), // "web" | "file" | "manual"
+  sourceUri: text("source_uri").notNull(),
+  title: text("title").notNull().default(""),
+  fetchedAt: text("fetched_at")
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+});
+
+// ─── Knowledge Chunks (FTS5) ─────────────────────────────────────────────────
+// NOTE: FTS5 virtual tables are not supported by drizzle-orm schema.
+// Created via raw SQL in migration. Queried via raw SQL in repo.
+
 // ─── Type exports ────────────────────────────────────────────────────────────
 
 export type ProjectIndexRow = typeof projectsIndex.$inferSelect;
@@ -145,3 +181,7 @@ export type ProjectPlanItemRow = typeof projectPlanItems.$inferSelect;
 export type NewProjectPlanItemRow = typeof projectPlanItems.$inferInsert;
 export type ProjectHistoryRow = typeof projectHistory.$inferSelect;
 export type NewProjectHistoryRow = typeof projectHistory.$inferInsert;
+export type PersonaRow = typeof personas.$inferSelect;
+export type NewPersonaRow = typeof personas.$inferInsert;
+export type KnowledgeSourceRow = typeof knowledgeSources.$inferSelect;
+export type NewKnowledgeSourceRow = typeof knowledgeSources.$inferInsert;

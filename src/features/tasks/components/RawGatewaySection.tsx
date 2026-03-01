@@ -72,7 +72,7 @@ export const RawGatewaySection = memo(function RawGatewaySection({
           {/* Schedule */}
           <div className="mt-2">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Schedule</span>
-            <pre className="mt-1 max-h-24 overflow-auto rounded-md border border-border/40 bg-muted/30 p-2 font-mono text-[10px] leading-relaxed text-muted-foreground">
+            <pre className="mt-1 max-h-24 overflow-auto rounded-md border border-border/40 bg-muted/30 p-2 font-mono text-[10px] leading-relaxed text-foreground">
               {JSON.stringify(cronJob.schedule, null, 2)}
             </pre>
           </div>
@@ -80,7 +80,7 @@ export const RawGatewaySection = memo(function RawGatewaySection({
           {/* Payload */}
           <div className="mt-2">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Payload</span>
-            <pre className="mt-1 max-h-32 overflow-auto rounded-md border border-border/40 bg-muted/30 p-2 font-mono text-[10px] leading-relaxed text-muted-foreground">
+            <pre className="mt-1 max-h-32 overflow-auto rounded-md border border-border/40 bg-muted/30 p-2 font-mono text-[10px] leading-relaxed text-foreground">
               {JSON.stringify(cronJob.payload, null, 2)}
             </pre>
           </div>
@@ -88,7 +88,7 @@ export const RawGatewaySection = memo(function RawGatewaySection({
           {/* State */}
           <div className="mt-2">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Runtime State</span>
-            <pre className="mt-1 max-h-24 overflow-auto rounded-md border border-border/40 bg-muted/30 p-2 font-mono text-[10px] leading-relaxed text-muted-foreground">
+            <pre className="mt-1 max-h-24 overflow-auto rounded-md border border-border/40 bg-muted/30 p-2 font-mono text-[10px] leading-relaxed text-foreground">
               {JSON.stringify(cronJob.state, null, 2)}
             </pre>
           </div>
@@ -97,7 +97,7 @@ export const RawGatewaySection = memo(function RawGatewaySection({
           {cronJob.delivery && (
             <div className="mt-2">
               <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Delivery</span>
-              <pre className="mt-1 max-h-16 overflow-auto rounded-md border border-border/40 bg-muted/30 p-2 font-mono text-[10px] leading-relaxed text-muted-foreground">
+              <pre className="mt-1 max-h-16 overflow-auto rounded-md border border-border/40 bg-muted/30 p-2 font-mono text-[10px] leading-relaxed text-foreground">
                 {JSON.stringify(cronJob.delivery, null, 2)}
               </pre>
             </div>

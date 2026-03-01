@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useCallback, useState } from "react";
-import { MoreHorizontal, Pin, PinOff, Pencil, Trash2 } from "lucide-react";
+import { MoreHorizontal, Pin, PinOff, Pencil, Trash2, FileSearch, Download } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,6 +17,8 @@ type SessionItemMenuProps = {
   onRename: (key: string) => void;
   onDelete: (key: string) => void;
   onTogglePin: (key: string) => void;
+  onViewTrace?: (key: string) => void;
+  onExport?: (key: string) => void;
 };
 
 export const SessionItemMenu = memo(function SessionItemMenu({
@@ -26,6 +28,8 @@ export const SessionItemMenu = memo(function SessionItemMenu({
   onRename,
   onDelete,
   onTogglePin,
+  onViewTrace,
+  onExport,
 }: SessionItemMenuProps) {
   const [confirmOpen, setConfirmOpen] = useState(false);
 
@@ -44,7 +48,7 @@ export const SessionItemMenu = memo(function SessionItemMenu({
         <DropdownMenuTrigger asChild>
           <button
             type="button"
-            className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-all duration-150 hover:bg-muted hover:text-foreground group-hover:opacity-100 focus:opacity-100 focus-ring"
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md text-muted-foreground opacity-0 transition-all duration-150 hover:bg-muted hover:text-foreground group-hover:opacity-100 focus:opacity-100 focus-ring -mr-2"
             aria-label={`Actions for ${displayName}`}
             onClick={(e) => e.stopPropagation()}
           >
@@ -79,6 +83,28 @@ export const SessionItemMenu = memo(function SessionItemMenu({
               </>
             )}
           </DropdownMenuItem>
+          {onViewTrace && (
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onViewTrace(sessionKey);
+              }}
+            >
+              <FileSearch className="mr-2 h-3.5 w-3.5" />
+              View Trace
+            </DropdownMenuItem>
+          )}
+          {onExport && (
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onExport(sessionKey);
+              }}
+            >
+              <Download className="mr-2 h-3.5 w-3.5" />
+              Export
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem
             onClick={(e) => {
               e.stopPropagation();

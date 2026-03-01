@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
 import {
-  taskEmoji,
   taskIcon,
   STATUS_COLORS,
   STATUS_PILL,
@@ -8,27 +7,6 @@ import {
   formatHistoryTime,
 } from "@/features/activity/lib/activityDisplayUtils";
 import { Zap, Search, Microscope, Eye, HeartPulse, Bot, Activity } from "lucide-react";
-
-describe("taskEmoji", () => {
-  it("returns ⚡ for continuation tasks", () => {
-    expect(taskEmoji("Project Continuation")).toBe("⚡");
-  });
-  it("returns 🔍 for auditor tasks", () => {
-    expect(taskEmoji("Codebase Auditor")).toBe("🔍");
-  });
-  it("returns 🔬 for research tasks", () => {
-    expect(taskEmoji("Product Research")).toBe("🔬");
-  });
-  it("returns 👁 for visual QA", () => {
-    expect(taskEmoji("Visual QA")).toBe("👁");
-  });
-  it("returns 🏥 for health/gateway", () => {
-    expect(taskEmoji("Gateway Health")).toBe("🏥");
-  });
-  it("returns 🤖 for unknown tasks", () => {
-    expect(taskEmoji("Random Task")).toBe("🤖");
-  });
-});
 
 describe("taskIcon", () => {
   it("returns Zap for continuation tasks", () => {

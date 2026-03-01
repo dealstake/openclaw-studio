@@ -3,7 +3,7 @@ import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import type { ContextTab } from "@/features/context/components/ContextPanel";
 
 /** All navigable tabs — context panel tabs + management tabs (opened in expanded modal) */
-export type NavTab = ContextTab | "sessions" | "usage" | "channels" | "settings";
+export type NavTab = ContextTab | "usage" | "channels" | "settings";
 
 export interface CommandAction {
   /** Unique identifier */
@@ -22,11 +22,16 @@ export interface CommandAction {
   onSelect: () => void;
 }
 
+/** Action type for RecentItem — avoids fragile string-prefix detection on id */
+export type RecentItemType = "navigation" | "agent" | "action";
+
 export interface RecentItem {
   /** Unique key (e.g., "nav-projects", "agent-alex") */
   id: string;
   /** Display label */
   label: string;
+  /** Action type for dispatch logic */
+  type: RecentItemType;
   /** Timestamp of last access */
   accessedAt: number;
 }

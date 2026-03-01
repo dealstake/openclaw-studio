@@ -4,6 +4,7 @@ import { memo, useCallback, useEffect, useRef, useState, type KeyboardEvent } fr
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { GatewayModelChoice } from "@/lib/gateway/models";
+import { formatModelDisplayName } from "@/lib/models/utils";
 import { useBreakpoint, isMobile } from "@/hooks/useBreakpoint";
 import { ChevronDown, Check, Zap, Brain, Sparkles, X } from "lucide-react";
 
@@ -90,7 +91,7 @@ function ModelOption({
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-foreground">
-            {model.name ?? model.id}
+            {model.name ?? formatModelDisplayName(model.id)}
           </span>
           <span
             className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${badge.className}`}
@@ -144,6 +145,7 @@ function ModelBottomSheet({
       {/* Sheet */}
       <div
         className="relative w-full max-w-lg rounded-t-2xl border-t border-border bg-popover pb-safe animate-in slide-in-from-bottom duration-300"
+        style={{ marginBottom: 0 }}
         role="dialog"
         aria-label="Select model"
       >
@@ -200,7 +202,7 @@ export const ModelPicker = memo(function ModelPicker({
   const mobile = isMobile(bp);
 
   const selectedModel = models.find((m) => `${m.provider}/${m.id}` === value) ?? models[0];
-  const selectedName = selectedModel?.name ?? "Model";
+  const selectedName = selectedModel?.name ?? formatModelDisplayName(value);
 
   // Reset focus index when opening via onOpenChange
   const handleOpenChange = useCallback(

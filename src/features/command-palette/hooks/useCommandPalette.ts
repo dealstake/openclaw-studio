@@ -6,7 +6,6 @@ import {
   ListTodo,
   Brain,
   FolderOpen,
-  History,
   BarChart3,
   Radio,
 
@@ -18,7 +17,7 @@ import {
   Zap,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import type { CommandAction, CommandPaletteProps, NavTab } from "../lib/types";
+import type { CommandAction, CommandPaletteProps, NavTab, RecentItemType } from "../lib/types";
 import { useRecentItems } from "./useRecentItems";
 
 const TAB_COMMANDS: Array<{
@@ -32,7 +31,6 @@ const TAB_COMMANDS: Array<{
   { tab: "tasks", label: "Go to Tasks", icon: ListTodo, shortcut: "⌘⇧T", keywords: ["task", "cron", "job"] },
   { tab: "brain", label: "Go to Brain Files", icon: Brain, shortcut: "⌘⇧B", keywords: ["brain", "memory", "soul"] },
   { tab: "workspace", label: "Go to Files", icon: FolderOpen, keywords: ["file", "workspace", "explorer"] },
-  { tab: "sessions", label: "Go to Sessions", icon: History, keywords: ["session", "history", "transcript"] },
   { tab: "usage", label: "Go to Usage", icon: BarChart3, keywords: ["usage", "cost", "tokens", "spend"] },
   { tab: "channels", label: "Go to Channels", icon: Radio, keywords: ["channel", "whatsapp", "telegram", "discord"] },
 
@@ -44,19 +42,18 @@ const TAB_COMMANDS: Array<{
 interface ActionContext {
   onNavigateTab: (tab: NavTab) => void;
   onOpenContextPanel: () => void;
-  trackRecent: (id: string, label: string) => void;
+  trackRecent: (id: string, label: string, type?: RecentItemType) => void;
   close: () => void;
 }
 
 function navigateAndClose(ctx: ActionContext, tab: NavTab, label: string): void {
   ctx.onNavigateTab(tab);
-  ctx.onOpenContextPanel();
-  ctx.trackRecent(`nav-${tab}`, label);
+  ctx.trackRecent(`nav-${tab}`, label, "navigation");
   ctx.close();
 }
 
 function createRecentActions(
-  recentItems: Array<{ id: string; label: string }>,
+  recentItems: Array<{ id: string; label: string; type?: string }>,
   ctx: ActionContext,
   onSwitchAgent?: (agentId: string) => void,
 ): CommandAction[] {
@@ -68,12 +65,12 @@ function createRecentActions(
       icon: tabCmd?.icon ?? Zap,
       group: "recent" as const,
       onSelect: () => {
-        if (tabCmd) {
+        if (recent.type === "navigation" && tabCmd) {
           ctx.onNavigateTab(tabCmd.tab);
-          ctx.onOpenContextPanel();
-        } else if (recent.id.startsWith("agent-") && onSwitchAgent) {
+        } else if (recent.type === "agent" && onSwitchAgent) {
           onSwitchAgent(recent.id.replace("agent-", ""));
         }
+        ctx.trackRecent(recent.id, recent.label, (recent.type as RecentItemType) ?? "action");
         ctx.close();
       },
     };
@@ -104,7 +101,9 @@ function createGatewayActions(
       group: "actions" as const,
       keywords: ["restart", "gateway", "reconnect", "refresh"],
       onSelect: () => {
-        void client.call("gateway.restart", {});
+        void client.call("gateway.restart", {}).catch(() => {
+          /* network error — gateway is restarting, ignore */
+        });
         ctx.close();
       },
     },
@@ -162,7 +161,7 @@ function createAgentActions(
       keywords: ["agent", "switch", id],
       onSelect: () => {
         onSwitchAgent(id);
-        ctx.trackRecent(`agent-${id}`, `Switch to ${id}`);
+        ctx.trackRecent(`agent-${id}`, `Switch to ${id}`, "agent");
         ctx.close();
       },
     }));

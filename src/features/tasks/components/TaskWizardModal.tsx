@@ -63,12 +63,12 @@ const TYPE_CARDS: Array<{
 interface TaskWizardModalProps {
   open: boolean;
   agents: string[];
-  /** @deprecated WizardChat handles creating state internally */
-  creating?: boolean;
   client: GatewayClient;
   onClose: () => void;
   onCreateTask: (payload: CreateTaskPayload) => Promise<void>;
   onAgentCreated?: () => void;
+  /** Pre-filled prompt auto-sent after type selection (e.g., from integration setup) */
+  initialPrompt?: string;
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -76,11 +76,11 @@ interface TaskWizardModalProps {
 export const TaskWizardModal = memo(function TaskWizardModal({
   open,
   agents,
-  creating: _creating = false,
   client,
   onClose,
   onCreateTask,
   onAgentCreated,
+  initialPrompt,
 }: TaskWizardModalProps) {
   const wizard = useTaskWizard();
   const taskConfigExtractor = useMemo(
@@ -93,7 +93,6 @@ export const TaskWizardModal = memo(function TaskWizardModal({
     },
     [wizard],
   );
-  void _creating; // Kept for interface compat; WizardChat handles its own state
   const [showAgentCreation, setShowAgentCreation] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
   const [localAgents, setLocalAgents] = useState<string[]>(agents);
@@ -254,6 +253,7 @@ export const TaskWizardModal = memo(function TaskWizardModal({
                 starters={WIZARD_STARTERS[wizard.taskType]}
                 configExtractor={taskConfigExtractor}
                 onConfigExtracted={handleConfigExtracted}
+                initialPrompt={initialPrompt}
               />
             )}
           {wizard.step === "confirm" && !showAgentCreation && (

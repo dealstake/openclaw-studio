@@ -17,17 +17,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import type { AgentConfig } from "@/features/agents/lib/agentConfigUtils";
-
-// ── Model helpers ──────────────────────────────────────────────────────
-
-function formatModel(model: string): string {
-  const parts = model.split("/");
-  const name = parts[parts.length - 1];
-  if (name.includes("opus")) return "Opus";
-  if (name.includes("sonnet")) return "Sonnet";
-  if (name.includes("haiku")) return "Haiku";
-  return name;
-}
+import { formatModelDisplayName } from "@/lib/models/utils";
 
 // ── Brain file display names ───────────────────────────────────────────
 
@@ -84,7 +74,7 @@ export const AgentPreviewCard = React.memo(function AgentPreviewCard({
         {/* Model badge */}
         <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/15 px-2 py-0.5 text-[10px] font-medium text-blue-400">
           <Cpu className="h-2.5 w-2.5" />
-          {formatModel(config.model)}
+          {formatModelDisplayName(config.model)}
         </span>
       </div>
 

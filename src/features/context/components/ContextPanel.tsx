@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useRef, useState, useEffect, useMemo, type KeyboardEvent, type ReactNode } from "react";
+import { memo, useCallback, useRef, useEffect, useMemo, useState, type KeyboardEvent, type ReactNode, type UIEvent } from "react";
 import { Maximize2, X } from "lucide-react";
 
 import { PanelIconButton } from "@/components/PanelIconButton";
@@ -22,11 +22,9 @@ interface ContextPanelProps {
   tasksContent: ReactNode;
   brainContent: ReactNode;
   workspaceContent?: ReactNode;
+  skillsContent?: ReactNode;
   activityContent?: ReactNode;
 }
-
-/** Exported for backwards compat — prefer CONTEXT_TAB_CONFIG from lib/tabs.ts */
-export const TAB_OPTIONS = CONTEXT_TAB_CONFIG.map(({ value, label }) => ({ value, label }));
 
 export const ContextPanel = memo(function ContextPanel({
   activeTab,
@@ -39,31 +37,50 @@ export const ContextPanel = memo(function ContextPanel({
   tasksContent,
   brainContent,
   workspaceContent,
+  skillsContent,
   activityContent,
 }: ContextPanelProps) {
-  // Lazy mount: track which tabs have been activated at least once.
-  const [mountedTabs, setMountedTabs] = useState<Set<ContextTab>>(
-    () => new Set<ContextTab>([activeTab])
-  );
-
-  const effectiveMountedTabs = mountedTabs.has(activeTab)
-    ? mountedTabs
-    : new Set([...mountedTabs, activeTab]);
-
   const handleTabClick = useCallback(
     (tab: ContextTab) => {
       onTabChange(tab);
-      setMountedTabs((prev) => {
-        if (prev.has(tab)) return prev;
-        const next = new Set(prev);
-        next.add(tab);
-        return next;
-      });
     },
     [onTabChange]
   );
 
   const tabBarRef = useRef<HTMLDivElement>(null);
+
+  // Scroll indicator state: show gradient fades when tabs overflow
+  const [showScrollLeft, setShowScrollLeft] = useState(false);
+  const [showScrollRight, setShowScrollRight] = useState(false);
+
+  const updateScrollIndicators = useCallback(() => {
+    const el = tabBarRef.current;
+    if (!el) return;
+    setShowScrollLeft(el.scrollLeft > 2);
+    setShowScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 2);
+  }, []);
+
+  const handleTabScroll = useCallback(
+    (e: UIEvent<HTMLDivElement>) => {
+      void e;
+      updateScrollIndicators();
+    },
+    [updateScrollIndicators]
+  );
+
+  // Check scroll indicators on mount and when tabs change
+  useEffect(() => {
+    updateScrollIndicators();
+  }, [activeTab, updateScrollIndicators]);
+
+  // Also check on resize
+  useEffect(() => {
+    const el = tabBarRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => updateScrollIndicators());
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [updateScrollIndicators]);
 
   // Auto-scroll active tab into view on mobile
   useEffect(() => {
@@ -73,7 +90,10 @@ export const ContextPanel = memo(function ContextPanel({
     if (activeBtn) {
       activeBtn.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
     }
-  }, [activeTab]);
+    // Update indicators after scroll animation
+    const timer = setTimeout(updateScrollIndicators, 350);
+    return () => clearTimeout(timer);
+  }, [activeTab, updateScrollIndicators]);
 
   // Keyboard navigation for roving tabindex (WAI-ARIA Tabs pattern)
   const handleTabKeyDown = useCallback(
@@ -117,22 +137,31 @@ export const ContextPanel = memo(function ContextPanel({
     tasks: tasksContent,
     brain: brainContent,
     workspace: workspaceContent,
+    skills: skillsContent,
     activity: activityContent,
-  }), [projectsContent, tasksContent, brainContent, workspaceContent, activityContent]);
+  }), [projectsContent, tasksContent, brainContent, workspaceContent, skillsContent, activityContent]);
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden">
       {/* Single tab bar — responsive via CSS, no duplication */}
       {!hideTabBar && (
-        <div className="flex items-center border-b border-border/20 px-3 pt-2">
-          {/* Scrollable tab buttons */}
-          <div
-            ref={tabBarRef}
-            className="flex min-w-0 flex-1 items-center gap-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-            role="tablist"
-            aria-label="Context panel tabs"
-            onKeyDown={handleTabKeyDown}
-          >
+        <div className="flex items-center px-3 pt-0">
+          {/* Scrollable tab buttons with overflow indicators */}
+          <div className="relative min-w-0 flex-1 overflow-hidden">
+            {showScrollLeft && (
+              <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-6 bg-gradient-to-r from-card to-transparent" aria-hidden="true" />
+            )}
+            {showScrollRight && (
+              <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-6 bg-gradient-to-l from-card to-transparent" aria-hidden="true" />
+            )}
+            <div
+              ref={tabBarRef}
+              className="flex items-center gap-0 overflow-x-auto px-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              role="tablist"
+              aria-label="Context panel tabs"
+              onKeyDown={handleTabKeyDown}
+              onScroll={handleTabScroll}
+            >
             {CONTEXT_TAB_CONFIG.map((tab) => {
               const isActive = activeTab === tab.value;
               return (
@@ -144,10 +173,10 @@ export const ContextPanel = memo(function ContextPanel({
                   aria-selected={isActive}
                   tabIndex={isActive ? 0 : -1}
                   aria-controls={tabPanelId(tab.value)}
-                  className={`flex-shrink-0 min-w-[44px] px-2.5 pb-2 ${sectionLabelClass} transition-colors focus-ring rounded-md ${
+                  className={`flex-shrink-0 items-center justify-center min-h-[44px] lg:h-7 px-3 ${sectionLabelClass} transition-all focus-ring rounded-full ${
                     isActive
-                      ? "text-foreground font-semibold border-b-2 border-primary"
-                      : "text-muted-foreground hover:text-foreground"
+                      ? "bg-primary/15 text-primary shadow-sm ring-1 ring-primary/25 font-semibold dark:bg-primary/20"
+                      : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                   }`}
                   onClick={() => handleTabClick(tab.value)}
                   data-testid={`context-tab-${tab.value}`}
@@ -156,6 +185,7 @@ export const ContextPanel = memo(function ContextPanel({
                 </button>
               );
             })}
+            </div>
           </div>
           {/* Pinned action buttons — never scroll off-screen */}
           <div className="ml-auto flex flex-shrink-0 items-center gap-1 pl-2">
@@ -165,7 +195,7 @@ export const ContextPanel = memo(function ContextPanel({
               </PanelIconButton>
             )}
             {onClose && (
-              <PanelIconButton onClick={onClose} aria-label="Close panel" data-testid="close-panel-btn" className="hidden lg:flex">
+              <PanelIconButton onClick={onClose} aria-label="Close panel" data-testid="close-panel-btn">
                 <X className="h-3.5 w-3.5" />
               </PanelIconButton>
             )}
@@ -184,21 +214,15 @@ export const ContextPanel = memo(function ContextPanel({
             </button>
           </div>
         ) : (
-          <>
-            {CONTEXT_TAB_CONFIG.map(({ value }) =>
-              effectiveMountedTabs.has(value) ? (
-                <div
-                  key={value}
-                  role="tabpanel"
-                  id={tabPanelId(value)}
-                  aria-labelledby={tabButtonId(value)}
-                  className={activeTab === value ? "flex h-full w-full flex-col overflow-hidden animate-in fade-in duration-150" : "hidden"}
-                >
-                  {contentMap[value] ?? null}
-                </div>
-              ) : null
-            )}
-          </>
+          <div
+            key={activeTab}
+            role="tabpanel"
+            id={tabPanelId(activeTab)}
+            aria-labelledby={tabButtonId(activeTab)}
+            className="flex h-full w-full flex-col overflow-hidden animate-in fade-in duration-150"
+          >
+            {contentMap[activeTab] ?? null}
+          </div>
         )}
       </div>
     </div>

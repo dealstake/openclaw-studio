@@ -31,12 +31,36 @@ export const STATUS_ORDER: Record<string, number> = {
 };
 
 export const STATUS_CONFIG: Record<string, StatusConfig> = {
-  "🚧": { label: "Building", icon: Loader2, colors: "border-purple-500/30 bg-purple-500/10 text-purple-300" },
-  "🔨": { label: "Active", icon: Hammer, colors: "border-amber-500/30 bg-amber-500/15 text-amber-200" },
-  "📋": { label: "Defined", icon: ClipboardList, colors: "border-blue-500/30 bg-blue-500/10 text-blue-300" },
-  "🌊": { label: "Backlog", icon: Inbox, colors: "border-cyan-500/30 bg-cyan-500/10 text-cyan-300" },
-  "⏸️": { label: "Parked", icon: PauseCircle, colors: "border-zinc-500/30 bg-zinc-500/10 text-zinc-300" },
-  "✅": { label: "Done", icon: CheckCircle2, colors: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300" },
+  "🚧": {
+    label: "Building",
+    icon: Loader2,
+    colors: "border-purple-300 bg-purple-100 text-purple-800 dark:border-purple-500/30 dark:bg-purple-500/10 dark:text-purple-300",
+  },
+  "🔨": {
+    label: "Active",
+    icon: Hammer,
+    colors: "border-amber-300 bg-amber-100 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/15 dark:text-amber-200",
+  },
+  "📋": {
+    label: "Defined",
+    icon: ClipboardList,
+    colors: "border-blue-300 bg-blue-100 text-blue-800 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-300",
+  },
+  "🌊": {
+    label: "Backlog",
+    icon: Inbox,
+    colors: "border-cyan-300 bg-cyan-100 text-cyan-800 dark:border-cyan-500/30 dark:bg-cyan-500/10 dark:text-cyan-300",
+  },
+  "⏸️": {
+    label: "Parked",
+    icon: PauseCircle,
+    colors: "border-zinc-300 bg-zinc-100 text-zinc-700 dark:border-zinc-500/30 dark:bg-zinc-500/10 dark:text-zinc-300",
+  },
+  "✅": {
+    label: "Done",
+    icon: CheckCircle2,
+    colors: "border-emerald-300 bg-emerald-100 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300",
+  },
 };
 
 /** All status keys for filter UI (in display order) */
@@ -62,10 +86,17 @@ export const CYCLE_STATUSES: Array<{ emoji: string; label: string }> = [
 export const QUEUED_CONFIG: StatusConfig = {
   label: "Queued",
   icon: ListOrdered,
-  colors: "border-orange-500/30 bg-orange-500/10 text-orange-300",
+  colors: "border-orange-300 bg-orange-100 text-orange-800 dark:border-orange-500/30 dark:bg-orange-500/10 dark:text-orange-300",
 };
 
 // ─── Priority ────────────────────────────────────────────────────────────────
+
+export const PRIORITY_ORDER: Record<string, number> = {
+  "🔴": 0, // P0
+  "🟡": 1, // P1
+  "🟢": 2, // P2
+  "⚪": 3, // P3
+};
 
 export const PRIORITY_DOT: Record<string, string> = {
   "🔴": "bg-red-400",
@@ -128,6 +159,35 @@ export const TYPE_CARDS: Array<{
     color: "border-zinc-500/40 hover:border-zinc-500/70 hover:bg-zinc-500/5",
   },
 ];
+
+// ─── Sort ────────────────────────────────────────────────────────────────────
+
+/**
+ * Sort projects deterministically:
+ * 1. Status rank (Building → Active → Defined → Backlog → Parked → Done)
+ * 2. Priority rank within same status (P0 → P1 → P2 → P3)
+ * 3. Name alphabetically as tiebreaker
+ */
+export function sortProjects<
+  T extends { statusEmoji: string; priorityEmoji: string; name: string },
+>(projects: T[]): T[] {
+  return [...projects].sort((a, b) => {
+    const statusA = STATUS_ORDER[a.statusEmoji] ?? 99;
+    const statusB = STATUS_ORDER[b.statusEmoji] ?? 99;
+    if (statusA !== statusB) return statusA - statusB;
+
+    const prioA = PRIORITY_ORDER[a.priorityEmoji] ?? 99;
+    const prioB = PRIORITY_ORDER[b.priorityEmoji] ?? 99;
+    if (prioA !== prioB) return prioA - prioB;
+
+    return a.name.localeCompare(b.name);
+  });
+}
+
+// ─── Magic Strings ───────────────────────────────────────────────────────────
+
+/** Prefix used in project file content to mark archived projects */
+export const ARCHIVED_PREFIX = "<!-- Archived:";
 
 // ─── Status Toggle Mappings (legacy — kept for backward compat) ──────────────
 

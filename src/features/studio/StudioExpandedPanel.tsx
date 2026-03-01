@@ -2,7 +2,7 @@
 
 import { memo } from "react";
 import type { ContextTab } from "@/features/context/components/ContextPanel";
-import { TAB_OPTIONS } from "@/features/context/components/ContextPanel";
+import { CONTEXT_TAB_CONFIG } from "@/features/context/lib/tabs";
 import { PanelExpandModal } from "@/components/PanelExpandModal";
 import { PanelErrorBoundary } from "@/components/PanelErrorBoundary";
 import { ExpandedContext } from "@/features/context/lib/expandedContext";
@@ -12,10 +12,12 @@ import { TasksPanel } from "@/features/tasks/components/TasksPanel";
 import {
   AgentBrainPanel,
 } from "@/features/agents/components/AgentInspectPanels";
-import { WorkspaceExplorerPanel } from "@/features/workspace/components/WorkspaceExplorerPanel";
+import { UnifiedFilesPanel } from "@/features/workspace/components/UnifiedFilesPanel";
 import { ActivityPanel } from "@/features/activity/components/ActivityPanel";
+import { SkillsPanel } from "@/features/skills/components/SkillsPanel";
+import type { PersonaTemplate } from "@/features/personas/lib/templateTypes";
 import type { ManagementTab } from "@/layout/AppSidebar";
-import type { GatewayClient } from "@/lib/gateway/GatewayClient";
+import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import type { StudioTask, UpdateTaskPayload, TaskSchedule } from "@/features/tasks/types";
 import type { AgentState } from "@/features/agents/state/store";
 import type { AgentFileName } from "@/lib/agents/agentFiles";
@@ -25,6 +27,7 @@ interface StudioExpandedPanelProps {
   onClose: () => void;
   focusedAgentId: string | null;
   client: GatewayClient;
+  status: GatewayStatus;
   cronEventTick: number;
   createProjectTick: number;
   // Tasks
@@ -50,6 +53,9 @@ interface StudioExpandedPanelProps {
   onBrainPreviewModeChange: (mode: boolean) => void;
   // Transcript
   onTranscriptClick: (sessionId: string, agentId: string | null) => void;
+  // Wizard entry points
+  onCreateSkill?: () => void;
+  onSelectTemplate?: (template: PersonaTemplate) => void;
 }
 
 export const StudioExpandedPanel = memo(function StudioExpandedPanel({
@@ -57,6 +63,7 @@ export const StudioExpandedPanel = memo(function StudioExpandedPanel({
   onClose,
   focusedAgentId,
   client,
+  status,
   cronEventTick,
   createProjectTick,
   agentTasks,
@@ -79,11 +86,13 @@ export const StudioExpandedPanel = memo(function StudioExpandedPanel({
   brainPreviewMode,
   onBrainPreviewModeChange,
   onTranscriptClick,
+  onCreateSkill,
+  onSelectTemplate,
 }: StudioExpandedPanelProps) {
   if (!expandedTab) return null;
 
-  const title = TAB_OPTIONS.find((t) => t.value === expandedTab)?.label
-    ?? ({ sessions: "Sessions", usage: "Usage", channels: "Channels", cron: "Cron", settings: "Settings" } as Record<string, string>)[expandedTab]
+  const title = CONTEXT_TAB_CONFIG.find((t) => t.value === expandedTab)?.label
+    ?? ({ usage: "Usage", channels: "Channels", cron: "Cron", settings: "Settings" } as Record<string, string>)[expandedTab]
     ?? "";
 
   return (
@@ -132,12 +141,17 @@ export const StudioExpandedPanel = memo(function StudioExpandedPanel({
           )}
           {expandedTab === "workspace" && (
             <PanelErrorBoundary name="Workspace">
-              <WorkspaceExplorerPanel
+              <UnifiedFilesPanel
                 client={client}
                 agentId={focusedAgentId}
                 isTabActive
                 eventTick={cronEventTick}
               />
+            </PanelErrorBoundary>
+          )}
+          {expandedTab === "skills" && (
+            <PanelErrorBoundary name="Skills">
+              <SkillsPanel client={client} status={status} onCreateSkill={onCreateSkill} focusedAgentId={focusedAgentId} onSelectTemplate={onSelectTemplate} />
             </PanelErrorBoundary>
           )}
           {expandedTab === "activity" && (
@@ -146,7 +160,7 @@ export const StudioExpandedPanel = memo(function StudioExpandedPanel({
             </PanelErrorBoundary>
           )}
           <ManagementPanelContent
-            tab={expandedTab === "sessions" || expandedTab === "usage" || expandedTab === "channels" || expandedTab === "settings" ? expandedTab : null}
+            tab={expandedTab === "usage" || expandedTab === "channels" || expandedTab === "settings" ? expandedTab : null}
             onCloseSettings={onClose}
             onTranscriptClick={onTranscriptClick}
           />

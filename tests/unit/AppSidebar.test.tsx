@@ -40,6 +40,16 @@ vi.mock("@/components/theme-toggle", () => ({
   ThemeToggle: () => createElement("button", { "data-testid": "theme-toggle" }, "Toggle"),
 }));
 
+// Mock NotificationBell
+vi.mock("@/features/notifications/components/NotificationBell", () => ({
+  NotificationBell: () => createElement("button", { "aria-label": "Notifications" }, "🔔"),
+}));
+
+// Mock LogoutButton
+vi.mock("@/components/brand/LogoutButton", () => ({
+  LogoutButton: () => createElement("button", null, "Sign Out"),
+}));
+
 afterEach(cleanup);
 
 function makeClient(): GatewayClient {
@@ -90,8 +100,7 @@ describe("AppSidebar", () => {
 
     it("renders management nav items", () => {
       render(createElement(AppSidebar, defaultProps()));
-      // Expanded mode has nav items with aria-labels
-      expect(screen.getAllByLabelText("Sessions").length).toBeGreaterThanOrEqual(1);
+      // Expanded mode has nav items with aria-labels (Sessions removed from nav)
       expect(screen.getByLabelText("Usage")).toBeInTheDocument();
       expect(screen.getByLabelText("Channels")).toBeInTheDocument();
     });
@@ -117,7 +126,7 @@ describe("AppSidebar", () => {
 
     it("renders settings button", () => {
       render(createElement(AppSidebar, defaultProps()));
-      expect(screen.getByLabelText("Settings")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /settings/i })).toBeInTheDocument();
     });
 
     it("calls onSelectSession when session clicked", () => {
@@ -146,7 +155,6 @@ describe("AppSidebar", () => {
 
     it("renders nav icon buttons with labels", () => {
       render(createElement(AppSidebar, defaultProps({ collapsed: true })));
-      expect(screen.getAllByLabelText("Sessions").length).toBeGreaterThanOrEqual(1);
       expect(screen.getByLabelText("Usage")).toBeInTheDocument();
       expect(screen.getByLabelText("Channels")).toBeInTheDocument();
     });

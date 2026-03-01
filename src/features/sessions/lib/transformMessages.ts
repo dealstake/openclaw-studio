@@ -55,6 +55,7 @@ export function transformMessagesToMessageParts(messages: MessageLike[]): Messag
   const parts: MessagePart[] = [];
   // Track pending tool calls for matching with tool results
   const pendingTools = new Map<string, number>(); // toolCallId → index in parts
+  let toolCallCounter = 0; // Unique fallback IDs for tool calls without explicit IDs
 
   for (const msg of messages) {
     const { role, content } = msg;
@@ -115,7 +116,7 @@ export function transformMessagesToMessageParts(messages: MessageLike[]): Messag
           }
           case "tool_use": {
             const b = block as { id?: string; name?: string; input?: unknown };
-            const toolCallId = b.id ?? `tool-${parts.length}`;
+            const toolCallId = b.id ?? `tool-${toolCallCounter++}`;
             const argsStr = b.input ? JSON.stringify(b.input) : undefined;
             const idx = parts.length;
             parts.push({

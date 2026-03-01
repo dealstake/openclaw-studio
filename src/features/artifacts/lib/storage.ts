@@ -18,6 +18,16 @@ export function loadPins(): Set<string> {
   }
 }
 
+/** Remove pins for file IDs that no longer exist. */
+export function pruneStale(pins: Set<string>, validIds: Set<string>): Set<string> {
+  const pruned = new Set<string>();
+  for (const id of pins) {
+    if (validIds.has(id)) pruned.add(id);
+  }
+  if (pruned.size !== pins.size) savePins(pruned);
+  return pruned;
+}
+
 export function savePins(pins: Set<string>): void {
   try {
     localStorage.setItem(PINS_KEY, JSON.stringify([...pins]));

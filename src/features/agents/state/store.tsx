@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import type { MessagePart } from "@/lib/chat/types";
+import type { WizardContext } from "@/features/wizards/lib/wizardTypes";
 
 export type AgentStatus = "idle" | "running" | "error";
 export type FocusFilter = "all" | "needs-attention" | "running" | "idle";
@@ -49,6 +50,8 @@ export type AgentState = AgentStoreSeed & {
   historyLoadedAt: number | null;
   toolCallingEnabled: boolean;
   showThinkingTraces: boolean;
+  /** Active wizard context — null when no wizard is running */
+  wizardContext: WizardContext | null;
 };
 
 export const buildNewSessionAgentPatch = (agent: AgentState): Partial<AgentState> => {
@@ -74,6 +77,7 @@ export const buildNewSessionAgentPatch = (agent: AgentState): Partial<AgentState
     hasUnseenActivity: false,
     sessionCreated: true,
     sessionSettingsSynced: true,
+    wizardContext: null,
   };
 };
 
@@ -92,7 +96,10 @@ export type Action =
   | { type: "appendPart"; agentId: string; part: MessagePart }
   | { type: "updatePart"; agentId: string; index: number; patch: Partial<MessagePart> }
   | { type: "markActivity"; agentId: string; at?: number }
-  | { type: "selectAgent"; agentId: string | null };
+  | { type: "selectAgent"; agentId: string | null }
+  | { type: "startWizard"; agentId: string; wizardContext: WizardContext }
+  | { type: "endWizard"; agentId: string }
+  | { type: "setWizardConfig"; agentId: string; config: unknown };
 
 /** Maximum message parts per agent before oldest are trimmed. */
 export const MAX_PARTS = 500;
@@ -154,6 +161,7 @@ const createRuntimeAgentState = (
     draft: keep(existing?.draft, ""),
     sessionSettingsSynced: keep(existing?.sessionSettingsSynced, false),
     historyLoadedAt: keep(existing?.historyLoadedAt, null),
+    wizardContext: keep(existing?.wizardContext, null),
   };
 };
 
@@ -249,6 +257,27 @@ const reducer = (state: AgentStoreState, action: Action): AgentStoreState => {
                   : agent
               ),
       };
+    case "startWizard":
+      return {
+        ...state,
+        agents: state.agents.map((agent) =>
+          agent.agentId === action.agentId
+            ? { ...agent, wizardContext: action.wizardContext }
+            : agent
+        ),
+      };
+    case "endWizard":
+      return {
+        ...state,
+        agents: state.agents.map((agent) =>
+          agent.agentId === action.agentId
+            ? { ...agent, wizardContext: null }
+            : agent
+        ),
+      };
+    case "setWizardConfig":
+      // Store extracted config — consumers read it from wizardContext
+      return state;
     default:
       return state;
   }

@@ -8,7 +8,7 @@ import type { StudioDb } from "../index";
 /** Subset of schema ProjectIndexRow returned by repo queries. */
 export type ProjectIndexRow = Pick<
   FullProjectIndexRow,
-  "name" | "doc" | "status" | "statusEmoji" | "priority" | "priorityEmoji" | "oneLiner" | "sortOrder"
+  "name" | "doc" | "status" | "statusEmoji" | "priority" | "priorityEmoji" | "oneLiner" | "sortOrder" | "createdAt" | "updatedAt"
 >;
 
 // ─── Repository ──────────────────────────────────────────────────────────────
@@ -25,6 +25,8 @@ export function listAll(db: StudioDb): ProjectIndexRow[] {
       priorityEmoji: projectsIndex.priorityEmoji,
       oneLiner: projectsIndex.oneLiner,
       sortOrder: projectsIndex.sortOrder,
+      createdAt: projectsIndex.createdAt,
+      updatedAt: projectsIndex.updatedAt,
     })
     .from(projectsIndex)
     .orderBy(
@@ -51,6 +53,8 @@ export function getByDoc(db: StudioDb, doc: string): ProjectIndexRow | null {
       priorityEmoji: projectsIndex.priorityEmoji,
       oneLiner: projectsIndex.oneLiner,
       sortOrder: projectsIndex.sortOrder,
+      createdAt: projectsIndex.createdAt,
+      updatedAt: projectsIndex.updatedAt,
     })
     .from(projectsIndex)
     .where(eq(projectsIndex.doc, doc))
@@ -60,7 +64,7 @@ export function getByDoc(db: StudioDb, doc: string): ProjectIndexRow | null {
 }
 
 /** Insert or update a project row. Uses `doc` as the conflict key. */
-export function upsert(db: StudioDb, row: Omit<ProjectIndexRow, "sortOrder">): void {
+export function upsert(db: StudioDb, row: Omit<ProjectIndexRow, "sortOrder" | "createdAt" | "updatedAt">): void {
   const sortOrder = STATUS_ORDER[row.statusEmoji] ?? 99;
   const now = new Date().toISOString();
 

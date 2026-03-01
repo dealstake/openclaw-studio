@@ -22,6 +22,71 @@ const initialStatus: Record<EmergencyActionKind, ActionStatus> = {
   "cleanup-zombies": "idle",
 };
 
+/**
+ * Shared helper: runs a batch action with gateway check, pending state, try/catch,
+ * and partial-failure reporting. Eliminates boilerplate across all three actions.
+ */
+async function executeBatchAction<T>(opts: {
+  kind: EmergencyActionKind;
+  gatewayStatus: GatewayStatus;
+  setActionStatus: (kind: EmergencyActionKind, status: ActionStatus) => void;
+  fetchItems: () => Promise<T[]>;
+  processItem: (item: T) => Promise<void>;
+  noun: string;
+  pastVerb: string;
+  errorMessage: string;
+}): Promise<{ succeeded: number; failedCount: number; items: T[]; result: ActionResult }> {
+  const { kind, gatewayStatus, setActionStatus, fetchItems, processItem, noun, pastVerb, errorMessage } = opts;
+
+  if (gatewayStatus !== "connected") {
+    return {
+      succeeded: 0,
+      failedCount: 0,
+      items: [],
+      result: { kind, status: "error", message: "Gateway not connected", affected: 0 },
+    };
+  }
+
+  setActionStatus(kind, "pending");
+  try {
+    const items = await fetchItems();
+    let succeeded = 0;
+    let failedCount = 0;
+
+    for (const item of items) {
+      try {
+        await processItem(item);
+        succeeded++;
+      } catch {
+        failedCount++;
+      }
+    }
+
+    const total = items.length;
+    const hasFailures = failedCount > 0;
+    const resultStatus = hasFailures
+      ? (succeeded > 0 ? "partial" as const : "error" as const)
+      : "success" as const;
+    const message = hasFailures
+      ? `${pastVerb} ${succeeded} of ${total} ${noun}${total === 1 ? "" : "s"}. ${failedCount} failed.`
+      : `${pastVerb} ${succeeded} ${noun}${succeeded === 1 ? "" : "s"}`;
+
+    setActionStatus(kind, resultStatus === "error" ? "error" : "success");
+    const result: ActionResult = { kind, status: resultStatus, message, affected: succeeded, failed: failedCount };
+    return { succeeded, failedCount, items, result };
+  } catch (err) {
+    if (isGatewayDisconnectLikeError(err)) throw err;
+    const msg = err instanceof Error ? err.message : errorMessage;
+    setActionStatus(kind, "error");
+    return {
+      succeeded: 0,
+      failedCount: 0,
+      items: [],
+      result: { kind, status: "error", message: msg, affected: 0 },
+    };
+  }
+}
+
 export const useEmergencyActions = (client: GatewayClient, gatewayStatus: GatewayStatus) => {
   const [state, setState] = useState<EmergencyActionsState>({
     status: { ...initialStatus },
@@ -37,125 +102,79 @@ export const useEmergencyActions = (client: GatewayClient, gatewayStatus: Gatewa
   }, []);
 
   const pauseAllCron = useCallback(async (): Promise<ActionResult> => {
-    if (gatewayStatus !== "connected") {
-      return { kind: "pause-all-cron", status: "error", message: "Gateway not connected", affected: 0 };
-    }
-    setActionStatus("pause-all-cron", "pending");
-    try {
-      const result = await listCronJobs(client, { includeDisabled: true });
-      const enabledJobs = result.jobs.filter((j: CronJobSummary) => j.enabled);
-      const pausedIds: string[] = [];
+    const pausedIds: string[] = [];
+    const { result } = await executeBatchAction<CronJobSummary>({
+      kind: "pause-all-cron",
+      gatewayStatus,
+      setActionStatus,
+      fetchItems: async () => {
+        const res = await listCronJobs(client, { includeDisabled: true });
+        return res.jobs.filter((j: CronJobSummary) => j.enabled);
+      },
+      processItem: async (job) => {
+        await updateCronJob(client, job.id, { enabled: false });
+        pausedIds.push(job.id);
+      },
+      noun: "cron job",
+      pastVerb: "Paused",
+      errorMessage: "Failed to pause cron jobs",
+    });
 
-      for (const job of enabledJobs) {
-        try {
-          await updateCronJob(client, job.id, { enabled: false });
-          pausedIds.push(job.id);
-        } catch {
-          // Continue with remaining jobs
-        }
-      }
-
-      setState((prev) => ({
-        ...prev,
-        status: { ...prev.status, "pause-all-cron": "success" },
-        pausedJobIds: pausedIds,
-        lastResult: {
-          kind: "pause-all-cron",
-          status: "success",
-          message: `Paused ${pausedIds.length} cron job${pausedIds.length === 1 ? "" : "s"}`,
-          affected: pausedIds.length,
-        },
-      }));
-      return { kind: "pause-all-cron", status: "success", message: `Paused ${pausedIds.length} cron job${pausedIds.length === 1 ? "" : "s"}`, affected: pausedIds.length };
-    } catch (err) {
-      if (isGatewayDisconnectLikeError(err)) throw err;
-      const msg = err instanceof Error ? err.message : "Failed to pause cron jobs";
-      setActionStatus("pause-all-cron", "error");
-      return { kind: "pause-all-cron", status: "error", message: msg, affected: 0 };
-    }
+    setState((prev) => ({ ...prev, pausedJobIds: pausedIds, lastResult: result }));
+    return result;
   }, [client, gatewayStatus, setActionStatus]);
 
   const stopActiveSessions = useCallback(async (): Promise<ActionResult> => {
-    if (gatewayStatus !== "connected") {
-      return { kind: "stop-active-sessions", status: "error", message: "Gateway not connected", affected: 0 };
-    }
-    setActionStatus("stop-active-sessions", "pending");
-    try {
-      const result = await client.call<{ sessions: Array<{ sessionKey: string; kind?: string }> }>(
-        "sessions.list",
-        { activeMinutes: 30 }
-      );
-      const activeSessions = result.sessions ?? [];
-      let stopped = 0;
+    const { result } = await executeBatchAction<{ sessionKey: string; kind?: string }>({
+      kind: "stop-active-sessions",
+      gatewayStatus,
+      setActionStatus,
+      fetchItems: async () => {
+        const res = await client.call<{ sessions: Array<{ sessionKey: string; kind?: string }> }>(
+          "sessions.list",
+          { activeMinutes: 30 },
+        );
+        return res.sessions ?? [];
+      },
+      processItem: async (session) => {
+        await client.call("sessions.kill", { sessionKey: session.sessionKey });
+      },
+      noun: "session",
+      pastVerb: "Stopped",
+      errorMessage: "Failed to stop sessions",
+    });
 
-      for (const session of activeSessions) {
-        try {
-          await client.call("sessions.kill", { sessionKey: session.sessionKey });
-          stopped++;
-        } catch {
-          // Continue with remaining sessions
-        }
-      }
-
-      setActionStatus("stop-active-sessions", "success");
-      const res: ActionResult = {
-        kind: "stop-active-sessions",
-        status: "success",
-        message: `Stopped ${stopped} session${stopped === 1 ? "" : "s"}`,
-        affected: stopped,
-      };
-      setState((prev) => ({ ...prev, lastResult: res }));
-      return res;
-    } catch (err) {
-      if (isGatewayDisconnectLikeError(err)) throw err;
-      const msg = err instanceof Error ? err.message : "Failed to stop sessions";
-      setActionStatus("stop-active-sessions", "error");
-      return { kind: "stop-active-sessions", status: "error", message: msg, affected: 0 };
-    }
+    setState((prev) => ({ ...prev, lastResult: result }));
+    return result;
   }, [client, gatewayStatus, setActionStatus]);
 
   const cleanupZombies = useCallback(async (): Promise<ActionResult> => {
-    if (gatewayStatus !== "connected") {
-      return { kind: "cleanup-zombies", status: "error", message: "Gateway not connected", affected: 0 };
-    }
-    setActionStatus("cleanup-zombies", "pending");
-    try {
-      const result = await client.call<{ sessions: Array<{ sessionKey: string; lastActiveAt?: string }> }>(
-        "sessions.list",
-        { includeGlobal: true }
-      );
-      const now = Date.now();
-      const thirtyMinMs = 30 * 60 * 1000;
-      const zombies = (result.sessions ?? []).filter((s) => {
-        if (!s.lastActiveAt) return false;
-        return now - new Date(s.lastActiveAt).getTime() > thirtyMinMs;
-      });
+    const { result } = await executeBatchAction<{ sessionKey: string; lastActiveAt?: string }>({
+      kind: "cleanup-zombies",
+      gatewayStatus,
+      setActionStatus,
+      fetchItems: async () => {
+        const res = await client.call<{ sessions: Array<{ sessionKey: string; lastActiveAt?: string }> }>(
+          "sessions.list",
+          { includeGlobal: true },
+        );
+        const now = Date.now();
+        const thirtyMinMs = 30 * 60 * 1000;
+        return (res.sessions ?? []).filter((s) => {
+          if (!s.lastActiveAt) return false;
+          return now - new Date(s.lastActiveAt).getTime() > thirtyMinMs;
+        });
+      },
+      processItem: async (zombie) => {
+        await client.call("sessions.kill", { sessionKey: zombie.sessionKey });
+      },
+      noun: "zombie session",
+      pastVerb: "Cleaned up",
+      errorMessage: "Failed to cleanup zombies",
+    });
 
-      let cleaned = 0;
-      for (const zombie of zombies) {
-        try {
-          await client.call("sessions.kill", { sessionKey: zombie.sessionKey });
-          cleaned++;
-        } catch {
-          // Continue
-        }
-      }
-
-      setActionStatus("cleanup-zombies", "success");
-      const res: ActionResult = {
-        kind: "cleanup-zombies",
-        status: "success",
-        message: `Cleaned up ${cleaned} zombie session${cleaned === 1 ? "" : "s"}`,
-        affected: cleaned,
-      };
-      setState((prev) => ({ ...prev, lastResult: res }));
-      return res;
-    } catch (err) {
-      if (isGatewayDisconnectLikeError(err)) throw err;
-      const msg = err instanceof Error ? err.message : "Failed to cleanup zombies";
-      setActionStatus("cleanup-zombies", "error");
-      return { kind: "cleanup-zombies", status: "error", message: msg, affected: 0 };
-    }
+    setState((prev) => ({ ...prev, lastResult: result }));
+    return result;
   }, [client, gatewayStatus, setActionStatus]);
 
   const executeAction = useCallback(
@@ -169,7 +188,7 @@ export const useEmergencyActions = (client: GatewayClient, gatewayStatus: Gatewa
           return cleanupZombies();
       }
     },
-    [pauseAllCron, stopActiveSessions, cleanupZombies]
+    [pauseAllCron, stopActiveSessions, cleanupZombies],
   );
 
   const restoreCron = useCallback(async () => {
@@ -184,7 +203,6 @@ export const useEmergencyActions = (client: GatewayClient, gatewayStatus: Gatewa
         failed.push(id);
       }
     }
-    // Only remove successfully restored IDs; keep failed ones for retry
     setState((prev) => ({
       ...prev,
       pausedJobIds: prev.pausedJobIds.filter((id) => !restored.includes(id)),

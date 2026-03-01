@@ -15,9 +15,15 @@ import { AgentChatView } from "./AgentChatView";
 import { EmptyStatePanel } from "./EmptyStatePanel";
 import { AgentChatTranscript } from "./AgentChatTranscript";
 import { AgentChatComposer } from "./AgentChatComposer";
+import type { UseWizardInChatReturn } from "@/features/wizards/hooks/useWizardInChat";
+import { WizardChatOverlay } from "@/features/wizards/components/WizardChatOverlay";
+import type { ComposerAgent } from "./ComposerAgentMenu";
 
 type AgentChatPanelProps = {
   agent: AgentRecord;
+  /** Agent list for composer agent menu */
+  composerAgents?: ComposerAgent[];
+  onSelectAgent?: (agentId: string) => void;
   canSend: boolean;
   models: GatewayModelChoice[];
   stopBusy: boolean;
@@ -40,10 +46,18 @@ type AgentChatPanelProps = {
   gatewayStatus?: GatewayStatus;
   /** Number of messages queued for offline delivery */
   queueLength?: number;
+  /** Wizard-in-chat integration — pass from useWizardInChat hook */
+  wizard?: UseWizardInChatReturn | null;
+  /** Called when user confirms extracted wizard config */
+  onWizardConfirm?: () => void;
+  /** Whether wizard config confirmation is in progress */
+  wizardConfirming?: boolean;
 };
 
 export const AgentChatPanel = memo(function AgentChatPanel({
   agent,
+  composerAgents,
+  onSelectAgent,
   canSend,
   models,
   stopBusy,
@@ -62,6 +76,10 @@ export const AgentChatPanel = memo(function AgentChatPanel({
   onDismissContinuationBanner,
   gatewayStatus,
   queueLength = 0,
+  onNewSession,
+  wizard = null,
+  onWizardConfirm,
+  wizardConfirming = false,
 }: AgentChatPanelProps) {
   const draftRef = useRef<HTMLTextAreaElement | null>(null);
   const scrollToBottomNextOutputRef = useRef(false);
@@ -116,11 +134,47 @@ export const AgentChatPanel = memo(function AgentChatPanel({
     [onDraftChange]
   );
 
+  const isWizardActive = !!(wizard?.wizardContext);
+
+  const handleWizardSend = useCallback(
+    (text: string) => {
+      if (wizard?.wizardContext) {
+        void wizard.sendMessage(text);
+      }
+    },
+    [wizard],
+  );
+
+  const handleWizardExit = useCallback(() => {
+    if (wizard) {
+      void wizard.endWizard();
+    }
+  }, [wizard]);
+
+  const handleWizardRevise = useCallback(() => {
+    if (wizard?.wizardContext) {
+      void wizard.sendMessage("Please revise the configuration based on my feedback.");
+    }
+  }, [wizard]);
+
+  const handleWizardStarterClick = useCallback(
+    (message: string) => {
+      if (wizard?.wizardContext) {
+        void wizard.sendMessage(message);
+      }
+    },
+    [wizard],
+  );
+
   const handleComposerSend = useCallback(
     (message: string, attachments?: ChatAttachment[]) => {
+      if (isWizardActive) {
+        handleWizardSend(message);
+        return;
+      }
       handleSend(message, attachments);
     },
-    [handleSend]
+    [handleSend, handleWizardSend, isWizardActive]
   );
 
   return (
@@ -186,13 +240,48 @@ export const AgentChatPanel = memo(function AgentChatPanel({
               ) : viewingSessionHistory.length === 0 ? (
                 <EmptyStatePanel title="No messages in this session." compact className="p-3 text-xs" />
               ) : (
-                <div className="mx-auto flex w-full min-w-0 max-w-3xl flex-col gap-4 px-4 text-sm text-foreground sm:px-8 md:px-12">
+                <div className="mx-auto flex w-full min-w-0 max-w-3xl flex-col gap-4 px-5 text-sm text-foreground sm:px-8 md:px-12">
                   <AgentChatView
                     parts={viewingSessionHistory}
                     streaming={false}
                   />
                 </div>
               )}
+            </div>
+          </div>
+        ) : isWizardActive && wizard ? (
+          /* Wizard mode — show wizard messages inline */
+          <div className="h-full overflow-y-auto overflow-x-hidden pt-14 pb-28 sm:pt-16 sm:pb-32">
+            <div className="mx-auto flex w-full min-w-0 max-w-3xl flex-col gap-5 px-4 text-sm leading-relaxed text-foreground sm:px-8 md:px-12">
+              {/* Show existing main chat messages (dimmed) */}
+              {agent.messageParts.length > 0 && (
+                <div className="pointer-events-none opacity-40 blur-[0.5px] transition-all duration-300">
+                  <AgentChatView parts={agent.messageParts} streaming={false} />
+                </div>
+              )}
+
+              {/* Wizard divider */}
+              <div className="my-2 flex items-center gap-2">
+                <div className="flex-1 border-t border-border/40" />
+                <span className={`text-[10px] font-medium uppercase tracking-wider ${wizard.wizardContext?.theme.accent ?? "text-muted-foreground"}`}>
+                  {wizard.wizardContext?.theme.label}
+                </span>
+                <div className="flex-1 border-t border-border/40" />
+              </div>
+
+              {/* Wizard messages */}
+              <WizardChatOverlay
+                messages={wizard.messages}
+                streamText={wizard.streamText}
+                thinkingTrace={wizard.thinkingTrace}
+                isStreaming={wizard.isStreaming}
+                wizardType={wizard.wizardContext!.type}
+                extractedConfig={wizard.extractedConfig}
+                onConfirmConfig={onWizardConfirm ?? handleWizardExit}
+                onReviseConfig={handleWizardRevise}
+                onCancelWizard={handleWizardExit}
+                confirming={wizardConfirming}
+              />
             </div>
           </div>
         ) : (
@@ -219,16 +308,8 @@ export const AgentChatPanel = memo(function AgentChatPanel({
             running={running}
             models={models}
             modelValue={
-              // agent.model may include provider prefix (e.g. "anthropic/claude-opus-4-6")
-              // but select option values are just the model id (e.g. "claude-opus-4-6").
-              // Strip the provider prefix so the select matches correctly.
-              (() => {
-                const raw = agent.model ?? "";
-                const stripped = raw.includes("/") ? raw.split("/").slice(1).join("/") : raw;
-                // If the stripped value matches a known model id, use it; otherwise fall back to first model
-                const match = models.find((m) => m.id === stripped);
-                return match ? match.id : models[0]?.id ?? "";
-              })()
+              // ModelPicker expects full "provider/id" format for matching
+              agent.model ?? (models.length > 0 ? `${models[0].provider}/${models[0].id}` : "")
             }
             onModelChange={onModelChange}
             thinkingLevel={agent.thinkingLevel ?? "off"}
@@ -241,6 +322,17 @@ export const AgentChatPanel = memo(function AgentChatPanel({
             runStartedAt={agent.runStartedAt}
             gatewayStatus={gatewayStatus}
             queueLength={queueLength}
+            wizardType={wizard?.wizardContext?.type ?? null}
+            wizardTheme={wizard?.wizardContext?.theme ?? null}
+            wizardStarters={wizard?.wizardContext?.starters}
+            wizardIsStreaming={wizard?.isStreaming}
+            wizardHasMessages={(wizard?.messages.length ?? 0) > 0}
+            onWizardExit={handleWizardExit}
+            onWizardStarterClick={handleWizardStarterClick}
+            onNewSession={onNewSession}
+            composerAgents={composerAgents}
+            selectedAgentId={agent.agentId}
+            onSelectAgent={onSelectAgent}
           />
         )}
       </div>

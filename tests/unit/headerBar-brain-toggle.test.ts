@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { HeaderBar } from "@/features/agents/components/HeaderBar";
 
-describe("HeaderBar brain toggle", () => {
+describe("HeaderBar mobile context menu", () => {
   beforeEach(() => {
     vi.stubGlobal(
       "matchMedia",
@@ -25,26 +25,29 @@ describe("HeaderBar brain toggle", () => {
     vi.unstubAllGlobals();
   });
 
-  it("renders_files_toggle_in_overflow_menu_and_calls_handler", () => {
-    const onFilesToggle = vi.fn();
+  it("renders context tab items in mobile overflow menu", () => {
+    const onContextTabClick = vi.fn();
 
     render(
       createElement(HeaderBar, {
-        status: "disconnected",
-        onConnectionSettings: vi.fn(),
-        onFilesToggle,
-        filesActive: false,
+        showContextTabs: false,
+        onContextTabClick,
       })
     );
 
-    // Open the overflow menu
+    // Open the mobile context menu
     const menuToggle = screen.getByTestId("studio-menu-toggle");
     fireEvent.click(menuToggle);
 
-    // Click Files in overflow menu
-    const filesButton = screen.getByText("Files");
-    expect(filesButton).toBeInTheDocument();
-    fireEvent.click(filesButton);
-    expect(onFilesToggle).toHaveBeenCalledTimes(1);
+    // Context tabs should be visible
+    expect(screen.getByText("Projects")).toBeInTheDocument();
+    expect(screen.getByText("Tasks")).toBeInTheDocument();
+    expect(screen.getByText("Brain")).toBeInTheDocument();
+    expect(screen.getByText("Files")).toBeInTheDocument();
+    expect(screen.getByText("Activity")).toBeInTheDocument();
+
+    // Click a tab
+    fireEvent.click(screen.getByText("Brain"));
+    expect(onContextTabClick).toHaveBeenCalledWith("brain");
   });
 });

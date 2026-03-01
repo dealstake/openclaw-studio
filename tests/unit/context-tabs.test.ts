@@ -2,8 +2,8 @@ import { describe, it, expect } from "vitest";
 import { CONTEXT_TAB_CONFIG, tabPanelId, tabButtonId, type ContextTab } from "@/features/context/lib/tabs";
 
 describe("CONTEXT_TAB_CONFIG", () => {
-  it("defines 5 tabs", () => {
-    expect(CONTEXT_TAB_CONFIG).toHaveLength(5);
+  it("defines 6 tabs", () => {
+    expect(CONTEXT_TAB_CONFIG).toHaveLength(6);
   });
 
   it("has unique values", () => {
@@ -18,7 +18,7 @@ describe("CONTEXT_TAB_CONFIG", () => {
 
   it("includes expected tabs", () => {
     const values = CONTEXT_TAB_CONFIG.map((t) => t.value);
-    expect(values).toEqual(["projects", "tasks", "brain", "workspace", "activity"]);
+    expect(values).toEqual(["projects", "tasks", "brain", "workspace", "skills", "activity"]);
   });
 
   it("each entry has Icon, label, shortLabel", () => {

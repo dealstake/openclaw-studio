@@ -10,21 +10,17 @@ import {
 } from "@/components/ui/tooltip";
 import type { TrendBucket } from "@/features/usage/lib/trendAggregator";
 
-/** Model color palette using semantic chart tokens */
-const MODEL_COLORS: Record<string, string> = {
-  "claude-opus-4": "bg-chart-1",
-  "claude-sonnet-4": "bg-chart-2",
-  "claude-haiku-3.5": "bg-chart-3",
-};
-
-const FALLBACK_COLORS = [
+/** Rotating chart color palette using semantic tokens (themeable via CSS custom props). */
+const CHART_COLORS = [
+  "bg-chart-1",
+  "bg-chart-2",
+  "bg-chart-3",
   "bg-chart-4",
   "bg-chart-5",
-  "bg-chart-3",
 ];
 
-function getModelColor(model: string, idx: number): string {
-  return MODEL_COLORS[model] ?? FALLBACK_COLORS[idx % FALLBACK_COLORS.length];
+function getModelColor(_model: string, idx: number): string {
+  return CHART_COLORS[idx % CHART_COLORS.length];
 }
 
 function formatDateLabel(date: string): string {
@@ -35,11 +31,14 @@ function formatDateLabel(date: string): string {
 interface DailyTrendChartProps {
   trends: TrendBucket[];
   models: string[];
+  /** Called when a bar is clicked with the date key (YYYY-MM-DD). */
+  onBarClick?: (date: string) => void;
 }
 
 export const DailyTrendChart = memo(function DailyTrendChart({
   trends,
   models,
+  onBarClick,
 }: DailyTrendChartProps) {
   if (trends.length === 0) {
     return (
@@ -84,17 +83,20 @@ export const DailyTrendChart = memo(function DailyTrendChart({
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <div
-                      className="flex h-5 rounded-sm overflow-hidden cursor-default"
+                      className={`flex h-11 items-center rounded-sm overflow-hidden ${onBarClick ? "cursor-pointer hover:opacity-80 transition-opacity" : "cursor-default"}`}
                       style={{ width: `${Math.max(widthPct, 2)}%` }}
-                      role="graphics-symbol"
+                      role={onBarClick ? "button" : "graphics-symbol"}
+                      tabIndex={onBarClick ? 0 : undefined}
                       aria-label={barLabel}
+                      onClick={onBarClick ? () => onBarClick(trend.date) : undefined}
+                      onKeyDown={onBarClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onBarClick(trend.date); } } : undefined}
                     >
                       {modelEntries.map((e) => {
                         const segPct = totalForBar > 0 ? (e.cost / totalForBar) * 100 : 0;
                         return (
                           <div
                             key={e.model}
-                            className={`${getModelColor(e.model, e.idx)} min-w-[2px]`}
+                            className={`${getModelColor(e.model, e.idx)} min-w-[2px] h-5`}
                             style={{ width: `${segPct}%` }}
                           />
                         );

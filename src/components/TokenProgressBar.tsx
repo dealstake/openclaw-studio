@@ -45,7 +45,15 @@ export const TokenProgressBar = memo(function TokenProgressBar({
   const barHeight = compact ? "h-1.5" : "h-2";
 
   const bar = (
-    <div className={`flex ${barHeight} w-full overflow-hidden rounded-full`} title={tooltip}>
+    <div
+      className={`flex ${barHeight} w-full overflow-hidden rounded-full`}
+      title={tooltip}
+      role="progressbar"
+      aria-valuenow={pct}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-label={`Token usage: ${pct}%`}
+    >
       <div className="relative w-[60%] bg-emerald-500/15">
         <div
           className="absolute inset-y-0 left-0 rounded-l-full bg-emerald-500/70 transition-all duration-300"

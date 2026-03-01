@@ -24,9 +24,18 @@ export interface ActivityMessage {
   timestamp: number;
   /** Current streaming status */
   status: "streaming" | "complete" | "error";
+  /** Input tokens consumed (populated from gateway events) */
+  tokensIn?: number | null;
+  /** Output tokens consumed (populated from gateway events) */
+  tokensOut?: number | null;
+  /** Total cost in USD (populated from gateway events) */
+  totalCost?: number | null;
 }
 
-const MAX_ENTRIES = 200;
+/** Maximum live activity entries before FIFO eviction. Override via NEXT_PUBLIC_ACTIVITY_MAX_ENTRIES. */
+const rawMaxEntries = process.env.NEXT_PUBLIC_ACTIVITY_MAX_ENTRIES;
+const parsedMaxEntries = rawMaxEntries ? parseInt(rawMaxEntries, 10) : NaN;
+const MAX_ENTRIES = !isNaN(parsedMaxEntries) && parsedMaxEntries >= 0 ? parsedMaxEntries : 200;
 
 // --- Module-level store ---
 let messages: ActivityMessage[] = [];
@@ -42,14 +51,11 @@ function emit() {
 
 // --- Internal helpers (DRY: shared by upsert + append) ---
 
-/** Replace entry at index with merged data, returning new array. */
+/** Replace entry at index with merged data, returning new array (single copy). */
 function replaceAt(idx: number, patch: Partial<ActivityMessage>): ActivityMessage[] {
-  const existing = messages[idx];
-  return [
-    ...messages.slice(0, idx),
-    { ...existing, ...patch },
-    ...messages.slice(idx + 1),
-  ];
+  const copy = [...messages];
+  copy[idx] = { ...copy[idx], ...patch };
+  return copy;
 }
 
 /** Create a new entry with defaults, append it, and apply FIFO eviction. */
@@ -114,11 +120,7 @@ export function finalizeActivityMessage(
 ): void {
   const idx = messages.findIndex((m) => m.sourceKey === sourceKey);
   if (idx < 0) return;
-  messages = [
-    ...messages.slice(0, idx),
-    { ...messages[idx], status },
-    ...messages.slice(idx + 1),
-  ];
+  messages = replaceAt(idx, { status });
   emit();
 }
 

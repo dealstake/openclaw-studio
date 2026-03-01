@@ -231,7 +231,7 @@ export const AgentWizardModal = React.memo(function AgentWizardModal({
             {step === "preview" && (
               <button
                 type="button"
-                className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted/65"
+                className="flex h-7 w-7 min-h-[44px] min-w-[44px] items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted/65"
                 onClick={handleRevise}
                 aria-label="Go back"
               >
@@ -247,7 +247,7 @@ export const AgentWizardModal = React.memo(function AgentWizardModal({
           </div>
           <button
             type="button"
-            className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted/65"
+            className="flex h-7 w-7 min-h-[44px] min-w-[44px] items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted/65"
             onClick={handleClose}
             aria-label="Close wizard"
           >

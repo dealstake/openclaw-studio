@@ -4,13 +4,27 @@ import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { useTaskEditForm } from "@/features/tasks/hooks/useTaskEditForm";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import { isGatewayDisconnectLikeError } from "@/lib/gateway/GatewayClient";
-import type { StudioTask, TaskSchedule, UpdateTaskPayload } from "@/features/tasks/types";
+import type { StudioTask } from "@/features/tasks/types";
 import { type CronRunEntry, fetchCronRuns } from "@/lib/cron/types";
+import { useTaskActions, TaskActionsProvider } from "@/features/tasks/context/TaskActionsContext";
 import { TaskDetailHeader } from "./TaskDetailHeader";
 import { TaskMetadataSection } from "./TaskMetadataSection";
 import { TaskPromptSection } from "./TaskPromptSection";
+import { TaskAdvancedSection } from "./TaskAdvancedSection";
 import { RunHistorySection } from "./RunHistorySection";
 import { RawGatewaySection } from "./RawGatewaySection";
+import { TaskHealthSection } from "./TaskHealthSection";
+import { TaskUpcomingRuns } from "./TaskUpcomingRuns";
+
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+type DrawerTab = "overview" | "history" | "advanced";
+
+const TAB_CONFIG: { key: DrawerTab; label: string }[] = [
+  { key: "overview", label: "Overview" },
+  { key: "history", label: "Run History" },
+  { key: "advanced", label: "Advanced" },
+];
 
 // ─── Props ───────────────────────────────────────────────────────────────────
 
@@ -19,11 +33,6 @@ interface TaskDetailDrawerProps {
   client: GatewayClient;
   busy: boolean;
   onClose: () => void;
-  onToggle: (taskId: string, enabled: boolean) => void;
-  onUpdateTask: (taskId: string, updates: UpdateTaskPayload) => void;
-  onUpdateSchedule: (taskId: string, schedule: TaskSchedule) => void;
-  onRun: (taskId: string) => void;
-  onDelete: (taskId: string) => void;
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -33,15 +42,14 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
   client,
   busy,
   onClose,
-  onToggle,
-  onUpdateTask,
-  onUpdateSchedule,
-  onRun,
-  onDelete,
 }: TaskDetailDrawerProps) {
+  const actions = useTaskActions();
+  const { onUpdateTask } = actions;
   const [runs, setRuns] = useState<CronRunEntry[]>([]);
   const [runsLoading, setRunsLoading] = useState(false);
   const [runsError, setRunsError] = useState<string | null>(null);
+  const [pendingTrigger, setPendingTrigger] = useState(false);
+  const [activeTab, setActiveTab] = useState<DrawerTab>("overview");
   const loadingRef = useRef(false);
 
   const {
@@ -52,6 +60,7 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
 
   const startEditing = useCallback(() => {
     startEditingForm();
+    setActiveTab("overview");
   }, [startEditingForm]);
 
   const loadRuns = useCallback(
@@ -82,10 +91,27 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
     if (task) void loadRuns(task.cronJobId);
   }, [task, loadRuns]);
 
+  const handleRun = useCallback(
+    (taskId: string) => {
+      actions.onRun(taskId);
+      setPendingTrigger(true);
+      setActiveTab("history");
+      // Auto-refresh run history after trigger
+      if (task) {
+        setTimeout(() => {
+          void loadRuns(task.cronJobId).then(() => setPendingTrigger(false));
+        }, 3000);
+      }
+    },
+    [actions, task, loadRuns]
+  );
+
   useEffect(() => {
     if (!task) {
       setRuns([]);
       setRunsError(null);
+      setPendingTrigger(false);
+      setActiveTab("overview");
       cancelEditing();
       return;
     }
@@ -95,6 +121,13 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
   if (!task) return null;
 
   return (
+    <TaskActionsProvider
+      onToggle={actions.onToggle}
+      onUpdateTask={actions.onUpdateTask}
+      onUpdateSchedule={actions.onUpdateSchedule}
+      onRun={handleRun}
+      onDelete={actions.onDelete}
+    >
     <div className="flex h-full w-full flex-col overflow-hidden animate-in slide-in-from-right-8 fade-in duration-200">
       <TaskDetailHeader
         taskName={task.name}
@@ -108,43 +141,84 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
         onClose={onClose}
       />
 
+      {/* Tab bar */}
+      <div className="flex border-b border-border/40" role="tablist" aria-label="Task details">
+        {TAB_CONFIG.map(({ key, label }) => (
+          <button
+            key={key}
+            id={`task-tab-${key}`}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === key}
+            aria-controls={`task-panel-${key}`}
+            className={`flex-1 px-3 py-2 text-xs font-medium transition ${
+              activeTab === key
+                ? "border-b-2 border-primary text-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+            onClick={() => setActiveTab(key)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       <div className="min-h-0 flex-1 overflow-y-auto">
-        <TaskMetadataSection
-          task={task}
-          editing={editing}
-          editDescription={editDescription}
-          editModel={editModel}
-          editThinking={editThinking}
-          editDeliveryChannel={editDeliveryChannel}
-          editDeliveryTarget={editDeliveryTarget}
-          busy={busy}
-          onFieldChange={setField}
-          onUpdateSchedule={onUpdateSchedule}
-          onToggle={onToggle}
-          onRun={onRun}
-          onDelete={onDelete}
-        />
+        {/* Overview tab */}
+        {activeTab === "overview" ? (
+          <div role="tabpanel" id="task-panel-overview" aria-labelledby="task-tab-overview">
+            <TaskMetadataSection
+              task={task}
+              editing={editing}
+              editDescription={editDescription}
+              busy={busy}
+              onFieldChange={setField}
+            />
+            <TaskPromptSection
+              prompt={task.prompt}
+              editing={editing}
+              editPrompt={editPrompt}
+              defaultExpanded={editing}
+              onEditPromptChange={(v) => setField("prompt", v)}
+            />
+            <TaskHealthSection task={task} />
+            <TaskUpcomingRuns task={task} />
+          </div>
+        ) : null}
 
-        <TaskPromptSection
-          prompt={task.prompt}
-          editing={editing}
-          editPrompt={editPrompt}
-          defaultExpanded={editing}
-          onEditPromptChange={(v) => setField("prompt", v)}
-        />
+        {/* Run History tab */}
+        {activeTab === "history" ? (
+          <div role="tabpanel" id="task-panel-history" aria-labelledby="task-tab-history">
+          <RunHistorySection
+            runs={runs}
+            loading={runsLoading}
+            error={runsError}
+            pendingTrigger={pendingTrigger}
+            onRetry={handleRetryRuns}
+          />
+          </div>
+        ) : null}
 
-        <RawGatewaySection
-          cronJob={task.rawCronJob}
-          cronJobId={task.cronJobId}
-        />
-
-        <RunHistorySection
-          runs={runs}
-          loading={runsLoading}
-          error={runsError}
-          onRetry={handleRetryRuns}
-        />
+        {/* Advanced tab */}
+        {activeTab === "advanced" ? (
+          <div role="tabpanel" id="task-panel-advanced" aria-labelledby="task-tab-advanced">
+            <TaskAdvancedSection
+              task={task}
+              editing={editing}
+              editModel={editModel}
+              editThinking={editThinking}
+              editDeliveryChannel={editDeliveryChannel}
+              editDeliveryTarget={editDeliveryTarget}
+              onFieldChange={setField}
+            />
+            <RawGatewaySection
+              cronJob={task.rawCronJob}
+              cronJobId={task.cronJobId}
+            />
+          </div>
+        ) : null}
       </div>
     </div>
+    </TaskActionsProvider>
   );
 });

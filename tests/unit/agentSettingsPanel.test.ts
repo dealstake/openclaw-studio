@@ -3,16 +3,6 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { AgentState } from "@/features/agents/state/store";
 import { AgentSettingsPanel } from "@/features/agents/components/AgentInspectPanels";
-import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
-
-// Mock the self-contained sections since they fetch data internally
-vi.mock("@/features/agents/components/CronJobsSettingsSection", () => ({
-  CronJobsSettingsSection: () => createElement("div", { "data-testid": "agent-settings-cron" }, "Cron section"),
-}));
-
-vi.mock("@/features/agents/components/HeartbeatsSettingsSection", () => ({
-  HeartbeatsSettingsSection: () => createElement("div", { "data-testid": "agent-settings-heartbeat" }, "Heartbeats section"),
-}));
 
 const createAgent = (): AgentState => ({
   agentId: "agent-1",
@@ -39,24 +29,16 @@ const createAgent = (): AgentState => ({
   historyLoadedAt: null,
   toolCallingEnabled: true,
   showThinkingTraces: true,
+  wizardContext: null,
   model: "openai/gpt-5",
   thinkingLevel: "medium",
   avatarSeed: "seed-1",
   avatarUrl: null,
 });
 
-function makeClient(): GatewayClient {
-  return {
-    call: vi.fn().mockResolvedValue({ ok: true }),
-    status: "connected" as GatewayStatus,
-  } as unknown as GatewayClient;
-}
-
 function defaultProps(overrides: Record<string, unknown> = {}) {
   return {
     agent: createAgent(),
-    client: makeClient(),
-    status: "connected" as GatewayStatus,
     onClose: vi.fn(),
     onRename: vi.fn(async () => true),
     onNewSession: vi.fn(),
@@ -108,29 +90,11 @@ describe("AgentSettingsPanel", () => {
     expect(onNewSession).toHaveBeenCalledTimes(1);
   });
 
-  it("renders cron and heartbeat sections", () => {
+  it("no longer renders cron or heartbeat sections (moved to Brain/Tasks panels)", () => {
     render(createElement(AgentSettingsPanel, defaultProps()));
 
-    expect(screen.getByTestId("agent-settings-cron")).toBeInTheDocument();
-    expect(screen.getByTestId("agent-settings-heartbeat")).toBeInTheDocument();
-  });
-
-  it("renders cron section after session section", () => {
-    render(createElement(AgentSettingsPanel, defaultProps()));
-
-    const sessionSection = screen.getByTestId("agent-settings-session");
-    const cronSection = screen.getByTestId("agent-settings-cron");
-    const position = sessionSection.compareDocumentPosition(cronSection);
-    expect(position & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-  });
-
-  it("renders heartbeat section after cron section", () => {
-    render(createElement(AgentSettingsPanel, defaultProps()));
-
-    const cronSection = screen.getByTestId("agent-settings-cron");
-    const heartbeatSection = screen.getByTestId("agent-settings-heartbeat");
-    const position = cronSection.compareDocumentPosition(heartbeatSection);
-    expect(position & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.queryByTestId("agent-settings-cron")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("agent-settings-heartbeat")).not.toBeInTheDocument();
   });
 
   it("renders danger zone with delete for non-main agents", () => {

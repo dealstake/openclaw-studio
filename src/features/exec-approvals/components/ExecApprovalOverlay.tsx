@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import FocusTrap from "focus-trap-react";
 import { ShieldAlert } from "lucide-react";
 import type { ExecApprovalRequest, ExecApprovalDecision } from "@/features/exec-approvals/types";
 import { SectionLabel, sectionLabelClass} from "@/components/SectionLabel";
@@ -55,12 +56,25 @@ export const ExecApprovalOverlay = ({
   const expired = current.expiresAtMs <= now;
 
   return (
+    <FocusTrap
+      focusTrapOptions={{
+        allowOutsideClick: true,
+        escapeDeactivates: false,
+        fallbackFocus: "[data-testid='exec-approval-overlay']",
+      }}
+    >
     <div
       className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center bg-background/70 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
       aria-label="Exec approval requested"
       data-testid="exec-approval-overlay"
+      onKeyDown={(e) => {
+        if (e.key === "Escape") {
+          e.stopPropagation();
+          onDecision(current.id, "deny");
+        }
+      }}
     >
       <div className="w-full max-w-lg rounded-lg border border-border bg-card/95 p-6 shadow-lg">
         <div className="flex items-center gap-3">
@@ -139,5 +153,6 @@ export const ExecApprovalOverlay = ({
         </div>
       </div>
     </div>
+    </FocusTrap>
   );
 };

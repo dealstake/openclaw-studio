@@ -76,10 +76,10 @@ describe("getAgentWizardStarters", () => {
     const starters = getAgentWizardStarters();
     expect(starters.length).toBeGreaterThanOrEqual(3);
     for (const s of starters) {
-      expect(s).toHaveProperty("prompt");
-      expect(s).toHaveProperty("text");
-      expect(typeof s.prompt).toBe("string");
-      expect(typeof s.text).toBe("string");
+      expect(s).toHaveProperty("message");
+      expect(s).toHaveProperty("label");
+      expect(typeof s.message).toBe("string");
+      expect(typeof s.label).toBe("string");
     }
   });
 });

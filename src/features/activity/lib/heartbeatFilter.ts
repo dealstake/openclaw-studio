@@ -49,13 +49,21 @@ export function filterHeartbeatTurns(parts: MessagePart[]): MessagePart[] {
   for (let i = 0; i < parts.length; i++) {
     if (!isHeartbeatUserPart(parts[i])) continue;
 
-    // Found a heartbeat user message — scan forward for the next text part
-    let j = i + 1;
-    while (j < parts.length && parts[j].type !== "text") j++;
+    // Found a heartbeat user message — mark it for removal
+    indicesToRemove.add(i);
 
-    // Remove entire turn regardless of response content (OK or alert)
-    const end = j < parts.length ? j : i;
-    for (let k = i; k <= end; k++) indicesToRemove.add(k);
+    // Scan forward past non-text parts to find the assistant response
+    let j = i + 1;
+    while (j < parts.length && parts[j].type !== "text") {
+      indicesToRemove.add(j);
+      j++;
+    }
+
+    // If the next text part is NOT another heartbeat user prompt, it's the response — remove it too
+    if (j < parts.length && !isHeartbeatUserPart(parts[j])) {
+      indicesToRemove.add(j);
+    }
+    // If it IS another heartbeat user prompt, leave it for the outer loop to handle
   }
 
   if (indicesToRemove.size === 0) return parts;

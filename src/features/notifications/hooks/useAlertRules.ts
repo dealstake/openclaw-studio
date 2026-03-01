@@ -33,6 +33,16 @@ export function useAlertRules() {
     persistRules(rules);
   }, [rules]);
 
+  // Cross-tab sync: listen for storage changes from other tabs
+  useEffect(() => {
+    function handleStorage(e: StorageEvent) {
+      if (e.key !== STORAGE_KEY || e.storageArea !== localStorage) return;
+      setRules(loadRules());
+    }
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, []);
+
   const updateRule = useCallback((id: string, patch: Partial<AlertRule>) => {
     setRules((prev) =>
       prev.map((r) => (r.id === id ? { ...r, ...patch } : r)),

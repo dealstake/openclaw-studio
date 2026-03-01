@@ -5,28 +5,35 @@ import {
   MessageSquare,
   BarChart3,
   Radio,
-  Settings,
+  KeyRound,
+  Cpu,
   Plus,
   ChevronLeft,
+  Loader2,
+  AlertCircle,
+  SearchX,
 } from "lucide-react";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { BottomSidebarActions } from "@/components/BottomSidebarActions";
 import { sectionLabelClass } from "@/components/SectionLabel";
 import { SearchInput } from "@/components/SearchInput";
+import { EmptyState } from "@/components/ui/EmptyState";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { useSessionHistory } from "@/features/sessions/hooks/useSessionHistory";
+import { useTranscriptSearch } from "@/features/sessions/hooks/useTranscripts";
 import { SessionList } from "@/features/sessions/components/SessionList";
+import { SearchResultCard } from "@/features/sessions/components/SearchResultCard";
+import { exportConversationAsMarkdown } from "@/features/sessions/lib/exportConversation";
 
 /** Management nav items that open in expanded modal */
-export type ManagementTab = "sessions" | "usage" | "channels" | "settings";
+export type ManagementTab = "usage" | "channels" | "credentials" | "models" | "settings";
 
 const NAV_ITEMS: Array<{ value: ManagementTab; label: string; icon: typeof MessageSquare }> = [
-  { value: "sessions", label: "Sessions", icon: MessageSquare },
   { value: "usage", label: "Usage", icon: BarChart3 },
   { value: "channels", label: "Channels", icon: Radio },
+  { value: "credentials", label: "Credentials", icon: KeyRound },
+  { value: "models", label: "Models", icon: Cpu },
 ];
-
-const ALL_NAV_ITEMS = [...NAV_ITEMS, { value: "settings" as ManagementTab, label: "Settings", icon: Settings }];
 
 /* ─── Shared nav icon button ─── */
 type NavIconButtonProps = {
@@ -49,7 +56,7 @@ const NavIconButton = memo(function NavIconButton({
   onKeyDown,
 }: NavIconButtonProps) {
   const Icon = item.icon;
-  const sizeClass = size === "sm" ? "h-10 w-10" : "h-11 w-11";
+  const sizeClass = "h-11 w-11";
   const iconSize = size === "sm" ? "h-4 w-4" : "h-5 w-5";
   const indicatorClass =
     indicatorPosition === "left"
@@ -94,6 +101,7 @@ interface AppSidebarProps {
   onToggleCollapse: () => void;
   onManagementNav: (tab: ManagementTab) => void;
   activeManagementTab?: ManagementTab | null;
+  onViewTrace?: (sessionKey: string) => void;
 }
 
 export const AppSidebar = memo(function AppSidebar({
@@ -107,6 +115,7 @@ export const AppSidebar = memo(function AppSidebar({
   onToggleCollapse,
   onManagementNav,
   activeManagementTab,
+  onViewTrace,
 }: AppSidebarProps) {
   const {
     groups,
@@ -120,6 +129,26 @@ export const AppSidebar = memo(function AppSidebar({
     deleteSession,
     renameSession,
   } = useSessionHistory(client, status, agentId);
+
+  // Server-side search across ALL sessions (active + archived)
+  const {
+    setQuery: setServerSearchQuery,
+    results: searchResults,
+    searching,
+    error: searchError,
+  } = useTranscriptSearch(agentId);
+
+  // Unified search handler: drives both client-side filter and server-side search
+  const handleSearchChange = useCallback(
+    (value: string) => {
+      setSearch(value);
+      setServerSearchQuery(value);
+    },
+    [setSearch, setServerSearchQuery],
+  );
+
+  // Whether to show server-side search results overlay
+  const showSearchResults = search.trim().length > 0 && (searching || searchResults.length > 0 || searchError);
 
   const loadRef = useRef(load);
   useEffect(() => {
@@ -141,6 +170,19 @@ export const AppSidebar = memo(function AppSidebar({
   );
   const handleRetry = useCallback(() => void load(), [load]);
 
+  const handleExport = useCallback(
+    (key: string) => {
+      // Find display name from groups
+      const session = groups.flatMap((g) => g.sessions).find((s) => s.key === key);
+      const displayName = session?.displayName ?? key;
+      if (!agentId) return;
+      void exportConversationAsMarkdown(agentId, key, displayName).catch((err) =>
+        console.error("Export failed:", err),
+      );
+    },
+    [agentId, groups],
+  );
+
   /** Arrow-key navigation within sidebar nav items */
   const handleNavKeyDown = useCallback(
     (e: React.KeyboardEvent, index: number) => {
@@ -161,7 +203,7 @@ export const AppSidebar = memo(function AppSidebar({
 
   /* ── Single shell with animated width transition ── */
   return (
-    <TooltipProvider delayDuration={300}>
+    <TooltipProvider >
     <div
       className={`flex h-full flex-col bg-background/60 backdrop-blur-xl ring-1 ring-white/[0.06] shadow-[4px_0_24px_-6px_rgba(0,0,0,0.3)] transform-gpu transition-[width] duration-300 ease-out overflow-hidden ${
         collapsed ? "w-14" : "w-72"
@@ -195,18 +237,12 @@ export const AppSidebar = memo(function AppSidebar({
               <MessageSquare className="h-4 w-4" />
             </button>
           </div>
-          {/* Settings + theme toggle pinned to bottom */}
-          <div className="mt-auto flex flex-col items-center gap-1 pb-3">
-            <ThemeToggle />
-            <NavIconButton
-              item={ALL_NAV_ITEMS[ALL_NAV_ITEMS.length - 1]}
-              isActive={activeManagementTab === "settings"}
-              size="md"
-              indicatorPosition="left"
-              tooltipSide="right"
-              onClick={onManagementNav}
-            />
-          </div>
+          {/* Notifications + Theme + Settings dropdown pinned to bottom */}
+          <BottomSidebarActions
+            collapsed
+            onOpenSettings={() => onManagementNav("settings")}
+            settingsActive={activeManagementTab === "settings"}
+          />
         </>
       ) : (
         /* ── Expanded: nav icons + session history ── */
@@ -232,7 +268,7 @@ export const AppSidebar = memo(function AppSidebar({
             <button
               type="button"
               onClick={onToggleCollapse}
-              className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="flex h-7 w-7 min-h-[44px] min-w-[44px] items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               aria-label="Collapse sidebar"
             >
               <ChevronLeft className="h-4 w-4" />
@@ -241,7 +277,7 @@ export const AppSidebar = memo(function AppSidebar({
             <button
               type="button"
               onClick={onNewSession}
-              className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-primary hover:text-primary-foreground"
+              className="flex h-7 w-7 min-h-[44px] min-w-[44px] items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-primary hover:text-primary-foreground"
               aria-label="New session"
             >
               <Plus className="h-4 w-4" />
@@ -252,51 +288,90 @@ export const AppSidebar = memo(function AppSidebar({
           <div className="px-3 py-2 shrink-0">
             <SearchInput
               value={search}
-              onChange={setSearch}
+              onChange={handleSearchChange}
               placeholder="Search sessions…"
             />
           </div>
 
-          {/* Session list */}
-          <SessionList
-            groups={groups}
-            loading={loading}
-            error={error}
-            search={search}
-            activeSessionKey={activeSessionKey}
-            pinnedKeys={pinnedKeys}
-            onRetry={handleRetry}
-            onSelect={onSelectSession}
-            onRename={handleRename}
-            onDelete={handleDelete}
-            onTogglePin={togglePin}
-          />
+          {/* Session list or search results */}
+          {showSearchResults ? (
+            <div
+              className="min-h-0 flex-1 overflow-y-auto px-1.5 pb-2"
+              role="region"
+              aria-label="Search results"
+              aria-live="polite"
+            >
+              {searching && searchResults.length === 0 ? (
+                <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span className="text-xs">Searching…</span>
+                </div>
+              ) : searchError ? (
+                <div className="flex flex-col items-center gap-2 px-3 py-8 text-center">
+                  <AlertCircle className="h-5 w-5 text-destructive/70" />
+                  <p className="text-xs text-muted-foreground">{searchError}</p>
+                  <button
+                    type="button"
+                    onClick={() => setServerSearchQuery(search)}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    Retry
+                  </button>
+                </div>
+              ) : searchResults.length === 0 ? (
+                <EmptyState
+                  icon={SearchX}
+                  title="No results found"
+                  description="Try a different search term"
+                  className="py-8"
+                />
+              ) : (
+                <>
+                  <div className={`${sectionLabelClass} px-2.5 py-1.5 text-[10px]`}>
+                    {searchResults.length} result{searchResults.length !== 1 ? "s" : ""}
+                    {searching && <Loader2 className="ml-1.5 inline h-3 w-3 animate-spin" />}
+                  </div>
+                  <div className="flex flex-col gap-1.5 px-1" role="listbox" aria-label="Search results list">
+                    {searchResults.map((result) => (
+                      <SearchResultCard
+                        key={result.sessionId}
+                        result={result}
+                        query={search}
+                        onClick={() => {
+                          const key = result.sessionKey ?? result.sessionId;
+                          onSelectSession(key);
+                          handleSearchChange("");
+                        }}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          ) : (
+            <SessionList
+              groups={groups}
+              loading={loading}
+              error={error}
+              search={search}
+              activeSessionKey={activeSessionKey}
+              pinnedKeys={pinnedKeys}
+              onRetry={handleRetry}
+              onSelect={onSelectSession}
+              onRename={handleRename}
+              onDelete={handleDelete}
+              onTogglePin={togglePin}
+              onViewTrace={onViewTrace}
+              onExport={handleExport}
+            />
+          )}
 
-          {/* Settings + theme toggle pinned to bottom */}
-          <div className="border-t border-border/20 px-2 py-2 shrink-0 flex items-center gap-1">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  onClick={() => onManagementNav("settings")}
-                  className={`flex min-w-0 flex-1 items-center gap-2.5 rounded-md px-2 py-1.5 text-[13px] transition-all duration-150 ${
-                    activeManagementTab === "settings"
-                      ? "bg-accent text-accent-foreground"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                  }`}
-                  aria-label="Settings"
-                  aria-current={activeManagementTab === "settings" ? "page" : undefined}
-                >
-                  <Settings className="h-3.5 w-3.5 shrink-0" />
-                  <span>Settings</span>
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="right" className="text-xs">
-                Settings
-              </TooltipContent>
-            </Tooltip>
-            <ThemeToggle />
-          </div>
+          {/* Notifications + Theme + Settings dropdown pinned to bottom */}
+          <BottomSidebarActions
+            collapsed={false}
+            onOpenSettings={() => onManagementNav("settings")}
+            settingsActive={activeManagementTab === "settings"}
+          />
         </>
       )}
     </div>

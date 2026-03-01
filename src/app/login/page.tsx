@@ -108,7 +108,7 @@ export default function LoginPage() {
               placeholder="Email address"
               autoComplete="email"
               disabled={!methods.email}
-              className="w-full rounded-lg border border-border bg-input py-3 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed"
+              className="w-full rounded-lg border border-border bg-input py-3 pl-10 pr-4 text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed"
             />
           </div>
           <button

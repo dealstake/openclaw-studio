@@ -19,7 +19,8 @@ export const TrendSparkline = memo(function TrendSparkline({
 }) {
   if (data.length < 2) return null;
 
-  const max = Math.max(...data, 1);
+  // Use reduce instead of Math.max(...data) to avoid RangeError on large arrays (>125K items)
+  const max = data.reduce((a, b) => (b > a ? b : a), 1);
   const points = data
     .map(
       (v, i) =>

@@ -84,18 +84,21 @@ export const CardHeader = React.memo(function CardHeader({
 });
 
 export interface CardTitleProps extends React.HTMLAttributes<HTMLHeadingElement> {
+  /** Rendered element tag. Use "div" or "span" when inside a clickable BaseCard to avoid heading-in-button. */
+  as?: "h3" | "h4" | "div" | "span";
   children: React.ReactNode;
 }
 
 export const CardTitle = React.memo(function CardTitle({
+  as: Component = "h3",
   className,
   children,
   ...props
 }: CardTitleProps) {
   return (
-    <h3 className={cn("min-w-0 flex-1 truncate text-sm font-medium text-foreground leading-snug transition-colors duration-150 group-hover/card:text-primary", className)} {...props}>
+    <Component className={cn("min-w-0 flex-1 truncate text-sm font-medium text-foreground leading-snug transition-colors duration-150 group-hover/card:text-primary", className)} {...props}>
       {children}
-    </h3>
+    </Component>
   );
 });
 

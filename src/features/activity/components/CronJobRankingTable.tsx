@@ -9,21 +9,10 @@ import { Skeleton } from "@/components/Skeleton";
 import { formatDuration, formatRelativeTime } from "@/lib/text/time";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import type { JobStats } from "../lib/cronStatsCalculator";
+import { successRateColor, runStatusDot } from "../lib/activityDisplayUtils";
 import { TrendSparkline } from "./TrendSparkline";
 
 const compactNumber = new Intl.NumberFormat(undefined, { notation: "compact" });
-
-function successRateColor(rate: number): string {
-  if (rate >= 0.9) return "text-green-400";
-  if (rate >= 0.7) return "text-yellow-400";
-  return "text-red-400";
-}
-
-function runStatusDot(status: string): string {
-  if (status === "ok") return "bg-green-500";
-  if (status === "error") return "bg-red-500";
-  return "bg-muted-foreground";
-}
 
 const JobRow = memo(function JobRow({
   job,
@@ -39,6 +28,14 @@ const JobRow = memo(function JobRow({
   const [loadingRuns, setLoadingRuns] = useState(false);
   const [runError, setRunError] = useState<string | null>(null);
   const fetchedRef = useRef(false);
+
+  // Reset fetched state when row is collapsed so next expand gets fresh data
+  const handleOpenChange = useCallback((isOpen: boolean) => {
+    setOpen(isOpen);
+    if (!isOpen) {
+      fetchedRef.current = false;
+    }
+  }, []);
 
   const loadRuns = useCallback(async () => {
     if (fetchedRef.current) return;
@@ -64,7 +61,7 @@ const JobRow = memo(function JobRow({
   const tokenPct = maxTokens > 0 ? (job.totalTokens / maxTokens) * 100 : 0;
 
   return (
-    <Collapsible open={open} onOpenChange={setOpen}>
+    <Collapsible open={open} onOpenChange={handleOpenChange}>
       <CollapsibleTrigger asChild>
         <button
           type="button"
@@ -119,7 +116,11 @@ const JobRow = memo(function JobRow({
               key={run.id}
               className="flex items-center gap-2 rounded-md bg-muted/20 px-2 py-1"
             >
-              <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${runStatusDot(run.status)}`} />
+              <span
+                role="img"
+                aria-label={`Status: ${run.status}`}
+                className={`h-1.5 w-1.5 shrink-0 rounded-full ${runStatusDot(run.status)}`}
+              />
               <span className="text-[10px] text-muted-foreground w-14 shrink-0">
                 {run.startedAtMs ? formatRelativeTime(run.startedAtMs) : "—"}
               </span>

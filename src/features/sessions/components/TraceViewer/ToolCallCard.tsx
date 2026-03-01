@@ -8,12 +8,14 @@ import type { ToolCallTrace } from "../../lib/traceParser";
 
 type ToolCallCardProps = {
   toolCall: ToolCallTrace;
+  defaultExpanded?: boolean;
 };
 
 export const ToolCallCard = React.memo(function ToolCallCard({
   toolCall,
+  defaultExpanded = false,
 }: ToolCallCardProps) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(defaultExpanded);
 
   const argsJson = JSON.stringify(toolCall.arguments, null, 2);
   const hasResult = toolCall.result !== undefined;
@@ -26,7 +28,7 @@ export const ToolCallCard = React.memo(function ToolCallCard({
     <div className="rounded-lg border border-border bg-card/50">
       <button
         type="button"
-        className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition hover:bg-muted/30"
+        className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition hover:bg-muted/30 min-h-[44px]"
         onClick={() => setExpanded(!expanded)}
         aria-expanded={expanded}
       >

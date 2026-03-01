@@ -19,8 +19,8 @@ export interface FilterPillGroupProps<V extends string = string> {
 }
 
 /**
- * Horizontal pill group for panel-level filtering.
- * Follows consistent styling across all panels.
+ * @deprecated Use `FilterGroup` instead — supports multi-select, flex-wrap, and aria-pressed.
+ * Horizontal pill group for panel-level filtering (single-select only).
  */
 export const FilterPillGroup = React.memo(function FilterPillGroup({
   options,
@@ -41,9 +41,9 @@ export const FilterPillGroup = React.memo(function FilterPillGroup({
             type="button"
             role="tab"
             aria-selected={active}
-            className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 min-h-[44px] sm:min-h-0 font-mono text-[10px] font-semibold uppercase tracking-wider transition focus-ring ${
+            className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 min-h-[44px] sm:min-h-0 font-mono text-xs font-semibold uppercase tracking-wider transition focus-ring ${
               active
-                ? "border-primary/30 bg-primary/10 text-primary"
+                ? "border-primary/40 bg-primary/15 text-primary-foreground dark:bg-primary/20 dark:text-primary"
                 : "border-border/60 text-muted-foreground hover:bg-muted/40"
             }`}
             onClick={() => onChange(opt.value)}
@@ -53,7 +53,7 @@ export const FilterPillGroup = React.memo(function FilterPillGroup({
               <span
                 className={`inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[8px] font-bold ${
                   active
-                    ? "bg-primary/20 text-primary"
+                    ? "bg-primary/25 text-primary-foreground dark:bg-primary/30 dark:text-primary"
                     : "bg-muted-foreground/15 text-muted-foreground"
                 }`}
               >

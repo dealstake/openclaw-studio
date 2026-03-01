@@ -32,7 +32,7 @@ export function useAppLayout() {
   const [managementView, setManagementView] = useState<ManagementTab | null>(null);
 
   // ── Auto-hide header (desktop only) ────────────────────────────
-  const { isVisible: headerVisible, onHoverZoneEnter, onHoverZoneLeave } = useAutoHideHeader({
+  const { isVisible: headerVisible, onHoverZoneEnter, onHoverZoneLeave, onFocusZoneEnter, onFocusZoneLeave } = useAutoHideHeader({
     disabled: isMobileLayout,
   });
 
@@ -49,15 +49,10 @@ export function useAppLayout() {
 
   // ── Files toggle ──────────────────────────────────────────────
   const handleFilesToggle = useCallback(() => {
-    contextPanel.setContextMode((prev) => {
-      if (prev === "files") {
-        setMobilePane("chat");
-        return "agent";
-      }
-      setMobilePane("context");
-      return "files";
-    });
-  }, [contextPanel]);
+    contextPanel.setContextTab("workspace");
+    contextPanel.setContextPanelOpen(true);
+    setMobilePane("context");
+  }, [contextPanel, setMobilePane]);
 
   const handleBackToChat = useCallback(() => {
     setManagementView(null);
@@ -113,6 +108,7 @@ export function useAppLayout() {
   }, [contextPanel, sessionSidebar, mobilePane]);
 
   // ── Swipe gestures (mobile) ────────────────────────────────────
+  const [swipeDy, setSwipeDy] = useState(0);
   const swipeHandlers = useSwipeDrawer({
     onSwipeRight: isMobileLayout
       ? () => {
@@ -120,6 +116,7 @@ export function useAppLayout() {
             sessionSidebar.setMobileSessionDrawerOpen(true);
           }
           if (mobilePane === "context") {
+            setSwipeDy(0);
             setMobilePane("chat");
           }
         }
@@ -137,9 +134,20 @@ export function useAppLayout() {
     onSwipeDown: isMobileLayout
       ? () => {
           if (mobilePane === "context") {
+            setSwipeDy(0);
             setMobilePane("chat");
           }
         }
+      : undefined,
+    onSwipeMove: isMobileLayout
+      ? (dy: number) => {
+          if (mobilePane === "context") {
+            setSwipeDy(dy);
+          }
+        }
+      : undefined,
+    onSwipeCancel: isMobileLayout
+      ? () => setSwipeDy(0)
       : undefined,
   });
 
@@ -184,6 +192,8 @@ export function useAppLayout() {
     headerVisible,
     onHoverZoneEnter,
     onHoverZoneLeave,
+    onFocusZoneEnter,
+    onFocusZoneLeave,
 
     // Actions
     handleExpandToggle,
@@ -194,5 +204,6 @@ export function useAppLayout() {
 
     // Swipe
     swipeHandlers,
+    swipeDy,
   } as const;
 }

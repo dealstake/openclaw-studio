@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { ContextTab } from "@/features/context/components/ContextPanel";
 
 /** Extended tab type for expanded modal — includes management tabs not shown in the context panel */
-export type ExpandableTab = ContextTab | "sessions" | "usage" | "channels" | "settings";
+export type ExpandableTab = ContextTab | "usage" | "channels" | "settings";
 
 /** Mobile pane shown on small viewports */
 export type MobilePane = "chat" | "context";

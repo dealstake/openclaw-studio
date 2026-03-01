@@ -203,7 +203,7 @@ describe("generateMarkdown", () => {
     expect(md).toContain("## Continuation Context");
     expect(md).toContain("**Last worked on**");
     expect(md).toContain("**Immediate next step**");
-    expect(md).toContain("**Blocked by**");
+    expect(md).toContain("**Context needed**");
     expect(md).toContain("**Context needed**");
   });
 });

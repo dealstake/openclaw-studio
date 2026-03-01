@@ -6,9 +6,9 @@ import {
   FolderKanban,
   Plus,
   RefreshCw,
-  SearchX,
 } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { ErrorBanner } from "@/components/ErrorBanner";
 import { CardSkeleton } from "@/components/ui/CardSkeleton";
 import type { ProjectDetails } from "../lib/parseProject";
 import { ProjectCard } from "./ProjectCard";
@@ -20,10 +20,8 @@ import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import { PanelIconButton } from "@/components/PanelIconButton";
 import { SectionLabel } from "@/components/SectionLabel";
 import { PanelToolbar } from "@/components/ui/PanelToolbar";
-import { FilterPillGroup } from "@/components/ui/FilterPillGroup";
-import type { FilterOption } from "@/components/ui/FilterPillGroup";
-import { SearchInput } from "@/components/SearchInput";
-import { STATUS_CONFIG, STATUS_KEYS } from "../lib/constants";
+import { FilterGroup, type FilterGroupOption } from "@/components/ui/FilterGroup";
+import { STATUS_CONFIG, STATUS_KEYS, sortProjects } from "../lib/constants";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -35,6 +33,8 @@ export interface ProjectEntry {
   priority: string;
   priorityEmoji: string;
   oneLiner: string;
+  createdAt?: string;
+  updatedAt?: string;
   details?: ProjectDetails;
 }
 
@@ -61,11 +61,8 @@ export const ProjectsPanel = memo(function ProjectsPanel({
 }: ProjectsPanelProps) {
   const [showWizard, setShowWizard] = useState(false);
   const [archiveTarget, setArchiveTarget] = useState<ProjectEntry | null>(null);
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string[]>(["all"]);
   const [editingProjectDoc, setEditingProjectDoc] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedQuery, setDebouncedQuery] = useState("");
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Open wizard programmatically when requestCreateProject increments
   const createProjectTickRef = useRef(requestCreateProject ?? 0);
@@ -80,15 +77,7 @@ export const ProjectsPanel = memo(function ProjectsPanel({
   const { projects, loading, error, refresh, changeStatus, archive, buildingCount, getQueuePosition } =
     useProjects(agentId, client, { isTabActive, eventTick });
 
-  const handleSearchChange = useCallback((value: string) => {
-    setSearchQuery(value);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => setDebouncedQuery(value), 200);
-  }, []);
 
-  useEffect(() => {
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-  }, []);
 
   // Count projects per status for filter badges
   const statusCounts = useMemo(() => {
@@ -99,9 +88,9 @@ export const ProjectsPanel = memo(function ProjectsPanel({
     return counts;
   }, [projects]);
 
-  // Build FilterPillGroup options from status counts
-  const filterOptions = useMemo<FilterOption[]>(() => {
-    const opts: FilterOption[] = [
+  // Build FilterGroup options from status counts
+  const filterOptions = useMemo<FilterGroupOption[]>(() => {
+    const opts: FilterGroupOption[] = [
       { value: "all", label: "All", count: projects.length },
     ];
     for (const key of STATUS_KEYS) {
@@ -114,22 +103,33 @@ export const ProjectsPanel = memo(function ProjectsPanel({
     return opts;
   }, [projects.length, statusCounts]);
 
+  // Handle filter changes: "all" is exclusive — selecting it clears others, selecting a status clears "all"
+  const handleFilterChange = useCallback((next: string[]) => {
+    const hadAll = statusFilter.includes("all");
+    const hasAll = next.includes("all");
+    if (hasAll && !hadAll) {
+      setStatusFilter(["all"]);
+    } else if (hasAll && next.length > 1) {
+      setStatusFilter(next.filter((v) => v !== "all"));
+    } else {
+      setStatusFilter(next);
+    }
+  }, [statusFilter]);
+
+  const isAllSelected = statusFilter.includes("all");
+
   const filteredProjects = useMemo(() => {
     let result = projects;
-    if (statusFilter !== "all") result = result.filter((p) => p.statusEmoji === statusFilter);
-    if (debouncedQuery.trim()) {
-      const q = debouncedQuery.trim().toLowerCase();
-      result = result.filter((p) =>
-        p.name.toLowerCase().includes(q) || p.oneLiner.toLowerCase().includes(q)
-      );
+    if (!isAllSelected) {
+      result = result.filter((p) => statusFilter.includes(p.statusEmoji));
     }
-    return result;
-  }, [projects, statusFilter, debouncedQuery]);
+    return sortProjects(result);
+  }, [projects, statusFilter, isAllSelected]);
 
   if (!agentId) return null;
 
   return (
-    <div className="flex flex-col gap-2 px-3 py-3">
+    <div className="flex flex-col gap-3 px-3 py-3">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -139,17 +139,20 @@ export const ProjectsPanel = memo(function ProjectsPanel({
           </SectionLabel>
           {!loading && projects.length > 0 && (
             <span className="font-mono text-[10px] text-muted-foreground/60">
-              {statusFilter !== "all" ? `${filteredProjects.length}/${projects.length}` : projects.length}
+              {!isAllSelected ? `${filteredProjects.length}/${projects.length}` : projects.length}
             </span>
           )}
         </div>
         <div className="flex items-center gap-1.5">
-          <PanelIconButton
+          <button
+            type="button"
+            className="flex items-center gap-1 rounded-md border border-border/80 bg-card/70 px-2 py-1 text-xs text-muted-foreground transition hover:border-border hover:bg-muted/65 active:scale-[0.97] focus-ring min-h-[44px] sm:min-h-0"
             aria-label="New project"
             onClick={() => setShowWizard(true)}
           >
             <Plus className="h-3 w-3" />
-          </PanelIconButton>
+            <span className="hidden sm:inline">New</span>
+          </button>
           <PanelIconButton
             aria-label="Refresh projects"
             onClick={refresh}
@@ -159,24 +162,14 @@ export const ProjectsPanel = memo(function ProjectsPanel({
         </div>
       </div>
 
-      {/* Toolbar: Search + Filters */}
-      {projects.length > 0 && (
+      {/* Toolbar: Filters */}
+      {projects.length > 0 && filterOptions.length > 2 && (
         <PanelToolbar className="rounded-lg border-0 px-0 py-0">
-          {projects.length > 5 && (
-            <SearchInput
-              variant="compact"
-              value={searchQuery}
-              onChange={handleSearchChange}
-              placeholder="Search projects…"
-            />
-          )}
-          {filterOptions.length > 2 && (
-            <FilterPillGroup
-              options={filterOptions}
-              value={statusFilter}
-              onChange={setStatusFilter}
-            />
-          )}
+          <FilterGroup
+            options={filterOptions}
+            value={statusFilter}
+            onChange={handleFilterChange}
+          />
         </PanelToolbar>
       )}
 
@@ -187,9 +180,7 @@ export const ProjectsPanel = memo(function ProjectsPanel({
 
       {/* Error */}
       {error && (
-        <div className="rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-400">
-          {error}
-        </div>
+        <ErrorBanner message={error} onRetry={refresh} />
       )}
 
       {/* Empty */}
@@ -205,14 +196,14 @@ export const ProjectsPanel = memo(function ProjectsPanel({
       {/* Filtered empty */}
       {!loading && !error && projects.length > 0 && filteredProjects.length === 0 && (
         <EmptyState
-          icon={SearchX}
-          title={`No ${statusFilter !== "all" ? (STATUS_CONFIG[statusFilter]?.label ?? "") + " " : "matching "}projects`}
+          icon={FolderKanban}
+          title="No matching projects"
           className="py-8"
         />
       )}
 
       {/* All projects — flat list, sorted by status */}
-      <div className="animate-in fade-in duration-300">
+      <div className="flex flex-col gap-3 animate-in fade-in duration-300">
         {filteredProjects.map((project, i) => (
           <div
             key={project.doc}

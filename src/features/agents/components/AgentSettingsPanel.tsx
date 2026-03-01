@@ -3,19 +3,14 @@
 import { memo } from "react";
 
 import type { AgentState } from "@/features/agents/state/store";
-import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { AgentInspectHeader } from "./AgentInspectHeader";
 import { IdentitySettingsSection } from "./IdentitySettingsSection";
 import { SessionSettingsSection } from "./SessionSettingsSection";
-import { CronJobsSettingsSection } from "./CronJobsSettingsSection";
-import { HeartbeatsSettingsSection } from "./HeartbeatsSettingsSection";
 import { DangerZoneSection } from "./DangerZoneSection";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 type AgentSettingsPanelProps = {
   agent: AgentState;
-  client: GatewayClient;
-  status: GatewayStatus;
   onClose: () => void;
   onRename: (value: string) => Promise<boolean>;
   onNewSession: () => Promise<void> | void;
@@ -23,13 +18,10 @@ type AgentSettingsPanelProps = {
   canDelete?: boolean;
   onToolCallingToggle: (enabled: boolean) => void;
   onThinkingTracesToggle: (enabled: boolean) => void;
-  onNavigateToTasks?: () => void;
 };
 
 export const AgentSettingsPanel = memo(function AgentSettingsPanel({
   agent,
-  client,
-  status,
   onClose,
   onRename,
   onNewSession,
@@ -37,7 +29,6 @@ export const AgentSettingsPanel = memo(function AgentSettingsPanel({
   canDelete = true,
   onToolCallingToggle,
   onThinkingTracesToggle,
-  onNavigateToTasks,
 }: AgentSettingsPanelProps) {
   return (
     <TooltipProvider>
@@ -66,19 +57,6 @@ export const AgentSettingsPanel = memo(function AgentSettingsPanel({
             onToolCallingToggle={onToolCallingToggle}
             onThinkingTracesToggle={onThinkingTracesToggle}
             onNewSession={onNewSession}
-          />
-
-          <CronJobsSettingsSection
-            client={client}
-            agentId={agent.agentId}
-            status={status}
-            onNavigateToTasks={onNavigateToTasks}
-          />
-
-          <HeartbeatsSettingsSection
-            client={client}
-            agentId={agent.agentId}
-            status={status}
           />
 
           <DangerZoneSection

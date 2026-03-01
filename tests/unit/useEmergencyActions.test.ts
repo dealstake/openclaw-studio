@@ -142,8 +142,8 @@ describe("useEmergencyActions", () => {
         res = await result.current.executeAction("pause-all-cron");
       });
 
-      // Should still succeed — j2 was paused even though j1 failed
-      expect(res).toMatchObject({ status: "success", affected: 1 });
+      // Should report partial — j2 was paused but j1 failed
+      expect(res).toMatchObject({ status: "partial", affected: 1, failed: 1 });
       expect(result.current.pausedJobIds).toEqual(["j2"]);
     });
   });

@@ -30,18 +30,4 @@ export interface ActivityMeta {
 
 export type ActivityStatus = "success" | "error" | "partial";
 
-/** Display-ready version of an ActivityEvent */
-export interface DisplayEvent extends ActivityEvent {
-  relativeTime: string;
-  statusColor: string;
-  formattedTokens: string | null;
-}
 
-/** Filter criteria for activity feed */
-export interface ActivityFilter {
-  types?: string[];
-  taskId?: string;
-  projectSlug?: string;
-  status?: string;
-  search?: string;
-}

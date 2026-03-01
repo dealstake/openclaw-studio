@@ -15,8 +15,8 @@ import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 // ── Types ──────────────────────────────────────────────────────────────
 
 export type WizardStarter = {
-  prompt: string;
-  text: string;
+  message: string;
+  label: string;
 };
 
 export type WizardChatProps = {
@@ -28,6 +28,8 @@ export type WizardChatProps = {
   onConfigExtracted?: (config: unknown) => void;
   configExtractor?: (text: string) => unknown | null;
   className?: string;
+  /** Pre-filled prompt auto-sent on mount (e.g., from integration setup) */
+  initialPrompt?: string;
 };
 
 // ── Component ──────────────────────────────────────────────────────────
@@ -48,6 +50,7 @@ export const WizardChat = React.memo(function WizardChat({
   onConfigExtracted,
   configExtractor,
   className,
+  initialPrompt,
 }: WizardChatProps) {
   const {
     messages,
@@ -81,6 +84,15 @@ export const WizardChat = React.memo(function WizardChat({
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, streamText, thinkingTrace]);
+
+  // Auto-send initialPrompt on mount
+  const initialPromptSentRef = useRef(false);
+  useEffect(() => {
+    if (initialPrompt && !initialPromptSentRef.current) {
+      initialPromptSentRef.current = true;
+      void sendMessage(initialPrompt);
+    }
+  }, [initialPrompt, sendMessage]);
 
   // Cleanup wizard session on unmount — abort streaming first to avoid race
   useEffect(() => {
@@ -155,12 +167,12 @@ export const WizardChat = React.memo(function WizardChat({
             >
               {starters.map((s) => (
                 <button
-                  key={s.text}
+                  key={s.label}
                   type="button"
-                  onClick={() => handleStarterClick(s.prompt)}
+                  onClick={() => handleStarterClick(s.message)}
                   className="rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
                 >
-                  {s.text}
+                  {s.label}
                 </button>
               ))}
             </div>

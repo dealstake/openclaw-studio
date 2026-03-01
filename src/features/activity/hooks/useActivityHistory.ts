@@ -50,7 +50,13 @@ export function useActivityHistory(): UseActivityHistoryResult {
           events: ActivityEvent[];
           total: number;
         };
-        setEvents((prev) => (append ? [...prev, ...data.events] : data.events));
+        setEvents((prev) => {
+          if (!append) return data.events;
+          // Dedup by event id to handle shifts between pages
+          const existingIds = new Set(prev.map((e) => e.id));
+          const newEvents = data.events.filter((e) => !existingIds.has(e.id));
+          return [...prev, ...newEvents];
+        });
         setTotal(data.total);
         offsetRef.current = offset + data.events.length;
       } catch (err) {
