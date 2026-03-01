@@ -130,12 +130,17 @@
   font-size: 0.85em;
 }
 
-.agent-markdown th,
-.agent-markdown td {
+.agent-markdown th {
   border: 1px solid var(--border);
   padding: 0.3rem 0.5rem;
   text-align: left;
   white-space: nowrap;
+}
+
+.agent-markdown td {
+  border: 1px solid var(--border);
+  padding: 0.3rem 0.5rem;
+  text-align: left;
 }
 
 .agent-markdown a {
