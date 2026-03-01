@@ -65,15 +65,17 @@ export function useRoutingPreSend({
       if (decision.routed) {
         const lastRouted = lastRoutedModelRef.current.get(params.sessionKey);
         if (lastRouted !== decision.model) {
+          // Optimistic update to prevent duplicate patches from concurrent calls
+          lastRoutedModelRef.current.set(params.sessionKey, decision.model);
           try {
             await syncGatewaySessionSettings({
               client,
               sessionKey: params.sessionKey,
               model: decision.model,
             });
-            lastRoutedModelRef.current.set(params.sessionKey, decision.model);
           } catch (err) {
-            // If patch fails, fall back to configured model
+            // Revert optimistic update on failure
+            lastRoutedModelRef.current.delete(params.sessionKey);
             console.warn("[Router] Failed to apply model override:", err);
             return {
               routed: false,

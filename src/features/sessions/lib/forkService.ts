@@ -40,6 +40,10 @@ export interface ForkResult {
   sessionKey: string;
   /** Number of messages copied */
   messagesCopied: number;
+  /** Whether all messages were successfully copied */
+  status: "success" | "partial";
+  /** Warning messages (e.g., non-text content stripped) */
+  warnings: string[];
   /** Fork metadata for UI display */
   metadata: ForkMetadata;
 }
@@ -82,17 +86,28 @@ function generateForkSessionKey(agentId: string): string {
 }
 
 /**
- * Extract text content from a message (handles string and array content).
+ * Extract injectable content from a message.
+ * Returns the raw content (string or array) for chat.inject.
+ * If the message contains non-text parts (images, tool results),
+ * returns a text fallback with a warning marker so the fork is
+ * still usable but the user knows content was stripped.
  */
-function extractTextContent(message: ChatHistoryMessage): string {
-  if (typeof message.content === "string") return message.content;
-  if (Array.isArray(message.content)) {
-    return message.content
-      .filter((p) => p.type === "text" && typeof p.text === "string")
-      .map((p) => p.text!)
-      .join("\n");
+function extractInjectableContent(message: ChatHistoryMessage): { content: string; hasNonTextParts: boolean } {
+  if (typeof message.content === "string") {
+    return { content: message.content, hasNonTextParts: false };
   }
-  return "";
+  if (Array.isArray(message.content)) {
+    const textParts = message.content.filter((p) => p.type === "text" && typeof p.text === "string");
+    const nonTextParts = message.content.filter((p) => p.type !== "text");
+    const text = textParts.map((p) => p.text!).join("\n");
+    if (nonTextParts.length > 0) {
+      const types = [...new Set(nonTextParts.map((p) => p.type))].join(", ");
+      const warning = `\n[⚠️ Fork: ${nonTextParts.length} non-text part(s) stripped (${types})]`;
+      return { content: text + warning, hasNonTextParts: true };
+    }
+    return { content: text, hasNonTextParts: false };
+  }
+  return { content: "", hasNonTextParts: false };
 }
 
 /**
@@ -143,10 +158,17 @@ export async function forkSession(
   // Step 4: Inject messages up to fork point
   const messagesToCopy = history.messages.slice(0, forkAtIndex + 1);
   let injectedCount = 0;
+  let failedAt: number | null = null;
+  const warnings: string[] = [];
 
-  for (const msg of messagesToCopy) {
-    const text = extractTextContent(msg);
-    if (!text.trim()) continue; // Skip empty messages
+  for (let i = 0; i < messagesToCopy.length; i++) {
+    const msg = messagesToCopy[i];
+    const { content, hasNonTextParts } = extractInjectableContent(msg);
+    if (!content.trim()) continue; // Skip empty messages
+
+    if (hasNonTextParts) {
+      warnings.push(`Message ${i + 1}: non-text content stripped (images/tools not forkable)`);
+    }
 
     const role = msg.role ?? "user";
 
@@ -154,12 +176,13 @@ export async function forkSession(
       await client.call("chat.inject", {
         sessionKey: newSessionKey,
         role,
-        content: text,
+        content,
       });
       injectedCount++;
     } catch (err) {
-      // If injection fails mid-way, still return what we have
-      console.warn(`[Fork] Failed to inject message ${injectedCount}:`, err);
+      failedAt = i;
+      warnings.push(`Fork incomplete: failed at message ${i + 1} of ${messagesToCopy.length}`);
+      console.warn(`[Fork] Failed to inject message ${i + 1}:`, err);
       break;
     }
   }
@@ -194,6 +217,8 @@ export async function forkSession(
   return {
     sessionKey: newSessionKey,
     messagesCopied: injectedCount,
+    status: failedAt != null ? "partial" : "success",
+    warnings,
     metadata,
   };
 }

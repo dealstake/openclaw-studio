@@ -309,6 +309,7 @@ export const AgentStudioPage = () => {
     messageParts: focusedAgent?.messageParts ?? [],
     isWizardActive: wizard.wizardContext != null,
     startWizard: wizard.startWizard,
+    agentId: focusedAgentId,
   });
 
   const handleStartWizard = useCallback(

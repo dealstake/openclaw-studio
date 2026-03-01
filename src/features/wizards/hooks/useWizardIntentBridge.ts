@@ -20,6 +20,8 @@ interface UseWizardIntentBridgeParams {
   isWizardActive: boolean;
   /** Start a wizard — from useWizardInChat */
   startWizard: (type: WizardType, systemPrompt: string) => void;
+  /** Agent ID — used to clear state on agent switch */
+  agentId?: string | null;
 }
 
 /**
@@ -33,6 +35,7 @@ export function useWizardIntentBridge({
   messageParts,
   isWizardActive,
   startWizard,
+  agentId,
 }: UseWizardIntentBridgeParams): void {
   // Track which tool call IDs we've already processed
   const processedRef = useRef<Set<string>>(new Set());
@@ -71,10 +74,14 @@ export function useWizardIntentBridge({
     }
   }, [messageParts, isWizardActive, startWizard]);
 
-  // Clean up processed set when parts reset (new run)
+  // Clean up processed set when parts reset (new run) or agent changes
   useEffect(() => {
     if (messageParts.length === 0) {
       processedRef.current.clear();
     }
   }, [messageParts.length]);
+
+  useEffect(() => {
+    processedRef.current.clear();
+  }, [agentId]);
 }

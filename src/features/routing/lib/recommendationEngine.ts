@@ -55,12 +55,14 @@ const HAIKU_MODEL = "anthropic/claude-3-5-haiku-latest";
 /**
  * Generate routing recommendations from usage data.
  *
- * @param data - Aggregated usage data points (e.g., last 7 days)
+ * @param data - Aggregated usage data points
  * @param existingRules - Currently configured rules (to avoid duplicates)
+ * @param timeframeDays - Number of days the data covers (for monthly projections)
  */
 export function generateRecommendations(
   data: UsageDataPoint[],
   existingRules: RoutingRule[],
+  timeframeDays: number = 7,
 ): Recommendation[] {
   const recommendations: Recommendation[] = [];
   const existingTaskTypes = new Set(
@@ -91,7 +93,7 @@ export function generateRecommendations(
     const altTotalOut = expensiveCron.reduce((s, d) => s + d.tokensOut, 0);
     const altCost = calculateCost(alternative, altTotalIn, altTotalOut) ?? totalCost * 0.2;
     const weeklySavings = totalCost - altCost;
-    const monthlySavings = weeklySavings * 4.3;
+    const monthlySavings = (weeklySavings / timeframeDays) * 30;
 
     if (monthlySavings > 0.5) {
       recommendations.push({
@@ -118,7 +120,7 @@ export function generateRecommendations(
   );
   if (expensiveHeartbeats.length > 0 && !existingTaskTypes.has("heartbeat")) {
     const totalCost = expensiveHeartbeats.reduce((sum, d) => sum + d.totalCostUsd, 0);
-    const monthlySavings = totalCost * 0.9 * 4.3; // haiku is ~10% of opus cost
+    const monthlySavings = (totalCost * 0.9 / timeframeDays) * 30; // haiku is ~10% of opus cost
 
     if (monthlySavings > 0.1) {
       recommendations.push({
@@ -149,7 +151,7 @@ export function generateRecommendations(
   if (lowTokenSubagents.length > 0 && !existingTaskTypes.has("subagent")) {
     const totalCost = lowTokenSubagents.reduce((sum, d) => sum + d.totalCostUsd, 0);
     const alternative = "anthropic/claude-sonnet-4-6";
-    const monthlySavings = totalCost * 0.8 * 4.3;
+    const monthlySavings = (totalCost * 0.8 / timeframeDays) * 30;
 
     if (monthlySavings > 1) {
       recommendations.push({
