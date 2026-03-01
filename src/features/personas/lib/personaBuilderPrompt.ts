@@ -142,7 +142,8 @@ Valid capability keys:
 - \`github\` — GitHub integration (requires PAT)
 - \`openai\` — OpenAI models (requires API key)
 - \`image-generation\` — Image generation (requires Gemini key)
-- \`document-editing\` — Document creation (built-in)
+- \`document-generation\` — Document generation from templates (Handlebars engine, built-in — always ready)
+- \`drive-sharing\` — Google Drive upload + sharing (requires Google OAuth via gog)
 - \`browser-automation\` — Browser control (built-in)
 - \`messaging\` — WhatsApp / iMessage / Telegram
 - \`scheduling\` — Appointment scheduling

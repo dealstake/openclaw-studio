@@ -195,6 +195,20 @@ export const contentWriterTemplate: PersonaTemplate = {
       credentialHowTo:
         "Optional: set up Google Workspace credentials via `gog auth login` to publish drafts directly to Google Docs for review.",
     },
+
+    {
+      skillKey: "__builtin__",
+      capability: "Document Generation (Templates, PDF, DOCX)",
+      required: false,
+      credentialHowTo:
+        "Automatic — powered by the built-in Handlebars template engine. Generate blog posts, newsletters, and content briefs.",
+    },
+    {
+      skillKey: "gog",
+      capability: "Google Drive Sharing",
+      required: false,
+      credentialHowTo: "Authenticate via the built-in Google OAuth flow to share generated content drafts via Drive.",
+    },
   ],
 
   brainFileTemplates: [

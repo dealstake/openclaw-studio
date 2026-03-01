@@ -181,6 +181,20 @@ export const itHelpdeskTemplate: PersonaTemplate = {
       credentialHowTo:
         "Automatic — uses the built-in contacts database. Track per-user ticket history and identify recurring issues.",
     },
+
+    {
+      skillKey: "__builtin__",
+      capability: "Document Generation (Templates, PDF, DOCX)",
+      required: false,
+      credentialHowTo:
+        "Automatic — powered by the built-in Handlebars template engine. Generate incident reports, runbooks, and resolution summaries.",
+    },
+    {
+      skillKey: "gog",
+      capability: "Google Drive Sharing",
+      required: false,
+      credentialHowTo: "Authenticate via the built-in Google OAuth flow to share incident reports and runbooks via Drive.",
+    },
   ],
 
   brainFileTemplates: [

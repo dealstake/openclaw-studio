@@ -111,6 +111,20 @@ export const customerSuccessManagerTemplate: PersonaTemplate = {
       credentialHowTo: "Run `gog auth login` to authenticate. Used for scheduling QBRs and sending customer updates.",
       clawhubPackage: "gog",
     },
+
+    {
+      skillKey: "__builtin__",
+      capability: "Document Generation (Templates, PDF, DOCX)",
+      required: false,
+      credentialHowTo:
+        "Automatic — powered by the built-in Handlebars template engine. Generate QBR decks, success plans, and health reports.",
+    },
+    {
+      skillKey: "gog",
+      capability: "Google Drive Sharing",
+      required: false,
+      credentialHowTo: "Authenticate via the built-in Google OAuth flow to share QBR and success plan documents via Drive.",
+    },
   ],
 
   brainFileTemplates: [

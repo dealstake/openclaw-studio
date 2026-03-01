@@ -51,7 +51,7 @@ export const RUN_PREFLIGHT_SCHEMA = {
       type: "array",
       items: { type: "string" },
       description:
-        'Capability keys to check. Valid values: "voice", "email", "calendar", "google-workspace", "web-search", "notion", "github", "openai", "image-generation", "document-editing", "browser-automation", "database", "mcp-jira", "mcp-slack", "mcp-hubspot", "messaging", "scheduling", "reminders", "file-storage", "analytics".',
+        'Capability keys to check. Valid values: "voice", "email", "calendar", "google-workspace", "web-search", "notion", "github", "openai", "image-generation", "document-generation", "drive-sharing", "browser-automation", "database", "mcp-jira", "mcp-slack", "mcp-hubspot", "messaging", "scheduling", "reminders", "file-storage", "analytics".',
     },
     validate: {
       type: "boolean",

@@ -87,7 +87,21 @@ export const legalResearcherTemplate: PersonaTemplate = {
     },
   ],
 
-  skillRequirements: [],
+  skillRequirements: [
+    {
+      skillKey: "__builtin__",
+      capability: "Document Generation (Templates, PDF, DOCX)",
+      required: false,
+      credentialHowTo:
+        "Automatic — powered by the built-in Handlebars template engine. No external dependencies required.",
+    },
+    {
+      skillKey: "gog",
+      capability: "Google Drive Sharing",
+      required: false,
+      credentialHowTo: "Authenticate via the built-in Google OAuth flow to enable Drive upload and sharing.",
+    },
+  ],
 
   brainFileTemplates: [
     {

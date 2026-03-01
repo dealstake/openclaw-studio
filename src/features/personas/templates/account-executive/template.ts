@@ -135,6 +135,20 @@ export const accountExecutiveTemplate: PersonaTemplate = {
         "Run `gog auth login` to authenticate with Google. Used for scheduling demos and tracking proposal sends.",
       clawhubPackage: "gog",
     },
+
+    {
+      skillKey: "__builtin__",
+      capability: "Document Generation (Templates, PDF, DOCX)",
+      required: false,
+      credentialHowTo:
+        "Automatic — powered by the built-in Handlebars template engine. Generate proposals, SOWs, and meeting follow-ups.",
+    },
+    {
+      skillKey: "gog",
+      capability: "Google Drive Sharing",
+      required: false,
+      credentialHowTo: "Authenticate via the built-in Google OAuth flow to upload proposals to Drive and share links.",
+    },
   ],
 
   brainFileTemplates: [
