@@ -1,4 +1,4 @@
-import { FolderKanban, ListChecks, Brain, FolderOpen, Activity, Puzzle, type LucideIcon } from "lucide-react";
+import { FolderKanban, ListChecks, Brain, FolderOpen, Activity, Puzzle, PieChart, type LucideIcon } from "lucide-react";
 
 /** Canonical tab configuration — single source of truth for all context panel components. */
 export const CONTEXT_TAB_CONFIG = [
@@ -8,6 +8,7 @@ export const CONTEXT_TAB_CONFIG = [
   { value: "workspace", label: "Files", shortLabel: "F", Icon: FolderOpen },
   { value: "skills", label: "Skills", shortLabel: "S", Icon: Puzzle },
   { value: "activity", label: "Activity", shortLabel: "A", Icon: Activity },
+  { value: "budget", label: "Budget", shortLabel: "€", Icon: PieChart },
 ] as const satisfies ReadonlyArray<{
   value: string;
   label: string;

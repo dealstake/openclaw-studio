@@ -8,6 +8,7 @@ import { CardSkeleton } from "@/components/ui/CardSkeleton";
 import { sectionLabelClass } from "@/components/SectionLabel";
 import { SessionItem } from "./SessionItem";
 import type { SessionHistoryGroup } from "../hooks/useSessionHistory";
+import { MAX_COMPARISON_SESSIONS } from "../state/comparisonStore";
 
 type SessionListProps = {
   groups: SessionHistoryGroup[];
@@ -16,6 +17,8 @@ type SessionListProps = {
   search: string;
   activeSessionKey: string | null;
   pinnedKeys: ReadonlySet<string>;
+  /** Session keys currently selected for comparison */
+  comparisonKeys?: ReadonlySet<string>;
   onRetry: () => void;
   onSelect: (key: string) => void;
   onRename: (key: string, name: string) => void;
@@ -23,6 +26,7 @@ type SessionListProps = {
   onTogglePin: (key: string) => void;
   onViewTrace?: (key: string) => void;
   onExport?: (key: string) => void;
+  onToggleCompare?: (key: string) => void;
   className?: string;
 };
 
@@ -33,6 +37,7 @@ export const SessionList = memo(function SessionList({
   search,
   activeSessionKey,
   pinnedKeys,
+  comparisonKeys,
   onRetry,
   onSelect,
   onRename,
@@ -40,6 +45,7 @@ export const SessionList = memo(function SessionList({
   onTogglePin,
   onViewTrace,
   onExport,
+  onToggleCompare,
   className = "",
 }: SessionListProps) {
   const [renamingKey, setRenamingKey] = useState<string | null>(null);
@@ -49,6 +55,8 @@ export const SessionList = memo(function SessionList({
     () => groups.flatMap((g) => g.sessions.map((s) => s.key)),
     [groups],
   );
+
+  const comparisonFull = (comparisonKeys?.size ?? 0) >= MAX_COMPARISON_SESSIONS;
 
   const handleRenameStart = useCallback((key: string) => setRenamingKey(key), []);
   const handleRenameCancel = useCallback(() => setRenamingKey(null), []);
@@ -145,6 +153,8 @@ export const SessionList = memo(function SessionList({
                   pinned={pinnedKeys.has(session.key)}
                   renaming={renamingKey === session.key}
                   searchQuery={search}
+                  inComparison={comparisonKeys?.has(session.key) ?? false}
+                  comparisonFull={comparisonFull && !(comparisonKeys?.has(session.key) ?? false)}
                   onSelect={onSelect}
                   onRename={handleRenameCommit}
                   onRenameStart={handleRenameStart}
@@ -153,6 +163,7 @@ export const SessionList = memo(function SessionList({
                   onTogglePin={onTogglePin}
                   onViewTrace={onViewTrace}
                   onExport={onExport}
+                  onToggleCompare={onToggleCompare}
                 />
               ))}
             </div>

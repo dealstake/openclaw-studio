@@ -271,6 +271,55 @@ export type ContactSearchRow = {
   rank: number;
 };
 
+// ─── Agent File Versions ─────────────────────────────────────────────────────
+
+/**
+ * Snapshots of all brain files for an agent at a point in time.
+ * Each row captures the full content of all AGENT_FILE_NAMES files.
+ * The deploy operation writes the snapshot back to the gateway.
+ */
+export const agentFileVersions = sqliteTable("agent_file_versions", {
+  id: text("id").primaryKey(),
+  agentId: text("agent_id").notNull(),
+  versionNumber: integer("version_number").notNull(),
+  label: text("label").notNull().default(""),
+  description: text("description").notNull().default(""),
+  /** JSON-serialized Record<AgentFileName, string> */
+  filesJson: text("files_json").notNull(),
+  /** ISO date when this version was deployed (null = never deployed) */
+  deployedAt: text("deployed_at"),
+  /** 1 = currently active/deployed version */
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(false),
+  createdAt: text("created_at")
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+  updatedAt: text("updated_at")
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+});
+
+export type AgentFileVersionRow = typeof agentFileVersions.$inferSelect;
+export type NewAgentFileVersionRow = typeof agentFileVersions.$inferInsert;
+
+// ─── Shared Artifacts ────────────────────────────────────────────────────────
+
+/**
+ * Persists agent-produced outputs that can be shared/consumed across sessions.
+ * Phase 1 of the Inter-Agent Data Sharing feature.
+ */
+export const sharedArtifacts = sqliteTable("shared_artifacts", {
+  id: text("id").primaryKey(),
+  sourceAgentId: text("source_agent_id").notNull(),
+  sourceSessionKey: text("source_session_key").notNull(),
+  name: text("name").notNull(),
+  mimeType: text("mime_type").notNull().default("text/plain"),
+  content: text("content").notNull().default(""),
+  metadataJson: text("metadata_json").notNull().default("{}"),
+  createdAt: text("created_at")
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+});
+
 // ─── Type exports ────────────────────────────────────────────────────────────
 
 export type ContactRow = typeof contacts.$inferSelect;
@@ -296,3 +345,5 @@ export type PersonaRow = typeof personas.$inferSelect;
 export type NewPersonaRow = typeof personas.$inferInsert;
 export type KnowledgeSourceRow = typeof knowledgeSources.$inferSelect;
 export type NewKnowledgeSourceRow = typeof knowledgeSources.$inferInsert;
+export type SharedArtifactRow = typeof sharedArtifacts.$inferSelect;
+export type NewSharedArtifactRow = typeof sharedArtifacts.$inferInsert;

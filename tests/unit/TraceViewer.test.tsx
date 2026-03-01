@@ -69,9 +69,10 @@ vi.mock("@/features/sessions/hooks/useSessionTrace", () => ({
 
 import { TraceViewer } from "@/features/sessions/components/TraceViewer";
 import { TraceHeader } from "@/features/sessions/components/TraceViewer/TraceHeader";
-import { TraceTurnRow } from "@/features/sessions/components/TraceViewer/TraceTurnRow";
-import { TraceTurnDetail } from "@/features/sessions/components/TraceViewer/TraceTurnDetail";
+import { TraceNodeRow } from "@/features/sessions/components/TraceViewer/TraceNodeRow";
+import { TraceNodeDetail } from "@/features/sessions/components/TraceViewer/TraceNodeDetail";
 import { ToolCallCard } from "@/features/sessions/components/TraceViewer/ToolCallCard";
+import type { TraceNode } from "@/features/sessions/lib/traceParser";
 
 describe("TraceHeader", () => {
   it("renders summary info", () => {
@@ -92,12 +93,69 @@ describe("TraceHeader", () => {
   });
 });
 
-describe("TraceTurnRow", () => {
-  it("renders turn with content preview", () => {
+// --- TraceNode mock data for TraceNodeRow/TraceNodeDetail tests ---
+
+const mockUserNode: TraceNode = {
+  id: "node-1",
+  type: "message",
+  role: "user",
+  content: "Hello, can you help me with a coding task?",
+  children: [],
+  depth: 0,
+  tokens: { input: 50, output: 0, cacheRead: 0, cacheWrite: 0, total: 50 },
+  cost: { input: 0.001, output: 0, total: 0.001 },
+  model: null,
+  stopReason: null,
+  timestamp: 1706745600000,
+  latencyMs: null,
+};
+
+const mockThinkingChild: TraceNode = {
+  id: "node-2",
+  type: "thinking",
+  role: "assistant",
+  content: "Let me think about this...",
+  children: [],
+  depth: 1,
+};
+
+const mockToolCallChild: TraceNode = {
+  id: "node-3",
+  type: "tool_call",
+  role: "assistant",
+  content: "export default {}",
+  children: [],
+  depth: 1,
+  toolCall: {
+    id: "tc-1",
+    name: "Read",
+    arguments: { path: "/src/index.ts" },
+    result: "export default {}",
+    durationMs: 120,
+  },
+};
+
+const mockAssistantNode: TraceNode = {
+  id: "node-4",
+  type: "message",
+  role: "assistant",
+  content: "Sure! I can help with that. What do you need?",
+  children: [mockThinkingChild, mockToolCallChild],
+  depth: 0,
+  tokens: { input: 100, output: 200, cacheRead: 50, cacheWrite: 10, total: 360 },
+  cost: { input: 0.003, output: 0.006, total: 0.009 },
+  model: "claude-opus-4-6",
+  stopReason: "end_turn",
+  timestamp: 1706745602000,
+  latencyMs: 2000,
+};
+
+describe("TraceNodeRow", () => {
+  it("renders node with content preview", () => {
     const { container } = render(
-      <TraceTurnRow
-        turn={mockTurns[0]}
-        isSelected={false}
+      <TraceNodeRow
+        node={mockUserNode}
+        selectedId={null}
         maxLatency={2000}
         onSelect={vi.fn()}
       />,
@@ -105,85 +163,79 @@ describe("TraceTurnRow", () => {
     expect(container.textContent).toContain("Hello, can you help me with a coding task?");
   });
 
-  it("shows tool call badge when turn has tool calls", () => {
+  it("shows expand/collapse toggle for nodes with children", () => {
     const { container } = render(
-      <TraceTurnRow
-        turn={mockTurns[1]}
-        isSelected={false}
+      <TraceNodeRow
+        node={mockAssistantNode}
+        selectedId={null}
         maxLatency={2000}
         onSelect={vi.fn()}
       />,
     );
-    // Turn index "2" and tool count "1" should be present
-    expect(container.textContent).toContain("2");
+    // Should render an expand/collapse button when there are children
+    const toggleBtn = container.querySelector("[aria-label='Collapse'], [aria-label='Expand']") as HTMLElement;
+    expect(toggleBtn).toBeTruthy();
   });
 
-  it("calls onSelect when clicked", () => {
+  it("calls onSelect with the node when clicked", () => {
     const onSelect = vi.fn();
     const { container } = render(
-      <TraceTurnRow
-        turn={mockTurns[0]}
-        isSelected={false}
+      <TraceNodeRow
+        node={mockUserNode}
+        selectedId={null}
         maxLatency={2000}
         onSelect={onSelect}
       />,
     );
-    const btn = container.querySelector("button") as HTMLElement;
-    fireEvent.click(btn);
-    expect(onSelect).toHaveBeenCalledWith(0);
+    const buttons = container.querySelectorAll("button[role='option']");
+    fireEvent.click(buttons[0]);
+    expect(onSelect).toHaveBeenCalledWith(mockUserNode);
   });
 
-  it("applies selected styling", () => {
+  it("applies selected styling when selectedId matches", () => {
     const { container } = render(
-      <TraceTurnRow
-        turn={mockTurns[0]}
-        isSelected={true}
+      <TraceNodeRow
+        node={mockUserNode}
+        selectedId="node-1"
         maxLatency={2000}
         onSelect={vi.fn()}
       />,
     );
-    const btn = container.querySelector("button") as HTMLElement;
+    const btn = container.querySelector("button[role='option']") as HTMLElement;
     expect(btn.getAttribute("aria-selected")).toBe("true");
     expect(btn.className).toContain("bg-accent");
   });
 });
 
-describe("TraceTurnDetail", () => {
-  it("shows placeholder when no turn selected", () => {
-    render(<TraceTurnDetail turn={null} />);
-    expect(screen.getByText("Select a turn to view details")).toBeInTheDocument();
+describe("TraceNodeDetail", () => {
+  it("shows placeholder when no node selected", () => {
+    render(<TraceNodeDetail node={null} />);
+    expect(screen.getByText("Select a node to view details")).toBeInTheDocument();
   });
 
-  it("renders turn content", () => {
-    const { container } = render(<TraceTurnDetail turn={mockTurns[1]} />);
+  it("renders message node content and metadata", () => {
+    const { container } = render(<TraceNodeDetail node={mockAssistantNode} />);
     expect(container.textContent).toContain("Sure! I can help");
     expect(container.textContent).toContain("Content");
-  });
-
-  it("shows tool calls section with count", () => {
-    const { container } = render(<TraceTurnDetail turn={mockTurns[1]} />);
-    expect(container.textContent).toContain("Tool Calls (1)");
-  });
-
-  it("shows metadata section with model and stop reason", () => {
-    const { container } = render(<TraceTurnDetail turn={mockTurns[1]} />);
     expect(container.textContent).toContain("Metadata");
     expect(container.textContent).toContain("claude-opus-4-6");
     expect(container.textContent).toContain("end_turn");
   });
 
-  it("has collapsible thinking section", () => {
-    const { container } = render(<TraceTurnDetail turn={mockTurns[1]} />);
-    const buttons = container.querySelectorAll("button");
-    const thinkingBtn = Array.from(buttons).find(b => b.textContent?.includes("Thinking"));
-    expect(thinkingBtn).toBeTruthy();
-    expect(container.textContent).not.toContain("Let me think about this...");
-    fireEvent.click(thinkingBtn!);
+  it("renders tool_call node with ToolCallCard", () => {
+    const { container } = render(<TraceNodeDetail node={mockToolCallChild} />);
+    expect(container.textContent).toContain("Tool Call");
+    expect(container.textContent).toContain("Read");
+  });
+
+  it("renders thinking node with content", () => {
+    const { container } = render(<TraceNodeDetail node={mockThinkingChild} />);
+    expect(container.textContent).toContain("Thinking");
     expect(container.textContent).toContain("Let me think about this...");
   });
 
   it("shows loading skeletons", () => {
-    const { container } = render(<TraceTurnDetail turn={null} loading={true} />);
+    const { container } = render(<TraceNodeDetail node={null} loading={true} />);
     expect(container.querySelectorAll("[class*='animate-pulse']").length).toBeGreaterThan(0);
   });
 });

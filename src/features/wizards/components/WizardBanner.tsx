@@ -37,14 +37,12 @@ type WizardBannerProps = {
  * Shows the wizard type icon + label, optional starters, and an exit button.
  */
 export const WizardBanner = memo(function WizardBanner({
-  type: _type,
   theme,
   starters,
   onExit,
   onStarterClick,
   isStreaming = false,
 }: WizardBannerProps) {
-  void _type;
   const Icon = WIZARD_ICONS[theme.icon];
 
   const handleExit = useCallback(() => {

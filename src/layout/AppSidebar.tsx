@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useRef, useEffect } from "react";
+import { memo, useCallback, useMemo, useRef, useEffect } from "react";
 import {
   MessageSquare,
   BarChart3,
@@ -26,6 +26,7 @@ import { useTranscriptSearch } from "@/features/sessions/hooks/useTranscripts";
 import { SessionList } from "@/features/sessions/components/SessionList";
 import { SearchResultCard } from "@/features/sessions/components/SearchResultCard";
 import { exportConversationAsMarkdown } from "@/features/sessions/lib/exportConversation";
+import { useComparisonStore, toggleComparison } from "@/features/sessions/state/comparisonStore";
 
 /** Management nav items that open in expanded modal */
 export type ManagementTab = "usage" | "channels" | "credentials" | "models" | "gateway" | "settings" | "contacts";
@@ -129,6 +130,12 @@ export const AppSidebar = memo(function AppSidebar({
     deleteSession,
     renameSession,
   } = useSessionHistory(client, status, agentId, activeSessionKey);
+
+  const { comparisonSessionKeys } = useComparisonStore();
+  const comparisonKeysSet = useMemo(
+    () => new Set(comparisonSessionKeys),
+    [comparisonSessionKeys],
+  );
 
   // Server-side search across ALL sessions (active + archived)
   const {
@@ -353,6 +360,7 @@ export const AppSidebar = memo(function AppSidebar({
               search={search}
               activeSessionKey={activeSessionKey}
               pinnedKeys={pinnedKeys}
+              comparisonKeys={comparisonKeysSet}
               onRetry={handleRetry}
               onSelect={onSelectSession}
               onRename={handleRename}
@@ -360,6 +368,7 @@ export const AppSidebar = memo(function AppSidebar({
               onTogglePin={togglePin}
               onViewTrace={onViewTrace}
               onExport={handleExport}
+              onToggleCompare={toggleComparison}
             />
           )}
 

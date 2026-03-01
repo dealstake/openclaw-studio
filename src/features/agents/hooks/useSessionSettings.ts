@@ -2,6 +2,7 @@ import { useCallback, type MutableRefObject } from "react";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import { applySessionSettingMutation } from "@/features/agents/state/sessionSettingsMutations";
 import type { Action, AgentState } from "@/features/agents/state/store";
+import { setAgentAutonomyLevel, type AutonomyLevel } from "@/features/agents/lib/autonomyService";
 
 interface UseSessionSettingsParams {
   client: GatewayClient;
@@ -70,11 +71,30 @@ export function useSessionSettings({
     [dispatch]
   );
 
+  const handleAutonomyChange = useCallback(
+    async (agentId: string, level: AutonomyLevel) => {
+      // Optimistic local update
+      dispatch({
+        type: "updateAgent",
+        agentId,
+        patch: { autonomyLevel: level },
+      });
+      // Persist to gateway config
+      try {
+        await setAgentAutonomyLevel(client, agentId, level);
+      } catch (err) {
+        console.error("Failed to persist autonomy level:", err);
+      }
+    },
+    [client, dispatch]
+  );
+
   return {
     handleSessionSettingChange,
     handleModelChange,
     handleThinkingChange,
     handleToolCallingToggle,
     handleThinkingTracesToggle,
+    handleAutonomyChange,
   };
 }

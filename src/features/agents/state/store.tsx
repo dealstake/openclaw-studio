@@ -10,6 +10,8 @@ import {
 } from "react";
 import type { MessagePart } from "@/lib/chat/types";
 import type { WizardContext } from "@/features/wizards/lib/wizardTypes";
+import type { AutonomyLevel } from "@/features/agents/lib/autonomyService";
+import { DEFAULT_AUTONOMY_LEVEL } from "@/features/agents/lib/autonomyService";
 
 export type AgentStatus = "idle" | "running" | "error";
 export type FocusFilter = "all" | "needs-attention" | "running" | "idle";
@@ -25,6 +27,7 @@ export type AgentStoreSeed = {
   thinkingLevel?: string | null;
   toolCallingEnabled?: boolean;
   showThinkingTraces?: boolean;
+  autonomyLevel?: AutonomyLevel;
 };
 
 export type AgentState = AgentStoreSeed & {
@@ -50,6 +53,7 @@ export type AgentState = AgentStoreSeed & {
   historyLoadedAt: number | null;
   toolCallingEnabled: boolean;
   showThinkingTraces: boolean;
+  autonomyLevel: AutonomyLevel;
   /** Active wizard context — null when no wizard is running */
   wizardContext: WizardContext | null;
 };
@@ -140,6 +144,7 @@ const createRuntimeAgentState = (
     thinkingLevel: seed.thinkingLevel ?? existing?.thinkingLevel ?? "high",
     toolCallingEnabled: seed.toolCallingEnabled ?? existing?.toolCallingEnabled ?? false,
     showThinkingTraces: seed.showThinkingTraces ?? existing?.showThinkingTraces ?? true,
+    autonomyLevel: seed.autonomyLevel ?? existing?.autonomyLevel ?? DEFAULT_AUTONOMY_LEVEL,
     // Session-scoped fields (reset when session changes)
     status: keep(existing?.status, "idle"),
     sessionCreated: keep(existing?.sessionCreated, false),

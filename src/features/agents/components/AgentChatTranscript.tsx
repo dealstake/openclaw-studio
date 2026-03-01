@@ -11,12 +11,15 @@ export const AgentChatTranscript = memo(function AgentChatTranscript({
   scrollToBottomNextOutputRef,
   agentName,
   onSendStarter,
+  sessionKey,
 }: {
   messageParts: MessagePart[];
   streaming: boolean;
   scrollToBottomNextOutputRef: MutableRefObject<boolean>;
   agentName: string;
   onSendStarter: (message: string) => void;
+  /** Session key for annotation scoping — enables FeedbackToolbar on assistant messages. */
+  sessionKey?: string;
 }) {
   const {
     scrollRef,
@@ -47,6 +50,7 @@ export const AgentChatTranscript = memo(function AgentChatTranscript({
             <AgentChatView
               parts={messageParts}
               streaming={streaming}
+              sessionKey={sessionKey}
             />
             <div ref={bottomRef} />
           </div>

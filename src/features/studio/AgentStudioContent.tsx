@@ -695,6 +695,7 @@ export const AgentStudioPage = () => {
     handleThinkingChange,
     handleToolCallingToggle,
     handleThinkingTracesToggle,
+    handleAutonomyChange,
   } = useChatCallbacks({
     client,
     status,
@@ -844,6 +845,7 @@ export const AgentStudioPage = () => {
     onDeleteAgent: () => { if (settingsAgent) handleDeleteAgent(settingsAgent.agentId); },
     onToolCallingToggle: (enabled: boolean) => { if (settingsAgent) handleToolCallingToggle(settingsAgent.agentId, enabled); },
     onThinkingTracesToggle: (enabled: boolean) => { if (settingsAgent) handleThinkingTracesToggle(settingsAgent.agentId, enabled); },
+    onAutonomyChange: (level: Parameters<typeof handleAutonomyChange>[1]) => { if (settingsAgent) void handleAutonomyChange(settingsAgent.agentId, level); },
     onNavigateToTasks: () => setContextTab("tasks"),
     onTranscriptClick: handleDrawerTranscriptClick,
     onStartCredentialWizard: () => {
@@ -855,8 +857,8 @@ export const AgentStudioPage = () => {
     focusedAgent?.sessionKey, handleViewTrace, handleDrawerTranscriptClick,
     channelsSnapshot, channelsLoading, channelsError, loadChannelsStatus,
     settingsAgent, handleBackToChat, handleRenameAgent, handleNewSession,
-    handleDeleteAgent, handleToolCallingToggle, handleThinkingTracesToggle, setContextTab,
-    setManagementView, handleStartWizard,
+    handleDeleteAgent, handleToolCallingToggle, handleThinkingTracesToggle, handleAutonomyChange,
+    setContextTab, setManagementView, handleStartWizard,
   ]);
 
   const handleExportSession = useCallback(
@@ -1053,6 +1055,8 @@ export const AgentStudioPage = () => {
                   onDismissContinuationBanner={stableChatOnDismissContinuation}
                   wizard={wizard}
                   onWizardConfirm={() => void handleWizardConfirm()}
+                  onOpenCredentialVault={() => setManagementView("credentials")}
+                  onOpenSettings={() => handleManagementNav("settings")}
                 />
               ) : (
                 <div className="flex h-full w-full flex-col items-center justify-center gap-3 text-center text-muted-foreground">
@@ -1123,7 +1127,7 @@ export const AgentStudioPage = () => {
               swipeDy={swipeDy}
               swipeHandlers={swipeHandlers}
               contextTab={contextTab}
-              expandedTab={expandedTab as "projects" | "tasks" | "brain" | "workspace" | "skills" | "activity" | null}
+              expandedTab={expandedTab as "projects" | "tasks" | "brain" | "workspace" | "skills" | "activity" | "budget" | null}
               onExpandToggle={handleExpandToggle}
               onClose={() => setContextPanelOpen(false)}
               onTabChange={setContextTab}

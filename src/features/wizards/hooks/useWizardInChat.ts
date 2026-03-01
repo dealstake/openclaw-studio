@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { z } from "zod";
 import type { GatewayClient, EventFrame } from "@/lib/gateway/GatewayClient";
 import type { WizardContext, WizardType, WizardExtractedConfig } from "../lib/wizardTypes";
 import { getWizardTheme, getWizardStarters } from "../lib/wizardThemes";
@@ -11,6 +12,39 @@ import {
   dispatchWizardTool,
 } from "../lib/wizardTools";
 import { formatPreflightForLLM } from "@/features/personas/lib/preflightPromptHelpers";
+
+// ── Tab isolation ──────────────────────────────────────────────────────
+//
+// Each browser tab gets a unique ID on module load. This prevents two tabs
+// sharing the same agentId from clobbering each other's wizard session key
+// in localStorage (they'd otherwise both write/read wizard-session:<agentId>).
+
+const TAB_ID = crypto.randomUUID();
+
+// ── Zod schemas for runtime event validation ───────────────────────────
+
+/**
+ * Validates the `payload.data` object inside `runtime.agent` events.
+ * Only the fields the hook reads are declared; unknown fields are stripped.
+ */
+const AgentEventDataSchema = z.object({
+  delta: z.string().optional(),
+  text: z.string().optional(),
+  phase: z.string().optional(),
+});
+
+/**
+ * Validates the common structure of gateway event payloads.
+ */
+const EventPayloadSchema = z.object({
+  sessionKey: z.string().optional(),
+  stream: z.string().optional(),
+  state: z.string().optional(),
+  role: z.string().optional(),
+  errorMessage: z.string().optional(),
+  data: AgentEventDataSchema.optional(),
+  message: z.unknown().optional(),
+});
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -108,10 +142,12 @@ export function useWizardInChat({
     onConfigExtractedRef.current = onConfigExtracted;
   }, [onConfigExtracted]);
 
-  // Keep context ref in sync and persist to localStorage for leak cleanup
+  // Keep context ref in sync and persist to localStorage for leak cleanup.
+  // Key includes TAB_ID to prevent cross-tab collisions when multiple tabs
+  // share the same agentId.
   useEffect(() => {
     wizardContextRef.current = wizardContext;
-    const STORAGE_KEY = `wizard-session:${agentId}`;
+    const STORAGE_KEY = `wizard-session:${agentId}:${TAB_ID}`;
     if (wizardContext) {
       try {
         localStorage.setItem(STORAGE_KEY, wizardContext.sessionKey);
@@ -122,8 +158,10 @@ export function useWizardInChat({
   }, [wizardContext, agentId]);
 
   // On mount: clean up any leaked wizard session from a previous page load
+  // for this specific tab. Uses TAB_ID so only this tab's leaked sessions
+  // are deleted — other tabs are unaffected.
   useEffect(() => {
-    const STORAGE_KEY = `wizard-session:${agentId}`;
+    const STORAGE_KEY = `wizard-session:${agentId}:${TAB_ID}`;
     const leaked = localStorage.getItem(STORAGE_KEY);
     if (leaked) {
       localStorage.removeItem(STORAGE_KEY);
@@ -140,21 +178,21 @@ export function useWizardInChat({
 
       if (event.event !== "runtime.chat" && event.event !== "runtime.agent") return;
 
-      const payload = event.payload as Record<string, unknown> | undefined;
-      if (!payload) return;
+      // Validate payload shape at runtime before accessing fields
+      const payloadParse = EventPayloadSchema.safeParse(event.payload);
+      if (!payloadParse.success) return;
+      const payload = payloadParse.data;
+
       if (payload.sessionKey !== ctx.sessionKey) return;
 
       // ── runtime.agent events ──
       if (event.event === "runtime.agent") {
-        const stream = typeof payload.stream === "string" ? payload.stream : "";
-        const data =
-          payload.data && typeof payload.data === "object"
-            ? (payload.data as Record<string, unknown>)
-            : null;
+        const stream = payload.stream ?? "";
+        const data = payload.data ?? {};
 
         if (stream === "thinking" || stream === "reasoning" || stream === "extended_thinking") {
-          const delta = typeof data?.delta === "string" ? data.delta : "";
-          const text = typeof data?.text === "string" ? data.text : "";
+          const delta = data.delta ?? "";
+          const text = data.text ?? "";
           if (text) {
             setThinkingTrace(text);
           } else if (delta) {
@@ -165,8 +203,8 @@ export function useWizardInChat({
         }
 
         if (stream === "assistant") {
-          const delta = typeof data?.delta === "string" ? data.delta : "";
-          const text = typeof data?.text === "string" ? data.text : "";
+          const delta = data.delta ?? "";
+          const text = data.text ?? "";
           if (text) {
             setStreamText(text);
           } else if (delta) {
@@ -177,7 +215,7 @@ export function useWizardInChat({
         }
 
         if (stream === "lifecycle") {
-          const phase = typeof data?.phase === "string" ? data.phase : "";
+          const phase = data.phase ?? "";
           if (phase === "end" || phase === "error") {
             setIsStreaming(false);
           }
@@ -186,7 +224,7 @@ export function useWizardInChat({
       }
 
       // ── runtime.chat events ──
-      const state = typeof payload.state === "string" ? payload.state : "";
+      const state = payload.state ?? "";
       const role = resolveRole(payload.message);
 
       if (state === "delta") {
@@ -295,9 +333,7 @@ export function useWizardInChat({
 
       if (state === "error") {
         const errorMsg =
-          typeof payload.errorMessage === "string"
-            ? payload.errorMessage
-            : "An error occurred in the wizard session.";
+          payload.errorMessage ?? "An error occurred in the wizard session.";
         setError(errorMsg);
         setStreamText(null);
         setThinkingTrace(null);

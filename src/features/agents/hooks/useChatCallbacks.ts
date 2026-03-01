@@ -88,6 +88,7 @@ export function useChatCallbacks({
     handleThinkingChange,
     handleToolCallingToggle,
     handleThinkingTracesToggle,
+    handleAutonomyChange,
   } = useSessionSettings({
     client,
     dispatch,
@@ -103,5 +104,6 @@ export function useChatCallbacks({
     handleThinkingChange,
     handleToolCallingToggle,
     handleThinkingTracesToggle,
+    handleAutonomyChange,
   };
 }

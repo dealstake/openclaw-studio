@@ -10,13 +10,14 @@ import { AgentBrainPanel } from "@/features/agents/components/AgentInspectPanels
 import { UnifiedFilesPanel } from "@/features/workspace/components/UnifiedFilesPanel";
 import { ActivityPanel } from "@/features/activity/components/ActivityPanel";
 import { SkillsPanel } from "@/features/skills/components/SkillsPanel";
+import { ContextBudgetCard } from "@/features/context-budget";
 import type { PersonaTemplate } from "@/features/personas/lib/templateTypes";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import type { AgentState } from "@/features/agents/state/store";
 import type { GatewayModelChoice } from "@/lib/gateway/models";
 import type { AgentFileName } from "@/lib/agents/agentFiles";
 
-export type ExpandableTab = "projects" | "tasks" | "brain" | "workspace" | "skills" | "activity";
+export type ExpandableTab = "projects" | "tasks" | "brain" | "workspace" | "skills" | "activity" | "budget";
 
 interface StudioContextDrawerProps {
   isMobileLayout: boolean;
@@ -187,6 +188,11 @@ export const StudioContextDrawer = React.memo(function StudioContextDrawer(props
         activityContent={
           <PanelErrorBoundary name="Activity">
             <ActivityPanel />
+          </PanelErrorBoundary>
+        }
+        budgetContent={
+          <PanelErrorBoundary name="Budget">
+            <ContextBudgetCard agentId={focusedAgentId} />
           </PanelErrorBoundary>
         }
       />

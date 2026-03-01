@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useCallback, useEffect, useRef } from "react";
-import { MessageSquare, Pin } from "lucide-react";
+import { MessageSquare, Pin, GitCompareArrows } from "lucide-react";
 import { formatRelativeTime } from "@/lib/text/time";
 import type { SessionHistoryEntry } from "../hooks/useSessionHistory";
 import { SessionItemMenu } from "./SessionItemMenu";
@@ -15,6 +15,10 @@ type SessionItemProps = {
   pinned: boolean;
   renaming: boolean;
   searchQuery: string;
+  /** Whether this session is currently selected for comparison */
+  inComparison?: boolean;
+  /** Whether the comparison set is at capacity */
+  comparisonFull?: boolean;
   onSelect: (key: string) => void;
   onRename: (key: string, name: string) => void;
   onRenameStart: (key: string) => void;
@@ -23,6 +27,7 @@ type SessionItemProps = {
   onTogglePin: (key: string) => void;
   onViewTrace?: (key: string) => void;
   onExport?: (key: string) => void;
+  onToggleCompare?: (key: string) => void;
 };
 
 export const SessionItem = memo(function SessionItem({
@@ -32,6 +37,8 @@ export const SessionItem = memo(function SessionItem({
   pinned,
   renaming,
   searchQuery,
+  inComparison = false,
+  comparisonFull = false,
   onSelect,
   onRename,
   onRenameStart,
@@ -40,6 +47,7 @@ export const SessionItem = memo(function SessionItem({
   onTogglePin,
   onViewTrace,
   onExport,
+  onToggleCompare,
 }: SessionItemProps) {
   const itemRef = useRef<HTMLButtonElement>(null);
   const itemId = `session-item-${session.key.replace(/:/g, "-")}`;
@@ -79,9 +87,11 @@ export const SessionItem = memo(function SessionItem({
       className={`group flex w-full items-start gap-2.5 rounded-lg px-2.5 py-2.5 text-left transition-all duration-200 focus-ring min-h-[44px] ${
         active
           ? "bg-accent text-accent-foreground border-l-2 border-l-primary ring-1 ring-primary/20"
-          : focused
-            ? "bg-muted/70 text-foreground ring-1 ring-primary/30"
-            : "text-foreground/80 hover:bg-muted hover:translate-x-0.5"
+          : inComparison
+            ? "bg-primary/5 text-foreground ring-1 ring-primary/30 border-l-2 border-l-primary/50"
+            : focused
+              ? "bg-muted/70 text-foreground ring-1 ring-primary/30"
+              : "text-foreground/80 hover:bg-muted hover:translate-x-0.5"
       }`}
     >
       {pinned ? (
@@ -106,10 +116,21 @@ export const SessionItem = memo(function SessionItem({
             {session.summary}
           </p>
         )}
-        <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
-          {formatRelativeTime(session.updatedAt)}
-          {session.messageCount > 0 ? ` · ${session.messageCount} msgs` : ""}
-        </p>
+        <div className="mt-0.5 flex items-center gap-1.5">
+          <p className="truncate text-[11px] text-muted-foreground">
+            {formatRelativeTime(session.updatedAt)}
+            {session.messageCount > 0 ? ` · ${session.messageCount} msgs` : ""}
+          </p>
+          {inComparison && (
+            <span
+              className="inline-flex items-center gap-0.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary"
+              aria-label="Selected for comparison"
+            >
+              <GitCompareArrows className="h-2.5 w-2.5" />
+              Compare
+            </span>
+          )}
+        </div>
       </div>
       {!renaming && (
         <div className="mt-0.5 shrink-0">
@@ -117,11 +138,14 @@ export const SessionItem = memo(function SessionItem({
             sessionKey={session.key}
             displayName={session.displayName}
             pinned={pinned}
+            inComparison={inComparison}
+            comparisonFull={comparisonFull}
             onRename={onRenameStart}
             onDelete={onDelete}
             onTogglePin={onTogglePin}
             onViewTrace={onViewTrace}
             onExport={onExport}
+            onToggleCompare={onToggleCompare}
           />
         </div>
       )}

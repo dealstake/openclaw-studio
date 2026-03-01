@@ -1,11 +1,22 @@
 "use client";
 
 import { memo, useCallback, useState } from "react";
-import { MoreHorizontal, Pin, PinOff, Pencil, Trash2, FileSearch, Download } from "lucide-react";
+import {
+  MoreHorizontal,
+  Pin,
+  PinOff,
+  Pencil,
+  Trash2,
+  FileSearch,
+  Download,
+  GitCompare,
+  GitCompareArrows,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
@@ -14,22 +25,29 @@ type SessionItemMenuProps = {
   sessionKey: string;
   displayName: string;
   pinned: boolean;
+  inComparison?: boolean;
+  /** Whether the comparison set is full (MAX reached) and this session is not in it */
+  comparisonFull?: boolean;
   onRename: (key: string) => void;
   onDelete: (key: string) => void;
   onTogglePin: (key: string) => void;
   onViewTrace?: (key: string) => void;
   onExport?: (key: string) => void;
+  onToggleCompare?: (key: string) => void;
 };
 
 export const SessionItemMenu = memo(function SessionItemMenu({
   sessionKey,
   displayName,
   pinned,
+  inComparison = false,
+  comparisonFull = false,
   onRename,
   onDelete,
   onTogglePin,
   onViewTrace,
   onExport,
+  onToggleCompare,
 }: SessionItemMenuProps) {
   const [confirmOpen, setConfirmOpen] = useState(false);
 
@@ -41,6 +59,13 @@ export const SessionItemMenu = memo(function SessionItemMenu({
     onDelete(sessionKey);
     setConfirmOpen(false);
   }, [onDelete, sessionKey]);
+
+  const CompareIcon = inComparison ? GitCompareArrows : GitCompare;
+  const compareLabel = inComparison
+    ? "Remove from Compare"
+    : comparisonFull
+      ? "Compare (limit reached)"
+      : "Add to Compare";
 
   return (
     <>
@@ -55,7 +80,7 @@ export const SessionItemMenu = memo(function SessionItemMenu({
             <MoreHorizontal className="h-3.5 w-3.5" />
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" sideOffset={4} className="w-40">
+        <DropdownMenuContent align="end" sideOffset={4} className="w-44">
           <DropdownMenuItem
             onClick={(e) => {
               e.stopPropagation();
@@ -83,6 +108,22 @@ export const SessionItemMenu = memo(function SessionItemMenu({
               </>
             )}
           </DropdownMenuItem>
+          {onToggleCompare && (
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                if (!comparisonFull || inComparison) {
+                  onToggleCompare(sessionKey);
+                }
+              }}
+              disabled={comparisonFull && !inComparison}
+              className={inComparison ? "text-primary focus:text-primary" : undefined}
+            >
+              <CompareIcon className="mr-2 h-3.5 w-3.5" />
+              {compareLabel}
+            </DropdownMenuItem>
+          )}
+          {(onViewTrace || onExport) && <DropdownMenuSeparator />}
           {onViewTrace && (
             <DropdownMenuItem
               onClick={(e) => {
@@ -105,6 +146,7 @@ export const SessionItemMenu = memo(function SessionItemMenu({
               Export
             </DropdownMenuItem>
           )}
+          <DropdownMenuSeparator />
           <DropdownMenuItem
             onClick={(e) => {
               e.stopPropagation();

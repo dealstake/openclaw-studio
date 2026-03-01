@@ -10,6 +10,7 @@ import {
   type SummaryStatusSnapshot,
 } from "@/features/agents/state/runtimeEventBridge";
 import type { AgentStoreSeed, Action as AgentStoreAction } from "@/features/agents/state/store";
+import { parseAutonomyLevel } from "@/features/agents/lib/autonomyService";
 import {
   buildAgentMainSessionKey,
   isSameSessionKey,
@@ -162,6 +163,18 @@ export function useLoadAgents(params: UseLoadAgentsParams) {
           mainSessionKeyByAgent.set(agent.id, null);
         }
       }
+      // Build agentId → config entry map for per-agent settings (e.g. autonomyLevel)
+      const configEntryByAgentId = new Map<string, Record<string, unknown>>();
+      const rawConfigList = configSnapshot?.config?.agents?.list;
+      if (Array.isArray(rawConfigList)) {
+        for (const entry of rawConfigList) {
+          if (entry && typeof entry === "object" && typeof (entry as Record<string, unknown>).id === "string") {
+            const e = entry as Record<string, unknown>;
+            configEntryByAgentId.set(String(e.id).trim(), e);
+          }
+        }
+      }
+
       const seeds: AgentStoreSeed[] = realAgents.map((agent) => {
         const persistedSeed =
           settings && gatewayKey ? resolveAgentAvatarSeed(settings, gatewayKey, agent.id) : null;
@@ -178,6 +191,8 @@ export function useLoadAgents(params: UseLoadAgentsParams) {
             : resolveDefaultModelForAgent(agent.id, configSnapshot);
         const thinkingLevel =
           typeof mainSession?.thinkingLevel === "string" ? mainSession.thinkingLevel : null;
+        const configEntry = configEntryByAgentId.get(agent.id) ?? null;
+        const autonomyLevel = parseAutonomyLevel(configEntry?.autonomyLevel);
         return {
           agentId: agent.id,
           name,
@@ -186,6 +201,7 @@ export function useLoadAgents(params: UseLoadAgentsParams) {
           avatarUrl,
           model,
           thinkingLevel,
+          autonomyLevel,
         };
       });
       hydrateAgents(seeds);

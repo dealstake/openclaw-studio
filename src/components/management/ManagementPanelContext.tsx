@@ -4,6 +4,7 @@ import { createContext, useContext, useMemo, type ReactNode } from "react";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import type { ChannelsStatusSnapshot } from "@/lib/gateway/channels";
 import type { AgentState } from "@/features/agents/state/store";
+import type { AutonomyLevel } from "@/features/agents/lib/autonomyService";
 
 export interface ManagementPanelContextValue {
   client: GatewayClient;
@@ -26,6 +27,7 @@ export interface ManagementPanelContextValue {
   onDeleteAgent: () => void;
   onToolCallingToggle: (enabled: boolean) => void;
   onThinkingTracesToggle: (enabled: boolean) => void;
+  onAutonomyChange: (level: AutonomyLevel) => void;
   onNavigateToTasks: () => void;
   onStartCredentialWizard: (() => void) | null;
 }
@@ -51,7 +53,7 @@ export function ManagementPanelProvider({ children, ...value }: ManagementPanelP
     value.channelsSnapshot, value.channelsLoading, value.channelsError, value.onRefreshChannels,
     value.settingsAgent, value.onCloseSettings, value.onRenameAgent,
     value.onNewSession, value.onDeleteAgent, value.onToolCallingToggle,
-    value.onThinkingTracesToggle, value.onNavigateToTasks,
+    value.onThinkingTracesToggle, value.onAutonomyChange, value.onNavigateToTasks,
     value.onStartCredentialWizard,
   ]);
 

@@ -35,6 +35,7 @@ function stateWithParts(count: number): AgentStoreState {
         historyLoadedAt: null,
         toolCallingEnabled: false,
         showThinkingTraces: true,
+  autonomyLevel: "autonomous",
   wizardContext: null,
       },
     ],

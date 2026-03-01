@@ -60,16 +60,18 @@ export const WizardChatOverlay = memo(function WizardChatOverlay({
 }: WizardChatOverlayProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll on new content — deferred to after paint cycle
+  // Auto-scroll on new content — deferred to next animation frame so the DOM
+  // has painted before we measure scroll position.
   useEffect(() => {
-    const timer = setTimeout(() => {
+    const raf = requestAnimationFrame(() => {
       bottomRef.current?.scrollIntoView({ block: "end", behavior: "auto" });
-    }, 50);
-    return () => clearTimeout(timer);
+    });
+    return () => cancelAnimationFrame(raf);
   }, [messages.length, streamText, thinkingTrace, extractedConfig]);
 
   return (
-    <div className="flex flex-col gap-3">
+    // aria-live="polite" ensures streaming messages are announced to screen readers
+    <div className="flex flex-col gap-3" aria-live="polite" aria-atomic="false">
       {/* Rendered messages */}
       {messages.map((msg) => (
         <div

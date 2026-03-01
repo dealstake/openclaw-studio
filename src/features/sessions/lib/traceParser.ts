@@ -121,6 +121,14 @@ function extractThinkingContent(content: string | ContentBlock[]): string | unde
 }
 
 /**
+ * Runtime type guard: returns true if `value` is a plain object (not null, not array).
+ * Used to safely narrow unknown API values to `Record<string, unknown>`.
+ */
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/**
  * Extract tool calls from assistant message content blocks.
  */
 function extractToolCalls(content: string | ContentBlock[]): ToolCallTrace[] {
@@ -130,7 +138,8 @@ function extractToolCalls(content: string | ContentBlock[]): ToolCallTrace[] {
     .map((b) => ({
       id: b.id ?? "",
       name: b.name ?? "",
-      arguments: (b.input ?? (typeof b.arguments === "string" ? {} : (b.arguments as Record<string, unknown>))) ?? {},
+      // Runtime-validated: treat b.input or b.arguments as Record only if they are plain objects
+      arguments: isRecord(b.input) ? b.input : isRecord(b.arguments) ? b.arguments : {},
     }));
 }
 

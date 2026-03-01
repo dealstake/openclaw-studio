@@ -30,6 +30,7 @@ const createAgent = (): AgentState =>
     historyLoadedAt: null,
     toolCallingEnabled: true,
     showThinkingTraces: true,
+  autonomyLevel: "autonomous",
   wizardContext: null,
     model: "openai/gpt-5",
     thinkingLevel: "medium",

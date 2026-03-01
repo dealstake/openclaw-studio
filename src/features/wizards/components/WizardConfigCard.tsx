@@ -19,6 +19,18 @@ type WizardConfigCardProps = {
 const SECRET_KEY_RE = /^(secret|password|token|key|apiKey|api_key|credential|auth)$/i;
 
 /**
+ * Converts a camelCase or snake_case object key into a human-readable Title Case label.
+ * e.g. "apiKey" → "Api Key", "service_name" → "Service Name"
+ */
+function formatConfigLabel(key: string): string {
+  return key
+    .replace(/([A-Z])/g, " $1")
+    .replace(/_/g, " ")
+    .replace(/^\s/, "")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+/**
  * Renders a config object as key-value pairs.
  * Handles nested objects shallowly, truncates long values,
  * and masks sensitive keys (secret, password, token, key, etc.).
@@ -29,13 +41,10 @@ function configToEntries(config: unknown): { key: string; value: string }[] {
   for (const [key, val] of Object.entries(config as Record<string, unknown>)) {
     if (val === null || val === undefined) continue;
 
+    const label = formatConfigLabel(key);
+
     // Mask sensitive values
     if (SECRET_KEY_RE.test(key) && typeof val === "string" && val.length > 0) {
-      const label = key
-        .replace(/([A-Z])/g, " $1")
-        .replace(/_/g, " ")
-        .replace(/^\s/, "")
-        .replace(/\b\w/g, (c) => c.toUpperCase());
       entries.push({ key: label, value: "••••••••" });
       continue;
     }
@@ -52,12 +61,6 @@ function configToEntries(config: unknown): { key: string; value: string }[] {
       display = JSON.stringify(val);
       if (display.length > 120) display = display.slice(0, 117) + "…";
     }
-    // Convert camelCase/snake_case to Title Case
-    const label = key
-      .replace(/([A-Z])/g, " $1")
-      .replace(/_/g, " ")
-      .replace(/^\s/, "")
-      .replace(/\b\w/g, (c) => c.toUpperCase());
     entries.push({ key: label, value: display });
   }
   return entries;
@@ -114,9 +117,9 @@ export const WizardConfigCard = memo(function WizardConfigCard({
       <div className="flex items-center gap-2">
         <button
           type="button"
-          className="inline-flex h-11 items-center gap-1.5 rounded-md bg-primary px-4 text-xs font-medium text-primary-foreground shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex h-11 items-center gap-1.5 rounded-md bg-primary px-4 text-xs font-medium text-primary-foreground shadow-sm transition hover:brightness-110 aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
           onClick={handleConfirm}
-          disabled={confirming}
+          aria-disabled={confirming}
           aria-label="Confirm and create"
         >
           <Check className="h-3 w-3" />

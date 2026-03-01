@@ -31,6 +31,7 @@ const createAgent = (): AgentState => ({
   historyLoadedAt: null,
   toolCallingEnabled: true,
   showThinkingTraces: true,
+  autonomyLevel: "autonomous",
   wizardContext: null,
   model: null,
   thinkingLevel: null,
@@ -141,7 +142,9 @@ describe("AgentChatPanel controls", () => {
     expect(screen.getByText("web_search")).toBeInTheDocument();
   });
 
-  it("renders_status_part_as_chat_status_bar", () => {
+  it("does_not_render_non_error_status_inline", () => {
+    // Non-error status parts (complete, thinking, etc.) are shown via the
+    // composer button progress ring, not inline in the transcript.
     const parts: MessagePart[] = [
       { type: "text", text: "> test" },
       { type: "status", state: "complete", model: "claude-opus-4" },
@@ -160,8 +163,8 @@ describe("AgentChatPanel controls", () => {
       })
     );
 
-    // ChatStatusBar shows the model name
-    expect(screen.getByText("claude-opus-4")).toBeInTheDocument();
+    // "complete" status is not rendered inline — no model name badge in transcript
+    expect(screen.queryByText("claude-opus-4")).toBeNull();
   });
 
   it("renders_empty_state_when_no_message_parts", () => {

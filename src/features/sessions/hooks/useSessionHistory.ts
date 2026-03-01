@@ -104,38 +104,44 @@ export function useSessionHistory(
     setLoading(true);
     setError(null);
     try {
-      const result = await client.call<SessionsListResult>("sessions.list", {
-        includeGlobal: true,
-        limit: 200,
-      });
-      const raw = result.sessions ?? [];
+      // Fetch sessions list and transcript previews concurrently to avoid double re-render
+      const params = new URLSearchParams({ agentId, page: "1", perPage: "200" });
+      const [sessionsResult, previewMap] = await Promise.all([
+        client.call<SessionsListResult>("sessions.list", {
+          includeGlobal: true,
+          limit: 200,
+        }),
+        fetch(`/api/sessions/transcripts?${params}`)
+          .then(async (resp) => {
+            if (!resp.ok) return new Map<string, string>();
+            const data = await resp.json();
+            const transcripts: TranscriptEntry[] = data.transcripts ?? [];
+            const map = new Map<string, string>();
+            for (const t of transcripts) {
+              if (t.sessionKey && t.preview) {
+                map.set(
+                  t.sessionKey,
+                  t.preview.length > 60 ? t.preview.slice(0, 57) + "…" : t.preview,
+                );
+              }
+            }
+            return map;
+          })
+          .catch(() => new Map<string, string>()),
+      ]);
+
+      const raw = sessionsResult.sessions ?? [];
       const agentSessions = filterAgentSessions(raw, agentId);
 
-      setSessions(agentSessions);
-
-      // Fetch previews from transcripts API and merge as summaries
-      try {
-        const params = new URLSearchParams({ agentId, page: "1", perPage: "200" });
-        const resp = await fetch(`/api/sessions/transcripts?${params}`);
-        if (resp.ok) {
-          const data = await resp.json();
-          const transcripts: TranscriptEntry[] = data.transcripts ?? [];
-          const previewMap = new Map<string, string>();
-          for (const t of transcripts) {
-            if (t.sessionKey && t.preview) {
-              previewMap.set(t.sessionKey, t.preview.length > 60 ? t.preview.slice(0, 57) + "…" : t.preview);
-            }
-          }
-          if (previewMap.size > 0) {
-            setSessions(prev => prev.map(s => {
+      // Merge previews into sessions in a single atomic state update
+      setSessions(
+        previewMap.size > 0
+          ? agentSessions.map((s) => {
               const preview = previewMap.get(s.key);
               return preview ? { ...s, summary: preview } : s;
-            }));
-          }
-        }
-      } catch {
-        // Non-critical — previews are a nice-to-have enhancement
-      }
+            })
+          : agentSessions,
+      );
     } catch (err) {
       if (!isGatewayDisconnectLikeError(err)) {
         setError(err instanceof Error ? err.message : "Failed to load sessions");

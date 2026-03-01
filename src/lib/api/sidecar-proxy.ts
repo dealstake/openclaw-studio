@@ -28,8 +28,11 @@ export async function withSidecarGetFallback<T>(
 ): Promise<NextResponse> {
   if (isSidecarConfigured()) {
     const resp = await sidecarGet(sidecarPath, sidecarParams);
-    const data = await resp.json();
-    return NextResponse.json(data, { status: resp.status });
+    // Fall back to local when sidecar doesn't implement this endpoint
+    if (resp.status !== 404) {
+      const data = await resp.json();
+      return NextResponse.json(data, { status: resp.status });
+    }
   }
   const result = await localFn();
   return NextResponse.json(result);
@@ -47,8 +50,11 @@ export async function withSidecarMutateFallback<T>(
 ): Promise<NextResponse> {
   if (isSidecarConfigured()) {
     const resp = await sidecarMutate(sidecarPath, method, body);
-    const data = await resp.json();
-    return NextResponse.json(data, { status: resp.status });
+    // Fall back to local when sidecar doesn't implement this endpoint
+    if (resp.status !== 404) {
+      const data = await resp.json();
+      return NextResponse.json(data, { status: resp.status });
+    }
   }
   const result = await localFn();
   return NextResponse.json(result);

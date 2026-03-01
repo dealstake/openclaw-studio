@@ -1,4 +1,4 @@
-import { memo, useMemo } from "react";
+import { memo } from "react";
 import { MessageBubble } from "@/components/chat/MessageBubble";
 import { MessageActions } from "@/features/agents/components/MessageActions";
 import { getWizardTheme } from "../lib/wizardThemes";
@@ -21,7 +21,7 @@ export const WizardMessageBubble = memo(function WizardMessageBubble({
   wizardType,
   streaming = false,
 }: WizardMessageBubbleProps) {
-  const theme = useMemo(() => getWizardTheme(wizardType), [wizardType]);
+  const theme = getWizardTheme(wizardType);
 
   return (
     <div className={`border-l-2 pl-3 ${theme.border}`}>

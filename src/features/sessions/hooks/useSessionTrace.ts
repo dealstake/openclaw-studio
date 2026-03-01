@@ -50,8 +50,21 @@ export function useSessionTrace(agentId: string | null, sessionId: string | null
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchTrace(agentId, sessionId);
-      const result = parseTrace(data.messages, sessionId);
+      // Paginate until hasMore is false — sessions with >500 messages were silently truncated
+      const PAGE_SIZE = 500;
+      const allMessages: import("@/features/sessions/lib/traceParser").EnhancedTranscriptMessage[] =
+        [];
+      let offset = 0;
+      let hasMore = true;
+      while (hasMore) {
+        const page = await fetchTrace(agentId, sessionId, offset, PAGE_SIZE);
+        allMessages.push(...page.messages);
+        hasMore = page.hasMore;
+        offset += page.messages.length;
+        // Safety: if the API returns 0 messages, stop to avoid an infinite loop
+        if (page.messages.length === 0) break;
+      }
+      const result = parseTrace(allMessages, sessionId);
       setTurns(result.turns);
       setSummary(result.summary);
       if (result.turns.length > 0) {
