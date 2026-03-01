@@ -5,7 +5,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 
 import { GET as filesGET } from "@/app/api/workspace/files/route";
-import { GET as fileGET, PUT as filePUT } from "@/app/api/workspace/file/route";
+import { GET as fileGET, PUT as filePUT, DELETE as fileDELETE } from "@/app/api/workspace/file/route";
 
 const ORIGINAL_ENV = { ...process.env };
 let tempDir: string;
@@ -311,6 +311,112 @@ describe("PUT /api/workspace/file", () => {
           path: "test.md",
           content: "data",
         }),
+      })
+    );
+    expect(response.status).toBe(400);
+  });
+});
+
+// ── DELETE /api/workspace/file ────────────────────────────────────────────────
+
+describe("DELETE /api/workspace/file", () => {
+  it("returns 400 when agentId is missing", async () => {
+    const response = await fileDELETE(
+      makeRequest("/api/workspace/file", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path: "test.md" }),
+      })
+    );
+    expect(response.status).toBe(400);
+  });
+
+  it("returns 400 when path is missing", async () => {
+    const agentDir = path.join(tempDir, "agents", "alex");
+    fs.mkdirSync(agentDir, { recursive: true });
+
+    const response = await fileDELETE(
+      makeRequest("/api/workspace/file", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agentId: "alex" }),
+      })
+    );
+    expect(response.status).toBe(400);
+    const body = await response.json();
+    expect(body.error).toMatch(/path/);
+  });
+
+  it("returns 404 when file does not exist", async () => {
+    const agentDir = path.join(tempDir, "agents", "alex");
+    fs.mkdirSync(agentDir, { recursive: true });
+
+    const response = await fileDELETE(
+      makeRequest("/api/workspace/file", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agentId: "alex", path: "nonexistent.md" }),
+      })
+    );
+    expect(response.status).toBe(404);
+  });
+
+  it("deletes a file and returns ok: true", async () => {
+    const agentDir = path.join(tempDir, "agents", "alex");
+    fs.mkdirSync(agentDir, { recursive: true });
+    fs.writeFileSync(path.join(agentDir, "delete-me.md"), "# Delete me");
+
+    const response = await fileDELETE(
+      makeRequest("/api/workspace/file", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agentId: "alex", path: "delete-me.md" }),
+      })
+    );
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.ok).toBe(true);
+    expect(fs.existsSync(path.join(agentDir, "delete-me.md"))).toBe(false);
+  });
+
+  it("deletes a file in a subdirectory", async () => {
+    const projDir = path.join(tempDir, "agents", "alex", "projects");
+    fs.mkdirSync(projDir, { recursive: true });
+    fs.writeFileSync(path.join(projDir, "old-project.md"), "# Old");
+
+    const response = await fileDELETE(
+      makeRequest("/api/workspace/file", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agentId: "alex", path: "projects/old-project.md" }),
+      })
+    );
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.ok).toBe(true);
+    expect(fs.existsSync(path.join(projDir, "old-project.md"))).toBe(false);
+  });
+
+  it("rejects path traversal attempts", async () => {
+    const agentDir = path.join(tempDir, "agents", "alex");
+    fs.mkdirSync(agentDir, { recursive: true });
+
+    const response = await fileDELETE(
+      makeRequest("/api/workspace/file", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agentId: "alex", path: "../../../etc/passwd" }),
+      })
+    );
+    expect(response.status).toBe(403);
+  });
+
+  it("rejects invalid agentId", async () => {
+    const response = await fileDELETE(
+      makeRequest("/api/workspace/file", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agentId: "../evil", path: "test.md" }),
       })
     );
     expect(response.status).toBe(400);

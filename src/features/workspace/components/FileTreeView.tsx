@@ -27,6 +27,16 @@ interface FileTreeViewProps {
   onTogglePin?: (entry: PinnedEntry) => void;
   /** Ordered list of pinned entries to display at the top */
   pinnedEntries?: PinnedEntry[];
+  /**
+   * Called when the user clicks the edit action on a file node.
+   * If omitted, the edit button is not shown.
+   */
+  onEdit?: (entry: WorkspaceEntry) => void;
+  /**
+   * Called when the user clicks the delete action on a file node.
+   * If omitted, the delete button is not shown.
+   */
+  onDelete?: (path: string) => void;
 }
 
 // ── Tree filtering ───────────────────────────────────────────────────────────
@@ -73,6 +83,8 @@ export const FileTreeView = memo(function FileTreeView({
   isPinned,
   onTogglePin,
   pinnedEntries = [],
+  onEdit,
+  onDelete,
 }: FileTreeViewProps) {
   // Tracks which directory paths are expanded
   const [expandedDirs, setExpandedDirs] = useState<Set<string>>(new Set());
@@ -136,6 +148,39 @@ export const FileTreeView = memo(function FileTreeView({
     [entries, searchQuery, cacheSnapshot]
   );
 
+  /**
+   * Handle ArrowUp / ArrowDown at the tree container level.
+   * Collects all visible treeitem elements and moves focus between them.
+   * ArrowRight / ArrowLeft are handled per-node in FileTreeNode.
+   */
+  const handleTreeKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+
+      const treeEl = e.currentTarget;
+      const items = Array.from(
+        treeEl.querySelectorAll<HTMLElement>('[role="treeitem"]')
+      );
+      if (items.length === 0) return;
+
+      const active = document.activeElement as HTMLElement;
+      const idx = items.indexOf(active);
+
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        // Wrap to first if at end
+        const next = items[idx + 1] ?? items[0];
+        next?.focus();
+      } else {
+        e.preventDefault();
+        // Wrap to last if at start
+        const prev = items[idx - 1] ?? items[items.length - 1];
+        prev?.focus();
+      }
+    },
+    []
+  );
+
   return (
     <div className="flex h-full flex-col">
       {/* Search bar */}
@@ -164,6 +209,7 @@ export const FileTreeView = memo(function FileTreeView({
         role="tree"
         aria-label="Workspace files"
         className="flex-1 overflow-y-auto px-1 py-1"
+        onKeyDown={handleTreeKeyDown}
       >
         {filteredEntries.length === 0 && searchQuery.trim() ? (
           <p className="px-3 py-4 text-center text-xs text-muted-foreground">
@@ -184,6 +230,8 @@ export const FileTreeView = memo(function FileTreeView({
               onClick={onFileClick}
               isPinned={isPinned}
               onTogglePin={onTogglePin}
+              onEdit={onEdit}
+              onDelete={onDelete}
             />
           ))
         )}

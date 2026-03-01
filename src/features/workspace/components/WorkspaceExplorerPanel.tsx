@@ -50,6 +50,7 @@ export const WorkspaceExplorerPanel = memo(function WorkspaceExplorerPanel({
     createFile,
     fileExists,
     fetchDirChildren,
+    deleteFile,
   } = useWorkspaceFiles({ agentId, client, isTabActive, eventTick });
 
   const [searchMode, setSearchMode] = useState(false);
@@ -58,6 +59,11 @@ export const WorkspaceExplorerPanel = memo(function WorkspaceExplorerPanel({
   const [modalFile, setModalFile] = useState<string | null>(null);
   const [showNewFile, setShowNewFile] = useState(false);
   const [overwriteConfirm, setOverwriteConfirm] = useState<{
+    open: boolean;
+    path: string;
+    name: string;
+  }>({ open: false, path: "", name: "" });
+  const [deleteConfirm, setDeleteConfirm] = useState<{
     open: boolean;
     path: string;
     name: string;
@@ -125,6 +131,23 @@ export const WorkspaceExplorerPanel = memo(function WorkspaceExplorerPanel({
   const handleToggleSearch = useCallback(() => {
     setSearchMode((prev) => !prev);
   }, []);
+
+  /** Open a file in the editor modal (triggered by the Edit hover action). */
+  const handleEditFile = useCallback((entry: WorkspaceEntry) => {
+    setModalFile(entry.path);
+  }, []);
+
+  /** Show delete confirmation for a file path. */
+  const handleDeleteFile = useCallback((path: string) => {
+    const name = path.split("/").pop() ?? path;
+    setDeleteConfirm({ open: true, path, name });
+  }, []);
+
+  /** Execute delete after user confirms. */
+  const handleDeleteConfirm = useCallback(() => {
+    setDeleteConfirm((prev) => ({ ...prev, open: false }));
+    void deleteFile(deleteConfirm.path);
+  }, [deleteFile, deleteConfirm.path]);
 
   // Keyboard shortcut: Escape closes search mode or goes back from file viewer
   useEffect(() => {
@@ -213,6 +236,8 @@ export const WorkspaceExplorerPanel = memo(function WorkspaceExplorerPanel({
                 isPinned={isPinned}
                 onTogglePin={togglePin}
                 pinnedEntries={pinnedEntries}
+                onEdit={handleEditFile}
+                onDelete={handleDeleteFile}
               />
             )}
           </div>
@@ -228,6 +253,15 @@ export const WorkspaceExplorerPanel = memo(function WorkspaceExplorerPanel({
         confirmLabel="Overwrite"
         destructive
         onConfirm={handleOverwriteConfirm}
+      />
+      <ConfirmDialog
+        open={deleteConfirm.open}
+        onOpenChange={(open) => setDeleteConfirm((prev) => ({ ...prev, open }))}
+        title="Delete file?"
+        description={`"${deleteConfirm.name}" will be permanently deleted. This cannot be undone.`}
+        confirmLabel="Delete"
+        destructive
+        onConfirm={handleDeleteConfirm}
       />
       {agentId && (
         <FileEditorModal

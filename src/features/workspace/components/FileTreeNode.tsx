@@ -1,9 +1,15 @@
 "use client";
 
 import { memo } from "react";
-import { ChevronRight, Star } from "lucide-react";
+import { ChevronRight, MoreHorizontal, Pencil, Star, Trash2 } from "lucide-react";
 
 import { formatRelativeTime } from "@/lib/text/time";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 import { getFileIcon } from "../lib/file-icons";
 import type { PinnedEntry } from "../hooks/usePinnedFiles";
@@ -45,6 +51,16 @@ export interface FileTreeNodeProps {
   isPinned?: (path: string) => boolean;
   /** Called when the user clicks the pin/unpin star button */
   onTogglePin?: (entry: PinnedEntry) => void;
+  /**
+   * Called when the user clicks the edit action for a file.
+   * Only available for file nodes (not directories).
+   */
+  onEdit?: (entry: WorkspaceEntry) => void;
+  /**
+   * Called when the user clicks the delete action for a file.
+   * Only available for file nodes (not directories).
+   */
+  onDelete?: (path: string) => void;
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -59,6 +75,8 @@ export const FileTreeNode = memo(function FileTreeNode({
   onClick,
   isPinned,
   onTogglePin,
+  onEdit,
+  onDelete,
 }: FileTreeNodeProps) {
   const isDir = node.type === "directory";
   const isExpanded = isDir && expandedDirs.has(node.path);
@@ -78,9 +96,26 @@ export const FileTreeNode = memo(function FileTreeNode({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      handleClick();
+    switch (e.key) {
+      case "Enter":
+      case " ":
+        e.preventDefault();
+        handleClick();
+        break;
+      // ArrowRight expands a collapsed directory
+      case "ArrowRight":
+        if (isDir && !isExpanded) {
+          e.preventDefault();
+          onToggleExpand(node.path);
+        }
+        break;
+      // ArrowLeft collapses an expanded directory
+      case "ArrowLeft":
+        if (isDir && isExpanded) {
+          e.preventDefault();
+          onToggleExpand(node.path);
+        }
+        break;
     }
   };
 
@@ -89,16 +124,23 @@ export const FileTreeNode = memo(function FileTreeNode({
     onTogglePin?.({ name: node.name, path: node.path, type: node.type });
   };
 
-  const handlePinKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      e.stopPropagation();
-      onTogglePin?.({ name: node.name, path: node.path, type: node.type });
-    }
+  const handleEditClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onEdit?.(node);
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onDelete?.(node.path);
   };
 
   // Children come from the cache (fetched on first expand)
   const children = isExpanded ? (childrenCache.get(node.path) ?? node.children ?? []) : [];
+
+  // Whether mobile dropdown should be shown for this node
+  const hasMobileActions = !isDir
+    ? !!(onEdit || onDelete || onTogglePin)
+    : !!onTogglePin;
 
   return (
     // role="none" wrapper so the group div doesn't pollute tree accessibility
@@ -139,33 +181,117 @@ export const FileTreeNode = memo(function FileTreeNode({
           {node.name}
         </span>
 
-        {/* Pin/unpin button — visible on hover, or always visible when already pinned */}
-        {onTogglePin && (
-          <button
-            type="button"
-            onClick={handlePinClick}
-            onKeyDown={handlePinKeyDown}
-            aria-label={nodePinned ? `Unpin ${node.name}` : `Pin ${node.name}`}
-            aria-pressed={nodePinned}
-            className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded transition-opacity hover:bg-muted focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring ${
-              nodePinned
-                ? "opacity-100" // always visible when pinned
-                : "opacity-0 group-hover:opacity-100" // reveal on row hover
-            }`}
-          >
-            <Star
-              className={`h-3 w-3 transition-colors ${
-                nodePinned
-                  ? "fill-current text-amber-400"
-                  : "text-muted-foreground hover:text-amber-400"
-              }`}
-            />
-          </button>
+        {/* ── Actions area ─────────────────────────────────────────── */}
+
+        {/* Desktop hover buttons — hidden on mobile, revealed on row hover */}
+        <div className="hidden md:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+          {/* Edit button — files only */}
+          {!isDir && onEdit && (
+            <button
+              type="button"
+              onClick={handleEditClick}
+              aria-label={`Edit ${node.name}`}
+              className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            >
+              <Pencil className="h-3 w-3" />
+            </button>
+          )}
+
+          {/* Delete button — files only */}
+          {!isDir && onDelete && (
+            <button
+              type="button"
+              onClick={handleDeleteClick}
+              aria-label={`Delete ${node.name}`}
+              className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            >
+              <Trash2 className="h-3 w-3" />
+            </button>
+          )}
+
+          {/* Pin/unpin button — files and directories */}
+          {onTogglePin && (
+            <button
+              type="button"
+              onClick={handlePinClick}
+              aria-label={nodePinned ? `Unpin ${node.name}` : `Pin ${node.name}`}
+              aria-pressed={nodePinned}
+              className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            >
+              <Star
+                className={`h-3 w-3 transition-colors ${
+                  nodePinned
+                    ? "fill-current text-amber-400"
+                    : "text-muted-foreground hover:text-amber-400"
+                }`}
+              />
+            </button>
+          )}
+        </div>
+
+        {/* Always-visible pinned star indicator — fades when row is hovered
+            (the hover action bar takes over). Shown on both mobile and desktop. */}
+        {nodePinned && (
+          <Star
+            aria-hidden="true"
+            className="h-3 w-3 flex-shrink-0 fill-current text-amber-400 transition-opacity group-hover:opacity-0 md:hidden"
+          />
         )}
 
-        {/* Relative timestamp — fades on hover to avoid crowding actions */}
+        {/* Mobile: single MoreHorizontal button → context dropdown
+            Always visible on touch devices (no hover available).
+            Stop click propagation so the row itself doesn't trigger expand/open. */}
+        {hasMobileActions && (
+          <div
+            className="flex md:hidden"
+            onClick={(e) => { e.stopPropagation(); }}
+          >
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  aria-label={`More actions for ${node.name}`}
+                  className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                >
+                  <MoreHorizontal className="h-3.5 w-3.5" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="min-w-[140px]">
+                {!isDir && onEdit && (
+                  <DropdownMenuItem
+                    onClick={() => { onEdit(node); }}
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                    Edit
+                  </DropdownMenuItem>
+                )}
+                {onTogglePin && (
+                  <DropdownMenuItem
+                    onClick={() => {
+                      onTogglePin({ name: node.name, path: node.path, type: node.type });
+                    }}
+                  >
+                    <Star className="h-3.5 w-3.5" />
+                    {nodePinned ? "Unpin" : "Pin"}
+                  </DropdownMenuItem>
+                )}
+                {!isDir && onDelete && (
+                  <DropdownMenuItem
+                    variant="destructive"
+                    onClick={() => { onDelete(node.path); }}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Delete
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )}
+
+        {/* Relative timestamp — fades on hover to make room for action buttons */}
         {node.updatedAt && !isLoading ? (
-          <span className="flex-shrink-0 text-[10px] text-muted-foreground transition-opacity group-hover:opacity-0">
+          <span className="hidden flex-shrink-0 text-[10px] text-muted-foreground transition-opacity group-hover:opacity-0 sm:block">
             {formatRelativeTime(node.updatedAt)}
           </span>
         ) : null}
@@ -199,6 +325,8 @@ export const FileTreeNode = memo(function FileTreeNode({
               onClick={onClick}
               isPinned={isPinned}
               onTogglePin={onTogglePin}
+              onEdit={onEdit}
+              onDelete={onDelete}
             />
           ))}
         </div>

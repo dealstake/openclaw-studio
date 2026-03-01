@@ -243,3 +243,27 @@ export const writeWorkspaceFile = (
     size: stat.size,
   };
 };
+
+/**
+ * Delete a single file from the workspace.
+ * Only supports files — directories must be removed via other means.
+ * Throws if the path is invalid, the file does not exist, or the path
+ * points to a directory.
+ */
+export const deleteWorkspaceFile = (
+  agentId: string,
+  relativePath: string
+): void => {
+  const { absolute } = resolveWorkspacePath(agentId, relativePath);
+
+  if (!fs.existsSync(absolute)) {
+    throw new Error(`File not found: ${relativePath}`);
+  }
+
+  const stat = fs.statSync(absolute);
+  if (!stat.isFile()) {
+    throw new Error(`Path is not a file: ${relativePath}`);
+  }
+
+  fs.unlinkSync(absolute);
+};
