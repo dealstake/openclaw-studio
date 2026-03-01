@@ -10,6 +10,7 @@ import {
   Trash2,
   Pencil,
   ChevronDown,
+  Download,
 } from "lucide-react";
 import { PanelHeader } from "@/components/ui/PanelHeader";
 import { PanelToolbar } from "@/components/ui/PanelToolbar";
@@ -420,6 +421,50 @@ const KanbanColumn = memo(function KanbanColumn({
   );
 });
 
+// ─── CSV export ──────────────────────────────────────────────────────────────
+
+function escapeCSV(value: string | null | undefined): string {
+  if (value == null) return "";
+  const str = String(value);
+  if (str.includes(",") || str.includes('"') || str.includes("\n")) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
+}
+
+function exportContactsCSV(contacts: ClientContactRow[]): void {
+  const headers = ["Name", "Email", "Phone", "Company", "Title", "Stage", "Tags", "Notes", "Created"];
+  const rows = contacts.map((c) => {
+    let tags = "";
+    if (c.tags) {
+      try {
+        const arr = JSON.parse(c.tags) as string[];
+        tags = arr.join("; ");
+      } catch { tags = c.tags; }
+    }
+    return [
+      escapeCSV(c.name),
+      escapeCSV(c.email),
+      escapeCSV(c.phone),
+      escapeCSV(c.company),
+      escapeCSV(c.title),
+      escapeCSV(c.stage),
+      escapeCSV(tags),
+      escapeCSV(c.notes),
+      escapeCSV(c.createdAt),
+    ].join(",");
+  });
+
+  const csv = [headers.join(","), ...rows].join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `contacts-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 // ─── ContactsPanel ────────────────────────────────────────────────────────────
 
 export const ContactsPanel = memo(function ContactsPanel() {
@@ -594,6 +639,19 @@ export const ContactsPanel = memo(function ContactsPanel() {
                 </TooltipContent>
               </Tooltip>
 
+              {contacts.length > 0 && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <PanelIconButton
+                      aria-label="Export contacts as CSV"
+                      onClick={() => exportContactsCSV(contacts)}
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                    </PanelIconButton>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="text-xs">Export CSV</TooltipContent>
+                </Tooltip>
+              )}
               <PanelIconButton
                 aria-label="Refresh contacts"
                 onClick={() => refresh(searchQuery, activeStage)}
