@@ -5,6 +5,12 @@ import type { GatewayClient, EventFrame } from "@/lib/gateway/GatewayClient";
 import type { WizardContext, WizardType, WizardExtractedConfig } from "../lib/wizardTypes";
 import { getWizardTheme, getWizardStarters } from "../lib/wizardThemes";
 import { extractJsonBlock } from "../lib/artifactExtractor";
+import type { PreflightResult } from "@/features/personas/lib/preflightTypes";
+import {
+  extractWizardToolCall,
+  dispatchWizardTool,
+} from "../lib/wizardTools";
+import { formatPreflightForLLM } from "@/features/personas/lib/preflightPromptHelpers";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -37,6 +43,14 @@ export type UseWizardInChatReturn = {
   error: string | null;
   /** Most recently extracted config (null until extraction succeeds) */
   extractedConfig: WizardExtractedConfig | null;
+  /**
+   * Most recent preflight result from a run_preflight tool call.
+   * Set when the LLM outputs a `json:run_preflight` block and the
+   * tool handler completes. Cleared by `clearPreflightResult()`.
+   */
+  preflightResult: PreflightResult | null;
+  /** Clear the current preflight result (e.g. after the UI has handled it) */
+  clearPreflightResult: () => void;
   /** Start a wizard session */
   startWizard: (type: WizardType, systemPrompt: string) => void;
   /** Send a message in the active wizard session */
@@ -75,10 +89,19 @@ export function useWizardInChat({
   const [error, setError] = useState<string | null>(null);
   const [extractedConfig, setExtractedConfig] = useState<WizardExtractedConfig | null>(null);
 
+  const [preflightResult, setPreflightResult] = useState<PreflightResult | null>(null);
+
   const sessionInitRef = useRef(false);
   const cleanedUpRef = useRef(false);
   const wizardContextRef = useRef<WizardContext | null>(null);
   const onConfigExtractedRef = useRef(onConfigExtracted);
+  // Prevent duplicate tool-call processing for the same message
+  const pendingToolCallRef = useRef<string | null>(null);
+  // Stable ref for agentId — avoids re-registering the event listener on agentId change
+  const agentIdRef = useRef(agentId);
+  useEffect(() => {
+    agentIdRef.current = agentId;
+  }, [agentId]);
 
   // Keep callback ref current
   useEffect(() => {
@@ -207,6 +230,65 @@ export function useWizardInChat({
             setExtractedConfig(extracted);
             onConfigExtractedRef.current?.(extracted);
           }
+
+          // ── Wizard tool call interception ──────────────────────────────
+          // Detect `json:run_preflight` (and future tool) blocks in the
+          // assistant message. If found: dispatch the tool, inject the
+          // result back into the conversation, and update preflightResult
+          // so the rendering layer can show a WizardPreflightCard.
+          const toolCall = extractWizardToolCall(finalText);
+          if (toolCall && pendingToolCallRef.current !== finalText) {
+            // Mark this message as processed to prevent re-entrant calls
+            pendingToolCallRef.current = finalText;
+            const sessionKey = ctx.sessionKey;
+            // Use ref to avoid capturing stale agentId in closure
+            const currentAgentId = agentIdRef.current;
+
+            void (async () => {
+              try {
+                const toolResult = await dispatchWizardTool(
+                  toolCall.toolName,
+                  toolCall.input,
+                  currentAgentId,
+                );
+
+                if (toolResult.tool === "run_preflight") {
+                  // Update the preflight card in the UI
+                  setPreflightResult(toolResult.result);
+
+                  // Format the result for the LLM to read
+                  const resultText = formatPreflightForLLM(toolResult.result);
+
+                  // Inject back into the wizard session as a system tool-result
+                  await client.call("chat.send", {
+                    sessionKey,
+                    message: `[tool-result:run_preflight]\n${resultText}`,
+                    deliver: false,
+                    idempotencyKey: crypto.randomUUID(),
+                  });
+                }
+              } catch (err) {
+                // Non-fatal — log but don't surface to user (LLM will re-try or continue)
+                const msg =
+                  err instanceof Error ? err.message : String(err);
+                console.warn("[useWizardInChat] tool call failed:", msg);
+
+                // Inject an error notice so the LLM knows to handle gracefully
+                try {
+                  await client.call("chat.send", {
+                    sessionKey,
+                    message: `[tool-result:run_preflight]\nPreflight check failed: ${msg}. Please proceed without the check or ask the user to try again.`,
+                    deliver: false,
+                    idempotencyKey: crypto.randomUUID(),
+                  });
+                } catch {
+                  // Ignore injection failures
+                }
+              } finally {
+                pendingToolCallRef.current = null;
+              }
+            })();
+          }
         }
         return;
       }
@@ -259,11 +341,19 @@ export function useWizardInChat({
       setIsStreaming(false);
       setError(null);
       setExtractedConfig(null);
+      setPreflightResult(null);
       sessionInitRef.current = false;
       cleanedUpRef.current = false;
+      pendingToolCallRef.current = null;
     },
     [agentId],
   );
+
+  // ── Clear preflight result ─────────────────────────────────────────
+
+  const clearPreflightResult = useCallback(() => {
+    setPreflightResult(null);
+  }, []);
 
   // ── Send message ───────────────────────────────────────────────────
 
@@ -357,7 +447,9 @@ export function useWizardInChat({
     setIsStreaming(false);
     setError(null);
     setExtractedConfig(null);
+    setPreflightResult(null);
     sessionInitRef.current = false;
+    pendingToolCallRef.current = null;
   }, [client]);
 
   return {
@@ -368,6 +460,8 @@ export function useWizardInChat({
     isStreaming,
     error,
     extractedConfig,
+    preflightResult,
+    clearPreflightResult,
     startWizard,
     sendMessage,
     endWizard,

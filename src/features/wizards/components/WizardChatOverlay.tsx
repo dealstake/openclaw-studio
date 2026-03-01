@@ -3,7 +3,9 @@ import type { WizardMessage } from "../hooks/useWizardInChat";
 import type { WizardExtractedConfig, WizardType } from "../lib/wizardTypes";
 import { WizardMessageBubble } from "./WizardMessageBubble";
 import { WizardConfigCard } from "./WizardConfigCard";
+import { WizardPreflightCard } from "./WizardPreflightCard";
 import { ThinkingBlock } from "@/components/chat/ThinkingBlock";
+import type { PreflightResult } from "@/features/personas/lib/preflightTypes";
 
 type WizardChatOverlayProps = {
   messages: WizardMessage[];
@@ -16,6 +18,20 @@ type WizardChatOverlayProps = {
   onReviseConfig: () => void;
   onCancelWizard: () => void;
   confirming?: boolean;
+  /** Latest preflight result from a run_preflight tool call (null if none) */
+  preflightResult?: PreflightResult | null;
+  /** Called when user clicks "Install" for a missing skill */
+  onInstallSkill?: (capability: string, clawhubPackage: string) => void;
+  /** Called when user clicks "Enable" for a disabled skill */
+  onEnableSkill?: (capability: string) => void;
+  /** Called when user clicks "Set up credential" */
+  onSetupCredential?: (templateKey: string) => void;
+  /** Called when user clicks "Authenticate" for OAuth */
+  onOAuthFlow?: (authUrl: string) => void;
+  /** Called to re-run the preflight check */
+  onRecheck?: () => void;
+  /** Whether a re-check is in progress */
+  rechecking?: boolean;
 };
 
 /**
@@ -34,6 +50,13 @@ export const WizardChatOverlay = memo(function WizardChatOverlay({
   onReviseConfig,
   onCancelWizard,
   confirming = false,
+  preflightResult = null,
+  onInstallSkill,
+  onEnableSkill,
+  onSetupCredential,
+  onOAuthFlow,
+  onRecheck,
+  rechecking = false,
 }: WizardChatOverlayProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -77,6 +100,21 @@ export const WizardChatOverlay = memo(function WizardChatOverlay({
             content={streamText}
             wizardType={wizardType}
             streaming={true}
+          />
+        </div>
+      )}
+
+      {/* Preflight results card — shown when the LLM calls run_preflight */}
+      {preflightResult && !isStreaming && (
+        <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <WizardPreflightCard
+            result={preflightResult}
+            onInstallSkill={onInstallSkill}
+            onEnableSkill={onEnableSkill}
+            onSetupCredential={onSetupCredential}
+            onOAuthFlow={onOAuthFlow}
+            onRecheck={onRecheck}
+            rechecking={rechecking}
           />
         </div>
       )}

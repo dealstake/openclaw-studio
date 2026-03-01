@@ -99,6 +99,78 @@ function formatSkillRequirements(reqs: SkillRequirement[]): string {
 }
 
 // ---------------------------------------------------------------------------
+// run_preflight Tool Protocol
+// ---------------------------------------------------------------------------
+
+/**
+ * Instructions for the LLM on how to invoke the run_preflight tool.
+ *
+ * The wizard uses a pseudo-tool-calling protocol: the LLM outputs a tagged
+ * JSON block, the frontend intercepts it, calls the API, then injects the
+ * result back as a [tool-result:run_preflight] message. The LLM then reads
+ * the result and continues the conversation.
+ */
+const PREFLIGHT_TOOL_PROTOCOL = `
+## run_preflight Tool
+
+You have access to a **run_preflight** tool that checks whether the infrastructure
+required by this persona (skills, credentials, MCP servers, system dependencies)
+is installed and properly configured.
+
+### When to call it
+1. **After identifying capabilities** — once you know what this persona needs
+   (e.g., voice calling, calendar access, email), run preflight before proceeding.
+2. **Before outputting the persona config** — verify infrastructure is ready.
+3. **After the user says they've set up a credential** — re-run with \`validate: true\`
+   to confirm the key works.
+
+### How to call it
+Output this block anywhere in your response. Do NOT wrap it in a prose sentence like
+"let me check" — just include the block and the system will handle execution:
+
+\`\`\`json:run_preflight
+{"capabilities": ["voice", "email", "calendar"]}
+\`\`\`
+
+Valid capability keys:
+- \`voice\` — Text-to-speech / voice calls (requires ElevenLabs)
+- \`email\` — Email access (requires Google OAuth or IMAP)
+- \`calendar\` — Calendar management (requires Google OAuth)
+- \`google-workspace\` — Full Google Workspace (Gmail + Calendar + Drive)
+- \`web-search\` — Web search (built-in, usually ready)
+- \`notion\` — Notion integration (requires API key)
+- \`github\` — GitHub integration (requires PAT)
+- \`openai\` — OpenAI models (requires API key)
+- \`image-generation\` — Image generation (requires Gemini key)
+- \`document-editing\` — Document creation (built-in)
+- \`browser-automation\` — Browser control (built-in)
+- \`messaging\` — WhatsApp / iMessage / Telegram
+- \`scheduling\` — Appointment scheduling
+- \`reminders\` — Apple Reminders
+- \`file-storage\` — File operations (built-in)
+- \`analytics\` — Usage analytics
+
+### How to interpret results
+The system will inject a [tool-result:run_preflight] message containing:
+- \`overall\`: "ready" | "action_needed" | "blocked"
+- Per-capability status with remediation instructions
+
+**ready** → All good. Continue with persona setup.
+
+**action_needed** → Optional capabilities missing. The UI shows setup options.
+Tell the user what's missing but don't block persona creation.
+
+**blocked** → Required capabilities are missing. DO NOT create the persona yet.
+Address each blocked item:
+- If "Skill can be installed" → Tell the user; an Install button appears in the UI.
+- If "Needs credential setup" → Explain what's needed; a form appears automatically.
+- If "Requires OAuth" → Tell the user; an Authenticate button appears.
+- If "dependency missing" → Give the install command for their platform.
+
+Ask the user to complete setup, then re-run preflight before creating the persona.
+`;
+
+// ---------------------------------------------------------------------------
 // Output Block Format Reference
 // ---------------------------------------------------------------------------
 
@@ -325,6 +397,7 @@ ${template.placeholders.map((p) => `- \`{{${p.key}}}\`: ${p.label} — ${p.promp
 When you discover the persona needs a capability, immediately note it. If the capability requires a credential:
 - Tell the user what's needed and where to get it
 - Frame it as helpful, not blocking: "You'll need [credential] for [capability]. You can set that up at [URL] — but let's keep going with the rest."
+${PREFLIGHT_TOOL_PROTOCOL}
 
 ${OUTPUT_BLOCK_FORMAT}
 
@@ -395,6 +468,7 @@ If the user asks to change something, output the complete updated blocks.
 When you discover the persona needs a capability (email, calendar, voice, messaging), immediately note it:
 - Tell the user what credential is needed and where to get it
 - Frame it as helpful, not blocking: "You'll need [credential] for [capability]. You can set that up at [URL] — but let's keep going with the rest."
+${PREFLIGHT_TOOL_PROTOCOL}
 
 ${OUTPUT_BLOCK_FORMAT}
 
