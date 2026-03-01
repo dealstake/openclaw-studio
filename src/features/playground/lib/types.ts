@@ -35,3 +35,23 @@ export interface PlaygroundResult {
   error: string | null;
   startedAt: number;
 }
+
+/** Per-model column state in compare mode */
+export interface CompareColumnResult {
+  /** Full model key (provider/model-id) */
+  model: string;
+  response: PlaygroundResponse | null;
+  /** Text actively streaming in for this column */
+  streamText: string | null;
+  isStreaming: boolean;
+  error: string | null;
+}
+
+/** State for a full compare run (all columns together) */
+export interface CompareRun {
+  id: string;
+  systemPrompt: string;
+  userMessage: string;
+  columns: CompareColumnResult[];
+  startedAt: number;
+}
