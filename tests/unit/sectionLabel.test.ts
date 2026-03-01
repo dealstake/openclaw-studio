@@ -13,7 +13,7 @@ describe("SectionLabel", () => {
     render(createElement(SectionLabel, null, "Label"));
     const el = screen.getByText("Label");
     expect(el.className).toContain("font-mono");
-    expect(el.className).toContain("text-xs");
+    expect(el.className).toContain("text-sm");
     expect(el.className).toContain("tracking-[0.08em]");
     expect(el.className).toContain("text-muted-foreground");
   });
