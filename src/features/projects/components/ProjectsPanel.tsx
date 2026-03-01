@@ -164,7 +164,7 @@ export const ProjectsPanel = memo(function ProjectsPanel({
 
       {/* Toolbar: Filters */}
       {projects.length > 0 && filterOptions.length > 2 && (
-        <PanelToolbar className="rounded-lg border-0 px-0 py-0">
+        <PanelToolbar className="rounded-lg border-0 px-0 py-0 mb-2">
           <FilterGroup
             options={filterOptions}
             value={statusFilter}
