@@ -146,7 +146,7 @@ export const PersonaCard = React.memo(function PersonaCard({
         </div>
 
         {/* Action buttons */}
-        <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover/card:opacity-100">
+        <div className="flex items-center gap-1 opacity-100 md:opacity-0 transition-opacity group-hover/card:opacity-100 focus-within:opacity-100">
           {canPractice && (
             <button
               type="button"
