@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useCallback, useEffect, useState } from "react";
-import { FlaskConical, GitCompare, Clock, Plus, Trash2, X } from "lucide-react";
+import { FlaskConical, GitCompare, Clock, Plus, Trash2, X, FileOutput } from "lucide-react";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import type { GatewayModelChoice } from "@/lib/gateway/models";
 import { PanelHeader } from "@/components/ui/PanelHeader";
@@ -17,6 +17,7 @@ import type { PlaygroundRequest, PromptPreset } from "../lib/types";
 import { sectionLabelClass } from "@/components/SectionLabel";
 import { usePromptHistory, type PromptHistoryEntry } from "../hooks/usePromptHistory";
 import { PromptHistoryDrawer } from "./PromptHistoryDrawer";
+import { ApplyToAgentDialog } from "./ApplyToAgentDialog";
 
 interface PlaygroundPanelProps {
   client: GatewayClient;
@@ -85,6 +86,7 @@ export const PlaygroundPanel = memo(function PlaygroundPanel({
   // ── History ──────────────────────────────────────────────────────────
   const promptHistory = usePromptHistory();
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [applyDialogOpen, setApplyDialogOpen] = useState(false);
 
   // Auto-record completed results
   useEffect(() => {
@@ -210,6 +212,15 @@ export const PlaygroundPanel = memo(function PlaygroundPanel({
             >
               <Clock className="h-3.5 w-3.5" />
             </PanelIconButton>
+            {systemPrompt.trim() && agentId && (
+              <PanelIconButton
+                onClick={() => setApplyDialogOpen(true)}
+                aria-label="Apply system prompt to agent"
+                title="Write system prompt to agent brain file"
+              >
+                <FileOutput className="h-3.5 w-3.5" />
+              </PanelIconButton>
+            )}
             <PanelIconButton
               onClick={handleModeToggle}
               aria-label={
@@ -303,6 +314,22 @@ export const PlaygroundPanel = memo(function PlaygroundPanel({
                 streamText={streamText}
                 isStreaming={isStreaming}
                 error={latestResult?.error ?? error}
+                onSavePreset={
+                  latestResult?.response
+                    ? () => {
+                        const label =
+                          userMessage.slice(0, 50) || "Untitled preset";
+                        promptHistory.savePreset({
+                          id: crypto.randomUUID(),
+                          label,
+                          systemPrompt,
+                          userMessage,
+                          model: selectedModel,
+                          createdAt: Date.now(),
+                        });
+                      }
+                    : undefined
+                }
               />
             </>
           )}
@@ -317,6 +344,17 @@ export const PlaygroundPanel = memo(function PlaygroundPanel({
         onReplay={handleReplay}
         onSavePreset={handleSavePreset}
       />
+
+      {/* Apply to Agent dialog */}
+      {agentId && (
+        <ApplyToAgentDialog
+          open={applyDialogOpen}
+          onClose={() => setApplyDialogOpen(false)}
+          systemPrompt={systemPrompt}
+          client={client}
+          agentId={agentId}
+        />
+      )}
     </div>
   );
 });

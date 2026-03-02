@@ -1,7 +1,7 @@
 "use client";
 
 import { memo } from "react";
-import { Clock, Coins, Zap } from "lucide-react";
+import { BookmarkPlus, Clock, Coins, Zap } from "lucide-react";
 import { MarkdownViewer } from "@/components/MarkdownViewer";
 import { Skeleton } from "@/components/Skeleton";
 import { sectionLabelClass } from "@/components/SectionLabel";
@@ -15,6 +15,8 @@ interface ResponseViewProps {
   streamText: string | null;
   isStreaming: boolean;
   error: string | null;
+  /** Called when user clicks "Save as preset" in footer */
+  onSavePreset?: () => void;
 }
 
 export const ResponseView = memo(function ResponseView({
@@ -22,6 +24,7 @@ export const ResponseView = memo(function ResponseView({
   streamText,
   isStreaming,
   error,
+  onSavePreset,
 }: ResponseViewProps) {
   // Nothing to show yet
   if (!result && !isStreaming && !error) {
@@ -90,6 +93,18 @@ export const ResponseView = memo(function ResponseView({
               label={formatCostUsd(response.estimatedCostUsd)}
               title="Estimated cost (USD)"
             />
+          )}
+          {onSavePreset && (
+            <button
+              type="button"
+              onClick={onSavePreset}
+              className="ml-auto flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] text-muted-foreground
+                transition-colors hover:bg-muted hover:text-foreground"
+              title="Save prompt + model as a reusable preset"
+            >
+              <BookmarkPlus className="h-3 w-3" />
+              Save preset
+            </button>
           )}
         </div>
       )}
