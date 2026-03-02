@@ -100,13 +100,13 @@ describe("useWizardSession", () => {
     expect(result.current.messages[0]).toEqual({ role: "user", content: "Hello" });
   });
 
-  it("processes runtime.chat delta events for streaming text", async () => {
+  it("processes chat delta events for streaming text", async () => {
     const { result } = renderHook(() => useWizardSession(defaultOpts()));
 
     act(() => {
       client._emit({
         type: "event",
-        event: "runtime.chat",
+        event: "chat",
         payload: {
           sessionKey: "agent:alex:wizard:task",
           state: "delta",
@@ -119,13 +119,13 @@ describe("useWizardSession", () => {
     expect(result.current.isStreaming).toBe(true);
   });
 
-  it("processes runtime.chat final events into messages", async () => {
+  it("processes chat final events into messages", async () => {
     const { result } = renderHook(() => useWizardSession(defaultOpts()));
 
     act(() => {
       client._emit({
         type: "event",
-        event: "runtime.chat",
+        event: "chat",
         payload: {
           sessionKey: "agent:alex:wizard:task",
           state: "final",
@@ -149,7 +149,7 @@ describe("useWizardSession", () => {
     act(() => {
       client._emit({
         type: "event",
-        event: "runtime.chat",
+        event: "chat",
         payload: {
           sessionKey: "agent:alex:main",
           state: "final",
@@ -167,7 +167,7 @@ describe("useWizardSession", () => {
     act(() => {
       client._emit({
         type: "event",
-        event: "runtime.chat",
+        event: "chat",
         payload: {
           sessionKey: "agent:alex:wizard:task",
           state: "error",
@@ -187,7 +187,7 @@ describe("useWizardSession", () => {
     act(() => {
       client._emit({
         type: "event",
-        event: "runtime.chat",
+        event: "chat",
         payload: {
           sessionKey: "agent:alex:wizard:task",
           state: "delta",
@@ -200,7 +200,7 @@ describe("useWizardSession", () => {
     act(() => {
       client._emit({
         type: "event",
-        event: "runtime.chat",
+        event: "chat",
         payload: {
           sessionKey: "agent:alex:wizard:task",
           state: "aborted",
@@ -271,7 +271,7 @@ describe("useWizardSession", () => {
     act(() => {
       client._emit({
         type: "event",
-        event: "runtime.chat",
+        event: "chat",
         payload: {
           sessionKey: "agent:alex:wizard:task",
           state: "final",
@@ -290,13 +290,13 @@ describe("useWizardSession", () => {
     });
   });
 
-  it("processes runtime.agent thinking events", () => {
+  it("processes agent thinking events", () => {
     const { result } = renderHook(() => useWizardSession(defaultOpts()));
 
     act(() => {
       client._emit({
         type: "event",
-        event: "runtime.agent",
+        event: "agent",
         payload: {
           sessionKey: "agent:alex:wizard:task",
           runId: "run-1",
@@ -312,7 +312,7 @@ describe("useWizardSession", () => {
     act(() => {
       client._emit({
         type: "event",
-        event: "runtime.agent",
+        event: "agent",
         payload: {
           sessionKey: "agent:alex:wizard:task",
           runId: "run-1",
@@ -325,13 +325,13 @@ describe("useWizardSession", () => {
     expect(result.current.thinkingTrace).toBe("Let me think about this task.");
   });
 
-  it("processes runtime.agent assistant stream events", () => {
+  it("processes agent assistant stream events", () => {
     const { result } = renderHook(() => useWizardSession(defaultOpts()));
 
     act(() => {
       client._emit({
         type: "event",
-        event: "runtime.agent",
+        event: "agent",
         payload: {
           sessionKey: "agent:alex:wizard:task",
           runId: "run-1",
@@ -344,14 +344,14 @@ describe("useWizardSession", () => {
     expect(result.current.streamText).toBe("Full accumulated text so far");
   });
 
-  it("handles runtime.agent lifecycle end", () => {
+  it("handles agent lifecycle end", () => {
     const { result } = renderHook(() => useWizardSession(defaultOpts()));
 
     // Start streaming
     act(() => {
       client._emit({
         type: "event",
-        event: "runtime.agent",
+        event: "agent",
         payload: {
           sessionKey: "agent:alex:wizard:task",
           runId: "run-1",
@@ -366,7 +366,7 @@ describe("useWizardSession", () => {
     act(() => {
       client._emit({
         type: "event",
-        event: "runtime.agent",
+        event: "agent",
         payload: {
           sessionKey: "agent:alex:wizard:task",
           runId: "run-1",
