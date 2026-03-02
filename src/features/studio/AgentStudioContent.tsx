@@ -359,6 +359,11 @@ export const AgentStudioPage = () => {
         existingAgents: agents.map((a) => ({ id: a.agentId, name: a.name ?? a.agentId })),
       });
       wizard.startWizard("persona", prompt);
+      // Auto-send kickoff message so the wizard starts immediately
+      // Use setTimeout to allow React state to settle after startWizard
+      setTimeout(() => {
+        wizard.sendMessage(`Create a ${template.name} persona using the ${template.name} template. Let's get started!`);
+      }, 100);
       if (isMobileLayout) {
         setMobilePane("chat");
       }
