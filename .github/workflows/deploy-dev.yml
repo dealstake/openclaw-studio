@@ -70,6 +70,7 @@ jobs:
             GOOGLE_SERVICE_ACCOUNT_JSON=${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
             GOOGLE_IMPERSONATE_EMAIL=alex@tridentfundingsolutions.com
             GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+            ELEVENLABS_API_KEY=${{ secrets.ELEVENLABS_API_KEY }}
             WORKSPACE_SIDECAR_URL=${{ secrets.WORKSPACE_SIDECAR_URL }}
             WORKSPACE_SIDECAR_TOKEN=${{ secrets.WORKSPACE_SIDECAR_TOKEN }}
             GATEWAY_TOKEN=${{ secrets.GATEWAY_TOKEN }}
