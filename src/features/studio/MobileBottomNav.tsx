@@ -63,7 +63,7 @@ export const MobileBottomNav = memo(function MobileBottomNav({
         aria-label="Sessions"
       >
         <Menu className="h-5 w-5" />
-        <span className="text-[10px] font-medium leading-none">Sessions</span>
+        <span className="text-[11px] font-medium leading-none">Sessions</span>
       </button>
 
       {/* Primary context tabs */}
@@ -85,7 +85,7 @@ export const MobileBottomNav = memo(function MobileBottomNav({
               <Icon
                 className={`h-5 w-5 ${isActive ? "text-primary" : ""}`}
               />
-              <span className="text-[10px] font-medium leading-none truncate max-w-[56px]">
+              <span className="text-[11px] font-medium leading-none truncate max-w-[56px]">
                 {shortLabel}
               </span>
             </button>
@@ -105,7 +105,7 @@ export const MobileBottomNav = memo(function MobileBottomNav({
           aria-expanded={moreOpen}
         >
           <MoreHorizontal className="h-5 w-5" />
-          <span className="text-[10px] font-medium leading-none">More</span>
+          <span className="text-[11px] font-medium leading-none">More</span>
         </button>
 
         {moreOpen && (
