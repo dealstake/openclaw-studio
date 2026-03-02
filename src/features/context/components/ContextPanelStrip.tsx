@@ -37,7 +37,7 @@ export const ContextPanelStrip = memo(function ContextPanelStrip({
           className={`flex h-6 w-6 items-center justify-center rounded text-[10px] font-semibold transition ${
             activeTab === tab.value
               ? "bg-muted text-foreground"
-              : "text-muted-foreground/60 hover:bg-muted/60 hover:text-muted-foreground"
+              : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
           }`}
           aria-label={`Open ${tab.label}`}
           title={tab.label}

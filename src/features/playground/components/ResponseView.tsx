@@ -28,7 +28,7 @@ export const ResponseView = memo(function ResponseView({
     return (
       <div className="flex h-full flex-col items-center justify-center gap-2 text-center px-6 py-10">
         <Zap className="h-8 w-8 text-muted-foreground/30" />
-        <p className="text-xs text-muted-foreground/60">
+        <p className="text-xs text-muted-foreground">
           Configure your prompt above and hit{" "}
           <kbd className="rounded border border-border px-1 py-0.5 font-mono text-[10px]">⌘↵</kbd>{" "}
           to run
@@ -96,7 +96,7 @@ export const ResponseView = memo(function ResponseView({
       {/* Streaming footer */}
       {isStreaming && (
         <div className="flex flex-shrink-0 items-center gap-2 border-t border-border/50 px-3 py-2">
-          <span className={`${sectionLabelClass} text-muted-foreground/50 animate-pulse`}>
+          <span className={`${sectionLabelClass} text-muted-foreground animate-pulse`}>
             Generating…
           </span>
         </div>

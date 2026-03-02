@@ -144,7 +144,7 @@ const ArtifactRow = memo(function ArtifactRow({
           className={`flex h-11 w-11 items-center justify-center rounded-md transition sm:h-7 sm:w-7 ${
             isCopied
               ? "text-emerald-500 opacity-100 hover:bg-muted/50"
-              : "text-muted-foreground/50 opacity-0 group-hover:opacity-100 hover:text-foreground/80 hover:bg-muted/50 disabled:cursor-not-allowed"
+              : "text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-foreground/80 hover:bg-muted/50 disabled:cursor-not-allowed"
           }`}
           title={isCopied ? "Link copied!" : "Copy share link"}
           aria-label={isCopied ? "Share link copied" : "Copy share link"}
@@ -163,7 +163,7 @@ const ArtifactRow = memo(function ArtifactRow({
           className={`flex h-11 w-11 items-center justify-center rounded-md transition sm:h-7 sm:w-7 ${
             isPinned
               ? "text-primary opacity-100 hover:bg-muted/50"
-              : "text-muted-foreground/50 opacity-0 group-hover:opacity-100 hover:text-foreground/80 hover:bg-muted/50"
+              : "text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-foreground/80 hover:bg-muted/50"
           }`}
           title={isPinned ? "Unpin" : "Pin to top"}
           aria-label={isPinned ? "Unpin" : "Pin to top"}
@@ -180,7 +180,7 @@ const ArtifactRow = memo(function ArtifactRow({
 const SectionDivider = memo(function SectionDivider({ label }: { label: string }) {
   return (
     <div className="flex items-center gap-2 px-1 py-1.5">
-      <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+      <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
         {label}
       </span>
       <div className="h-px flex-1 bg-border/40" />

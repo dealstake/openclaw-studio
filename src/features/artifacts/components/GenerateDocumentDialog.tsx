@@ -251,7 +251,7 @@ export const GenerateDocumentDialog = memo(function GenerateDocumentDialog({
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder={selectedTemplate?.label ?? "Enter a title…"}
                 maxLength={128}
-                className="h-9 w-full rounded-lg border border-border bg-card px-3 text-sm text-foreground placeholder:text-muted-foreground/60 transition focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
+                className="h-9 w-full rounded-lg border border-border bg-card px-3 text-sm text-foreground placeholder:text-muted-foreground transition focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
               />
             </div>
 

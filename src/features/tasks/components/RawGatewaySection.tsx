@@ -24,7 +24,7 @@ export const RawGatewaySection = memo(function RawGatewaySection({
           <Server className="h-3 w-3 shrink-0" />
           <span className={sectionLabelClass}>Gateway State</span>
         </div>
-        <p className="mt-1 text-[11px] text-muted-foreground/60">
+        <p className="mt-1 text-[11px] text-muted-foreground">
           No gateway cron job found (ID: <code className="rounded bg-muted px-1 py-0.5 font-mono text-[10px]">{cronJobId}</code>)
         </p>
       </div>

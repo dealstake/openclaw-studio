@@ -1081,7 +1081,7 @@ export const AgentStudioPage = () => {
                       : "No agents available."}
                   </p>
                   {!hasAnyAgents && (
-                    <p className="text-xs text-muted-foreground/70">
+                    <p className="text-xs text-muted-foreground">
                       Use New Agent in the sidebar to add your first agent.
                     </p>
                   )}
