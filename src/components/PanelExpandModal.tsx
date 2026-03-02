@@ -4,7 +4,7 @@ import React from "react";
 import type { ReactNode } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { ModalOverlay } from "@/components/ModalOverlay";
-import { Minimize2, X } from "lucide-react";
+import { X } from "lucide-react";
 
 import { PanelIconButton } from "@/components/PanelIconButton";
 import { sectionLabelClass } from "@/components/SectionLabel";
@@ -38,24 +38,14 @@ export const PanelExpandModal = React.memo(function PanelExpandModal({
             <span className={`${sectionLabelClass} text-muted-foreground`}>
               {title}
             </span>
-            <div className="flex items-center gap-1">
-              <PanelIconButton
-                onClick={() => onOpenChange(false)}
-                aria-label="Collapse panel"
-                data-testid="panel-expand-collapse-btn"
-                className="min-h-[44px] min-w-[44px] xl:min-h-0 xl:min-w-0"
-              >
-                <Minimize2 className="h-3.5 w-3.5" />
-              </PanelIconButton>
-              <PanelIconButton
-                onClick={() => onOpenChange(false)}
-                aria-label="Close expanded panel"
-                data-testid="panel-expand-close-btn"
-                className="min-h-[44px] min-w-[44px] xl:min-h-0 xl:min-w-0"
-              >
-                <X className="h-3.5 w-3.5" />
-              </PanelIconButton>
-            </div>
+            <PanelIconButton
+              onClick={() => onOpenChange(false)}
+              aria-label="Close expanded panel"
+              data-testid="panel-expand-close-btn"
+              className="min-h-[44px] min-w-[44px] xl:min-h-0 xl:min-w-0"
+            >
+              <X className="h-3.5 w-3.5" />
+            </PanelIconButton>
           </div>
 
           {/* Body */}

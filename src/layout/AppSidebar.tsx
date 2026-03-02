@@ -333,7 +333,7 @@ export const AppSidebar = memo(function AppSidebar({
                 />
               ) : (
                 <>
-                  <div className={`${sectionLabelClass} px-2.5 py-1.5 text-[10px]`}>
+                  <div className={`${sectionLabelClass} px-2.5 py-1.5`}>
                     {searchResults.length} result{searchResults.length !== 1 ? "s" : ""}
                     {searching && <Loader2 className="ml-1.5 inline h-3 w-3 animate-spin" />}
                   </div>

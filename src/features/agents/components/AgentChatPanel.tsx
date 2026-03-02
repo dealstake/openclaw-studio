@@ -281,10 +281,10 @@ export const AgentChatPanel = memo(function AgentChatPanel({
       {typeof tokenUsed === "number" && tokenLimit && tokenLimit > 0 && tokenUsed / tokenLimit >= 0.8 && (
         <div className="mx-auto mt-2 flex w-full max-w-3xl items-center gap-2 rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-3 py-1.5 text-xs sm:px-6">
           <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-yellow-500" />
-          <span className="text-yellow-200/90">
+          <span className="text-yellow-200">
             Approaching context limit
           </span>
-          <span className="ml-auto shrink-0 font-mono text-[10px] text-yellow-300">
+          <span className="ml-auto shrink-0 font-mono text-[10px] text-yellow-200">
             {Math.round((tokenUsed / tokenLimit) * 100)}%
           </span>
         </div>

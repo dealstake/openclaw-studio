@@ -160,7 +160,7 @@ export const MobileSessionDrawer = memo(function MobileSessionDrawer({
         {/* Agent list for mobile */}
         {breadcrumbAgents.length > 1 && (
           <div className="border-b border-border/40 px-3 py-3">
-            <p className={`${sectionLabelClass} mb-1.5 px-0.5 text-[10px]`}>Agents</p>
+            <p className={`${sectionLabelClass} mb-1.5 px-0.5`}>Agents</p>
             <div className="flex flex-col gap-0.5">
               {breadcrumbAgents.map((agent) => (
                 <button

@@ -19,7 +19,6 @@ describe("PanelExpandModal", () => {
         <div>content</div>
       </PanelExpandModal>
     );
-    expect(screen.getAllByTestId("panel-expand-collapse-btn").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByTestId("panel-expand-close-btn").length).toBeGreaterThanOrEqual(1);
   });
 
