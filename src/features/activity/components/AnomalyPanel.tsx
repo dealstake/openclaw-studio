@@ -128,7 +128,7 @@ const AnomalyCard = memo(function AnomalyCard({ anomaly, onDismiss }: AnomalyCar
               {meta.icon}
               {meta.label}
             </span>
-            <span className="inline-flex items-center gap-0.5 rounded-md bg-muted/60 px-1.5 py-0.5 text-[10px] font-mono text-foreground/80">
+            <span className="inline-flex items-center gap-0.5 rounded-md bg-muted/60 px-1.5 py-0.5 text-[10px] font-sans text-foreground/80">
               <TrendIcon size={10} className={styles.icon} />
               {formatZScore(anomaly.zScore)}
             </span>

@@ -138,7 +138,7 @@ export const ProjectsPanel = memo(function ProjectsPanel({
             Projects
           </SectionLabel>
           {!loading && projects.length > 0 && (
-            <span className="font-mono text-xs text-muted-foreground">
+            <span className="font-sans text-xs text-muted-foreground">
               {!isAllSelected ? `${filteredProjects.length}/${projects.length}` : projects.length}
             </span>
           )}

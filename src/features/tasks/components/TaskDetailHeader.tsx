@@ -52,7 +52,7 @@ export const TaskDetailHeader = memo(function TaskDetailHeader({
             autoFocus
           />
         ) : (
-          <h2 className="mt-0.5 truncate font-mono text-sm font-semibold text-foreground">
+          <h2 className="mt-0.5 truncate font-sans text-sm font-semibold text-foreground">
             {taskName}
           </h2>
         )}
@@ -68,7 +68,7 @@ export const TaskDetailHeader = memo(function TaskDetailHeader({
               disabled={busy || !editName.trim()}
             >
               <Save className="h-3 w-3" />
-              <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em]">
+              <span className="font-sans text-[10px] font-semibold uppercase tracking-[0.12em]">
                 Save
               </span>
             </button>
@@ -78,7 +78,7 @@ export const TaskDetailHeader = memo(function TaskDetailHeader({
               aria-label="Cancel editing"
               onClick={onCancelEditing}
             >
-              <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em]">
+              <span className="font-sans text-[10px] font-semibold uppercase tracking-[0.12em]">
                 Cancel
               </span>
             </button>

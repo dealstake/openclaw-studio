@@ -84,7 +84,7 @@ export const TaskCard = memo(function TaskCard({
           {isRunning && <span className="ml-1.5 text-xs font-normal text-purple-300">Running…</span>}
         </span>
         <span
-          className="ml-2 shrink-0 rounded bg-muted/50 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground"
+          className="ml-2 shrink-0 rounded bg-muted/50 px-1.5 py-0.5 font-sans text-[10px] text-muted-foreground"
           title={task.model}
         >
           {abbreviateModel(task.model)}
@@ -136,7 +136,7 @@ export const TaskCard = memo(function TaskCard({
 
           {/* Consecutive Errors Badge */}
           {hasErrors && (
-            <div className="ml-auto flex items-center gap-1 rounded-full bg-destructive/10 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-destructive">
+            <div className="ml-auto flex items-center gap-1 rounded-full bg-destructive/10 px-1.5 py-0.5 font-sans text-[10px] font-semibold text-destructive">
               <AlertCircle className="h-3 w-3" />
               {task.consecutiveErrors}
             </div>

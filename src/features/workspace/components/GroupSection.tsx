@@ -63,7 +63,7 @@ export const GroupSection = memo(function GroupSection({
             <SectionLabel as="span">
               {GROUP_LABELS[group]}
             </SectionLabel>
-            <span className="font-mono text-[10px] text-muted-foreground/60">
+            <span className="font-sans text-[10px] text-muted-foreground/60">
               {entries.length}
             </span>
           </button>

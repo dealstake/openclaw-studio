@@ -284,7 +284,7 @@ export const AgentChatPanel = memo(function AgentChatPanel({
           <span className="text-yellow-200/90">
             Approaching context limit
           </span>
-          <span className="ml-auto shrink-0 font-mono text-[10px] text-yellow-300">
+          <span className="ml-auto shrink-0 font-sans text-[10px] text-yellow-300">
             {Math.round((tokenUsed / tokenLimit) * 100)}%
           </span>
         </div>
@@ -333,7 +333,7 @@ export const AgentChatPanel = memo(function AgentChatPanel({
                 <ArrowLeft className="h-3 w-3" />
                 Back to live session
               </button>
-              <span className="truncate font-mono text-[10px] text-muted-foreground">
+              <span className="truncate font-sans text-[10px] text-muted-foreground">
                 {viewingSessionKey}
               </span>
             </div>
@@ -341,7 +341,7 @@ export const AgentChatPanel = memo(function AgentChatPanel({
               {viewingSessionLoading ? (
                 <div className="flex items-center justify-center py-12">
                   <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground" />
-                  <span className="ml-2 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                  <span className="ml-2 font-sans text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
                     Loading history…
                   </span>
                 </div>

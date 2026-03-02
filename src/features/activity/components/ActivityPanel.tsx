@@ -55,7 +55,7 @@ export const ActivityPanel = memo(function ActivityPanel() {
           <Activity className="h-4 w-4 text-muted-foreground" />
           <SectionLabel as="span">Activity</SectionLabel>
           {runningCount > 0 && (
-            <span className="rounded-full bg-muted px-1.5 py-0.5 font-mono text-[10px] font-semibold text-muted-foreground">
+            <span className="rounded-full bg-muted px-1.5 py-0.5 font-sans text-[10px] font-semibold text-muted-foreground">
               {runningCount}
             </span>
           )}

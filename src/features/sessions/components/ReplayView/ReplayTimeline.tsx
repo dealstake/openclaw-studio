@@ -119,15 +119,15 @@ const TurnRow = React.memo(function TurnRow({
         {/* Right-side metrics */}
         <div className="hidden shrink-0 flex-col items-end gap-0.5 sm:flex">
           {durationText && (
-            <span className="font-mono text-[10px] text-muted-foreground">{durationText}</span>
+            <span className="font-sans text-[10px] text-muted-foreground">{durationText}</span>
           )}
           {turn.tokens.total > 0 && (
-            <span className="font-mono text-[10px] text-muted-foreground">
+            <span className="font-sans text-[10px] text-muted-foreground">
               {formatTokensOrEmpty(turn.tokens.total)}
             </span>
           )}
           {turn.cost.total > 0 && (
-            <span className="font-mono text-[10px] text-muted-foreground">
+            <span className="font-sans text-[10px] text-muted-foreground">
               {formatCostOrEmpty(turn.cost.total)}
             </span>
           )}
@@ -161,7 +161,7 @@ const TurnRow = React.memo(function TurnRow({
                   <Wrench className="h-2.5 w-2.5 shrink-0 text-orange-400" />
                   <span className="font-mono truncate">{tc.name}</span>
                   {tc.durationMs !== undefined && (
-                    <span className="ml-auto font-mono text-[10px]">
+                    <span className="ml-auto font-sans text-[10px]">
                       {tc.durationMs < 1000
                         ? `${tc.durationMs}ms`
                         : `${(tc.durationMs / 1000).toFixed(1)}s`}

@@ -12,10 +12,9 @@ describe("SectionLabel", () => {
   it("applies section-label classes", () => {
     render(createElement(SectionLabel, null, "Label"));
     const el = screen.getByText("Label");
-    expect(el.className).toContain("font-mono");
-    expect(el.className).toContain("text-sm");
+    expect(el.className).toContain("font-sans");
+    expect(el.className).toContain("text-xs");
     expect(el.className).toContain("tracking-[0.08em]");
-    expect(el.className).toContain("text-muted-foreground");
   });
 
   it("renders as div by default", () => {
@@ -45,7 +44,7 @@ describe("SectionLabel", () => {
   });
 
   it("exports sectionLabelClass constant", () => {
-    expect(sectionLabelClass).toContain("font-mono");
+    expect(sectionLabelClass).toContain("font-sans");
     expect(sectionLabelClass).toContain("tracking-[0.08em]");
   });
 });

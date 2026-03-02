@@ -106,7 +106,7 @@ export const TraceNodeRow = React.memo(function TraceNodeRow({
 
         {/* Tool call duration */}
         {durationMs ? (
-          <span className="hidden shrink-0 font-mono text-[10px] text-muted-foreground sm:block">
+          <span className="hidden shrink-0 font-sans text-[10px] text-muted-foreground sm:block">
             {durationMs < 1000 ? `${durationMs}ms` : `${(durationMs / 1000).toFixed(1)}s`}
           </span>
         ) : null}
@@ -125,14 +125,14 @@ export const TraceNodeRow = React.memo(function TraceNodeRow({
 
         {/* Tokens (message-level only) */}
         {node.tokens && node.tokens.total > 0 && (
-          <span className="hidden w-10 shrink-0 text-right font-mono text-[10px] text-muted-foreground sm:block">
+          <span className="hidden w-10 shrink-0 text-right font-sans text-[10px] text-muted-foreground sm:block">
             {formatTokensOrEmpty(node.tokens.total)}
           </span>
         )}
 
         {/* Cost (message-level only) */}
         {node.cost && node.cost.total > 0 && (
-          <span className="hidden w-12 shrink-0 text-right font-mono text-[10px] text-muted-foreground md:block">
+          <span className="hidden w-12 shrink-0 text-right font-sans text-[10px] text-muted-foreground md:block">
             {formatCostOrEmpty(node.cost.total)}
           </span>
         )}

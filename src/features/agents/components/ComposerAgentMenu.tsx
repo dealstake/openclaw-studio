@@ -172,7 +172,7 @@ export const ComposerAgentMenu = memo(function ComposerAgentMenu({
                     style={{ width: `${Math.min(tokenPct, 100)}%` }}
                   />
                 </div>
-                <span className={`font-mono text-[10px] ${tokenPct >= 80 ? "font-bold text-yellow-500" : "text-muted-foreground"}`}>
+                <span className={`font-sans text-[10px] ${tokenPct >= 80 ? "font-bold text-yellow-500" : "text-muted-foreground"}`}>
                   {tokenPct}%
                 </span>
               </div>

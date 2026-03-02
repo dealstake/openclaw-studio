@@ -41,7 +41,7 @@ export const PanelHeader = memo(function PanelHeader({
               {icon}
             </div>
           )}
-          <h3 className="font-mono text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground truncate">
+          <h3 className="font-sans text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground truncate">
             {title}
           </h3>
         </div>

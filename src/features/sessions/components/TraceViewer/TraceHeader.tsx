@@ -29,7 +29,7 @@ export const TraceHeader = React.memo(function TraceHeader({
 
       <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
         {summary.model && (
-          <span className="flex items-center gap-1 rounded-md border border-border/60 bg-muted/40 px-2 py-0.5 font-mono text-[10px]">
+          <span className="flex items-center gap-1 rounded-md border border-border/60 bg-muted/40 px-2 py-0.5 font-sans text-[10px]">
             <Bot className="h-3 w-3" />
             {summary.model}
           </span>

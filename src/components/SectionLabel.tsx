@@ -3,7 +3,7 @@ import type { HTMLAttributes, ReactNode } from "react";
 
 /**
  * Shared section-label typography used across all feature panels.
- * Replaces 80+ duplicated `font-mono text-[10px] font-semibold uppercase tracking-…` patterns.
+ * Replaces 80+ duplicated section-label patterns with consistent sans-serif typography.
  *
  * Also exports `sectionLabelClass` for cases where a dedicated component
  * can't be used (e.g. interactive elements, <summary>, <label>).
@@ -11,7 +11,7 @@ import type { HTMLAttributes, ReactNode } from "react";
 
 /** Canonical class string — use on any element that needs the section-label look. */
 export const sectionLabelClass =
-  "font-mono text-sm font-semibold uppercase tracking-[0.08em]";
+  "font-sans text-xs font-semibold uppercase tracking-[0.08em]";
 
 type SectionLabelProps = HTMLAttributes<HTMLDivElement> & {
   children?: ReactNode;

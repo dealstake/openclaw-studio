@@ -92,7 +92,7 @@ export const AutonomyLevelBadge = memo(function AutonomyLevelBadge({
     </>
   );
 
-  const baseClass = `flex items-center gap-1 rounded-full border px-2 py-0.5 font-mono text-[10px] font-medium uppercase tracking-[0.08em] ${colorClass}`;
+  const baseClass = `flex items-center gap-1 rounded-full border px-2 py-0.5 font-sans text-[10px] font-medium uppercase tracking-[0.08em] ${colorClass}`;
 
   if (onClick) {
     return (

@@ -75,7 +75,7 @@ export const ThinkingBlock = React.memo(function ThinkingBlock({
 
         {/* Duration */}
         {durationLabel ? (
-          <span className="font-mono text-[10px] tabular-nums text-muted-foreground/70">
+          <span className="font-sans text-[10px] tabular-nums text-muted-foreground/70">
             {durationLabel}
           </span>
         ) : null}

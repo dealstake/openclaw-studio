@@ -67,7 +67,7 @@ export const AgentPreviewCard = React.memo(function AgentPreviewCard({
       {/* Badges row */}
       <div className="flex items-center gap-2 flex-wrap">
         {/* Agent ID badge */}
-        <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-mono text-muted-foreground">
+        <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-sans text-muted-foreground">
           {config.agentId}
         </span>
 
@@ -136,7 +136,7 @@ export const AgentPreviewCard = React.memo(function AgentPreviewCard({
             <div className="mt-2 space-y-3">
               {Object.entries(brainFiles).map(([key, content]) => (
                 <div key={key} className="space-y-1">
-                  <p className="text-xs font-medium text-foreground font-mono">
+                  <p className="text-xs font-medium text-foreground font-sans">
                     {BRAIN_FILE_LABELS[key] ?? `${key}.md`}
                   </p>
                   <div className="rounded-lg border border-border bg-muted/50 p-3 max-h-48 overflow-y-auto">

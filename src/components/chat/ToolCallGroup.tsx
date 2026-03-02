@@ -117,7 +117,7 @@ export const ToolCallGroup = React.memo(function ToolCallGroup({
 
         {/* Duration */}
         {durationLabel ? (
-          <span className="font-mono text-xs tabular-nums text-muted-foreground/50">
+          <span className="font-sans text-xs tabular-nums text-muted-foreground/50">
             {durationLabel}
           </span>
         ) : null}

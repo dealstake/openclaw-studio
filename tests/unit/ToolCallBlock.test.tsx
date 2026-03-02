@@ -70,8 +70,8 @@ describe("ToolCallBlock", () => {
         startedAt={1000}
       />,
     );
-    // No font-mono duration span should exist
-    const durationSpans = container.querySelectorAll(".font-mono");
+    // No font-sans duration span should exist
+    const durationSpans = container.querySelectorAll(".font-sans");
     expect(durationSpans.length).toBe(0);
   });
 

@@ -113,7 +113,7 @@ export const StreamingStatus = memo(function StreamingStatus({
       />
       <span className="hidden sm:inline" aria-hidden="true">{label}</span>
       <span className="text-muted-foreground/60" aria-hidden="true">·</span>
-      <span className="font-mono text-[10px] text-muted-foreground/80">
+      <span className="font-sans text-[10px] text-muted-foreground/80">
         <ElapsedBadge startMs={effectiveStart} />
       </span>
     </div>
