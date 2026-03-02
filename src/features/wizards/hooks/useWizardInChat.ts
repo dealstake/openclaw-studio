@@ -356,7 +356,8 @@ export function useWizardInChat({
 
   const startWizard = useCallback(
     (type: WizardType, systemPrompt: string) => {
-      const sessionKey = `agent:${agentId}:wizard:${type}`;
+      const wizardId = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      const sessionKey = `agent:${agentId}:wizard:${type}:${wizardId}`;
       const theme = getWizardTheme(type);
       const starters = getWizardStarters(type);
 

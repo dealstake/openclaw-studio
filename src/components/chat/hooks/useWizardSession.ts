@@ -57,7 +57,7 @@ export function useWizardSession({
   const [error, setError] = useState<string | null>(null);
 
   const sessionKeyRef = useRef(
-    `agent:${agentId}:wizard:${wizardType}`
+    `agent:${agentId}:wizard:${wizardType}:${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`
   );
   const sessionInitRef = useRef(false);
   const cleanedUpRef = useRef(false);
