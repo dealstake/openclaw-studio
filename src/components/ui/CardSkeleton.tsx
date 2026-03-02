@@ -35,7 +35,7 @@ function SkeletonCard({ variant }: { variant: CardSkeletonVariant }) {
 
   // card variant (default)
   return (
-    <div className="rounded-xl border border-border/50 bg-card/50 p-4">
+    <div className="rounded-lg border border-border/50 bg-card/50 p-4">
       <div className="flex flex-col gap-2.5">
         <div className={cn(pulseBar, "h-3.5 w-[60%]")} />
         <div className={cn(pulseBar, "h-3 w-[80%]")} />
