@@ -118,7 +118,11 @@ export const RoutingPanel = memo(function RoutingPanel({
         <div className="flex items-center gap-2">
           <SectionLabel>Model Router</SectionLabel>
           {recommendationCount > 0 && (
-            <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-bold text-white">
+            <span
+              className="flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-bold text-white"
+              aria-label={`${recommendationCount} new suggestions`}
+              role="status"
+            >
               {recommendationCount}
             </span>
           )}
@@ -129,7 +133,7 @@ export const RoutingPanel = memo(function RoutingPanel({
             aria-label="Refresh routing rules"
             disabled={loading || saving}
           >
-            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "motion-safe:animate-spin" : ""}`} />
           </PanelIconButton>
           <PanelIconButton
             variant="primary"

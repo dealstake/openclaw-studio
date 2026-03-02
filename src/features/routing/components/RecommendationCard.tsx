@@ -28,8 +28,8 @@ const PRIORITY_STYLES = {
 } as const;
 
 const PRIORITY_BADGE = {
-  high: "bg-amber-500/20 text-amber-600 dark:text-amber-400",
-  medium: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
+  high: "bg-amber-500/20 text-amber-800 dark:text-amber-300",
+  medium: "bg-blue-500/15 text-blue-800 dark:text-blue-300",
   low: "bg-muted text-muted-foreground",
 } as const;
 
@@ -75,15 +75,17 @@ export const RecommendationCard = memo(function RecommendationCard({
       role="article"
       aria-label={`Recommendation: ${recommendation.title}`}
     >
-      {/* Dismiss button */}
-      <button
-        type="button"
-        onClick={handleDismiss}
-        className="absolute right-2 top-2 rounded-md p-0.5 text-muted-foreground/50 opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100"
-        aria-label="Dismiss recommendation"
-      >
-        <X className="h-3 w-3" />
-      </button>
+      {/* Dismiss button — 44px touch target */}
+      <div className="absolute right-0 top-0 h-11 w-11">
+        <button
+          type="button"
+          onClick={handleDismiss}
+          className="flex h-full w-full items-center justify-center rounded-md text-muted-foreground/50 opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100"
+          aria-label="Dismiss recommendation"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+      </div>
 
       {/* Header */}
       <div className="flex items-start gap-2 pr-5">
@@ -99,7 +101,7 @@ export const RecommendationCard = memo(function RecommendationCard({
               {recommendation.priority}
             </span>
           </div>
-          <p className="mt-1 text-[11px] text-muted-foreground leading-relaxed">
+          <p className="mt-1 text-[12px] text-muted-foreground leading-relaxed">
             {recommendation.description}
           </p>
         </div>
@@ -118,7 +120,7 @@ export const RecommendationCard = memo(function RecommendationCard({
           type="button"
           onClick={handleCreate}
           disabled={disabled || creating}
-          className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary transition-colors hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex h-11 items-center gap-1.5 rounded-md bg-primary px-4 text-[12px] font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {creating ? (
             "Creating…"
