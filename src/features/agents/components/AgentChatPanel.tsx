@@ -276,7 +276,7 @@ export const AgentChatPanel = memo(function AgentChatPanel({
   );
 
   return (
-    <div data-agent-panel className="group fade-up relative flex h-full w-full min-w-0 flex-col overflow-hidden">
+    <div data-agent-panel className="group fade-up relative flex h-full w-full min-w-0 flex-col overflow-hidden bg-surface-sunken">
       {/* Context warning banner — slim pill at 80%+ utilization */}
       {typeof tokenUsed === "number" && tokenLimit && tokenLimit > 0 && tokenUsed / tokenLimit >= 0.8 && (
         <div className="mx-auto mt-2 flex w-full max-w-3xl items-center gap-2 rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-3 py-1.5 text-xs sm:px-6">

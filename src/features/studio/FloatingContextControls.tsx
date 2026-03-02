@@ -36,7 +36,7 @@ export const FloatingContextControls = memo(function FloatingContextControls({
   if (!contextPanelOpen) {
     return (
       <div
-        className={`fixed top-4 right-4 z-[var(--z-header)] flex min-w-0 items-center gap-1 rounded-full bg-background/95 p-1 shadow-lg ring-1 ring-border/20 backdrop-blur-xl ${baseTransition}`}
+        className={`fixed top-4 right-4 z-[var(--z-header)] flex min-w-0 items-center gap-1 rounded-full bg-surface-elevated/95 p-1 shadow-lg ring-1 ring-border/20 backdrop-blur-xl ${baseTransition}`}
         data-testid="floating-context-controls"
       >
         {CONTEXT_TAB_CONFIG.map(({ value, label, Icon }) => (
@@ -60,7 +60,7 @@ export const FloatingContextControls = memo(function FloatingContextControls({
     <>
       {/* Context tab icons — docked inside the panel area */}
       <div
-        className={`fixed top-4 right-4 z-[var(--z-header)] flex items-center gap-0.5 rounded-full bg-background/95 p-1 shadow-lg ring-1 ring-border/20 backdrop-blur-xl ${baseTransition}`}
+        className={`fixed top-4 right-4 z-[var(--z-header)] flex items-center gap-0.5 rounded-full bg-surface-elevated/95 p-1 shadow-lg ring-1 ring-border/20 backdrop-blur-xl ${baseTransition}`}
         data-testid="context-panel-tabs"
         /* 5 icons × 44px + close + gaps ≈ ~310px — fits within 360px panel */
       >

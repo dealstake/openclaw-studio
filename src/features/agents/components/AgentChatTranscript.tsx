@@ -62,8 +62,8 @@ export const AgentChatTranscript = memo(function AgentChatTranscript({
 
       {showJumpToLatest ? (
         <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex flex-col items-center">
-          <div className="h-12 w-full bg-gradient-to-t from-background via-background/80 to-transparent" />
-          <div className="w-full bg-background pb-3">
+          <div className="h-12 w-full bg-gradient-to-t from-surface-sunken via-surface-sunken/80 to-transparent" />
+          <div className="w-full bg-surface-sunken pb-3">
             <button
               type="button"
               className="pointer-events-auto mx-auto flex items-center gap-1.5 rounded-full border border-border/80 bg-card px-3 py-1.5 text-xs font-medium text-foreground shadow-sm transition hover:bg-muted/70"

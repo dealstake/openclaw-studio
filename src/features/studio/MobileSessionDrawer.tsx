@@ -157,7 +157,7 @@ export const MobileSessionDrawer = memo(function MobileSessionDrawer({
     <div className="fixed inset-0 z-50" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="mobile-drawer-title" ref={drawerRef}>
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
       <div
-        className="absolute inset-y-0 left-0 w-[280px] animate-in slide-in-from-left duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] bg-[var(--surface-elevated)] flex flex-col"
+        className="absolute inset-y-0 left-0 w-[280px] animate-in slide-in-from-left duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] bg-surface-elevated flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         <h2 id="mobile-drawer-title" className="sr-only">Main Menu</h2>
