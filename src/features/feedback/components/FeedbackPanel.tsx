@@ -295,7 +295,7 @@ export const FeedbackPanel = memo(function FeedbackPanel({
                 type="button"
                 onClick={() => setRatingFilter(r)}
                 className={cn(
-                  "rounded-full px-2.5 py-0.5 text-[10px] font-medium transition-colors min-h-[32px]",
+                  "rounded-full px-2.5 py-1 text-[10px] font-medium transition-colors min-h-[44px] sm:min-h-0 sm:py-0.5",
                   isActive
                     ? "bg-primary text-primary-foreground"
                     : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
