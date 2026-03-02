@@ -310,9 +310,9 @@ export const AgentChatPanel = memo(function AgentChatPanel({
         </div>
       )}
 
-      {/* Session header — autonomy level badge (non-autonomous = prominent, autonomous = subtle) */}
+      {/* Session header — autonomy level badge (desktop only, hidden on mobile) */}
       {!viewingSessionKey && (
-        <div className="flex items-center justify-end px-4 pt-1.5 pb-0">
+        <div className="hidden items-center justify-end px-4 pt-1.5 pb-0 sm:flex">
           <AutonomyLevelBadge
             level={(agent.autonomyLevel as AutonomyLevel | undefined) ?? DEFAULT_AUTONOMY_LEVEL}
             onClick={onOpenSettings}

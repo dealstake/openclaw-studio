@@ -321,38 +321,10 @@ export const AgentChatComposer = memo(function AgentChatComposer({
           onChange={handleFileInputChange}
         />
 
-        {/* ═══ FLOATING ROW: [Avatar ○] [━━ Glass Input Pill ━━] [Send ○] ═══ */}
+        {/* ═══ FLOATING ROW: [━━ Glass Input Pill ━━] [Morphing Button ○] ═══ */}
         <div className="flex items-end gap-2 sm:gap-2.5">
 
-          {/* ── Floating Avatar Button (left) ── */}
-          <div className="shrink-0">
-            {composerAgents && composerAgents.length > 0 && selectedAgentId && onSelectAgent ? (
-              <ComposerAgentMenu
-                agents={composerAgents}
-                selectedAgentId={selectedAgentId}
-                onSelectAgent={onSelectAgent}
-                models={models}
-                modelValue={modelValue}
-                onModelChange={onModelChange}
-                thinkingLevel={thinkingLevel}
-                onThinkingChange={onThinkingChange}
-                allowThinking={allowThinking}
-                tokenPct={tokenPct}
-                onNewSession={onNewSession}
-                onAttach={triggerAttach}
-              />
-            ) : (
-              <button
-                type="button"
-                aria-label={`Agent: ${agentName}`}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border/30 bg-background/60 shadow-lg ring-1 ring-white/[0.06] backdrop-blur-xl dark:bg-background/40"
-              >
-                <AgentAvatar name={agentName} size={36} />
-              </button>
-            )}
-          </div>
-
-          {/* ── Floating Glass Input Pill (center) ── */}
+          {/* ── Glass Input Pill ── */}
           <div className="min-w-0 flex-1 rounded-[20px] border border-border/50 bg-background/70 shadow-xl ring-1 ring-white/[0.08] backdrop-blur-xl transition-all focus-within:border-border/80 focus-within:shadow-2xl dark:bg-background/40 dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)]">
             <textarea
               ref={handleRef}
@@ -368,7 +340,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
             />
           </div>
 
-          {/* ── Floating Send/Stop Button (right) ── */}
+          {/* ── Morphing Action Button — same size, same spot, 3 states ── */}
           <div className="relative shrink-0">
             {/* SVG progress ring — visible when running and tokenPct available */}
             {running && tokenPct !== null && (
@@ -394,9 +366,10 @@ export const AgentChatComposer = memo(function AgentChatComposer({
             {running && tokenPct === null && (
               <div className="absolute inset-[-3px] rounded-full border-2 border-primary/50 animate-pulse" aria-hidden />
             )}
+            {/* State 1: Running → Stop button */}
             {running ? (
               <button
-                className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-lg ring-1 ring-white/[0.06] backdrop-blur-xl transition-all duration-300 ease-out hover:brightness-110 active:scale-90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
+                className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-lg ring-1 ring-white/[0.06] backdrop-blur-xl transition-all duration-300 ease-out hover:brightness-110 active:scale-90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
                 type="button"
                 aria-label="Stop agent"
                 onClick={onStop}
@@ -405,8 +378,9 @@ export const AgentChatComposer = memo(function AgentChatComposer({
                 <Square className="h-3.5 w-3.5 fill-current" />
               </button>
             ) : !isEmpty || hasFiles ? (
+              /* State 2: Has text/files → Send button */
               <button
-                className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg ring-1 ring-white/[0.06] backdrop-blur-xl transition-all duration-300 ease-out hover:brightness-110 active:scale-90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
+                className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg ring-1 ring-white/[0.06] backdrop-blur-xl transition-all duration-300 ease-out hover:brightness-110 active:scale-90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
                 type="button"
                 aria-label="Send message"
                 onClick={handleClickSend}
@@ -414,9 +388,26 @@ export const AgentChatComposer = memo(function AgentChatComposer({
               >
                 <ArrowUp className="h-[18px] w-[18px]" />
               </button>
+            ) : composerAgents && composerAgents.length > 0 && selectedAgentId && onSelectAgent ? (
+              /* State 3: Idle → Avatar (agent menu) */
+              <ComposerAgentMenu
+                agents={composerAgents}
+                selectedAgentId={selectedAgentId}
+                onSelectAgent={onSelectAgent}
+                models={models}
+                modelValue={modelValue}
+                onModelChange={onModelChange}
+                thinkingLevel={thinkingLevel}
+                onThinkingChange={onThinkingChange}
+                allowThinking={allowThinking}
+                tokenPct={tokenPct}
+                onNewSession={onNewSession}
+                onAttach={triggerAttach}
+              />
             ) : (
+              /* Fallback: disabled send button */
               <button
-                className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border/30 bg-background/60 text-muted-foreground shadow-lg ring-1 ring-white/[0.06] backdrop-blur-xl dark:bg-background/40"
+                className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-border/30 bg-background/60 text-muted-foreground shadow-lg ring-1 ring-white/[0.06] backdrop-blur-xl dark:bg-background/40"
                 type="button"
                 aria-label="Send message"
                 disabled
