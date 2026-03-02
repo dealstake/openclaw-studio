@@ -15,13 +15,14 @@ import { RoutingPanel } from "@/features/routing/components/RoutingPanel";
 import { PlaygroundPanel } from "@/features/playground/components/PlaygroundPanel";
 import { OrchestratorPanel } from "@/features/orchestrator/components/OrchestratorPanel";
 import { MemoryGraphPanel } from "@/features/memory-graph/components/MemoryGraphPanel";
+import { FeedbackPanel } from "@/features/feedback/components/FeedbackPanel";
 import type { PersonaTemplate } from "@/features/personas/lib/templateTypes";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import type { AgentState } from "@/features/agents/state/store";
 import type { GatewayModelChoice } from "@/lib/gateway/models";
 import type { AgentFileName } from "@/lib/agents/agentFiles";
 
-export type ExpandableTab = "projects" | "tasks" | "brain" | "workspace" | "skills" | "activity" | "budget" | "router" | "playground" | "orchestrator" | "memory-graph";
+export type ExpandableTab = "projects" | "tasks" | "brain" | "workspace" | "skills" | "activity" | "budget" | "router" | "playground" | "orchestrator" | "memory-graph" | "feedback";
 
 interface StudioContextDrawerProps {
   isMobileLayout: boolean;
@@ -235,6 +236,11 @@ export const StudioContextDrawer = React.memo(function StudioContextDrawer(props
         memoryGraphContent={
           <PanelErrorBoundary name="Memory Graph">
             <MemoryGraphPanel agentId={focusedAgentId} className="h-full" />
+          </PanelErrorBoundary>
+        }
+        feedbackContent={
+          <PanelErrorBoundary name="Feedback">
+            <FeedbackPanel />
           </PanelErrorBoundary>
         }
       />

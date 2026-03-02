@@ -29,6 +29,7 @@ interface ContextPanelProps {
   playgroundContent?: ReactNode;
   orchestratorContent?: ReactNode;
   memoryGraphContent?: ReactNode;
+  feedbackContent?: ReactNode;
 }
 
 export const ContextPanel = memo(function ContextPanel({
@@ -49,6 +50,7 @@ export const ContextPanel = memo(function ContextPanel({
   playgroundContent,
   orchestratorContent,
   memoryGraphContent,
+  feedbackContent,
 }: ContextPanelProps) {
   const handleTabClick = useCallback(
     (tab: ContextTab) => {
@@ -154,7 +156,8 @@ export const ContextPanel = memo(function ContextPanel({
     playground: playgroundContent,
     orchestrator: orchestratorContent,
     "memory-graph": memoryGraphContent,
-  }), [projectsContent, tasksContent, brainContent, workspaceContent, skillsContent, activityContent, budgetContent, routerContent, playgroundContent, orchestratorContent, memoryGraphContent]);
+    feedback: feedbackContent,
+  }), [projectsContent, tasksContent, brainContent, workspaceContent, skillsContent, activityContent, budgetContent, routerContent, playgroundContent, orchestratorContent, memoryGraphContent, feedbackContent]);
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden">

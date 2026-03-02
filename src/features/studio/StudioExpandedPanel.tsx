@@ -26,6 +26,7 @@ import type { GatewayModelChoice } from "@/lib/gateway/models";
 import { PlaygroundPanel } from "@/features/playground/components/PlaygroundPanel";
 import { RoutingPanel } from "@/features/routing/components/RoutingPanel";
 import { OrchestratorPanel } from "@/features/orchestrator/components/OrchestratorPanel";
+import { FeedbackPanel } from "@/features/feedback/components/FeedbackPanel";
 
 interface StudioExpandedPanelProps {
   expandedTab: ContextTab | ManagementTab | null;
@@ -209,6 +210,11 @@ export const StudioExpandedPanel = memo(function StudioExpandedPanel({
                 agentId={focusedAgentId}
                 isTabActive
               />
+            </PanelErrorBoundary>
+          )}
+          {expandedTab === "feedback" && (
+            <PanelErrorBoundary name="Feedback">
+              <FeedbackPanel />
             </PanelErrorBoundary>
           )}
           <ManagementPanelContent

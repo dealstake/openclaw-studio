@@ -24,10 +24,10 @@ function renderPanel(overrides: Record<string, unknown> = {}) {
 }
 
 describe("ContextPanel", () => {
-  it("renders 11 tab buttons from config", () => {
+  it("renders 12 tab buttons from config", () => {
     renderPanel();
     const tabs = screen.getAllByRole("tab");
-    expect(tabs).toHaveLength(11);
+    expect(tabs).toHaveLength(12);
   });
 
   it("marks active tab as selected", () => {
@@ -86,7 +86,7 @@ describe("ContextPanel", () => {
     renderPanel({ activeTab: "projects", onTabChange });
     const tablist = screen.getByRole("tablist");
     fireEvent.keyDown(tablist, { key: "ArrowLeft" });
-    expect(onTabChange).toHaveBeenCalledWith("memory-graph");
+    expect(onTabChange).toHaveBeenCalledWith("feedback");
   });
 
   it("navigates to first tab with Home key", () => {
@@ -102,7 +102,7 @@ describe("ContextPanel", () => {
     renderPanel({ activeTab: "projects", onTabChange });
     const tablist = screen.getByRole("tablist");
     fireEvent.keyDown(tablist, { key: "End" });
-    expect(onTabChange).toHaveBeenCalledWith("memory-graph");
+    expect(onTabChange).toHaveBeenCalledWith("feedback");
   });
 
   it("uses roving tabindex (active=0, inactive=-1)", () => {
