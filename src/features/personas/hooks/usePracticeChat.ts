@@ -239,6 +239,7 @@ export function usePracticeChat({
         sessionKey,
         message: kickoff,
         deliver: false,
+        idempotencyKey: crypto.randomUUID(),
       });
     } catch (err) {
       setError(
@@ -281,6 +282,7 @@ export function usePracticeChat({
           sessionKey: sessionKeyRef.current,
           message: text,
           deliver: false,
+          idempotencyKey: crypto.randomUUID(),
         });
       } catch (err) {
         setError(
@@ -312,6 +314,7 @@ export function usePracticeChat({
         client
           .call("chat.send", {
             sessionKey: sessionKeyRef.current,
+            idempotencyKey: crypto.randomUUID(),
             message: `The practice session is now over. Break character and evaluate my performance:
 
 1. **Score** (1-10): How well did I perform?
