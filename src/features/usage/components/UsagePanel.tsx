@@ -17,13 +17,16 @@ import { AgentCostTable } from "@/features/usage/components/AgentCostTable";
 import { SummaryCard } from "@/features/usage/components/SummaryCard";
 import { BudgetAlert } from "@/features/usage/components/BudgetAlert";
 import { SavingsCard } from "@/features/routing/components/SavingsCard";
+import { ToolPerformanceTable } from "@/features/usage/components/ToolPerformanceTable";
+import { useToolMetrics } from "@/features/usage/hooks/useToolMetrics";
 
-type BreakdownView = "model" | "agent" | "cron";
+type BreakdownView = "model" | "agent" | "cron" | "tool";
 
 const BREAKDOWN_OPTIONS: FilterGroupOption<BreakdownView>[] = [
   { value: "model", label: "By Model" },
   { value: "agent", label: "By Agent" },
   { value: "cron", label: "Cron Jobs" },
+  { value: "tool", label: "By Tool" },
 ];
 
 const TIME_RANGE_OPTIONS: FilterGroupOption<TimeRange>[] = [
@@ -57,6 +60,11 @@ export const UsagePanel = memo(function UsagePanel() {
   } = useUsageQuery();
 
   const [breakdownView, setBreakdownView] = useState<BreakdownView>("model");
+  const {
+    metrics: toolMetrics,
+    loading: toolLoading,
+    refresh: refreshTools,
+  } = useToolMetrics();
 
   // Collect unique model names for the trend chart legend
   const models = useMemo(() => Array.from(costByModel.keys()), [costByModel]);
@@ -65,6 +73,14 @@ export const UsagePanel = memo(function UsagePanel() {
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  // Fetch tool metrics when "By Tool" tab is selected
+  useEffect(() => {
+    if (breakdownView === "tool") {
+      const days = timeRange === "today" ? 1 : timeRange === "7d" ? 7 : timeRange === "30d" ? 30 : 90;
+      void refreshTools(days);
+    }
+  }, [breakdownView, timeRange, refreshTools]);
 
   // Cost per session
   const costPerSession = totalSessions > 0 ? totalCost / totalSessions : 0;
@@ -251,6 +267,12 @@ export const UsagePanel = memo(function UsagePanel() {
         )}
         {breakdownView === "cron" && !hasCronEntries && (
           <p className="text-xs text-muted-foreground py-4 text-center">No cron sessions in this time range.</p>
+        )}
+
+        {breakdownView === "tool" && (
+          toolLoading
+            ? <Skeleton className="h-40 rounded-lg" />
+            : <ToolPerformanceTable metrics={toolMetrics} />
         )}
       </div>
     </div>
