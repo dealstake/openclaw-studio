@@ -1,15 +1,19 @@
 "use client";
 
 /**
- * Hook to connect practice sessions to real AI inference via `/api/practice/chat`.
+ * Hook to connect practice sessions to real AI inference via the gateway.
  *
- * Maintains conversation state client-side and sends the full history
- * with each request. Uses Gemini via the practice API route for cheap,
- * fast practice conversations.
+ * Uses the `agent:bootstrap` hook (`persona-bootstrap`) to swap brain files
+ * for the persona, then sends messages via `chat.send` RPC and listens
+ * for streaming events on the practice session key.
+ *
+ * Replaces the old `/api/practice/chat` raw-Gemini approach, giving
+ * practice sessions full tool access, streaming, and proper session history.
  */
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
+import type { EventFrame } from "@/lib/gateway/types";
 import type { PracticeModeType } from "../lib/personaTypes";
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -27,6 +31,8 @@ export interface UsePracticeChatOptions {
   personaName: string;
   mode: PracticeModeType;
   difficulty: "easy" | "medium" | "hard";
+  /** The owning agent ID (defaults to "alex") */
+  agentId?: string;
 }
 
 export interface UsePracticeChatReturn {
@@ -48,98 +54,63 @@ export interface UsePracticeChatReturn {
   evaluationText: string | null;
 }
 
-// ── System prompts ─────────────────────────────────────────────────────
+// ── Session key builder ────────────────────────────────────────────────
 
-function buildPracticeSystemPrompt(
+function buildPracticeSessionKey(agentId: string, personaId: string): string {
+  return `agent:${agentId}:practice:${personaId}`;
+}
+
+// ── Kickoff prompt ─────────────────────────────────────────────────────
+
+function buildKickoffMessage(
   personaName: string,
   mode: PracticeModeType,
   difficulty: "easy" | "medium" | "hard",
 ): string {
-  const difficultyInstructions: Record<string, string> = {
-    easy: "Be cooperative, respond positively to most approaches, and give gentle hints when the user struggles.",
-    medium: "Be realistic — push back naturally, raise common objections, but remain open to persuasion with good technique.",
-    hard: "Be a tough counterpart — skeptical, distracted, raise difficult objections, interrupt occasionally. Only concede to exceptional skill.",
+  const modeLabels: Record<PracticeModeType, string> = {
+    "mock-call": "cold call",
+    "task-delegation": "task delegation exercise",
+    "ticket-simulation": "support ticket simulation",
+    "content-review": "content review session",
+    interview: "interview",
+    analysis: "analysis exercise",
+    scenario: "professional scenario",
   };
 
-  const modeInstructions: Record<PracticeModeType, string> = {
-    "mock-call": `You are role-playing as a potential prospect/lead receiving a phone call from the user. 
-    Act as a realistic business owner or decision-maker. React naturally to the caller's pitch, questions, and approach.
-    Raise realistic objections. The user is practicing their cold calling skills.`,
-
-    "task-delegation": `You are role-playing as a busy executive delegating tasks to the user (who plays the assistant).
-    Give instructions with varying clarity. Sometimes be vague, sometimes specific. 
-    The user is practicing their ability to clarify requirements, manage expectations, and execute tasks.`,
-
-    "ticket-simulation": `You are role-playing as a frustrated customer with a technical issue.
-    Describe your problem with varying levels of technical accuracy. React emotionally if the support feels unhelpful.
-    The user is practicing their support and troubleshooting skills.`,
-
-    "content-review": `You are role-playing as a content manager giving a brief to the user (a content creator).
-    Provide creative direction, brand guidelines, and feedback on drafts.
-    The user is practicing their content creation and revision skills.`,
-
-    interview: `You are role-playing as a job candidate being interviewed by the user.
-    Answer questions with varying quality. Sometimes be evasive, sometimes over-share.
-    The user is practicing their interviewing and evaluation skills.`,
-
-    analysis: `You are presenting data and scenarios to the user for analysis.
-    Provide information with some ambiguity and hidden insights.
-    The user is practicing their analytical and recommendation skills.`,
-
-    scenario: `You are role-playing in an open-ended professional scenario with the user.
-    React naturally and create a realistic interaction.
-    The user is practicing their professional skills.`,
-  };
-
-  return `You are "${personaName}" in a practice/training session. This is a role-play exercise.
-
-## Your Role
-${modeInstructions[mode]}
-
-## Difficulty Level: ${difficulty.toUpperCase()}
-${difficultyInstructions[difficulty]}
-
-## Rules
-- Stay in character at all times
-- Keep responses concise and natural (2-4 sentences typical, longer only when realistic)
-- DO NOT break character to give tips or feedback during the conversation
-- React to the user's actual words and technique, not what they "should" say
-- If the conversation reaches a natural endpoint (meeting booked, issue resolved, etc.), acknowledge it in character
-- Remember: this is PRACTICE — the user is trying to improve their skills`;
+  return (
+    `Start a ${modeLabels[mode]} practice session as "${personaName}". ` +
+    `Difficulty: ${difficulty}. ` +
+    `Begin the interaction in character with a realistic opening. ` +
+    `Do NOT break character or explain — just start the scene.`
+  );
 }
 
-// ── API call helper ────────────────────────────────────────────────────
+// ── Payload helpers ────────────────────────────────────────────────────
 
-interface ApiMessage {
-  role: "user" | "assistant" | "system";
-  content: string;
+type EventPayload = Record<string, unknown>;
+type EventData = Record<string, unknown>;
+
+function getPayload(event: EventFrame): EventPayload | null {
+  return event.payload && typeof event.payload === "object"
+    ? (event.payload as EventPayload)
+    : null;
 }
 
-async function callPracticeApi(
-  systemPrompt: string,
-  messages: ApiMessage[],
-): Promise<string> {
-  const res = await fetch("/api/practice/chat", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ systemPrompt, messages }),
-  });
-
-  if (!res.ok) {
-    const data = (await res.json().catch(() => ({}))) as { error?: string };
-    throw new Error(data.error ?? `Practice API error (${res.status})`);
-  }
-
-  const data = (await res.json()) as { text: string };
-  return data.text;
+function getData(payload: EventPayload): EventData | null {
+  return payload.data && typeof payload.data === "object"
+    ? (payload.data as EventData)
+    : null;
 }
 
 // ── Hook ───────────────────────────────────────────────────────────────
 
 export function usePracticeChat({
+  client,
+  personaId,
   personaName,
   mode,
   difficulty,
+  agentId = "alex",
 }: UsePracticeChatOptions): UsePracticeChatReturn {
   const [messages, setMessages] = useState<PracticeChatMessage[]>([]);
   const [streamText, setStreamText] = useState<string | null>(null);
@@ -148,8 +119,95 @@ export function usePracticeChat({
   const [isActive, setIsActive] = useState(false);
   const [evaluationText, setEvaluationText] = useState<string | null>(null);
 
-  const systemPromptRef = useRef<string>("");
-  const historyRef = useRef<ApiMessage[]>([]);
+  const sessionKeyRef = useRef<string>("");
+  const streamBufferRef = useRef<string>("");
+  const unsubscribeRef = useRef<(() => void) | null>(null);
+  /** Set when evaluate() is active — the resolve callback for the eval promise */
+  const evalResolveRef = useRef<((text: string) => void) | null>(null);
+
+  // ── Event listener ─────────────────────────────────────────────────
+
+  const setupEventListener = useCallback(() => {
+    unsubscribeRef.current?.();
+
+    const sessionKey = sessionKeyRef.current;
+    if (!sessionKey) return;
+
+    const unsubscribe = client.onEvent((event: EventFrame) => {
+      if (event.event !== "agent" && event.event !== "chat") return;
+
+      const payload = getPayload(event);
+      if (!payload || payload.sessionKey !== sessionKey) return;
+
+      // ── Agent stream events ──
+      if (event.event === "agent") {
+        const stream = typeof payload.stream === "string" ? payload.stream : "";
+        const data = getData(payload);
+
+        // Text delta
+        if (stream === "assistant" && data) {
+          const delta = typeof data.delta === "string" ? data.delta : "";
+          const text = typeof data.text === "string" ? data.text : "";
+
+          if (text) {
+            streamBufferRef.current = text;
+          } else if (delta) {
+            streamBufferRef.current += delta;
+          }
+          setStreamText(streamBufferRef.current);
+          setIsStreaming(true);
+          return;
+        }
+
+        // Lifecycle end = turn complete
+        if (stream === "lifecycle" && data) {
+          const phase = typeof data.phase === "string" ? data.phase : "";
+
+          if (phase === "end" || phase === "error") {
+            const finalText = streamBufferRef.current;
+
+            if (phase === "error") {
+              const errMsg =
+                typeof data.error === "string"
+                  ? data.error
+                  : "An error occurred during the practice session.";
+              setError(errMsg);
+            } else if (finalText) {
+              // Check if we're in evaluate mode
+              if (evalResolveRef.current) {
+                evalResolveRef.current(finalText);
+                evalResolveRef.current = null;
+              } else {
+                setMessages((prev) => [
+                  ...prev,
+                  {
+                    id: crypto.randomUUID(),
+                    role: "assistant",
+                    content: finalText,
+                    timestamp: Date.now(),
+                  },
+                ]);
+              }
+            }
+
+            streamBufferRef.current = "";
+            setStreamText(null);
+            setIsStreaming(false);
+          }
+        }
+      }
+    });
+
+    unsubscribeRef.current = unsubscribe;
+  }, [client]);
+
+  // ── Cleanup on unmount ─────────────────────────────────────────────
+
+  useEffect(() => {
+    return () => {
+      unsubscribeRef.current?.();
+    };
+  }, []);
 
   // ── Start ──────────────────────────────────────────────────────────
 
@@ -157,51 +215,57 @@ export function usePracticeChat({
     setError(null);
     setMessages([]);
     setEvaluationText(null);
-    historyRef.current = [];
+    streamBufferRef.current = "";
 
-    const systemPrompt = buildPracticeSystemPrompt(personaName, mode, difficulty);
-    systemPromptRef.current = systemPrompt;
+    const sessionKey = buildPracticeSessionKey(agentId, personaId);
+    sessionKeyRef.current = sessionKey;
+
+    // Reset any stale session
+    try {
+      await client.call("chat.abort", { sessionKey });
+    } catch {
+      // Ignore — session might not exist yet
+    }
+
+    setupEventListener();
 
     try {
       setIsStreaming(true);
-
-      // Send a kick-off message to get the AI to start the scene
-      const kickoff: ApiMessage = {
-        role: "user",
-        content:
-          "The practice session is starting now. Begin the interaction in character. Your opening line should set the scene for the practice scenario. Do NOT break character.",
-      };
-
-      const response = await callPracticeApi(systemPrompt, [kickoff]);
-
-      // Don't add the kickoff to visible history — just the response
-      historyRef.current = [kickoff, { role: "assistant", content: response }];
-
-      setMessages([
-        {
-          id: crypto.randomUUID(),
-          role: "assistant",
-          content: response,
-          timestamp: Date.now(),
-        },
-      ]);
       setIsActive(true);
+
+      const kickoff = buildKickoffMessage(personaName, mode, difficulty);
+
+      await client.call("chat.send", {
+        sessionKey,
+        message: kickoff,
+        deliver: false,
+      });
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to start practice session.",
+        err instanceof Error
+          ? err.message
+          : "Failed to start practice session.",
       );
-    } finally {
-      setStreamText(null);
       setIsStreaming(false);
+      setIsActive(false);
     }
-  }, [personaName, mode, difficulty]);
+  }, [
+    client,
+    agentId,
+    personaId,
+    personaName,
+    mode,
+    difficulty,
+    setupEventListener,
+  ]);
 
   // ── Send ───────────────────────────────────────────────────────────
 
   const send = useCallback(
     async (text: string) => {
-      if (!isActive) return;
+      if (!isActive || !sessionKeyRef.current) return;
       setError(null);
+      streamBufferRef.current = "";
 
       const userMsg: PracticeChatMessage = {
         id: crypto.randomUUID(),
@@ -209,70 +273,70 @@ export function usePracticeChat({
         content: text,
         timestamp: Date.now(),
       };
-
       setMessages((prev) => [...prev, userMsg]);
-      historyRef.current.push({ role: "user", content: text });
       setIsStreaming(true);
-      setStreamText("Thinking…");
 
       try {
-        const response = await callPracticeApi(
-          systemPromptRef.current,
-          historyRef.current,
-        );
-
-        historyRef.current.push({ role: "assistant", content: response });
-
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: crypto.randomUUID(),
-            role: "assistant",
-            content: response,
-            timestamp: Date.now(),
-          },
-        ]);
+        await client.call("chat.send", {
+          sessionKey: sessionKeyRef.current,
+          message: text,
+          deliver: false,
+        });
       } catch (err) {
         setError(
           err instanceof Error ? err.message : "Failed to send message.",
         );
-      } finally {
-        setStreamText(null);
         setIsStreaming(false);
       }
     },
-    [isActive],
+    [client, isActive],
   );
 
   // ── Evaluate ───────────────────────────────────────────────────────
 
   const evaluate = useCallback(async () => {
-    if (historyRef.current.length < 2) return;
+    if (!sessionKeyRef.current || messages.length < 2) return;
 
     setIsStreaming(true);
-    setStreamText("Evaluating…");
+    streamBufferRef.current = "";
 
     try {
-      const evalPrompt = `You just finished a practice/training session with the user. 
-Now break character and provide a brief evaluation:
+      // Set up a promise that resolves when the lifecycle:end event fires
+      const evalText = await new Promise<string>((resolve, reject) => {
+        evalResolveRef.current = resolve;
+        const timeout = setTimeout(() => {
+          evalResolveRef.current = null;
+          reject(new Error("Evaluation timed out"));
+        }, 60_000);
 
-1. **Score** (1-10): How well did the user perform?
-2. **Strengths**: What did they do well? (2-3 bullet points)
-3. **Areas to Improve**: Where could they improve? (2-3 bullet points)
+        client
+          .call("chat.send", {
+            sessionKey: sessionKeyRef.current,
+            message: `The practice session is now over. Break character and evaluate my performance:
+
+1. **Score** (1-10): How well did I perform?
+2. **Strengths**: What did I do well? (2-3 bullet points)
+3. **Areas to Improve**: Where could I improve? (2-3 bullet points)
 4. **Key Tip**: One specific, actionable tip for next time.
 
-Be honest but encouraging. Reference specific moments from the conversation.`;
+Be honest but encouraging. Reference specific moments from our conversation.`,
+            deliver: false,
+          })
+          .catch((err: unknown) => {
+            clearTimeout(timeout);
+            evalResolveRef.current = null;
+            reject(err);
+          });
 
-      const evalHistory: ApiMessage[] = [
-        ...historyRef.current,
-        { role: "user", content: evalPrompt },
-      ];
+        // Clear timeout when resolved
+        const origResolve = resolve;
+        evalResolveRef.current = (text: string) => {
+          clearTimeout(timeout);
+          origResolve(text);
+        };
+      });
 
-      const response = await callPracticeApi(
-        systemPromptRef.current,
-        evalHistory,
-      );
-      setEvaluationText(response);
+      setEvaluationText(evalText);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to evaluate session.",
@@ -281,20 +345,30 @@ Be honest but encouraging. Reference specific moments from the conversation.`;
       setStreamText(null);
       setIsStreaming(false);
     }
-  }, []);
+  }, [client, messages.length]);
 
   // ── Cleanup ────────────────────────────────────────────────────────
 
   const cleanup = useCallback(() => {
+    if (sessionKeyRef.current) {
+      client
+        .call("chat.abort", { sessionKey: sessionKeyRef.current })
+        .catch(() => {});
+    }
+
+    unsubscribeRef.current?.();
+    unsubscribeRef.current = null;
+    evalResolveRef.current = null;
+
     setIsActive(false);
     setMessages([]);
     setStreamText(null);
     setIsStreaming(false);
     setError(null);
     setEvaluationText(null);
-    historyRef.current = [];
-    systemPromptRef.current = "";
-  }, []);
+    streamBufferRef.current = "";
+    sessionKeyRef.current = "";
+  }, [client]);
 
   return {
     messages,
