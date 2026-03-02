@@ -1,35 +1,16 @@
 "use client";
 
 /**
- * Hook to connect practice sessions to real AI inference via gateway.
+ * Hook to connect practice sessions to real AI inference via `/api/practice/chat`.
  *
- * Creates an isolated gateway session for the practice conversation,
- * sends a system prompt with the persona's role + practice scenario,
- * streams responses back, and handles evaluation.
+ * Maintains conversation state client-side and sends the full history
+ * with each request. Uses Gemini via the practice API route for cheap,
+ * fast practice conversations.
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { z } from "zod";
-import type { GatewayClient, EventFrame } from "@/lib/gateway/GatewayClient";
+import { useCallback, useRef, useState } from "react";
+import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import type { PracticeModeType } from "../lib/personaTypes";
-
-// ── Zod schemas ────────────────────────────────────────────────────────
-
-const AgentEventDataSchema = z.object({
-  delta: z.string().optional(),
-  text: z.string().optional(),
-  phase: z.string().optional(),
-});
-
-const EventPayloadSchema = z.object({
-  sessionKey: z.string().optional(),
-  stream: z.string().optional(),
-  state: z.string().optional(),
-  role: z.string().optional(),
-  errorMessage: z.string().optional(),
-  data: AgentEventDataSchema.optional(),
-  message: z.unknown().optional(),
-});
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -49,25 +30,21 @@ export interface UsePracticeChatOptions {
 }
 
 export interface UsePracticeChatReturn {
-  /** All messages in the practice conversation */
   messages: PracticeChatMessage[];
-  /** Current streaming text from the AI */
   streamText: string | null;
-  /** Whether the AI is currently responding */
   isStreaming: boolean;
-  /** Error if something went wrong */
   error: string | null;
-  /** Start the practice session (creates gateway session + sends system prompt) */
+  /** Start the practice session */
   start: () => Promise<void>;
   /** Send a user message */
   send: (text: string) => Promise<void>;
   /** End the session and request evaluation */
   evaluate: () => Promise<void>;
   /** Clean up the session */
-  cleanup: () => Promise<void>;
+  cleanup: () => void;
   /** Whether the session has been started */
   isActive: boolean;
-  /** Evaluation result text (null until evaluation completes) */
+  /** Evaluation text from the AI */
   evaluationText: string | null;
 }
 
@@ -131,11 +108,35 @@ ${difficultyInstructions[difficulty]}
 - Remember: this is PRACTICE — the user is trying to improve their skills`;
 }
 
+// ── API call helper ────────────────────────────────────────────────────
+
+interface ApiMessage {
+  role: "user" | "assistant" | "system";
+  content: string;
+}
+
+async function callPracticeApi(
+  systemPrompt: string,
+  messages: ApiMessage[],
+): Promise<string> {
+  const res = await fetch("/api/practice/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ systemPrompt, messages }),
+  });
+
+  if (!res.ok) {
+    const data = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(data.error ?? `Practice API error (${res.status})`);
+  }
+
+  const data = (await res.json()) as { text: string };
+  return data.text;
+}
+
 // ── Hook ───────────────────────────────────────────────────────────────
 
 export function usePracticeChat({
-  client,
-  personaId,
   personaName,
   mode,
   difficulty,
@@ -147,226 +148,153 @@ export function usePracticeChat({
   const [isActive, setIsActive] = useState(false);
   const [evaluationText, setEvaluationText] = useState<string | null>(null);
 
-  const sessionKeyRef = useRef<string | null>(null);
-  const cleanedUpRef = useRef(false);
-
-  // Generate a stable session key
-  const getSessionKey = useCallback(() => {
-    if (!sessionKeyRef.current) {
-      sessionKeyRef.current = `agent:${personaId}:practice:${Date.now()}`;
-    }
-    return sessionKeyRef.current;
-  }, [personaId]);
-
-  // ── Event subscription ─────────────────────────────────────────────
-
-  useEffect(() => {
-    const unsub = client.onEvent((event: EventFrame) => {
-      const sk = sessionKeyRef.current;
-      if (!sk) return;
-
-      if (event.event !== "chat" && event.event !== "agent") return;
-
-      const payloadParse = EventPayloadSchema.safeParse(event.payload);
-      if (!payloadParse.success) return;
-      const payload = payloadParse.data;
-
-      if (payload.sessionKey !== sk) return;
-
-      // ── runtime.agent events ──
-      if (event.event === "agent") {
-        const stream = payload.stream ?? "";
-        const data = payload.data ?? {};
-
-        if (stream === "assistant") {
-          const delta = data.delta ?? "";
-          const text = data.text ?? "";
-          if (text) {
-            setStreamText(text);
-          } else if (delta) {
-            setStreamText((prev) => (prev ?? "") + delta);
-          }
-          setIsStreaming(true);
-          return;
-        }
-
-        if (stream === "lifecycle") {
-          const phase = data.phase ?? "";
-          if (phase === "end" || phase === "error") {
-            setIsStreaming(false);
-          }
-        }
-        return;
-      }
-
-      // ── chat events ──
-      const state = payload.state ?? "";
-      const role = resolveRole(payload.message);
-
-      if (state === "delta") {
-        const text = extractText(payload.message);
-        if (typeof text === "string") {
-          setStreamText(text);
-          setIsStreaming(true);
-        }
-        return;
-      }
-
-      if (state === "final") {
-        const text = extractText(payload.message);
-        if (role === "assistant" && typeof text === "string") {
-          const finalText = text.trim();
-
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: crypto.randomUUID(),
-              role: "assistant",
-              content: finalText,
-              timestamp: Date.now(),
-            },
-          ]);
-          setStreamText(null);
-          setIsStreaming(false);
-        }
-        return;
-      }
-
-      if (state === "error") {
-        setError(payload.errorMessage ?? "An error occurred.");
-        setStreamText(null);
-        setIsStreaming(false);
-        return;
-      }
-
-      if (state === "aborted") {
-        setStreamText(null);
-        setIsStreaming(false);
-      }
-    });
-
-    return unsub;
-  }, [client]);
+  const systemPromptRef = useRef<string>("");
+  const historyRef = useRef<ApiMessage[]>([]);
 
   // ── Start ──────────────────────────────────────────────────────────
 
   const start = useCallback(async () => {
-    const sk = getSessionKey();
     setError(null);
-    cleanedUpRef.current = false;
+    setMessages([]);
+    setEvaluationText(null);
+    historyRef.current = [];
+
+    const systemPrompt = buildPracticeSystemPrompt(personaName, mode, difficulty);
+    systemPromptRef.current = systemPrompt;
 
     try {
-      const systemPrompt = buildPracticeSystemPrompt(personaName, mode, difficulty);
+      setIsStreaming(true);
 
-      // Send system prompt to initialize the session
-      await client.call("chat.send", {
-        sessionKey: sk,
-        message: `[system] ${systemPrompt}`,
-        deliver: false,
-        idempotencyKey: crypto.randomUUID(),
-      });
+      // Send a kick-off message to get the AI to start the scene
+      const kickoff: ApiMessage = {
+        role: "user",
+        content:
+          "The practice session is starting now. Begin the interaction in character. Your opening line should set the scene for the practice scenario. Do NOT break character.",
+      };
 
-      // Send initial message to get the AI to start in character
-      await client.call("chat.send", {
-        sessionKey: sk,
-        message: "[system] The practice session is starting now. Begin the interaction in character. Your opening line should set the scene for the practice scenario.",
-        deliver: false,
-        idempotencyKey: crypto.randomUUID(),
-      });
+      const response = await callPracticeApi(systemPrompt, [kickoff]);
 
+      // Don't add the kickoff to visible history — just the response
+      historyRef.current = [kickoff, { role: "assistant", content: response }];
+
+      setMessages([
+        {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          content: response,
+          timestamp: Date.now(),
+        },
+      ]);
       setIsActive(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to start practice session.");
+      setError(
+        err instanceof Error ? err.message : "Failed to start practice session.",
+      );
+    } finally {
+      setStreamText(null);
+      setIsStreaming(false);
     }
-  }, [client, getSessionKey, personaName, mode, difficulty]);
+  }, [personaName, mode, difficulty]);
 
   // ── Send ───────────────────────────────────────────────────────────
 
   const send = useCallback(
     async (text: string) => {
-      const sk = sessionKeyRef.current;
-      if (!sk || !isActive) return;
-
+      if (!isActive) return;
       setError(null);
 
-      // Add user message immediately
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: crypto.randomUUID(),
-          role: "user",
-          content: text,
-          timestamp: Date.now(),
-        },
-      ]);
+      const userMsg: PracticeChatMessage = {
+        id: crypto.randomUUID(),
+        role: "user",
+        content: text,
+        timestamp: Date.now(),
+      };
+
+      setMessages((prev) => [...prev, userMsg]);
+      historyRef.current.push({ role: "user", content: text });
       setIsStreaming(true);
+      setStreamText("Thinking…");
 
       try {
-        await client.call("chat.send", {
-          sessionKey: sk,
-          message: text,
-          deliver: false,
-          idempotencyKey: crypto.randomUUID(),
-        });
+        const response = await callPracticeApi(
+          systemPromptRef.current,
+          historyRef.current,
+        );
+
+        historyRef.current.push({ role: "assistant", content: response });
+
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: crypto.randomUUID(),
+            role: "assistant",
+            content: response,
+            timestamp: Date.now(),
+          },
+        ]);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to send message.");
+        setError(
+          err instanceof Error ? err.message : "Failed to send message.",
+        );
+      } finally {
+        setStreamText(null);
         setIsStreaming(false);
       }
     },
-    [client, isActive],
+    [isActive],
   );
 
   // ── Evaluate ───────────────────────────────────────────────────────
 
   const evaluate = useCallback(async () => {
-    const sk = sessionKeyRef.current;
-    if (!sk) return;
+    if (historyRef.current.length < 2) return;
 
     setIsStreaming(true);
+    setStreamText("Evaluating…");
 
     try {
-      // Send evaluation request
-      await client.call("chat.send", {
-        sessionKey: sk,
-        message: `[system] The practice session has ended. Break character now and provide a detailed evaluation of the user's performance. Score them on a scale of 1-10 overall, and provide specific feedback on:
+      const evalPrompt = `You just finished a practice/training session with the user. 
+Now break character and provide a brief evaluation:
 
-1. **Opening & Rapport** — How well did they open the conversation?
-2. **Discovery & Listening** — Did they ask good questions and listen?
-3. **Technique** — Did they use effective techniques for this scenario?
-4. **Objection Handling** — How well did they handle pushback?
-5. **Outcome** — Did they achieve the goal of the interaction?
+1. **Score** (1-10): How well did the user perform?
+2. **Strengths**: What did they do well? (2-3 bullet points)
+3. **Areas to Improve**: Where could they improve? (2-3 bullet points)
+4. **Key Tip**: One specific, actionable tip for next time.
 
-Format your response with the overall score first, then dimension scores, then specific feedback with examples from the conversation. End with 2-3 actionable improvements.`,
-        deliver: false,
-        idempotencyKey: crypto.randomUUID(),
-      });
+Be honest but encouraging. Reference specific moments from the conversation.`;
+
+      const evalHistory: ApiMessage[] = [
+        ...historyRef.current,
+        { role: "user", content: evalPrompt },
+      ];
+
+      const response = await callPracticeApi(
+        systemPromptRef.current,
+        evalHistory,
+      );
+      setEvaluationText(response);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to request evaluation.");
+      setError(
+        err instanceof Error ? err.message : "Failed to evaluate session.",
+      );
+    } finally {
+      setStreamText(null);
       setIsStreaming(false);
     }
-  }, [client]);
+  }, []);
 
   // ── Cleanup ────────────────────────────────────────────────────────
 
-  const cleanup = useCallback(async () => {
-    const sk = sessionKeyRef.current;
-    if (!sk || cleanedUpRef.current) return;
-    cleanedUpRef.current = true;
-
-    try {
-      await client.call("sessions.delete", { key: sk });
-    } catch {
-      // Ignore cleanup errors
-    }
-
-    sessionKeyRef.current = null;
+  const cleanup = useCallback(() => {
+    setIsActive(false);
     setMessages([]);
     setStreamText(null);
     setIsStreaming(false);
     setError(null);
-    setIsActive(false);
     setEvaluationText(null);
-  }, [client]);
+    historyRef.current = [];
+    systemPromptRef.current = "";
+  }, []);
 
   return {
     messages,
@@ -380,35 +308,4 @@ Format your response with the overall score first, then dimension scores, then s
     isActive,
     evaluationText,
   };
-}
-
-// ── Helpers ────────────────────────────────────────────────────────────
-
-function resolveRole(message: unknown): string | null {
-  if (!message || typeof message !== "object") return null;
-  const role = (message as Record<string, unknown>).role;
-  return typeof role === "string" ? role : null;
-}
-
-function extractText(message: unknown): string | null {
-  if (!message || typeof message !== "object") return null;
-  const msg = message as Record<string, unknown>;
-
-  if (typeof msg.text === "string") return msg.text;
-  if (typeof msg.content === "string") return msg.content;
-
-  if (Array.isArray(msg.content)) {
-    const texts = msg.content
-      .filter(
-        (part: unknown) =>
-          part &&
-          typeof part === "object" &&
-          (part as Record<string, unknown>).type === "text",
-      )
-      .map((part: unknown) => (part as Record<string, unknown>).text)
-      .filter((t): t is string => typeof t === "string");
-    return texts.length > 0 ? texts.join("") : null;
-  }
-
-  return null;
 }
