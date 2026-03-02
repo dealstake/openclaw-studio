@@ -104,6 +104,8 @@ export const ActivityPanel = memo(function ActivityPanel() {
             dismissOne={alertState.dismissOne}
             dismissAll={alertState.dismissAll}
             snoozeTask={alertState.snoozeTask}
+            baselines={alertState.baselines}
+            setSensitivity={alertState.setSensitivity}
           />
         </div>
       )}

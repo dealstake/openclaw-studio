@@ -353,6 +353,8 @@ export const agentBaselines = sqliteTable("agent_baselines", {
   errorRateSampleCount: integer("error_rate_sample_count").notNull().default(0),
   computedAt: text("computed_at").notNull(),
   windowDays: integer("window_days").notNull().default(7),
+  /** Sensitivity threshold in σ (1, 2, or 3). Default 3. */
+  sensitivity: integer("sensitivity").notNull().default(3),
 });
 
 export type AgentBaselineRow = typeof agentBaselines.$inferSelect;

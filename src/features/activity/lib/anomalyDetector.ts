@@ -31,10 +31,10 @@ import { estimateCostUsd } from "@/features/playground/lib/costEstimator";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-/** Z-score threshold for "warning" severity (3 standard deviations) */
-const THRESHOLD_WARNING = 3;
-/** Z-score threshold for "critical" severity (5 standard deviations) */
-const THRESHOLD_CRITICAL = 5;
+/** Default Z-score threshold for "warning" severity (3 standard deviations) */
+const DEFAULT_THRESHOLD_WARNING = 3;
+/** Critical is always warning + 2σ (e.g. 3→5, 2→4, 1→3) */
+const CRITICAL_OFFSET = 2;
 /** Minimum sample count to trust a baseline for scoring */
 const MIN_SAMPLE_COUNT = 3;
 
@@ -81,10 +81,10 @@ function zScore(observed: number, stats: MetricStats): number | null {
 }
 
 /** Map a Z-score to a severity level. Returns null if below warning threshold. */
-function severityFromZ(z: number): AnomalySeverity | null {
+function severityFromZ(z: number, warningThreshold: number): AnomalySeverity | null {
   const absZ = Math.abs(z);
-  if (absZ >= THRESHOLD_CRITICAL) return "critical";
-  if (absZ >= THRESHOLD_WARNING) return "warning";
+  if (absZ >= warningThreshold + CRITICAL_OFFSET) return "critical";
+  if (absZ >= warningThreshold) return "warning";
   return null;
 }
 
@@ -162,6 +162,7 @@ export function scoreEventAgainstBaseline(
   const detectedAt = new Date().toISOString();
   const agentId = event.agentId ?? baseline.agentId;
   const taskName = event.taskName || baseline.taskName;
+  const warningThreshold = baseline.sensitivity ?? DEFAULT_THRESHOLD_WARNING;
 
   const anomalies: AgentAnomaly[] = [];
   const metricsChecked: AnomalyMetric[] = [];
@@ -172,7 +173,7 @@ export function scoreEventAgainstBaseline(
     metricsChecked.push("totalTokens");
     const z = zScore(tokens, baseline.totalTokens);
     if (z !== null) {
-      const severity = severityFromZ(z);
+      const severity = severityFromZ(z, warningThreshold);
       if (severity) {
         anomalies.push({
           id: randomUUID(),
@@ -201,7 +202,7 @@ export function scoreEventAgainstBaseline(
     metricsChecked.push("costUsd");
     const z = zScore(cost, baseline.costUsd);
     if (z !== null) {
-      const severity = severityFromZ(z);
+      const severity = severityFromZ(z, warningThreshold);
       if (severity) {
         anomalies.push({
           id: randomUUID(),
@@ -230,7 +231,7 @@ export function scoreEventAgainstBaseline(
     metricsChecked.push("durationMs");
     const z = zScore(duration, baseline.durationMs);
     if (z !== null) {
-      const severity = severityFromZ(z);
+      const severity = severityFromZ(z, warningThreshold);
       if (severity) {
         anomalies.push({
           id: randomUUID(),
@@ -259,7 +260,7 @@ export function scoreEventAgainstBaseline(
   if (errorRate === 1 && baseline.errorRate.sampleCount >= MIN_SAMPLE_COUNT) {
     const z = zScore(errorRate, baseline.errorRate);
     if (z !== null) {
-      const severity = severityFromZ(z);
+      const severity = severityFromZ(z, warningThreshold);
       if (severity) {
         anomalies.push({
           id: randomUUID(),

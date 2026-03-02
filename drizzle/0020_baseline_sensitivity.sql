@@ -1,0 +1,1 @@
+ALTER TABLE agent_baselines ADD COLUMN sensitivity INTEGER NOT NULL DEFAULT 3;

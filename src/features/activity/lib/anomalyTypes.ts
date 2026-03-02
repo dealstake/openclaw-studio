@@ -48,6 +48,8 @@ export interface AgentBaseline {
   computedAt: string;
   /** Rolling window in days (default: 7) */
   windowDays: number;
+  /** Sensitivity threshold in σ (1, 2, or 3). Default 3. */
+  sensitivity: number;
 }
 
 // ─── Baseline API Response Types ─────────────────────────────────────────────────

@@ -161,6 +161,7 @@ export function computeBaselinesFromEvents(
       errorRate: computeMetricStats(errorValues),
       computedAt,
       windowDays,
+      sensitivity: 3, // default; preserved on upsert if already customized
     });
   }
 

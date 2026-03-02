@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useAgentStore } from "@/features/agents/state/store";
-import type { AgentAnomaly } from "@/features/activity/lib/anomalyTypes";
+import type { AgentAnomaly, AgentBaseline } from "@/features/activity/lib/anomalyTypes";
 
 interface UseAnomalyAlertsResult {
   anomalies: AgentAnomaly[];
@@ -13,6 +13,10 @@ interface UseAnomalyAlertsResult {
   dismissOne: (id: string) => Promise<void>;
   dismissAll: () => Promise<void>;
   snoozeTask: (taskId: string) => Promise<void>;
+  /** Per-task baselines with sensitivity info */
+  baselines: AgentBaseline[];
+  /** Update sensitivity for a baseline */
+  setSensitivity: (baselineId: string, sensitivity: number) => Promise<void>;
 }
 
 /**
@@ -27,6 +31,7 @@ export function useAnomalyAlerts(): UseAnomalyAlertsResult {
   const selectedAgentId = state.selectedAgentId;
 
   const [anomalies, setAnomalies] = useState<AgentAnomaly[]>([]);
+  const [baselines, setBaselines] = useState<AgentBaseline[]>([]);
   const [activeCount, setActiveCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,20 +45,22 @@ export function useAnomalyAlerts(): UseAnomalyAlertsResult {
       setLoading(true);
       setError(null);
       try {
-        const params = new URLSearchParams({
-          agentId,
-          days: "30",
-          includeAll: "false",
-          limit: "100",
-        });
-        const resp = await fetch(`/api/activity/alerts?${params.toString()}`, { signal });
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-        const data = (await resp.json()) as {
+        const [alertsResp, baselinesResp] = await Promise.all([
+          fetch(`/api/activity/alerts?${new URLSearchParams({ agentId, days: "30", includeAll: "false", limit: "100" })}`, { signal }),
+          fetch(`/api/activity/baselines?${new URLSearchParams({ agentId })}`, { signal }),
+        ]);
+        if (!alertsResp.ok) throw new Error(`HTTP ${alertsResp.status}`);
+        const data = (await alertsResp.json()) as {
           anomalies: AgentAnomaly[];
           activeCount: number;
         };
         setAnomalies(data.anomalies);
         setActiveCount(data.activeCount);
+
+        if (baselinesResp.ok) {
+          const bData = (await baselinesResp.json()) as { baselines: AgentBaseline[] };
+          setBaselines(bData.baselines);
+        }
       } catch (err) {
         if (err instanceof Error && err.name === "AbortError") return;
         setError(err instanceof Error ? err.message : "Failed to load alerts");
@@ -147,5 +154,25 @@ export function useAnomalyAlerts(): UseAnomalyAlertsResult {
     [selectedAgentId, refresh]
   );
 
-  return { anomalies, activeCount, loading, error, refresh, dismissOne, dismissAll, snoozeTask };
+  const setSensitivityFn = useCallback(
+    async (baselineId: string, sensitivity: number) => {
+      if (!selectedAgentId) return;
+      // Optimistic update
+      setBaselines((prev) =>
+        prev.map((b) => (b.id === baselineId ? { ...b, sensitivity } : b))
+      );
+      try {
+        await fetch(`/api/activity/baselines?agentId=${encodeURIComponent(selectedAgentId)}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ baselineId, sensitivity }),
+        });
+      } catch {
+        refresh(); // revert on error
+      }
+    },
+    [selectedAgentId, refresh]
+  );
+
+  return { anomalies, activeCount, loading, error, refresh, dismissOne, dismissAll, snoozeTask, baselines, setSensitivity: setSensitivityFn };
 }

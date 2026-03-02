@@ -36,6 +36,7 @@ function rowToBaseline(row: typeof agentBaselines.$inferSelect): AgentBaseline {
     errorRate: toStats(row.errorRateMean, row.errorRateStdDev, row.errorRateSampleCount),
     computedAt: row.computedAt,
     windowDays: row.windowDays,
+    sensitivity: row.sensitivity,
   };
 }
 
@@ -88,6 +89,24 @@ export function upsertBaseline(db: StudioDb, baseline: AgentBaseline): void {
       },
     })
     .run();
+}
+
+/**
+ * Update the sensitivity threshold (1σ, 2σ, or 3σ) for a specific baseline.
+ * Returns true if a row was updated.
+ */
+export function setSensitivity(
+  db: StudioDb,
+  baselineId: string,
+  sensitivity: number
+): boolean {
+  const clamped = Math.max(1, Math.min(3, Math.round(sensitivity)));
+  const result = db
+    .update(agentBaselines)
+    .set({ sensitivity: clamped })
+    .where(eq(agentBaselines.id, baselineId))
+    .run();
+  return result.changes > 0;
 }
 
 /**

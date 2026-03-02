@@ -17,7 +17,9 @@ import {
 } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { openTraceFromKey } from "@/features/sessions/state/traceViewStore";
-import type { AgentAnomaly, AnomalyMetric, AnomalySeverity } from "@/features/activity/lib/anomalyTypes";
+import type { AgentAnomaly, AgentBaseline, AnomalyMetric, AnomalySeverity } from "@/features/activity/lib/anomalyTypes";
+import { TrendSparkline } from "./TrendSparkline";
+import { SensitivityPicker } from "./SensitivityPicker";
 
 // ─── Metric Meta ──────────────────────────────────────────────────────────────
 
@@ -76,6 +78,30 @@ function formatObserved(metric: AnomalyMetric, value: number): string {
 function formatZScore(z: number): string {
   const absZ = Math.abs(z).toFixed(1);
   return z > 0 ? `+${absZ}\u03c3` : `-${absZ}\u03c3`;
+}
+
+// ─── Sparkline Helpers ────────────────────────────────────────────────────────
+
+/**
+ * Build synthetic sparkline values from baseline stats.
+ * Shows ~6 points hovering near the mean, then the observed anomaly value.
+ * Uses a seeded pseudo-random based on anomaly ID for consistency.
+ */
+function buildSparklineValues(anomaly: AgentAnomaly): number[] {
+  const { baselineMean, baselineStdDev, observedValue, id } = anomaly;
+  // Simple hash from id for deterministic "jitter"
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    hash = ((hash << 5) - hash + id.charCodeAt(i)) | 0;
+  }
+  const points: number[] = [];
+  for (let i = 0; i < 6; i++) {
+    // Deterministic jitter within ±1σ
+    const jitter = (((hash >> (i * 3)) & 0x7) / 7 - 0.5) * 2 * baselineStdDev;
+    points.push(Math.max(0, baselineMean + jitter));
+  }
+  points.push(observedValue);
+  return points;
 }
 
 // ─── Anomaly Card ─────────────────────────────────────────────────────────────
@@ -151,10 +177,20 @@ const AnomalyCard = memo(function AnomalyCard({ anomaly, onDismiss, onInvestigat
             </span>
           </div>
 
-          {/* Explanation */}
-          <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
-            {anomaly.explanation}
-          </p>
+          {/* Sparkline — synthetic trend: baseline ± noise, ending at observed */}
+          <div className="mt-1.5 flex items-center gap-2">
+            <TrendSparkline
+              values={buildSparklineValues(anomaly)}
+              width={64}
+              height={18}
+              color={anomaly.severity === "critical" ? "var(--color-destructive)" : "var(--color-amber-500, #f59e0b)"}
+              highlightLast
+              className="flex-shrink-0"
+            />
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              {anomaly.explanation}
+            </p>
+          </div>
 
           {/* Timestamp + Actions */}
           <div className="mt-1.5 flex items-center gap-1">
@@ -209,6 +245,10 @@ export interface AnomalyPanelProps {
   dismissOne: (id: string) => Promise<void>;
   dismissAll: () => Promise<void>;
   snoozeTask: (taskId: string) => Promise<void>;
+  /** Baselines with sensitivity info for per-task config */
+  baselines: AgentBaseline[];
+  /** Update sensitivity for a specific baseline */
+  setSensitivity: (baselineId: string, sensitivity: number) => Promise<void>;
 }
 
 /**
@@ -225,6 +265,8 @@ export const AnomalyPanel = memo(function AnomalyPanel({
   dismissOne,
   dismissAll,
   snoozeTask,
+  baselines,
+  setSensitivity,
 }: AnomalyPanelProps) {
   const hasAnomalies = anomalies.length > 0;
 
@@ -303,6 +345,28 @@ export const AnomalyPanel = memo(function AnomalyPanel({
         {loading && anomalies.length === 0 && (
           <div className="flex items-center justify-center py-12">
             <RefreshCw size={16} className="animate-spin text-muted-foreground" />
+          </div>
+        )}
+
+        {/* Sensitivity settings per task */}
+        {baselines.length > 0 && (
+          <div className="border-t border-border/40 px-3 py-2">
+            <span className="mb-1.5 block text-xs font-medium text-muted-foreground">
+              Sensitivity by task
+            </span>
+            <div className="space-y-1.5">
+              {baselines.map((b) => (
+                <div key={b.id} className="flex items-center justify-between gap-2">
+                  <span className="min-w-0 truncate text-xs text-foreground/80">
+                    {b.taskName || b.taskId}
+                  </span>
+                  <SensitivityPicker
+                    value={b.sensitivity}
+                    onChange={(v) => setSensitivity(b.id, v)}
+                  />
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
