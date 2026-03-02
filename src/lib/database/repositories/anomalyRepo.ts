@@ -11,13 +11,16 @@
 
 import { eq, and, desc, gte } from "drizzle-orm";
 
-import { agentAnomalies } from "../schema";
+import { agentAnomalies, activityEvents } from "../schema";
 import type { StudioDb } from "../index";
 import type { AgentAnomaly, AnomalyMetric, AnomalySeverity } from "@/features/activity/lib/anomalyTypes";
 
 // ─── Row ↔ Domain Converters ─────────────────────────────────────────────────
 
-function rowToAnomaly(row: typeof agentAnomalies.$inferSelect): AgentAnomaly {
+function rowToAnomaly(
+  row: typeof agentAnomalies.$inferSelect,
+  sessionKey?: string | null
+): AgentAnomaly {
   return {
     id: row.id,
     agentId: row.agentId,
@@ -32,6 +35,7 @@ function rowToAnomaly(row: typeof agentAnomalies.$inferSelect): AgentAnomaly {
     zScore: row.zScore,
     severity: row.severity as AnomalySeverity,
     explanation: row.explanation,
+    sessionKey: sessionKey ?? null,
     dismissed: row.dismissed === 1,
     detectedAt: row.detectedAt,
   };
@@ -105,14 +109,18 @@ export function queryAnomalies(
   ];
 
   const rows = db
-    .select()
+    .select({
+      anomaly: agentAnomalies,
+      sessionKey: activityEvents.sessionKey,
+    })
     .from(agentAnomalies)
+    .leftJoin(activityEvents, eq(agentAnomalies.eventId, activityEvents.id))
     .where(and(...conditions))
     .orderBy(desc(agentAnomalies.detectedAt))
     .limit(limit)
     .all();
 
-  return rows.map(rowToAnomaly);
+  return rows.map((r) => rowToAnomaly(r.anomaly, r.sessionKey));
 }
 
 /**
@@ -153,6 +161,27 @@ export function dismissAnomaly(db: StudioDb, id: string): boolean {
     .run();
 
   return result.changes > 0;
+}
+
+/**
+ * Dismiss all active anomalies for a specific (agent, task) pair.
+ * Used by "snooze task" — suppresses all current alerts for one task.
+ * Returns the number of rows updated.
+ */
+export function dismissByTaskId(db: StudioDb, agentId: string, taskId: string): number {
+  const result = db
+    .update(agentAnomalies)
+    .set({ dismissed: 1 })
+    .where(
+      and(
+        eq(agentAnomalies.agentId, agentId),
+        eq(agentAnomalies.taskId, taskId),
+        eq(agentAnomalies.dismissed, 0)
+      )
+    )
+    .run();
+
+  return result.changes;
 }
 
 /**

@@ -12,8 +12,11 @@ import {
   DollarSign,
   Zap,
   AlertCircle,
+  FileSearch,
+  BellOff,
 } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { openTraceFromKey } from "@/features/sessions/state/traceViewStore";
 import type { AgentAnomaly, AnomalyMetric, AnomalySeverity } from "@/features/activity/lib/anomalyTypes";
 
 // ─── Metric Meta ──────────────────────────────────────────────────────────────
@@ -80,9 +83,11 @@ function formatZScore(z: number): string {
 interface AnomalyCardProps {
   anomaly: AgentAnomaly;
   onDismiss: (id: string) => void;
+  onInvestigate: (anomaly: AgentAnomaly) => void;
+  onSnoozeTask: (taskId: string) => void;
 }
 
-const AnomalyCard = memo(function AnomalyCard({ anomaly, onDismiss }: AnomalyCardProps) {
+const AnomalyCard = memo(function AnomalyCard({ anomaly, onDismiss, onInvestigate, onSnoozeTask }: AnomalyCardProps) {
   const styles = SEVERITY_STYLES[anomaly.severity];
   const meta = METRIC_META[anomaly.metric];
   const isAbove = anomaly.zScore > 0;
@@ -91,6 +96,14 @@ const AnomalyCard = memo(function AnomalyCard({ anomaly, onDismiss }: AnomalyCar
   const handleDismiss = useCallback(() => {
     onDismiss(anomaly.id);
   }, [anomaly.id, onDismiss]);
+
+  const handleInvestigate = useCallback(() => {
+    onInvestigate(anomaly);
+  }, [anomaly, onInvestigate]);
+
+  const handleSnooze = useCallback(() => {
+    onSnoozeTask(anomaly.taskId);
+  }, [anomaly.taskId, onSnoozeTask]);
 
   return (
     <div
@@ -143,15 +156,38 @@ const AnomalyCard = memo(function AnomalyCard({ anomaly, onDismiss }: AnomalyCar
             {anomaly.explanation}
           </p>
 
-          {/* Timestamp */}
-          <p className="mt-1 text-xs text-muted-foreground/80">
-            {new Date(anomaly.detectedAt).toLocaleString(undefined, {
-              month: "short",
-              day: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </p>
+          {/* Timestamp + Actions */}
+          <div className="mt-1.5 flex items-center gap-1">
+            <span className="text-xs text-muted-foreground/80">
+              {new Date(anomaly.detectedAt).toLocaleString(undefined, {
+                month: "short",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </span>
+            <span className="mx-1 text-border">·</span>
+            {anomaly.sessionKey && (
+              <button
+                type="button"
+                onClick={handleInvestigate}
+                className="inline-flex min-h-[44px] items-center gap-1 rounded-md px-2 text-xs text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                title="View session trace"
+              >
+                <FileSearch size={11} />
+                Investigate
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={handleSnooze}
+              className="inline-flex min-h-[44px] items-center gap-1 rounded-md px-2 text-xs text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              title={`Dismiss all alerts for ${anomaly.taskName}`}
+            >
+              <BellOff size={11} />
+              Snooze task
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -172,6 +208,7 @@ export interface AnomalyPanelProps {
   refresh: () => void;
   dismissOne: (id: string) => Promise<void>;
   dismissAll: () => Promise<void>;
+  snoozeTask: (taskId: string) => Promise<void>;
 }
 
 /**
@@ -187,8 +224,15 @@ export const AnomalyPanel = memo(function AnomalyPanel({
   refresh,
   dismissOne,
   dismissAll,
+  snoozeTask,
 }: AnomalyPanelProps) {
   const hasAnomalies = anomalies.length > 0;
+
+  const handleInvestigate = useCallback((anomaly: AgentAnomaly) => {
+    if (anomaly.sessionKey) {
+      openTraceFromKey(anomaly.sessionKey, anomaly.agentId);
+    }
+  }, []);
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -249,6 +293,8 @@ export const AnomalyPanel = memo(function AnomalyPanel({
                 key={anomaly.id}
                 anomaly={anomaly}
                 onDismiss={dismissOne}
+                onInvestigate={handleInvestigate}
+                onSnoozeTask={snoozeTask}
               />
             ))}
           </div>

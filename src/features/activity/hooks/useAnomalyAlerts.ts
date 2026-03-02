@@ -12,6 +12,7 @@ interface UseAnomalyAlertsResult {
   refresh: () => void;
   dismissOne: (id: string) => Promise<void>;
   dismissAll: () => Promise<void>;
+  snoozeTask: (taskId: string) => Promise<void>;
 }
 
 /**
@@ -124,5 +125,27 @@ export function useAnomalyAlerts(): UseAnomalyAlertsResult {
     }
   }, [selectedAgentId, anomalies]);
 
-  return { anomalies, activeCount, loading, error, refresh, dismissOne, dismissAll };
+  const snoozeTask = useCallback(
+    async (taskId: string) => {
+      if (!selectedAgentId) return;
+      // Optimistic: remove all alerts for this task
+      setAnomalies((prev) => {
+        const remaining = prev.filter((a) => a.taskId !== taskId);
+        setActiveCount(remaining.length);
+        return remaining;
+      });
+      try {
+        await fetch(`/api/activity/alerts?agentId=${encodeURIComponent(selectedAgentId)}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ snoozeTaskId: taskId }),
+        });
+      } catch {
+        refresh();
+      }
+    },
+    [selectedAgentId, refresh]
+  );
+
+  return { anomalies, activeCount, loading, error, refresh, dismissOne, dismissAll, snoozeTask };
 }

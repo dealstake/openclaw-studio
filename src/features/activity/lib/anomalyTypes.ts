@@ -117,6 +117,8 @@ export interface AgentAnomaly {
    * "Cost for 'Daily Summary' was $0.52, 4.5× above the baseline average of $0.11"
    */
   explanation: string;
+  /** Session key of the triggering event (for trace navigation) */
+  sessionKey?: string | null;
   /** Whether the user has dismissed this alert */
   dismissed: boolean;
   /** ISO timestamp when the anomaly was detected */

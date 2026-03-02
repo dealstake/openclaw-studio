@@ -210,10 +210,17 @@ export async function PATCH(request: Request) {
           return { dismissed: count };
         }
 
+        // Snooze a specific task — dismiss all alerts for that taskId
+        const snoozeTaskId = typeof body.snoozeTaskId === "string" ? body.snoozeTaskId.trim() : "";
+        if (snoozeTaskId) {
+          const count = anomalyRepo.dismissByTaskId(db, agentId, snoozeTaskId);
+          return { dismissed: count };
+        }
+
         const id = typeof body.id === "string" ? body.id.trim() : "";
         if (!id) {
           return NextResponse.json(
-            { error: "Provide either { id } to dismiss one or { dismissAll: true } to dismiss all." },
+            { error: "Provide { id }, { snoozeTaskId }, or { dismissAll: true }." },
             { status: 400 }
           );
         }
