@@ -34,7 +34,7 @@ export const TaskActions = memo(function TaskActions({
             onClick={() => onToggle(taskId, !enabled)}
             disabled={busy}
           >
-            <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em]">
+            <span className="font-sans text-[10px] font-semibold uppercase tracking-[0.12em]">
               {enabled ? "Pause" : "Resume"}
             </span>
           </button>
@@ -45,7 +45,7 @@ export const TaskActions = memo(function TaskActions({
             disabled={busy}
           >
             <Play className="h-3 w-3" />
-            <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em]">
+            <span className="font-sans text-[10px] font-semibold uppercase tracking-[0.12em]">
               Trigger Run
             </span>
           </button>
@@ -58,7 +58,7 @@ export const TaskActions = memo(function TaskActions({
         disabled={busy}
       >
         <Trash2 className="h-3 w-3" />
-        <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em]">
+        <span className="font-sans text-[10px] font-semibold uppercase tracking-[0.12em]">
           {managementStatus === "orphan" ? "Delete Metadata" : "Delete"}
         </span>
       </button>

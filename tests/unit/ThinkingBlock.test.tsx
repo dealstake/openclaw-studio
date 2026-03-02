@@ -76,7 +76,7 @@ describe("ThinkingBlock", () => {
       <ThinkingBlock text="thinking" streaming startedAt={1000} />,
     );
     // No duration text should appear
-    const monospanElements = container.querySelectorAll(".font-mono");
+    const monospanElements = container.querySelectorAll(".font-sans");
     expect(monospanElements.length).toBe(0);
   });
 

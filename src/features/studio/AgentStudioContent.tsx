@@ -946,7 +946,7 @@ export const AgentStudioPage = () => {
     <div className="relative w-screen overflow-hidden bg-background" style={{ minHeight: '100svh' }}>
       {state.loading ? (
         <div className="pointer-events-none fixed bottom-4 left-0 right-0 z-50 flex justify-center px-3">
-          <div className="bg-card rounded-lg px-6 py-3 font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+          <div className="bg-card rounded-lg px-6 py-3 font-sans text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
             Loading agents…
           </div>
         </div>

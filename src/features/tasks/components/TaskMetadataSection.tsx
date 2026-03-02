@@ -51,7 +51,7 @@ export const TaskMetadataSection = memo(function TaskMetadataSection({
             </span>
           </div>
           <span
-            className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] ${typeConfig.className}`}
+            className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-[0.12em] ${typeConfig.className}`}
           >
             <TypeIcon className="h-2.5 w-2.5" />
             {typeConfig.label}

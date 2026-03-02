@@ -128,7 +128,7 @@ const ArtifactRow = memo(function ArtifactRow({
           {file.name}
         </div>
         <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
-          <span className="font-mono uppercase tracking-wide">
+          <span className="font-sans uppercase tracking-wide">
             {fileTypeLabel(file.mimeType)}
           </span>
           <span>{formatSizeFromString(file.size)}</span>

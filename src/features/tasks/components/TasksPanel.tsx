@@ -237,7 +237,7 @@ export const TasksPanel = memo(function TasksPanel({
             Tasks
           </SectionLabel>
           {tasks.length > 0 ? (
-            <span className="rounded-full bg-muted px-1.5 py-0.5 font-mono text-[10px] font-semibold text-muted-foreground">
+            <span className="rounded-full bg-muted px-1.5 py-0.5 font-sans text-[10px] font-semibold text-muted-foreground">
               {tasks.length}
             </span>
           ) : null}
@@ -245,7 +245,7 @@ export const TasksPanel = memo(function TasksPanel({
             <TooltipProvider >
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="flex items-center gap-1 rounded-full bg-muted/60 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+                  <span className="flex items-center gap-1 rounded-full bg-muted/60 px-1.5 py-0.5 font-sans text-[10px] text-muted-foreground">
                     <Layers className="h-3 w-3" />
                     {maxConcurrentRuns}
                   </span>

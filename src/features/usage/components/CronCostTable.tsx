@@ -90,7 +90,7 @@ export const CronCostTable = memo(function CronCostTable({
         <tbody>
           {groups.map((g) => (
             <tr key={g.jobId} className="border-b border-border/50 last:border-0">
-              <td className="px-3 py-2 font-mono text-xs text-foreground" title={g.jobId}>
+              <td className="px-3 py-2 font-sans text-xs text-foreground" title={g.jobId}>
                 {g.jobId.slice(0, 8)}…
               </td>
               <td className="px-3 py-2 text-right text-muted-foreground">{g.runs}</td>

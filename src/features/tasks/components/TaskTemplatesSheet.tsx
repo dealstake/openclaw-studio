@@ -55,7 +55,7 @@ export const TaskTemplatesSheet = memo(function TaskTemplatesSheet({
 
         {[...categories.entries()].map(([category, templates]) => (
           <div key={category} className="mb-5">
-            <h3 className="mb-2 font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+            <h3 className="mb-2 font-sans text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
               {category}
             </h3>
             <div className="flex flex-col gap-2">
@@ -81,7 +81,7 @@ export const TaskTemplatesSheet = memo(function TaskTemplatesSheet({
                           {template.name}
                         </span>
                         <span
-                          className={`inline-flex items-center gap-0.5 rounded border px-1 py-0.5 font-mono text-[8px] font-semibold uppercase tracking-wider ${badge.className}`}
+                          className={`inline-flex items-center gap-0.5 rounded border px-1 py-0.5 font-sans text-[8px] font-semibold uppercase tracking-wider ${badge.className}`}
                         >
                           <BadgeIcon className="h-2 w-2" />
                           {template.type}

@@ -279,7 +279,7 @@ export const TaskWizardModal = memo(function TaskWizardModal({
               onClick={handleShowAgentCreation}
             >
               <Sparkles className="h-3.5 w-3.5" />
-              <span className="font-mono uppercase tracking-wider">
+              <span className="font-sans uppercase tracking-wider">
                 Need a new agent?
               </span>
             </button>

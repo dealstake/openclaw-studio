@@ -36,7 +36,7 @@ export const ChannelStatusPills = memo(function ChannelStatusPills({
       {entries.map((entry) => (
         <span
           key={entry.key}
-          className="inline-flex max-w-[80px] items-center gap-1 truncate rounded border border-border/70 bg-card/65 px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground"
+          className="inline-flex max-w-[80px] items-center gap-1 truncate rounded border border-border/70 bg-card/65 px-1.5 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground"
           title={`${entry.label}: ${entry.health}`}
         >
           <span

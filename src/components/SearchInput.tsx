@@ -22,7 +22,7 @@ const variantStyles = {
     wrapper: "",
     icon: "h-3.5 w-3.5",
     input:
-      "h-9 rounded-md border border-border/80 bg-card/70 pl-8 pr-10 font-mono text-base md:text-[11px] text-foreground placeholder:text-muted-foreground focus-ring",
+      "h-9 rounded-md border border-border/80 bg-card/70 pl-8 pr-10 font-sans text-base md:text-[11px] text-foreground placeholder:text-muted-foreground focus-ring",
     clearBtn: "right-0 flex h-9 w-9 items-center justify-center",
     clearIcon: "h-3.5 w-3.5",
   },
@@ -30,7 +30,7 @@ const variantStyles = {
     wrapper: "min-w-[140px]",
     icon: "h-3 w-3",
     input:
-      "h-8 rounded-md border border-border/50 bg-muted/30 pl-7 pr-8 font-mono text-base md:text-xs text-foreground placeholder:text-muted-foreground focus-ring",
+      "h-8 rounded-md border border-border/50 bg-muted/30 pl-7 pr-8 font-sans text-base md:text-xs text-foreground placeholder:text-muted-foreground focus-ring",
     clearBtn: "right-0 flex h-8 w-8 items-center justify-center rounded-full",
     clearIcon: "h-4 w-4",
   },

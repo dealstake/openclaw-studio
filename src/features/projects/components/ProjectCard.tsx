@@ -248,7 +248,7 @@ export const ProjectCard = memo(function ProjectCard({
                   />
                 )}
               </div>
-              <span className="font-mono text-xs text-foreground/80">
+              <span className="font-sans text-xs text-foreground/80">
                 {details.progress.total > 0
                   ? `${details.progress.completed}/${details.progress.total}`
                   : "—"}
@@ -274,7 +274,7 @@ export const ProjectCard = memo(function ProjectCard({
                       style={{ width: `${phase.percent}%` }}
                     />
                   </div>
-                  <span className="font-mono text-xs text-muted-foreground shrink-0">
+                  <span className="font-sans text-xs text-muted-foreground shrink-0">
                     {phase.completed}/{phase.total}
                   </span>
                 </div>
@@ -318,7 +318,7 @@ export const ProjectCard = memo(function ProjectCard({
               <div className="space-y-1.5">
                 {details.history.map((entry, i) => (
                   <div key={i} className="flex items-start gap-2 text-xs">
-                    <span className="shrink-0 font-mono text-muted-foreground">{entry.entryDate}</span>
+                    <span className="shrink-0 font-sans text-muted-foreground">{entry.entryDate}</span>
                     <span className="text-muted-foreground leading-snug">{entry.entryText}</span>
                   </div>
                 ))}

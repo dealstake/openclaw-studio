@@ -281,10 +281,10 @@ export const AgentChatPanel = memo(function AgentChatPanel({
       {typeof tokenUsed === "number" && tokenLimit && tokenLimit > 0 && tokenUsed / tokenLimit >= 0.8 && (
         <div className="mx-auto mt-2 flex w-full max-w-3xl items-center gap-2 rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-3 py-1.5 text-xs sm:px-6">
           <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-yellow-500" />
-          <span className="text-yellow-200">
+          <span className="text-yellow-200/90">
             Approaching context limit
           </span>
-          <span className="ml-auto shrink-0 font-mono text-[10px] text-yellow-200">
+          <span className="ml-auto shrink-0 font-sans text-[10px] text-yellow-300">
             {Math.round((tokenUsed / tokenLimit) * 100)}%
           </span>
         </div>
@@ -333,7 +333,7 @@ export const AgentChatPanel = memo(function AgentChatPanel({
                 <ArrowLeft className="h-3 w-3" />
                 Back to live session
               </button>
-              <span className="truncate font-mono text-[10px] text-muted-foreground">
+              <span className="truncate font-sans text-[10px] text-muted-foreground">
                 {viewingSessionKey}
               </span>
             </div>
@@ -341,7 +341,7 @@ export const AgentChatPanel = memo(function AgentChatPanel({
               {viewingSessionLoading ? (
                 <div className="flex items-center justify-center py-12">
                   <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground" />
-                  <span className="ml-2 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                  <span className="ml-2 font-sans text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
                     Loading history…
                   </span>
                 </div>
@@ -359,7 +359,7 @@ export const AgentChatPanel = memo(function AgentChatPanel({
           </div>
         ) : isWizardActive && wizard ? (
           /* Wizard mode — show wizard messages inline */
-          <div className="h-full overflow-y-auto overflow-x-hidden pb-28 sm:pb-32" style={{ paddingTop: `calc(0.75rem + env(safe-area-inset-top, 0px))` }}>
+          <div className="h-full overflow-y-auto overflow-x-hidden pt-3 pb-28 sm:pt-4 sm:pb-32">
             <div className="mx-auto flex w-full min-w-0 max-w-3xl flex-col gap-5 px-4 text-sm leading-relaxed text-foreground sm:px-8 md:px-12">
               {/* Show existing main chat messages (dimmed) */}
               {agent.messageParts.length > 0 && (

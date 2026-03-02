@@ -83,7 +83,7 @@ export const ExecApprovalOverlay = ({
             Exec approval requested
           </SectionLabel>
           {queue.length > 1 ? (
-            <span className="rounded px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] border border-border/70 bg-muted text-muted-foreground">
+            <span className="rounded px-1.5 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-[0.12em] border border-border/70 bg-muted text-muted-foreground">
               +{queue.length - 1} queued
             </span>
           ) : null}

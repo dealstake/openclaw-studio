@@ -26,7 +26,7 @@ export const StudioStatusBanners = ({
     ) : null}
     {configMutationStatusLine ? (
       <div className="fixed inset-x-0 top-16 z-30 px-4">
-        <div className="rounded-md border border-border/80 bg-card/80 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.11em] text-muted-foreground">
+        <div className="rounded-md border border-border/80 bg-card/80 px-4 py-2 font-sans text-[11px] uppercase tracking-[0.11em] text-muted-foreground">
           {configMutationStatusLine}
         </div>
       </div>
