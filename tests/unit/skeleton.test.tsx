@@ -8,7 +8,7 @@ describe("Skeleton", () => {
     const el = container.firstElementChild!;
     expect(el.className).toContain("animate-pulse");
     expect(el.className).toContain("rounded-md");
-    expect(el.className).toContain("bg-muted/60");
+    expect(el.className).toContain("bg-muted/80");
   });
 
   it("applies custom className", () => {
