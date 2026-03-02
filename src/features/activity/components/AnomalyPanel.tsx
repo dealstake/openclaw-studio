@@ -43,12 +43,12 @@ interface SeverityStyle {
 
 const SEVERITY_STYLES: Record<AnomalySeverity, SeverityStyle> = {
   warning: {
-    pill: "bg-amber-500/10 text-amber-700 dark:text-amber-300",
+    pill: "bg-amber-500/10 text-amber-800 dark:text-amber-300",
     border: "border-amber-500/20",
     icon: "text-amber-500",
   },
   critical: {
-    pill: "bg-destructive/10 text-destructive",
+    pill: "bg-destructive/10 text-red-800 dark:text-destructive",
     border: "border-destructive/20",
     icon: "text-destructive",
   },
@@ -171,7 +171,7 @@ const AnomalyCard = memo(function AnomalyCard({ anomaly, onDismiss, onInvestigat
               <button
                 type="button"
                 onClick={handleInvestigate}
-                className="inline-flex min-h-[44px] items-center gap-1 rounded-md px-2 text-xs text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                className="inline-flex min-h-[44px] items-center gap-1 rounded-md px-2 text-xs text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
                 title="View session trace"
               >
                 <FileSearch size={11} />
@@ -181,7 +181,7 @@ const AnomalyCard = memo(function AnomalyCard({ anomaly, onDismiss, onInvestigat
             <button
               type="button"
               onClick={handleSnooze}
-              className="inline-flex min-h-[44px] items-center gap-1 rounded-md px-2 text-xs text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              className="inline-flex min-h-[44px] items-center gap-1 rounded-md px-2 text-xs text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
               title={`Dismiss all alerts for ${anomaly.taskName}`}
             >
               <BellOff size={11} />
