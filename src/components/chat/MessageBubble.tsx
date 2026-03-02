@@ -34,7 +34,7 @@ export const MessageBubble = React.memo(function MessageBubble({
 }: MessageBubbleProps) {
   if (role === "user") {
     return (
-      <div className={cn("group/message relative flex justify-end", className)}>
+      <div className={cn("group/message relative flex flex-col items-end", className)}>
         <div className="max-w-[85%] rounded-3xl rounded-br-sm bg-muted/50 px-4 py-2.5 text-foreground">
           <MarkdownViewer content={content} />
         </div>
