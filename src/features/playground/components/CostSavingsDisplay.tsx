@@ -50,9 +50,9 @@ export const CostSavingsDisplay = memo(function CostSavingsDisplay({
     <div
       className={`flex items-center gap-1.5 rounded px-1.5 py-0.5 text-[10px] font-medium ${
         isSaving
-          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+          ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
           : isMore
-            ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+            ? "bg-amber-500/10 text-amber-700 dark:text-amber-400"
             : "bg-muted text-muted-foreground"
       }`}
       title={`vs ${agentModelName}: ${isSaving ? "saves" : isMore ? "costs" : "same"} ${formatCostUsd(Math.abs(diff))} (${Math.abs(pct).toFixed(0)}%)`}

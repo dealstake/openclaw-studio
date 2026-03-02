@@ -465,9 +465,10 @@ const CompareModelSelectors = memo(function CompareModelSelectors({
                 onClick={() => onRemoveModel(idx)}
                 disabled={disabled}
                 aria-label={`Remove model ${idx + 1}`}
-                className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded border border-border
+                className="relative flex h-7 w-7 flex-shrink-0 items-center justify-center rounded border border-border
                   text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive
-                  disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled:cursor-not-allowed disabled:opacity-50
+                  before:absolute before:-inset-2 before:content-['']"
               >
                 <X className="h-3 w-3" />
               </button>
