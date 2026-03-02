@@ -22,7 +22,7 @@ import type { WizardType, WizardTheme, WizardStarter } from "@/features/wizards/
 import { WizardBanner } from "@/features/wizards/components/WizardBanner";
 import { useVoiceInput } from "@/features/voice/hooks/useVoiceInput";
 import { useVoiceOutput } from "@/features/voice/hooks/useVoiceOutput";
-import { MicButton, SpeakerToggle, VoiceTranscriptOverlay } from "@/features/voice/components/VoiceControls";
+import { MicButton, VoiceTranscriptOverlay } from "@/features/voice/components/VoiceControls";
 
 export const AgentChatComposer = memo(function AgentChatComposer({
   onDraftChange,
@@ -113,6 +113,24 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   const voiceInput = useVoiceInput();
   const voiceOutput = useVoiceOutput();
 
+  // Stable ref for voiceOutput to avoid re-creating callbacks
+  const voiceOutputRef = useRef(voiceOutput);
+  useEffect(() => {
+    voiceOutputRef.current = voiceOutput;
+  }, [voiceOutput]);
+
+  /** Auto-enable voice output when mic is active, disable when it stops */
+  const prevMicListeningRef = useRef(false);
+  useEffect(() => {
+    if (voiceInput.isListening && !prevMicListeningRef.current) {
+      voiceOutput.setEnabled(true);
+    } else if (!voiceInput.isListening && prevMicListeningRef.current) {
+      // Keep enabled for the current response cycle — disable after TTS finishes
+      // (voiceOutput.enabled persists until user types manually)
+    }
+    prevMicListeningRef.current = voiceInput.isListening;
+  }, [voiceInput.isListening, voiceOutput]);
+
   /** When voice transcript updates, sync it into the textarea */
   const handleVoiceTranscript = useCallback((text: string) => {
     const el = localRef.current;
@@ -187,6 +205,10 @@ export const AgentChatComposer = memo(function AgentChatComposer({
       const value = event.target.value;
       setIsEmpty(!value.trim());
       onDraftChange(value);
+      // User is typing — exit voice mode
+      if (voiceOutputRef.current.enabled && value.trim()) {
+        voiceOutputRef.current.setEnabled(false);
+      }
       if (pendingResizeRef.current !== null) {
         cancelAnimationFrame(pendingResizeRef.current);
       }
@@ -392,14 +414,13 @@ export const AgentChatComposer = memo(function AgentChatComposer({
           {/* ── Glass Input Pill ── */}
           <div className="min-w-0 flex-1 rounded-[20px] border border-border/50 bg-background/70 shadow-xl ring-1 ring-white/[0.08] backdrop-blur-xl transition-all focus-within:border-border/80 focus-within:shadow-2xl dark:bg-background/40 dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)]">
             <div className="flex items-end">
-              {/* Voice controls — left side of pill */}
-              <div className="flex shrink-0 items-center gap-0.5 pl-2 pb-1.5">
+              {/* Voice mic — left side of pill */}
+              <div className="flex shrink-0 items-center pl-2 pb-1.5">
                 <MicButton
                   voiceInput={voiceInput}
                   onTranscript={handleVoiceTranscript}
                   onSend={handleVoiceSend}
                 />
-                <SpeakerToggle voiceOutput={voiceOutput} />
               </div>
               <textarea
                 ref={handleRef}
