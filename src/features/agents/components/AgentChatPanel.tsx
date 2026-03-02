@@ -2,11 +2,13 @@ import {
   memo,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
 } from "react";
 
 import type { AgentState as AgentRecord } from "@/features/agents/state/store";
 import type { MessagePart } from "@/lib/chat/types";
+import { isTextPart } from "@/lib/chat/types";
 import { AlertTriangle, ArrowLeft, RefreshCw, X, Zap } from "lucide-react";
 import { AutonomyLevelBadge } from "./AutonomyLevelSelector";
 import type { AutonomyLevel } from "@/features/agents/lib/autonomyService";
@@ -275,6 +277,14 @@ export const AgentChatPanel = memo(function AgentChatPanel({
     [handleSend, handleWizardSend, isWizardActive]
   );
 
+  // Extract last assistant text from message parts for TTS
+  const lastAssistantText = useMemo(() => {
+    if (!agent.messageParts || agent.messageParts.length === 0) return undefined;
+    const textParts = agent.messageParts.filter(isTextPart);
+    if (textParts.length === 0) return undefined;
+    return textParts.map(p => p.text).join("");
+  }, [agent.messageParts]);
+
   return (
     <div data-agent-panel className="group fade-up relative flex h-full w-full min-w-0 flex-col overflow-hidden bg-surface-sunken">
       {/* Context warning banner — slim pill at 80%+ utilization */}
@@ -448,6 +458,7 @@ export const AgentChatPanel = memo(function AgentChatPanel({
             composerAgents={composerAgents}
             selectedAgentId={agent.agentId}
             onSelectAgent={onSelectAgent}
+            lastAssistantText={lastAssistantText}
           />
         )}
       </div>

@@ -20,6 +20,9 @@ import { ComposerAgentMenu, type ComposerAgent } from "./ComposerAgentMenu";
 import { useFileUpload, type ChatAttachment } from "../hooks/useFileUpload";
 import type { WizardType, WizardTheme, WizardStarter } from "@/features/wizards/lib/wizardTypes";
 import { WizardBanner } from "@/features/wizards/components/WizardBanner";
+import { useVoiceInput } from "@/features/voice/hooks/useVoiceInput";
+import { useVoiceOutput } from "@/features/voice/hooks/useVoiceOutput";
+import { MicButton, SpeakerToggle } from "@/features/voice/components/VoiceControls";
 
 export const AgentChatComposer = memo(function AgentChatComposer({
   onDraftChange,
@@ -55,6 +58,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   composerAgents,
   selectedAgentId,
   onSelectAgent,
+  lastAssistantText,
 }: {
   onDraftChange: (value: string) => void;
   onSend: (message: string, attachments?: ChatAttachment[]) => void;
@@ -89,6 +93,8 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   composerAgents?: ComposerAgent[];
   selectedAgentId?: string | null;
   onSelectAgent?: (agentId: string) => void;
+  /** Latest assistant message text — used for TTS when voice output is enabled */
+  lastAssistantText?: string;
 }) {
   const localRef = useRef<HTMLTextAreaElement | null>(null);
   const pendingResizeRef = useRef<number | null>(null);
@@ -99,6 +105,62 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dragCountRef = useRef(0);
   const { files, addFiles, removeFile, clearFiles, getAttachments, hasFiles, isEncoding, acceptString } = useFileUpload();
+
+  // When wizard is active, use wizard streaming state instead of main agent running state
+  const isRunning = wizardType ? (wizardIsStreaming ?? false) : running;
+
+  // ── Voice controls ────────────────────────────────────────────────────
+  const voiceInput = useVoiceInput();
+  const voiceOutput = useVoiceOutput();
+
+  /** When voice transcript updates, sync it into the textarea */
+  const handleVoiceTranscript = useCallback((text: string) => {
+    const el = localRef.current;
+    if (el) {
+      el.value = text;
+      setIsEmpty(!text.trim());
+      onDraftChange(text);
+    }
+  }, [onDraftChange]);
+
+  /** When voice input stops, auto-send the transcript */
+  const handleVoiceSend = useCallback((text: string) => {
+    if (!text.trim()) return;
+    onSend(text);
+    const el = localRef.current;
+    if (el) {
+      el.value = "";
+      el.style.height = "auto";
+    }
+    setIsEmpty(true);
+    onDraftChange("");
+  }, [onSend, onDraftChange]);
+
+  /** Auto-speak assistant responses when voice output is enabled */
+  const prevRunningRef = useRef(false);
+  const prevAssistantTextRef = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    // Detect transition from running → not running with new text
+    if (prevRunningRef.current && !isRunning && voiceOutput.enabled && lastAssistantText) {
+      if (lastAssistantText !== prevAssistantTextRef.current) {
+        // Strip markdown for cleaner speech
+        const plainText = lastAssistantText
+          .replace(/```[\s\S]*?```/g, " code block ")
+          .replace(/\*\*(.*?)\*\*/g, "$1")
+          .replace(/\*(.*?)\*/g, "$1")
+          .replace(/`([^`]+)`/g, "$1")
+          .replace(/#{1,6}\s/g, "")
+          .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+          .replace(/\n{2,}/g, ". ")
+          .trim();
+        if (plainText.length > 0 && plainText.length < 5000) {
+          void voiceOutput.speak(plainText);
+        }
+        prevAssistantTextRef.current = lastAssistantText;
+      }
+    }
+    prevRunningRef.current = isRunning;
+  }, [isRunning, lastAssistantText, voiceOutput]);
 
   const showFileError = useCallback((msg: string) => {
     setFileError(msg);
@@ -248,8 +310,6 @@ export const AgentChatComposer = memo(function AgentChatComposer({
     };
   }, []);
 
-    // When wizard is active, use wizard streaming state instead of main agent running state
-  const isRunning = wizardType ? (wizardIsStreaming ?? false) : running;
   const sendDisabled = !canSend || isRunning || (isEmpty && !hasFiles) || isEncoding;
 
   const tokenPct = tokenUsed && tokenLimit && tokenLimit > 0
@@ -328,18 +388,29 @@ export const AgentChatComposer = memo(function AgentChatComposer({
 
           {/* ── Glass Input Pill ── */}
           <div className="min-w-0 flex-1 rounded-[20px] border border-border/50 bg-background/70 shadow-xl ring-1 ring-white/[0.08] backdrop-blur-xl transition-all focus-within:border-border/80 focus-within:shadow-2xl dark:bg-background/40 dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)]">
-            <textarea
-              ref={handleRef}
-              rows={1}
-              defaultValue={initialDraft}
-              className="max-h-[200px] min-h-[36px] w-full resize-none bg-transparent px-4 py-2.5 text-base leading-relaxed text-foreground outline-none placeholder:text-muted-foreground"
-              aria-label="Message to agent"
-              onChange={handleChange}
-              onKeyDown={handleKeyDown}
-              onFocus={handleFocus}
-              onPaste={handlePaste}
-              placeholder={wizardType && wizardTheme ? "Describe what you need..." : `Message ${agentName}...`}
-            />
+            <div className="flex items-end">
+              {/* Voice controls — left side of pill */}
+              <div className="flex shrink-0 items-center gap-0.5 pl-2 pb-1.5">
+                <MicButton
+                  voiceInput={voiceInput}
+                  onTranscript={handleVoiceTranscript}
+                  onSend={handleVoiceSend}
+                />
+                <SpeakerToggle voiceOutput={voiceOutput} />
+              </div>
+              <textarea
+                ref={handleRef}
+                rows={1}
+                defaultValue={initialDraft}
+                className="max-h-[200px] min-h-[36px] w-full resize-none bg-transparent px-3 py-2.5 text-base leading-relaxed text-foreground outline-none placeholder:text-muted-foreground"
+                aria-label="Message to agent"
+                onChange={handleChange}
+                onKeyDown={handleKeyDown}
+                onFocus={handleFocus}
+                onPaste={handlePaste}
+                placeholder={wizardType && wizardTheme ? "Describe what you need..." : `Message ${agentName}...`}
+              />
+            </div>
           </div>
 
           {/* ── Morphing Action Button — same size, same spot, 3 states ── */}
