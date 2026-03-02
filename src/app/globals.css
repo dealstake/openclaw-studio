@@ -214,6 +214,15 @@
   }
 }
 
+/* Global focus-visible ring for all interactive elements (WCAG 2.4.7).
+ * Uses :where() for zero specificity so component-level overrides win. */
+:where(button, a, [role="button"], [role="tab"], [role="radio"], [role="option"],
+       [role="menuitem"], [role="link"], [tabindex]:not([tabindex="-1"]),
+       input, textarea, select, summary):focus-visible {
+  outline: 2px solid oklch(from var(--ring) l c h / 0.6);
+  outline-offset: 2px;
+}
+
 /* Standardize Lucide icon stroke weight globally (1.75 vs default 2)
  * for a cleaner, more refined look matching Linear/Vercel conventions */
 :where(.lucide) {

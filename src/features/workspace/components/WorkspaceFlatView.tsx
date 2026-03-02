@@ -43,7 +43,7 @@ export const WorkspaceFlatView = memo(function WorkspaceFlatView({
     setActiveIndex,
     containerRef: listRef,
     handleKeyDown,
-  } = useListNavigation(filteredEntries.length, handleActivate);
+  } = useListNavigation(filteredEntries.length, handleActivate, { itemSelector: '[role="option"]' });
 
   const isProjectsDir = currentPath === "projects";
 

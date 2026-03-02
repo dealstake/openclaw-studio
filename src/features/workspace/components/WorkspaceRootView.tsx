@@ -45,7 +45,7 @@ export const WorkspaceRootView = memo(function WorkspaceRootView({
     setActiveIndex,
     containerRef,
     handleKeyDown,
-  } = useListNavigation(flatEntries.length, handleActivate);
+  } = useListNavigation(flatEntries.length, handleActivate, { itemSelector: '[role="option"]' });
 
   const groupOffsets = useMemo(() => {
     const offsets = new Map<WorkspaceGroup, number>();

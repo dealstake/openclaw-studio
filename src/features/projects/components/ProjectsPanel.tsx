@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useMemo, useState, useCallback, useRef, useEffect } from "react";
+import { memo, useMemo, useState, useCallback, useRef, useEffect, type KeyboardEvent } from "react";
 import {
   FolderGit2,
   FolderKanban,
@@ -126,6 +126,47 @@ export const ProjectsPanel = memo(function ProjectsPanel({
     return sortProjects(result);
   }, [projects, statusFilter, isAllSelected]);
 
+  // Keyboard navigation for project list
+  const [focusedIndex, setFocusedIndex] = useState(-1);
+  const handleListKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      const len = filteredProjects.length;
+      if (!len) return;
+      let next = focusedIndex;
+      switch (e.key) {
+        case "ArrowDown":
+          e.preventDefault();
+          next = focusedIndex < len - 1 ? focusedIndex + 1 : 0;
+          break;
+        case "ArrowUp":
+          e.preventDefault();
+          next = focusedIndex > 0 ? focusedIndex - 1 : len - 1;
+          break;
+        case "Home":
+          e.preventDefault();
+          next = 0;
+          break;
+        case "End":
+          e.preventDefault();
+          next = len - 1;
+          break;
+        case "Enter":
+          if (focusedIndex >= 0 && focusedIndex < len) {
+            e.preventDefault();
+            setEditingProjectDoc(filteredProjects[focusedIndex].doc);
+          }
+          return;
+        default:
+          return;
+      }
+      setFocusedIndex(next);
+    },
+    [focusedIndex, filteredProjects],
+  );
+
+  // Clamp focus when list shrinks
+  const effectiveFocusIndex = focusedIndex >= filteredProjects.length ? -1 : focusedIndex;
+
   if (!agentId) return null;
 
   return (
@@ -204,11 +245,20 @@ export const ProjectsPanel = memo(function ProjectsPanel({
       )}
 
       {/* All projects — flat list, sorted by status */}
-      <div id="projects-list" className="flex flex-col gap-4 animate-in fade-in duration-300">
+      <div
+        id="projects-list"
+        className="flex flex-col gap-4 animate-in fade-in duration-300"
+        role="listbox"
+        aria-label="Projects"
+        tabIndex={0}
+        onKeyDown={handleListKeyDown}
+      >
         {filteredProjects.map((project, i) => (
           <div
             key={project.doc}
-            className="animate-in fade-in slide-in-from-bottom-1 duration-200 fill-mode-both"
+            role="option"
+            aria-selected={effectiveFocusIndex === i}
+            className={`animate-in fade-in slide-in-from-bottom-1 duration-200 fill-mode-both ${effectiveFocusIndex === i ? "ring-2 ring-primary/50 rounded-lg" : ""}`}
             style={{ animationDelay: `${Math.min(i * 50, 300)}ms` }}
           >
             <ProjectCard
