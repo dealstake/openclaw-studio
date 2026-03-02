@@ -174,9 +174,10 @@ export const PersonaCard = React.memo(function PersonaCard({
     (e: React.MouseEvent) => {
       e.stopPropagation();
       if (busy) return;
+      if (!window.confirm(`Delete "${persona.displayName}"? This cannot be undone.`)) return;
       void onDelete(persona.personaId);
     },
-    [busy, onDelete, persona.personaId],
+    [busy, onDelete, persona.personaId, persona.displayName],
   );
 
   const handleKnowledge = useCallback(

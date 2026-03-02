@@ -433,25 +433,47 @@ export const PracticeSessionModal = React.memo(function PracticeSessionModal({
 
   // When evaluation response arrives, set the score
   useEffect(() => {
-    if (!evaluating) return;
+    if (!practiceChat.evaluationText || !session || session.score) return;
 
-    // Check if the last AI message is an evaluation (after endSession)
-    const aiMessages = practiceChat.messages;
-    const lastMsg = aiMessages[aiMessages.length - 1];
-    if (lastMsg?.role === "assistant" && !practiceChat.isStreaming && session?.status === "completed") {
-      // Parse score from the evaluation text
-      const scoreMatch = lastMsg.content.match(/(\d+)\s*\/\s*10/);
-      const overall = scoreMatch ? parseInt(scoreMatch[1], 10) : 5;
+    const text = practiceChat.evaluationText;
 
-      setScore({
-        timestamp: new Date().toISOString(),
-        overall,
-        dimensions: {},
-        feedback: lastMsg.content,
-        improvements: [],
-      });
+    // Parse overall score (look for N/10 pattern)
+    const scoreMatch = text.match(/(\d+)\s*\/\s*10/);
+    const overall = scoreMatch ? parseInt(scoreMatch[1], 10) : 5;
+
+    // Parse dimension scores from structured eval text
+    const dimensions: Record<string, number> = {};
+    const dimPatterns: [string, RegExp][] = [
+      ["problem_diagnosis", /problem\s*diagnosis[:\s]*(\d+)/i],
+      ["resolution_quality", /resolution\s*quality[:\s]*(\d+)/i],
+      ["empathy_tone", /empathy[^:]*[:\s]*(\d+)/i],
+      ["efficiency", /efficiency[:\s]*(\d+)/i],
+    ];
+    for (const [key, regex] of dimPatterns) {
+      const match = text.match(regex);
+      if (match) dimensions[key] = parseInt(match[1], 10);
     }
-  }, [practiceChat.messages, practiceChat.isStreaming, evaluating, session?.status, setScore]);
+
+    // Parse improvement suggestions (bullet points after "improve" heading)
+    const improvements: string[] = [];
+    const improveSection = text.match(/areas?\s*to\s*improve[:\s]*\n([\s\S]*?)(?:\n\n|\n\*\*|$)/i);
+    if (improveSection) {
+      const bullets = improveSection[1].match(/[-*•]\s*(.+)/g);
+      if (bullets) {
+        for (const b of bullets) {
+          improvements.push(b.replace(/^[-*•]\s*/, "").trim());
+        }
+      }
+    }
+
+    setScore({
+      timestamp: new Date().toISOString(),
+      overall,
+      dimensions,
+      feedback: text,
+      improvements,
+    });
+  }, [practiceChat.evaluationText, session, setScore]);
 
   const isActive = session?.status === "active";
   const isCompleted = session?.status === "completed" && session.score;
@@ -609,12 +631,12 @@ export const PracticeSessionModal = React.memo(function PracticeSessionModal({
                 <button
                   type="button"
                   onClick={handleSend}
-                  disabled={!input.trim()}
+                  disabled={!input.trim() || practiceChat.isStreaming}
                   aria-label="Send message"
                   className={cn(
                     "flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg transition-colors",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
-                    input.trim()
+                    input.trim() && !practiceChat.isStreaming
                       ? "bg-primary text-primary-foreground hover:bg-primary/90"
                       : "bg-muted text-muted-foreground",
                   )}
