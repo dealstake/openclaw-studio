@@ -22,7 +22,7 @@ describe("extractHeadings", () => {
   });
 
   it("extracts a single h1", () => {
-    expect(extractHeadings("# Hello World")).toEqual([h(1, "Hello World", 0)]);
+    expect(extractHeadings("# Hello World")).toEqual([h(1, "Hello World", 1)]);
   });
 
   it("extracts h1 through h6", () => {
@@ -35,20 +35,20 @@ describe("extractHeadings", () => {
       "###### H6",
     ].join("\n");
     expect(extractHeadings(content)).toEqual([
-      h(1, "H1", 0),
-      h(2, "H2", 1),
-      h(3, "H3", 2),
-      h(4, "H4", 3),
-      h(5, "H5", 4),
-      h(6, "H6", 5),
+      h(1, "H1", 1),
+      h(2, "H2", 2),
+      h(3, "H3", 3),
+      h(4, "H4", 4),
+      h(5, "H5", 5),
+      h(6, "H6", 6),
     ]);
   });
 
-  it("records correct 0-indexed line numbers", () => {
+  it("records correct 1-indexed line numbers", () => {
     const content = "line 0\nline 1\n## Section\nline 3";
     const headings = extractHeadings(content);
     expect(headings).toHaveLength(1);
-    expect(headings[0].lineNumber).toBe(2);
+    expect(headings[0].lineNumber).toBe(3);
   });
 
   it("trims heading text", () => {
@@ -81,7 +81,7 @@ describe("extractHeadings", () => {
         "## Another real heading",
       ].join("\n");
       const headings = extractHeadings(content);
-      expect(headings).toEqual([h(1, "Real heading", 0), h(2, "Another real heading", 4)]);
+      expect(headings).toEqual([h(1, "Real heading", 1), h(2, "Another real heading", 5)]);
     });
 
     it("skips headings inside tilde fenced code blocks", () => {
@@ -92,7 +92,7 @@ describe("extractHeadings", () => {
         "~~~",
       ].join("\n");
       const headings = extractHeadings(content);
-      expect(headings).toEqual([h(1, "Real heading", 0)]);
+      expect(headings).toEqual([h(1, "Real heading", 1)]);
     });
 
     it("handles code block with language specifier", () => {
@@ -104,14 +104,14 @@ describe("extractHeadings", () => {
         "# After",
       ].join("\n");
       const headings = extractHeadings(content);
-      expect(headings).toEqual([h(1, "Before", 0), h(1, "After", 4)]);
+      expect(headings).toEqual([h(1, "Before", 1), h(1, "After", 5)]);
     });
 
     it("handles indented code fence opener", () => {
       // Leading whitespace before ``` still counts
       const content = ["# Before", "  ```", "# Inside", "  ```", "# After"].join("\n");
       const headings = extractHeadings(content);
-      expect(headings).toEqual([h(1, "Before", 0), h(1, "After", 4)]);
+      expect(headings).toEqual([h(1, "Before", 1), h(1, "After", 5)]);
     });
 
     it("handles adjacent code blocks", () => {
@@ -127,7 +127,7 @@ describe("extractHeadings", () => {
         "# H3",
       ].join("\n");
       const headings = extractHeadings(content);
-      expect(headings).toEqual([h(1, "H1", 0), h(1, "H2", 4), h(1, "H3", 8)]);
+      expect(headings).toEqual([h(1, "H1", 1), h(1, "H2", 5), h(1, "H3", 9)]);
     });
 
     it("treats unclosed code block as in-code through EOF", () => {
@@ -135,7 +135,7 @@ describe("extractHeadings", () => {
         "\n"
       );
       const headings = extractHeadings(content);
-      expect(headings).toEqual([h(1, "Before", 0)]);
+      expect(headings).toEqual([h(1, "Before", 1)]);
     });
   });
 
@@ -151,7 +151,7 @@ describe("extractHeadings", () => {
         "# Real heading",
       ].join("\n");
       const headings = extractHeadings(content);
-      expect(headings).toEqual([h(1, "Real heading", 4)]);
+      expect(headings).toEqual([h(1, "Real heading", 5)]);
     });
 
     it("frontmatter only triggers on line 0", () => {
@@ -170,7 +170,7 @@ describe("extractHeadings", () => {
     it("frontmatter can be closed with ...", () => {
       const content = ["---", "key: val", "...", "# Real heading"].join("\n");
       const headings = extractHeadings(content);
-      expect(headings).toEqual([h(1, "Real heading", 3)]);
+      expect(headings).toEqual([h(1, "Real heading", 4)]);
     });
 
     it("returns empty when document is only frontmatter", () => {
