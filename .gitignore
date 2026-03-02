@@ -68,3 +68,4 @@ AGENTS.md
 
 # local issue tracker
 /.beads
+.openclaw-studio.db
