@@ -35,6 +35,11 @@ const ContactsPanel = lazy(() =>
     default: m.ContactsPanel,
   }))
 );
+const VoiceSettingsPanelConnected = lazy(() =>
+  import("@/features/voice/components/VoiceSettingsPanelConnected").then((m) => ({
+    default: m.VoiceSettingsPanelConnected,
+  }))
+);
 import {
   AgentSettingsPanel,
 } from "@/features/agents/components/AgentInspectPanels";
@@ -92,6 +97,11 @@ export const ManagementPanelContent = memo(function ManagementPanelContent({
       {tab === "contacts" && (
         <PanelErrorBoundary name="Contacts">
           <ContactsPanel />
+        </PanelErrorBoundary>
+      )}
+      {tab === "voice" && (
+        <PanelErrorBoundary name="Voice">
+          <VoiceSettingsPanelConnected />
         </PanelErrorBoundary>
       )}
       {tab === "settings" && ctx.settingsAgent && (

@@ -2,6 +2,7 @@ import {
   memo,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type ChangeEvent,
@@ -21,7 +22,9 @@ import { useFileUpload, type ChatAttachment } from "../hooks/useFileUpload";
 import type { WizardType, WizardTheme, WizardStarter } from "@/features/wizards/lib/wizardTypes";
 import { WizardBanner } from "@/features/wizards/components/WizardBanner";
 import { useVoiceInput } from "@/features/voice/hooks/useVoiceInput";
-import { useVoiceOutput } from "@/features/voice/hooks/useVoiceOutput";
+import { useVoiceOutput, resolvedToSpeakOptions } from "@/features/voice/hooks/useVoiceOutput";
+import { useVoiceSettings } from "@/features/voice/hooks/useVoiceSettings";
+import { createStudioSettingsCoordinator } from "@/lib/studio/coordinator";
 import { MicButton, VoiceTranscriptOverlay } from "@/features/voice/components/VoiceControls";
 
 export const AgentChatComposer = memo(function AgentChatComposer({
@@ -112,6 +115,13 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   // ── Voice controls ────────────────────────────────────────────────────
   const voiceInput = useVoiceInput();
   const voiceOutput = useVoiceOutput();
+  const voiceSettingsCoordinator = useMemo(
+    () => createStudioSettingsCoordinator({ debounceMs: 200 }),
+    [],
+  );
+  const { settings: voiceResolvedSettings } = useVoiceSettings({
+    settingsCoordinator: voiceSettingsCoordinator,
+  });
 
   // Stable ref for voiceOutput to avoid re-creating callbacks
   const voiceOutputRef = useRef(voiceOutput);
@@ -172,7 +182,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
           .replace(/\n{2,}/g, ". ")
           .trim();
         if (plainText.length > 0 && plainText.length < 5000) {
-          void voiceOutput.speak(plainText);
+          void voiceOutput.speak(plainText, resolvedToSpeakOptions(voiceResolvedSettings));
         }
         prevAssistantTextRef.current = lastAssistantText;
       }
