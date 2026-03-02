@@ -104,7 +104,7 @@ export const WizardConfigCard = memo(function WizardConfigCard({
         <dl className="mb-3 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs">
           {entries.map(({ key, value }) => (
             <div key={key} className="contents">
-              <dt className="font-medium text-muted-foreground">{key}</dt>
+              <dt className="font-medium text-muted-foreground/90">{key}</dt>
               <dd className="truncate text-foreground">{value}</dd>
             </div>
           ))}

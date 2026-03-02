@@ -196,7 +196,7 @@ export const PersonasTab = React.memo(function PersonasTab({
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
               filter === f.value
                 ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
+                : "text-muted-foreground/90 hover:text-foreground hover:bg-muted/50",
             )}
           >
             {f.label}
