@@ -205,6 +205,7 @@ export const StudioContextDrawer = React.memo(function StudioContextDrawer(props
               client={client}
               status={status}
               agentId={focusedAgentId}
+              agentModel={agents.find((a) => a.agentId === focusedAgentId)?.model ?? null}
               models={gatewayModels}
               defaultModel={undefined}
               isTabActive={contextTab === "playground"}

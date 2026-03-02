@@ -18,11 +18,14 @@ import { sectionLabelClass } from "@/components/SectionLabel";
 import { usePromptHistory, type PromptHistoryEntry } from "../hooks/usePromptHistory";
 import { PromptHistoryDrawer } from "./PromptHistoryDrawer";
 import { ApplyToAgentDialog } from "./ApplyToAgentDialog";
+import { TestCurrentAgentButton } from "./TestCurrentAgentButton";
 
 interface PlaygroundPanelProps {
   client: GatewayClient;
   status: GatewayStatus;
   agentId: string | null;
+  /** Current agent's configured model key */
+  agentModel?: string | null;
   models: GatewayModelChoice[];
   /** Default model key (provider/id) to pre-select */
   defaultModel?: string;
@@ -35,6 +38,7 @@ export const PlaygroundPanel = memo(function PlaygroundPanel({
   client,
   status,
   agentId,
+  agentModel,
   models,
   defaultModel,
 }: PlaygroundPanelProps) {
@@ -95,6 +99,14 @@ export const PlaygroundPanel = memo(function PlaygroundPanel({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [latestResult?.response]);
+
+  const handleLoadAgent = useCallback(
+    (loadedPrompt: string, loadedModel: string) => {
+      setSystemPrompt(loadedPrompt);
+      if (loadedModel && !compareMode) setSelectedModel(loadedModel);
+    },
+    [compareMode],
+  );
 
   const handleReplay = useCallback(
     (entry: { systemPrompt: string; userMessage: string; model: string }) => {
@@ -259,7 +271,14 @@ export const PlaygroundPanel = memo(function PlaygroundPanel({
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {/* Input pane */}
         <div className="flex flex-col gap-0 overflow-y-auto border-b border-border/50">
-          <div className="px-3 pt-3 pb-1">
+          <div className="px-3 pt-3 pb-1 flex flex-col gap-2">
+            <TestCurrentAgentButton
+              client={client}
+              agentId={agentId}
+              agentModel={agentModel ?? null}
+              disabled={activeStreaming || notConnected}
+              onLoad={handleLoadAgent}
+            />
             {compareMode ? (
               <CompareModelSelectors
                 models={models}
@@ -314,6 +333,7 @@ export const PlaygroundPanel = memo(function PlaygroundPanel({
                 streamText={streamText}
                 isStreaming={isStreaming}
                 error={latestResult?.error ?? error}
+                agentModel={agentModel ?? null}
                 onSavePreset={
                   latestResult?.response
                     ? () => {

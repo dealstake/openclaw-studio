@@ -6,6 +6,7 @@ import { MarkdownViewer } from "@/components/MarkdownViewer";
 import { Skeleton } from "@/components/Skeleton";
 import { sectionLabelClass } from "@/components/SectionLabel";
 import { formatCostUsd } from "../lib/costEstimator";
+import { CostSavingsDisplay } from "./CostSavingsDisplay";
 import type { PlaygroundResult } from "../lib/types";
 
 interface ResponseViewProps {
@@ -15,6 +16,8 @@ interface ResponseViewProps {
   streamText: string | null;
   isStreaming: boolean;
   error: string | null;
+  /** Agent's currently configured model (for cost comparison) */
+  agentModel?: string | null;
   /** Called when user clicks "Save as preset" in footer */
   onSavePreset?: () => void;
 }
@@ -24,6 +27,7 @@ export const ResponseView = memo(function ResponseView({
   streamText,
   isStreaming,
   error,
+  agentModel,
   onSavePreset,
 }: ResponseViewProps) {
   // Nothing to show yet
@@ -92,6 +96,14 @@ export const ResponseView = memo(function ResponseView({
               icon={<Coins className="h-3 w-3" />}
               label={formatCostUsd(response.estimatedCostUsd)}
               title="Estimated cost (USD)"
+            />
+          )}
+          {agentModel && response.tokensIn !== undefined && response.tokensOut !== undefined && result?.request && (
+            <CostSavingsDisplay
+              testedModel={result.request.model}
+              agentModel={agentModel}
+              tokensIn={response.tokensIn}
+              tokensOut={response.tokensOut}
             />
           )}
           {onSavePreset && (

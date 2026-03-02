@@ -22,6 +22,8 @@ interface RoutingPanelProps {
   status: GatewayStatus;
   models: GatewayModelChoice[];
   agents: AgentState[];
+  /** Navigate to Playground tab with a model pre-selected */
+  onTestInPlayground?: (model: string) => void;
 }
 
 /** Derive a short model display name from its key */
@@ -47,6 +49,7 @@ export const RoutingPanel = memo(function RoutingPanel({
   status,
   models,
   agents,
+  onTestInPlayground,
 }: RoutingPanelProps) {
   const {
     rules,
@@ -161,6 +164,7 @@ export const RoutingPanel = memo(function RoutingPanel({
           recommendations={recommendations}
           onCreateRule={createRule}
           onDismiss={dismissRecommendation}
+          onTestInPlayground={onTestInPlayground}
           disabled={status !== "connected" || saving}
         />
 

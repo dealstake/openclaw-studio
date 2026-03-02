@@ -99,7 +99,7 @@ export const AgentStudioPage = () => {
     contextPanelOpen, setContextPanelOpen,
     setContextMode,
     contextTab, setContextTab,
-    expandedTab,
+    expandedTab, setExpandedTab,
     brainFileTab, setBrainFileTab,
     brainPreviewMode, setBrainPreviewMode,
     managementView, setManagementView,
@@ -248,6 +248,11 @@ export const AgentStudioPage = () => {
     }
   }, [mobilePane, focusedAgent, settingsAgentId, setSettingsAgentId, setContextTab, setContextPanelOpen, setMobilePane, setManagementView]);
   const handleCmdOpenCtx = useCallback(() => setContextPanelOpen(true), [setContextPanelOpen]);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const handleNavigateToPlayground = useCallback((_model: string) => {
+    setContextTab("playground");
+    setExpandedTab("playground");
+  }, [setContextTab, setExpandedTab]);
   const handleCmdSwitchAgent = useCallback((agentId: string) => {
     flushPendingDraft(focusedAgent?.agentId ?? null);
     dispatch({ type: "selectAgent", agentId });
@@ -1147,6 +1152,7 @@ export const AgentStudioPage = () => {
               defaultModel={focusedAgent?.model ?? (gatewayModels.length > 0 ? `${gatewayModels[0].provider}/${gatewayModels[0].id}` : undefined)}
               onCreateSkill={() => handleStartWizard("skill")}
               onSelectTemplate={handleSelectTemplate}
+              onNavigateToPlayground={handleNavigateToPlayground}
             />
             {/* Trace Viewer overlay */}
             {viewingTrace && (

@@ -9,7 +9,7 @@
 "use client";
 
 import { memo, useCallback, useState } from "react";
-import { Lightbulb, Plus, X, TrendingDown, ArrowRight } from "lucide-react";
+import { Lightbulb, Plus, X, TrendingDown, ArrowRight, FlaskConical } from "lucide-react";
 import { formatCost } from "@/lib/text/format";
 import type { Recommendation } from "../lib/recommendationEngine";
 import type { RoutingRule } from "../lib/types";
@@ -18,6 +18,8 @@ interface RecommendationCardProps {
   recommendation: Recommendation;
   onCreateRule: (rule: RoutingRule) => Promise<void>;
   onDismiss: (id: string) => void;
+  /** Navigate to playground with this recommendation's model pre-selected */
+  onTestInPlayground?: (model: string) => void;
   disabled?: boolean;
 }
 
@@ -37,6 +39,7 @@ export const RecommendationCard = memo(function RecommendationCard({
   recommendation,
   onCreateRule,
   onDismiss,
+  onTestInPlayground,
   disabled,
 }: RecommendationCardProps) {
   const [creating, setCreating] = useState(false);
@@ -116,22 +119,36 @@ export const RecommendationCard = memo(function RecommendationCard({
           </span>
         </div>
 
-        <button
-          type="button"
-          onClick={handleCreate}
-          disabled={disabled || creating}
-          className="inline-flex h-11 items-center gap-1.5 rounded-md bg-primary px-4 text-[12px] font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {creating ? (
-            "Creating…"
-          ) : (
-            <>
-              <Plus className="h-3 w-3" />
-              Create Rule
-              <ArrowRight className="h-2.5 w-2.5" />
-            </>
+        <div className="flex items-center gap-2">
+          {onTestInPlayground && (
+            <button
+              type="button"
+              onClick={() => onTestInPlayground(recommendation.suggestedRule.model)}
+              disabled={disabled}
+              className="inline-flex h-11 items-center gap-1.5 rounded-md border border-border px-3 text-[12px] font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+              title="Test this model in the Playground before creating a rule"
+            >
+              <FlaskConical className="h-3 w-3" />
+              Test
+            </button>
           )}
-        </button>
+          <button
+            type="button"
+            onClick={handleCreate}
+            disabled={disabled || creating}
+            className="inline-flex h-11 items-center gap-1.5 rounded-md bg-primary px-4 text-[12px] font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {creating ? (
+              "Creating…"
+            ) : (
+              <>
+                <Plus className="h-3 w-3" />
+                Create Rule
+                <ArrowRight className="h-2.5 w-2.5" />
+              </>
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -143,6 +160,7 @@ interface RecommendationsSectionProps {
   recommendations: Recommendation[];
   onCreateRule: (rule: RoutingRule) => Promise<void>;
   onDismiss: (id: string) => void;
+  onTestInPlayground?: (model: string) => void;
   disabled?: boolean;
 }
 
@@ -150,6 +168,7 @@ export const RecommendationsSection = memo(function RecommendationsSection({
   recommendations,
   onCreateRule,
   onDismiss,
+  onTestInPlayground,
   disabled,
 }: RecommendationsSectionProps) {
   if (recommendations.length === 0) return null;
@@ -171,6 +190,7 @@ export const RecommendationsSection = memo(function RecommendationsSection({
             recommendation={rec}
             onCreateRule={onCreateRule}
             onDismiss={onDismiss}
+            onTestInPlayground={onTestInPlayground}
             disabled={disabled}
           />
         ))}

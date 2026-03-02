@@ -64,6 +64,8 @@ interface StudioExpandedPanelProps {
   // Wizard entry points
   onCreateSkill?: () => void;
   onSelectTemplate?: (template: PersonaTemplate) => void;
+  // Cross-tab navigation
+  onNavigateToPlayground?: (model: string) => void;
 }
 
 export const StudioExpandedPanel = memo(function StudioExpandedPanel({
@@ -98,6 +100,7 @@ export const StudioExpandedPanel = memo(function StudioExpandedPanel({
   defaultModel,
   onCreateSkill,
   onSelectTemplate,
+  onNavigateToPlayground,
 }: StudioExpandedPanelProps) {
   if (!expandedTab) return null;
 
@@ -180,6 +183,7 @@ export const StudioExpandedPanel = memo(function StudioExpandedPanel({
                 client={client}
                 status={status}
                 agentId={focusedAgentId}
+                agentModel={agents.find((a) => a.agentId === focusedAgentId)?.model ?? null}
                 models={gatewayModels}
                 defaultModel={defaultModel}
                 isTabActive
@@ -193,6 +197,7 @@ export const StudioExpandedPanel = memo(function StudioExpandedPanel({
                 status={status}
                 models={gatewayModels}
                 agents={agents}
+                onTestInPlayground={onNavigateToPlayground}
               />
             </PanelErrorBoundary>
           )}
