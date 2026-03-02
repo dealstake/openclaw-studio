@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useMemo, useRef, useEffect } from "react";
+import { memo, useCallback, useMemo, useRef, useEffect, useState } from "react";
 import {
   MessageSquare,
   BarChart3,
@@ -14,6 +14,7 @@ import {
   Loader2,
   AlertCircle,
   SearchX,
+  ThumbsDown,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { BottomSidebarActions } from "@/components/BottomSidebarActions";
@@ -27,6 +28,7 @@ import { SessionList } from "@/features/sessions/components/SessionList";
 import { SearchResultCard } from "@/features/sessions/components/SearchResultCard";
 import { exportConversationAsMarkdown } from "@/features/sessions/lib/exportConversation";
 import { useComparisonStore, toggleComparison } from "@/features/sessions/state/comparisonStore";
+import { useFeedbackFilter } from "@/features/feedback/hooks/useFeedbackFilter";
 
 /** Management nav items that open in expanded modal */
 export type ManagementTab = "usage" | "channels" | "credentials" | "models" | "gateway" | "settings" | "contacts";
@@ -143,6 +145,9 @@ export const AppSidebar = memo(function AppSidebar({
     [comparisonSessionKeys],
   );
 
+  const { filterGroups, hasNegativeFeedback } = useFeedbackFilter();
+  const [feedbackFilterActive, setFeedbackFilterActive] = useState(false);
+
   // Server-side search across ALL sessions (active + archived)
   const {
     setQuery: setServerSearchQuery,
@@ -162,6 +167,9 @@ export const AppSidebar = memo(function AppSidebar({
 
   // Whether to show server-side search results overlay
   const showSearchResults = search.trim().length > 0 && (searching || searchResults.length > 0 || searchError);
+
+  // Apply feedback filter when active
+  const filteredGroups = feedbackFilterActive ? filterGroups(groups) : groups;
 
   const loadRef = useRef(load);
   useEffect(() => {
@@ -294,13 +302,36 @@ export const AppSidebar = memo(function AppSidebar({
             </button>
           </div>
 
-          {/* Search */}
-          <div className="px-3 py-2 shrink-0">
+          {/* Search + feedback filter */}
+          <div className="px-3 py-2 shrink-0 flex items-center gap-1.5">
             <SearchInput
               value={search}
               onChange={handleSearchChange}
               placeholder="Search sessions…"
+              className="flex-1"
             />
+            {hasNegativeFeedback && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={() => setFeedbackFilterActive((v) => !v)}
+                    className={`flex h-8 w-8 min-h-[44px] min-w-[44px] items-center justify-center rounded-md transition-colors ${
+                      feedbackFilterActive
+                        ? "bg-destructive/15 text-destructive"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    }`}
+                    aria-label="Filter sessions with negative feedback"
+                    aria-pressed={feedbackFilterActive}
+                  >
+                    <ThumbsDown className="h-3.5 w-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  {feedbackFilterActive ? "Show all sessions" : "Show flagged sessions"}
+                </TooltipContent>
+              </Tooltip>
+            )}
           </div>
 
           {/* Session list or search results */}
@@ -360,7 +391,7 @@ export const AppSidebar = memo(function AppSidebar({
             </div>
           ) : (
             <SessionList
-              groups={groups}
+              groups={filteredGroups}
               loading={loading}
               error={error}
               search={search}
