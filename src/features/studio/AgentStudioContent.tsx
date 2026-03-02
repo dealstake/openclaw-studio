@@ -1174,6 +1174,7 @@ export const AgentStudioPage = () => {
                     agentId={viewingReplay.agentId}
                     sessionId={viewingReplay.sessionId}
                     onClose={clearViewingReplay}
+                    client={client}
                   />
                 </div>
               </div>

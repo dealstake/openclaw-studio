@@ -14,24 +14,36 @@ import { SectionLabel } from "@/components/SectionLabel";
 import { Skeleton } from "@/components/Skeleton";
 import { formatCost, formatTokens } from "@/lib/text/format";
 import { formatDuration } from "@/lib/text/time";
+import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import { useSessionTrace } from "../../hooks/useSessionTrace";
+import { forkSession, type ForkResult } from "../../lib/forkService";
+import { ForkedSessionBadge } from "../ForkedSessionBadge";
 import { ReplayTimeline } from "./ReplayTimeline";
-import { StepDetailPanel } from "./StepDetailPanel";
+import { StepDetailPanel, type StepEdits } from "./StepDetailPanel";
 
 type ReplayViewProps = {
   agentId: string;
   sessionId: string;
   onClose: () => void;
+  /** GatewayClient — required for fork/re-run functionality */
+  client?: GatewayClient | null;
+  /** Callback when a fork is created — e.g., to navigate to the forked session */
+  onForked?: (result: ForkResult) => void;
 };
 
 export const ReplayView = React.memo(function ReplayView({
   agentId,
   sessionId,
   onClose,
+  client,
+  onForked,
 }: ReplayViewProps) {
   const { turns, summary, loading, error, load } = useSessionTrace(agentId, sessionId);
   const containerRef = useRef<HTMLDivElement>(null);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [forkLoading, setForkLoading] = useState(false);
+  const [forkResult, setForkResult] = useState<ForkResult | null>(null);
+  const [forkError, setForkError] = useState<string | null>(null);
 
   useEffect(() => {
     load();
@@ -48,6 +60,38 @@ export const ReplayView = React.memo(function ReplayView({
   const handleSelect = useCallback((index: number) => {
     setSelectedIndex(index);
   }, []);
+
+  // Build the source session key from agentId + sessionId
+  const sourceSessionKey = useMemo(
+    () => `agent:${agentId}:${sessionId}`,
+    [agentId, sessionId],
+  );
+
+  const handleForkFromHere = useCallback(
+    async (stepIndex: number, edits: StepEdits) => {
+      if (!client) return;
+      setForkLoading(true);
+      setForkError(null);
+      try {
+        const hasEdits = Object.keys(edits.toolCallArgs).length > 0 || edits.content !== undefined;
+        const result = await forkSession(client, {
+          sourceSessionKey,
+          agentId,
+          forkAtIndex: stepIndex,
+          label: hasEdits
+            ? `Fork at step ${stepIndex + 1} (edited)`
+            : `Fork at step ${stepIndex + 1}`,
+        });
+        setForkResult(result);
+        onForked?.(result);
+      } catch (err) {
+        setForkError(err instanceof Error ? err.message : "Fork failed");
+      } finally {
+        setForkLoading(false);
+      }
+    },
+    [client, sourceSessionKey, agentId, onForked],
+  );
 
   // Keyboard navigation
   const handleKeyDown = useCallback(
@@ -106,6 +150,11 @@ export const ReplayView = React.memo(function ReplayView({
           </PanelIconButton>
         </div>
 
+        {/* Fork result badge */}
+        {forkResult && (
+          <ForkedSessionBadge metadata={forkResult.metadata} />
+        )}
+
         {summary && (
           <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
             {summary.model && (
@@ -147,6 +196,12 @@ export const ReplayView = React.memo(function ReplayView({
         </div>
       )}
 
+      {forkError && (
+        <div className="px-4 pt-2">
+          <ErrorBanner message={`Fork failed: ${forkError}`} />
+        </div>
+      )}
+
       {/* Two-column layout */}
       <div className="flex min-h-0 flex-1 flex-col md:flex-row">
         {/* Timeline */}
@@ -167,6 +222,8 @@ export const ReplayView = React.memo(function ReplayView({
             turn={selectedTurn}
             stepNumber={effectiveIndex}
             loading={loading && !selectedTurn}
+            onForkFromHere={client ? handleForkFromHere : undefined}
+            forkLoading={forkLoading}
           />
         </div>
       </div>
