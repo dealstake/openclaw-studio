@@ -22,7 +22,7 @@ import type { WizardType, WizardTheme, WizardStarter } from "@/features/wizards/
 import { WizardBanner } from "@/features/wizards/components/WizardBanner";
 import { useVoiceInput } from "@/features/voice/hooks/useVoiceInput";
 import { useVoiceOutput } from "@/features/voice/hooks/useVoiceOutput";
-import { MicButton, SpeakerToggle } from "@/features/voice/components/VoiceControls";
+import { MicButton, SpeakerToggle, VoiceTranscriptOverlay } from "@/features/voice/components/VoiceControls";
 
 export const AgentChatComposer = memo(function AgentChatComposer({
   onDraftChange,
@@ -382,6 +382,9 @@ export const AgentChatComposer = memo(function AgentChatComposer({
           multiple
           onChange={handleFileInputChange}
         />
+
+        {/* Voice transcript overlay — floats above the split row when listening */}
+        <VoiceTranscriptOverlay voiceInput={voiceInput} />
 
         {/* ═══ FLOATING ROW: [━━ Glass Input Pill ━━] [Morphing Button ○] ═══ */}
         <div className="flex items-end gap-2 sm:gap-2.5">

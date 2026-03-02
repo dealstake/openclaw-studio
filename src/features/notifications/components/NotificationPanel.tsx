@@ -155,7 +155,7 @@ export const NotificationPanel = React.memo(function NotificationPanel() {
             <span className="text-xs">No notifications yet</span>
           </div>
         ) : (
-          <div className="flex flex-col gap-0.5 p-1">
+          <div className="flex flex-col gap-1 p-1">
             {filtered.map((n) => (
               <NotificationItem
                 key={n.id}

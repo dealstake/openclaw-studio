@@ -9,7 +9,7 @@ const typeIconMap: Record<AlertRuleType, { icon: React.ElementType; color: strin
   error: { icon: AlertTriangle, color: "text-destructive" },
   budget: { icon: DollarSign, color: "text-amber-500" },
   rateLimit: { icon: Gauge, color: "text-blue-500" },
-  anomaly: { icon: TrendingUp, color: "text-orange-500" },
+  anomaly: { icon: TrendingUp, color: "text-orange-600 dark:text-orange-500" },
 };
 
 type NotificationItemProps = {
@@ -59,7 +59,7 @@ export const NotificationItem = React.memo(function NotificationItem({
             e.stopPropagation();
             onDismiss(notification.id);
           }}
-          className="mt-0.5 shrink-0 rounded p-0.5 text-muted-foreground/50 transition hover:bg-muted hover:text-foreground"
+          className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-md text-muted-foreground/50 transition hover:bg-muted hover:text-foreground"
           aria-label="Dismiss notification"
         >
           <X className="h-3 w-3" />

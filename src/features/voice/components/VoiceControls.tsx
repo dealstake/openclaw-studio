@@ -3,9 +3,9 @@
 /**
  * Voice controls for the chat composer.
  *
- * - Mic button: hold to talk (push-to-talk) or tap to toggle
- * - Speaker button: toggle auto-read responses
- * - Visual feedback: pulsing animation while listening
+ * - MicButton: tap to start/stop voice input (ElevenLabs real-time STT)
+ * - SpeakerToggle: toggle auto-read responses (ElevenLabs TTS)
+ * - VoiceTranscriptOverlay: live transcription display while listening
  */
 
 import React, { useCallback, useEffect, useRef } from "react";
@@ -32,6 +32,7 @@ export const MicButton = React.memo(function MicButton({
   const {
     isSupported,
     isListening,
+    isConnecting,
     transcript,
     startListening,
     stopListening,
@@ -39,8 +40,8 @@ export const MicButton = React.memo(function MicButton({
   } = voiceInput;
 
   const prevTranscriptRef = useRef("");
-  const stoppingRef = useRef(false);
   const prevListeningRef = useRef(false);
+  const stoppingRef = useRef(false);
 
   // Sync transcript to parent while listening
   useEffect(() => {
@@ -52,7 +53,7 @@ export const MicButton = React.memo(function MicButton({
     }
   }, [transcript, onTranscript]);
 
-  // Auto-send when listening stops (after stop() finishes processing)
+  // Auto-send when listening stops
   useEffect(() => {
     if (prevListeningRef.current && !isListening && stoppingRef.current) {
       stoppingRef.current = false;
@@ -67,15 +68,15 @@ export const MicButton = React.memo(function MicButton({
   }, [isListening, onSend, resetTranscript]);
 
   const handleToggle = useCallback(() => {
-    if (isListening) {
+    if (isListening || isConnecting) {
       stoppingRef.current = true;
       stopListening();
     } else {
       resetTranscript();
       prevTranscriptRef.current = "";
-      startListening();
+      void startListening();
     }
-  }, [isListening, startListening, stopListening, resetTranscript]);
+  }, [isListening, isConnecting, startListening, stopListening, resetTranscript]);
 
   if (!isSupported) return null;
 
@@ -83,18 +84,28 @@ export const MicButton = React.memo(function MicButton({
     <button
       type="button"
       onClick={handleToggle}
-      aria-label={isListening ? "Stop listening" : "Start voice input"}
+      aria-label={
+        isConnecting
+          ? "Connecting…"
+          : isListening
+            ? "Stop listening"
+            : "Start voice input"
+      }
       aria-pressed={isListening}
       className={cn(
         "relative flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg transition-all",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
-        isListening
-          ? "bg-red-500/20 text-red-500 hover:bg-red-500/30"
-          : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
+        isConnecting
+          ? "text-primary animate-pulse"
+          : isListening
+            ? "bg-red-500/20 text-red-500 hover:bg-red-500/30"
+            : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
         className,
       )}
     >
-      {isListening ? (
+      {isConnecting ? (
+        <Loader2 className="h-4 w-4 animate-spin" />
+      ) : isListening ? (
         <>
           <Mic className="h-4 w-4" />
           {/* Subtle breathing ring while listening */}
@@ -161,3 +172,43 @@ export const SpeakerToggle = React.memo(function SpeakerToggle({
     </button>
   );
 });
+
+// ── Voice Transcript Overlay ────────────────────────────────────────────
+
+interface VoiceTranscriptOverlayProps {
+  voiceInput: UseVoiceInputReturn;
+}
+
+export const VoiceTranscriptOverlay = React.memo(
+  function VoiceTranscriptOverlay({ voiceInput }: VoiceTranscriptOverlayProps) {
+    const { isListening, isConnecting, transcript, error } = voiceInput;
+
+    if (!isListening && !isConnecting) return null;
+
+    return (
+      <div className="mb-2 rounded-2xl border border-red-500/30 bg-red-500/5 px-4 py-3 shadow-lg ring-1 ring-red-500/10 backdrop-blur-xl animate-in slide-in-from-bottom-2 fade-in duration-200">
+        <div className="flex items-center gap-2">
+          {/* Pulsing dot */}
+          <span className="relative flex h-2.5 w-2.5 shrink-0">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
+            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-red-500" />
+          </span>
+
+          {isConnecting ? (
+            <span className="text-sm text-muted-foreground">
+              Connecting to voice…
+            </span>
+          ) : error ? (
+            <span className="text-sm text-destructive">{error}</span>
+          ) : transcript ? (
+            <span className="text-sm text-foreground">{transcript}</span>
+          ) : (
+            <span className="text-sm text-muted-foreground">
+              Listening… speak now
+            </span>
+          )}
+        </div>
+      </div>
+    );
+  },
+);
