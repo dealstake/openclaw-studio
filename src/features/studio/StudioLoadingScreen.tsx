@@ -22,6 +22,9 @@ export const StudioLoadingScreen = memo(function StudioLoadingScreen({
     <div
       className="relative w-screen overflow-hidden bg-background"
       style={{ minHeight: "100svh" }}
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
     >
       {/* ── Skeleton layout ────────────────────────────────── */}
       <div className="flex h-svh w-full">
@@ -132,7 +135,7 @@ export const StudioLoadingScreen = memo(function StudioLoadingScreen({
       <div className="fixed bottom-0 inset-x-0 md:hidden">
         <div className="flex justify-around border-t border-border/10 bg-background/80 backdrop-blur-sm px-4 py-2">
           {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-8 w-8 rounded-md" />
+            <Skeleton key={i} className="h-10 w-10 rounded-md" />
           ))}
         </div>
       </div>
