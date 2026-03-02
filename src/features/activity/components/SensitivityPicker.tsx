@@ -70,7 +70,8 @@ const SensitivityButton = memo(function SensitivityButton({
       onClick={handleClick}
       disabled={disabled}
       title={title}
-      className={`min-h-[28px] min-w-[32px] rounded-sm px-1.5 py-0.5 text-xs font-medium transition-colors ${
+      aria-label={`Set sensitivity to ${label}`}
+      className={`flex min-h-[44px] min-w-[44px] items-center justify-center rounded-sm text-xs font-medium transition-colors ${
         active
           ? "bg-foreground/10 text-foreground shadow-sm"
           : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"

@@ -183,7 +183,7 @@ const AnomalyCard = memo(function AnomalyCard({ anomaly, onDismiss, onInvestigat
               values={buildSparklineValues(anomaly)}
               width={64}
               height={18}
-              color={anomaly.severity === "critical" ? "var(--color-destructive)" : "var(--color-amber-500, #f59e0b)"}
+              color={anomaly.severity === "critical" ? "var(--color-destructive)" : "var(--color-accent)"}
               highlightLast
               className="flex-shrink-0"
             />
