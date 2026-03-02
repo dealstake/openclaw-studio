@@ -14,7 +14,6 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { useAnomalyAlerts } from "@/features/activity/hooks/useAnomalyAlerts";
 import type { AgentAnomaly, AnomalyMetric, AnomalySeverity } from "@/features/activity/lib/anomalyTypes";
 
 // ─── Metric Meta ──────────────────────────────────────────────────────────────
@@ -162,15 +161,33 @@ const AnomalyCard = memo(function AnomalyCard({ anomaly, onDismiss }: AnomalyCar
 // ─── Main Panel ───────────────────────────────────────────────────────────────
 
 /**
+ * Props for AnomalyPanel — data is lifted to ActivityPanel so the tab badge
+ * can show the active count without mounting this component.
+ */
+export interface AnomalyPanelProps {
+  anomalies: AgentAnomaly[];
+  activeCount: number;
+  loading: boolean;
+  error: string | null;
+  refresh: () => void;
+  dismissOne: (id: string) => Promise<void>;
+  dismissAll: () => Promise<void>;
+}
+
+/**
  * AnomalyPanel — displays recent behavioral anomalies for the selected agent.
  *
- * Phase 2 of the Agent Anomaly Detection feature.
- * Designed to be embedded as an "Alerts" tab inside ActivityPanel (Phase 3).
+ * Phase 3: Embedded as "Alerts" tab inside ActivityPanel.
  */
-export const AnomalyPanel = memo(function AnomalyPanel() {
-  const { anomalies, activeCount, loading, error, refresh, dismissOne, dismissAll } =
-    useAnomalyAlerts();
-
+export const AnomalyPanel = memo(function AnomalyPanel({
+  anomalies,
+  activeCount,
+  loading,
+  error,
+  refresh,
+  dismissOne,
+  dismissAll,
+}: AnomalyPanelProps) {
   const hasAnomalies = anomalies.length > 0;
 
   return (

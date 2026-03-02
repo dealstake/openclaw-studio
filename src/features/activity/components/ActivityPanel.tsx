@@ -1,23 +1,26 @@
 "use client";
 
 import { memo, useCallback, useMemo, useState } from "react";
-import { Activity, Radio, History } from "lucide-react";
+import { Activity, Radio, History, AlertTriangle } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { FilterGroup, type FilterGroupOption } from "@/components/ui/FilterGroup";
 import { useActivityMessageStore } from "@/features/activity/hooks/useActivityMessageStore";
+import { useAnomalyAlerts } from "@/features/activity/hooks/useAnomalyAlerts";
 import { LiveActivityFeed } from "./LiveActivityFeed";
 import { HistoryFeed } from "./HistoryFeed";
+import { AnomalyPanel } from "./AnomalyPanel";
 import { SectionLabel } from "@/components/SectionLabel";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
-type ActivityTab = "live" | "history";
+type ActivityTab = "live" | "history" | "alerts";
 
 // ── Main Panel ─────────────────────────────────────────────────────────
 
 export const ActivityPanel = memo(function ActivityPanel() {
   const [activeTab, setActiveTab] = useState<ActivityTab>("live");
   const { messages: activityMessages } = useActivityMessageStore();
+  const alertState = useAnomalyAlerts();
 
   const timeline = useMemo(() => {
     const sorted = [...activityMessages];
@@ -39,7 +42,8 @@ export const ActivityPanel = memo(function ActivityPanel() {
   const tabOptions = useMemo<FilterGroupOption<ActivityTab>[]>(() => [
     { value: "live", label: "Live", icon: <Radio className="h-3 w-3" />, count: runningCount > 0 ? runningCount : undefined },
     { value: "history", label: "History", icon: <History className="h-3 w-3" /> },
-  ], [runningCount]);
+    { value: "alerts", label: "Alerts", icon: <AlertTriangle className="h-3 w-3" />, count: alertState.activeCount > 0 ? alertState.activeCount : undefined },
+  ], [runningCount, alertState.activeCount]);
 
   // Single-select behavior: always exactly one tab selected
   const handleTabChange = useCallback((next: ActivityTab[]) => {
@@ -85,9 +89,21 @@ export const ActivityPanel = memo(function ActivityPanel() {
             <LiveActivityFeed timeline={timeline} />
           )}
         </div>
-      ) : (
+      ) : activeTab === "history" ? (
         <div role="tabpanel" id="activity-tabpanel-history" aria-labelledby="activity-tab-history" className="flex-1 overflow-hidden">
           <HistoryFeed />
+        </div>
+      ) : (
+        <div role="tabpanel" id="activity-tabpanel-alerts" aria-labelledby="activity-tab-alerts" className="flex-1 overflow-hidden">
+          <AnomalyPanel
+            anomalies={alertState.anomalies}
+            activeCount={alertState.activeCount}
+            loading={alertState.loading}
+            error={alertState.error}
+            refresh={alertState.refresh}
+            dismissOne={alertState.dismissOne}
+            dismissAll={alertState.dismissAll}
+          />
         </div>
       )}
     </div>
