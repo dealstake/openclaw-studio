@@ -9,13 +9,10 @@ import { Skeleton } from "@/components/Skeleton";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import type { GatewayModelChoice } from "@/lib/gateway/models";
 import type { AgentState } from "@/features/agents/state/store";
-import { useUsageQuery } from "@/features/usage/hooks/useUsageQuery";
 import type { RoutingRule } from "../lib/types";
 import { useRoutingRules } from "../hooks/useRoutingRules";
-import { useRecommendations } from "../hooks/useRecommendations";
 import { RuleRow } from "./RuleRow";
 import { RuleEditor } from "./RuleEditor";
-import { RecommendationsSection } from "./RecommendationCard";
 
 interface RoutingPanelProps {
   client: GatewayClient;
@@ -58,16 +55,6 @@ export const RoutingPanel = memo(function RoutingPanel({
     editRule,
     removeRule,
   } = useRoutingRules(client, status);
-
-  // Usage data for recommendations
-  const { costByModel, totalSessions, cronBreakdown } = useUsageQuery();
-  const cronSessions = cronBreakdown.reduce((sum, c) => sum + c.runs, 0);
-
-  const {
-    recommendations,
-    newCount: recommendationCount,
-    dismiss: dismissRecommendation,
-  } = useRecommendations(rules, costByModel, cronSessions, totalSessions);
 
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingRule, setEditingRule] = useState<RoutingRule | null>(null);
@@ -115,14 +102,7 @@ export const RoutingPanel = memo(function RoutingPanel({
     <div className="flex h-full w-full flex-col overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-border/30">
-        <div className="flex items-center gap-2">
-          <SectionLabel>Model Router</SectionLabel>
-          {recommendationCount > 0 && (
-            <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-bold text-white">
-              {recommendationCount}
-            </span>
-          )}
-        </div>
+        <SectionLabel>Model Router</SectionLabel>
         <div className="flex items-center gap-1">
           <PanelIconButton
             onClick={() => void reload()}
@@ -150,18 +130,6 @@ export const RoutingPanel = memo(function RoutingPanel({
             onRetry={() => void reload()}
             className="mb-3"
           />
-        )}
-
-        {/* Recommendations */}
-        <RecommendationsSection
-          recommendations={recommendations}
-          onCreateRule={createRule}
-          onDismiss={dismissRecommendation}
-          disabled={status !== "connected" || saving}
-        />
-
-        {recommendations.length > 0 && rules.length > 0 && (
-          <div className="my-3 border-t border-border/20" />
         )}
 
         {loading && rules.length === 0 ? (
