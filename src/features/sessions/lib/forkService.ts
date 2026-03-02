@@ -223,6 +223,123 @@ export async function forkSession(
   };
 }
 
+// ── Resume Archived Session ─────────────────────────────────────────
+
+export interface ResumeOptions {
+  /** UUID of the archived session transcript */
+  archivedSessionId: string;
+  /** Agent ID */
+  agentId: string;
+  /** Maximum number of recent messages to inject (default: 50 — keeps context manageable) */
+  maxMessages?: number;
+}
+
+export interface ResumeResult {
+  /** The new session key */
+  sessionKey: string;
+  /** Number of messages injected */
+  messagesInjected: number;
+  /** Status */
+  status: "success" | "partial" | "empty";
+  /** Warnings */
+  warnings: string[];
+}
+
+/**
+ * Resume an archived session by creating a new session and injecting
+ * the most recent messages from the archived transcript.
+ *
+ * Uses the sidecar transcript API to read the old session, then
+ * chat.inject to replay messages into a fresh session.
+ */
+export async function resumeArchivedSession(
+  client: GatewayClient,
+  options: ResumeOptions,
+): Promise<ResumeResult> {
+  const { archivedSessionId, agentId, maxMessages = 50 } = options;
+
+  // Step 1: Fetch archived transcript messages
+  const params = new URLSearchParams({
+    agentId,
+    sessionId: archivedSessionId,
+    offset: "0",
+    limit: "10000", // fetch all, we'll trim
+  });
+  const resp = await fetch(`/api/sessions/transcript?${params}`);
+  if (!resp.ok) {
+    const body = await resp.json().catch(() => null);
+    throw new Error(body?.error ?? `Failed to load archived transcript (HTTP ${resp.status})`);
+  }
+  const data = await resp.json();
+  const allMessages: Array<{ role: string; content: string | unknown[] }> = data.messages ?? [];
+
+  if (allMessages.length === 0) {
+    return {
+      sessionKey: "",
+      messagesInjected: 0,
+      status: "empty",
+      warnings: ["Archived session has no messages."],
+    };
+  }
+
+  // Step 2: Filter to user/assistant messages only, take the most recent N
+  const injectableMessages = allMessages
+    .filter((m) => m.role === "user" || m.role === "assistant")
+    .slice(-maxMessages);
+
+  // Step 3: Create a new session key
+  const ts = Date.now().toString(36);
+  const rand = Math.random().toString(36).slice(2, 8);
+  const newSessionKey = `agent:${agentId}:resumed:${ts}-${rand}`;
+
+  // Step 4: Inject messages
+  let injectedCount = 0;
+  const warnings: string[] = [];
+  let failedAt: number | null = null;
+
+  for (let i = 0; i < injectableMessages.length; i++) {
+    const msg = injectableMessages[i];
+    const { content, hasNonTextParts } = extractInjectableContent(
+      msg as { role?: string; content?: string | Array<{ type: string; text?: string }> },
+    );
+    if (!content.trim()) continue;
+
+    if (hasNonTextParts) {
+      warnings.push(`Message ${i + 1}: non-text content stripped`);
+    }
+
+    try {
+      await client.call("chat.inject", {
+        sessionKey: newSessionKey,
+        role: msg.role,
+        content,
+      });
+      injectedCount++;
+    } catch (err) {
+      failedAt = i;
+      warnings.push(`Injection failed at message ${i + 1} of ${injectableMessages.length}`);
+      console.warn(`[Resume] Failed to inject message ${i + 1}:`, err);
+      break;
+    }
+  }
+
+  if (injectedCount === 0) {
+    return {
+      sessionKey: newSessionKey,
+      messagesInjected: 0,
+      status: "empty",
+      warnings: ["No messages could be injected."],
+    };
+  }
+
+  return {
+    sessionKey: newSessionKey,
+    messagesInjected: injectedCount,
+    status: failedAt != null ? "partial" : "success",
+    warnings,
+  };
+}
+
 /**
  * Check if chat.inject is available on this gateway version.
  * Some older versions may not support it.

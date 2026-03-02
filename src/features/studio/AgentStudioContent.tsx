@@ -849,7 +849,9 @@ export const AgentStudioPage = () => {
     handleSidebarSessionSelect,
     handleDrawerTranscriptClick,
     handleExpandedTranscriptClick,
+    handleResumeSession,
   } = useStudioChatCallbacks({
+    client,
     focusedAgentRef,
     focusedAgent,
     handleModelChange,
@@ -1034,6 +1036,7 @@ export const AgentStudioPage = () => {
                 onViewTrace={(key) => handleViewTrace(key, focusedAgentId)}
                 onViewReplay={(key) => handleViewReplay(key, focusedAgentId)}
                 onExport={handleExportSession}
+                onResume={handleResumeSession}
               />
             ) : null}
             {/* App sidebar — desktop only, collapsible: floating overlay */}
@@ -1051,6 +1054,7 @@ export const AgentStudioPage = () => {
                 activeManagementTab={managementView}
                 onViewTrace={(key) => handleViewTrace(key, focusedAgentId)}
                 onViewReplay={(key) => handleViewReplay(key, focusedAgentId)}
+                onResume={handleResumeSession}
               />
             </div>
             {/* ── Chat canvas: base layer filling viewport ─────────── */}

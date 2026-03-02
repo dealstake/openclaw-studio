@@ -8,12 +8,15 @@ import { useCallback, useMemo, useState, type Dispatch, type MutableRefObject, t
 import type { MessagePart } from "@/lib/chat/types";
 import { transformMessagesToMessageParts } from "@/features/sessions/lib/transformMessages";
 import { fetchTranscriptMessages } from "@/features/sessions/hooks/useTranscripts";
+import { resumeArchivedSession } from "@/features/sessions/lib/forkService";
+import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import type { Action as AgentStoreAction, AgentState as AgentEntry } from "@/features/agents/state/store";
 import type { ManagementTab } from "@/layout/AppSidebar";
 import { useTraceViewStore, openTrace as openTraceAction, closeTrace as closeTraceAction } from "@/features/sessions/state/traceViewStore";
 import { useReplayViewStore, openReplay as openReplayAction, closeReplay as closeReplayAction } from "@/features/sessions/state/replayViewStore";
 
 export interface StudioChatCallbacksParams {
+  client: GatewayClient | null;
   focusedAgentRef: MutableRefObject<AgentEntry | null>;
   focusedAgent: AgentEntry | null;
   handleModelChange: (agentId: string, sessionKey: string, value: string | null) => void;
@@ -34,6 +37,7 @@ export interface StudioChatCallbacksParams {
 }
 
 export function useStudioChatCallbacks({
+  client,
   focusedAgentRef,
   focusedAgent,
   handleModelChange,
@@ -226,6 +230,31 @@ export function useStudioChatCallbacks({
     [handleTranscriptClick, clearExpandedTab],
   );
 
+  const handleResumeSession = useCallback(
+    async (archivedSessionId: string) => {
+      if (!client || !focusedAgent) return;
+      const agentId = focusedAgent.agentId;
+      try {
+        const result = await resumeArchivedSession(client, {
+          archivedSessionId,
+          agentId,
+          maxMessages: 50,
+        });
+        if (result.status === "empty") {
+          console.warn("[Resume] No messages to resume from");
+          return;
+        }
+        // Navigate to the new resumed session
+        setViewingSessionKey(null);
+        // Tell the gateway to switch to the resumed session
+        handleSidebarSessionSelect(result.sessionKey);
+      } catch (err) {
+        console.error("[Resume] Failed:", err);
+      }
+    },
+    [client, focusedAgent, handleSidebarSessionSelect],
+  );
+
   return {
     // Viewing state
     viewingSessionKey,
@@ -252,5 +281,6 @@ export function useStudioChatCallbacks({
     handleSidebarSessionSelect,
     handleDrawerTranscriptClick,
     handleExpandedTranscriptClick,
+    handleResumeSession,
   };
 }

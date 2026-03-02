@@ -104,6 +104,7 @@ interface AppSidebarProps {
   activeManagementTab?: ManagementTab | null;
   onViewTrace?: (sessionKey: string) => void;
   onViewReplay?: (sessionKey: string) => void;
+  onResume?: (sessionId: string) => void;
 }
 
 export const AppSidebar = memo(function AppSidebar({
@@ -119,6 +120,7 @@ export const AppSidebar = memo(function AppSidebar({
   activeManagementTab,
   onViewTrace,
   onViewReplay,
+  onResume,
 }: AppSidebarProps) {
   const {
     groups,
@@ -371,6 +373,7 @@ export const AppSidebar = memo(function AppSidebar({
               onViewTrace={onViewTrace}
               onViewReplay={onViewReplay}
               onExport={handleExport}
+              onResume={onResume}
               onToggleCompare={toggleComparison}
             />
           )}
