@@ -6,9 +6,9 @@ import { cn } from "@/lib/utils";
 // ─── Variants ────────────────────────────────────────────────────────────────
 
 const variantClasses = {
-  default: "rounded-lg border border-border/15 bg-card p-4",
-  compact: "rounded-lg border border-border/15 bg-card p-4",
-  flush: "rounded-none border-x-0 border-t-0 border-b border-border/15 bg-transparent p-3",
+  default: "rounded-lg bg-card shadow-[0_0_0_1px_var(--border-subtle)] p-4",
+  compact: "rounded-lg bg-card shadow-[0_0_0_1px_var(--border-subtle)] p-4",
+  flush: "rounded-none border-x-0 border-t-0 border-b border-border/10 bg-transparent p-3",
 } as const;
 
 export type BaseCardVariant = keyof typeof variantClasses;
@@ -53,8 +53,8 @@ export const BaseCard = React.memo(function BaseCard({
         variantClasses[variant],
         isHoverable && !isSelected && variant === "flush"
           ? "hover:bg-muted/30 hover:translate-x-0.5"
-          : isHoverable && !isSelected && "hover:bg-card hover:border-border/40 hover:shadow-sm hover:translate-x-0.5",
-        isSelected && "ring-1 ring-primary/30 border-primary/30 bg-primary/5",
+          : isHoverable && !isSelected && "hover:bg-card hover:shadow-[0_0_0_1px_var(--border-subtle-hover),0_1px_3px_0_rgb(0_0_0/0.06)] hover:translate-x-0.5",
+        isSelected && "ring-1 ring-primary/30 shadow-[0_0_0_1px_oklch(from_var(--primary)_l_c_h/0.3)] bg-primary/5",
         isInteractive && "cursor-pointer",
         className,
       )}
