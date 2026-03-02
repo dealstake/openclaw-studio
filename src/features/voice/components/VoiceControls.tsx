@@ -82,7 +82,7 @@ export const MicButton = React.memo(function MicButton({
       aria-label={isListening ? "Stop listening" : "Start voice input"}
       aria-pressed={isListening}
       className={cn(
-        "relative flex min-h-[36px] min-w-[36px] items-center justify-center rounded-lg transition-all",
+        "relative flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg transition-all",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
         isListening
           ? "bg-red-500/20 text-red-500 hover:bg-red-500/30"
@@ -137,7 +137,7 @@ export const SpeakerToggle = React.memo(function SpeakerToggle({
       }
       aria-pressed={enabled}
       className={cn(
-        "flex min-h-[36px] min-w-[36px] items-center justify-center rounded-lg transition-all",
+        "flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg transition-all",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
         isPlaying
           ? "bg-primary/20 text-primary"
