@@ -363,11 +363,11 @@ export const AgentChatComposer = memo(function AgentChatComposer({
                 />
               </svg>
             )}
-            {running && tokenPct === null && (
+            {(wizardType ? (wizardIsStreaming ?? false) : running) && tokenPct === null && (
               <div className="absolute inset-[-3px] rounded-full border-2 border-primary/50 animate-pulse" aria-hidden />
             )}
-            {/* State 1: Running → Stop button */}
-            {running ? (
+            {/* State 1: Running → Stop button (wizard-aware) */}
+            {(wizardType ? (wizardIsStreaming ?? false) : running) ? (
               <button
                 className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-lg ring-1 ring-white/[0.06] backdrop-blur-xl transition-all duration-300 ease-out hover:brightness-110 active:scale-90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
                 type="button"
