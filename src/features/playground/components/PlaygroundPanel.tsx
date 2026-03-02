@@ -1,7 +1,7 @@
 "use client";
 
-import { memo, useCallback, useState } from "react";
-import { FlaskConical, GitCompare, Plus, Trash2, X } from "lucide-react";
+import { memo, useCallback, useEffect, useState } from "react";
+import { FlaskConical, GitCompare, Clock, Plus, Trash2, X } from "lucide-react";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import type { GatewayModelChoice } from "@/lib/gateway/models";
 import { PanelHeader } from "@/components/ui/PanelHeader";
@@ -13,8 +13,10 @@ import { ModelSelector } from "./ModelSelector";
 import { PromptEditor } from "./PromptEditor";
 import { ResponseView } from "./ResponseView";
 import { ComparisonView } from "./ComparisonView";
-import type { PlaygroundRequest } from "../lib/types";
+import type { PlaygroundRequest, PromptPreset } from "../lib/types";
 import { sectionLabelClass } from "@/components/SectionLabel";
+import { usePromptHistory, type PromptHistoryEntry } from "../hooks/usePromptHistory";
+import { PromptHistoryDrawer } from "./PromptHistoryDrawer";
 
 interface PlaygroundPanelProps {
   client: GatewayClient;
@@ -79,6 +81,44 @@ export const PlaygroundPanel = memo(function PlaygroundPanel({
   } = useCompare({ client, agentId });
 
   const latestResult = results[0] ?? null;
+
+  // ── History ──────────────────────────────────────────────────────────
+  const promptHistory = usePromptHistory();
+  const [historyOpen, setHistoryOpen] = useState(false);
+
+  // Auto-record completed results
+  useEffect(() => {
+    if (latestResult?.response && latestResult.id) {
+      promptHistory.record(latestResult);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [latestResult?.response]);
+
+  const handleReplay = useCallback(
+    (entry: { systemPrompt: string; userMessage: string; model: string }) => {
+      setSystemPrompt(entry.systemPrompt);
+      setUserMessage(entry.userMessage);
+      if (!compareMode) setSelectedModel(entry.model);
+      setHistoryOpen(false);
+    },
+    [compareMode],
+  );
+
+  const handleSavePreset = useCallback(
+    (entry: PromptHistoryEntry) => {
+      const label = entry.userMessage.slice(0, 50) || "Untitled preset";
+      const preset: PromptPreset = {
+        id: crypto.randomUUID(),
+        label,
+        systemPrompt: entry.systemPrompt,
+        userMessage: entry.userMessage,
+        model: entry.model,
+        createdAt: Date.now(),
+      };
+      promptHistory.savePreset(preset);
+    },
+    [promptHistory],
+  );
 
   // ── Handlers ─────────────────────────────────────────────────────────
   const handleSubmit = useCallback(() => {
@@ -163,6 +203,13 @@ export const PlaygroundPanel = memo(function PlaygroundPanel({
         title="Playground"
         actions={
           <div className="flex items-center gap-1">
+            <PanelIconButton
+              onClick={() => setHistoryOpen(true)}
+              aria-label="Prompt history"
+              title="Browse prompt history and presets"
+            >
+              <Clock className="h-3.5 w-3.5" />
+            </PanelIconButton>
             <PanelIconButton
               onClick={handleModeToggle}
               aria-label={
@@ -261,6 +308,15 @@ export const PlaygroundPanel = memo(function PlaygroundPanel({
           )}
         </div>
       </div>
+
+      {/* Prompt history drawer (overlay) */}
+      <PromptHistoryDrawer
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        history={promptHistory}
+        onReplay={handleReplay}
+        onSavePreset={handleSavePreset}
+      />
     </div>
   );
 });
