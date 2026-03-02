@@ -83,23 +83,16 @@ export const CredentialCard = React.memo(function CredentialCard({
         </DropdownMenu>
       </CardHeader>
 
-      <CardMeta className="mt-1.5 flex-wrap items-center gap-x-1.5">
-        {credential.description && (
-          <span className="text-muted-foreground">
-            {credential.description}
-          </span>
-        )}
-        {credential.description && credential.maskedPreview && (
-          <span className="text-muted-foreground/50">·</span>
-        )}
-        {credential.maskedPreview && (
-          <span className="font-mono text-xs text-muted-foreground">{credential.maskedPreview}</span>
-        )}
-        {credential.pathCount > 1 && (
-          <span className="text-muted-foreground">
-            · {credential.pathCount} paths
-          </span>
-        )}
+      <CardMeta className="mt-1.5 items-center gap-x-1.5 overflow-hidden">
+        <span className="truncate text-muted-foreground">
+          {[
+            credential.description,
+            credential.maskedPreview,
+            credential.pathCount > 1 ? `${credential.pathCount} paths` : null,
+          ]
+            .filter(Boolean)
+            .join(" · ")}
+        </span>
       </CardMeta>
     </BaseCard>
   );
