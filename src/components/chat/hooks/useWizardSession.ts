@@ -77,14 +77,14 @@ export function useWizardSession({
     const sessionKey = sessionKeyRef.current;
 
     const unsub = client.onEvent((event: EventFrame) => {
-      if (event.event !== "runtime.chat" && event.event !== "runtime.agent") return;
+      if (event.event !== "chat" && event.event !== "agent") return;
 
       const payload = event.payload as Record<string, unknown> | undefined;
       if (!payload) return;
       if (payload.sessionKey !== sessionKey) return;
 
-      // ── runtime.agent events (thinking + tool streams) ──
-      if (event.event === "runtime.agent") {
+      // ── agent events (thinking + tool streams) ──
+      if (event.event === "agent") {
         const stream = typeof payload.stream === "string" ? payload.stream : "";
         const data = payload.data && typeof payload.data === "object"
           ? (payload.data as Record<string, unknown>)
@@ -126,7 +126,7 @@ export function useWizardSession({
         return;
       }
 
-      // ── runtime.chat events ──
+      // ── chat events ──
       const state = typeof payload.state === "string" ? payload.state : "";
       const role = resolveRole(payload.message);
 

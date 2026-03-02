@@ -83,7 +83,7 @@ export function useCompare({ client, agentId }: UseCompareOptions): UseCompareRe
     const unsub = client.onEvent((event: EventFrame) => {
       const runId = activeRunIdRef.current;
       if (!runId) return;
-      if (event.event !== "runtime.chat" && event.event !== "runtime.agent") return;
+      if (event.event !== "chat" && event.event !== "agent") return;
 
       const payload = event.payload as Record<string, unknown> | undefined;
       if (!payload) return;
@@ -101,7 +101,7 @@ export function useCompare({ client, agentId }: UseCompareOptions): UseCompareRe
       if (colIdx === -1) return;
 
       // ── runtime.agent ──────────────────────────────────────────────────────
-      if (event.event === "runtime.agent") {
+      if (event.event === "agent") {
         const stream = typeof payload.stream === "string" ? payload.stream : "";
         const data =
           payload.data && typeof payload.data === "object"

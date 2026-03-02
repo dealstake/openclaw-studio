@@ -58,13 +58,13 @@ export function usePlayground({
     const unsub = client.onEvent((event: EventFrame) => {
       const activeRunId = activeRunIdRef.current;
       if (!activeRunId) return;
-      if (event.event !== "runtime.chat" && event.event !== "runtime.agent") return;
+      if (event.event !== "chat" && event.event !== "agent") return;
 
       const payload = event.payload as Record<string, unknown> | undefined;
       if (!payload || payload.sessionKey !== sessionKey) return;
 
       // ── runtime.agent events ──
-      if (event.event === "runtime.agent") {
+      if (event.event === "agent") {
         const stream = typeof payload.stream === "string" ? payload.stream : "";
         const data = payload.data && typeof payload.data === "object"
           ? (payload.data as Record<string, unknown>)

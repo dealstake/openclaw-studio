@@ -176,7 +176,8 @@ export function useWizardInChat({
       const ctx = wizardContextRef.current;
       if (!ctx) return;
 
-      if (event.event !== "runtime.chat" && event.event !== "runtime.agent") return;
+      // Gateway emits short event names: "chat" and "agent"
+      if (event.event !== "chat" && event.event !== "agent") return;
 
       // Validate payload shape at runtime before accessing fields
       const payloadParse = EventPayloadSchema.safeParse(event.payload);
@@ -186,7 +187,7 @@ export function useWizardInChat({
       if (payload.sessionKey !== ctx.sessionKey) return;
 
       // ── runtime.agent events ──
-      if (event.event === "runtime.agent") {
+      if (event.event === "agent") {
         const stream = payload.stream ?? "";
         const data = payload.data ?? {};
 
@@ -223,7 +224,7 @@ export function useWizardInChat({
         return;
       }
 
-      // ── runtime.chat events ──
+      // ── chat events ──
       const state = payload.state ?? "";
       const role = resolveRole(payload.message);
 
