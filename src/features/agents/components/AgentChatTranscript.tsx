@@ -43,7 +43,8 @@ export const AgentChatTranscript = memo(function AgentChatTranscript({
           role="log"
           aria-label="Chat messages"
           aria-live="polite"
-          className="h-full overflow-y-auto overflow-x-hidden pt-3 pb-20 sm:pt-4 sm:pb-24 scroll-pt-3 sm:scroll-pt-4"
+          className="h-full overflow-y-auto overflow-x-hidden pb-20 sm:pb-24"
+          style={{ paddingTop: `calc(0.75rem + env(safe-area-inset-top, 0px))`, scrollPaddingTop: `calc(0.75rem + env(safe-area-inset-top, 0px))` }}
           {...scrollContainerProps}
         >
           <div className="mx-auto flex w-full min-w-0 max-w-3xl flex-col gap-5 px-4 text-sm leading-relaxed text-foreground sm:px-8 md:px-12">
