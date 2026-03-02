@@ -8,14 +8,27 @@
  */
 
 import { useCallback, useRef, useState } from "react";
+import type { ResolvedVoiceSettings } from "../lib/voiceTypes";
+
+/** Options passed to speak() — voice settings from the settings hierarchy */
+export interface SpeakOptions {
+  voiceId?: string;
+  modelId?: string;
+  voiceSettings?: {
+    stability: number;
+    similarity_boost: number;
+    style: number;
+    use_speaker_boost: boolean;
+  };
+}
 
 export interface UseVoiceOutputReturn {
   /** Whether audio is currently playing */
   isPlaying: boolean;
   /** Whether TTS is loading (fetching audio) */
   isLoading: boolean;
-  /** Speak the given text */
-  speak: (text: string) => Promise<void>;
+  /** Speak the given text, optionally with specific voice settings */
+  speak: (text: string, options?: SpeakOptions) => Promise<void>;
   /** Stop current playback */
   stop: () => void;
   /** Last error */
@@ -24,6 +37,20 @@ export interface UseVoiceOutputReturn {
   enabled: boolean;
   /** Toggle voice output on/off */
   setEnabled: (enabled: boolean) => void;
+}
+
+/** Helper: convert ResolvedVoiceSettings to SpeakOptions */
+export function resolvedToSpeakOptions(resolved: ResolvedVoiceSettings): SpeakOptions {
+  return {
+    voiceId: resolved.voiceId,
+    modelId: resolved.modelId,
+    voiceSettings: {
+      stability: resolved.voiceConfig.stability,
+      similarity_boost: resolved.voiceConfig.similarityBoost,
+      style: resolved.voiceConfig.style,
+      use_speaker_boost: resolved.voiceConfig.useSpeakerBoost,
+    },
+  };
 }
 
 export function useVoiceOutput(): UseVoiceOutputReturn {
@@ -50,7 +77,7 @@ export function useVoiceOutput(): UseVoiceOutputReturn {
   }, []);
 
   const speak = useCallback(
-    async (text: string) => {
+    async (text: string, options?: SpeakOptions) => {
       if (!text.trim()) return;
 
       // Stop any current playback
@@ -66,7 +93,12 @@ export function useVoiceOutput(): UseVoiceOutputReturn {
         const res = await fetch("/api/tts", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text }),
+          body: JSON.stringify({
+            text,
+            ...(options?.voiceId ? { voiceId: options.voiceId } : {}),
+            ...(options?.modelId ? { modelId: options.modelId } : {}),
+            ...(options?.voiceSettings ? { voiceSettings: options.voiceSettings } : {}),
+          }),
           signal: controller.signal,
         });
 

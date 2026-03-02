@@ -47,6 +47,20 @@ const mergeAvatarsPatch = (
   return merged;
 };
 
+const mergeVoicePatch = (
+  current: StudioSettingsPatch["voice"],
+  next: StudioSettingsPatch["voice"]
+): StudioSettingsPatch["voice"] => {
+  if (!current && !next) return undefined;
+  if (!current) return next;
+  if (!next) return current;
+  const merged: StudioSettingsPatch["voice"] = { ...current, ...next };
+  if (current.voiceConfig || next.voiceConfig) {
+    merged.voiceConfig = { ...current.voiceConfig, ...next.voiceConfig };
+  }
+  return merged;
+};
+
 const mergeStudioPatch = (
   current: StudioSettingsPatch | null,
   next: StudioSettingsPatch
@@ -56,10 +70,17 @@ const mergeStudioPatch = (
       ...(next.gateway !== undefined ? { gateway: next.gateway } : {}),
       ...(next.focused ? { focused: { ...next.focused } } : {}),
       ...(next.avatars ? { avatars: { ...next.avatars } } : {}),
+      ...(next.voice ? { voice: { ...next.voice } } : {}),
+      ...(next.agentVoices ? { agentVoices: { ...next.agentVoices } } : {}),
     };
   }
   const focused = mergeFocusedPatch(current.focused, next.focused);
   const avatars = mergeAvatarsPatch(current.avatars, next.avatars);
+  const voice = mergeVoicePatch(current.voice, next.voice);
+  const agentVoices = mergeAvatarsPatch(
+    current.agentVoices as AvatarsPatch | undefined,
+    next.agentVoices as AvatarsPatch | undefined,
+  ) as StudioSettingsPatch["agentVoices"];
   return {
     ...(next.gateway !== undefined
       ? { gateway: next.gateway }
@@ -68,6 +89,8 @@ const mergeStudioPatch = (
         : {}),
     ...(focused ? { focused } : {}),
     ...(avatars ? { avatars } : {}),
+    ...(voice ? { voice } : {}),
+    ...(agentVoices ? { agentVoices } : {}),
   };
 };
 

@@ -9,6 +9,7 @@ import {
   Cpu,
   Settings2,
   Users,
+  Volume2,
   Plus,
   ChevronLeft,
   Loader2,
@@ -31,7 +32,7 @@ import { useComparisonStore, toggleComparison } from "@/features/sessions/state/
 import { useFeedbackFilter } from "@/features/feedback/hooks/useFeedbackFilter";
 
 /** Management nav items that open in expanded modal */
-export type ManagementTab = "usage" | "channels" | "credentials" | "models" | "gateway" | "settings" | "contacts";
+export type ManagementTab = "usage" | "channels" | "credentials" | "models" | "gateway" | "settings" | "contacts" | "voice";
 
 const NAV_ITEMS: Array<{ value: ManagementTab; label: string; icon: typeof MessageSquare }> = [
   { value: "usage", label: "Usage", icon: BarChart3 },
@@ -40,6 +41,7 @@ const NAV_ITEMS: Array<{ value: ManagementTab; label: string; icon: typeof Messa
   { value: "models", label: "Models", icon: Cpu },
   { value: "gateway", label: "Gateway", icon: Settings2 },
   { value: "contacts", label: "Contacts", icon: Users },
+  { value: "voice", label: "Voice", icon: Volume2 },
 ];
 
 /* ─── Shared nav icon button ─── */

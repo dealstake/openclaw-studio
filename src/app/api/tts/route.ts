@@ -15,17 +15,25 @@ import { NextResponse } from "next/server";
 const DEFAULT_VOICE_ID = "21m00Tcm4TlvDq8ikWAM"; // Rachel — clear, professional
 const DEFAULT_MODEL_ID = "eleven_flash_v2_5"; // Fast, low-latency
 
+interface VoiceSettingsBody {
+  stability?: number;
+  similarity_boost?: number;
+  style?: number;
+  use_speaker_boost?: boolean;
+}
+
 interface TtsRequest {
   text: string;
   voiceId?: string;
   modelId?: string;
   apiKey?: string;
+  voiceSettings?: VoiceSettingsBody;
 }
 
 export async function POST(request: Request): Promise<Response> {
   try {
     const body = (await request.json()) as TtsRequest;
-    const { text, voiceId, modelId, apiKey: clientKey } = body;
+    const { text, voiceId, modelId, apiKey: clientKey, voiceSettings } = body;
 
     if (!text || typeof text !== "string" || text.trim().length === 0) {
       return NextResponse.json(
@@ -60,10 +68,10 @@ export async function POST(request: Request): Promise<Response> {
           text: truncated,
           model_id: model,
           voice_settings: {
-            stability: 0.5,
-            similarity_boost: 0.75,
-            style: 0.0,
-            use_speaker_boost: true,
+            stability: voiceSettings?.stability ?? 0.5,
+            similarity_boost: voiceSettings?.similarity_boost ?? 0.75,
+            style: voiceSettings?.style ?? 0.0,
+            use_speaker_boost: voiceSettings?.use_speaker_boost ?? true,
           },
         }),
       },

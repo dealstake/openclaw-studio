@@ -17,6 +17,12 @@ import {
 } from "@/lib/studio/settings-store";
 import { defaultStudioSettings, type StudioSettings } from "@/lib/studio/settings";
 
+/** Helper: create StudioSettings with defaults filled in */
+const mkSettings = (overrides: Partial<StudioSettings>): StudioSettings => ({
+  ...defaultStudioSettings(),
+  ...overrides,
+});
+
 const settingsDir = path.join(MOCK_STATE_DIR, "openclaw-studio");
 const settingsFile = path.join(settingsDir, "settings.json");
 
@@ -48,12 +54,11 @@ describe("settings-store", () => {
 
     it("loads and normalizes settings from disk", () => {
       fs.mkdirSync(settingsDir, { recursive: true });
-      const stored: StudioSettings = {
-        version: 1,
+      const stored = mkSettings({
         gateway: { url: "ws://localhost:18789", token: "tok123" },
         focused: {},
         avatars: {},
-      };
+      });
       fs.writeFileSync(settingsFile, JSON.stringify(stored), "utf8");
 
       const settings = loadStudioSettings();
@@ -82,12 +87,11 @@ describe("settings-store", () => {
 
   describe("saveStudioSettings", () => {
     it("creates directory and writes file", () => {
-      const settings: StudioSettings = {
-        version: 1,
+      const settings = mkSettings({
         gateway: { url: "ws://test", token: "abc" },
         focused: {},
         avatars: {},
-      };
+      });
       saveStudioSettings(settings);
 
       expect(fs.existsSync(settingsFile)).toBe(true);
@@ -99,12 +103,11 @@ describe("settings-store", () => {
       fs.mkdirSync(settingsDir, { recursive: true });
       fs.writeFileSync(settingsFile, '{"old":true}', "utf8");
 
-      const settings: StudioSettings = {
-        version: 1,
+      const settings = mkSettings({
         gateway: null,
         focused: {},
         avatars: { gw1: { agent1: "seed1" } },
-      };
+      });
       saveStudioSettings(settings);
 
       const raw = JSON.parse(fs.readFileSync(settingsFile, "utf8"));
@@ -126,14 +129,13 @@ describe("settings-store", () => {
 
     it("merges focused preferences", () => {
       // Save initial settings
-      saveStudioSettings({
-        version: 1,
+      saveStudioSettings(mkSettings({
         gateway: null,
         focused: {
           gw1: { mode: "focused", selectedAgentId: "a1", filter: "all" },
         },
         avatars: {},
-      });
+      }));
 
       const result = applyStudioSettingsPatch({
         focused: {
@@ -148,14 +150,13 @@ describe("settings-store", () => {
     });
 
     it("removes focused entry when patched with null", () => {
-      saveStudioSettings({
-        version: 1,
+      saveStudioSettings(mkSettings({
         gateway: null,
         focused: {
           gw1: { mode: "focused", selectedAgentId: null, filter: "all" },
         },
         avatars: {},
-      });
+      }));
 
       const result = applyStudioSettingsPatch({
         focused: { gw1: null },
@@ -165,12 +166,11 @@ describe("settings-store", () => {
     });
 
     it("patches avatar entries", () => {
-      saveStudioSettings({
-        version: 1,
+      saveStudioSettings(mkSettings({
         gateway: null,
         focused: {},
         avatars: { gw1: { agent1: "seed1" } },
-      });
+      }));
 
       const result = applyStudioSettingsPatch({
         avatars: {

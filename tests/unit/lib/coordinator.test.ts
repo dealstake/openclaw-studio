@@ -4,10 +4,10 @@ import {
   type StudioSettingsCoordinatorTransport,
   type StudioSettingsResponse,
 } from "@/lib/studio/coordinator";
-import type { StudioSettings, StudioSettingsPatch } from "@/lib/studio/settings";
+import { defaultStudioSettings, type StudioSettings, type StudioSettingsPatch } from "@/lib/studio/settings";
 
 const baseSettings: StudioSettings = {
-  version: 1,
+  ...defaultStudioSettings(),
   gateway: null,
   focused: {},
   avatars: {},

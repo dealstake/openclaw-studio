@@ -12,17 +12,43 @@ export type StudioFocusedPreference = {
   filter: FocusFilter;
 };
 
+export type StudioVoiceSettings = {
+  autoSpeak: boolean;
+  voiceId: string;
+  modelId: string;
+  language: string;
+  voiceConfig: {
+    stability: number;
+    similarityBoost: number;
+    style: number;
+    useSpeakerBoost: boolean;
+  };
+};
+
+export type AgentVoiceOverride = {
+  voiceId: string;
+  modelId?: string;
+};
+
 export type StudioSettings = {
   version: 1;
   gateway: StudioGatewaySettings | null;
   focused: Record<string, StudioFocusedPreference>;
   avatars: Record<string, Record<string, string>>;
+  /** Global voice/TTS settings */
+  voice: StudioVoiceSettings;
+  /** Per-agent voice overrides, keyed by [gatewayUrl][agentId] */
+  agentVoices: Record<string, Record<string, AgentVoiceOverride>>;
 };
 
 export type StudioSettingsPatch = {
   gateway?: StudioGatewaySettings | null;
   focused?: Record<string, Partial<StudioFocusedPreference> | null>;
   avatars?: Record<string, Record<string, string | null> | null>;
+  voice?: Partial<Omit<StudioVoiceSettings, "voiceConfig">> & {
+    voiceConfig?: Partial<StudioVoiceSettings["voiceConfig"]>;
+  };
+  agentVoices?: Record<string, Record<string, AgentVoiceOverride | null> | null>;
 };
 
 const SETTINGS_VERSION = 1 as const;
@@ -128,23 +154,81 @@ const normalizeAvatars = (value: unknown): Record<string, Record<string, string>
   return avatars;
 };
 
+const defaultVoiceSettings = (): StudioVoiceSettings => ({
+  autoSpeak: true,
+  voiceId: "21m00Tcm4TlvDq8ikWAM", // Rachel
+  modelId: "eleven_flash_v2_5",
+  language: "en",
+  voiceConfig: {
+    stability: 0.5,
+    similarityBoost: 0.75,
+    style: 0.0,
+    useSpeakerBoost: true,
+  },
+});
+
 export const defaultStudioSettings = (): StudioSettings => ({
   version: SETTINGS_VERSION,
   gateway: null,
   focused: {},
   avatars: {},
+  voice: defaultVoiceSettings(),
+  agentVoices: {},
 });
+
+const normalizeVoiceSettings = (value: unknown): StudioVoiceSettings => {
+  const defaults = defaultVoiceSettings();
+  if (!isRecord(value)) return defaults;
+  return {
+    autoSpeak: typeof value.autoSpeak === "boolean" ? value.autoSpeak : defaults.autoSpeak,
+    voiceId: coerceString(value.voiceId) || defaults.voiceId,
+    modelId: coerceString(value.modelId) || defaults.modelId,
+    language: coerceString(value.language) || defaults.language,
+    voiceConfig: isRecord(value.voiceConfig) ? {
+      stability: typeof value.voiceConfig.stability === "number" ? value.voiceConfig.stability : defaults.voiceConfig.stability,
+      similarityBoost: typeof value.voiceConfig.similarityBoost === "number" ? value.voiceConfig.similarityBoost : defaults.voiceConfig.similarityBoost,
+      style: typeof value.voiceConfig.style === "number" ? value.voiceConfig.style : defaults.voiceConfig.style,
+      useSpeakerBoost: typeof value.voiceConfig.useSpeakerBoost === "boolean" ? value.voiceConfig.useSpeakerBoost : defaults.voiceConfig.useSpeakerBoost,
+    } : { ...defaults.voiceConfig },
+  };
+};
+
+const normalizeAgentVoices = (value: unknown): Record<string, Record<string, AgentVoiceOverride>> => {
+  if (!isRecord(value)) return {};
+  const result: Record<string, Record<string, AgentVoiceOverride>> = {};
+  for (const [gatewayKeyRaw, gatewayRaw] of Object.entries(value)) {
+    const gatewayKey = normalizeGatewayKey(gatewayKeyRaw);
+    if (!gatewayKey) continue;
+    if (!isRecord(gatewayRaw)) continue;
+    const entries: Record<string, AgentVoiceOverride> = {};
+    for (const [agentIdRaw, overrideRaw] of Object.entries(gatewayRaw)) {
+      const agentId = coerceString(agentIdRaw);
+      if (!agentId) continue;
+      if (!isRecord(overrideRaw)) continue;
+      const voiceId = coerceString(overrideRaw.voiceId);
+      if (!voiceId) continue;
+      const modelId = coerceString(overrideRaw.modelId) || undefined;
+      entries[agentId] = { voiceId, ...(modelId ? { modelId } : {}) };
+    }
+    result[gatewayKey] = entries;
+  }
+  return result;
+};
 
 export const normalizeStudioSettings = (raw: unknown): StudioSettings => {
   if (!isRecord(raw)) return defaultStudioSettings();
   const gateway = normalizeGatewaySettings(raw.gateway);
   const focused = normalizeFocused(raw.focused);
   const avatars = normalizeAvatars(raw.avatars);
+  const voice = normalizeVoiceSettings(raw.voice);
+  const agentVoices = normalizeAgentVoices(raw.agentVoices);
   return {
     version: SETTINGS_VERSION,
     gateway,
     focused,
     avatars,
+    voice,
+    agentVoices,
   };
 };
 
@@ -195,11 +279,50 @@ export const mergeStudioSettings = (
       nextAvatars[gatewayKey] = existing;
     }
   }
+  // Merge voice settings
+  const nextVoice = patch.voice
+    ? normalizeVoiceSettings({ ...current.voice, ...patch.voice, voiceConfig: { ...current.voice.voiceConfig, ...(patch.voice.voiceConfig ?? {}) } })
+    : current.voice;
+
+  // Merge agent voices (same pattern as avatars)
+  const nextAgentVoices = { ...current.agentVoices };
+  if (patch.agentVoices) {
+    for (const [gatewayKeyRaw, gatewayPatch] of Object.entries(patch.agentVoices)) {
+      const gatewayKey = normalizeGatewayKey(gatewayKeyRaw);
+      if (!gatewayKey) continue;
+      if (gatewayPatch === null) {
+        delete nextAgentVoices[gatewayKey];
+        continue;
+      }
+      if (!isRecord(gatewayPatch)) continue;
+      const existing = nextAgentVoices[gatewayKey] ? { ...nextAgentVoices[gatewayKey] } : {};
+      for (const [agentIdRaw, overridePatch] of Object.entries(gatewayPatch)) {
+        const agentId = coerceString(agentIdRaw);
+        if (!agentId) continue;
+        if (overridePatch === null) {
+          delete existing[agentId];
+          continue;
+        }
+        if (!isRecord(overridePatch)) continue;
+        const voiceId = coerceString(overridePatch.voiceId);
+        if (!voiceId) {
+          delete existing[agentId];
+          continue;
+        }
+        const modelId = coerceString(overridePatch.modelId) || undefined;
+        existing[agentId] = { voiceId, ...(modelId ? { modelId } : {}) };
+      }
+      nextAgentVoices[gatewayKey] = existing;
+    }
+  }
+
   return {
     version: SETTINGS_VERSION,
     gateway: nextGateway ?? null,
     focused: nextFocused,
     avatars: nextAvatars,
+    voice: nextVoice,
+    agentVoices: nextAgentVoices,
   };
 };
 

@@ -49,7 +49,7 @@ describe("normalizeStudioSettings", () => {
 
 describe("mergeStudioSettings", () => {
   const base: StudioSettings = {
-    version: 1,
+    ...defaultStudioSettings(),
     gateway: { url: "ws://localhost:18789", token: "old" },
     focused: {
       "ws://localhost:18789": { mode: "focused", selectedAgentId: "alex", filter: "all" },
@@ -108,7 +108,7 @@ describe("mergeStudioSettings", () => {
 
 describe("resolveFocusedPreference", () => {
   const settings: StudioSettings = {
-    version: 1,
+    ...defaultStudioSettings(),
     gateway: null,
     focused: {
       "ws://localhost:18789": { mode: "focused", selectedAgentId: "alex", filter: "running" },
@@ -132,7 +132,7 @@ describe("resolveFocusedPreference", () => {
 
 describe("resolveAgentAvatarSeed", () => {
   const settings: StudioSettings = {
-    version: 1,
+    ...defaultStudioSettings(),
     gateway: null,
     focused: {},
     avatars: {

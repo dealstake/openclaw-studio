@@ -174,6 +174,18 @@ export interface PersonaConfig {
   /** Optimization goals set by user (e.g. "book more meetings", "faster resolution") */
   optimizationGoals: string[];
 
+  /** Voice identity for this persona (overrides global/agent voice) */
+  voiceConfig?: {
+    voiceId: string;
+    modelId?: string;
+    voiceConfig?: {
+      stability?: number;
+      similarityBoost?: number;
+      style?: number;
+      useSpeakerBoost?: boolean;
+    };
+  } | null;
+
   /** ISO timestamps */
   createdAt: string;
   lastTrainedAt: string | null;
