@@ -186,7 +186,7 @@ export const ProjectWizardModal = memo(function ProjectWizardModal({
               {step !== "type-select" && (
                 <button
                   type="button"
-                  className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted/65"
+                  className="flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted/65"
                   onClick={() => {
                     setStep("type-select");
                     setPreviewConfig(null);
@@ -208,7 +208,7 @@ export const ProjectWizardModal = memo(function ProjectWizardModal({
             <Dialog.Close asChild>
               <button
                 type="button"
-                className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted/65"
+                className="flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted/65"
                 aria-label="Close"
               >
                 <X className="h-4 w-4" />
