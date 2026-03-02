@@ -1023,7 +1023,7 @@ export const AgentStudioPage = () => {
             </div>
             {/* ── Chat canvas: base layer filling viewport ─────────── */}
             <div
-              className="absolute inset-0 z-0 flex overflow-hidden pt-16 lg:pt-0"
+              className="absolute inset-0 z-0 flex overflow-hidden"
               data-testid="focused-agent-panel"
               {...swipeHandlers}
             >

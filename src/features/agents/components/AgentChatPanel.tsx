@@ -359,7 +359,7 @@ export const AgentChatPanel = memo(function AgentChatPanel({
           </div>
         ) : isWizardActive && wizard ? (
           /* Wizard mode — show wizard messages inline */
-          <div className="h-full overflow-y-auto overflow-x-hidden pt-14 pb-28 sm:pt-16 sm:pb-32">
+          <div className="h-full overflow-y-auto overflow-x-hidden pt-3 pb-28 sm:pt-4 sm:pb-32">
             <div className="mx-auto flex w-full min-w-0 max-w-3xl flex-col gap-5 px-4 text-sm leading-relaxed text-foreground sm:px-8 md:px-12">
               {/* Show existing main chat messages (dimmed) */}
               {agent.messageParts.length > 0 && (
