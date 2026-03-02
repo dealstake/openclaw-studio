@@ -16,13 +16,13 @@ export const ContextPanelStrip = memo(function ContextPanelStrip({
 }: ContextPanelStripProps) {
   return (
     <div
-      className="flex h-full w-8 flex-col items-center gap-1 bg-[var(--surface-elevated)] py-3"
+      className="flex h-full w-10 flex-col items-center gap-1 bg-[var(--surface-elevated)] py-3"
       data-testid="context-panel-strip"
     >
       <button
         type="button"
         onClick={() => onOpen()}
-        className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground"
+        className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground"
         aria-label="Open context panel"
         title="Open context panel (⌘\)"
       >
@@ -34,7 +34,7 @@ export const ContextPanelStrip = memo(function ContextPanelStrip({
           key={tab.value}
           type="button"
           onClick={() => onOpen(tab.value)}
-          className={`flex h-6 w-6 items-center justify-center rounded text-[10px] font-semibold transition ${
+          className={`flex h-8 w-8 items-center justify-center rounded text-[10px] font-semibold transition ${
             activeTab === tab.value
               ? "bg-muted text-foreground"
               : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"

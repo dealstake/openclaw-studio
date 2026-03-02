@@ -141,7 +141,7 @@ const ArtifactRow = memo(function ArtifactRow({
           type="button"
           onClick={handleShare}
           disabled={isSharing}
-          className={`flex h-11 w-11 items-center justify-center rounded-md transition sm:h-7 sm:w-7 ${
+          className={`flex h-11 w-11 items-center justify-center rounded-md transition ${
             isCopied
               ? "text-emerald-500 opacity-100 hover:bg-muted/50"
               : "text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-foreground/80 hover:bg-muted/50 disabled:cursor-not-allowed"
@@ -160,7 +160,7 @@ const ArtifactRow = memo(function ArtifactRow({
         <button
           type="button"
           onClick={handlePin}
-          className={`flex h-11 w-11 items-center justify-center rounded-md transition sm:h-7 sm:w-7 ${
+          className={`flex h-11 w-11 items-center justify-center rounded-md transition ${
             isPinned
               ? "text-primary opacity-100 hover:bg-muted/50"
               : "text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-foreground/80 hover:bg-muted/50"

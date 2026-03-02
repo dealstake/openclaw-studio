@@ -63,7 +63,7 @@ export const FilterGroup = React.memo(function FilterGroup<V extends string = st
             key={opt.value}
             type="button"
             aria-pressed={active}
-            className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 min-h-[44px] lg:min-h-[36px] font-mono text-xs font-semibold uppercase tracking-wider transition-all focus-ring ${
+            className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 min-h-[44px] font-mono text-xs font-semibold uppercase tracking-wider transition-all focus-ring ${
               active
                 ? "bg-primary text-primary-foreground"
                 : "bg-muted text-muted-foreground hover:bg-muted/80"
@@ -77,7 +77,7 @@ export const FilterGroup = React.memo(function FilterGroup<V extends string = st
                 className={`inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-bold ${
                   active
                     ? "bg-primary-foreground/20 text-primary-foreground"
-                    : "bg-muted-foreground/25 text-muted-foreground"
+                    : "bg-muted-foreground/40 text-muted-foreground"
                 }`}
               >
                 {opt.count}
