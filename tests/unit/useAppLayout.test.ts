@@ -8,6 +8,8 @@ vi.mock("@/hooks/useBreakpoint", () => ({
   useBreakpoint: () => mockBreakpoint,
   isDesktopOrAbove: (bp: string) => bp === "desktop" || bp === "wide",
   isWide: (bp: string) => bp === "wide",
+  isTablet: (bp: string) => bp === "tablet",
+  isMobile: (bp: string) => bp === "mobile",
   isTabletOrBelow: (bp: string) => bp === "mobile" || bp === "tablet",
 }));
 
@@ -217,9 +219,17 @@ describe("breakpoint helpers (pure)", () => {
     expect(result.current.showSidebarInline).toBe(true);
   });
 
-  it("isTabletOrBelow returns true for mobile/tablet", () => {
+  it("tablet breakpoint gives isTabletLayout=true, isMobileLayout=false", () => {
     mockBreakpoint = "tablet";
     const { result } = renderHook(() => useAppLayout());
+    expect(result.current.isTabletLayout).toBe(true);
+    expect(result.current.isMobileLayout).toBe(false);
+  });
+
+  it("mobile breakpoint gives isMobileLayout=true, isTabletLayout=false", () => {
+    mockBreakpoint = "mobile";
+    const { result } = renderHook(() => useAppLayout());
     expect(result.current.isMobileLayout).toBe(true);
+    expect(result.current.isTabletLayout).toBe(false);
   });
 });
