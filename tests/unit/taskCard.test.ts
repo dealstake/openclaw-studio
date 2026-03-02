@@ -94,7 +94,7 @@ describe("TaskCard", () => {
   it("shows selected styling", () => {
     const { container } = renderCard(makeTask(), { selected: true });
     const card = container.firstChild as HTMLElement;
-    expect(card.className).toContain("border-primary");
+    expect(card.className).toContain("ring-primary/30");
   });
 
   it("supports keyboard activation via Enter", () => {
