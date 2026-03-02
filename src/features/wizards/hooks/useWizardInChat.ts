@@ -371,7 +371,8 @@ export function useWizardInChat({
         startedAt: Date.now(),
       };
 
-      // Reset state for new wizard
+      // Reset state for new wizard — sync ref immediately so sendMessage works
+      wizardContextRef.current = ctx;
       setWizardContext(ctx);
       setMessages([]);
       setStreamText(null);
