@@ -32,6 +32,7 @@ const mockUsageData: UsageQueryData = {
   setAgentIdFilter: vi.fn(),
   refresh: vi.fn().mockResolvedValue(undefined),
   cachedAt: null,
+  savings: null,
 };
 
 vi.mock("@/features/usage/hooks/useUsageQuery", () => ({

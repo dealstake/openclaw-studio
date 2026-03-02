@@ -11,6 +11,12 @@ import {
   aggregateByDay,
   type TrendBucket,
 } from "@/features/usage/lib/trendAggregator";
+import { parseRoutingConfig } from "@/features/routing/lib/routingService";
+import {
+  estimateSavings,
+  type RuleSavingsEstimate,
+} from "@/features/routing/lib/savingsEstimator";
+import type { GatewayConfigSnapshot } from "@/lib/gateway/agentConfigTypes";
 
 export const runtime = "nodejs";
 
@@ -40,6 +46,14 @@ type CronBreakdown = {
   totalTokens: number;
 };
 
+type SavingsData = {
+  totalSaved: number;
+  totalOriginalCost: number;
+  savedPercent: number;
+  byRule: RuleSavingsEstimate[];
+  isEstimate: boolean;
+};
+
 type UsageQueryResponse = {
   totalCost: number;
   totalSessions: number;
@@ -50,6 +64,7 @@ type UsageQueryResponse = {
   agentBreakdown: AgentBreakdown[];
   cronBreakdown: CronBreakdown[];
   projectedMonthlyCost: number;
+  savings: SavingsData | null;
 };
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -200,6 +215,36 @@ export async function POST(request: NextRequest) {
           30
         : 0;
 
+    // Fetch routing rules for savings estimation (best-effort)
+    let savings: SavingsData | null = null;
+    try {
+      const configSnapshot = await gatewayRpc<GatewayConfigSnapshot>(
+        "config.get",
+        {},
+      );
+      const routingConfig = parseRoutingConfig(configSnapshot);
+      if (routingConfig.rules.length > 0) {
+        const cronSessionCount = cronBreakdown.reduce(
+          (s, c) => s + c.runs,
+          0,
+        );
+        const costByModelMap = new Map(Object.entries(costByModel));
+        const estimate = estimateSavings(
+          routingConfig.rules,
+          costByModelMap,
+          agentFiltered.length,
+          totalInputTokens,
+          totalOutputTokens,
+          cronSessionCount,
+        );
+        if (estimate.totalSaved > 0) {
+          savings = estimate;
+        }
+      }
+    } catch {
+      // Routing config unavailable — skip savings
+    }
+
     const response: UsageQueryResponse = {
       totalCost,
       totalSessions: agentFiltered.length,
@@ -210,6 +255,7 @@ export async function POST(request: NextRequest) {
       agentBreakdown,
       cronBreakdown,
       projectedMonthlyCost,
+      savings,
     };
 
     return NextResponse.json(response);

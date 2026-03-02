@@ -28,17 +28,26 @@ function formatDateLabel(date: string): string {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
+/** Per-day savings overlay data */
+export type DailySavingsOverlay = Map<
+  string,
+  { originalCost: number; routedCost: number }
+>;
+
 interface DailyTrendChartProps {
   trends: TrendBucket[];
   models: string[];
   /** Called when a bar is clicked with the date key (YYYY-MM-DD). */
   onBarClick?: (date: string) => void;
+  /** Optional: show "cost without routing" ghost bar behind the actual bar */
+  savingsOverlay?: DailySavingsOverlay;
 }
 
 export const DailyTrendChart = memo(function DailyTrendChart({
   trends,
   models,
   onBarClick,
+  savingsOverlay,
 }: DailyTrendChartProps) {
   if (trends.length === 0) {
     return (
@@ -46,7 +55,14 @@ export const DailyTrendChart = memo(function DailyTrendChart({
     );
   }
 
-  const maxCost = Math.max(...trends.map((t) => t.totalCost), 0.01);
+  // If savings overlay exists, max cost should include the original (higher) cost
+  const maxCost = Math.max(
+    ...trends.map((t) => {
+      const overlay = savingsOverlay?.get(t.date);
+      return overlay ? Math.max(t.totalCost, overlay.originalCost) : t.totalCost;
+    }),
+    0.01,
+  );
 
   return (
     <TooltipProvider delayDuration={200}>
@@ -74,16 +90,29 @@ export const DailyTrendChart = memo(function DailyTrendChart({
           const totalForBar = modelEntries.reduce((s, e) => s + e.cost, 0);
           const barLabel = `${formatDateLabel(trend.date)}: ${formatCost(trend.totalCost)} across ${trend.sessionCount} session${trend.sessionCount !== 1 ? "s" : ""}`;
 
+          const overlay = savingsOverlay?.get(trend.date);
+          const ghostWidthPct = overlay
+            ? (overlay.originalCost / maxCost) * 100
+            : 0;
+
           return (
             <div key={trend.date} className="flex items-center gap-2">
               <span className="w-12 shrink-0 text-right text-xs text-muted-foreground">
                 {formatDateLabel(trend.date)}
               </span>
-              <div className="flex-1 flex items-center">
+              <div className="relative flex-1 flex items-center">
+                {/* Ghost bar: cost without routing */}
+                {overlay && ghostWidthPct > widthPct && (
+                  <div
+                    className="absolute h-11 rounded-sm bg-muted/40 border border-dashed border-border/40"
+                    style={{ width: `${Math.max(ghostWidthPct, 2)}%` }}
+                    aria-hidden="true"
+                  />
+                )}
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <div
-                      className={`flex h-11 items-center rounded-sm overflow-hidden ${onBarClick ? "cursor-pointer hover:opacity-80 transition-opacity" : "cursor-default"}`}
+                      className={`relative z-10 flex h-11 items-center rounded-sm overflow-hidden ${onBarClick ? "cursor-pointer hover:opacity-80 transition-opacity" : "cursor-default"}`}
                       style={{ width: `${Math.max(widthPct, 2)}%` }}
                       role={onBarClick ? "button" : "graphics-symbol"}
                       tabIndex={onBarClick ? 0 : undefined}
@@ -112,6 +141,11 @@ export const DailyTrendChart = memo(function DailyTrendChart({
                         {e.model}: {formatCost(e.cost)}
                       </p>
                     ))}
+                    {overlay && overlay.originalCost > trend.totalCost && (
+                      <p className="text-emerald-500 mt-1 border-t border-border pt-1">
+                        Saved ~{formatCost(overlay.originalCost - trend.totalCost)} with routing
+                      </p>
+                    )}
                   </TooltipContent>
                 </Tooltip>
               </div>

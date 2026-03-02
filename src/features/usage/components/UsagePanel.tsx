@@ -16,6 +16,7 @@ import { CronCostTable } from "@/features/usage/components/CronCostTable";
 import { AgentCostTable } from "@/features/usage/components/AgentCostTable";
 import { SummaryCard } from "@/features/usage/components/SummaryCard";
 import { BudgetAlert } from "@/features/usage/components/BudgetAlert";
+import { SavingsCard } from "@/features/routing/components/SavingsCard";
 
 type BreakdownView = "model" | "agent" | "cron";
 
@@ -46,6 +47,7 @@ export const UsagePanel = memo(function UsagePanel() {
     agentBreakdown,
     cronBreakdown,
     projectedMonthlyCost,
+    savings,
     loading,
     error,
     timeRange,
@@ -122,6 +124,9 @@ export const UsagePanel = memo(function UsagePanel() {
 
       {/* Budget alert */}
       <BudgetAlert currentSpend={totalCost} />
+
+      {/* Routing savings */}
+      {savings && <SavingsCard savings={savings} />}
 
       {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">

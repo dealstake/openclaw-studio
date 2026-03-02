@@ -8,6 +8,7 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import type { ModelCostBreakdown } from "@/features/usage/lib/costCalculator";
 import type { TrendBucket } from "@/features/usage/lib/trendAggregator";
+import type { SavingsEstimateSummary } from "@/features/routing/lib/savingsEstimator";
 
 export type TimeRange = "today" | "7d" | "30d" | "all";
 
@@ -26,6 +27,24 @@ export type CronBreakdown = {
   totalTokens: number;
 };
 
+type SavingsData = {
+  totalSaved: number;
+  totalOriginalCost: number;
+  savedPercent: number;
+  byRule: Array<{
+    ruleId: string;
+    ruleName: string;
+    sessionsAffected: number;
+    tokensRouted: number;
+    originalCost: number;
+    routedCost: number;
+    savedAmount: number;
+    fromModel: string;
+    toModel: string;
+  }>;
+  isEstimate: boolean;
+};
+
 type UsageQueryResponse = {
   totalCost: number;
   totalSessions: number;
@@ -36,6 +55,7 @@ type UsageQueryResponse = {
   agentBreakdown: AgentBreakdown[];
   cronBreakdown: CronBreakdown[];
   projectedMonthlyCost: number;
+  savings: SavingsData | null;
   cachedAt: string;
   error?: string;
 };
@@ -50,6 +70,8 @@ export type UsageQueryData = {
   agentBreakdown: AgentBreakdown[];
   cronBreakdown: CronBreakdown[];
   projectedMonthlyCost: number;
+  /** Estimated routing savings (null if no routing rules configured) */
+  savings: SavingsEstimateSummary | null;
   loading: boolean;
   error: string | null;
   timeRange: TimeRange;
@@ -129,6 +151,17 @@ export function useUsageQuery(): UsageQueryData {
     return new Map(Object.entries(data.costByModel));
   }, [data?.costByModel]);
 
+  const savings = useMemo((): SavingsEstimateSummary | null => {
+    if (!data?.savings) return null;
+    return {
+      totalSaved: data.savings.totalSaved,
+      totalOriginalCost: data.savings.totalOriginalCost,
+      savedPercent: data.savings.savedPercent,
+      byRule: data.savings.byRule,
+      isEstimate: data.savings.isEstimate,
+    };
+  }, [data?.savings]);
+
   return {
     totalCost: data?.totalCost ?? 0,
     totalSessions: data?.totalSessions ?? 0,
@@ -139,6 +172,7 @@ export function useUsageQuery(): UsageQueryData {
     agentBreakdown: data?.agentBreakdown ?? [],
     cronBreakdown: data?.cronBreakdown ?? [],
     projectedMonthlyCost: data?.projectedMonthlyCost ?? 0,
+    savings,
     loading,
     error,
     timeRange,
