@@ -221,6 +221,7 @@ const TreeNodeCard = memo(function TreeNodeCard({
     >
       <button
         onClick={handleClick}
+        aria-label={`${truncatedLabel}, ${isRoot ? "root session" : `forked at step ${(node.forkInfo?.forkAtIndex ?? 0) + 1}`}`}
         className={`flex h-full w-full items-start gap-2 rounded-lg border px-3 py-2 text-left transition-all min-h-[44px] ${
           isActive
             ? "border-primary bg-primary/10 ring-1 ring-primary/30"
@@ -307,7 +308,7 @@ export const ForkTree = memo(function ForkTree({
         <div className="flex items-center gap-2">
           <GitFork className="h-4 w-4 text-violet-400" />
           <SectionLabel as="h3">Fork Tree</SectionLabel>
-          <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
+          <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-foreground/70">
             {countTreeNodes(tree)} sessions
           </span>
         </div>
