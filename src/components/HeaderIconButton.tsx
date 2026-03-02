@@ -1,39 +1,20 @@
+/**
+ * @deprecated Use `IconButton variant="header"` from `@/components/IconButton` instead.
+ * This re-export maintains backwards compatibility during migration.
+ */
 import { memo } from "react";
 import type { ReactNode, ButtonHTMLAttributes } from "react";
+import { IconButton } from "@/components/IconButton";
 
-/**
- * Shared icon button used in the header toolbar.
- * Ensures consistent sizing, border, background, and hover across
- * theme toggle, brain, settings, menu, and avatar buttons.
- */
 type HeaderIconButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   children: ReactNode;
-  /** Active / pressed state (e.g. brain panel open) */
   active?: boolean;
   "data-testid"?: string;
 };
 
 export const HeaderIconButton = memo(function HeaderIconButton({
-  children,
   active = false,
-  className = "",
-  title,
-  "aria-label": ariaLabel,
   ...rest
 }: HeaderIconButtonProps) {
-  return (
-    <button
-      type="button"
-      className={`inline-flex h-11 w-11 items-center justify-center rounded-md border shadow-sm transition focus-ring ${
-        active
-          ? "border-border bg-muted text-foreground"
-          : "border-input/90 bg-background/75 text-foreground hover:border-ring hover:bg-card"
-      } disabled:cursor-not-allowed disabled:opacity-40 ${className}`}
-      title={title}
-      aria-label={ariaLabel}
-      {...rest}
-    >
-      {children}
-    </button>
-  );
+  return <IconButton variant="header" active={active} {...rest} />;
 });
