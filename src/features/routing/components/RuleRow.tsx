@@ -115,7 +115,7 @@ export const RuleRow = memo(function RuleRow({
           onClick={handleEdit}
           aria-label={`Edit rule "${rule.name}"`}
           disabled={disabled}
-          className="opacity-0 group-hover:opacity-100 transition-opacity"
+          className="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 sm:opacity-100 transition-opacity"
         >
           <Pencil className="h-3 w-3" />
         </PanelIconButton>
@@ -124,7 +124,7 @@ export const RuleRow = memo(function RuleRow({
           variant="destructive"
           aria-label={`Delete rule "${rule.name}"`}
           disabled={disabled}
-          className="opacity-0 group-hover:opacity-100 transition-opacity"
+          className="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 sm:opacity-100 transition-opacity"
         >
           <Trash2 className="h-3 w-3" />
         </PanelIconButton>

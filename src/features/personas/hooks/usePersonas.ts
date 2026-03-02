@@ -47,22 +47,25 @@ function rowToItem(row: Record<string, unknown>): PersonaListItem {
     (row.metrics_json as string) ?? "{}",
     {},
   );
+  // Support both snake_case (local Drizzle DB) and camelCase (sidecar API)
   return {
-    personaId: row.persona_id as string,
-    displayName: row.display_name as string,
-    templateKey: (row.template_key as string) ?? null,
-    category: row.category as PersonaCategory,
-    status: row.status as PersonaStatus,
-    optimizationGoals: parseJson<string[]>((row.optimization_goals as string) ?? "[]", []),
+    personaId: (row.persona_id ?? row.personaId) as string,
+    displayName: (row.display_name ?? row.displayName) as string,
+    templateKey: ((row.template_key ?? row.templateKey) as string) ?? null,
+    category: (row.category) as PersonaCategory,
+    status: (row.status) as PersonaStatus,
+    optimizationGoals: parseJson<string[]>(
+      ((row.optimization_goals ?? row.optimizationGoals) as string) ?? "[]", [],
+    ),
     metrics: {
       sessionCount: (metricsRaw.sessionCount as number) ?? 0,
       averageScore: (metricsRaw.averageScore as number) ?? 0,
       bestScore: (metricsRaw.bestScore as number) ?? 0,
       trend: (metricsRaw.trend as number) ?? 0,
     },
-    createdAt: row.created_at as string,
-    lastTrainedAt: (row.last_trained_at as string) ?? null,
-    practiceCount: (row.practice_count as number) ?? 0,
+    createdAt: ((row.created_at ?? row.createdAt) as string),
+    lastTrainedAt: ((row.last_trained_at ?? row.lastTrainedAt) as string) ?? null,
+    practiceCount: ((row.practice_count ?? row.practiceCount) as number) ?? 0,
   };
 }
 

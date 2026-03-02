@@ -28,8 +28,8 @@ const PRIORITY_STYLES = {
 } as const;
 
 const PRIORITY_BADGE = {
-  high: "bg-amber-500/20 text-amber-800 dark:text-amber-300",
-  medium: "bg-blue-500/15 text-blue-800 dark:text-blue-300",
+  high: "bg-amber-100 text-amber-900 dark:bg-amber-500/20 dark:text-amber-300",
+  medium: "bg-blue-100 text-blue-900 dark:bg-blue-500/15 dark:text-blue-300",
   low: "bg-muted text-muted-foreground",
 } as const;
 
