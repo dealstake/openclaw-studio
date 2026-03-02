@@ -56,7 +56,7 @@ export const SessionItem = memo(function SessionItem({
   onResume,
   onViewForkTree,
 }: SessionItemProps) {
-  const itemRef = useRef<HTMLButtonElement>(null);
+  const itemRef = useRef<HTMLDivElement>(null);
   const itemId = `session-item-${session.key.replace(/:/g, "-")}`;
   const handleClick = useCallback(() => onSelect(session.key), [onSelect, session.key]);
   const handleDoubleClick = useCallback(
@@ -82,16 +82,16 @@ export const SessionItem = memo(function SessionItem({
   }, [focused]);
 
   return (
-    <button
+    <div
       id={itemId}
       ref={itemRef}
-      type="button"
       role="option"
+      tabIndex={0}
       aria-selected={active}
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
       onKeyDown={handleKeyDown}
-      className={`group flex w-full items-start gap-2.5 rounded-lg px-2.5 py-2.5 text-left transition-all duration-200 focus-ring min-h-[44px] ${
+      className={`group relative flex w-full cursor-pointer items-start gap-2.5 rounded-lg px-2.5 py-2.5 text-left transition-all duration-200 focus-ring min-h-[44px] ${
         session.archiveType
           ? "text-foreground/40 hover:bg-muted/50"
           : active
@@ -148,8 +148,8 @@ export const SessionItem = memo(function SessionItem({
                 e.stopPropagation();
                 onViewForkTree?.(session.key);
               }}
-              className="inline-flex items-center gap-0.5 rounded-full bg-violet-500/10 px-1.5 py-0.5 text-[10px] font-medium text-violet-400 hover:bg-violet-500/20 transition-colors min-h-[22px]"
-              aria-label="View fork tree"
+              className="inline-flex items-center gap-0.5 rounded-full bg-violet-500/25 px-2 py-1 text-[10px] font-medium text-violet-300 hover:bg-violet-500/35 transition-colors min-h-[28px]"
+              aria-label={`View fork tree for ${session.displayName}`}
             >
               <GitBranch className="h-2.5 w-2.5" />
               {isFork(session.key) ? "Forked" : "Forks"}
@@ -178,6 +178,6 @@ export const SessionItem = memo(function SessionItem({
           />
         </div>
       )}
-    </button>
+    </div>
   );
 });
