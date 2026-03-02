@@ -378,13 +378,20 @@ export const AgentStudioPage = () => {
     if (extracted.type === "persona") {
       try {
         const { extractBrainFiles, extractKnowledgeFiles, extractJsonBlock } = await import("@/features/wizards/lib/artifactExtractor");
-        const personaConfig = extractJsonBlock<{ personaId: string; displayName: string; purpose: string }>(extracted.sourceText, "persona-config");
-        const brainFiles = extractBrainFiles(extracted.sourceText);
+        const personaConfig = extractJsonBlock<{ personaId: string; displayName: string; purpose?: string; roleDescription?: string }>(extracted.sourceText, "persona-config");
+        const rawBrainFiles = extractBrainFiles(extracted.sourceText);
         const knowledgeFiles = extractKnowledgeFiles(extracted.sourceText);
 
         if (!personaConfig?.personaId || !personaConfig?.displayName) {
           toast.error("Persona configuration incomplete — missing personaId or displayName");
           return;
+        }
+
+        // Convert filename-keyed brain files (e.g. "SOUL.md") to API-expected keys (e.g. "soul")
+        const brainFiles: Record<string, string> = {};
+        for (const [filename, content] of Object.entries(rawBrainFiles)) {
+          const key = filename.replace(/\.md$/i, "").toLowerCase();
+          brainFiles[key] = content;
         }
 
         const res = await fetch("/api/agents/create", {
@@ -393,7 +400,7 @@ export const AgentStudioPage = () => {
           body: JSON.stringify({
             agentId: personaConfig.personaId,
             name: personaConfig.displayName,
-            purpose: personaConfig.purpose ?? "AI persona",
+            purpose: personaConfig.purpose ?? personaConfig.roleDescription ?? "AI persona",
             brainFiles,
             knowledgeFiles,
           }),

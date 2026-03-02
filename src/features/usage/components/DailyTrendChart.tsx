@@ -88,9 +88,11 @@ export const DailyTrendChart = memo(function DailyTrendChart({
             .map((m, i) => ({ model: m, cost: trend.costByModel[m] ?? 0, idx: i }))
             .filter((e) => e.cost > 0);
           const totalForBar = modelEntries.reduce((s, e) => s + e.cost, 0);
-          const barLabel = `${formatDateLabel(trend.date)}: ${formatCost(trend.totalCost)} across ${trend.sessionCount} session${trend.sessionCount !== 1 ? "s" : ""}`;
-
           const overlay = savingsOverlay?.get(trend.date);
+          let barLabel = `${formatDateLabel(trend.date)}: ${formatCost(trend.totalCost)} across ${trend.sessionCount} session${trend.sessionCount !== 1 ? "s" : ""}`;
+          if (overlay && overlay.originalCost > trend.totalCost) {
+            barLabel += `. Saved approximately ${formatCost(overlay.originalCost - trend.totalCost)} with routing.`;
+          }
           const ghostWidthPct = overlay
             ? (overlay.originalCost / maxCost) * 100
             : 0;
