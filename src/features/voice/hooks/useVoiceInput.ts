@@ -144,8 +144,10 @@ export function useVoiceInput(
   }, [lang]);
 
   const stopListening = useCallback(() => {
+    // stop() lets the engine finish processing pending audio before firing onend
     recognitionRef.current?.stop();
-    setIsListening(false);
+    // Don't set isListening=false here — onend callback handles it
+    // This avoids a race where we clear state before final results arrive
   }, []);
 
   const resetTranscript = useCallback(() => {

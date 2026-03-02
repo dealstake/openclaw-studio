@@ -9,7 +9,7 @@
  */
 
 import React, { useCallback, useEffect, useRef } from "react";
-import { Mic, MicOff, Volume2, VolumeX, Loader2 } from "lucide-react";
+import { Mic, Volume2, VolumeX, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { UseVoiceInputReturn } from "../hooks/useVoiceInput";
 import type { UseVoiceOutputReturn } from "../hooks/useVoiceOutput";
@@ -39,8 +39,10 @@ export const MicButton = React.memo(function MicButton({
   } = voiceInput;
 
   const prevTranscriptRef = useRef("");
+  const stoppingRef = useRef(false);
+  const prevListeningRef = useRef(false);
 
-  // Sync transcript to parent
+  // Sync transcript to parent while listening
   useEffect(() => {
     if (transcript !== prevTranscriptRef.current) {
       prevTranscriptRef.current = transcript;
@@ -50,28 +52,30 @@ export const MicButton = React.memo(function MicButton({
     }
   }, [transcript, onTranscript]);
 
+  // Auto-send when listening stops (after stop() finishes processing)
+  useEffect(() => {
+    if (prevListeningRef.current && !isListening && stoppingRef.current) {
+      stoppingRef.current = false;
+      const text = prevTranscriptRef.current.trim();
+      if (text && onSend) {
+        onSend(text);
+        resetTranscript();
+        prevTranscriptRef.current = "";
+      }
+    }
+    prevListeningRef.current = isListening;
+  }, [isListening, onSend, resetTranscript]);
+
   const handleToggle = useCallback(() => {
     if (isListening) {
+      stoppingRef.current = true;
       stopListening();
-      // Auto-send on stop if we have a transcript
-      const finalText = prevTranscriptRef.current.trim();
-      if (finalText && onSend) {
-        // Small delay to capture final words
-        setTimeout(() => {
-          const text = prevTranscriptRef.current.trim();
-          if (text) {
-            onSend(text);
-            resetTranscript();
-            prevTranscriptRef.current = "";
-          }
-        }, 300);
-      }
     } else {
       resetTranscript();
       prevTranscriptRef.current = "";
       startListening();
     }
-  }, [isListening, startListening, stopListening, resetTranscript, onSend]);
+  }, [isListening, startListening, stopListening, resetTranscript]);
 
   if (!isSupported) return null;
 
@@ -92,9 +96,9 @@ export const MicButton = React.memo(function MicButton({
     >
       {isListening ? (
         <>
-          <MicOff className="h-4 w-4" />
-          {/* Pulse animation while listening */}
-          <span className="absolute inset-0 animate-ping rounded-lg bg-red-500/20" />
+          <Mic className="h-4 w-4" />
+          {/* Subtle breathing ring while listening */}
+          <span className="absolute inset-[-2px] rounded-lg border-2 border-red-500/60 animate-pulse" />
         </>
       ) : (
         <Mic className="h-4 w-4" />

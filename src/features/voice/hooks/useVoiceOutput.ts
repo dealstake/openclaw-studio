@@ -75,33 +75,83 @@ export function useVoiceOutput(): UseVoiceOutputReturn {
           throw new Error((errBody as { error?: string }).error || `TTS failed: ${res.status}`);
         }
 
-        // Get audio blob and play it
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
+        // Use MediaSource for streaming playback when available, else blob fallback
+        if (typeof MediaSource !== "undefined" && MediaSource.isTypeSupported("audio/mpeg")) {
+          const mediaSource = new MediaSource();
+          const url = URL.createObjectURL(mediaSource);
+          const audio = new Audio(url);
+          audioRef.current = audio;
 
-        const audio = new Audio(url);
-        audioRef.current = audio;
+          mediaSource.addEventListener("sourceopen", async () => {
+            const sourceBuffer = mediaSource.addSourceBuffer("audio/mpeg");
+            const reader = res.body?.getReader();
+            if (!reader) {
+              mediaSource.endOfStream();
+              return;
+            }
 
-        audio.onplay = () => {
-          setIsPlaying(true);
-          setIsLoading(false);
-        };
+            const pump = async (): Promise<void> => {
+              const { done, value } = await reader.read();
+              if (done) {
+                if (mediaSource.readyState === "open") mediaSource.endOfStream();
+                return;
+              }
+              // Wait for buffer to be ready before appending
+              if (sourceBuffer.updating) {
+                await new Promise<void>((r) => sourceBuffer.addEventListener("updateend", () => r(), { once: true }));
+              }
+              sourceBuffer.appendBuffer(value);
+              await new Promise<void>((r) => sourceBuffer.addEventListener("updateend", () => r(), { once: true }));
+              return pump();
+            };
 
-        audio.onended = () => {
-          setIsPlaying(false);
-          URL.revokeObjectURL(url);
-          audioRef.current = null;
-        };
+            void pump();
+          });
 
-        audio.onerror = () => {
-          setError("Failed to play audio");
-          setIsPlaying(false);
-          setIsLoading(false);
-          URL.revokeObjectURL(url);
-          audioRef.current = null;
-        };
+          audio.onplay = () => {
+            setIsPlaying(true);
+            setIsLoading(false);
+          };
+          audio.onended = () => {
+            setIsPlaying(false);
+            URL.revokeObjectURL(url);
+            audioRef.current = null;
+          };
+          audio.onerror = () => {
+            setError("Failed to play audio");
+            setIsPlaying(false);
+            setIsLoading(false);
+            URL.revokeObjectURL(url);
+            audioRef.current = null;
+          };
 
-        await audio.play();
+          await audio.play();
+        } else {
+          // Fallback: download full blob then play (Safari, older browsers)
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          const audio = new Audio(url);
+          audioRef.current = audio;
+
+          audio.onplay = () => {
+            setIsPlaying(true);
+            setIsLoading(false);
+          };
+          audio.onended = () => {
+            setIsPlaying(false);
+            URL.revokeObjectURL(url);
+            audioRef.current = null;
+          };
+          audio.onerror = () => {
+            setError("Failed to play audio");
+            setIsPlaying(false);
+            setIsLoading(false);
+            URL.revokeObjectURL(url);
+            audioRef.current = null;
+          };
+
+          await audio.play();
+        }
       } catch (err) {
         if ((err as Error).name === "AbortError") return;
         setError((err as Error).message || "TTS failed");
