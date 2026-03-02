@@ -1,5 +1,5 @@
 import React from "react";
-import { CheckCircle2, AlertTriangle, DollarSign, Gauge, X } from "lucide-react";
+import { CheckCircle2, AlertTriangle, DollarSign, Gauge, X, TrendingUp } from "lucide-react";
 import type { Notification, AlertRuleType } from "../lib/types";
 import { formatRelativeTime } from "@/lib/text/time";
 import { BaseCard, CardHeader } from "@/components/ui/BaseCard";
@@ -9,6 +9,7 @@ const typeIconMap: Record<AlertRuleType, { icon: React.ElementType; color: strin
   error: { icon: AlertTriangle, color: "text-destructive" },
   budget: { icon: DollarSign, color: "text-amber-500" },
   rateLimit: { icon: Gauge, color: "text-blue-500" },
+  anomaly: { icon: TrendingUp, color: "text-orange-500" },
 };
 
 type NotificationItemProps = {

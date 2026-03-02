@@ -1,5 +1,5 @@
 /** Alert rule types that can trigger notifications. */
-export type AlertRuleType = "budget" | "completion" | "error" | "rateLimit";
+export type AlertRuleType = "budget" | "completion" | "error" | "rateLimit" | "anomaly";
 
 /** A user-configured alert rule. */
 export interface AlertRule {

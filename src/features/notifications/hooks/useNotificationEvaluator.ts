@@ -9,11 +9,13 @@ import {
   evaluateCompletionRule,
   evaluateErrorRule,
   evaluateRateLimitRule,
+  evaluateAnomalyRule,
   shouldCooldown,
   type AgentEventPayload,
 } from "../lib/alertEvaluator";
 import { sendBrowserNotification } from "../lib/browserNotifications";
 import { isGatewayDisconnectLikeError } from "@/lib/gateway/GatewayClient";
+import type { AgentAnomaly } from "@/features/activity/lib/anomalyTypes";
 
 // ---------------------------------------------------------------------------
 // Timing constants
@@ -130,6 +132,51 @@ export function useNotificationEvaluator(
     } catch (err) {
       if (!isGatewayDisconnectLikeError(err)) {
         console.warn("[notifications] Budget poll failed:", err);
+      }
+    }
+
+    // ---- Anomaly digest check ----
+    try {
+      const anomalyRules = rulesRef.current.filter((r) => r.type === "anomaly");
+      if (anomalyRules.length > 0) {
+        const resp = await client.call<{ agents?: { id: string }[] }>("agents.list", {});
+        const agentIds = (resp.agents ?? []).map((a) => a.id);
+
+        for (const agentId of agentIds) {
+          try {
+            const alertsResp = await fetch(
+              `/api/activity/alerts?${new URLSearchParams({ agentId, days: "1", includeAll: "false", limit: "50" })}`,
+            );
+            if (!alertsResp.ok) continue;
+            const data = (await alertsResp.json()) as { anomalies: AgentAnomaly[]; activeCount: number };
+            if (data.activeCount === 0) continue;
+
+            // Filter to anomalies detected since last check
+            const lastCheck = lastFiredRef.current.get(`anomaly-poll-${agentId}`) ?? 0;
+            const newAnomalies = data.anomalies.filter(
+              (a) => new Date(a.detectedAt).getTime() > lastCheck,
+            );
+            if (newAnomalies.length === 0) continue;
+
+            const now = Date.now();
+            for (const rule of anomalyRules) {
+              if (shouldCooldown(rule, lastFiredRef.current, now)) continue;
+              const n = evaluateAnomalyRule(rule, newAnomalies);
+              if (n) {
+                lastFiredRef.current.set(rule.id, now);
+                addNotification(n);
+                sendBrowserNotification(n.title, n.body);
+              }
+            }
+            lastFiredRef.current.set(`anomaly-poll-${agentId}`, now);
+          } catch {
+            // Skip individual agent failures
+          }
+        }
+      }
+    } catch (err) {
+      if (!isGatewayDisconnectLikeError(err)) {
+        console.warn("[notifications] Anomaly poll failed:", err);
       }
     }
   }, [client, status]);

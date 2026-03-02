@@ -1,4 +1,5 @@
 import type { AlertRule, Notification } from "./types";
+import type { AgentAnomaly } from "@/features/activity/lib/anomalyTypes";
 
 /** Default error window when rule.cooldownMs is 0 (5 minutes). */
 const DEFAULT_ERROR_WINDOW_MS = 300_000;
@@ -110,5 +111,50 @@ export function evaluateRateLimitRule(
     timestamp: Date.now(),
     read: false,
     data: { usagePercent, threshold: rule.threshold },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Anomaly rule — fires when behavioral anomalies are detected
+// ---------------------------------------------------------------------------
+
+/**
+ * Create a notification from a batch of new anomalies (digest style).
+ * Fires at most once per cooldown window regardless of anomaly count.
+ */
+export function evaluateAnomalyRule(
+  rule: AlertRule,
+  newAnomalies: AgentAnomaly[],
+): Notification | null {
+  if (!rule.enabled || rule.type !== "anomaly") return null;
+  if (newAnomalies.length < rule.threshold) return null;
+
+  const critical = newAnomalies.filter((a) => a.severity === "critical");
+  const warning = newAnomalies.filter((a) => a.severity === "warning");
+
+  const parts: string[] = [];
+  if (critical.length > 0) parts.push(`${critical.length} critical`);
+  if (warning.length > 0) parts.push(`${warning.length} warning`);
+
+  const taskNames = [...new Set(newAnomalies.map((a) => a.taskName))];
+  const taskSummary =
+    taskNames.length <= 2
+      ? taskNames.join(", ")
+      : `${taskNames[0]} and ${taskNames.length - 1} others`;
+
+  return {
+    id: crypto.randomUUID(),
+    type: "anomaly",
+    title: `Anomaly detected: ${taskSummary}`,
+    body: `${newAnomalies.length} behavioral anomal${newAnomalies.length === 1 ? "y" : "ies"} (${parts.join(", ")})`,
+    timestamp: Date.now(),
+    read: false,
+    data: {
+      anomalyCount: newAnomalies.length,
+      criticalCount: critical.length,
+      warningCount: warning.length,
+      taskNames,
+      anomalyIds: newAnomalies.map((a) => a.id),
+    },
   };
 }

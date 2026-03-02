@@ -177,8 +177,8 @@ const AnomalyCard = memo(function AnomalyCard({ anomaly, onDismiss, onInvestigat
             </span>
           </div>
 
-          {/* Sparkline — synthetic trend: baseline ± noise, ending at observed */}
-          <div className="mt-1.5 flex items-center gap-2">
+          {/* Sparkline + explanation — stack vertically on mobile */}
+          <div className="mt-1.5 flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
             <TrendSparkline
               values={buildSparklineValues(anomaly)}
               width={64}
@@ -192,8 +192,8 @@ const AnomalyCard = memo(function AnomalyCard({ anomaly, onDismiss, onInvestigat
             </p>
           </div>
 
-          {/* Timestamp + Actions */}
-          <div className="mt-1.5 flex items-center gap-1">
+          {/* Timestamp + Actions — wrap on mobile */}
+          <div className="mt-1.5 flex flex-wrap items-center gap-1">
             <span className="text-xs text-muted-foreground/80">
               {new Date(anomaly.detectedAt).toLocaleString(undefined, {
                 month: "short",
@@ -202,7 +202,7 @@ const AnomalyCard = memo(function AnomalyCard({ anomaly, onDismiss, onInvestigat
                 minute: "2-digit",
               })}
             </span>
-            <span className="mx-1 text-border">·</span>
+            <span className="mx-1 hidden text-border sm:inline">·</span>
             {anomaly.sessionKey && (
               <button
                 type="button"

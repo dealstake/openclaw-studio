@@ -11,6 +11,10 @@ export function formatRuleThreshold(rule: AlertRule): string {
       return `${rule.threshold} errors in window`;
     case "rateLimit":
       return `${rule.threshold}% of budget`;
+    case "anomaly":
+      return rule.threshold === 1
+        ? "Any behavioral anomaly"
+        : `${rule.threshold}+ anomalies`;
     default:
       return "";
   }

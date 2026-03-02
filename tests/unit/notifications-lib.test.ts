@@ -5,6 +5,7 @@ import {
   evaluateCompletionRule,
   evaluateErrorRule,
   evaluateRateLimitRule,
+  evaluateAnomalyRule,
 } from "@/features/notifications/lib/alertEvaluator";
 import { formatRuleThreshold } from "@/features/notifications/lib/formatRuleThreshold";
 import { DEFAULT_ALERT_RULES } from "@/features/notifications/lib/defaults";
@@ -212,11 +213,76 @@ describe("formatRuleThreshold", () => {
   });
 });
 
+// ─── evaluateAnomalyRule ─────────────────────────────────────────────────────
+
+describe("evaluateAnomalyRule", () => {
+  const anomalyRule = makeRule({ type: "anomaly", threshold: 1, cooldownMs: 3_600_000 });
+
+  const makeAnomaly = (overrides: Record<string, unknown> = {}) => ({
+    id: "a1",
+    agentId: "agent-1",
+    taskId: "task-1",
+    taskName: "Daily Summary",
+    eventId: "ev-1",
+    eventTimestamp: new Date().toISOString(),
+    metric: "costUsd" as const,
+    observedValue: 0.52,
+    baselineMean: 0.11,
+    baselineStdDev: 0.03,
+    zScore: 13.67,
+    severity: "critical" as const,
+    explanation: "Cost was 4.5x above baseline",
+    sessionKey: "sess-1",
+    dismissed: false,
+    detectedAt: new Date().toISOString(),
+    ...overrides,
+  });
+
+  it("returns null when rule is disabled", () => {
+    expect(evaluateAnomalyRule({ ...anomalyRule, enabled: false }, [makeAnomaly()])).toBeNull();
+  });
+
+  it("returns null when below threshold", () => {
+    const rule = makeRule({ type: "anomaly", threshold: 3, cooldownMs: 0 });
+    expect(evaluateAnomalyRule(rule, [makeAnomaly()])).toBeNull();
+  });
+
+  it("creates a notification for a single anomaly", () => {
+    const n = evaluateAnomalyRule(anomalyRule, [makeAnomaly()]);
+    expect(n).not.toBeNull();
+    expect(n!.type).toBe("anomaly");
+    expect(n!.title).toContain("Daily Summary");
+    expect(n!.body).toContain("1 behavioral anomaly");
+  });
+
+  it("creates a digest for multiple anomalies", () => {
+    const anomalies = [
+      makeAnomaly({ id: "a1", severity: "critical" }),
+      makeAnomaly({ id: "a2", taskId: "task-2", taskName: "Health Check", severity: "warning" }),
+    ];
+    const n = evaluateAnomalyRule(anomalyRule, anomalies);
+    expect(n).not.toBeNull();
+    expect(n!.body).toContain("2 behavioral anomalies");
+    expect(n!.body).toContain("1 critical");
+    expect(n!.body).toContain("1 warning");
+  });
+
+  it("summarizes many task names", () => {
+    const anomalies = [
+      makeAnomaly({ id: "a1", taskName: "Task A" }),
+      makeAnomaly({ id: "a2", taskName: "Task B" }),
+      makeAnomaly({ id: "a3", taskName: "Task C" }),
+    ];
+    const n = evaluateAnomalyRule(anomalyRule, anomalies);
+    expect(n!.title).toContain("Task A and 2 others");
+  });
+});
+
 // ─── DEFAULT_ALERT_RULES ────────────────────────────────────────────────────
 
 describe("DEFAULT_ALERT_RULES", () => {
-  it("has 4 default rules", () => {
-    expect(DEFAULT_ALERT_RULES).toHaveLength(4);
+  it("has 5 default rules", () => {
+    expect(DEFAULT_ALERT_RULES).toHaveLength(5);
   });
 
   it("has unique IDs", () => {
@@ -231,6 +297,6 @@ describe("DEFAULT_ALERT_RULES", () => {
 
   it("covers all rule types", () => {
     const types = new Set(DEFAULT_ALERT_RULES.map((r) => r.type));
-    expect(types).toEqual(new Set(["budget", "completion", "error", "rateLimit"]));
+    expect(types).toEqual(new Set(["budget", "completion", "error", "rateLimit", "anomaly"]));
   });
 });

@@ -40,4 +40,12 @@ export const DEFAULT_ALERT_RULES: AlertRule[] = [
     cooldownMs: 1_800_000, // 30 minutes
     label: "Rate limit warning (80%)",
   },
+  {
+    id: "anomaly-digest",
+    type: "anomaly",
+    enabled: true,
+    threshold: 1, // fire on any anomaly
+    cooldownMs: 3_600_000, // 1 hour — digest, not per-anomaly
+    label: "Behavioral anomaly alerts",
+  },
 ];
