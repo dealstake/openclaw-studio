@@ -17,6 +17,7 @@
 
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import { syncGatewaySessionSettings } from "@/lib/gateway/GatewayClient";
+import { registerFork } from "./forkRegistry";
 
 // ── Types ───────────────────────────────────────────────────────────
 
@@ -213,6 +214,9 @@ export async function forkSession(
     label,
     model,
   };
+
+  // Persist fork relationship for tree visualization
+  registerFork(newSessionKey, metadata);
 
   return {
     sessionKey: newSessionKey,

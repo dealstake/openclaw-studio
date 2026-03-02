@@ -105,6 +105,7 @@ interface AppSidebarProps {
   onViewTrace?: (sessionKey: string) => void;
   onViewReplay?: (sessionKey: string) => void;
   onResume?: (sessionId: string) => void;
+  onViewForkTree?: (sessionKey: string) => void;
 }
 
 export const AppSidebar = memo(function AppSidebar({
@@ -121,6 +122,7 @@ export const AppSidebar = memo(function AppSidebar({
   onViewTrace,
   onViewReplay,
   onResume,
+  onViewForkTree,
 }: AppSidebarProps) {
   const {
     groups,
@@ -375,6 +377,7 @@ export const AppSidebar = memo(function AppSidebar({
               onExport={handleExport}
               onResume={onResume}
               onToggleCompare={toggleComparison}
+              onViewForkTree={onViewForkTree}
             />
           )}
 

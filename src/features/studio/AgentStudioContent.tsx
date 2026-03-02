@@ -39,6 +39,8 @@ import { useCommandPalette } from "@/features/command-palette/hooks/useCommandPa
 // Heartbeat entries now routed exclusively via onActivityMessage to useActivityMessageStore
 import { TraceViewer } from "@/features/sessions/components/TraceViewer";
 import { ReplayView } from "@/features/sessions/components/ReplayView";
+import { ForkTree } from "@/features/sessions/components/ForkTree";
+import { useForkTree } from "@/features/sessions/hooks/useForkTree";
 import { useChannelsStatus } from "@/features/channels/hooks/useChannelsStatus";
 
 import { EmergencyProvider } from "@/features/emergency/EmergencyProvider";
@@ -835,6 +837,9 @@ export const AgentStudioPage = () => {
     clearViewingTrace,
     viewingReplay,
     clearViewingReplay,
+    viewingForkTree,
+    clearViewingForkTree,
+    handleViewForkTree,
     stableChatOnModelChange,
     stableChatOnThinkingChange,
     stableChatOnDraftChange,
@@ -914,6 +919,9 @@ export const AgentStudioPage = () => {
     },
     [focusedAgentId],
   );
+
+  // Fork tree for overlay
+  const forkTreeInfo = useForkTree(viewingForkTree ?? null);
 
   const stableChatTokenLimit = useMemo(() => {
     if (!focusedAgent) return undefined;
@@ -1037,6 +1045,7 @@ export const AgentStudioPage = () => {
                 onViewReplay={(key) => handleViewReplay(key, focusedAgentId)}
                 onExport={handleExportSession}
                 onResume={handleResumeSession}
+                onViewForkTree={handleViewForkTree}
               />
             ) : null}
             {/* App sidebar — desktop only, collapsible: floating overlay */}
@@ -1055,6 +1064,7 @@ export const AgentStudioPage = () => {
                 onViewTrace={(key) => handleViewTrace(key, focusedAgentId)}
                 onViewReplay={(key) => handleViewReplay(key, focusedAgentId)}
                 onResume={handleResumeSession}
+                onViewForkTree={handleViewForkTree}
               />
             </div>
             {/* ── Chat canvas: base layer filling viewport ─────────── */}
@@ -1179,6 +1189,22 @@ export const AgentStudioPage = () => {
                     sessionId={viewingReplay.sessionId}
                     onClose={clearViewingReplay}
                     client={client}
+                  />
+                </div>
+              </div>
+            )}
+            {/* Fork Tree overlay */}
+            {viewingForkTree && forkTreeInfo.tree && (
+              <div className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+                <div className="h-[80vh] w-full max-w-3xl">
+                  <ForkTree
+                    tree={forkTreeInfo.tree}
+                    activeSessionKey={viewingForkTree}
+                    onSelectSession={(key) => {
+                      clearViewingForkTree();
+                      handleSidebarSessionSelect(key);
+                    }}
+                    onClose={clearViewingForkTree}
                   />
                 </div>
               </div>

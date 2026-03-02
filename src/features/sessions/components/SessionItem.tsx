@@ -1,12 +1,13 @@
 "use client";
 
 import { memo, useCallback, useEffect, useRef } from "react";
-import { MessageSquare, Pin, GitCompareArrows, Archive } from "lucide-react";
+import { MessageSquare, Pin, GitCompareArrows, Archive, GitBranch } from "lucide-react";
 import { formatRelativeTime } from "@/lib/text/time";
 import type { SessionHistoryEntry } from "../hooks/useSessionHistory";
 import { SessionItemMenu } from "./SessionItemMenu";
 import { highlightMatch } from "../lib/highlightMatch";
 import { InlineRenameInput } from "./InlineRenameInput";
+import { isFork, hasForks } from "../lib/forkRegistry";
 
 type SessionItemProps = {
   session: SessionHistoryEntry;
@@ -30,6 +31,7 @@ type SessionItemProps = {
   onExport?: (key: string) => void;
   onToggleCompare?: (key: string) => void;
   onResume?: (sessionId: string) => void;
+  onViewForkTree?: (key: string) => void;
 };
 
 export const SessionItem = memo(function SessionItem({
@@ -52,6 +54,7 @@ export const SessionItem = memo(function SessionItem({
   onExport,
   onToggleCompare,
   onResume,
+  onViewForkTree,
 }: SessionItemProps) {
   const itemRef = useRef<HTMLButtonElement>(null);
   const itemId = `session-item-${session.key.replace(/:/g, "-")}`;
@@ -137,6 +140,20 @@ export const SessionItem = memo(function SessionItem({
               <GitCompareArrows className="h-2.5 w-2.5" />
               Compare
             </span>
+          )}
+          {(isFork(session.key) || hasForks(session.key)) && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onViewForkTree?.(session.key);
+              }}
+              className="inline-flex items-center gap-0.5 rounded-full bg-violet-500/10 px-1.5 py-0.5 text-[10px] font-medium text-violet-400 hover:bg-violet-500/20 transition-colors min-h-[22px]"
+              aria-label="View fork tree"
+            >
+              <GitBranch className="h-2.5 w-2.5" />
+              {isFork(session.key) ? "Forked" : "Forks"}
+            </button>
           )}
         </div>
       </div>

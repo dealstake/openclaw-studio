@@ -29,6 +29,7 @@ type SessionListProps = {
   onExport?: (key: string) => void;
   onToggleCompare?: (key: string) => void;
   onResume?: (sessionId: string) => void;
+  onViewForkTree?: (key: string) => void;
   className?: string;
 };
 
@@ -50,6 +51,7 @@ export const SessionList = memo(function SessionList({
   onExport,
   onToggleCompare,
   onResume,
+  onViewForkTree,
   className = "",
 }: SessionListProps) {
   const [renamingKey, setRenamingKey] = useState<string | null>(null);
@@ -170,6 +172,7 @@ export const SessionList = memo(function SessionList({
                   onExport={onExport}
                   onToggleCompare={onToggleCompare}
                   onResume={onResume}
+                  onViewForkTree={onViewForkTree}
                 />
               ))}
             </div>

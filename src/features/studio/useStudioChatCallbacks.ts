@@ -14,6 +14,7 @@ import type { Action as AgentStoreAction, AgentState as AgentEntry } from "@/fea
 import type { ManagementTab } from "@/layout/AppSidebar";
 import { useTraceViewStore, openTrace as openTraceAction, closeTrace as closeTraceAction } from "@/features/sessions/state/traceViewStore";
 import { useReplayViewStore, openReplay as openReplayAction, closeReplay as closeReplayAction } from "@/features/sessions/state/replayViewStore";
+import { useForkTreeStore, openForkTree as openForkTreeAction, closeForkTree as closeForkTreeAction } from "@/features/sessions/state/forkTreeStore";
 
 export interface StudioChatCallbacksParams {
   client: GatewayClient | null;
@@ -62,6 +63,11 @@ export function useStudioChatCallbacks({
   const clearViewingTrace = closeTraceAction;
   const { replay: viewingReplay } = useReplayViewStore();
   const clearViewingReplay = closeReplayAction;
+  const { forkTreeSessionKey: viewingForkTree } = useForkTreeStore();
+  const clearViewingForkTree = closeForkTreeAction;
+  const handleViewForkTree = useCallback((sessionKey: string) => {
+    openForkTreeAction(sessionKey);
+  }, []);
   const [viewingSessionLoading, setViewingSessionLoading] = useState(false);
 
   const stableChatOnModelChange = useCallback((value: string | null) => {
@@ -265,6 +271,9 @@ export function useStudioChatCallbacks({
     clearViewingTrace,
     viewingReplay,
     clearViewingReplay,
+    viewingForkTree,
+    clearViewingForkTree,
+    handleViewForkTree,
     // Stable chat callbacks
     stableChatOnModelChange,
     stableChatOnThinkingChange,

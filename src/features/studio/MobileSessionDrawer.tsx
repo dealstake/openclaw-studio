@@ -31,6 +31,7 @@ interface MobileSessionDrawerProps {
   onViewReplay?: (key: string) => void;
   onExport?: (key: string) => void;
   onResume?: (sessionId: string) => void;
+  onViewForkTree?: (key: string) => void;
 }
 
 const MANAGEMENT_ITEMS: { value: ManagementTab; label: string }[] = [
@@ -59,6 +60,7 @@ export const MobileSessionDrawer = memo(function MobileSessionDrawer({
   onViewReplay,
   onExport,
   onResume,
+  onViewForkTree,
 }: MobileSessionDrawerProps) {
   const {
     groups,
@@ -260,6 +262,7 @@ export const MobileSessionDrawer = memo(function MobileSessionDrawer({
           onExport={onExport}
           onResume={onResume}
           onToggleCompare={toggleComparison}
+          onViewForkTree={onViewForkTree}
         />
       </div>
     </div>
