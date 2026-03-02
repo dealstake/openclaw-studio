@@ -68,23 +68,33 @@ export function useVoiceSettings({
   useEffect(() => {
     if (!settingsCoordinator || loadedRef.current) return;
     loadedRef.current = true;
-    void settingsCoordinator.loadSettings().then((s) => {
-      if (s) setStudioSettings(s);
-    });
+    let cancelled = false;
+    const load = async () => {
+      const s = await settingsCoordinator.loadSettings();
+      if (!cancelled && s) setStudioSettings(s);
+    };
+    void load();
+    return () => { cancelled = true; };
   }, [settingsCoordinator]);
 
   // Fetch available voices
   useEffect(() => {
-    setVoicesLoading(true);
-    fetch("/api/voice/voices")
-      .then((res) => (res.ok ? res.json() : Promise.reject(new Error("Failed"))))
-      .then((data: { voices: ElevenLabsVoice[] }) => {
-        setVoices(data.voices ?? []);
-      })
-      .catch(() => {
-        // Silent fail — voices dropdown won't populate
-      })
-      .finally(() => setVoicesLoading(false));
+    let cancelled = false;
+    const load = async () => {
+      setVoicesLoading(true);
+      try {
+        const res = await fetch("/api/voice/voices");
+        if (!res.ok) return;
+        const data = (await res.json()) as { voices: ElevenLabsVoice[] };
+        if (!cancelled) setVoices(data.voices ?? []);
+      } catch {
+        // Silent fail
+      } finally {
+        if (!cancelled) setVoicesLoading(false);
+      }
+    };
+    void load();
+    return () => { cancelled = true; };
   }, []);
 
   // Resolve merged settings
