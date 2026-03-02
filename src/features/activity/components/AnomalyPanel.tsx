@@ -40,14 +40,14 @@ interface SeverityStyle {
 
 const SEVERITY_STYLES: Record<AnomalySeverity, SeverityStyle> = {
   warning: {
-    pill: "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400",
-    border: "border-yellow-500/20",
-    icon: "text-yellow-500",
+    pill: "bg-amber-500/10 text-amber-700 dark:text-amber-300",
+    border: "border-amber-500/20",
+    icon: "text-amber-500",
   },
   critical: {
-    pill: "bg-red-500/10 text-red-600 dark:text-red-400",
-    border: "border-red-500/20",
-    icon: "text-red-500",
+    pill: "bg-destructive/10 text-destructive",
+    border: "border-destructive/20",
+    icon: "text-destructive",
   },
 };
 
@@ -107,7 +107,7 @@ const AnomalyCard = memo(function AnomalyCard({ anomaly, onDismiss }: AnomalyCar
               {anomaly.taskName}
             </span>
             <span
-              className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-semibold ${styles.pill}`}
+              className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-xs font-semibold ${styles.pill}`}
             >
               {anomaly.severity.toUpperCase()}
             </span>
@@ -115,7 +115,7 @@ const AnomalyCard = memo(function AnomalyCard({ anomaly, onDismiss }: AnomalyCar
               type="button"
               onClick={handleDismiss}
               aria-label={`Dismiss anomaly for ${anomaly.taskName}`}
-              className="ml-auto flex min-h-[32px] min-w-[32px] items-center justify-center rounded-md text-muted-foreground opacity-0 transition-all group-hover/anomaly:opacity-100 hover:bg-muted/60 hover:text-foreground"
+              className="ml-auto flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md text-muted-foreground opacity-0 transition-all group-hover/anomaly:opacity-100 focus-visible:opacity-100 hover:bg-muted/60 hover:text-foreground"
             >
               <X size={12} />
             </button>
@@ -123,15 +123,15 @@ const AnomalyCard = memo(function AnomalyCard({ anomaly, onDismiss }: AnomalyCar
 
           {/* Metric chips */}
           <div className="mt-1 flex flex-wrap items-center gap-1.5">
-            <span className="inline-flex items-center gap-1 rounded-md bg-muted/60 px-1.5 py-0.5 text-[10px] text-muted-foreground">
+            <span className="inline-flex items-center gap-1 rounded-md bg-muted/60 px-1.5 py-0.5 text-xs text-muted-foreground">
               {meta.icon}
               {meta.label}
             </span>
-            <span className="inline-flex items-center gap-0.5 rounded-md bg-muted/60 px-1.5 py-0.5 text-[10px] font-sans text-foreground/80">
+            <span className="inline-flex items-center gap-0.5 rounded-md bg-muted/60 px-1.5 py-0.5 text-xs font-sans text-foreground/80">
               <TrendIcon size={10} className={styles.icon} />
               {formatZScore(anomaly.zScore)}
             </span>
-            <span className="text-[10px] text-muted-foreground">
+            <span className="text-xs text-muted-foreground">
               {formatObserved(anomaly.metric, anomaly.observedValue)}
               {" vs avg "}
               {formatObserved(anomaly.metric, anomaly.baselineMean)}
@@ -139,12 +139,12 @@ const AnomalyCard = memo(function AnomalyCard({ anomaly, onDismiss }: AnomalyCar
           </div>
 
           {/* Explanation */}
-          <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
+          <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
             {anomaly.explanation}
           </p>
 
           {/* Timestamp */}
-          <p className="mt-1 text-[10px] text-muted-foreground/80">
+          <p className="mt-1 text-xs text-muted-foreground/80">
             {new Date(anomaly.detectedAt).toLocaleString(undefined, {
               month: "short",
               day: "numeric",
@@ -196,7 +196,7 @@ export const AnomalyPanel = memo(function AnomalyPanel({
       <div className="flex items-center justify-between border-b border-border/40 px-3 py-2">
         <div className="flex items-center gap-2">
           <AlertTriangle size={13} className="text-muted-foreground" />
-          <span className="text-[11px] font-medium text-muted-foreground">
+          <span className="text-xs font-medium text-muted-foreground">
             {activeCount > 0
               ? `${activeCount} active alert${activeCount !== 1 ? "s" : ""}`
               : "No active alerts"}
@@ -208,7 +208,7 @@ export const AnomalyPanel = memo(function AnomalyPanel({
               type="button"
               onClick={dismissAll}
               title="Dismiss all alerts"
-              className="flex items-center gap-1 rounded-md px-2 py-1 text-[10px] text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+              className="flex min-h-[44px] items-center gap-1 rounded-md px-3 text-xs text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
             >
               <CheckCheck size={11} />
               Dismiss all
@@ -218,8 +218,8 @@ export const AnomalyPanel = memo(function AnomalyPanel({
             type="button"
             onClick={refresh}
             disabled={loading}
-            title="Refresh alerts"
-            className="flex min-h-[28px] min-w-[28px] items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground disabled:opacity-40"
+            aria-label="Refresh alerts"
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground disabled:opacity-40"
           >
             <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
           </button>
@@ -227,7 +227,7 @@ export const AnomalyPanel = memo(function AnomalyPanel({
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto" aria-live="polite" aria-busy={loading}>
         {error && (
           <div className="mx-3 mt-3 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-[12px] text-destructive">
             {error}
