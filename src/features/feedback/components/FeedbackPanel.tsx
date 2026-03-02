@@ -10,6 +10,9 @@ import {
   Trash2,
   MessageSquare,
   X,
+  FlaskConical,
+  Check,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SectionLabel } from "@/components/SectionLabel";
@@ -112,6 +115,8 @@ function deleteAnnotation(id: string) {
 
 // ── Annotation Row ─────────────────────────────────────────────────────
 
+type TestCaseStatus = "idle" | "loading" | "done" | "error" | "duplicate";
+
 const AnnotationRow = memo(function AnnotationRow({
   annotation,
   onDelete,
@@ -121,6 +126,51 @@ const AnnotationRow = memo(function AnnotationRow({
 }) {
   const { Icon, className: iconClass } = RATING_ICON[annotation.rating];
   const agentId = agentIdFromSessionKey(annotation.sessionKey);
+  const [tcStatus, setTcStatus] = useState<TestCaseStatus>("idle");
+  const canCreateTestCase = annotation.rating !== "thumbs_up";
+
+  const handleCreateTestCase = useCallback(async () => {
+    if (tcStatus === "done" || tcStatus === "loading") return;
+    setTcStatus("loading");
+    try {
+      const res = await fetch("/api/evaluations/from-feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userMessage: `[From session ${annotation.sessionKey}, message ${annotation.messageId}]`,
+          rating: annotation.rating,
+          comment: annotation.comment,
+          sessionKey: annotation.sessionKey,
+          messageId: annotation.messageId,
+        }),
+      });
+      if (res.status === 409) {
+        setTcStatus("duplicate");
+        return;
+      }
+      if (!res.ok) {
+        setTcStatus("error");
+        return;
+      }
+      setTcStatus("done");
+    } catch {
+      setTcStatus("error");
+    }
+  }, [annotation, tcStatus]);
+
+  const testCaseIcon = tcStatus === "loading" ? (
+    <Loader2 className="h-3 w-3 animate-spin" />
+  ) : tcStatus === "done" || tcStatus === "duplicate" ? (
+    <Check className="h-3 w-3 text-emerald-500" />
+  ) : (
+    <FlaskConical className="h-3 w-3" />
+  );
+
+  const testCaseTitle =
+    tcStatus === "done" ? "Test case created" :
+    tcStatus === "duplicate" ? "Already a test case" :
+    tcStatus === "error" ? "Failed — click to retry" :
+    "Create eval test case";
 
   return (
     <div className="group/row flex items-start gap-2.5 rounded-lg px-2.5 py-2 transition-colors hover:bg-muted/40">
@@ -149,15 +199,31 @@ const AnnotationRow = memo(function AnnotationRow({
           {annotation.sessionKey} · {annotation.messageId}
         </div>
       </div>
-      <button
-        type="button"
-        onClick={() => onDelete(annotation.id)}
-        className="flex-shrink-0 opacity-0 transition-opacity group-hover/row:opacity-100 text-muted-foreground/50 hover:text-rose-400"
-        aria-label="Delete annotation"
-        title="Delete"
-      >
-        <Trash2 className="h-3 w-3" />
-      </button>
+      <div className="flex items-center gap-0.5 flex-shrink-0">
+        {canCreateTestCase && (
+          <button
+            type="button"
+            onClick={handleCreateTestCase}
+            className={cn(
+              "opacity-0 transition-opacity group-hover/row:opacity-100 text-muted-foreground/50 hover:text-blue-400",
+              (tcStatus === "done" || tcStatus === "duplicate") && "opacity-100",
+            )}
+            aria-label={testCaseTitle}
+            title={testCaseTitle}
+          >
+            {testCaseIcon}
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() => onDelete(annotation.id)}
+          className="opacity-0 transition-opacity group-hover/row:opacity-100 text-muted-foreground/50 hover:text-rose-400"
+          aria-label="Delete annotation"
+          title="Delete"
+        >
+          <Trash2 className="h-3 w-3" />
+        </button>
+      </div>
     </div>
   );
 });
