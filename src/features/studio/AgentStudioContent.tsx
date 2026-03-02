@@ -92,7 +92,7 @@ export const AgentStudioPage = () => {
   const { state, dispatch, hydrateAgents, setError, setLoading } = useAgentStore();
   const layout = useAppLayout();
   const {
-    breakpoint, showSidebarInline, showContextInline, isMobileLayout,
+    breakpoint, showSidebarInline, showContextInline, isMobileLayout, isTabletLayout,
     mobilePane, setMobilePane,
     sessionSidebarCollapsed, setSessionSidebarCollapsed,
     mobileSessionDrawerOpen, setMobileSessionDrawerOpen,
@@ -958,7 +958,8 @@ export const AgentStudioPage = () => {
                 setContextTab(tab);
                 setContextPanelOpen(true);
               }
-              if (mobilePane !== "context") setMobilePane("context");
+              // Only switch to context pane on mobile (tablet shows context inline)
+              if (isMobileLayout && mobilePane !== "context") setMobilePane("context");
             }}
             visible={headerVisible}
           />

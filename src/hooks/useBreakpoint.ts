@@ -57,6 +57,9 @@ export function useBreakpoint(): Breakpoint {
 export function isMobile(bp: Breakpoint): boolean {
   return bp === "mobile";
 }
+export function isTablet(bp: Breakpoint): boolean {
+  return bp === "tablet";
+}
 export function isTabletOrBelow(bp: Breakpoint): boolean {
   return bp === "mobile" || bp === "tablet";
 }

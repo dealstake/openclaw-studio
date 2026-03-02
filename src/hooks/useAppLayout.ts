@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { ManagementTab } from "@/layout/AppSidebar";
-import { useBreakpoint, isDesktopOrAbove, isWide, isTabletOrBelow } from "@/hooks/useBreakpoint";
+import { useBreakpoint, isDesktopOrAbove, isWide, isTablet, isMobile } from "@/hooks/useBreakpoint";
 import { useSwipeDrawer } from "@/hooks/useSwipeDrawer";
 import { useAutoHideHeader } from "@/hooks/useAutoHideHeader";
 import { useContextPanelState } from "@/hooks/useContextPanelState";
@@ -16,7 +16,8 @@ export function useAppLayout() {
   // ── Responsive breakpoint ──────────────────────────────────────
   const breakpoint = useBreakpoint();
   const showSidebarInline = isDesktopOrAbove(breakpoint); // ≥1024px
-  const isMobileLayout = isTabletOrBelow(breakpoint); // <1024px
+  const isTabletLayout = isTablet(breakpoint); // 768-1023px — two-column, no sidebar
+  const isMobileLayout = isMobile(breakpoint); // <768px only — bottom sheet context
 
   // ── Sub-hook state ─────────────────────────────────────────────
   const contextPanel = useContextPanelState();
@@ -26,7 +27,8 @@ export function useAppLayout() {
   // ── Mobile pane ────────────────────────────────────────────────
   const [mobilePane, setMobilePane] = useState<"chat" | "context">("chat");
 
-  const showContextInline = isWide(breakpoint) && contextPanel.contextPanelOpen;
+  // Tablet + wide both show context as inline right column (not bottom sheet)
+  const showContextInline = (isWide(breakpoint) || isTabletLayout) && contextPanel.contextPanelOpen;
 
   // ── Management view (inline center area) ───────────────────────
   const [managementView, setManagementView] = useState<ManagementTab | null>(null);
@@ -157,6 +159,7 @@ export function useAppLayout() {
     showSidebarInline,
     showContextInline,
     isMobileLayout,
+    isTabletLayout,
 
     // Mobile pane
     mobilePane,
