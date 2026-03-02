@@ -410,6 +410,25 @@ export const AgentStudioPage = () => {
           toast.error(`Persona creation failed: ${(err as { error?: string }).error ?? res.statusText}`);
           return;
         }
+
+        // Create persona DB row so it appears in the personas list
+        const ownerAgentId = focusedAgent?.agentId ?? "alex";
+        const personaDbRes = await fetch("/api/workspace/personas", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            agentId: ownerAgentId,
+            personaId: personaConfig.personaId,
+            displayName: personaConfig.displayName,
+            category: (personaConfig as Record<string, unknown>).category ?? "operations",
+            templateKey: (personaConfig as Record<string, unknown>).templateKey ?? null,
+            optimizationGoals: (personaConfig as Record<string, unknown>).optimizationGoals ?? [],
+          }),
+        });
+        if (!personaDbRes.ok) {
+          console.warn("[persona] DB row creation failed:", await personaDbRes.text().catch(() => ""));
+        }
+
         void wizard.endWizard();
         toast.success(`Persona "${personaConfig.displayName}" created successfully`);
       } catch (err) {
