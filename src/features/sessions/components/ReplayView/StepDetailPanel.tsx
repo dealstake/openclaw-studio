@@ -130,7 +130,7 @@ const EditableToolArgs = React.memo(function EditableToolArgs({
       <button
         type="button"
         onClick={handleEdit}
-        className="absolute right-2 top-2 flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] text-muted-foreground opacity-0 transition hover:bg-muted hover:text-foreground group-hover/args:opacity-100 min-h-[24px]"
+        className="absolute right-2 top-2 flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] text-muted-foreground opacity-40 transition hover:bg-muted hover:text-foreground hover:opacity-100 focus:opacity-100 group-hover/args:opacity-100 min-h-[44px] min-w-[44px] justify-center"
         title="Edit arguments"
       >
         <Pencil className="h-2.5 w-2.5" />
@@ -215,7 +215,7 @@ const EditableContent = React.memo(function EditableContent({
       <button
         type="button"
         onClick={handleEdit}
-        className="absolute right-2 top-2 flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] text-muted-foreground opacity-0 transition hover:bg-muted hover:text-foreground group-hover/content:opacity-100 min-h-[24px]"
+        className="absolute right-2 top-2 flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] text-muted-foreground opacity-40 transition hover:bg-muted hover:text-foreground hover:opacity-100 focus:opacity-100 group-hover/content:opacity-100 min-h-[44px] min-w-[44px] justify-center"
         title="Edit content"
       >
         <Pencil className="h-2.5 w-2.5" />
@@ -236,14 +236,12 @@ export const StepDetailPanel = React.memo(function StepDetailPanel({
   // Track edits per step — reset when step changes
   const [editedToolArgs, setEditedToolArgs] = useState<Record<string, Record<string, unknown>>>({});
   const [editedContent, setEditedContent] = useState<string | undefined>(undefined);
-  const [lastStepNumber, setLastStepNumber] = useState<number | null>(null);
 
   // Reset edits when step changes
-  if (stepNumber !== lastStepNumber) {
-    setLastStepNumber(stepNumber);
+  React.useEffect(() => {
     setEditedToolArgs({});
     setEditedContent(undefined);
-  }
+  }, [stepNumber]);
 
   const hasEdits = useMemo(
     () => Object.keys(editedToolArgs).length > 0 || editedContent !== undefined,

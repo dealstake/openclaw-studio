@@ -26,7 +26,7 @@ export const ForkedSessionBadge = memo(function ForkedSessionBadge({
 
   return (
     <div
-      className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs bg-violet-500/10 text-violet-400 border border-violet-500/20 ${className ?? ""}`}
+      className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs bg-violet-500/15 text-violet-300 border border-violet-500/30 ${className ?? ""}`}
     >
       <GitBranch className="h-3 w-3" />
       <span>Forked from</span>
