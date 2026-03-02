@@ -185,7 +185,7 @@ const AnnotationRow = memo(function AnnotationRow({
           <span className="text-[10px] text-muted-foreground/60">
             {RATING_LABEL[annotation.rating]}
           </span>
-          <span className="ml-auto flex-shrink-0 text-[10px] tabular-nums text-muted-foreground/50">
+          <span className="ml-auto flex-shrink-0 text-[10px] tabular-nums text-muted-foreground/70">
             {formatDate(annotation.createdAt)}
           </span>
         </div>
@@ -195,7 +195,7 @@ const AnnotationRow = memo(function AnnotationRow({
             {annotation.comment}
           </p>
         )}
-        <div className="mt-0.5 text-[10px] text-muted-foreground/40 truncate">
+        <div className="mt-0.5 text-[10px] text-muted-foreground/70 truncate">
           {annotation.sessionKey} · {annotation.messageId}
         </div>
       </div>
@@ -205,7 +205,7 @@ const AnnotationRow = memo(function AnnotationRow({
             type="button"
             onClick={handleCreateTestCase}
             className={cn(
-              "opacity-0 transition-opacity group-hover/row:opacity-100 text-muted-foreground/50 hover:text-blue-400",
+              "flex h-7 w-7 items-center justify-center rounded-md opacity-0 transition-opacity group-hover/row:opacity-100 group-focus-within/row:opacity-100 text-muted-foreground/60 hover:text-blue-400 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
               (tcStatus === "done" || tcStatus === "duplicate") && "opacity-100",
             )}
             aria-label={testCaseTitle}
@@ -217,7 +217,7 @@ const AnnotationRow = memo(function AnnotationRow({
         <button
           type="button"
           onClick={() => onDelete(annotation.id)}
-          className="opacity-0 transition-opacity group-hover/row:opacity-100 text-muted-foreground/50 hover:text-rose-400"
+          className="flex h-7 w-7 items-center justify-center rounded-md opacity-0 transition-opacity group-hover/row:opacity-100 group-focus-within/row:opacity-100 text-muted-foreground/60 hover:text-rose-400 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           aria-label="Delete annotation"
           title="Delete"
         >
@@ -336,7 +336,7 @@ export const FeedbackPanel = memo(function FeedbackPanel({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search annotations…"
-            className="w-full rounded-md border border-border/60 bg-background/60 py-1.5 pl-7 pr-7 text-xs text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-ring"
+            className="w-full rounded-md border border-border/60 bg-background/60 py-1.5 pl-7 pr-7 text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-ring"
           />
           {search && (
             <button
