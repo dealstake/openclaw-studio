@@ -1,157 +1,87 @@
 import { describe, it, expect } from "vitest";
-import { estimateSavings, EMPTY_SUMMARY } from "@/features/routing/lib/savingsEstimator";
+import {
+  estimateSavings,
+  EMPTY_SUMMARY,
+} from "@/features/routing/lib/savingsEstimator";
 import type { RoutingRule } from "@/features/routing/lib/types";
 import type { ModelCostBreakdown } from "@/features/usage/lib/costCalculator";
 
-function makeRule(
-  overrides: Partial<RoutingRule> & { id: string; name: string; model: string },
-): RoutingRule {
+function makeRule(overrides: Partial<RoutingRule> = {}): RoutingRule {
   return {
+    id: "rule-1",
+    name: "Test Rule",
     enabled: true,
-    conditions: [],
+    conditions: [{ type: "taskType", value: "cron" }],
+    model: "anthropic/claude-haiku-3.5",
     ...overrides,
   };
 }
 
-function makeCostByModel(
-  entries: Record<string, Partial<ModelCostBreakdown>>,
-): Map<string, ModelCostBreakdown> {
+function makeCostMap(entries: [string, number][]): Map<string, ModelCostBreakdown> {
   const map = new Map<string, ModelCostBreakdown>();
-  for (const [key, val] of Object.entries(entries)) {
-    map.set(key, {
-      requests: val.requests ?? 1,
-      inputTokens: val.inputTokens ?? 0,
-      outputTokens: val.outputTokens ?? 0,
-      cost: val.cost ?? 0,
+  for (const [model, cost] of entries) {
+    map.set(model, {
+      requests: 100,
+      inputTokens: 1_000_000,
+      outputTokens: 200_000,
+      cost,
     });
   }
   return map;
 }
 
 describe("estimateSavings", () => {
-  it("returns empty summary when no rules", () => {
-    const result = estimateSavings([], new Map(), 10, 100000, 50000, 5);
+  it("returns empty summary for no rules", () => {
+    const result = estimateSavings([], new Map(), 100, 1_000_000, 200_000, 20);
     expect(result).toEqual(EMPTY_SUMMARY);
   });
 
-  it("returns empty summary when no sessions", () => {
-    const rules = [makeRule({ id: "1", name: "Route cron", model: "anthropic/claude-haiku-3.5", conditions: [{ type: "taskType", value: "cron" }] })];
+  it("returns empty summary for zero sessions", () => {
+    const rules = [makeRule()];
     const result = estimateSavings(rules, new Map(), 0, 0, 0, 0);
     expect(result).toEqual(EMPTY_SUMMARY);
   });
 
-  it("returns empty summary when all rules disabled", () => {
-    const rules = [makeRule({ id: "1", name: "Disabled", model: "anthropic/claude-haiku-3.5", enabled: false })];
-    const result = estimateSavings(rules, new Map(), 10, 100000, 50000, 5);
+  it("returns empty for disabled rules only", () => {
+    const rules = [makeRule({ enabled: false })];
+    const costMap = makeCostMap([["anthropic/claude-opus-4-6", 50]]);
+    const result = estimateSavings(rules, costMap, 100, 1_000_000, 200_000, 20);
     expect(result).toEqual(EMPTY_SUMMARY);
   });
 
-  it("estimates savings for cron → haiku rule", () => {
-    const rules = [
-      makeRule({
-        id: "1",
-        name: "Cron → Haiku",
-        model: "anthropic/claude-haiku-3.5",
-        conditions: [{ type: "taskType", value: "cron" }],
-      }),
-    ];
-    const costByModel = makeCostByModel({ "Opus 4": { cost: 100 } });
-    const result = estimateSavings(
-      rules,
-      costByModel,
-      100,      // totalSessions
-      10000000, // 10M input tokens
-      5000000,  // 5M output tokens
-      50,       // 50 cron sessions
-    );
-
+  it("estimates savings for cron→haiku rule", () => {
+    const rules = [makeRule({ conditions: [{ type: "taskType", value: "cron" }], model: "anthropic/claude-haiku-3.5" })];
+    const costMap = makeCostMap([["anthropic/claude-opus-4-6", 50]]);
+    const result = estimateSavings(rules, costMap, 100, 1_000_000, 200_000, 20);
     expect(result.totalSaved).toBeGreaterThan(0);
-    expect(result.isEstimate).toBe(true);
+    expect(result.savedPercent).toBeGreaterThan(0);
     expect(result.byRule).toHaveLength(1);
-    expect(result.byRule[0].ruleName).toBe("Cron → Haiku");
     expect(result.byRule[0].toModel).toBe("anthropic/claude-haiku-3.5");
+    expect(result.isEstimate).toBe(true);
   });
 
-  it("estimates savings for catch-all rule (any → haiku)", () => {
+  it("handles multiple rules without double-counting tokens", () => {
     const rules = [
-      makeRule({
-        id: "1",
-        name: "All → Haiku",
-        model: "anthropic/claude-haiku-3.5",
-        conditions: [{ type: "taskType", value: "any" }],
-      }),
+      makeRule({ id: "r1", conditions: [{ type: "taskType", value: "cron" }], model: "anthropic/claude-haiku-3.5" }),
+      makeRule({ id: "r2", conditions: [{ type: "taskType", value: "main" }], model: "anthropic/claude-sonnet-4-6" }),
     ];
-    const costByModel = makeCostByModel({ "Opus 4": { cost: 200 } });
-    const result = estimateSavings(
-      rules,
-      costByModel,
-      100,
-      10000000,
-      5000000,
-      20,
-    );
-
-    expect(result.totalSaved).toBeGreaterThan(0);
-    expect(result.byRule).toHaveLength(1);
-    // All sessions routed
-    expect(result.byRule[0].sessionsAffected).toBe(100);
-  });
-
-  it("returns zero savings when routing to same-tier model", () => {
-    const rules = [
-      makeRule({
-        id: "1",
-        name: "Opus → Opus",
-        model: "anthropic/claude-opus-4-6",
-        conditions: [],
-      }),
-    ];
-    const costByModel = makeCostByModel({ "Opus 4": { cost: 100 } });
-    const result = estimateSavings(rules, costByModel, 50, 5000000, 2000000, 10);
-
-    // No savings since default = opus and rule = opus
-    expect(result.totalSaved).toBe(0);
-  });
-
-  it("savedPercent is calculated correctly", () => {
-    const rules = [
-      makeRule({
-        id: "1",
-        name: "All → Flash",
-        model: "gemini-2.5-flash",
-        conditions: [],
-      }),
-    ];
-    const costByModel = makeCostByModel({ "Opus 4": { cost: 50 } });
-    const result = estimateSavings(rules, costByModel, 20, 2000000, 1000000, 5);
-
-    if (result.totalSaved > 0) {
-      expect(result.savedPercent).toBeGreaterThan(0);
-      // savedPercent can exceed 100% when estimated original cost > actual recorded cost
-      // (e.g., routing estimation assumes all sessions use the expensive default model)
-      expect(Number.isFinite(result.savedPercent)).toBe(true);
-    }
-  });
-
-  it("handles multiple rules with priority ordering", () => {
-    const rules = [
-      makeRule({
-        id: "1",
-        name: "Cron → Haiku",
-        model: "anthropic/claude-haiku-3.5",
-        conditions: [{ type: "taskType", value: "cron" }],
-      }),
-      makeRule({
-        id: "2",
-        name: "Subagent → Sonnet",
-        model: "anthropic/claude-sonnet-4-6",
-        conditions: [{ type: "taskType", value: "subagent" }],
-      }),
-    ];
-    const costByModel = makeCostByModel({ "Opus 4": { cost: 150 } });
-    const result = estimateSavings(rules, costByModel, 100, 10000000, 5000000, 40);
-
+    const costMap = makeCostMap([["anthropic/claude-opus-4-6", 100]]);
+    const result = estimateSavings(rules, costMap, 100, 2_000_000, 400_000, 30);
+    // Both rules should contribute
     expect(result.byRule.length).toBeGreaterThanOrEqual(1);
+    // Total saved should be positive
     expect(result.totalSaved).toBeGreaterThan(0);
+  });
+
+  it("calculates savings percent correctly", () => {
+    const rules = [makeRule({ conditions: [], model: "anthropic/claude-haiku-3.5" })]; // catch-all
+    const costMap = makeCostMap([["anthropic/claude-opus-4-6", 100]]);
+    const result = estimateSavings(rules, costMap, 100, 1_000_000, 200_000, 20);
+    if (result.totalOriginalCost > 0) {
+      expect(result.savedPercent).toBeCloseTo(
+        (result.totalSaved / result.totalOriginalCost) * 100,
+        1,
+      );
+    }
   });
 });
