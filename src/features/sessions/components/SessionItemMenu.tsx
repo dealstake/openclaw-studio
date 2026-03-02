@@ -29,6 +29,8 @@ type SessionItemMenuProps = {
   inComparison?: boolean;
   /** Whether the comparison set is full (MAX reached) and this session is not in it */
   comparisonFull?: boolean;
+  /** Whether this is an archived (reset/deleted) session with limited actions */
+  isArchived?: boolean;
   onRename: (key: string) => void;
   onDelete: (key: string) => void;
   onTogglePin: (key: string) => void;
@@ -44,6 +46,7 @@ export const SessionItemMenu = memo(function SessionItemMenu({
   pinned,
   inComparison = false,
   comparisonFull = false,
+  isArchived = false,
   onRename,
   onDelete,
   onTogglePin,
@@ -84,34 +87,38 @@ export const SessionItemMenu = memo(function SessionItemMenu({
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" sideOffset={4} className="w-44">
-          <DropdownMenuItem
-            onClick={(e) => {
-              e.stopPropagation();
-              onRename(sessionKey);
-            }}
-          >
-            <Pencil className="mr-2 h-3.5 w-3.5" />
-            Rename
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={(e) => {
-              e.stopPropagation();
-              onTogglePin(sessionKey);
-            }}
-          >
-            {pinned ? (
-              <>
-                <PinOff className="mr-2 h-3.5 w-3.5" />
-                Unpin
-              </>
-            ) : (
-              <>
-                <Pin className="mr-2 h-3.5 w-3.5" />
-                Pin to top
-              </>
-            )}
-          </DropdownMenuItem>
-          {onToggleCompare && (
+          {!isArchived && (
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onRename(sessionKey);
+              }}
+            >
+              <Pencil className="mr-2 h-3.5 w-3.5" />
+              Rename
+            </DropdownMenuItem>
+          )}
+          {!isArchived && (
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onTogglePin(sessionKey);
+              }}
+            >
+              {pinned ? (
+                <>
+                  <PinOff className="mr-2 h-3.5 w-3.5" />
+                  Unpin
+                </>
+              ) : (
+                <>
+                  <Pin className="mr-2 h-3.5 w-3.5" />
+                  Pin to top
+                </>
+              )}
+            </DropdownMenuItem>
+          )}
+          {!isArchived && onToggleCompare && (
             <DropdownMenuItem
               onClick={(e) => {
                 e.stopPropagation();

@@ -65,6 +65,8 @@ type TranscriptEntry = {
   sessionId: string;
   sessionKey: string | null;
   archived: boolean;
+  archiveType?: "reset" | "deleted" | null;
+  archivedAt?: string | null;
   size: number;
   startedAt: string | null;
   updatedAt: string | null;
@@ -95,25 +97,100 @@ function listTranscriptsLocal(agentId: string): TranscriptEntry[] {
     if (val?.sessionId) uuidToKey[val.sessionId] = key;
   }
 
-  const collectFromDir = (dir: string, archived: boolean) => {
+  /** Parse session key and preview from the first few KB of a JSONL transcript */
+  const extractMetaFromFile = (filePath: string): { sessionKey: string | null; model: string | null; preview: string | null; startedAt: string | null } => {
+    const result = { sessionKey: null as string | null, model: null as string | null, preview: null as string | null, startedAt: null as string | null };
+    try {
+      const fd = fs.openSync(filePath, "r");
+      const buf = Buffer.alloc(4096);
+      const bytesRead = fs.readSync(fd, buf, 0, 4096, 0);
+      fs.closeSync(fd);
+      const chunk = buf.toString("utf-8", 0, bytesRead);
+      for (const line of chunk.split("\n").filter(Boolean)) {
+        try {
+          const entry = JSON.parse(line);
+          if (entry.type === "session") {
+            result.sessionKey = entry.sessionKey || null;
+            result.startedAt = entry.timestamp || null;
+          }
+          if (entry.type === "model_change" && !result.model) {
+            result.model = entry.modelId || null;
+          }
+          if (entry.type === "message" && entry.message?.role === "user" && !result.preview) {
+            const content = entry.message.content;
+            if (typeof content === "string") {
+              result.preview = content.substring(0, 200);
+            } else if (Array.isArray(content)) {
+              const textPart = content.find((p: { type: string; text?: string }) => p.type === "text");
+              if (textPart?.text) result.preview = textPart.text.substring(0, 200);
+            }
+          }
+        } catch { /* skip bad lines */ }
+      }
+    } catch { /* skip unreadable */ }
+    return result;
+  };
+
+  /** Parse archived filename: {uuid}.jsonl.{reset|deleted}.{timestamp} */
+  const parseArchivedFilename = (f: string): { sessionId: string; archiveType: "reset" | "deleted"; archivedAt: string } | null => {
+    const match = f.match(/^([a-f0-9-]+)\.jsonl\.(reset|deleted)\.(.+)$/);
+    if (!match) return null;
+    return {
+      sessionId: match[1],
+      archiveType: match[2] as "reset" | "deleted",
+      archivedAt: match[3],
+    };
+  };
+
+  const collectFromDir = (dir: string, dirArchived: boolean) => {
     if (!fs.existsSync(dir)) return;
-    const files = fs.readdirSync(dir).filter(f => f.endsWith(".jsonl"));
+    const files = fs.readdirSync(dir);
     for (const file of files) {
-      const sessionId = file.replace(".jsonl", "");
+      let sessionId: string;
+      let archiveType: "reset" | "deleted" | null = null;
+      let archivedAt: string | null = null;
+
+      if (file.endsWith(".jsonl")) {
+        sessionId = file.replace(".jsonl", "");
+      } else {
+        const parsed = parseArchivedFilename(file);
+        if (!parsed) continue;
+        sessionId = parsed.sessionId;
+        archiveType = parsed.archiveType;
+        archivedAt = parsed.archivedAt;
+      }
+
       const filePath = path.join(dir, file);
       try {
         const stat = fs.statSync(filePath);
-        const key = uuidToKey[sessionId] ?? null;
-        const meta = key ? sessionsMap[key] : null;
+        const isArchived = dirArchived || archiveType !== null;
+
+        // For active sessions, use sessions.json lookup; for archived, read from file
+        let key = uuidToKey[sessionId] ?? null;
+        let model: string | null = key ? (sessionsMap[key] as { model?: string })?.model ?? null : null;
+        let preview: string | null = null;
+        let startedAt: string | null = stat.birthtime.toISOString();
+
+        if (isArchived || !key) {
+          // Extract metadata from file content for archived/orphaned sessions
+          const meta = extractMetaFromFile(filePath);
+          if (!key && meta.sessionKey) key = meta.sessionKey;
+          if (!model && meta.model) model = meta.model;
+          if (meta.preview) preview = meta.preview;
+          if (meta.startedAt) startedAt = meta.startedAt;
+        }
+
         entries.push({
           sessionId,
           sessionKey: key,
-          archived,
+          archived: isArchived,
+          archiveType,
+          archivedAt,
           size: stat.size,
-          startedAt: stat.birthtime.toISOString(),
+          startedAt,
           updatedAt: stat.mtime.toISOString(),
-          model: meta?.model ?? null,
-          preview: null,
+          model,
+          preview,
         });
       } catch {
         // Skip unreadable files

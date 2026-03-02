@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useCallback, useEffect, useRef } from "react";
-import { MessageSquare, Pin, GitCompareArrows } from "lucide-react";
+import { MessageSquare, Pin, GitCompareArrows, Archive } from "lucide-react";
 import { formatRelativeTime } from "@/lib/text/time";
 import type { SessionHistoryEntry } from "../hooks/useSessionHistory";
 import { SessionItemMenu } from "./SessionItemMenu";
@@ -87,16 +87,20 @@ export const SessionItem = memo(function SessionItem({
       onDoubleClick={handleDoubleClick}
       onKeyDown={handleKeyDown}
       className={`group flex w-full items-start gap-2.5 rounded-lg px-2.5 py-2.5 text-left transition-all duration-200 focus-ring min-h-[44px] ${
-        active
-          ? "bg-accent text-accent-foreground border-l-2 border-l-primary ring-1 ring-primary/20"
-          : inComparison
-            ? "bg-primary/5 text-foreground ring-1 ring-primary/30 border-l-2 border-l-primary/50"
-            : focused
-              ? "bg-muted/70 text-foreground ring-1 ring-primary/30"
-              : "text-foreground/80 hover:bg-muted hover:translate-x-0.5"
+        session.archiveType
+          ? "text-foreground/40 hover:bg-muted/50"
+          : active
+            ? "bg-accent text-accent-foreground border-l-2 border-l-primary ring-1 ring-primary/20"
+            : inComparison
+              ? "bg-primary/5 text-foreground ring-1 ring-primary/30 border-l-2 border-l-primary/50"
+              : focused
+                ? "bg-muted/70 text-foreground ring-1 ring-primary/30"
+                : "text-foreground/80 hover:bg-muted hover:translate-x-0.5"
       }`}
     >
-      {pinned ? (
+      {session.archiveType ? (
+        <Archive className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground/50" />
+      ) : pinned ? (
         <Pin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary/70" />
       ) : (
         <MessageSquare className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
@@ -142,6 +146,7 @@ export const SessionItem = memo(function SessionItem({
             pinned={pinned}
             inComparison={inComparison}
             comparisonFull={comparisonFull}
+            isArchived={!!session.archiveType}
             onRename={onRenameStart}
             onDelete={onDelete}
             onTogglePin={onTogglePin}

@@ -19,6 +19,8 @@ export type TranscriptEntry = {
   sessionId: string;
   sessionKey: string | null;
   archived: boolean;
+  archiveType?: "reset" | "deleted" | null;
+  archivedAt?: string | null;
   size: number;
   startedAt: string | null;
   updatedAt: string | null;
