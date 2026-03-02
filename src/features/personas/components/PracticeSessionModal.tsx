@@ -28,11 +28,13 @@ import {
   ShieldAlert,
   RefreshCw,
 } from "lucide-react";
+import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import type { PracticeModeType } from "../lib/personaTypes";
 import type { PracticeConfig, PracticeTranscriptEntry } from "../lib/practiceTypes";
 import type { PreflightResult } from "../lib/preflightTypes";
 import { PRACTICE_MODE_LABELS } from "../lib/personaConstants";
 import { usePracticeSession } from "../hooks/usePracticeSession";
+import { usePracticeChat } from "../hooks/usePracticeChat";
 import { usePersonaHealth } from "../hooks/usePersonaHealth";
 import { PracticeScoreCard } from "./PracticeScoreCard";
 
@@ -279,6 +281,7 @@ const PreflightBanner = React.memo(function PreflightBanner({
 export interface PracticeSessionModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  client: GatewayClient;
   personaId: string;
   personaName: string;
   availableModes: PracticeModeType[];
@@ -288,6 +291,7 @@ export interface PracticeSessionModalProps {
 export const PracticeSessionModal = React.memo(function PracticeSessionModal({
   open,
   onOpenChange,
+  client,
   personaId,
   personaName,
   availableModes,
@@ -311,6 +315,15 @@ export const PracticeSessionModal = React.memo(function PracticeSessionModal({
   );
   const [difficulty, setDifficulty] = useState<Difficulty>("medium");
 
+  // Real AI chat hook — connects to gateway for live inference
+  const practiceChat = usePracticeChat({
+    client,
+    personaId,
+    personaName,
+    mode: selectedMode,
+    difficulty,
+  });
+
   // Preflight health check — runs automatically when modal opens in pre-session state
   const { checkHealth, checking: healthChecking, healthResult, error: healthError, reset: resetHealth } =
     usePersonaHealth();
@@ -320,12 +333,12 @@ export const PracticeSessionModal = React.memo(function PracticeSessionModal({
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Auto-scroll transcript
+  // Auto-scroll on new messages or streaming
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [session?.transcript.length]);
+  }, [practiceChat.messages.length, practiceChat.streamText, session?.transcript.length]);
 
   // Focus input when session starts
   useEffect(() => {
@@ -334,8 +347,23 @@ export const PracticeSessionModal = React.memo(function PracticeSessionModal({
     }
   }, [session?.status]);
 
+  // Sync real AI messages into the practice session transcript
+  useEffect(() => {
+    const aiMessages = practiceChat.messages;
+    if (aiMessages.length === 0 || !session || session.status !== "active") return;
+
+    // Only process the latest message (avoid re-adding)
+    const lastMsg = aiMessages[aiMessages.length - 1];
+    const transcriptTexts = new Set(session.transcript.map(t => t.content));
+
+    if (!transcriptTexts.has(lastMsg.content)) {
+      if (lastMsg.role === "assistant") {
+        addPersonaMessage(lastMsg.content);
+      }
+    }
+  }, [practiceChat.messages, session, addPersonaMessage]);
+
   // Auto-run preflight when modal opens in pre-session state.
-  // checkHealth is stable (useCallback with no deps in the hook).
   const personaIdRef = useRef(personaId);
   personaIdRef.current = personaId;
   useEffect(() => {
@@ -352,11 +380,12 @@ export const PracticeSessionModal = React.memo(function PracticeSessionModal({
         if (session?.status === "active") abandonSession();
         reset();
         resetHealth();
+        void practiceChat.cleanup();
         setInput("");
       }
       onOpenChange(nextOpen);
     },
-    [onOpenChange, reset, abandonSession, resetHealth, session?.status],
+    [onOpenChange, reset, abandonSession, resetHealth, practiceChat, session?.status],
   );
 
   const handleStart = useCallback(() => {
@@ -370,37 +399,21 @@ export const PracticeSessionModal = React.memo(function PracticeSessionModal({
     };
     startSession(config);
 
-    const openingMessages: Partial<Record<PracticeModeType, string>> = {
-      "mock-call": "📞 *Ring ring...* Hello?",
-      "task-delegation":
-        "Good morning. I've got a packed day — let me know what needs to happen.",
-      "ticket-simulation":
-        "Hi, I'm having an issue and I really need help with this...",
-      "content-review":
-        "I have a content brief ready for you. Let me share the details.",
-      interview: "Hi, thanks for taking the time to meet with me today.",
-      analysis:
-        "I've prepared a dataset for your review. Let me walk you through it.",
-      scenario: "Let's get started. What would you like to work through?",
-    };
-
-    const opening = openingMessages[selectedMode] ?? "Let's begin.";
-    setTimeout(() => addPersonaMessage(opening), 100);
-  }, [personaId, selectedMode, difficulty, startSession, addPersonaMessage, healthResult]);
+    // Start real AI practice session
+    void practiceChat.start();
+  }, [personaId, selectedMode, difficulty, startSession, practiceChat, healthResult]);
 
   const handleSend = useCallback(() => {
     const trimmed = input.trim();
     if (!trimmed || !session || session.status !== "active") return;
+
+    // Add to local transcript
     addUserMessage(trimmed);
     setInput("");
 
-    // Placeholder — real implementation connects to chat system
-    setTimeout(() => {
-      addPersonaMessage(
-        "*(AI response would appear here — connect to chat system for real inference)*",
-      );
-    }, 800);
-  }, [input, session, addUserMessage, addPersonaMessage]);
+    // Send to real AI via gateway
+    void practiceChat.send(trimmed);
+  }, [input, session, addUserMessage, practiceChat]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -414,21 +427,31 @@ export const PracticeSessionModal = React.memo(function PracticeSessionModal({
 
   const handleEnd = useCallback(() => {
     endSession();
-    // Placeholder evaluation
-    setTimeout(() => {
+    // Request real AI evaluation
+    void practiceChat.evaluate();
+  }, [endSession, practiceChat]);
+
+  // When evaluation response arrives, set the score
+  useEffect(() => {
+    if (!evaluating) return;
+
+    // Check if the last AI message is an evaluation (after endSession)
+    const aiMessages = practiceChat.messages;
+    const lastMsg = aiMessages[aiMessages.length - 1];
+    if (lastMsg?.role === "assistant" && !practiceChat.isStreaming && session?.status === "completed") {
+      // Parse score from the evaluation text
+      const scoreMatch = lastMsg.content.match(/(\d+)\s*\/\s*10/);
+      const overall = scoreMatch ? parseInt(scoreMatch[1], 10) : 5;
+
       setScore({
         timestamp: new Date().toISOString(),
-        overall: 7,
+        overall,
         dimensions: {},
-        feedback:
-          "Connect practice mode to the real AI chat system to get actual scoring.",
-        improvements: [
-          "Wire up to agent chat for real AI responses",
-          "Implement transcript export",
-        ],
+        feedback: lastMsg.content,
+        improvements: [],
       });
-    }, 1500);
-  }, [endSession, setScore]);
+    }
+  }, [practiceChat.messages, practiceChat.isStreaming, evaluating, session?.status, setScore]);
 
   const isActive = session?.status === "active";
   const isCompleted = session?.status === "completed" && session.score;
@@ -549,6 +572,22 @@ export const PracticeSessionModal = React.memo(function PracticeSessionModal({
                 {session.transcript.map((entry, i) => (
                   <TranscriptBubble key={i} entry={entry} />
                 ))}
+                {/* Streaming indicator — show AI typing */}
+                {practiceChat.isStreaming && practiceChat.streamText && (
+                  <div className="flex justify-start">
+                    <div className="max-w-[80%] rounded-2xl rounded-bl-md border border-border/30 bg-card px-3.5 py-2.5 text-sm leading-relaxed text-foreground">
+                      {practiceChat.streamText}
+                      <span className="ml-1 inline-block h-3 w-0.5 animate-pulse bg-foreground/50" />
+                    </div>
+                  </div>
+                )}
+                {practiceChat.isStreaming && !practiceChat.streamText && (
+                  <div className="flex justify-start">
+                    <div className="rounded-2xl rounded-bl-md border border-border/30 bg-card px-3.5 py-2.5">
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Input bar */}

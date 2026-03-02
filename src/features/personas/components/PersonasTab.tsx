@@ -2,7 +2,7 @@
 
 import React, { useCallback, useState } from "react";
 import { Search, Users, Plus } from "lucide-react";
-import type { GatewayStatus } from "@/lib/gateway/GatewayClient";
+import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { cn } from "@/lib/utils";
 import { ErrorBanner } from "@/components/ErrorBanner";
 import { usePersonas, type PersonaStatusFilter, type PersonaListItem } from "../hooks/usePersonas";
@@ -43,6 +43,7 @@ const ALL_PRACTICE_MODES: PracticeModeType[] = [
 // ---------------------------------------------------------------------------
 
 export interface PersonasTabProps {
+  client: GatewayClient;
   agentId: string | null;
   status: GatewayStatus;
   /** Callback to launch persona creation wizard (legacy — modal now self-managed) */
@@ -52,6 +53,7 @@ export interface PersonasTabProps {
 }
 
 export const PersonasTab = React.memo(function PersonasTab({
+  client,
   agentId,
   status,
   onCreatePersona,
@@ -266,6 +268,7 @@ export const PersonasTab = React.memo(function PersonasTab({
         <PracticeSessionModal
           open={!!practiceTarget}
           onOpenChange={handlePracticeClose}
+          client={client}
           personaId={practiceTarget.personaId}
           personaName={practiceTarget.displayName}
           availableModes={ALL_PRACTICE_MODES}

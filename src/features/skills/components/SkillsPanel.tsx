@@ -185,6 +185,7 @@ export const SkillsPanel = React.memo(function SkillsPanel({
       {/* Tab content */}
       {subTab === "personas" ? (
         <PersonasTab
+          client={client}
           agentId={focusedAgentId ?? null}
           status={status}
           onCreatePersona={onCreatePersona}
