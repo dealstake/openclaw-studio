@@ -138,7 +138,7 @@
   --sidebar-ring: oklch(0.72 0.13 85);
   --panel: oklch(0.215 0.016 250 / 0.75);
   --panel-border: oklch(0.35 0.02 250 / 0.53);
-  --surface-elevated: oklch(0.195 0.016 250);
+  --surface-elevated: oklch(0.21 0.016 250);
   --surface-sunken: oklch(0.165 0.016 250);
   --shadow-color: oklch(0.08 0.012 250);
   --shadow-opacity: 0.40;
