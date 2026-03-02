@@ -4,7 +4,7 @@ export interface MarkdownHeading {
   level: number;
   /** Heading text (trimmed, without the `#` prefix) */
   text: string;
-  /** 0-indexed line number in the content string */
+  /** 1-indexed line number in the content string */
   lineNumber: number;
 }
 
@@ -15,7 +15,7 @@ export interface MarkdownHeading {
  * - Fenced code blocks (``` or ~~~)
  * - YAML frontmatter (--- ... ---)
  *
- * Returns headings in document order with their 0-indexed line numbers.
+ * Returns headings in document order with their 1-indexed line numbers.
  */
 export function extractHeadings(content: string): MarkdownHeading[] {
   const lines = content.split("\n");
@@ -51,7 +51,7 @@ export function extractHeadings(content: string): MarkdownHeading[] {
       headings.push({
         level: match[1].length,
         text: match[2].trim(),
-        lineNumber: i,
+        lineNumber: i + 1,
       });
     }
   }

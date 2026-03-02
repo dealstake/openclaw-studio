@@ -131,7 +131,7 @@ export const BrainSectionNav = memo(function BrainSectionNav({
                     type="button"
                     onClick={() => onNavigate(heading.lineNumber)}
                     className={[
-                      "w-full text-left px-2 py-0.5 text-xs transition-colors truncate",
+                      "w-full text-left px-2 py-2 text-xs transition-colors truncate",
                       indent,
                       weight,
                       isActive

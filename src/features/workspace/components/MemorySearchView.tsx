@@ -82,7 +82,7 @@ const ResultCard = memo(function ResultCard({
         >
           {badge}
         </span>
-        <span className="text-[10px] text-muted-foreground/60">
+        <span className="text-[10px] text-muted-foreground">
           Line {result.lineNumber}
           {result.matchCount > 1 ? ` · ${result.matchCount} matches` : ""}
         </span>
@@ -189,7 +189,7 @@ export const MemorySearchView = memo(function MemorySearchView({
           <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
             <FileSearch className="h-7 w-7 text-muted-foreground/30" />
             <p className="text-xs text-muted-foreground">No matches found</p>
-            <p className="text-[10px] text-muted-foreground/60">
+            <p className="text-[10px] text-muted-foreground">
               Try a different search term
             </p>
           </div>
@@ -199,7 +199,7 @@ export const MemorySearchView = memo(function MemorySearchView({
         {showResults && (
           <div className="flex flex-col gap-1.5 px-2 py-2">
             {/* Summary line */}
-            <p className="px-1 text-[10px] text-muted-foreground/60">
+            <p className="px-1 text-[10px] text-muted-foreground">
               {totalMatches} match{totalMatches !== 1 ? "es" : ""} in{" "}
               {filesSearched} file{filesSearched !== 1 ? "s" : ""}
             </p>
@@ -214,7 +214,7 @@ export const MemorySearchView = memo(function MemorySearchView({
             ))}
 
             {results.length >= 50 && (
-              <p className="px-1 pt-1 text-center text-[10px] text-muted-foreground/60">
+              <p className="px-1 pt-1 text-center text-[10px] text-muted-foreground">
                 Showing first 50 results — refine your query for fewer matches
               </p>
             )}
