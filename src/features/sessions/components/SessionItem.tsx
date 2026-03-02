@@ -29,6 +29,7 @@ type SessionItemProps = {
   onViewReplay?: (key: string) => void;
   onExport?: (key: string) => void;
   onToggleCompare?: (key: string) => void;
+  onResume?: (sessionId: string) => void;
 };
 
 export const SessionItem = memo(function SessionItem({
@@ -50,6 +51,7 @@ export const SessionItem = memo(function SessionItem({
   onViewReplay,
   onExport,
   onToggleCompare,
+  onResume,
 }: SessionItemProps) {
   const itemRef = useRef<HTMLButtonElement>(null);
   const itemId = `session-item-${session.key.replace(/:/g, "-")}`;
@@ -147,6 +149,7 @@ export const SessionItem = memo(function SessionItem({
             inComparison={inComparison}
             comparisonFull={comparisonFull}
             isArchived={!!session.archiveType}
+            archivedSessionId={session.sessionId}
             onRename={onRenameStart}
             onDelete={onDelete}
             onTogglePin={onTogglePin}
@@ -154,6 +157,7 @@ export const SessionItem = memo(function SessionItem({
             onViewReplay={onViewReplay}
             onExport={onExport}
             onToggleCompare={onToggleCompare}
+            onResume={onResume}
           />
         </div>
       )}

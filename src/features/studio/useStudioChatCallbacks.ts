@@ -175,10 +175,16 @@ export function useStudioChatCallbacks({
         setViewingSessionKey(null);
         return;
       }
+      // Handle archived session keys: "archived:{uuid}"
+      let resolvedKey = compositeKey;
+      if (compositeKey.startsWith("archived:")) {
+        // Extract the raw UUID — use it as the sessionId for transcript lookup
+        resolvedKey = compositeKey.slice("archived:".length);
+      }
       // Extract agentId and sessionId from composite key format "agent:<agentId>:<sessionId>"
-      const parts = compositeKey.split(":");
+      const parts = resolvedKey.split(":");
       let agentId: string | null = null;
-      let sessionId = compositeKey;
+      let sessionId = resolvedKey;
       if (parts.length >= 3 && parts[0] === "agent") {
         agentId = parts[1];
         sessionId = parts.slice(2).join(":");

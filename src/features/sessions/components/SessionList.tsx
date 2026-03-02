@@ -28,6 +28,7 @@ type SessionListProps = {
   onViewReplay?: (key: string) => void;
   onExport?: (key: string) => void;
   onToggleCompare?: (key: string) => void;
+  onResume?: (sessionId: string) => void;
   className?: string;
 };
 
@@ -48,6 +49,7 @@ export const SessionList = memo(function SessionList({
   onViewReplay,
   onExport,
   onToggleCompare,
+  onResume,
   className = "",
 }: SessionListProps) {
   const [renamingKey, setRenamingKey] = useState<string | null>(null);
@@ -167,6 +169,7 @@ export const SessionList = memo(function SessionList({
                   onViewReplay={onViewReplay}
                   onExport={onExport}
                   onToggleCompare={onToggleCompare}
+                  onResume={onResume}
                 />
               ))}
             </div>

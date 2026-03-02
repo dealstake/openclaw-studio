@@ -12,6 +12,7 @@ import {
   Download,
   GitCompare,
   GitCompareArrows,
+  RotateCcw,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -31,6 +32,8 @@ type SessionItemMenuProps = {
   comparisonFull?: boolean;
   /** Whether this is an archived (reset/deleted) session with limited actions */
   isArchived?: boolean;
+  /** The session UUID for archived sessions (needed for resume/fork) */
+  archivedSessionId?: string;
   onRename: (key: string) => void;
   onDelete: (key: string) => void;
   onTogglePin: (key: string) => void;
@@ -38,6 +41,7 @@ type SessionItemMenuProps = {
   onViewReplay?: (key: string) => void;
   onExport?: (key: string) => void;
   onToggleCompare?: (key: string) => void;
+  onResume?: (sessionId: string) => void;
 };
 
 export const SessionItemMenu = memo(function SessionItemMenu({
@@ -47,6 +51,7 @@ export const SessionItemMenu = memo(function SessionItemMenu({
   inComparison = false,
   comparisonFull = false,
   isArchived = false,
+  archivedSessionId,
   onRename,
   onDelete,
   onTogglePin,
@@ -54,6 +59,7 @@ export const SessionItemMenu = memo(function SessionItemMenu({
   onViewReplay,
   onExport,
   onToggleCompare,
+  onResume,
 }: SessionItemMenuProps) {
   const [confirmOpen, setConfirmOpen] = useState(false);
 
@@ -131,6 +137,17 @@ export const SessionItemMenu = memo(function SessionItemMenu({
             >
               <CompareIcon className="mr-2 h-3.5 w-3.5" />
               {compareLabel}
+            </DropdownMenuItem>
+          )}
+          {isArchived && onResume && archivedSessionId && (
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onResume(archivedSessionId);
+              }}
+            >
+              <RotateCcw className="mr-2 h-3.5 w-3.5" />
+              Resume Session
             </DropdownMenuItem>
           )}
           {(onViewTrace || onViewReplay || onExport) && <DropdownMenuSeparator />}

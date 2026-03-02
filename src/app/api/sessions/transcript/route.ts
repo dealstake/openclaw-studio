@@ -58,6 +58,19 @@ export async function GET(request: Request) {
   }
 }
 
+/** Find an archived transcript file by UUID prefix (handles .jsonl.reset.* and .jsonl.deleted.* suffixes) */
+function findArchivedTranscript(sessionsDir: string, sessionId: string): string | null {
+  const prefix = `${sessionId}.jsonl.`;
+  for (const dir of [sessionsDir, path.join(sessionsDir, "archive")]) {
+    try {
+      const files = fs.readdirSync(dir);
+      const match = files.find(f => f.startsWith(prefix));
+      if (match) return path.join(dir, match);
+    } catch { /* dir doesn't exist */ }
+  }
+  return null;
+}
+
 type TranscriptMessage = {
   id: string;
   role: string;
@@ -72,15 +85,22 @@ async function readTranscriptLocal(
   limit: number,
 ): Promise<{ sessionId: string; messages: TranscriptMessage[]; total: number; offset: number; limit: number; hasMore: boolean }> {
   const workspace = resolveAgentWorkspace(agentId);
-  const activePath = path.join(workspace, "sessions", `${sessionId}.jsonl`);
-  const archivePath = path.join(workspace, "sessions", "archive", `${sessionId}.jsonl`);
+  const sessionsDir = path.join(workspace, "sessions");
+  const activePath = path.join(sessionsDir, `${sessionId}.jsonl`);
+  const archivePath = path.join(sessionsDir, "archive", `${sessionId}.jsonl`);
 
   let filePath = activePath;
   if (!fs.existsSync(activePath)) {
     if (fs.existsSync(archivePath)) {
       filePath = archivePath;
     } else {
-      throw new Error(`Session transcript not found: ${sessionId}`);
+      // Check for reset/deleted archived files: {sessionId}.jsonl.{reset|deleted}.*
+      const found = findArchivedTranscript(sessionsDir, sessionId);
+      if (found) {
+        filePath = found;
+      } else {
+        throw new Error(`Session transcript not found: ${sessionId}`);
+      }
     }
   }
 
