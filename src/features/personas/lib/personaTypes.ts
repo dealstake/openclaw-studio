@@ -196,6 +196,39 @@ export interface PersonaConfig {
 // DB Row (mirrors personas table)
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// UI List Types (migrated from usePersonas hook — Phase 7)
+// ---------------------------------------------------------------------------
+
+/** Summary metrics for persona cards */
+export interface PersonaMetricsSummary {
+  sessionCount: number;
+  averageScore: number;
+  bestScore: number;
+  trend: number;
+}
+
+/** Persona list item used by PersonaCard and PersonasTab */
+export interface PersonaListItem {
+  personaId: string;
+  displayName: string;
+  templateKey: string | null;
+  category: PersonaCategory;
+  status: PersonaStatus;
+  optimizationGoals: string[];
+  metrics: PersonaMetricsSummary;
+  createdAt: string;
+  lastTrainedAt: string | null;
+  practiceCount: number;
+}
+
+/** Filter for persona status in the UI */
+export type PersonaStatusFilter = "all" | "active" | "draft" | "paused" | "archived";
+
+// ---------------------------------------------------------------------------
+// DB Row (mirrors personas table)
+// ---------------------------------------------------------------------------
+
 /** Row shape for the personas SQLite table */
 export interface PersonaRow {
   persona_id: string;

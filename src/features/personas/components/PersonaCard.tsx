@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { BaseCard, CardHeader, CardTitle, CardMeta } from "@/components/ui/BaseCard";
 import { cn } from "@/lib/utils";
-import type { PersonaListItem } from "../hooks/usePersonas";
+import type { PersonaListItem } from "../lib/personaTypes";
 import type { PersonaStatus, PersonaCategory } from "../lib/personaTypes";
 import type { OverallPreflightStatus } from "../lib/preflightTypes";
 

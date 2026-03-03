@@ -5,7 +5,7 @@ import { Search, Users, Plus } from "lucide-react";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { cn } from "@/lib/utils";
 import { ErrorBanner } from "@/components/ErrorBanner";
-import { usePersonas, type PersonaStatusFilter, type PersonaListItem } from "../hooks/usePersonas";
+import type { PersonaStatusFilter, PersonaListItem } from "../lib/personaTypes";
 import { PersonaCard } from "./PersonaCard";
 import { PersonaDetailModal } from "./PersonaDetailModal";
 import { PracticeSessionModal } from "./PracticeSessionModal";
@@ -73,20 +73,98 @@ export const PersonasTab = React.memo(function PersonasTab({
   onSelectTemplate,
   initialDetailAgentId,
 }: PersonasTabProps) {
-  const {
-    personas,
-    allPersonas,
-    loading,
-    error,
-    busyId,
-    filter,
-    search,
-    setFilter,
-    setSearch,
-    reload,
-    onDelete,
-    onStatusChange,
-  } = usePersonas(agentId, status);
+  // ── Derive persona list from agents prop (replaces usePersonas hook) ──
+  const [filter, setFilter] = useState<PersonaStatusFilter>("all");
+  const [search, setSearch] = useState("");
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const allPersonas: PersonaListItem[] = useMemo(
+    () =>
+      agents
+        .filter((a) => a.personaStatus != null)
+        .map((a) => ({
+          personaId: a.agentId,
+          displayName: a.name,
+          templateKey: a.templateKey ?? null,
+          category: (a.personaCategory ?? "operations") as PersonaListItem["category"],
+          status: (a.personaStatus ?? "draft") as PersonaListItem["status"],
+          optimizationGoals: a.optimizationGoals ?? [],
+          metrics: { sessionCount: 0, averageScore: 0, bestScore: 0, trend: 0 },
+          createdAt: "",
+          lastTrainedAt: null,
+          practiceCount: a.practiceCount ?? 0,
+        })),
+    [agents],
+  );
+
+  const personas = useMemo(() => {
+    return allPersonas.filter((p) => {
+      if (filter !== "all" && p.status !== filter) return false;
+      if (search) {
+        const q = search.toLowerCase();
+        if (
+          !p.displayName.toLowerCase().includes(q) &&
+          !p.category.toLowerCase().includes(q) &&
+          !(p.templateKey ?? "").toLowerCase().includes(q)
+        )
+          return false;
+      }
+      return true;
+    });
+  }, [allPersonas, filter, search]);
+
+  const loading = false; // agents are already hydrated
+
+  const onDelete = useCallback(
+    async (personaId: string) => {
+      if (!agentId) return;
+      setBusyId(personaId);
+      try {
+        const res = await fetch(
+          `/api/workspace/personas?agentId=${encodeURIComponent(agentId)}&personaId=${encodeURIComponent(personaId)}`,
+          { method: "DELETE" },
+        );
+        if (!res.ok) {
+          const data = (await res.json().catch(() => ({}))) as { error?: string };
+          throw new Error(data.error ?? `HTTP ${res.status}`);
+        }
+        // Agent store will update on next hydration cycle
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to delete persona.");
+      } finally {
+        setBusyId(null);
+      }
+    },
+    [agentId],
+  );
+
+  const onStatusChange = useCallback(
+    async (personaId: string, newStatus: PersonaListItem["status"]) => {
+      if (!agentId) return;
+      setBusyId(personaId);
+      try {
+        const res = await fetch("/api/workspace/personas", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ agentId, personaId, status: newStatus }),
+        });
+        if (!res.ok) {
+          const data = (await res.json().catch(() => ({}))) as { error?: string };
+          throw new Error(data.error ?? `HTTP ${res.status}`);
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to update persona.");
+      } finally {
+        setBusyId(null);
+      }
+    },
+    [agentId],
+  );
+
+  const reload = useCallback(() => {
+    // No-op: agents are hydrated from the store; trigger re-fetch externally if needed
+  }, []);
 
   // Template browser modal state
   const [templateBrowserOpen, setTemplateBrowserOpen] = useState(false);
@@ -144,7 +222,6 @@ export const PersonasTab = React.memo(function PersonasTab({
   // Sync detail modal with external initialDetailAgentId changes
   useEffect(() => {
     if (initialDetailAgentId) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing prop → state for externally-driven modal open
       setDetailPersonaId(initialDetailAgentId);
     }
   }, [initialDetailAgentId]);
