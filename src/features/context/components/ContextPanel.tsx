@@ -18,6 +18,8 @@ interface ContextPanelProps {
   expandedTab?: ContextTab | null;
   /** Hide the internal tab bar (when external ContextTabCluster provides tab navigation) */
   hideTabBar?: boolean;
+  /** Optional per-tab badge elements (e.g., live indicator dot) */
+  tabBadges?: Partial<Record<ContextTab, ReactNode>>;
   projectsContent?: ReactNode;
   tasksContent: ReactNode;
   workspaceContent?: ReactNode;
@@ -38,6 +40,7 @@ export const ContextPanel = memo(function ContextPanel({
   onClose,
   expandedTab,
   hideTabBar,
+  tabBadges,
   projectsContent,
   tasksContent,
   workspaceContent,
@@ -197,6 +200,7 @@ export const ContextPanel = memo(function ContextPanel({
                   data-testid={`context-tab-${tab.value}`}
                 >
                   {tab.label}
+                  {tabBadges?.[tab.value] ?? null}
                 </button>
               );
             })}

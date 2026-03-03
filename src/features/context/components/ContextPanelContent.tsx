@@ -11,9 +11,10 @@
  * - StudioExpandedPanel for full-screen expanded tab view
  */
 
-import React from "react";
+import React, { useMemo } from "react";
 import { PanelErrorBoundary } from "@/components/PanelErrorBoundary";
 import { ContextPanel } from "./ContextPanel";
+import { useHasLiveActivity } from "@/features/activity/hooks/useHasLiveActivity";
 import type { ContextTab } from "../lib/tabs";
 // ExpandableTab from useContextPanelState is wider (includes "usage"|"channels"|"personas").
 // ContextPanel only accepts ContextTab for expandedTab.
@@ -114,9 +115,24 @@ export const ContextPanelContent = React.memo(function ContextPanelContent({
   gatewayModels,
   onCreateSkill,
 }: ContextPanelContentProps) {
+  const hasLiveActivity = useHasLiveActivity();
+
+  const tabBadges = useMemo(() => {
+    if (!hasLiveActivity) return undefined;
+    return {
+      activity: (
+        <span className="relative ml-1 inline-flex h-2 w-2" aria-label="Live activity">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+        </span>
+      ),
+    };
+  }, [hasLiveActivity]);
+
   return (
     <ContextPanel
       activeTab={activeTab}
+      tabBadges={tabBadges}
       expandedTab={expandedTab}
       onExpandToggle={onExpandToggle}
       onClose={onClose}
