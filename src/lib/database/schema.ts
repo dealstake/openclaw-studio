@@ -145,6 +145,13 @@ export const personas = sqliteTable("personas", {
     .$defaultFn(() => new Date().toISOString()),
   lastTrainedAt: text("last_trained_at"),
   practiceCount: integer("practice_count").notNull().default(0),
+  // ── Voice config (Phase 6: persona-agent unification) ──
+  voiceProvider: text("voice_provider"),      // 'elevenlabs' | 'openai' | null
+  voiceId: text("voice_id"),                  // e.g. 'Rachel'
+  voiceModelId: text("voice_model_id"),       // e.g. 'eleven_flash_v2_5'
+  voiceStability: real("voice_stability").default(0.5),
+  voiceClarity: real("voice_clarity").default(0.75),
+  voiceStyle: real("voice_style").default(0.0),
 });
 
 // ─── Knowledge Sources ───────────────────────────────────────────────────────

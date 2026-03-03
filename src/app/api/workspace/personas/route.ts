@@ -179,6 +179,8 @@ export async function PATCH(request: Request) {
         const updatable = [
           "displayName", "category", "status", "templateKey",
           "metricsJson", "practiceCount", "lastTrainedAt",
+          "voiceProvider", "voiceId", "voiceModelId",
+          "voiceStability", "voiceClarity", "voiceStyle",
         ] as const;
         const updateFields: Record<string, unknown> = {};
 

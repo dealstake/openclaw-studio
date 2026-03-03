@@ -34,6 +34,19 @@ interface PersonaApiRow {
   optimizationGoals?: string;
   practice_count?: number;
   practiceCount?: number;
+  // Voice config (Phase 6)
+  voice_provider?: string | null;
+  voiceProvider?: string | null;
+  voice_id?: string | null;
+  voiceId?: string | null;
+  voice_model_id?: string | null;
+  voiceModelId?: string | null;
+  voice_stability?: number;
+  voiceStability?: number;
+  voice_clarity?: number;
+  voiceClarity?: number;
+  voice_style?: number;
+  voiceStyle?: number;
 }
 
 interface UseLoadAgentsParams {
@@ -278,6 +291,13 @@ export function useLoadAgents(params: UseLoadAgentsParams) {
           templateKey: persona?.template_key ?? persona?.templateKey ?? null,
           optimizationGoals: personaGoals,
           practiceCount: persona?.practice_count ?? persona?.practiceCount ?? 0,
+          // Voice config (Phase 6)
+          voiceProvider: (persona?.voice_provider ?? persona?.voiceProvider ?? null) as "elevenlabs" | "openai" | null,
+          voiceId: persona?.voice_id ?? persona?.voiceId ?? null,
+          voiceModelId: persona?.voice_model_id ?? persona?.voiceModelId ?? null,
+          voiceStability: persona?.voice_stability ?? persona?.voiceStability ?? 0.5,
+          voiceClarity: persona?.voice_clarity ?? persona?.voiceClarity ?? 0.75,
+          voiceStyle: persona?.voice_style ?? persona?.voiceStyle ?? 0,
         };
       });
       hydrateAgents(seeds);

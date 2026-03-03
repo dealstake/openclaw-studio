@@ -48,6 +48,19 @@ export type AgentStoreSeed = {
   optimizationGoals?: string[];
   /** Number of practice sessions completed */
   practiceCount?: number;
+  // ── Voice config (Phase 6: persona-agent unification) ──
+  /** Voice provider (elevenlabs, openai, or null) */
+  voiceProvider?: "elevenlabs" | "openai" | null;
+  /** Voice ID (e.g. 'Rachel') */
+  voiceId?: string | null;
+  /** Voice model ID (e.g. 'eleven_flash_v2_5') */
+  voiceModelId?: string | null;
+  /** Voice stability (0-1, default 0.5) */
+  voiceStability?: number;
+  /** Voice clarity/similarity boost (0-1, default 0.75) */
+  voiceClarity?: number;
+  /** Voice style exaggeration (0-1, default 0) */
+  voiceStyle?: number;
 };
 
 export type AgentState = AgentStoreSeed & {
@@ -95,6 +108,19 @@ export type AgentState = AgentStoreSeed & {
   optimizationGoals: string[];
   /** Number of practice sessions completed */
   practiceCount: number;
+  // ── Voice config (Phase 6: persona-agent unification) ──
+  /** Voice provider (elevenlabs, openai, or null) */
+  voiceProvider: "elevenlabs" | "openai" | null;
+  /** Voice ID (e.g. 'Rachel') */
+  voiceId: string | null;
+  /** Voice model ID (e.g. 'eleven_flash_v2_5') */
+  voiceModelId: string | null;
+  /** Voice stability (0-1, default 0.5) */
+  voiceStability: number;
+  /** Voice clarity/similarity boost (0-1, default 0.75) */
+  voiceClarity: number;
+  /** Voice style exaggeration (0-1, default 0) */
+  voiceStyle: number;
 };
 
 export const buildNewSessionAgentPatch = (agent: AgentState): Partial<AgentState> => {
@@ -194,6 +220,13 @@ const createRuntimeAgentState = (
     templateKey: seed.templateKey ?? existing?.templateKey ?? null,
     optimizationGoals: seed.optimizationGoals ?? existing?.optimizationGoals ?? [],
     practiceCount: seed.practiceCount ?? existing?.practiceCount ?? 0,
+    // Voice config (Phase 6: persona-agent unification)
+    voiceProvider: seed.voiceProvider ?? existing?.voiceProvider ?? null,
+    voiceId: seed.voiceId ?? existing?.voiceId ?? null,
+    voiceModelId: seed.voiceModelId ?? existing?.voiceModelId ?? null,
+    voiceStability: seed.voiceStability ?? existing?.voiceStability ?? 0.5,
+    voiceClarity: seed.voiceClarity ?? existing?.voiceClarity ?? 0.75,
+    voiceStyle: seed.voiceStyle ?? existing?.voiceStyle ?? 0,
     // Session-scoped fields (reset when session changes)
     status: keep(existing?.status, "idle"),
     sessionCreated: keep(existing?.sessionCreated, false),
