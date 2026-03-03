@@ -26,7 +26,7 @@ const AGENTS_ROOT = path.join(os.homedir(), ".openclaw", "agents");
 
 /** Allowed status transitions */
 const VALID_TRANSITIONS: Record<PersonaStatus, PersonaStatus[]> = {
-  draft: ["configuring", "archived"],
+  draft: ["configuring", "active", "archived"],
   configuring: ["active", "draft", "archived"],
   active: ["paused", "archived"],
   paused: ["active", "archived"],

@@ -80,6 +80,7 @@ import type { WizardType } from "@/features/wizards/lib/wizardTypes";
 import type { PersonaTemplate } from "@/features/personas/lib/templateTypes";
 import { buildPersonaBuilderPrompt } from "@/features/personas/lib/personaBuilderPrompt";
 import { executeWizardCreation } from "@/features/wizards/lib/wizardCreation";
+import { createGatewayAgent } from "@/lib/gateway/agentCrud";
 import { toast } from "sonner";
 
 export const AgentStudioPage = () => {
@@ -423,7 +424,15 @@ export const AgentStudioPage = () => {
           return;
         }
 
-        // Create persona DB row so it appears in the personas list
+        // Register as gateway agent so it appears in the agent switcher immediately
+        try {
+          await createGatewayAgent({ client, name: personaConfig.displayName });
+        } catch (gwErr) {
+          console.warn("[persona] Gateway agent registration failed:", gwErr);
+          // Non-fatal — persona files exist, user can activate later
+        }
+
+        // Create persona DB row as "active" (gateway-registered = immediately usable)
         const ownerAgentId = focusedAgent?.agentId ?? "alex";
         const personaDbRes = await fetch("/api/workspace/personas", {
           method: "POST",
@@ -441,8 +450,19 @@ export const AgentStudioPage = () => {
           console.warn("[persona] DB row creation failed:", await personaDbRes.text().catch(() => ""));
         }
 
+        // Transition to active since gateway agent is registered
+        await fetch("/api/workspace/personas", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            agentId: ownerAgentId,
+            personaId: personaConfig.personaId,
+            status: "active",
+          }),
+        }).catch(() => { /* non-fatal */ });
+
         void wizard.endWizard();
-        toast.success(`Persona "${personaConfig.displayName}" created successfully`);
+        toast.success(`Persona "${personaConfig.displayName}" created and activated`);
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Unknown error";
         toast.error(`Persona creation failed: ${msg}`);

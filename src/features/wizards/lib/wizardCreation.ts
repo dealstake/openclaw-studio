@@ -265,12 +265,56 @@ export async function executeWizardCreation(
         return { success: false, message: "Invalid project configuration: missing name, slug, or description." };
       }
       return createProject(client, agentId, config as unknown as ProjectWizardConfig);
-    case "agent":
-      // Agent creation is complex (brain files, config) — kept in modal for now
-      return {
-        success: false,
-        message: "Agent creation via wizard is not yet supported. Use the Agent Settings panel.",
-      };
+    case "agent": {
+      if (!hasStringProps(config, ["name"])) {
+        return { success: false, message: "Invalid agent configuration: missing name." };
+      }
+      const agentConf = config as Record<string, unknown>;
+      const name = agentConf.name as string;
+      const purpose = (agentConf.purpose as string) ?? (agentConf.roleDescription as string) ?? "AI agent";
+      const agentSlug = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+      try {
+        // 1. Register in gateway config
+        const { createGatewayAgent } = await import("@/lib/gateway/agentCrud");
+        await createGatewayAgent({ client, name });
+
+        // 2. Create agent files on disk
+        const res = await fetch("/api/agents/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ agentId: agentSlug, name, purpose }),
+        });
+        if (!res.ok) {
+          const data = (await res.json().catch(() => ({}))) as { error?: string };
+          return { success: false, message: data.error ?? `Failed to create agent (HTTP ${res.status})` };
+        }
+
+        // 3. Create persona DB row as active
+        const personaRes = await fetch("/api/workspace/personas", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            agentId,
+            personaId: agentSlug,
+            displayName: name,
+            category: (agentConf.category as string) ?? "operations",
+          }),
+        });
+        if (personaRes.ok) {
+          // Transition to active
+          await fetch("/api/workspace/personas", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ agentId, personaId: agentSlug, status: "active" }),
+          }).catch(() => { /* non-fatal */ });
+        }
+
+        return { success: true, message: `Agent "${name}" created and activated.` };
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        return { success: false, message: `Failed to create agent: ${msg}` };
+      }
+    }
     default:
       return {
         success: false,

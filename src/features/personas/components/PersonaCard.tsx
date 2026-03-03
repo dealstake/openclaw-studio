@@ -156,7 +156,9 @@ export const PersonaCard = React.memo(function PersonaCard({
     (e: React.MouseEvent) => {
       e.stopPropagation();
       if (busy) return;
-      const next = persona.status === "active" ? "paused" : "active";
+      // draft/configuring → active (activate), active → paused, paused → active
+      const next: PersonaStatus =
+        persona.status === "active" ? "paused" : "active";
       void onStatusChange(persona.personaId, next);
     },
     [busy, onStatusChange, persona.personaId, persona.status],
@@ -226,17 +228,17 @@ export const PersonaCard = React.memo(function PersonaCard({
           {healthStatus && <HealthStatusIcon status={healthStatus} />}
         </div>
 
-        {/* Deploy button — always visible for draft personas */}
-        {persona.status === "draft" && (
+        {/* Activate button — visible for draft/configuring personas not yet registered as gateway agents */}
+        {(persona.status === "draft" || persona.status === "configuring") && (
           <button
             type="button"
             onClick={handleToggleActive}
             disabled={busy}
             className="rounded px-2 py-1 text-xs font-medium text-primary bg-primary/10 hover:bg-primary/20 border border-primary/30 transition-colors min-h-[44px] flex items-center justify-center gap-1"
-            aria-label="Deploy persona"
+            aria-label="Activate persona"
           >
             <Rocket className="h-3.5 w-3.5" />
-            Deploy
+            Activate
           </button>
         )}
 

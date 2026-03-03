@@ -17,6 +17,8 @@ import type { OverallPreflightStatus } from "../lib/preflightTypes";
 import { usePersonaHealth } from "../hooks/usePersonaHealth";
 import type { AgentState } from "@/features/agents/state/store";
 import type { GatewayModelChoice } from "@/lib/gateway/models";
+import type { PersonaStatus } from "../lib/personaTypes";
+import { createGatewayAgent } from "@/lib/gateway/agentCrud";
 
 // ---------------------------------------------------------------------------
 // Filter config
@@ -97,6 +99,29 @@ export const PersonasTab = React.memo(function PersonasTab({
     Record<string, OverallPreflightStatus | "checking">
   >({});
   const { checkHealth } = usePersonaHealth();
+
+  // Wrap status changes: when activating a draft/configuring persona, register as gateway agent first
+  const handleStatusChangeWithGateway = useCallback(
+    async (personaId: string, newStatus: PersonaStatus) => {
+      if (newStatus === "active") {
+        // Find the persona to get its display name
+        const persona = allPersonas.find((p) => p.personaId === personaId);
+        if (persona && (persona.status === "draft" || persona.status === "configuring")) {
+          // Check if already registered as a gateway agent
+          const isRegistered = agents.some((a) => a.agentId === personaId);
+          if (!isRegistered) {
+            try {
+              await createGatewayAgent({ client, name: persona.displayName });
+            } catch {
+              // Non-fatal — may already exist with a different slug
+            }
+          }
+        }
+      }
+      return onStatusChange(personaId, newStatus);
+    },
+    [allPersonas, agents, client, onStatusChange],
+  );
 
   const handleOpenTemplateBrowser = useCallback(() => {
     if (onCreatePersona) {
@@ -305,7 +330,7 @@ export const PersonasTab = React.memo(function PersonasTab({
                 onSelect={handleSelect}
                 onPractice={handlePractice}
                 onKnowledge={handleKnowledge}
-                onStatusChange={onStatusChange}
+                onStatusChange={handleStatusChangeWithGateway}
                 onDelete={onDelete}
                 busy={busyId === persona.personaId}
                 onHealthCheck={handleHealthCheck}
