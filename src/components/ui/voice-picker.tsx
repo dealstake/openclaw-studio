@@ -33,6 +33,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import { useOrbColors } from "@/features/voice/hooks/useThemeColors"
 
 interface VoicePickerProps {
   voices: Voice[]
@@ -59,6 +60,7 @@ function VoicePicker({
   const setIsOpen = isControlled ? onOpenChange : setInternalOpen
 
   const selectedVoice = voices.find((v) => v.voiceId === value)
+  const { colors: orbColors, colorsRef: orbColorsRef } = useOrbColors("idle")
 
   return (
     <AudioPlayerProvider>
@@ -73,7 +75,7 @@ function VoicePicker({
             {selectedVoice ? (
               <div className="flex items-center gap-2 overflow-hidden">
                 <div className="relative size-6 shrink-0 overflow-visible">
-                  <Orb agentState="thinking" className="absolute inset-0" />
+                  <Orb agentState="thinking" colors={orbColors} colorsRef={orbColorsRef} className="absolute inset-0" />
                 </div>
                 <span className="truncate">{selectedVoice.name}</span>
               </div>
@@ -131,6 +133,8 @@ function VoicePickerItem({
   const isPlaying =
     audioItem && player.isItemActive(audioItem.id) && player.isPlaying
 
+  const { colors: itemOrbColors, colorsRef: itemOrbColorsRef } = useOrbColors(isPlaying ? "speaking" : "idle")
+
   const handlePreview = React.useCallback(
     async (e: React.MouseEvent) => {
       e.preventDefault()
@@ -169,6 +173,8 @@ function VoicePickerItem({
       >
         <Orb
           agentState={isPlaying ? "talking" : undefined}
+          colors={itemOrbColors}
+          colorsRef={itemOrbColorsRef}
           className="pointer-events-none absolute inset-0"
         />
         {preview && isHovered && (

@@ -189,6 +189,7 @@ export const VoiceButton = React.forwardRef<
               smoothingTimeConstant={0.85}
               height={20}
               mode="static"
+              style={{ color: "var(--voice-listening)" }}
               className="animate-in fade-in absolute inset-0 h-full w-full duration-300"
             />
           )}

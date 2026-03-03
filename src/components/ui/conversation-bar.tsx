@@ -246,6 +246,7 @@ export const ConversationBar = React.forwardRef<
                           smoothingTimeConstant={0.85}
                           height={20}
                           mode="static"
+                          style={{ color: "var(--voice-listening)" }}
                           className={cn(
                             "h-full w-full transition-opacity duration-300",
                             agentState === "disconnected" && "opacity-0"

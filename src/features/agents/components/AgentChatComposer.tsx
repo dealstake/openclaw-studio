@@ -375,7 +375,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
       <div className="mx-auto max-w-3xl">
         {/* Wizard banner — floats above the split row */}
         {wizardType && wizardTheme && onWizardExit && (
-          <div className="mb-2 rounded-2xl border border-border/50 bg-background/70 shadow-lg ring-1 ring-white/[0.06] backdrop-blur-xl dark:bg-background/40">
+          <div className="mb-2 rounded-2xl border border-border/50 glass-panel dark:bg-background/40">
             <WizardBanner
               type={wizardType}
               theme={wizardTheme}
@@ -389,7 +389,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
 
         {/* Minimal status strip — only offline/errors/attachments, no streaming chrome */}
         {((gatewayStatus && gatewayStatus !== "connected") || fileError || hasFiles) && (
-          <div className="mb-2 rounded-2xl border border-border/50 bg-background/70 px-4 py-2 shadow-lg ring-1 ring-white/[0.06] backdrop-blur-xl dark:bg-background/40 animate-in slide-in-from-bottom-2 fade-in duration-200">
+          <div className="mb-2 rounded-2xl border border-border/50 glass-panel px-4 py-2 dark:bg-background/40 animate-in slide-in-from-bottom-2 fade-in duration-200">
             {gatewayStatus && gatewayStatus !== "connected" && (
               <div className="flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400" role="status">
                 <WifiOff className="h-3.5 w-3.5 shrink-0" aria-hidden />
@@ -423,7 +423,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
         <div className="flex items-end gap-2 sm:gap-2.5">
 
           {/* ── Glass Input Pill ── */}
-          <div className="min-w-0 flex-1 rounded-[20px] border border-border/50 bg-background/70 shadow-xl ring-1 ring-white/[0.08] backdrop-blur-xl transition-all focus-within:border-border/80 focus-within:shadow-2xl dark:bg-background/40 dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)]">
+          <div className="min-w-0 flex-1 rounded-[20px] border border-border/50 glass-panel transition-all focus-within:border-border/80 focus-within:shadow-2xl dark:bg-background/40 dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)]">
             <div className="flex items-end">
               {/* Voice mic — left side of pill */}
               <div className="flex shrink-0 items-center pl-2 pb-1.5">
