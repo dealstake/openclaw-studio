@@ -4,6 +4,7 @@ import { RuntimeTrackingState } from "@/features/agents/state/runtimeTrackingSta
 import type { GatewayRuntimeEventHandlerDeps, RuntimeDispatchAction } from "@/features/agents/state/gatewayRuntimeEventHandler.types";
 import type { ChatEventPayload } from "@/features/agents/state/runtimeEventBridge.types";
 import type { AgentState } from "@/features/agents/state/store";
+import { PERSONA_DEFAULTS } from "../../../../helpers/agentFixtures";
 
 // ── Test Helpers ─────────────────────────────────────────────────────
 
@@ -40,6 +41,7 @@ function makeAgent(overrides: Partial<AgentState> = {}): AgentState {
     wizardContext: null,
     group: null,
     tags: [],
+  ...PERSONA_DEFAULTS,
     ...overrides,
   };
 }

@@ -2,6 +2,7 @@ import { createElement } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import type { AgentState } from "@/features/agents/state/store";
+import { PERSONA_DEFAULTS } from "../helpers/agentFixtures";
 import { AgentChatPanel } from "@/features/agents/components/AgentChatPanel";
 import type { GatewayModelChoice } from "@/lib/gateway/models";
 import type { MessagePart } from "@/lib/chat/types";
@@ -39,6 +40,7 @@ const createAgent = (): AgentState => ({
   avatarUrl: null,
   group: null,
   tags: [],
+  ...PERSONA_DEFAULTS,
 });
 
 describe("AgentChatPanel controls", () => {

@@ -18,6 +18,23 @@ import {
 } from "@/lib/gateway/GatewayClient";
 import type { AgentsListResult, SessionsListEntry, SessionsListResult } from "@/lib/gateway/types";
 import { resolveAgentAvatarSeed } from "@/lib/studio/settings";
+import type { PersonaCategory, PersonaStatus as PersonaLifecycleStatus } from "@/features/personas/lib/personaTypes";
+
+/** Persona row shape from /api/workspace/personas */
+interface PersonaApiRow {
+  persona_id?: string;
+  personaId?: string;
+  display_name?: string;
+  displayName?: string;
+  template_key?: string | null;
+  templateKey?: string | null;
+  category?: PersonaCategory;
+  status?: PersonaLifecycleStatus;
+  optimization_goals?: string;
+  optimizationGoals?: string;
+  practice_count?: number;
+  practiceCount?: number;
+}
 
 interface UseLoadAgentsParams {
   dispatch: React.Dispatch<AgentStoreAction>;
@@ -175,6 +192,28 @@ export function useLoadAgents(params: UseLoadAgentsParams) {
         }
       }
 
+      // Fetch persona metadata and build a lookup by persona_id (= agent_id)
+      const personaByAgentId = new Map<string, PersonaApiRow>();
+      try {
+        // Fetch personas for each agent — use first agent as proxy (personas API
+        // currently scopes by agentId but returns all personas visible to that agent)
+        const firstAgentId = realAgents[0]?.id;
+        if (firstAgentId) {
+          const personaRes = await fetch(
+            `/api/workspace/personas?agentId=${encodeURIComponent(firstAgentId)}`,
+          );
+          if (personaRes.ok) {
+            const personaData = (await personaRes.json()) as { personas?: PersonaApiRow[] };
+            for (const row of personaData.personas ?? []) {
+              const pid = (row.persona_id ?? row.personaId ?? "").trim();
+              if (pid) personaByAgentId.set(pid, row);
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load persona metadata during agent hydration.", err);
+      }
+
       const seeds: AgentStoreSeed[] = realAgents.map((agent) => {
         const persistedSeed =
           settings && gatewayKey ? resolveAgentAvatarSeed(settings, gatewayKey, agent.id) : null;
@@ -209,6 +248,18 @@ export function useLoadAgents(params: UseLoadAgentsParams) {
         const tags: string[] = rawTags
           .filter((t): t is string => typeof t === "string" && t.trim().length > 0)
           .map((t) => t.trim());
+        // Merge persona metadata if available
+        const persona = personaByAgentId.get(agent.id);
+        const isMainAgent = agent.id === agentsResult.defaultId;
+        let personaGoals: string[] = [];
+        if (persona) {
+          const goalsRaw = persona.optimization_goals ?? persona.optimizationGoals;
+          if (typeof goalsRaw === "string") {
+            try { personaGoals = JSON.parse(goalsRaw); } catch { /* ignore */ }
+          } else if (Array.isArray(goalsRaw)) {
+            personaGoals = goalsRaw as string[];
+          }
+        }
         return {
           agentId: agent.id,
           name,
@@ -220,6 +271,13 @@ export function useLoadAgents(params: UseLoadAgentsParams) {
           autonomyLevel,
           group,
           tags,
+          isMainAgent,
+          personaStatus: persona?.status ?? null,
+          personaCategory: persona?.category ?? null,
+          roleDescription: null, // persona DB doesn't store roleDescription yet
+          templateKey: persona?.template_key ?? persona?.templateKey ?? null,
+          optimizationGoals: personaGoals,
+          practiceCount: persona?.practice_count ?? persona?.practiceCount ?? 0,
         };
       });
       hydrateAgents(seeds);

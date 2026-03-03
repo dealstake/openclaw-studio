@@ -1,3 +1,4 @@
+import { PERSONA_DEFAULTS } from "../helpers/agentFixtures";
 import { describe, it, expect } from "vitest";
 import { agentStoreReducer, initialAgentStoreState, MAX_PARTS } from "@/features/agents/state/store";
 import type { AgentStoreState } from "@/features/agents/state/store";
@@ -39,6 +40,7 @@ function stateWithParts(count: number): AgentStoreState {
   wizardContext: null,
   group: null,
   tags: [],
+  ...PERSONA_DEFAULTS,
       },
     ],
     selectedAgentId: "test",

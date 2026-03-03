@@ -1,3 +1,4 @@
+import { PERSONA_DEFAULTS } from "../../helpers/agentFixtures";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useSpecialUpdates } from "@/features/agents/hooks/useSpecialUpdates";
@@ -36,6 +37,7 @@ const makeAgent = (overrides: Partial<AgentState> = {}): AgentState => ({
   historyLoadedAt: null,
   group: null,
   tags: [],
+  ...PERSONA_DEFAULTS,
   ...overrides,
 });
 

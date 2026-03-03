@@ -2,6 +2,7 @@ import { createElement } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { AgentState } from "@/features/agents/state/store";
+import { PERSONA_DEFAULTS } from "../helpers/agentFixtures";
 import { AgentBrainPanel } from "@/features/agents/components/AgentInspectPanels";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 
@@ -38,6 +39,7 @@ const createAgent = (agentId: string, name: string, sessionKey: string): AgentSt
   avatarUrl: null,
   group: null,
   tags: [],
+  ...PERSONA_DEFAULTS,
 });
 
 const createMockClient = () => {

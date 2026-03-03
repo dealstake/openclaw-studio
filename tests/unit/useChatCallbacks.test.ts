@@ -1,3 +1,4 @@
+import { PERSONA_DEFAULTS } from "../helpers/agentFixtures";
 import { describe, expect, it, vi, afterEach } from "vitest";
 import { renderHook, act, cleanup } from "@testing-library/react";
 import { useChatCallbacks } from "@/features/agents/hooks/useChatCallbacks";
@@ -68,6 +69,7 @@ function makeAgent(overrides: Partial<AgentState> = {}): AgentState {
     avatarUrl: null,
     group: null,
     tags: [],
+  ...PERSONA_DEFAULTS,
     ...overrides,
   };
 }

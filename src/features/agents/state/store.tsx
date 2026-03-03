@@ -12,6 +12,7 @@ import type { MessagePart } from "@/lib/chat/types";
 import type { WizardContext } from "@/features/wizards/lib/wizardTypes";
 import type { AutonomyLevel } from "@/features/agents/lib/autonomyService";
 import { DEFAULT_AUTONOMY_LEVEL } from "@/features/agents/lib/autonomyService";
+import type { PersonaCategory, PersonaStatus as PersonaLifecycleStatus } from "@/features/personas/lib/personaTypes";
 
 export type AgentStatus = "idle" | "running" | "error";
 export type FocusFilter = "all" | "needs-attention" | "running" | "idle";
@@ -32,6 +33,21 @@ export type AgentStoreSeed = {
   group?: string | null;
   /** Optional flexible labels for filtering (e.g. ["monitoring", "critical"]). */
   tags?: string[];
+  // ── Persona metadata (unified model) ──────────────────────────────
+  /** Whether this is the primary/main agent */
+  isMainAgent?: boolean;
+  /** Persona lifecycle status (draft/active/paused/archived) — distinct from runtime `status` */
+  personaStatus?: PersonaLifecycleStatus | null;
+  /** Persona category (sales, admin, support, etc.) */
+  personaCategory?: PersonaCategory | null;
+  /** Short role description from persona config */
+  roleDescription?: string | null;
+  /** Template key if created from Starter Kit */
+  templateKey?: string | null;
+  /** Optimization goals set by user */
+  optimizationGoals?: string[];
+  /** Number of practice sessions completed */
+  practiceCount?: number;
 };
 
 export type AgentState = AgentStoreSeed & {
@@ -64,6 +80,21 @@ export type AgentState = AgentStoreSeed & {
   tags: string[];
   /** Active wizard context — null when no wizard is running */
   wizardContext: WizardContext | null;
+  // ── Persona metadata (unified model) ──────────────────────────────
+  /** Whether this is the primary/main agent */
+  isMainAgent: boolean;
+  /** Persona lifecycle status (draft/active/paused/archived) — distinct from runtime `status` */
+  personaStatus: PersonaLifecycleStatus | null;
+  /** Persona category (sales, admin, support, etc.) */
+  personaCategory: PersonaCategory | null;
+  /** Short role description from persona config */
+  roleDescription: string | null;
+  /** Template key if created from Starter Kit */
+  templateKey: string | null;
+  /** Optimization goals set by user */
+  optimizationGoals: string[];
+  /** Number of practice sessions completed */
+  practiceCount: number;
 };
 
 export const buildNewSessionAgentPatch = (agent: AgentState): Partial<AgentState> => {
@@ -155,6 +186,14 @@ const createRuntimeAgentState = (
     autonomyLevel: seed.autonomyLevel ?? existing?.autonomyLevel ?? DEFAULT_AUTONOMY_LEVEL,
     group: seed.group ?? existing?.group ?? null,
     tags: seed.tags ?? existing?.tags ?? [],
+    // Persona metadata (always preserved across sessions)
+    isMainAgent: seed.isMainAgent ?? existing?.isMainAgent ?? false,
+    personaStatus: seed.personaStatus ?? existing?.personaStatus ?? null,
+    personaCategory: seed.personaCategory ?? existing?.personaCategory ?? null,
+    roleDescription: seed.roleDescription ?? existing?.roleDescription ?? null,
+    templateKey: seed.templateKey ?? existing?.templateKey ?? null,
+    optimizationGoals: seed.optimizationGoals ?? existing?.optimizationGoals ?? [],
+    practiceCount: seed.practiceCount ?? existing?.practiceCount ?? 0,
     // Session-scoped fields (reset when session changes)
     status: keep(existing?.status, "idle"),
     sessionCreated: keep(existing?.sessionCreated, false),

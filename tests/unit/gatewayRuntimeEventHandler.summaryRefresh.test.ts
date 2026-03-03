@@ -1,3 +1,4 @@
+import { PERSONA_DEFAULTS } from "../helpers/agentFixtures";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createGatewayRuntimeEventHandler } from "@/features/agents/state/gatewayRuntimeEventHandler";
@@ -38,6 +39,7 @@ const createAgent = (): AgentState =>
     avatarUrl: null,
     group: null,
     tags: [],
+  ...PERSONA_DEFAULTS,
   }) as AgentState;
 
 describe("gateway runtime event handler (summary refresh)", () => {

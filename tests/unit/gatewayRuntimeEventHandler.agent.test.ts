@@ -1,3 +1,4 @@
+import { PERSONA_DEFAULTS } from "../helpers/agentFixtures";
 import { describe, expect, it, vi } from "vitest";
 
 import { createGatewayRuntimeEventHandler } from "@/features/agents/state/gatewayRuntimeEventHandler";
@@ -37,6 +38,7 @@ const createAgent = (overrides?: Partial<AgentState>): AgentState => ({
   avatarUrl: null,
   group: null,
   tags: [],
+  ...PERSONA_DEFAULTS,
   ...(overrides ?? {}),
 });
 

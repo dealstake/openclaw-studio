@@ -2,6 +2,7 @@ import { createElement } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { AgentState } from "@/features/agents/state/store";
+import { PERSONA_DEFAULTS } from "../helpers/agentFixtures";
 import { AgentSettingsPanel } from "@/features/agents/components/AgentInspectPanels";
 
 const createAgent = (): AgentState => ({
@@ -37,6 +38,7 @@ const createAgent = (): AgentState => ({
   avatarUrl: null,
   group: null,
   tags: [],
+  ...PERSONA_DEFAULTS,
 });
 
 function defaultProps(overrides: Record<string, unknown> = {}) {
