@@ -131,11 +131,17 @@ export const VoiceModeOverlay = React.memo(function VoiceModeOverlay() {
     if (!isOverlayOpen) return;
 
     let wakeLock: WakeLockSentinel | null = null;
+    let cancelled = false;
 
     async function requestWakeLock() {
       try {
         if ("wakeLock" in navigator) {
-          wakeLock = await navigator.wakeLock.request("screen");
+          const lock = await navigator.wakeLock.request("screen");
+          if (cancelled) {
+            void lock.release();
+          } else {
+            wakeLock = lock;
+          }
         }
       } catch {
         // Wake Lock not supported or denied — non-critical
@@ -145,6 +151,7 @@ export const VoiceModeOverlay = React.memo(function VoiceModeOverlay() {
     void requestWakeLock();
 
     return () => {
+      cancelled = true;
       void wakeLock?.release();
     };
   }, [isOverlayOpen]);
@@ -220,7 +227,7 @@ export const VoiceModeOverlay = React.memo(function VoiceModeOverlay() {
                 type="button"
                 onClick={minimizeVoiceMode}
                 className={cn(
-                  "flex h-10 w-10 items-center justify-center rounded-full",
+                  "flex h-11 w-11 items-center justify-center rounded-full",
                   "text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                 )}
@@ -234,7 +241,7 @@ export const VoiceModeOverlay = React.memo(function VoiceModeOverlay() {
                 type="button"
                 onClick={closeVoiceMode}
                 className={cn(
-                  "flex h-10 w-10 items-center justify-center rounded-full",
+                  "flex h-11 w-11 items-center justify-center rounded-full",
                   "text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                 )}

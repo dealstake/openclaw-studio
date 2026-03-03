@@ -8,7 +8,7 @@
  * auto-speak toggle, and advanced voice tuning (stability, similarity, style).
  */
 
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Volume2,
   Play,
@@ -193,6 +193,16 @@ export const VoiceSettingsPanel = React.memo(function VoiceSettingsPanel({
   // Lifted audio preview state — prevents multiple simultaneous previews
   const previewAudioRef = useRef<HTMLAudioElement | null>(null);
   const [playingVoiceId, setPlayingVoiceId] = useState<string | null>(null);
+
+  // Cleanup preview audio on unmount to prevent zombie playback
+  useEffect(() => {
+    return () => {
+      if (previewAudioRef.current) {
+        previewAudioRef.current.pause();
+        previewAudioRef.current = null;
+      }
+    };
+  }, []);
 
   const handleVoicePreview = useCallback(
     (voice: ElevenLabsVoice, e: React.MouseEvent) => {

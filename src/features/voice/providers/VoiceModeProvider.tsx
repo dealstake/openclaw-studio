@@ -109,6 +109,7 @@ export function VoiceModeProvider({ children }: VoiceModeProviderProps) {
   }, []);
 
   const startTimer = useCallback(() => {
+    if (timerRef.current) clearInterval(timerRef.current);
     setElapsedSeconds(0);
     timerRef.current = setInterval(() => {
       setElapsedSeconds((prev) => prev + 1);

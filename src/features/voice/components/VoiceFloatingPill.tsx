@@ -66,7 +66,8 @@ export const VoiceFloatingPill = React.memo(function VoiceFloatingPill() {
           transition={{ type: "spring", damping: 20, stiffness: 300 }}
           onClick={expandVoiceMode}
           className={cn(
-            "fixed bottom-4 right-4 z-40",
+            "fixed right-4 z-40",
+            "bottom-[calc(1rem+var(--mobile-nav-height,0px)+env(safe-area-inset-bottom))]",
             "flex items-center gap-2 rounded-full px-4 py-3",
             "bg-card border border-border shadow-lg",
             "text-sm font-medium text-foreground",

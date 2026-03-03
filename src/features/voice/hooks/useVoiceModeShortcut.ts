@@ -21,8 +21,16 @@ export function useVoiceModeShortcut(defaultAgentId?: string | null): void {
     function handleKeyDown(e: KeyboardEvent) {
       if (!voiceMode) return;
 
-      // Ctrl/Cmd + Shift + V
+      // Ctrl/Cmd + Shift + V — skip when user is typing in an input
       if (e.key === "V" && e.shiftKey && (e.ctrlKey || e.metaKey)) {
+        const target = e.target as HTMLElement;
+        if (
+          target instanceof HTMLInputElement ||
+          target instanceof HTMLTextAreaElement ||
+          target.isContentEditable
+        ) {
+          return; // Don't hijack paste-without-formatting
+        }
         e.preventDefault();
 
         if (voiceMode.isOverlayOpen) {
