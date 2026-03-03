@@ -41,24 +41,25 @@ export const ToolProfileSelector = memo(function ToolProfileSelector({
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex flex-wrap gap-1.5">
+      <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Tool Profile">
         {TOOL_PROFILES.map((profile) => {
           const isSelected = profile === value;
           return (
             <button
               key={profile}
               type="button"
+              role="radio"
               onClick={() => handleSelect(profile)}
               onMouseEnter={() => setHoveredProfile(profile)}
               onMouseLeave={() => setHoveredProfile(null)}
               disabled={disabled}
-              className={`flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs transition-colors
+              className={`flex min-h-[44px] items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs transition-colors
                 ${isSelected
-                  ? "border-primary/50 bg-primary/10 text-primary"
+                  ? "border-primary bg-primary text-primary-foreground"
                   : "border-border/50 bg-muted/10 text-muted-foreground hover:border-border hover:bg-muted/30 hover:text-foreground"
                 }
                 disabled:cursor-not-allowed disabled:opacity-50`}
-              aria-pressed={isSelected}
+              aria-checked={isSelected}
             >
               {PROFILE_ICONS[profile]}
               {TOOL_PROFILE_LABELS[profile]}
@@ -66,7 +67,7 @@ export const ToolProfileSelector = memo(function ToolProfileSelector({
           );
         })}
       </div>
-      <p className="text-[11px] leading-relaxed text-muted-foreground">
+      <p className="text-xs leading-relaxed text-muted-foreground">
         {TOOL_PROFILE_DESCRIPTIONS[descriptionProfile]}
       </p>
     </div>

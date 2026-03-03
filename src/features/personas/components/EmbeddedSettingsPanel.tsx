@@ -109,9 +109,9 @@ export const EmbeddedSettingsPanel = memo(function EmbeddedSettingsPanel({
         </section>
 
         {/* Tool Profile */}
-        {toolProfileLoaded && (
-          <section className="flex flex-col gap-2">
-            <SectionLabel>Tool Profile</SectionLabel>
+        <section className="flex flex-col gap-2">
+          <SectionLabel>Tool Profile</SectionLabel>
+          {toolProfileLoaded ? (
             <ToolProfileSelector
               value={toolProfile}
               onChange={async (profile) => {
@@ -132,8 +132,10 @@ export const EmbeddedSettingsPanel = memo(function EmbeddedSettingsPanel({
                 }
               }}
             />
-          </section>
-        )}
+          ) : (
+            <div className="h-[68px] w-full animate-pulse rounded-md bg-muted/50" />
+          )}
+        </section>
 
         {/* Guardrails */}
         <section className="flex flex-col gap-2">
