@@ -16,6 +16,7 @@ import {
   ProjectWizardConfigSchema,
   AgentWizardConfigSchema,
 } from "./wizardSchemas";
+import { atomicCreate } from "@/lib/workspace/atomicCreate";
 
 // ── Skill creation types ───────────────────────────────────────────────
 
@@ -281,47 +282,84 @@ export async function executeWizardCreation(
       const name = agentConf.name;
       const purpose = agentConf.purpose ?? agentConf.roleDescription ?? "AI agent";
       const agentSlug = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
-      try {
-        // 1. Register in gateway config
-        const { createGatewayAgent } = await import("@/lib/gateway/agentCrud");
-        await createGatewayAgent({ client, name });
 
-        // 2. Create agent files on disk
-        const res = await fetch("/api/agents/create", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ agentId: agentSlug, name, purpose }),
-        });
-        if (!res.ok) {
-          const data = (await res.json().catch(() => ({}))) as { error?: string };
-          return { success: false, message: data.error ?? `Failed to create agent (HTTP ${res.status})` };
-        }
+      const atomicResult = await atomicCreate([
+        {
+          name: "Register gateway agent",
+          execute: async () => {
+            const { createGatewayAgent } = await import("@/lib/gateway/agentCrud");
+            await createGatewayAgent({ client, name });
+          },
+          rollback: async () => {
+            const { deleteGatewayAgent } = await import("@/lib/gateway/agentCrud");
+            await deleteGatewayAgent({ client, agentId: agentSlug }).catch(() => {/* best-effort */});
+          },
+        },
+        {
+          name: "Create agent files",
+          execute: async () => {
+            const res = await fetch("/api/agents/create", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ agentId: agentSlug, name, purpose }),
+            });
+            if (!res.ok) {
+              const data = (await res.json().catch(() => ({}))) as { error?: string };
+              throw new Error(data.error ?? `HTTP ${res.status}`);
+            }
+          },
+          rollback: async () => {
+            await fetch("/api/workspace/file", {
+              method: "DELETE",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ agentId, path: `../agents/${agentSlug}` }),
+            }).catch(() => {/* best-effort */});
+          },
+        },
+        {
+          name: "Create persona record",
+          execute: async () => {
+            const personaRes = await fetch("/api/workspace/personas", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                agentId,
+                personaId: agentSlug,
+                displayName: name,
+                category: (agentConf.category as string) ?? "operations",
+              }),
+            });
+            if (!personaRes.ok) {
+              throw new Error(`Persona creation failed (HTTP ${personaRes.status})`);
+            }
+            // Transition to active (non-fatal if this fails)
+            await fetch("/api/workspace/personas", {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ agentId, personaId: agentSlug, status: "active" }),
+            }).catch(() => {/* non-fatal */});
+          },
+          rollback: async () => {
+            await fetch("/api/workspace/personas", {
+              method: "DELETE",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ agentId, personaId: agentSlug }),
+            }).catch(() => {/* best-effort */});
+          },
+        },
+      ]);
 
-        // 3. Create persona DB row as active
-        const personaRes = await fetch("/api/workspace/personas", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            agentId,
-            personaId: agentSlug,
-            displayName: name,
-            category: (agentConf.category as string) ?? "operations",
-          }),
-        });
-        if (personaRes.ok) {
-          // Transition to active
-          await fetch("/api/workspace/personas", {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ agentId, personaId: agentSlug, status: "active" }),
-          }).catch(() => { /* non-fatal */ });
-        }
-
-        return { success: true, message: `Agent "${name}" created and activated.` };
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        return { success: false, message: `Failed to create agent: ${msg}` };
+      if (!atomicResult.success) {
+        const rollbackNote = atomicResult.rollbackErrors?.length
+          ? ` (rollback warnings: ${atomicResult.rollbackErrors.join("; ")})`
+          : "";
+        return {
+          success: false,
+          message: `Failed at "${atomicResult.failedStep}": ${atomicResult.error}${rollbackNote}`,
+        };
       }
+
+      return { success: true, message: `Agent "${name}" created and activated.` };
     }
     default:
       return {
