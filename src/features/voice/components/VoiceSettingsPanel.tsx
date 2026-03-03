@@ -79,7 +79,6 @@ const VoiceCard = React.memo(function VoiceCard({
       aria-pressed={selected}
       className={cn(
         "flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition-colors",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
         selected
           ? "border-primary/40 bg-primary/10"
           : "border-border/30 hover:border-border/60 hover:bg-muted/30",
@@ -270,7 +269,6 @@ export const VoiceSettingsPanel = React.memo(function VoiceSettingsPanel({
           aria-checked={settings.autoSpeak}
           className={cn(
             "relative h-6 w-11 shrink-0 rounded-full transition-colors",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
             settings.autoSpeak ? "bg-primary" : "bg-muted",
           )}
         >
@@ -291,7 +289,6 @@ export const VoiceSettingsPanel = React.memo(function VoiceSettingsPanel({
           onChange={handleModelChange}
           className={cn(
             "min-h-[44px] rounded-lg border border-border/40 bg-background/50 px-3 text-sm",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
           )}
         >
           <option value="eleven_flash_v2_5">Flash v2.5 — Fastest, lowest latency</option>
@@ -308,7 +305,6 @@ export const VoiceSettingsPanel = React.memo(function VoiceSettingsPanel({
           onChange={handleLanguageChange}
           className={cn(
             "min-h-[44px] rounded-lg border border-border/40 bg-background/50 px-3 text-sm",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
           )}
         >
           <option value="en">English</option>

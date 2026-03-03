@@ -55,7 +55,6 @@ function VoiceUnavailable({ onRetry }: VoiceUnavailableProps) {
         className={cn(
           "flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg",
           "text-muted-foreground/50 transition-colors hover:text-muted-foreground",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
         )}
         aria-label="Voice unavailable — click to retry"
         title="Voice unavailable — click to retry"
