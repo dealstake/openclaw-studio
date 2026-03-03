@@ -217,11 +217,11 @@ export const BrainKeysSection = memo(function BrainKeysSection({
       {!loading && profiles.length === 0 && hasAiCredentials && (
         <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-3 py-2.5">
           <p className="text-xs text-emerald-400">
-            ✓ Provider credentials configured via{" "}
+            <span aria-hidden="true">✓ </span>Provider credentials configured via{" "}
             <button
               type="button"
               onClick={onNavigateToCredentials}
-              className="inline min-h-[44px] px-0 underline underline-offset-2 hover:text-emerald-300 transition-colors"
+              className="inline-flex items-center min-h-[44px] px-1 rounded underline underline-offset-2 hover:text-emerald-300 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               Credentials vault
             </button>
