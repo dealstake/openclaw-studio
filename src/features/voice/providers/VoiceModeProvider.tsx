@@ -53,6 +53,10 @@ export interface VoiceModeContextValue {
   inputVolumeRef: React.RefObject<number>;
   /** Ref for output volume (0-1) — fed to Orb */
   outputVolumeRef: React.RefObject<number>;
+  /** Set input volume (0-1) — safe setter for ref */
+  setInputVolume: (v: number) => void;
+  /** Set output volume (0-1) — safe setter for ref */
+  setOutputVolume: (v: number) => void;
   /** Elapsed seconds since voice mode opened */
   elapsedSeconds: number;
 }
@@ -95,6 +99,14 @@ export function VoiceModeProvider({ children }: VoiceModeProviderProps) {
   const inputVolumeRef = useRef<number>(0);
   const outputVolumeRef = useRef<number>(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const setInputVolume = useCallback((v: number) => {
+    inputVolumeRef.current = v;
+  }, []);
+
+  const setOutputVolume = useCallback((v: number) => {
+    outputVolumeRef.current = v;
+  }, []);
 
   const startTimer = useCallback(() => {
     setElapsedSeconds(0);
@@ -163,6 +175,8 @@ export function VoiceModeProvider({ children }: VoiceModeProviderProps) {
       setAgentTranscript,
       inputVolumeRef,
       outputVolumeRef,
+      setInputVolume,
+      setOutputVolume,
       elapsedSeconds,
     }),
     [
@@ -176,6 +190,8 @@ export function VoiceModeProvider({ children }: VoiceModeProviderProps) {
       closeVoiceMode,
       minimizeVoiceMode,
       expandVoiceMode,
+      setInputVolume,
+      setOutputVolume,
       elapsedSeconds,
     ],
   );
