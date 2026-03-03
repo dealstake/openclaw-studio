@@ -24,6 +24,8 @@ export {
 } from "./lib/voiceTypes";
 
 // Hooks
+export { useVoiceClient, type UseVoiceClientReturn } from "./hooks/useVoiceClient";
+/** @deprecated Use useVoiceClient instead */
 export { useVoiceInput, type UseVoiceInputReturn } from "./hooks/useVoiceInput";
 export {
   useVoiceOutput,
