@@ -1,4 +1,4 @@
-import { eq, asc, desc, and, sql } from "drizzle-orm";
+import { eq, asc, and, sql } from "drizzle-orm";
 import { projectsIndex, type ProjectIndexRow as FullProjectIndexRow } from "../schema";
 import { STATUS_ORDER } from "@/features/projects/lib/constants";
 import type { StudioDb } from "../index";

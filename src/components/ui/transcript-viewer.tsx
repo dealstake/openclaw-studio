@@ -1,4 +1,4 @@
-/* eslint-disable react-hooks/preserve-manual-memoization, react-hooks/refs */
+/* eslint-disable react-hooks/refs */
 "use client"
 
 import {

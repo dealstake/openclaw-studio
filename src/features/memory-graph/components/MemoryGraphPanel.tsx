@@ -2,7 +2,6 @@
 
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { MemoryGraphData } from "../lib/types";
 import { useMemoryGraph } from "../hooks/useMemoryGraph";
 import type { EntityType } from "../lib/types";
 

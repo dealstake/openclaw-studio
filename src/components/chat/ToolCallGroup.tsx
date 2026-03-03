@@ -32,7 +32,7 @@ export const ToolCallGroup = React.memo(function ToolCallGroup({
 
   // Single tool — render directly (no grouping wrapper)
   if (tools.length === 1) {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     const { key: _k, ...props } = tools[0];
     return <ToolCallBlock {...props} className={className} />;
   }

@@ -35,7 +35,7 @@ interface UseChatCallbacksParams {
 export function useChatCallbacks({
   client,
   status,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- kept for backward-compatible API surface
+   
   agents: _agents,
   dispatch,
   stateRef,
