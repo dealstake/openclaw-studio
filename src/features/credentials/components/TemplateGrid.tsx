@@ -29,7 +29,12 @@ export const TemplateGrid = React.memo(function TemplateGrid({
   }, [search]);
 
   return (
-    <div className="grid grid-cols-2 gap-2.5">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+      {filtered.length === 0 && search.trim() !== "" && (
+        <div className="col-span-full pb-2 text-center text-xs text-muted-foreground">
+          No templates match &ldquo;{search}&rdquo;
+        </div>
+      )}
       {filtered.map((template) => (
         <BaseCard
           key={template.key}
@@ -55,7 +60,7 @@ export const TemplateGrid = React.memo(function TemplateGrid({
         className="min-h-[44px] border-dashed"
       >
         <div className="flex items-center gap-1.5">
-          <Plus className="h-3.5 w-3.5 text-muted-foreground/50" />
+          <Plus className="h-3.5 w-3.5 text-muted-foreground/50" aria-hidden="true" />
           <CardTitle as="div" className="text-xs">
             Custom
           </CardTitle>
