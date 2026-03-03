@@ -129,6 +129,8 @@ type AgentBrainPanelProps = {
   agents: AgentState[];
   selectedAgentId: string | null;
   onClose: () => void;
+  /** Hide the header bar (used when embedded in another panel) */
+  hideHeader?: boolean;
   /** Controlled file tab — when provided, panel syncs to this tab */
   activeTab?: AgentFileName;
   /** Callback when file tab changes (for lifting state) */
@@ -152,6 +154,7 @@ export const AgentBrainPanel = memo(function AgentBrainPanel({
   agents,
   selectedAgentId,
   onClose,
+  hideHeader,
   activeTab: controlledTab,
   onTabChange,
   previewMode: controlledPreview,
@@ -325,15 +328,17 @@ export const AgentBrainPanel = memo(function AgentBrainPanel({
       data-testid="agent-brain-panel"
       style={{ position: "relative", left: "auto", top: "auto", width: "100%", height: "100%" }}
     >
-      <AgentInspectHeader
-        label="Brain files"
-        title={selectedAgent?.name ?? "No agent selected"}
-        onClose={() => {
-          void handleClose();
-        }}
-        closeTestId="agent-brain-close"
-        closeDisabled={agentFilesSaving}
-      />
+      {!hideHeader && (
+        <AgentInspectHeader
+          label="Brain files"
+          title={selectedAgent?.name ?? "No agent selected"}
+          onClose={() => {
+            void handleClose();
+          }}
+          closeTestId="agent-brain-close"
+          closeDisabled={agentFilesSaving}
+        />
+      )}
 
       <div className="flex min-h-0 flex-1 flex-col p-4">
         <section className="flex min-h-0 flex-1 flex-col" data-testid="agent-brain-files">

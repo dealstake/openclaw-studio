@@ -16,6 +16,8 @@ import { GuardrailsSection } from "@/features/guardrails/components/GuardrailsSe
 type AgentSettingsPanelProps = {
   agent: AgentState;
   onClose: () => void;
+  /** Hide the header bar (used when embedded in another panel) */
+  hideHeader?: boolean;
   onRename: (value: string) => Promise<boolean>;
   onNewSession: () => Promise<void> | void;
   onDelete: () => void;
@@ -32,6 +34,7 @@ type AgentSettingsPanelProps = {
 export const AgentSettingsPanel = memo(function AgentSettingsPanel({
   agent,
   onClose,
+  hideHeader,
   onRename,
   onNewSession,
   onDelete,
@@ -49,12 +52,14 @@ export const AgentSettingsPanel = memo(function AgentSettingsPanel({
         data-testid="agent-settings-panel"
         style={{ position: "relative", left: "auto", top: "auto", width: "100%", height: "100%" }}
       >
-        <AgentInspectHeader
-          label="Agent settings"
-          title={agent.name}
-          onClose={onClose}
-          closeTestId="agent-settings-close"
-        />
+        {!hideHeader && (
+          <AgentInspectHeader
+            label="Agent settings"
+            title={agent.name}
+            onClose={onClose}
+            closeTestId="agent-settings-close"
+          />
+        )}
 
         <div className="flex flex-col gap-4 p-4">
           <IdentitySettingsSection

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { memo, useMemo, useState } from "react";
+import React, { memo, useCallback, useMemo, useState } from "react";
 import {
   User,
   Brain,
@@ -22,6 +22,8 @@ import { cn } from "@/lib/utils";
 import type { AgentState } from "@/features/agents/state/store";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import type { GatewayModelChoice } from "@/lib/gateway/models";
+import { AgentBrainPanel } from "@/features/agents/components/AgentBrainPanel";
+import { EmbeddedSettingsPanel } from "./EmbeddedSettingsPanel";
 
 // ---------------------------------------------------------------------------
 // Tab definition
@@ -184,8 +186,8 @@ export const PersonaDetailModal = memo(function PersonaDetailModal({
 }: PersonaDetailModalProps) {
   const [activeTab, setActiveTab] = useState<DetailTab>("overview");
 
-  // agents, client, status, models will be passed to embedded panels in Phase 3b
-  void agents; void client; void status; void models;
+  // no-op close handler for embedded panels that render their own close button
+  const noop = useCallback(() => {}, []);
 
   const tabContent = useMemo(() => {
     if (!agent) return null;
@@ -193,9 +195,27 @@ export const PersonaDetailModal = memo(function PersonaDetailModal({
       case "overview":
         return <OverviewTab agent={agent} />;
       case "brain":
-        return <PlaceholderTab label="Brain file editor" />;
+        return (
+          <div className="flex min-h-0 flex-1 flex-col -mx-4 -mb-4">
+            <AgentBrainPanel
+              client={client}
+              agents={agents}
+              selectedAgentId={agent.agentId}
+              onClose={noop}
+              hideHeader
+              status={status}
+              models={models}
+            />
+          </div>
+        );
       case "settings":
-        return <PlaceholderTab label="Agent settings" />;
+        return (
+          <EmbeddedSettingsPanel
+            agent={agent}
+            client={client}
+            status={status}
+          />
+        );
       case "voice":
         return <PlaceholderTab label="Voice configuration" />;
       case "knowledge":
@@ -207,7 +227,7 @@ export const PersonaDetailModal = memo(function PersonaDetailModal({
       default:
         return null;
     }
-  }, [activeTab, agent]);
+  }, [activeTab, agent, agents, client, status, models, noop]);
 
   if (!agent) return null;
 
