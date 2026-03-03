@@ -80,7 +80,7 @@ export function filterAgentSessions(
           (s.key === mainKey
             ? "Main Session"
             : prettifySessionKey(s.key.slice(agentPrefix.length))),
-        updatedAt: s.updatedAt ?? 0,
+        updatedAt: s.updatedAt ?? Date.now(),
         messageCount: s.messageCount ?? 0,
         isMain: s.key === mainKey,
       }),

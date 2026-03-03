@@ -85,9 +85,12 @@ export const SessionItemMenu = memo(function SessionItemMenu({
         <DropdownMenuTrigger asChild>
           <button
             type="button"
-            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md text-muted-foreground opacity-0 transition-all duration-150 hover:bg-muted hover:text-foreground group-hover:opacity-100 focus:opacity-100 focus-ring -mr-2"
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md text-muted-foreground opacity-20 transition-all duration-150 hover:bg-muted hover:text-foreground group-hover:opacity-100 focus:opacity-100 focus-ring -mr-2"
             aria-label={`Actions for ${displayName}`}
             onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") e.stopPropagation();
+            }}
           >
             <MoreHorizontal className="h-3.5 w-3.5" />
           </button>
