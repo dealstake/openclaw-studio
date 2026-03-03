@@ -154,6 +154,7 @@ const VoiceSlider = React.memo(function VoiceSlider({
   onChange,
   description,
 }: VoiceSliderProps) {
+  const id = React.useId();
   const handleChange = useCallback(
     (values: number[]) => {
       onChange(values[0]);
@@ -164,12 +165,13 @@ const VoiceSlider = React.memo(function VoiceSlider({
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex items-center justify-between">
-        <label className="text-xs font-medium text-foreground">{label}</label>
+        <label id={`${id}-label`} className="text-xs font-medium text-foreground">{label}</label>
         <span className="text-xs text-muted-foreground">
           {(value * 100).toFixed(0)}%
         </span>
       </div>
       <RadixSlider
+        aria-labelledby={`${id}-label`}
         min={min}
         max={max}
         step={step}
@@ -352,7 +354,9 @@ export const VoiceSettingsPanel = React.memo(function VoiceSettingsPanel({
         <button
           type="button"
           onClick={() => setAdvancedOpen(!advancedOpen)}
-          className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+          aria-expanded={advancedOpen}
+          aria-controls="advanced-voice-settings"
+          className="flex w-full items-center gap-1.5 rounded-md p-2 text-xs font-medium text-muted-foreground hover:text-foreground"
         >
           {advancedOpen ? (
             <ChevronDown className="h-3 w-3" />
@@ -362,7 +366,7 @@ export const VoiceSettingsPanel = React.memo(function VoiceSettingsPanel({
           Advanced Voice Settings
         </button>
         {advancedOpen && (
-          <div className="flex flex-col gap-4 rounded-lg border border-border/20 bg-card/30 p-3">
+          <div id="advanced-voice-settings" className="flex flex-col gap-4 rounded-lg border border-border/20 bg-card/30 p-3">
             <VoiceSlider
               label="Stability"
               value={settings.voiceConfig.stability}
