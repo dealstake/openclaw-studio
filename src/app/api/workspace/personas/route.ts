@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
+import { parseBody } from "@/lib/api/validation";
 import { withSidecarGetFallback, withSidecarMutateFallback } from "@/lib/api/sidecar-proxy";
 import { validateAgentId, handleApiError } from "@/lib/api/helpers";
 import { getDb } from "@/lib/database";
@@ -10,13 +12,48 @@ import type { PersonaStatus, PersonaCategory } from "@/features/personas/lib/per
 export const runtime = "nodejs";
 
 // ---------------------------------------------------------------------------
-// Validation helpers
+// Validation helpers & schemas
 // ---------------------------------------------------------------------------
 
 const VALID_STATUSES: PersonaStatus[] = ["draft", "configuring", "active", "paused", "archived"];
 const VALID_CATEGORIES: PersonaCategory[] = [
   "sales", "admin", "support", "marketing", "hr", "finance", "legal", "operations",
 ];
+
+const statusEnum = z.enum(["draft", "configuring", "active", "paused", "archived"]);
+const categoryEnum = z.enum([
+  "sales", "admin", "support", "marketing", "hr", "finance", "legal", "operations",
+]);
+
+const createPersonaSchema = z.object({
+  agentId: z.string().min(1),
+  personaId: z.string().min(1),
+  displayName: z.string().min(1),
+  category: categoryEnum,
+  templateKey: z.string().optional(),
+  optimizationGoals: z.array(z.string()).optional(),
+  toolProfile: z.string().optional(),
+});
+
+const patchPersonaSchema = z.object({
+  agentId: z.string().min(1),
+  personaId: z.string().min(1),
+  displayName: z.string().min(1).optional(),
+  category: categoryEnum.optional(),
+  status: statusEnum.optional(),
+  templateKey: z.string().nullable().optional(),
+  optimizationGoals: z.array(z.string()).optional(),
+  metricsJson: z.string().optional(),
+  practiceCount: z.number().int().min(0).optional(),
+  lastTrainedAt: z.string().nullable().optional(),
+  voiceProvider: z.string().optional(),
+  voiceId: z.string().optional(),
+  voiceModelId: z.string().optional(),
+  voiceStability: z.number().min(0).max(1).optional(),
+  voiceClarity: z.number().min(0).max(1).optional(),
+  voiceStyle: z.number().min(0).max(1).optional(),
+  toolProfile: z.string().optional(),
+});
 
 function isValidStatus(s: string): s is PersonaStatus {
   return (VALID_STATUSES as string[]).includes(s);
@@ -72,21 +109,11 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const body = await parseBody(request, createPersonaSchema);
     const { agentId, personaId, displayName, category, templateKey, optimizationGoals, toolProfile } = body;
 
     const validation = validateAgentId(agentId);
     if (!validation.ok) return validation.error;
-
-    if (!personaId || typeof personaId !== "string") {
-      return NextResponse.json({ error: "Missing required field: personaId" }, { status: 400 });
-    }
-    if (!displayName || typeof displayName !== "string") {
-      return NextResponse.json({ error: "Missing required field: displayName" }, { status: 400 });
-    }
-    if (!category || !isValidCategory(category)) {
-      return NextResponse.json({ error: `Invalid category: ${category}` }, { status: 400 });
-    }
 
     // Pre-check for duplicate before entering sidecar fallback
     const db = getDb();
@@ -135,25 +162,11 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
-    const body = await request.json();
+    const body = await parseBody(request, patchPersonaSchema);
     const { agentId, personaId, ...fields } = body;
 
     const validation = validateAgentId(agentId);
     if (!validation.ok) return validation.error;
-
-    if (!personaId || typeof personaId !== "string") {
-      return NextResponse.json({ error: "Missing required field: personaId" }, { status: 400 });
-    }
-
-    // Validate status if being changed
-    if (fields.status && !isValidStatus(fields.status)) {
-      return NextResponse.json({ error: `Invalid status: ${fields.status}` }, { status: 400 });
-    }
-
-    // Validate category if being changed
-    if (fields.category && !isValidCategory(fields.category)) {
-      return NextResponse.json({ error: `Invalid category: ${fields.category}` }, { status: 400 });
-    }
 
     // Pre-check existence
     const db = getDb();

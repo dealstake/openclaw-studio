@@ -69,6 +69,7 @@ export function useStudioChatCallbacks({
     openForkTreeAction(sessionKey);
   }, []);
   const [viewingSessionLoading, setViewingSessionLoading] = useState(false);
+  const [viewingSessionError, setViewingSessionError] = useState<string | null>(null);
 
   const stableChatOnModelChange = useCallback((value: string | null) => {
     const fa = focusedAgentRef.current;
@@ -152,6 +153,49 @@ export function useStudioChatCallbacks({
     return sessionUsage ? sessionUsage.inputTokens + sessionUsage.outputTokens : undefined;
   }, [focusedAgent, agentContextWindow, sessionUsage]);
 
+  // Shared transcript loader — sets loading/error/history state
+  const loadTranscript = useCallback(
+    (effectiveAgentId: string, sessionId: string) => {
+      setViewingSessionLoading(true);
+      setViewingSessionHistory([]);
+      setViewingSessionError(null);
+      fetchTranscriptMessages(effectiveAgentId, sessionId, 0, 200)
+        .then((result) => {
+          setViewingSessionHistory(transformMessagesToMessageParts(result.messages));
+          setViewingSessionError(null);
+        })
+        .catch((err) => {
+          console.error("Failed to load transcript:", err);
+          setViewingSessionError(
+            err instanceof Error ? err.message : "Failed to load transcript",
+          );
+        })
+        .finally(() => setViewingSessionLoading(false));
+    },
+    [],
+  );
+
+  // Retry the current transcript
+  const retryTranscript = useCallback(() => {
+    const key = viewingSessionKey;
+    if (!key) return;
+    // Parse composite key to extract agentId + sessionId
+    let resolvedKey = key;
+    if (resolvedKey.startsWith("archived:")) {
+      resolvedKey = resolvedKey.slice("archived:".length);
+    }
+    const parts = resolvedKey.split(":");
+    let agentId: string | null = null;
+    let sessionId = resolvedKey;
+    if (parts.length >= 3 && parts[0] === "agent") {
+      agentId = parts[1];
+      sessionId = parts.slice(2).join(":");
+    }
+    const effectiveAgentId = agentId || focusedAgent?.agentId || "";
+    if (!effectiveAgentId) return;
+    loadTranscript(effectiveAgentId, sessionId);
+  }, [viewingSessionKey, focusedAgent?.agentId, loadTranscript]);
+
   // Shared transcript click handler
   const handleTranscriptClick = useCallback(
     (sessionId: string, agentId: string | null, dismissFn?: () => void) => {
@@ -159,23 +203,10 @@ export function useStudioChatCallbacks({
       const effectiveAgentId = agentId || focusedAgent?.agentId || "";
       if (!effectiveAgentId) return;
       setViewingSessionKey(sessionId);
-      setViewingSessionLoading(true);
-      setViewingSessionHistory([]);
       setMobilePane("chat");
-      fetchTranscriptMessages(effectiveAgentId, sessionId, 0, 200)
-        .then((result) => {
-          setViewingSessionHistory(transformMessagesToMessageParts(result.messages));
-        })
-        .catch((err) => {
-          console.error("Failed to load transcript:", err);
-          setViewingSessionHistory([{
-            type: "text",
-            text: "Unable to load this session's transcript. Please try again in a moment.",
-          }]);
-        })
-        .finally(() => setViewingSessionLoading(false));
+      loadTranscript(effectiveAgentId, sessionId);
     },
-    [focusedAgent?.agentId, setMobilePane],
+    [focusedAgent?.agentId, setMobilePane, loadTranscript],
   );
 
   // Sidebar session select — parses composite key (agent:id:session) and fetches transcript
@@ -203,23 +234,10 @@ export function useStudioChatCallbacks({
       if (!effectiveAgentId) return;
       // Set viewing key to the composite key (for sidebar highlight matching)
       setViewingSessionKey(compositeKey);
-      setViewingSessionLoading(true);
-      setViewingSessionHistory([]);
       setMobilePane("chat");
-      fetchTranscriptMessages(effectiveAgentId, sessionId, 0, 200)
-        .then((result) => {
-          setViewingSessionHistory(transformMessagesToMessageParts(result.messages));
-        })
-        .catch((err) => {
-          console.error("Failed to load transcript:", err);
-          setViewingSessionHistory([{
-            type: "text",
-            text: "Unable to load this session's transcript. Please try again in a moment.",
-          }]);
-        })
-        .finally(() => setViewingSessionLoading(false));
+      loadTranscript(effectiveAgentId, sessionId);
     },
-    [focusedAgent?.agentId, setMobilePane],
+    [focusedAgent?.agentId, setMobilePane, loadTranscript],
   );
 
   const handleDrawerTranscriptClick = useCallback(
@@ -268,6 +286,8 @@ export function useStudioChatCallbacks({
     viewingSessionHistory,
     viewingTrace,
     viewingSessionLoading,
+    viewingSessionError,
+    retryTranscript,
     clearViewingTrace,
     viewingReplay,
     clearViewingReplay,

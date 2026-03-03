@@ -2,7 +2,9 @@ import { NextResponse, type NextRequest } from "next/server";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
+import { z } from "zod";
 
+import { parseBody } from "@/lib/api/validation";
 import { validateAgentId, handleApiError } from "@/lib/api/helpers";
 import {
   generateSoulMd,
@@ -15,28 +17,28 @@ import { isSidecarConfigured, sidecarMutate } from "@/lib/workspace/sidecar";
 export const runtime = "nodejs";
 
 // ---------------------------------------------------------------------------
-// Validation Helpers
+// Validation Helpers & Schemas
 // ---------------------------------------------------------------------------
+
+/** Validates knowledge filenames: alphanumeric with dashes/underscores, .md extension, no path traversal */
+const knowledgeFilenameRegex = /^[a-zA-Z0-9][a-zA-Z0-9_-]*\.md$/;
 
 function isValidKnowledgeFilename(filename: string): boolean {
   if (!filename || typeof filename !== "string") return false;
   if (filename.includes("/") || filename.includes("\\")) return false;
   if (filename.includes("..")) return false;
-  const stem = filename.replace(/\.md$/, "");
-  return /^[a-zA-Z0-9][a-zA-Z0-9_-]*$/.test(stem) && filename.endsWith(".md");
+  return knowledgeFilenameRegex.test(filename);
 }
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
+const createAgentSchema = z.object({
+  agentId: z.string().min(1),
+  name: z.string().trim().min(1, "name is required"),
+  purpose: z.string().trim().min(1, "purpose is required"),
+  brainFiles: z.record(z.string(), z.string()).optional(),
+  knowledgeFiles: z.record(z.string(), z.string()).optional(),
+});
 
-interface CreateAgentBody {
-  agentId: string;
-  name: string;
-  purpose: string;
-  brainFiles?: Record<string, string>;
-  knowledgeFiles?: Record<string, string>;
-}
+type CreateAgentBody = z.infer<typeof createAgentSchema>;
 
 // ---------------------------------------------------------------------------
 // Sidecar Mode — writes files through Mac Mini sidecar
@@ -160,19 +162,11 @@ function createLocally(body: CreateAgentBody) {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = (await request.json()) as CreateAgentBody;
-    const { agentId, name, purpose, knowledgeFiles } = body;
+    const body = await parseBody(request, createAgentSchema);
+    const { agentId, knowledgeFiles } = body;
 
     const agentValidation = validateAgentId(agentId);
     if (!agentValidation.ok) return agentValidation.error;
-
-    if (!name || typeof name !== "string" || !name.trim()) {
-      return NextResponse.json({ error: "name is required." }, { status: 400 });
-    }
-
-    if (!purpose || typeof purpose !== "string" || !purpose.trim()) {
-      return NextResponse.json({ error: "purpose is required." }, { status: 400 });
-    }
 
     if (knowledgeFiles) {
       for (const filename of Object.keys(knowledgeFiles)) {

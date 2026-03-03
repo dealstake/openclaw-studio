@@ -11,36 +11,30 @@
  */
 
 import { NextResponse } from "next/server";
+import { z } from "zod";
+import { parseBody } from "@/lib/api/validation";
 
 const DEFAULT_VOICE_ID = "21m00Tcm4TlvDq8ikWAM"; // Rachel — clear, professional
 const DEFAULT_MODEL_ID = "eleven_flash_v2_5"; // Fast, low-latency
 
-interface VoiceSettingsBody {
-  stability?: number;
-  similarity_boost?: number;
-  style?: number;
-  use_speaker_boost?: boolean;
-}
+const voiceSettingsSchema = z.object({
+  stability: z.number().min(0).max(1).optional(),
+  similarity_boost: z.number().min(0).max(1).optional(),
+  style: z.number().min(0).max(1).optional(),
+  use_speaker_boost: z.boolean().optional(),
+}).optional();
 
-interface TtsRequest {
-  text: string;
-  voiceId?: string;
-  modelId?: string;
-  apiKey?: string;
-  voiceSettings?: VoiceSettingsBody;
-}
+const ttsBodySchema = z.object({
+  text: z.string().min(1, "text is required").max(10000),
+  voiceId: z.string().optional(),
+  modelId: z.string().optional(),
+  apiKey: z.string().optional(),
+  voiceSettings: voiceSettingsSchema,
+});
 
 export async function POST(request: Request): Promise<Response> {
   try {
-    const body = (await request.json()) as TtsRequest;
-    const { text, voiceId, modelId, apiKey: clientKey, voiceSettings } = body;
-
-    if (!text || typeof text !== "string" || text.trim().length === 0) {
-      return NextResponse.json(
-        { error: "text is required" },
-        { status: 400 },
-      );
-    }
+    const { text, voiceId, modelId, apiKey: clientKey, voiceSettings } = await parseBody(request, ttsBodySchema);
 
     // Truncate excessively long text (ElevenLabs limit ~5000 chars)
     const truncated = text.slice(0, 5000);
@@ -97,6 +91,8 @@ export async function POST(request: Request): Promise<Response> {
       },
     });
   } catch (err) {
+    // parseBody throws NextResponse on validation failure
+    if (err instanceof NextResponse) return err;
     console.error("[tts] Error:", err);
     return NextResponse.json(
       { error: "Internal server error" },

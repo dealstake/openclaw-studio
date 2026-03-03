@@ -875,6 +875,8 @@ export const AgentStudioPage = () => {
     viewingSessionHistory,
     viewingTrace,
     viewingSessionLoading,
+    viewingSessionError,
+    retryTranscript,
     clearViewingTrace,
     viewingReplay,
     clearViewingReplay,
@@ -1154,6 +1156,8 @@ export const AgentStudioPage = () => {
                         viewingSessionKey={viewingSessionKey}
                         viewingSessionHistory={viewingSessionHistory}
                         viewingSessionLoading={viewingSessionLoading}
+                        viewingSessionError={viewingSessionError}
+                        onRetryTranscript={retryTranscript}
                         onExitSessionView={stableChatOnExitSessionView}
                         sessionContinued={sessionContinuedAgents.has(focusedAgent.agentId)}
                         onDismissContinuationBanner={stableChatOnDismissContinuation}
@@ -1282,6 +1286,8 @@ export const AgentStudioPage = () => {
                       viewingSessionKey={viewingSessionKey}
                       viewingSessionHistory={viewingSessionHistory}
                       viewingSessionLoading={viewingSessionLoading}
+                      viewingSessionError={viewingSessionError}
+                      onRetryTranscript={retryTranscript}
                       onExitSessionView={stableChatOnExitSessionView}
                       sessionContinued={sessionContinuedAgents.has(focusedAgent.agentId)}
                       onDismissContinuationBanner={stableChatOnDismissContinuation}

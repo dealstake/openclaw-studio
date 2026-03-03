@@ -67,6 +67,9 @@ export function handleApiError(
   tag: string,
   fallback = "Internal server error."
 ): NextResponse {
+  // parseBody throws NextResponse on validation failure — pass through
+  if (err instanceof NextResponse) return err;
+
   // Sidecar unavailable → 503
   if (isSidecarUnavailableError(err)) {
     return NextResponse.json(

@@ -10,11 +10,13 @@
  */
 
 import { NextResponse } from "next/server";
+import { z } from "zod";
+import { parseBody } from "@/lib/api/validation";
 
-interface TokenRequest {
-  type?: "realtime_scribe" | "tts_websocket";
-  apiKey?: string;
-}
+const tokenBodySchema = z.object({
+  type: z.enum(["realtime_scribe", "tts_websocket"]).optional().default("realtime_scribe"),
+  apiKey: z.string().optional(),
+});
 
 // Simple per-IP rate limit: max 10 tokens per hour
 const tokenCounts = new Map<string, { count: number; resetAt: number }>();
@@ -45,8 +47,8 @@ export async function POST(request: Request): Promise<Response> {
       );
     }
 
-    const body = (await request.json()) as TokenRequest;
-    const tokenType = body.type || "realtime_scribe";
+    const body = await parseBody(request, tokenBodySchema);
+    const tokenType = body.type;
 
     // Resolve API key: env var takes priority, client key as fallback
     const envKey = process.env.ELEVENLABS_API_KEY;
@@ -82,6 +84,7 @@ export async function POST(request: Request): Promise<Response> {
     const data = (await response.json()) as { token: string };
     return NextResponse.json({ token: data.token });
   } catch (err) {
+    if (err instanceof NextResponse) return err;
     console.error("[voice/token] Error:", err);
     return NextResponse.json(
       { error: "Internal server error" },

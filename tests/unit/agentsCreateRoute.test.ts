@@ -28,7 +28,9 @@ describe("POST /api/agents/create", () => {
     const res = await POST(makeRequest({ name: "Bot", purpose: "Test" }));
     expect(res.status).toBe(400);
     const data = await res.json();
-    expect(data.error).toContain("agentId");
+    // Zod validation returns issues array with field paths
+    expect(data.success).toBe(false);
+    expect(data.issues?.some((i: { path: string }) => i.path === "agentId")).toBe(true);
   });
 
   it("rejects unsafe agentId with path traversal", async () => {
@@ -40,7 +42,8 @@ describe("POST /api/agents/create", () => {
     const res = await POST(makeRequest({ agentId: "test-agent", purpose: "Test" }));
     expect(res.status).toBe(400);
     const data = await res.json();
-    expect(data.error).toContain("name");
+    expect(data.success).toBe(false);
+    expect(data.issues?.some((i: { path: string }) => i.path === "name")).toBe(true);
   });
 
   it("rejects empty name", async () => {
@@ -52,7 +55,8 @@ describe("POST /api/agents/create", () => {
     const res = await POST(makeRequest({ agentId: "test-agent", name: "Bot" }));
     expect(res.status).toBe(400);
     const data = await res.json();
-    expect(data.error).toContain("purpose");
+    expect(data.success).toBe(false);
+    expect(data.issues?.some((i: { path: string }) => i.path === "purpose")).toBe(true);
   });
 
   it("creates agent directory and brain files", async () => {

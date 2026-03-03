@@ -12,6 +12,12 @@
  */
 
 import { NextResponse } from "next/server";
+import { z } from "zod";
+import { parseBody } from "@/lib/api/validation";
+
+const voicesBodySchema = z.object({
+  apiKey: z.string().optional(),
+});
 
 interface VoiceLabel {
   accent?: string;
@@ -105,7 +111,7 @@ export async function GET(): Promise<Response> {
 
 export async function POST(request: Request): Promise<Response> {
   try {
-    const body = (await request.json()) as { apiKey?: string };
+    const body = await parseBody(request, voicesBodySchema);
     const envKey = process.env.ELEVENLABS_API_KEY;
     const clientKey = body.apiKey;
     const apiKey = envKey || (isValidApiKey(clientKey) ? clientKey : null);
@@ -118,6 +124,7 @@ export async function POST(request: Request): Promise<Response> {
     }
     return fetchVoices(apiKey);
   } catch (err) {
+    if (err instanceof NextResponse) return err;
     console.error("[voice/voices] Error:", err);
     return NextResponse.json(
       { error: "Internal server error" },
