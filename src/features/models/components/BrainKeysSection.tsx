@@ -196,8 +196,8 @@ export const BrainKeysSection = memo(function BrainKeysSection({
       {!loading && profiles.length === 0 && (
         <EmptyState
           icon={KeyRound}
-          title="No API keys configured."
-          description="Add a key to authenticate your agent with an AI provider."
+          title="No API keys added yet"
+          description="Keys are optional — your gateway may already have provider credentials configured."
         />
       )}
 

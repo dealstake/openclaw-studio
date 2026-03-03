@@ -1,6 +1,6 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useEffect, useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import type { StudioTask } from "@/features/tasks/types";
 import { TaskScheduleEditor } from "./TaskScheduleEditor";
@@ -33,6 +33,29 @@ export const TaskMetadataSection = memo(function TaskMetadataSection({
   onFieldChange,
 }: TaskMetadataSectionProps) {
   const { onUpdateSchedule } = useTaskActions();
+
+  // Elapsed time counter for running tasks
+  const [elapsed, setElapsed] = useState(() => {
+    if (!task.runningAtMs) return "";
+    const ms = Date.now() - task.runningAtMs;
+    const s = Math.floor(ms / 1000) % 60;
+    const m = Math.floor(ms / 60_000) % 60;
+    const h = Math.floor(ms / 3_600_000);
+    return h > 0 ? `${h}h ${m}m ${s}s` : m > 0 ? `${m}m ${s}s` : `${s}s`;
+  });
+  useEffect(() => {
+    if (!task.runningAtMs) return;
+    const tick = () => {
+      const ms = Date.now() - task.runningAtMs!;
+      const s = Math.floor(ms / 1000) % 60;
+      const m = Math.floor(ms / 60_000) % 60;
+      const h = Math.floor(ms / 3_600_000);
+      setElapsed(h > 0 ? `${h}h ${m}m ${s}s` : m > 0 ? `${m}m ${s}s` : `${s}s`);
+    };
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [task.runningAtMs]);
+
   const typeConfig = TYPE_CONFIG[task.type];
   const TypeIcon = typeConfig.icon;
   const statusKey = getTaskStatusKey(task);
@@ -83,7 +106,7 @@ export const TaskMetadataSection = memo(function TaskMetadataSection({
         {/* Essential meta — always visible */}
         <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
           {task.runningAtMs ? (
-            <span className="font-semibold text-purple-400">● Running now</span>
+            <span className="font-semibold text-purple-400">● Running now{elapsed ? ` — ${elapsed}` : ""}</span>
           ) : task.nextRunAtMs ? (
             <span>Next run: {formatRelativeTime(task.nextRunAtMs)}</span>
           ) : null}
