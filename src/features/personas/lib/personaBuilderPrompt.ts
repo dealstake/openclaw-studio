@@ -172,6 +172,29 @@ Ask the user to complete setup, then re-run preflight before creating the person
 `;
 
 // ---------------------------------------------------------------------------
+// Voice Selection Reference
+// ---------------------------------------------------------------------------
+
+const VOICE_SELECTION_GUIDE = `
+## Voice Identity Selection
+Every persona gets its own voice. During the interview, ask the user about their preferred voice personality:
+- "Should [persona name] sound professional and authoritative, or warm and conversational?"
+- Suggest a voice that matches the persona's role and personality.
+
+**Voice mapping heuristic** (use as default, user can override):
+- Professional/executive female → Rachel (21m00Tcm4TlvDq8ikWAM)
+- Friendly/casual female → Sarah (EXAVITQu4vr4xnSDxMaL)
+- Authoritative male → Adam (pNInz6obpgDQGcFmaJgB)
+- Warm/approachable male → Josh (TxGEqnHWrfWFTfGW9XjX)
+- Energetic/sales male → Sam (yoZ06aMxZJJ28mfd3POQ)
+- Calm/analytical → Elli (MF3mGyEYCl7XYWbV9V6O)
+
+Include \`voiceId\` and \`voiceModelId\` in the persona-config JSON.
+Default model: \`eleven_flash_v2_5\` (fast, low-latency).
+For multilingual personas: \`eleven_multilingual_v2\`.
+`;
+
+// ---------------------------------------------------------------------------
 // Output Block Format Reference
 // ---------------------------------------------------------------------------
 
@@ -191,7 +214,9 @@ When you have gathered enough information, output the persona configuration and 
   "industry": "SaaS",
   "practiceModeType": "task-delegation",
   "optimizationGoals": ["Reduce scheduling conflicts by 90%", "Proactive meeting prep"],
-  "skillRequirements": ["google-workspace", "email", "calendar", "reminders"]
+  "skillRequirements": ["google-workspace", "email", "calendar", "reminders"],
+  "voiceId": "21m00Tcm4TlvDq8ikWAM",
+  "voiceModelId": "eleven_flash_v2_5"
 }
 \`\`\`
 
@@ -403,6 +428,8 @@ When you discover the persona needs a capability, immediately note it. If the ca
 - Frame it as helpful, not blocking: "You'll need [credential] for [capability]. You can set that up at [URL] — but let's keep going with the rest."
 ${PREFLIGHT_TOOL_PROTOCOL}
 
+${VOICE_SELECTION_GUIDE}
+
 ${OUTPUT_BLOCK_FORMAT}
 
 ## Strict Rules
@@ -473,6 +500,8 @@ When you discover the persona needs a capability (email, calendar, voice, messag
 - Tell the user what credential is needed and where to get it
 - Frame it as helpful, not blocking: "You'll need [credential] for [capability]. You can set that up at [URL] — but let's keep going with the rest."
 ${PREFLIGHT_TOOL_PROTOCOL}
+
+${VOICE_SELECTION_GUIDE}
 
 ${OUTPUT_BLOCK_FORMAT}
 

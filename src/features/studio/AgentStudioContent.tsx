@@ -462,6 +462,24 @@ export const AgentStudioPage = () => {
           }),
         }).catch(() => { /* non-fatal */ });
 
+        // Set voice identity if persona-config includes voice fields
+        const pcAny = personaConfig as Record<string, unknown>;
+        if (pcAny.voiceId) {
+          await fetch("/api/workspace/personas", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              personaId: personaConfig.personaId,
+              voiceProvider: "elevenlabs",
+              voiceId: pcAny.voiceId,
+              voiceModelId: pcAny.voiceModelId ?? "eleven_flash_v2_5",
+              voiceStability: pcAny.voiceStability ?? 0.5,
+              voiceClarity: pcAny.voiceClarity ?? 0.75,
+              voiceStyle: pcAny.voiceStyle ?? 0,
+            }),
+          }).catch(() => { /* non-fatal — voice config can be set later */ });
+        }
+
         void wizard.endWizard();
         toast.success(`Persona "${personaConfig.displayName}" created and activated`);
       } catch (err) {
