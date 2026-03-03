@@ -127,9 +127,10 @@ const ToolRow = memo(function ToolRow({
   return (
     <>
       <tr
-        className="border-b border-border/50 last:border-0 cursor-pointer hover:bg-muted/50 transition-colors"
+        className="border-b border-border/50 last:border-0 cursor-pointer hover:bg-muted/50 transition-colors h-11"
         onClick={onToggle}
         role="button"
+        aria-expanded={isExpanded}
         tabIndex={0}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onToggle(); }
@@ -181,7 +182,7 @@ const ToolRow = memo(function ToolRow({
           <td colSpan={6} className="px-6 py-3 bg-muted/30">
             <div className="text-xs">
               <span className="font-medium text-muted-foreground">Last error: </span>
-              <span className="text-red-400 font-mono">{metric.lastError}</span>
+              <span className="text-red-600 dark:text-red-400 font-mono">{metric.lastError}</span>
             </div>
           </td>
         </tr>
