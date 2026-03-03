@@ -4,6 +4,7 @@ import {
   useEffect,
   useMemo,
   useRef,
+  useState,
 } from "react";
 
 import type { AgentState as AgentRecord } from "@/features/agents/state/store";
@@ -109,6 +110,7 @@ export const AgentChatPanel = memo(function AgentChatPanel({
   wizardCreationResult = null,
   onDismissWizardResult,
 }: AgentChatPanelProps) {
+  const [contextBannerDismissed, setContextBannerDismissed] = useState(false);
   const draftRef = useRef<HTMLTextAreaElement | null>(null);
   const scrollToBottomNextOutputRef = useRef(false);
   const plainDraftRef = useRef(agent.draft);
@@ -302,15 +304,23 @@ export const AgentChatPanel = memo(function AgentChatPanel({
   return (
     <div data-agent-panel className="group fade-up relative flex h-full w-full min-w-0 flex-col overflow-hidden bg-surface-sunken">
       {/* Context warning banner — slim pill at 80%+ utilization */}
-      {typeof tokenUsed === "number" && tokenLimit && tokenLimit > 0 && tokenUsed / tokenLimit >= 0.8 && (
+      {typeof tokenUsed === "number" && tokenLimit && tokenLimit > 0 && tokenUsed / tokenLimit >= 0.8 && !contextBannerDismissed && (
         <div className="mx-auto mt-2 flex w-full max-w-3xl 2xl:max-w-4xl items-center gap-2 rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-3 py-1.5 text-xs sm:px-6">
           <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-yellow-500" />
           <span className="text-yellow-200/90">
             Approaching context limit
           </span>
-          <span className="ml-auto shrink-0 font-sans text-[10px] text-yellow-300">
+          <span className="shrink-0 font-sans text-[10px] text-yellow-300">
             {Math.round((tokenUsed / tokenLimit) * 100)}%
           </span>
+          <button
+            type="button"
+            className="ml-auto flex h-5 w-5 shrink-0 items-center justify-center rounded text-yellow-400/60 transition hover:text-yellow-300"
+            aria-label="Dismiss context limit banner"
+            onClick={() => setContextBannerDismissed(true)}
+          >
+            <X className="h-3 w-3" />
+          </button>
         </div>
       )}
 

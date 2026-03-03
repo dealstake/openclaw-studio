@@ -2,17 +2,17 @@ import { FolderKanban, ListChecks, FolderOpen, Activity, Puzzle, PieChart, Route
 
 /** Canonical tab configuration — single source of truth for all context panel components. */
 export const CONTEXT_TAB_CONFIG = [
-  { value: "projects", label: "Projects", shortLabel: "Proj", Icon: FolderKanban },
+  { value: "projects", label: "Projects", shortLabel: "Projects", Icon: FolderKanban },
   { value: "tasks", label: "Tasks", shortLabel: "Tasks", Icon: ListChecks },
   { value: "workspace", label: "Files", shortLabel: "Files", Icon: FolderOpen },
   { value: "skills", label: "Skills", shortLabel: "Skills", Icon: Puzzle },
-  { value: "activity", label: "Activity", shortLabel: "Act", Icon: Activity },
-  { value: "budget", label: "Budget", shortLabel: "Cost", Icon: PieChart },
-  { value: "router", label: "Routing", shortLabel: "Route", Icon: Route },
+  { value: "activity", label: "Activity", shortLabel: "Activity", Icon: Activity },
+  { value: "budget", label: "Budget", shortLabel: "Budget", Icon: PieChart },
+  { value: "router", label: "Routing", shortLabel: "Routing", Icon: Route },
   { value: "playground", label: "Playground", shortLabel: "Play", Icon: FlaskConical },
   { value: "orchestrator", label: "Swarm", shortLabel: "Swarm", Icon: Network },
-  { value: "memory-graph", label: "Memory", shortLabel: "Mem", Icon: Share2 },
-  { value: "feedback", label: "Feedback", shortLabel: "FB", Icon: MessageSquarePlus },
+  { value: "memory-graph", label: "Memory", shortLabel: "Memory", Icon: Share2 },
+  { value: "feedback", label: "Feedback", shortLabel: "Feedback", Icon: MessageSquarePlus },
 ] as const satisfies ReadonlyArray<{
   value: string;
   label: string;

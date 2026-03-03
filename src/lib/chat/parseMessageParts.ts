@@ -86,6 +86,32 @@ function toolLineToPart(line: string): MessagePart {
 }
 
 /**
+ * Detect internal system/infrastructure lines that should be hidden from
+ * the user-facing chat stream. These include compaction prompts, heartbeat
+ * tokens, post-compaction audit notices, and bare "NO_REPLY" responses.
+ */
+function isInternalSystemLine(line: string): boolean {
+  const trimmed = line.trim();
+
+  // Exact match tokens
+  if (trimmed === "NO_REPLY" || trimmed === "HEARTBEAT_OK") return true;
+
+  // System-tagged lines: "System: [timestamp] ⚠ Post-Compaction Audit..."
+  if (/^System:\s*\[/.test(trimmed)) return true;
+
+  // Compaction memory flush prompts
+  if (trimmed.includes("Pre-compaction memory flush") || trimmed.includes("Post-Compaction Audit")) return true;
+
+  // Heartbeat prompts
+  if (trimmed.startsWith("Heartbeat prompt:") || trimmed.includes("HEARTBEAT_OK")) return true;
+
+  // Internal operational instructions that leaked into output
+  if (trimmed.includes("Store durable memories now") && trimmed.includes("memory/")) return true;
+
+  return false;
+}
+
+/**
  * Parse gateway output lines + live streams into structured MessagePart[].
  * Pure function — no React dependency, easily unit-testable.
  */
@@ -115,6 +141,11 @@ export function parseMessageParts(input: ParseMessagePartsInput): MessagePart[] 
 
   for (const line of outputLines) {
     if (!line) continue;
+
+    // Filter out internal system/infrastructure messages that should never
+    // appear in the user-facing chat stream (compaction prompts, heartbeat
+    // tokens, audit notices, etc.)
+    if (isInternalSystemLine(line)) continue;
 
     // Thinking/reasoning trace
     if (isTraceMarkdown(line)) {
