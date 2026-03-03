@@ -8,6 +8,7 @@ import { ErrorBanner } from "@/components/ErrorBanner";
 import type { PersonaStatusFilter, PersonaListItem } from "../lib/personaTypes";
 import { PersonaCard } from "./PersonaCard";
 import { PersonaDetailModal } from "./PersonaDetailModal";
+import { PersonaDetailContent } from "./PersonaDetailContent";
 import { PracticeSessionModal } from "./PracticeSessionModal";
 import { KnowledgePanel } from "./KnowledgePanel";
 import { TemplateBrowserModal } from "./TemplateBrowserModal";
@@ -19,6 +20,7 @@ import type { AgentState } from "@/features/agents/state/store";
 import type { GatewayModelChoice } from "@/lib/gateway/models";
 import type { PersonaStatus } from "../lib/personaTypes";
 import { createGatewayAgent } from "@/lib/gateway/agentCrud";
+import { useBreakpoint, isWide } from "@/hooks/useBreakpoint";
 
 // ---------------------------------------------------------------------------
 // Filter config
@@ -73,6 +75,9 @@ export const PersonasTab = React.memo(function PersonasTab({
   onSelectTemplate,
   initialDetailAgentId,
 }: PersonasTabProps) {
+  const breakpoint = useBreakpoint();
+  const inlineDetail = isWide(breakpoint);
+
   // ── Derive persona list from agents prop (replaces usePersonas hook) ──
   const [filter, setFilter] = useState<PersonaStatusFilter>("all");
   const [search, setSearch] = useState("");
@@ -295,6 +300,21 @@ export const PersonasTab = React.memo(function PersonasTab({
     if (!open) setPracticeTarget(null);
   }, []);
 
+  // ── Inline detail view (wide viewports: renders inside the panel) ──
+  if (inlineDetail && detailAgent) {
+    return (
+      <PersonaDetailContent
+        agent={detailAgent}
+        agents={agents}
+        client={client}
+        status={status}
+        models={models}
+        onBack={() => setDetailPersonaId(null)}
+        showHeader
+      />
+    );
+  }
+
   return (
     <div className="flex h-full flex-col gap-2">
       {/* Header with count + create */}
@@ -450,16 +470,18 @@ export const PersonasTab = React.memo(function PersonasTab({
         onSelectTemplate={handleSelectTemplate}
       />
 
-      {/* Persona detail side sheet */}
-      <PersonaDetailModal
-        open={detailPersonaId !== null}
-        onOpenChange={(open) => { if (!open) setDetailPersonaId(null); }}
-        agent={detailAgent}
-        agents={agents}
-        client={client}
-        status={status}
-        models={models}
-      />
+      {/* Persona detail side sheet (non-wide viewports only — wide uses inline) */}
+      {!inlineDetail && (
+        <PersonaDetailModal
+          open={detailPersonaId !== null}
+          onOpenChange={(open) => { if (!open) setDetailPersonaId(null); }}
+          agent={detailAgent}
+          agents={agents}
+          client={client}
+          status={status}
+          models={models}
+        />
+      )}
     </div>
   );
 });
