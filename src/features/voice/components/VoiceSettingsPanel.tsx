@@ -56,13 +56,26 @@ const VoiceCard = React.memo(function VoiceCard({
     ? [voice.name.split(" - ")[0], voice.name.split(" - ").slice(1).join(" - ")]
     : [voice.name, ""];
 
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        handleSelect();
+      }
+    },
+    [handleSelect],
+  );
+
   return (
-    <button
-      type="button"
+    <div
+      role="radio"
+      aria-checked={selected}
+      tabIndex={0}
       onClick={handleSelect}
-      aria-pressed={selected}
+      onKeyDown={handleKeyDown}
       className={cn(
-        "flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition-colors",
+        "flex w-full cursor-pointer items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition-colors",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         selected
           ? "border-primary/40 bg-primary/10"
           : "border-border/30 hover:border-border/60 hover:bg-muted/30",
@@ -111,7 +124,7 @@ const VoiceCard = React.memo(function VoiceCard({
       {selected && (
         <div className="h-2 w-2 shrink-0 rounded-full bg-primary" />
       )}
-    </button>
+    </div>
   );
 });
 
@@ -369,7 +382,7 @@ export const VoiceSettingsPanel = React.memo(function VoiceSettingsPanel({
             No voices available. Check your ElevenLabs API key in Credentials.
           </div>
         ) : (
-          <div className="flex max-h-[400px] flex-col gap-1.5 overflow-y-auto">
+          <div role="radiogroup" aria-label="Voice selection" className="flex max-h-[400px] flex-col gap-1.5 overflow-y-auto">
             {voices.map((voice) => (
               <VoiceCard
                 key={voice.voiceId}
