@@ -64,54 +64,58 @@ export type WizardCreationResult = {
   openCredentialSetup?: { serviceName: string; key: string };
 };
 
-// ── Skill creation via agent message ───────────────────────────────────
+// ── Skill creation via workspace file API ──────────────────────────────
+//
+// SECURITY FIX (2026-03-03): Previously used chat.send to inject a system
+// message asking the LLM to write files. This was a prompt injection vector —
+// a crafted skill name/description could trick the LLM into writing arbitrary
+// files. Now uses PUT /api/workspace/file directly with parameterized content.
+// The server-side route validates paths and only allows text file writes.
 
 /**
- * Creates a skill by sending a message to the agent asking it to write
- * the SKILL.md file. The gateway doesn't have a workspace file-write RPC,
- * so we delegate to the agent which has filesystem access.
+ * Creates a skill by writing the SKILL.md file directly via the workspace API.
+ * No LLM involvement — the file content comes from the extracted wizard config.
  */
 async function createSkill(
-  client: GatewayClient,
+  _client: GatewayClient,
   agentId: string,
   config: SkillWizardConfig,
 ): Promise<WizardCreationResult> {
-  // Safe slug: only lowercase alphanumeric and hyphens — no sanitize() needed
-  const skillDir = config.name.toLowerCase().replace(/[^a-z0-9-]/g, "-");
-  const message = [
-    `[system] Create a new skill in the workspace. Write the following SKILL.md file:`,
-    "",
-    `Directory: ~/.openclaw/skills/${skillDir}/`,
-    `File: SKILL.md`,
-    "",
-    "```markdown",
-    config.skillContent,
-    "```",
-    "",
-    config.prerequisites?.length
-      ? `Prerequisites: ${config.prerequisites.join(", ")}`
-      : "",
-    "",
-    `Confirm when the file has been written.`,
-  ]
-    .filter(Boolean)
-    .join("\n");
+  // Safe slug: only lowercase alphanumeric and hyphens
+  const skillSlug = config.name.toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/^-+|-+$/g, "");
+
+  if (!skillSlug) {
+    return { success: false, message: "Invalid skill name — could not generate a valid directory name." };
+  }
+
+  const skillPath = `skills/${skillSlug}/SKILL.md`;
 
   try {
-    await client.call("chat.send", {
-      sessionKey: `agent:${agentId}:main`,
-      message,
-      deliver: false,
-      idempotencyKey: crypto.randomUUID(),
+    const res = await fetch("/api/workspace/file", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        agentId,
+        path: skillPath,
+        content: config.skillContent,
+      }),
     });
+
+    if (!res.ok) {
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      return {
+        success: false,
+        message: data.error ?? `Failed to create skill (HTTP ${res.status})`,
+      };
+    }
 
     return {
       success: true,
-      message: `Skill "${config.name}" creation delegated to agent. Check the chat for confirmation.`,
+      message: `Skill "${config.name}" created at ${skillPath}.`,
     };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    return { success: false, message: `Failed to delegate skill creation: ${msg}` };
+    return { success: false, message: `Failed to create skill: ${msg}` };
   }
 }
 
