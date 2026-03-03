@@ -51,6 +51,19 @@ export const ExecApprovalOverlay = ({
     return () => clearInterval(interval);
   }, [current]);
 
+  // Auto-dismiss expired requests after 3 seconds so they don't block the UI
+  useEffect(() => {
+    if (!current) return;
+    const remaining = current.expiresAtMs - Date.now();
+    if (remaining <= 0) {
+      const timeout = setTimeout(() => onDecision(current.id, "deny"), 3000);
+      return () => clearTimeout(timeout);
+    }
+    // Schedule auto-dismiss for when it expires + 3s grace
+    const timeout = setTimeout(() => onDecision(current.id, "deny"), remaining + 3000);
+    return () => clearTimeout(timeout);
+  }, [current, onDecision]);
+
   if (!current) return null;
 
   const expired = current.expiresAtMs <= now;
@@ -98,12 +111,12 @@ export const ExecApprovalOverlay = ({
         <div className="mt-3 flex flex-col gap-1.5">
           <MetaRow label="Host" value={current.request.host} />
           <MetaRow label="Agent" value={current.request.agentId} />
-          <MetaRow label="Session" value={current.request.sessionKey} />
+          <MetaRow label="Session" value={current.request.sessionKey?.replace(/^agent:[^:]+:/, "")} />
           <MetaRow label="CWD" value={current.request.cwd} />
           <MetaRow label="Security" value={current.request.security} />
         </div>
 
-        {current.request.ask ? (
+        {current.request.ask && !["off", "on-miss", "always"].includes(current.request.ask) ? (
           <div className="mt-3">
             <SectionLabel className="mb-1">Reason</SectionLabel>
             <div className="rounded-md border border-border/80 bg-muted/40 px-3 py-2 text-[11px] text-muted-foreground">
