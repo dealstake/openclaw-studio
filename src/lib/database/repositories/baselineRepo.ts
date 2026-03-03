@@ -170,7 +170,7 @@ export function computeAndStoreBaselines(
     summary: row.summary,
     meta: row.metaJson ? (JSON.parse(row.metaJson) as ActivityMeta) : {},
     sessionKey: row.sessionKey ?? null,
-    transcriptJson: null, // not needed for computation
+    transcriptJson: row.transcriptJson ?? null,
     tokensIn: row.tokensIn ?? null,
     tokensOut: row.tokensOut ?? null,
     model: row.model ?? null,
