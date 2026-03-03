@@ -8,6 +8,7 @@ import {
   Cpu,
   Settings2,
   Users,
+  BookUser,
   Volume2,
   Plus,
   ChevronLeft,
@@ -31,15 +32,16 @@ import { useComparisonStore, toggleComparison } from "@/features/sessions/state/
 import { useFeedbackFilter } from "@/features/feedback/hooks/useFeedbackFilter";
 
 /** Management nav items that open in expanded modal */
-export type ManagementTab = "usage" | "channels" | "credentials" | "models" | "gateway" | "settings" | "contacts" | "voice";
+export type ManagementTab = "usage" | "channels" | "credentials" | "models" | "gateway" | "settings" | "contacts" | "voice" | "personas";
 
 const NAV_ITEMS: Array<{ value: ManagementTab; label: string; icon: typeof MessageSquare }> = [
+  { value: "personas", label: "Personas", icon: Users },
   { value: "usage", label: "Usage", icon: BarChart3 },
   // { value: "channels", label: "Channels", icon: Radio }, // Hidden until Channels has content
   { value: "credentials", label: "Credentials", icon: KeyRound },
   { value: "models", label: "Models", icon: Cpu },
   { value: "gateway", label: "Gateway", icon: Settings2 },
-  { value: "contacts", label: "Contacts", icon: Users },
+  { value: "contacts", label: "Contacts", icon: BookUser },
   { value: "voice", label: "Voice", icon: Volume2 },
 ];
 

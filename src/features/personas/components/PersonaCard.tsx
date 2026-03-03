@@ -14,6 +14,7 @@ import {
   ShieldAlert,
   Shield,
   Loader2,
+  Rocket,
 } from "lucide-react";
 import { BaseCard, CardHeader, CardTitle, CardMeta } from "@/components/ui/BaseCard";
 import { cn } from "@/lib/utils";
@@ -262,6 +263,18 @@ export const PersonaCard = React.memo(function PersonaCard({
               aria-label="Manage knowledge"
             >
               <BookOpen className="h-3.5 w-3.5" />
+            </button>
+          )}
+          {persona.status === "draft" && (
+            <button
+              type="button"
+              onClick={handleToggleActive}
+              disabled={busy}
+              className="rounded px-2 py-1 text-xs font-medium text-primary bg-primary/10 hover:bg-primary/20 border border-primary/30 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center gap-1"
+              aria-label="Deploy persona"
+            >
+              <Rocket className="h-3.5 w-3.5" />
+              Deploy
             </button>
           )}
           {canToggle && (
