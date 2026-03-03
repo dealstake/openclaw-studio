@@ -1,18 +1,20 @@
 import { useSyncExternalStore } from "react";
 
-export type Breakpoint = "mobile" | "tablet" | "desktop" | "wide";
+export type Breakpoint = "mobile" | "tablet" | "desktop" | "wide" | "ultrawide";
 
 /**
  * Responsive breakpoint hook using useSyncExternalStore for zero-flicker SSR.
  *
  * Breakpoints:
- *   mobile:  <768px
- *   tablet:  768–1023px
- *   desktop: 1024–1439px
- *   wide:    ≥1440px
+ *   mobile:     <768px
+ *   tablet:     768–1023px
+ *   desktop:    1024–1439px
+ *   wide:       1440–1919px
+ *   ultrawide:  ≥1920px
  */
 
 const BREAKPOINTS = [
+  { name: "ultrawide" as const, query: "(min-width: 1920px)" },
   { name: "wide" as const, query: "(min-width: 1440px)" },
   { name: "desktop" as const, query: "(min-width: 1024px)" },
   { name: "tablet" as const, query: "(min-width: 768px)" },
@@ -64,8 +66,11 @@ export function isTabletOrBelow(bp: Breakpoint): boolean {
   return bp === "mobile" || bp === "tablet";
 }
 export function isDesktopOrAbove(bp: Breakpoint): boolean {
-  return bp === "desktop" || bp === "wide";
+  return bp === "desktop" || bp === "wide" || bp === "ultrawide";
 }
 export function isWide(bp: Breakpoint): boolean {
-  return bp === "wide";
+  return bp === "wide" || bp === "ultrawide";
+}
+export function isUltrawide(bp: Breakpoint): boolean {
+  return bp === "ultrawide";
 }

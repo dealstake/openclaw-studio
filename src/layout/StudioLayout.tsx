@@ -14,7 +14,7 @@
 
 import { type ReactNode, useCallback, useEffect, useRef } from "react";
 import { Group, Panel, Separator, usePanelRef, type PanelImperativeHandle } from "react-resizable-panels";
-import { isWide, type Breakpoint } from "@/hooks/useBreakpoint";
+import { isWide, isUltrawide, type Breakpoint } from "@/hooks/useBreakpoint";
 import { GripVertical } from "lucide-react";
 
 // ── Types ──────────────────────────────────────────────────────────
@@ -108,6 +108,10 @@ export function StudioLayout({
   }, [leftPanelRef, sidebarCollapsed, onSidebarCollapsedChange]);
 
   // On wide viewports: 3-column PanelGroup
+  // Ultrawide (≥1920px): right panel bigger default (26%), max 42%
+  // Wide (1440-1919px): right panel 25% default, max 38%
+  const ultra = isUltrawide(breakpoint);
+
   if (isWide(breakpoint)) {
     return (
       <Group
@@ -132,10 +136,10 @@ export function StudioLayout({
 
         <ResizeHandle />
 
-        {/* Center: chat area — 55% default, min 30%, content centered via mx-auto */}
+        {/* Center: chat area — content centered via mx-auto */}
         <Panel
           id="center-chat"
-          defaultSize="55%"
+          defaultSize={ultra ? "59%" : "55%"}
           minSize="30%"
         >
           <div className="relative h-full w-full overflow-hidden">
@@ -145,13 +149,13 @@ export function StudioLayout({
 
         <ResizeHandle />
 
-        {/* Right context panel — 30% default, collapses to 0 */}
+        {/* Right context panel — ultrawide gets more space */}
         <Panel
           panelRef={rightPanelRef as React.Ref<PanelImperativeHandle | null>}
           id="right-context"
-          defaultSize="30%"
-          minSize="18%"
-          maxSize="45%"
+          defaultSize={ultra ? "26%" : "30%"}
+          minSize={ultra ? "18%" : "18%"}
+          maxSize={ultra ? "42%" : "45%"}
           collapsible
           collapsedSize="0%"
           onResize={handleRightResize}
