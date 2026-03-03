@@ -2,7 +2,7 @@
 
 import { memo, useCallback, useMemo, useRef, useEffect } from "react";
 import { Plus } from "lucide-react";
-import type { BreadcrumbAgent } from "@/features/agents/components/AgentBreadcrumb";
+import type { BreadcrumbAgent } from "@/features/agents/components/ComposerAgentMenu";
 import type { ManagementTab } from "@/layout/AppSidebar";
 import { sectionLabelClass } from "@/components/SectionLabel";
 import { SearchInput } from "@/components/SearchInput";

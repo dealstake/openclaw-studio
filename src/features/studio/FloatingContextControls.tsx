@@ -2,7 +2,7 @@
 
 import { memo } from "react";
 import { X } from "lucide-react";
-import type { BreadcrumbAgent } from "@/features/agents/components/AgentBreadcrumb";
+import type { BreadcrumbAgent } from "@/features/agents/components/ComposerAgentMenu";
 import { CONTEXT_TAB_CONFIG } from "@/features/context/lib/tabs";
 import type { ContextTab } from "@/features/context/components/ContextPanel";
 

@@ -7,7 +7,7 @@ import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "rea
 import { AgentChatPanel } from "@/features/agents/components/AgentChatPanel";
 // AgentBrainPanel moved to StudioContextDrawer
 import { AppSidebar, type ManagementTab } from "@/layout/AppSidebar";
-import type { BreadcrumbAgent } from "@/features/agents/components/AgentBreadcrumb";
+import type { BreadcrumbAgent } from "@/features/agents/components/ComposerAgentMenu";
 import { FloatingContextControls } from "@/features/studio/FloatingContextControls";
 import { MobileBottomNav } from "@/features/studio/MobileBottomNav";
 import { EmptyStatePanel } from "@/features/agents/components/EmptyStatePanel";

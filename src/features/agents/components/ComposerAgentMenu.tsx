@@ -18,6 +18,13 @@ export type ComposerAgent = {
   avatarUrl?: string | null;
 };
 
+/**
+ * Alias for ComposerAgent — used by HeaderBar, MobileSessionDrawer,
+ * and FloatingContextControls for the read-only current-persona indicator.
+ * Identical shape; kept for call-site readability.
+ */
+export type BreadcrumbAgent = ComposerAgent;
+
 type ComposerAgentMenuProps = {
   agents: ComposerAgent[];
   selectedAgentId: string | null;

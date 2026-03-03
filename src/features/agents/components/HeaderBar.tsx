@@ -13,7 +13,8 @@ import {
   X,
 } from "lucide-react";
 import { useEmergencyOptional } from "@/features/emergency/EmergencyProvider";
-import { AgentBreadcrumb, type BreadcrumbAgent } from "./AgentBreadcrumb";
+import { AgentAvatar } from "./AgentAvatar";
+import type { BreadcrumbAgent } from "./ComposerAgentMenu";
 import type { ContextTab } from "@/features/context/components/ContextPanel";
 
 type HeaderBarProps = {
@@ -43,6 +44,34 @@ const CONTEXT_TAB_ITEMS: Array<{
   { value: "workspace", label: "Files", Icon: FolderOpen },
   { value: "activity", label: "Activity", Icon: Activity },
 ];
+
+/** Read-only current-persona pill for the header center. Switching is handled
+ *  by ComposerAgentMenu in the composer bar. */
+function AgentPill({
+  agents,
+  selectedAgentId,
+}: {
+  agents: BreadcrumbAgent[];
+  selectedAgentId: string | null;
+}) {
+  const selected = agents.find((a) => a.agentId === selectedAgentId) ?? agents[0];
+  if (!selected) return null;
+  return (
+    <div className="flex min-h-[44px] items-center gap-2 rounded-lg px-2 py-1.5">
+      <AgentAvatar
+        name={selected.name || selected.agentId}
+        avatarUrl={selected.avatarUrl}
+        size={20}
+      />
+      <span
+        className="max-w-[160px] truncate text-sm font-semibold text-foreground"
+        title={selected.name || selected.agentId}
+      >
+        {selected.name || selected.agentId}
+      </span>
+    </div>
+  );
+}
 
 /** Mobile-only overflow menu — context panel tabs + emergency */
 function MobileContextMenu({
@@ -124,8 +153,8 @@ export const HeaderBar = memo(function HeaderBar({
   onOpenSessionHistory,
   agents,
   selectedAgentId,
-  onSelectAgent,
-  onCreateAgent,
+  // onSelectAgent and onCreateAgent kept in type for call-site compat but not used here
+  // (agent switching is handled by ComposerAgentMenu in the composer bar)
   showContextTabs,
   contextTab,
   contextPanelOpen,
@@ -162,17 +191,14 @@ export const HeaderBar = memo(function HeaderBar({
         )}
       </div>
 
-      {/* Center section — breadcrumb, hidden on mobile (available in drawer) */}
-      <div className="hidden sm:flex flex-1 justify-center min-w-0">
-        {agents?.length && onSelectAgent ? (
-          <AgentBreadcrumb
-            agents={agents}
-            selectedAgentId={selectedAgentId ?? null}
-            onSelectAgent={onSelectAgent}
-            onCreateAgent={onCreateAgent}
-          />
-        ) : null}
-      </div>
+      {/* Center section — current persona indicator (read-only; switching via ComposerAgentMenu) */}
+      {agents?.length ? (
+        <div className="hidden sm:flex flex-1 justify-center min-w-0">
+          <AgentPill agents={agents} selectedAgentId={selectedAgentId ?? null} />
+        </div>
+      ) : (
+        <div className="hidden sm:flex flex-1 justify-center min-w-0" />
+      )}
 
       {/* Right section — unified strip on wide viewports */}
       {showContextTabs ? (
@@ -214,7 +240,7 @@ export const HeaderBar = memo(function HeaderBar({
               </button>
             </>
           )}
-          {/* Utility icons moved to BottomSidebarActions — only AgentBreadcrumb remains in header */}
+          {/* Utility icons live in BottomSidebarActions; agent switching in ComposerAgentMenu */}
         </div>
       ) : (
         <div className="flex shrink-0 items-center gap-1.5">
