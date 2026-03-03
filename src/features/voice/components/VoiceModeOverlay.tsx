@@ -321,7 +321,7 @@ export const VoiceModeOverlay = React.memo(function VoiceModeOverlay() {
 
               {/* Empty state */}
               {!userTranscript && !agentTranscript && state === "listening" && (
-                <p className="text-sm text-muted-foreground/60">
+                <p className="text-sm text-muted-foreground">
                   Start speaking…
                 </p>
               )}

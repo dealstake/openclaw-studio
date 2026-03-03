@@ -57,7 +57,7 @@ export const MicPermissionDialog = React.memo(function MicPermissionDialog({
           onClick={onClose}
           className={cn(
             "absolute right-3 top-3",
-            "flex h-8 w-8 items-center justify-center rounded-full",
+            "flex h-11 w-11 items-center justify-center rounded-full",
             "text-muted-foreground hover:bg-muted hover:text-foreground",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
           )}

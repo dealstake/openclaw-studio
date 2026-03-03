@@ -371,7 +371,7 @@ export const VoiceSettingsPanel = React.memo(function VoiceSettingsPanel({
 
       {/* Voice Picker */}
       <div className="flex flex-col gap-2">
-        <label className="text-xs font-medium text-muted-foreground">Voice</label>
+        <label id="voice-selection-label" className="text-xs font-medium text-muted-foreground">Voice</label>
         {voicesLoading ? (
           <div className="flex items-center gap-2 py-4">
             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
@@ -382,7 +382,7 @@ export const VoiceSettingsPanel = React.memo(function VoiceSettingsPanel({
             No voices available. Check your ElevenLabs API key in Credentials.
           </div>
         ) : (
-          <div role="radiogroup" aria-label="Voice selection" className="flex max-h-[400px] flex-col gap-1.5 overflow-y-auto">
+          <div role="radiogroup" aria-labelledby="voice-selection-label" className="flex max-h-[400px] flex-col gap-1.5 overflow-y-auto">
             {voices.map((voice) => (
               <VoiceCard
                 key={voice.voiceId}
