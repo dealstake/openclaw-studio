@@ -14,7 +14,7 @@
  * - Mobile-first: 100dvh, safe areas, 44px touch targets
  */
 
-import React, { useCallback, useEffect, useMemo, useRef } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Minimize2, PhoneOff, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -114,8 +114,16 @@ export const VoiceModeOverlay = React.memo(function VoiceModeOverlay() {
         e.preventDefault();
         minimizeVoiceMode();
       }
+      // Space as push-to-talk interrupt — only when not in an input
+      if (e.key === " " && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)) {
+        e.preventDefault();
+        // Space during speaking = interrupt (close and go back to chat)
+        if (state === "speaking") {
+          closeVoiceMode();
+        }
+      }
     },
-    [minimizeVoiceMode],
+    [minimizeVoiceMode, closeVoiceMode, state],
   );
 
   // Screen Wake Lock
@@ -143,6 +151,18 @@ export const VoiceModeOverlay = React.memo(function VoiceModeOverlay() {
 
   const orbState = useMemo(() => voiceModeToOrbState(state), [state]);
   const colors = useMemo(() => stateColors(state), [state]);
+
+  // WebGL support check — fallback to simple pulsing circle if no WebGL
+  const [hasWebGL] = useState(() => {
+    if (typeof document === "undefined") return true;
+    try {
+      const canvas = document.createElement("canvas");
+      const gl = canvas.getContext("webgl") ?? canvas.getContext("experimental-webgl");
+      return !!gl;
+    } catch {
+      return false;
+    }
+  });
 
   return (
     <AnimatePresence>
@@ -232,12 +252,28 @@ export const VoiceModeOverlay = React.memo(function VoiceModeOverlay() {
               className="h-[200px] w-[200px] sm:h-[250px] sm:w-[250px] lg:h-[300px] lg:w-[300px]"
               aria-label={`Voice visualizer, currently ${stateLabel(state).toLowerCase()}`}
             >
-              <Orb
-                agentState={orbState}
-                colors={colors}
-                inputVolumeRef={inputVolumeRef}
-                outputVolumeRef={outputVolumeRef}
-              />
+              {hasWebGL ? (
+                <Orb
+                  agentState={orbState}
+                  colors={colors}
+                  inputVolumeRef={inputVolumeRef}
+                  outputVolumeRef={outputVolumeRef}
+                />
+              ) : (
+                /* Fallback: simple pulsing circle for no-WebGL devices */
+                <div className="flex h-full w-full items-center justify-center">
+                  <div
+                    className={cn(
+                      "h-32 w-32 rounded-full transition-all duration-700",
+                      state === "listening" && "bg-emerald-500/30 shadow-[0_0_60px_20px_rgba(52,211,153,0.3)] animate-pulse",
+                      state === "thinking" && "bg-amber-500/30 shadow-[0_0_60px_20px_rgba(251,191,36,0.3)] animate-pulse",
+                      state === "speaking" && "bg-blue-500/30 shadow-[0_0_60px_20px_rgba(96,165,250,0.3)] scale-110",
+                      state === "connecting" && "bg-violet-500/30 shadow-[0_0_60px_20px_rgba(167,139,250,0.3)] animate-pulse",
+                      state === "idle" && "bg-muted/30",
+                    )}
+                  />
+                </div>
+              )}
             </div>
 
             {/* ── Transcript area ─────────────────────────────── */}
