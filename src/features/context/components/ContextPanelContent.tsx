@@ -117,17 +117,21 @@ export const ContextPanelContent = React.memo(function ContextPanelContent({
 }: ContextPanelContentProps) {
   const hasLiveActivity = useHasLiveActivity();
 
-  const tabBadges = useMemo(() => {
-    if (!hasLiveActivity) return undefined;
-    return {
-      activity: (
-        <span className="relative ml-1 inline-flex h-2 w-2" aria-label="Live activity">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+  const tabBadges = useMemo(() => ({
+    activity: (
+      <>
+        <span className="sr-only" aria-live="polite" aria-atomic="true">
+          {hasLiveActivity ? "Live activity" : ""}
         </span>
-      ),
-    };
-  }, [hasLiveActivity]);
+        {hasLiveActivity && (
+          <span className="absolute -right-0.5 top-0.5 flex h-2 w-2" aria-label="Live activity">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+          </span>
+        )}
+      </>
+    ),
+  }), [hasLiveActivity]);
 
   return (
     <ContextPanel
