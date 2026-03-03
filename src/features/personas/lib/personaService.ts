@@ -231,6 +231,12 @@ export function configToRow(config: PersonaConfig): PersonaRow {
     created_at: config.createdAt,
     last_trained_at: config.lastTrainedAt,
     practice_count: config.practiceCount,
+    voice_provider: config.voiceConfig?.voiceId ? "elevenlabs" : null,
+    voice_id: config.voiceConfig?.voiceId ?? null,
+    voice_model_id: config.voiceConfig?.modelId ?? null,
+    voice_stability: config.voiceConfig?.voiceConfig?.stability ?? 0.5,
+    voice_clarity: config.voiceConfig?.voiceConfig?.similarityBoost ?? 0.75,
+    voice_style: config.voiceConfig?.voiceConfig?.style ?? 0,
   };
 }
 

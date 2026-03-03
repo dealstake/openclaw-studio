@@ -25,7 +25,7 @@ import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import type { GatewayModelChoice } from "@/lib/gateway/models";
 import { AgentBrainPanel } from "@/features/agents/components/AgentBrainPanel";
 import { EmbeddedSettingsPanel } from "./EmbeddedSettingsPanel";
-import { VoiceSettingsPanelConnected } from "@/features/voice/components/VoiceSettingsPanelConnected";
+import { PersonaVoiceSettings } from "./PersonaVoiceSettings";
 import { KnowledgePanel } from "./KnowledgePanel";
 import { PracticeSessionModal } from "./PracticeSessionModal";
 import type { PracticeModeType } from "../lib/personaTypes";
@@ -327,7 +327,7 @@ export const PersonaDetailModal = memo(function PersonaDetailModal({
       case "voice":
         return (
           <div className="flex min-h-0 flex-1 flex-col overflow-y-auto -mx-4 -mb-4">
-            <VoiceSettingsPanelConnected />
+            <PersonaVoiceSettings agent={agent} />
           </div>
         );
       case "knowledge":

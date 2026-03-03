@@ -111,6 +111,12 @@ export async function POST(request: Request) {
           createdAt: new Date().toISOString(),
           lastTrainedAt: null,
           practiceCount: 0,
+          voiceProvider: "elevenlabs",
+          voiceId: "Rachel",
+          voiceModelId: "eleven_flash_v2_5",
+          voiceStability: 0.5,
+          voiceClarity: 0.75,
+          voiceStyle: 0,
         });
 
         return { ok: true, personaId };

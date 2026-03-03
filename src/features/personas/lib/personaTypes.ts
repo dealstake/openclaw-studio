@@ -208,4 +208,11 @@ export interface PersonaRow {
   created_at: string;
   last_trained_at: string | null;
   practice_count: number;
+  // Voice config (Phase 6)
+  voice_provider: string | null;
+  voice_id: string | null;
+  voice_model_id: string | null;
+  voice_stability: number;
+  voice_clarity: number;
+  voice_style: number;
 }
