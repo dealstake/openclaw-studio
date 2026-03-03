@@ -226,6 +226,20 @@ export const PersonaCard = React.memo(function PersonaCard({
           {healthStatus && <HealthStatusIcon status={healthStatus} />}
         </div>
 
+        {/* Deploy button — always visible for draft personas */}
+        {persona.status === "draft" && (
+          <button
+            type="button"
+            onClick={handleToggleActive}
+            disabled={busy}
+            className="rounded px-2 py-1 text-xs font-medium text-primary bg-primary/10 hover:bg-primary/20 border border-primary/30 transition-colors min-h-[44px] flex items-center justify-center gap-1"
+            aria-label="Deploy persona"
+          >
+            <Rocket className="h-3.5 w-3.5" />
+            Deploy
+          </button>
+        )}
+
         {/* Action buttons */}
         <div className="flex items-center gap-1 opacity-100 md:opacity-0 transition-opacity group-hover/card:opacity-100 focus-within:opacity-100">
           {/* Health check button */}
@@ -263,18 +277,6 @@ export const PersonaCard = React.memo(function PersonaCard({
               aria-label="Manage knowledge"
             >
               <BookOpen className="h-3.5 w-3.5" />
-            </button>
-          )}
-          {persona.status === "draft" && (
-            <button
-              type="button"
-              onClick={handleToggleActive}
-              disabled={busy}
-              className="rounded px-2 py-1 text-xs font-medium text-primary bg-primary/10 hover:bg-primary/20 border border-primary/30 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center gap-1"
-              aria-label="Deploy persona"
-            >
-              <Rocket className="h-3.5 w-3.5" />
-              Deploy
             </button>
           )}
           {canToggle && (
