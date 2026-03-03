@@ -192,7 +192,7 @@ export const ComposerAgentMenu = memo(function ComposerAgentMenu({
               <button
                 type="button"
                 role="menuitem"
-                className="flex w-full items-center gap-3 px-3 py-2 text-left transition hover:bg-muted/60"
+                className="flex w-full items-center gap-3 px-3 py-3 text-left transition hover:bg-muted/60"
                 onClick={() => { onNewSession(); setOpen(false); }}
               >
                 <Plus className="h-4 w-4 shrink-0 text-primary" />
@@ -203,7 +203,7 @@ export const ComposerAgentMenu = memo(function ComposerAgentMenu({
               <button
                 type="button"
                 role="menuitem"
-                className="flex w-full items-center gap-3 px-3 py-2 text-left transition hover:bg-muted/60"
+                className="flex w-full items-center gap-3 px-3 py-3 text-left transition hover:bg-muted/60"
                 onClick={() => { onAttach(); setOpen(false); }}
               >
                 <Paperclip className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -226,7 +226,7 @@ export const ComposerAgentMenu = memo(function ComposerAgentMenu({
                   type="button"
                   role="menuitemradio"
                   aria-checked={agent.agentId === selectedAgentId}
-                  className={`flex w-full items-center gap-3 px-3 py-2 text-left transition hover:bg-muted/60 ${
+                  className={`flex w-full items-center gap-3 px-3 py-3 text-left transition hover:bg-muted/60 ${
                     agent.agentId === selectedAgentId ? "bg-muted/30" : ""
                   }`}
                   onClick={() => { onSelectAgent(agent.agentId); setOpen(false); }}
@@ -249,7 +249,7 @@ export const ComposerAgentMenu = memo(function ComposerAgentMenu({
             <div className="py-1">
               <button
                 type="button"
-                className="flex w-full items-center gap-3 px-3 py-2 text-left transition hover:bg-muted/60"
+                className="flex w-full items-center gap-3 px-3 py-3 text-left transition hover:bg-muted/60"
                 onClick={() => setModelExpanded((p) => !p)}
                 aria-expanded={modelExpanded}
               >
@@ -269,7 +269,7 @@ export const ComposerAgentMenu = memo(function ComposerAgentMenu({
                         type="button"
                         role="menuitemradio"
                         aria-checked={isSelected}
-                        className={`flex w-full items-center gap-3 px-5 py-1.5 text-left transition hover:bg-muted/60 ${isSelected ? "bg-muted/30" : ""}`}
+                        className={`flex w-full items-center gap-3 px-5 py-2.5 text-left transition hover:bg-muted/60 ${isSelected ? "bg-muted/30" : ""}`}
                         onClick={() => { onModelChange(key); setModelExpanded(false); }}
                       >
                         <ModelIcon className={`h-3.5 w-3.5 shrink-0 ${iconClass}`} />
@@ -290,7 +290,7 @@ export const ComposerAgentMenu = memo(function ComposerAgentMenu({
             <div className="py-1">
               <button
                 type="button"
-                className="flex w-full items-center gap-3 px-3 py-2 text-left transition hover:bg-muted/60"
+                className="flex w-full items-center gap-3 px-3 py-3 text-left transition hover:bg-muted/60"
                 onClick={() => setThinkingExpanded((p) => !p)}
                 aria-expanded={thinkingExpanded}
               >
@@ -309,7 +309,7 @@ export const ComposerAgentMenu = memo(function ComposerAgentMenu({
                         type="button"
                         role="menuitemradio"
                         aria-checked={isActive}
-                        className={`flex w-full items-center gap-3 px-5 py-1.5 text-left transition hover:bg-muted/60 ${isActive ? "bg-muted/30" : ""}`}
+                        className={`flex w-full items-center gap-3 px-5 py-2.5 text-left transition hover:bg-muted/60 ${isActive ? "bg-muted/30" : ""}`}
                         onClick={() => { onThinkingChange(level.value); setThinkingExpanded(false); }}
                       >
                         <LevelIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
