@@ -127,20 +127,22 @@ const ToolRow = memo(function ToolRow({
   return (
     <>
       <tr
-        className="border-b border-border/50 last:border-0 cursor-pointer hover:bg-muted/50 transition-colors h-11"
-        onClick={onToggle}
-        role="button"
-        aria-expanded={isExpanded}
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onToggle(); }
-        }}
+        className={`border-b border-border/50 last:border-0 ${hasError ? "hover:bg-muted/50" : ""} transition-colors h-11`}
       >
         <td className="w-8 px-2 py-3 text-muted-foreground">
           {hasError ? (
-            isExpanded
-              ? <ChevronDown className="h-3.5 w-3.5" />
-              : <ChevronRight className="h-3.5 w-3.5" />
+            <button
+              type="button"
+              onClick={onToggle}
+              aria-expanded={isExpanded}
+              aria-controls={`tool-details-${metric.toolName}`}
+              aria-label={`Expand details for ${metric.toolName}`}
+              className="flex items-center justify-center min-h-[44px] min-w-[44px]"
+            >
+              {isExpanded
+                ? <ChevronDown className="h-3.5 w-3.5" />
+                : <ChevronRight className="h-3.5 w-3.5" />}
+            </button>
           ) : null}
         </td>
         <td className="px-3 py-3 font-medium text-foreground font-mono text-xs">
@@ -178,7 +180,7 @@ const ToolRow = memo(function ToolRow({
         </td>
       </tr>
       {isExpanded && hasError && (
-        <tr className="border-b border-border/50">
+        <tr id={`tool-details-${metric.toolName}`} className="border-b border-border/50">
           <td colSpan={6} className="px-6 py-3 bg-muted/30">
             <div className="text-xs">
               <span className="font-medium text-muted-foreground">Last error: </span>
