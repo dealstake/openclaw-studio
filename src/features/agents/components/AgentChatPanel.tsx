@@ -72,6 +72,8 @@ type AgentChatPanelProps = {
   onLaunchWizard?: (type: WizardType) => void;
   /** Creation result — shown after wizard creation completes */
   wizardCreationResult?: { success: boolean; message: string; resourceName?: string } | null;
+  /** Step-by-step creation progress */
+  wizardCreationSteps?: Array<{ label: string; status: "pending" | "active" | "done" | "error" }> | null;
   /** Called to dismiss the creation result card */
   onDismissWizardResult?: () => void;
 };
@@ -108,6 +110,7 @@ export const AgentChatPanel = memo(function AgentChatPanel({
   onOpenSettings,
   onLaunchWizard,
   wizardCreationResult = null,
+  wizardCreationSteps = null,
   onDismissWizardResult,
 }: AgentChatPanelProps) {
   const [contextBannerDismissed, setContextBannerDismissed] = useState(false);
@@ -449,6 +452,7 @@ export const AgentChatPanel = memo(function AgentChatPanel({
                 onSetupCredential={handleSetupCredential}
                 onOAuthFlow={handleOAuthFlow}
                 onRecheck={handlePrefightRecheck}
+                creationSteps={wizardCreationSteps}
                 creationResult={wizardCreationResult}
                 onDismissResult={onDismissWizardResult}
               />

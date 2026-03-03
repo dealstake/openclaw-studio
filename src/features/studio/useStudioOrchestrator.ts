@@ -108,6 +108,7 @@ export function useStudioOrchestrator() {
   const [createProjectTick, setCreateProjectTick] = useState(0);
   const [wizardConfirming, setWizardConfirming] = useState(false);
   const [wizardCreationResult, setWizardCreationResult] = useState<{ success: boolean; message: string; resourceName?: string } | null>(null);
+  const [wizardCreationSteps, setWizardCreationSteps] = useState<Array<{ label: string; status: "pending" | "active" | "done" | "error" }> | null>(null);
 
   // ═══════════════════════════════════════════════════════════════════
   // Gateway Models
@@ -343,10 +344,21 @@ export function useStudioOrchestrator() {
 
     setWizardConfirming(true);
     setWizardCreationResult(null);
+    setWizardCreationSteps(null);
 
     if (extracted.type === "task") {
       try {
+        setWizardCreationSteps([
+          { label: "Validating configuration", status: "done" },
+          { label: "Scheduling task", status: "active" },
+          { label: "Done", status: "pending" },
+        ]);
         await createTask(extracted.config as CreateTaskPayload);
+        setWizardCreationSteps([
+          { label: "Validating configuration", status: "done" },
+          { label: "Scheduling task", status: "done" },
+          { label: "Done", status: "done" },
+        ]);
         setWizardCreationResult({ success: true, message: "Task scheduled successfully.", resourceName: (extracted.config as Record<string, unknown>).name as string });
         void wizard.endWizard();
         void loadTasks();
@@ -359,6 +371,16 @@ export function useStudioOrchestrator() {
     }
 
     if (extracted.type === "persona") {
+      type StepStatus = "pending" | "active" | "done" | "error";
+      const steps: Array<{ label: string; status: StepStatus }> = [
+        { label: "Extracting configuration", status: "active" },
+        { label: "Creating agent workspace", status: "pending" },
+        { label: "Registering with gateway", status: "pending" },
+        { label: "Saving to database", status: "pending" },
+        { label: "Activating persona", status: "pending" },
+      ];
+      setWizardCreationSteps([...steps]);
+
       try {
         const { extractBrainFiles, extractKnowledgeFiles, extractJsonBlock } = await import("@/features/wizards/lib/artifactExtractor");
         const personaConfig = extractJsonBlock<{ personaId: string; displayName: string; purpose?: string; roleDescription?: string }>(extracted.sourceText, "persona-config");
@@ -374,6 +396,10 @@ export function useStudioOrchestrator() {
         for (const [filename, content] of Object.entries(rawBrainFiles)) {
           brainFiles[filename.replace(/\.md$/i, "").toLowerCase()] = content;
         }
+
+        steps[0].status = "done";
+        steps[1].status = "active";
+        setWizardCreationSteps([...steps]);
 
         const res = await fetch("/api/agents/create", {
           method: "POST",
@@ -392,11 +418,19 @@ export function useStudioOrchestrator() {
           return;
         }
 
+        steps[1].status = "done";
+        steps[2].status = "active";
+        setWizardCreationSteps([...steps]);
+
         try {
           await createGatewayAgent({ client, name: personaConfig.displayName });
         } catch (gwErr) {
           console.warn("[persona] Gateway agent registration failed:", gwErr);
         }
+
+        steps[2].status = "done";
+        steps[3].status = "active";
+        setWizardCreationSteps([...steps]);
 
         const ownerAgentId = focusedAgent?.agentId ?? "alex";
         const personaDbRes = await fetch("/api/workspace/personas", {
@@ -414,6 +448,10 @@ export function useStudioOrchestrator() {
         if (!personaDbRes.ok) {
           console.warn("[persona] DB row creation failed:", await personaDbRes.text().catch(() => ""));
         }
+
+        steps[3].status = "done";
+        steps[4].status = "active";
+        setWizardCreationSteps([...steps]);
 
         await fetch("/api/workspace/personas", {
           method: "PATCH",
@@ -442,11 +480,18 @@ export function useStudioOrchestrator() {
           }).catch(() => { /* non-fatal */ });
         }
 
+        steps[4].status = "done";
+        setWizardCreationSteps([...steps]);
+
         void wizard.endWizard();
         setWizardCreationResult({ success: true, message: `Persona "${personaConfig.displayName}" created and activated.`, resourceName: personaConfig.displayName });
         toast.success(`Persona "${personaConfig.displayName}" created and activated`);
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Unknown error";
+        // Mark current active step as error
+        const activeIdx = steps.findIndex((s) => s.status === "active");
+        if (activeIdx >= 0) steps[activeIdx].status = "error";
+        setWizardCreationSteps([...steps]);
         setWizardCreationResult({ success: false, message: `Persona creation failed: ${msg}` });
         toast.error(`Persona creation failed: ${msg}`);
       } finally {
@@ -998,7 +1043,8 @@ export function useStudioOrchestrator() {
     handleWizardConfirm,
     wizardConfirming,
     wizardCreationResult,
-    clearWizardCreationResult: () => setWizardCreationResult(null),
+    wizardCreationSteps,
+    clearWizardCreationResult: () => { setWizardCreationResult(null); setWizardCreationSteps(null); },
 
     // Chat
     stopBusyAgentId,
