@@ -40,6 +40,6 @@ export {
 } from "./hooks/useVoiceSettings";
 
 // Components
-export { MicButton, SpeakerToggle, VoiceTranscriptOverlay } from "./components/VoiceControls";
+export { VoiceInputControl, SpeakerToggle } from "./components/VoiceControls";
 export { VoiceSettingsPanel } from "./components/VoiceSettingsPanel";
 export { VoiceSettingsPanelConnected } from "./components/VoiceSettingsPanelConnected";

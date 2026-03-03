@@ -37,11 +37,11 @@ import { usePracticeSession } from "../hooks/usePracticeSession";
 import { usePracticeChat } from "../hooks/usePracticeChat";
 import { usePersonaHealth } from "../hooks/usePersonaHealth";
 import { PracticeScoreCard } from "./PracticeScoreCard";
-import { useVoiceClient } from "@/features/voice/hooks/useVoiceClient";
 import { useVoiceOutput, resolvedToSpeakOptions } from "@/features/voice/hooks/useVoiceOutput";
 import { useVoiceSettings } from "@/features/voice/hooks/useVoiceSettings";
 import { createStudioSettingsCoordinator } from "@/lib/studio/coordinator";
-import { MicButton, VoiceTranscriptOverlay } from "@/features/voice/components/VoiceControls";
+import { VoiceInputControl } from "@/features/voice/components/VoiceControls";
+import type { SpeechInputData } from "@/components/ui/speech-input";
 import type { PersonaVoiceConfig } from "@/features/voice/lib/voiceTypes";
 
 // ---------------------------------------------------------------------------
@@ -338,7 +338,6 @@ export const PracticeSessionModal = React.memo(function PracticeSessionModal({
     usePersonaHealth();
 
   // Voice support
-  const voiceInput = useVoiceClient();
   const voiceOutput = useVoiceOutput();
   const voiceCoordinator = useMemo(
     () => createStudioSettingsCoordinator({ debounceMs: 200 }),
@@ -365,21 +364,27 @@ export const PracticeSessionModal = React.memo(function PracticeSessionModal({
   }, [practiceChat.messages, voiceSettings, voiceOutput]);
 
   // Voice transcript → input
-  const handleVoiceTranscript = useCallback(
-    (text: string) => setInput(text),
+  const handleVoiceChange = useCallback(
+    (data: SpeechInputData) => setInput(data.transcript),
     [],
   );
 
   // Voice send → send message
-  const handleVoiceSend = useCallback(
-    (text: string) => {
-      if (!text.trim() || !session || session.status !== "active") return;
+  const handleVoiceStop = useCallback(
+    (data: SpeechInputData) => {
+      const text = data.transcript.trim();
+      if (!text || !session || session.status !== "active") return;
       addUserMessage(text);
       setInput("");
       void practiceChat.send(text);
     },
     [session, addUserMessage, practiceChat],
   );
+
+  // Voice cancel → clear input
+  const handleVoiceCancel = useCallback(() => {
+    setInput("");
+  }, []);
 
   // Chat input
   const [input, setInput] = useState("");
@@ -666,15 +671,12 @@ export const PracticeSessionModal = React.memo(function PracticeSessionModal({
                 )}
               </div>
 
-              {/* Voice transcript overlay */}
-              <VoiceTranscriptOverlay voiceInput={voiceInput} />
-
               {/* Input bar */}
               <div className="flex items-center gap-2 border-t border-border/30 pt-3">
-                <MicButton
-                  voiceInput={voiceInput}
-                  onTranscript={handleVoiceTranscript}
-                  onSend={handleVoiceSend}
+                <VoiceInputControl
+                  onChange={handleVoiceChange}
+                  onStop={handleVoiceStop}
+                  onCancel={handleVoiceCancel}
                 />
                 <input
                   ref={inputRef}

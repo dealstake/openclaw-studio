@@ -21,11 +21,11 @@ import { ComposerAgentMenu, type ComposerAgent } from "./ComposerAgentMenu";
 import { useFileUpload, type ChatAttachment } from "../hooks/useFileUpload";
 import type { WizardType, WizardTheme, WizardStarter } from "@/features/wizards/lib/wizardTypes";
 import { WizardBanner } from "@/features/wizards/components/WizardBanner";
-import { useVoiceClient } from "@/features/voice/hooks/useVoiceClient";
 import { useVoiceOutput, resolvedToSpeakOptions } from "@/features/voice/hooks/useVoiceOutput";
 import { useVoiceSettings } from "@/features/voice/hooks/useVoiceSettings";
 import { createStudioSettingsCoordinator } from "@/lib/studio/coordinator";
-import { MicButton, VoiceTranscriptOverlay } from "@/features/voice/components/VoiceControls";
+import { VoiceInputControl } from "@/features/voice/components/VoiceControls";
+import type { SpeechInputData } from "@/components/ui/speech-input";
 
 export const AgentChatComposer = memo(function AgentChatComposer({
   onDraftChange,
@@ -113,7 +113,6 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   const isRunning = wizardType ? (wizardIsStreaming ?? false) : running;
 
   // ── Voice controls ────────────────────────────────────────────────────
-  const voiceInput = useVoiceClient();
   const voiceOutput = useVoiceOutput();
   const voiceSettingsCoordinator = useMemo(
     () => createStudioSettingsCoordinator({ debounceMs: 200 }),
@@ -129,31 +128,25 @@ export const AgentChatComposer = memo(function AgentChatComposer({
     voiceOutputRef.current = voiceOutput;
   }, [voiceOutput]);
 
-  /** Auto-enable voice output when mic is active, disable when it stops */
-  const prevMicListeningRef = useRef(false);
-  useEffect(() => {
-    if (voiceInput.isListening && !prevMicListeningRef.current) {
-      voiceOutput.setEnabled(true);
-    } else if (!voiceInput.isListening && prevMicListeningRef.current) {
-      // Keep enabled for the current response cycle — disable after TTS finishes
-      // (voiceOutput.enabled persists until user types manually)
-    }
-    prevMicListeningRef.current = voiceInput.isListening;
-  }, [voiceInput.isListening, voiceOutput]);
-
   /** When voice transcript updates, sync it into the textarea */
-  const handleVoiceTranscript = useCallback((text: string) => {
+  const handleVoiceChange = useCallback((data: SpeechInputData) => {
     const el = localRef.current;
     if (el) {
-      el.value = text;
-      setIsEmpty(!text.trim());
-      onDraftChange(text);
+      el.value = data.transcript;
+      setIsEmpty(!data.transcript.trim());
+      onDraftChange(data.transcript);
     }
   }, [onDraftChange]);
 
+  /** When voice recording starts, enable voice output for auto-speak */
+  const handleVoiceStart = useCallback(() => {
+    voiceOutputRef.current.setEnabled(true);
+  }, []);
+
   /** When voice input stops, auto-send the transcript */
-  const handleVoiceSend = useCallback((text: string) => {
-    if (!text.trim()) return;
+  const handleVoiceStop = useCallback((data: SpeechInputData) => {
+    const text = data.transcript.trim();
+    if (!text) return;
     onSend(text);
     const el = localRef.current;
     if (el) {
@@ -163,6 +156,17 @@ export const AgentChatComposer = memo(function AgentChatComposer({
     setIsEmpty(true);
     onDraftChange("");
   }, [onSend, onDraftChange]);
+
+  /** When voice input is cancelled, clear the textarea */
+  const handleVoiceCancel = useCallback(() => {
+    const el = localRef.current;
+    if (el) {
+      el.value = "";
+      el.style.height = "auto";
+    }
+    setIsEmpty(true);
+    onDraftChange("");
+  }, [onDraftChange]);
 
   /** Auto-speak assistant responses when voice output is enabled */
   const prevRunningRef = useRef(false);
@@ -415,9 +419,6 @@ export const AgentChatComposer = memo(function AgentChatComposer({
           onChange={handleFileInputChange}
         />
 
-        {/* Voice transcript overlay — floats above the split row when listening */}
-        <VoiceTranscriptOverlay voiceInput={voiceInput} />
-
         {/* ═══ FLOATING ROW: [━━ Glass Input Pill ━━] [Morphing Button ○] ═══ */}
         <div className="flex items-end gap-2 sm:gap-2.5">
 
@@ -426,10 +427,11 @@ export const AgentChatComposer = memo(function AgentChatComposer({
             <div className="flex items-end">
               {/* Voice mic — left side of pill */}
               <div className="flex shrink-0 items-center pl-2 pb-1.5">
-                <MicButton
-                  voiceInput={voiceInput}
-                  onTranscript={handleVoiceTranscript}
-                  onSend={handleVoiceSend}
+                <VoiceInputControl
+                  onChange={handleVoiceChange}
+                  onStart={handleVoiceStart}
+                  onStop={handleVoiceStop}
+                  onCancel={handleVoiceCancel}
                 />
               </div>
               <textarea
