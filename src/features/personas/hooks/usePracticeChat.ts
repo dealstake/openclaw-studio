@@ -3,12 +3,11 @@
 /**
  * Hook to connect practice sessions to real AI inference via the gateway.
  *
- * Uses the `agent:bootstrap` hook (`persona-bootstrap`) to swap brain files
- * for the persona, then sends messages via `chat.send` RPC and listens
- * for streaming events on the practice session key.
+ * Routes practice sessions directly to the persona's own registered agent
+ * (session key: `agent:{personaId}:practice:{uid}`). The persona uses its
+ * own brain files, model config, and tool access — no bootstrap hook needed.
  *
- * Replaces the old `/api/practice/chat` raw-Gemini approach, giving
- * practice sessions full tool access, streaming, and proper session history.
+ * Gives practice sessions full tool access, streaming, and proper session history.
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -31,8 +30,6 @@ export interface UsePracticeChatOptions {
   personaName: string;
   mode: PracticeModeType;
   difficulty: "easy" | "medium" | "hard";
-  /** The owning agent ID (defaults to "alex") */
-  agentId?: string;
 }
 
 export interface UsePracticeChatReturn {
@@ -56,8 +53,9 @@ export interface UsePracticeChatReturn {
 
 // ── Session key builder ────────────────────────────────────────────────
 
-function buildPracticeSessionKey(agentId: string, personaId: string): string {
-  return `agent:${agentId}:practice:${personaId}`;
+function buildPracticeSessionKey(personaId: string): string {
+  const uid = crypto.randomUUID().slice(0, 8);
+  return `agent:${personaId}:practice:${uid}`;
 }
 
 // ── Kickoff prompt ─────────────────────────────────────────────────────
@@ -110,7 +108,6 @@ export function usePracticeChat({
   personaName,
   mode,
   difficulty,
-  agentId = "alex",
 }: UsePracticeChatOptions): UsePracticeChatReturn {
   const [messages, setMessages] = useState<PracticeChatMessage[]>([]);
   const [streamText, setStreamText] = useState<string | null>(null);
@@ -217,7 +214,7 @@ export function usePracticeChat({
     setEvaluationText(null);
     streamBufferRef.current = "";
 
-    const sessionKey = buildPracticeSessionKey(agentId, personaId);
+    const sessionKey = buildPracticeSessionKey(personaId);
     sessionKeyRef.current = sessionKey;
 
     // Reset any stale session
@@ -252,7 +249,6 @@ export function usePracticeChat({
     }
   }, [
     client,
-    agentId,
     personaId,
     personaName,
     mode,
