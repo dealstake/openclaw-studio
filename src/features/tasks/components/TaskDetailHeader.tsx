@@ -2,7 +2,7 @@
 
 import { memo } from "react";
 import { X, ArrowLeft, Pencil, Save } from "lucide-react";
-import { PanelIconButton } from "@/components/PanelIconButton";
+import { IconButton } from "@/components/IconButton";
 import { SectionLabel } from "@/components/SectionLabel";
 import { inputClass } from "@/features/tasks/lib/styles";
 
@@ -85,12 +85,12 @@ export const TaskDetailHeader = memo(function TaskDetailHeader({
           </>
         ) : (
           <>
-            <PanelIconButton aria-label="Edit task" onClick={onStartEditing}>
+            <IconButton aria-label="Edit task" onClick={onStartEditing}>
               <Pencil className="h-3 w-3" />
-            </PanelIconButton>
-            <PanelIconButton aria-label="Close task detail" onClick={onClose}>
+            </IconButton>
+            <IconButton aria-label="Close task detail" onClick={onClose}>
               <X className="h-3.5 w-3.5" />
-            </PanelIconButton>
+            </IconButton>
           </>
         )}
       </div>

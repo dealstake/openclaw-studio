@@ -6,7 +6,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { ModalOverlay } from "@/components/ModalOverlay";
 import { X } from "lucide-react";
 
-import { PanelIconButton } from "@/components/PanelIconButton";
+import { IconButton } from "@/components/IconButton";
 import { sectionLabelClass } from "@/components/SectionLabel";
 
 interface PanelExpandModalProps {
@@ -38,14 +38,14 @@ export const PanelExpandModal = React.memo(function PanelExpandModal({
             <span className={`${sectionLabelClass} text-muted-foreground`}>
               {title}
             </span>
-            <PanelIconButton
+            <IconButton
               onClick={() => onOpenChange(false)}
               aria-label="Close expanded panel"
               data-testid="panel-expand-close-btn"
               className="min-h-[44px] min-w-[44px] xl:min-h-0 xl:min-w-0"
             >
               <X className="h-3.5 w-3.5" />
-            </PanelIconButton>
+            </IconButton>
           </div>
 
           {/* Body */}

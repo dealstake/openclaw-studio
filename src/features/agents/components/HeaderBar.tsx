@@ -1,5 +1,5 @@
 import { memo, useEffect, useState, useRef } from "react";
-import { HeaderIconButton } from "@/components/HeaderIconButton";
+import { IconButton } from "@/components/IconButton";
 
 import { BrandMark } from "@/components/brand/BrandMark";
 import {
@@ -104,13 +104,13 @@ function MobileContextMenu({
 
   return (
     <div className="relative" ref={ref}>
-      <HeaderIconButton
+      <IconButton variant="header"
         onClick={() => setOpen((v) => !v)}
         aria-label="Open context menu"
         data-testid="studio-menu-toggle"
       >
         <Ellipsis className="h-4 w-4" />
-      </HeaderIconButton>
+      </IconButton>
 
       {open ? (
         <div className="absolute right-0 top-11 z-50 min-w-48 rounded-md border border-border/80 bg-popover/95 p-1 shadow-lg backdrop-blur">
@@ -168,18 +168,18 @@ export const HeaderBar = memo(function HeaderBar({
       {/* Left section — hamburger + brand */}
       <div className="flex min-w-0 items-center gap-3">
         {onOpenSessionHistory ? (
-          <HeaderIconButton
+          <IconButton variant="header"
             onClick={onOpenSessionHistory}
             aria-label="Open session history"
             className="lg:hidden"
             data-testid="session-history-toggle"
           >
             <Menu className="h-4 w-4" />
-          </HeaderIconButton>
+          </IconButton>
         ) : null}
         <BrandMark size="sm" className="hidden sm:flex" />
         {emergency && (
-          <HeaderIconButton
+          <IconButton variant="header"
             onClick={emergency.toggle}
             aria-label="Emergency controls"
             title="Emergency controls"
@@ -187,7 +187,7 @@ export const HeaderBar = memo(function HeaderBar({
             className="hidden sm:flex"
           >
             <ShieldAlert className="h-4 w-4 text-red-500" />
-          </HeaderIconButton>
+          </IconButton>
         )}
       </div>
 

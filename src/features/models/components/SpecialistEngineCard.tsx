@@ -3,7 +3,7 @@
 import { memo, useCallback, useState } from "react";
 import { Settings, Trash2 } from "lucide-react";
 import { BaseCard } from "@/components/ui/BaseCard";
-import { PanelIconButton } from "@/components/PanelIconButton";
+import { IconButton } from "@/components/IconButton";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import type { SpecialistEngine, EngineType } from "@/features/models/lib/types";
 
@@ -85,7 +85,7 @@ export const SpecialistEngineCard = memo(function SpecialistEngineCard({
 
           {/* Actions */}
           <div className="flex shrink-0 items-center gap-1">
-            <PanelIconButton
+            <IconButton
               aria-label={`Configure ${engine.displayName}`}
               onClick={(e) => {
                 e.stopPropagation();
@@ -93,8 +93,8 @@ export const SpecialistEngineCard = memo(function SpecialistEngineCard({
               }}
             >
               <Settings className="h-3.5 w-3.5" />
-            </PanelIconButton>
-            <PanelIconButton
+            </IconButton>
+            <IconButton
               aria-label={`Remove ${engine.displayName}`}
               onClick={(e) => {
                 e.stopPropagation();
@@ -102,7 +102,7 @@ export const SpecialistEngineCard = memo(function SpecialistEngineCard({
               }}
             >
               <Trash2 className="h-3.5 w-3.5" />
-            </PanelIconButton>
+            </IconButton>
           </div>
         </div>
       </BaseCard>

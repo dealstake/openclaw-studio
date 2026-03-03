@@ -2,7 +2,7 @@
 
 import { memo, useCallback, useId, type KeyboardEvent } from "react";
 import { Send, Square } from "lucide-react";
-import { PanelIconButton } from "@/components/PanelIconButton";
+import { IconButton } from "@/components/IconButton";
 import { sectionLabelClass } from "@/components/SectionLabel";
 
 interface PromptEditorProps {
@@ -89,16 +89,16 @@ export const PromptEditor = memo(function PromptEditor({
           />
           <div className="absolute bottom-2 right-2">
             {isStreaming ? (
-              <PanelIconButton
+              <IconButton
                 onClick={onAbort}
                 aria-label="Stop generation"
                 title="Stop generation"
                 variant="destructive"
               >
                 <Square className="h-3.5 w-3.5 fill-current" />
-              </PanelIconButton>
+              </IconButton>
             ) : (
-              <PanelIconButton
+              <IconButton
                 onClick={onSubmit}
                 aria-label="Run prompt"
                 title="Run prompt (⌘↵)"
@@ -106,7 +106,7 @@ export const PromptEditor = memo(function PromptEditor({
                 disabled={!canSubmit}
               >
                 <Send className="h-3.5 w-3.5" />
-              </PanelIconButton>
+              </IconButton>
             )}
           </div>
         </div>

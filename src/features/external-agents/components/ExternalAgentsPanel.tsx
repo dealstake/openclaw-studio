@@ -3,7 +3,7 @@
 import { memo, useCallback, useMemo } from "react";
 import { Bot, RefreshCw, Loader2 } from "lucide-react";
 import { SectionLabel } from "@/components/SectionLabel";
-import { PanelIconButton } from "@/components/PanelIconButton";
+import { IconButton } from "@/components/IconButton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorBanner } from "@/components/ErrorBanner";
 import { useExternalAgents } from "@/features/external-agents/hooks/useExternalAgents";
@@ -62,7 +62,7 @@ export const ExternalAgentsPanel = memo(function ExternalAgentsPanel() {
           )}
         </div>
 
-        <PanelIconButton
+        <IconButton
           onClick={handleRefresh}
           disabled={loading}
           aria-label="Refresh external agents"
@@ -73,7 +73,7 @@ export const ExternalAgentsPanel = memo(function ExternalAgentsPanel() {
           ) : (
             <RefreshCw size={14} aria-hidden="true" />
           )}
-        </PanelIconButton>
+        </IconButton>
       </div>
 
       {/* ── Last-scanned timestamp ────────────────────────────────── */}

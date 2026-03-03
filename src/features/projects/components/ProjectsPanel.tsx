@@ -17,7 +17,7 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { FileEditorModal } from "@/components/FileEditorModal";
 import { useProjects } from "../hooks/useProjects";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
-import { PanelIconButton } from "@/components/PanelIconButton";
+import { IconButton } from "@/components/IconButton";
 import { SectionLabel } from "@/components/SectionLabel";
 import { PanelToolbar } from "@/components/ui/PanelToolbar";
 import { FilterGroup, type FilterGroupOption } from "@/components/ui/FilterGroup";
@@ -204,12 +204,12 @@ export const ProjectsPanel = memo(function ProjectsPanel({
             <Plus className="h-3 w-3" />
             <span className="hidden sm:inline">New</span>
           </button>
-          <PanelIconButton
+          <IconButton
             aria-label="Refresh projects"
             onClick={refresh}
           >
             <RefreshCw className={`h-3 w-3 ${loading ? "animate-spin" : ""}`} />
-          </PanelIconButton>
+          </IconButton>
         </div>
       </div>
 

@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SectionLabel } from "@/components/SectionLabel";
-import { PanelIconButton } from "@/components/PanelIconButton";
+import { IconButton } from "@/components/IconButton";
 import { useAllAnnotations } from "../hooks/useAllAnnotations";
 import type { Annotation, AnnotationRating } from "../lib/types";
 
@@ -292,20 +292,20 @@ export const FeedbackPanel = memo(function FeedbackPanel({
         <div className="flex items-center justify-between">
           <SectionLabel>Feedback</SectionLabel>
           <div className="flex items-center gap-1">
-            <PanelIconButton
+            <IconButton
               onClick={() => exportAnnotations(filtered, "json")}
               aria-label="Export as JSON"
               title="Export JSON"
             >
               <Download className="h-3.5 w-3.5" />
-            </PanelIconButton>
-            <PanelIconButton
+            </IconButton>
+            <IconButton
               onClick={() => exportAnnotations(filtered, "csv")}
               aria-label="Export as CSV"
               title="Export CSV"
             >
               <span className="text-[9px] font-bold">CSV</span>
-            </PanelIconButton>
+            </IconButton>
           </div>
         </div>
 

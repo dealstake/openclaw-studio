@@ -5,7 +5,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { X, Check, Loader2 } from "lucide-react";
 import { ModalOverlay } from "@/components/ModalOverlay";
 import { MarkdownViewer } from "@/components/MarkdownViewer";
-import { PanelIconButton } from "@/components/PanelIconButton";
+import { IconButton } from "@/components/IconButton";
 import { sectionLabelClass } from "@/components/SectionLabel";
 import { useFileEditor } from "@/hooks/useFileEditor";
 
@@ -177,9 +177,9 @@ export const FileEditorModal = memo(function FileEditorModal({
               </button>
 
               <Dialog.Close asChild>
-                <PanelIconButton aria-label="Close">
+                <IconButton aria-label="Close">
                   <X className="h-3.5 w-3.5" />
-                </PanelIconButton>
+                </IconButton>
               </Dialog.Close>
             </div>
           </div>

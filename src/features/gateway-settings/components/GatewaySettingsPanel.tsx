@@ -3,7 +3,7 @@
 import { memo, useEffect, useState } from "react";
 import { RefreshCw, Settings2 } from "lucide-react";
 import { ErrorBanner } from "@/components/ErrorBanner";
-import { PanelIconButton } from "@/components/PanelIconButton";
+import { IconButton } from "@/components/IconButton";
 import { CardSkeleton } from "@/components/ui/CardSkeleton";
 import { PanelHeader } from "@/components/ui/PanelHeader";
 import { fetchModelsData } from "@/features/models/lib/modelService";
@@ -40,13 +40,13 @@ export const GatewaySettingsPanel = memo(function GatewaySettingsPanel({
         icon={<Settings2 className="h-4 w-4" />}
         title="Gateway"
         actions={
-          <PanelIconButton
+          <IconButton
             aria-label="Refresh gateway settings"
             onClick={() => void reload()}
             disabled={loading || status !== "connected"}
           >
             <RefreshCw className="h-3.5 w-3.5" />
-          </PanelIconButton>
+          </IconButton>
         }
       />
 

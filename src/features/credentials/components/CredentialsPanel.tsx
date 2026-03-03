@@ -8,7 +8,7 @@ import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { useManagementPanel } from "@/components/management/ManagementPanelContext";
 import { PanelHeader } from "@/components/ui/PanelHeader";
 import { PanelSearchInput } from "@/components/ui/PanelSearchInput";
-import { PanelIconButton } from "@/components/PanelIconButton";
+import { IconButton } from "@/components/IconButton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { CardSkeleton } from "@/components/ui/CardSkeleton";
 import { ErrorBanner } from "@/components/ErrorBanner";
@@ -125,26 +125,26 @@ export const CredentialsPanel = React.memo(function CredentialsPanel({
         title="Credentials"
         actions={
           <>
-            <PanelIconButton onClick={refresh} title="Refresh" aria-label="Refresh">
+            <IconButton onClick={refresh} title="Refresh" aria-label="Refresh">
               <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
-            </PanelIconButton>
+            </IconButton>
             {onStartCredentialWizard && (
-              <PanelIconButton
+              <IconButton
                 onClick={onStartCredentialWizard}
                 title="Create with AI"
                 aria-label="Create with AI"
               >
                 <Sparkles className="h-4 w-4" />
-              </PanelIconButton>
+              </IconButton>
             )}
-            <PanelIconButton
+            <IconButton
               onClick={handleAddNew}
               title="Add service"
               aria-label="Add service"
               variant="primary"
             >
               <Plus className="h-4 w-4" />
-            </PanelIconButton>
+            </IconButton>
           </>
         }
         filters={

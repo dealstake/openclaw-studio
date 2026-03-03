@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect } from "react";
 import { ArrowLeft, RotateCcw } from "lucide-react";
 import { formatRuleThreshold } from "../lib/formatRuleThreshold";
 import { SectionLabel } from "@/components/SectionLabel";
-import { PanelIconButton } from "@/components/PanelIconButton";
+import { IconButton } from "@/components/IconButton";
 import { useAlertRules } from "../hooks/useAlertRules";
 import { requestNotificationPermission } from "../lib/browserNotifications";
 
@@ -48,13 +48,13 @@ export const AlertRulesConfig = React.memo(function AlertRulesConfig({
   return (
     <div className="flex flex-col">
       <div className="flex items-center gap-2 border-b border-border/60 px-3 py-2">
-        <PanelIconButton onClick={onBack} aria-label="Back to notifications">
+        <IconButton onClick={onBack} aria-label="Back to notifications">
           <ArrowLeft className="h-3.5 w-3.5" />
-        </PanelIconButton>
+        </IconButton>
         <SectionLabel className="flex-1">Alert Rules</SectionLabel>
-        <PanelIconButton onClick={resetDefaults} aria-label="Reset to defaults">
+        <IconButton onClick={resetDefaults} aria-label="Reset to defaults">
           <RotateCcw className="h-3.5 w-3.5" />
-        </PanelIconButton>
+        </IconButton>
       </div>
 
       <div className="flex flex-col gap-1 p-2">

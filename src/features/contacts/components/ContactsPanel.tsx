@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { PanelHeader } from "@/components/ui/PanelHeader";
 import { PanelToolbar } from "@/components/ui/PanelToolbar";
-import { PanelIconButton } from "@/components/PanelIconButton";
+import { IconButton } from "@/components/IconButton";
 import { SearchInput } from "@/components/SearchInput";
 import { ErrorBanner } from "@/components/ErrorBanner";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -642,29 +642,29 @@ export const ContactsPanel = memo(function ContactsPanel() {
               {contacts.length > 0 && (
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <PanelIconButton
+                    <IconButton
                       aria-label="Export contacts as CSV"
                       onClick={() => exportContactsCSV(contacts)}
                     >
                       <Download className="h-3.5 w-3.5" />
-                    </PanelIconButton>
+                    </IconButton>
                   </TooltipTrigger>
                   <TooltipContent side="bottom" className="text-xs">Export CSV</TooltipContent>
                 </Tooltip>
               )}
-              <PanelIconButton
+              <IconButton
                 aria-label="Refresh contacts"
                 onClick={() => refresh(searchQuery, activeStage)}
               >
                 <RefreshCw className="h-3.5 w-3.5" />
-              </PanelIconButton>
-              <PanelIconButton
+              </IconButton>
+              <IconButton
                 aria-label="Add contact"
                 variant="primary"
                 onClick={handleAddNew}
               >
                 <Plus className="h-3.5 w-3.5" />
-              </PanelIconButton>
+              </IconButton>
             </>
           }
         />

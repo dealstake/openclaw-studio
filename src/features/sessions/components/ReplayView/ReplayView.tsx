@@ -9,7 +9,7 @@ import React, {
 } from "react";
 import { Bot, Clock, Coins, Hash, X } from "lucide-react";
 import { ErrorBanner } from "@/components/ErrorBanner";
-import { PanelIconButton } from "@/components/PanelIconButton";
+import { IconButton } from "@/components/IconButton";
 import { SectionLabel } from "@/components/SectionLabel";
 import { Skeleton } from "@/components/Skeleton";
 import { formatCost, formatTokens } from "@/lib/text/format";
@@ -145,9 +145,9 @@ export const ReplayView = React.memo(function ReplayView({
       <div className="flex flex-col gap-2 border-b border-border bg-card/80 px-4 py-3">
         <div className="flex items-center justify-between">
           <SectionLabel as="h3">Session Replay</SectionLabel>
-          <PanelIconButton onClick={onClose} aria-label="Close replay viewer">
+          <IconButton onClick={onClose} aria-label="Close replay viewer">
             <X className="h-3.5 w-3.5" />
-          </PanelIconButton>
+          </IconButton>
         </div>
 
         {/* Fork result badge */}

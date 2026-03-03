@@ -6,7 +6,7 @@ import { FileSearch, X } from "lucide-react";
 import { ErrorBanner } from "@/components/ErrorBanner";
 import { SearchInput } from "@/components/SearchInput";
 import { Skeleton } from "@/components/Skeleton";
-import { PanelIconButton } from "@/components/PanelIconButton";
+import { IconButton } from "@/components/IconButton";
 
 import { useMemorySearch } from "../hooks/useMemorySearch";
 import type { MemorySearchResult } from "../hooks/useMemorySearch";
@@ -156,9 +156,9 @@ export const MemorySearchView = memo(function MemorySearchView({
             variant="compact"
           />
         </div>
-        <PanelIconButton onClick={onClose} aria-label="Close search">
+        <IconButton onClick={onClose} aria-label="Close search">
           <X className="h-3.5 w-3.5" />
-        </PanelIconButton>
+        </IconButton>
       </div>
 
       {/* ── Body ── */}

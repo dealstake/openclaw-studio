@@ -2,7 +2,7 @@
 import { memo } from "react";
 import { X } from "lucide-react";
 import { SectionLabel } from "@/components/SectionLabel";
-import { PanelIconButton } from "@/components/PanelIconButton";
+import { IconButton } from "@/components/IconButton";
 
 export const AgentInspectHeader = memo(function AgentInspectHeader({
   label,
@@ -25,14 +25,14 @@ export const AgentInspectHeader = memo(function AgentInspectHeader({
         </SectionLabel>
         <div className="console-title text-2xl leading-none text-foreground">{title}</div>
       </div>
-      <PanelIconButton
+      <IconButton
         aria-label="Close panel"
         data-testid={closeTestId}
         disabled={closeDisabled}
         onClick={onClose}
       >
         <X className="h-3.5 w-3.5" />
-      </PanelIconButton>
+      </IconButton>
     </div>
   );
 });

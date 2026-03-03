@@ -5,7 +5,7 @@ import { FlaskConical, GitCompare, Clock, Plus, Trash2, X, FileOutput } from "lu
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import type { GatewayModelChoice } from "@/lib/gateway/models";
 import { PanelHeader } from "@/components/ui/PanelHeader";
-import { PanelIconButton } from "@/components/PanelIconButton";
+import { IconButton } from "@/components/IconButton";
 import { ErrorBanner } from "@/components/ErrorBanner";
 import { usePlayground } from "../hooks/usePlayground";
 import { useCompare } from "../hooks/useCompare";
@@ -217,23 +217,23 @@ export const PlaygroundPanel = memo(function PlaygroundPanel({
         title="Playground"
         actions={
           <div className="flex items-center gap-1">
-            <PanelIconButton
+            <IconButton
               onClick={() => setHistoryOpen(true)}
               aria-label="Prompt history"
               title="Browse prompt history and presets"
             >
               <Clock className="h-3.5 w-3.5" />
-            </PanelIconButton>
+            </IconButton>
             {systemPrompt.trim() && agentId && (
-              <PanelIconButton
+              <IconButton
                 onClick={() => setApplyDialogOpen(true)}
                 aria-label="Apply system prompt to agent"
                 title="Write system prompt to agent brain file"
               >
                 <FileOutput className="h-3.5 w-3.5" />
-              </PanelIconButton>
+              </IconButton>
             )}
-            <PanelIconButton
+            <IconButton
               onClick={handleModeToggle}
               aria-label={
                 compareMode
@@ -248,15 +248,15 @@ export const PlaygroundPanel = memo(function PlaygroundPanel({
               className={compareMode ? "text-primary" : undefined}
             >
               <GitCompare className="h-3.5 w-3.5" />
-            </PanelIconButton>
+            </IconButton>
             {hasResults && (
-              <PanelIconButton
+              <IconButton
                 onClick={handleClear}
                 aria-label="Clear results"
                 title="Clear results"
               >
                 <Trash2 className="h-3.5 w-3.5" />
-              </PanelIconButton>
+              </IconButton>
             )}
           </div>
         }

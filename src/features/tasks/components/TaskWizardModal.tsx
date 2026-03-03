@@ -20,7 +20,7 @@ import { AgentWizardModal } from "@/features/agents/components/AgentWizardModal"
 import { TaskTemplatesSheet } from "./TaskTemplatesSheet";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import { SectionLabel } from "@/components/SectionLabel";
-import { PanelIconButton } from "@/components/PanelIconButton";
+import { IconButton } from "@/components/IconButton";
 import type { WizardTaskConfig } from "@/features/tasks/types";
 
 // ─── Type selector cards ─────────────────────────────────────────────────────
@@ -188,7 +188,7 @@ export const TaskWizardModal = memo(function TaskWizardModal({
         <div className="flex shrink-0 items-center justify-between border-b border-border/40 px-4 py-3">
           <div className="flex items-center gap-2">
             {wizard.step !== "type-select" || showTemplates || showAgentCreation ? (
-              <PanelIconButton
+              <IconButton
                 onClick={
                   showTemplates
                     ? () => setShowTemplates(false)
@@ -199,7 +199,7 @@ export const TaskWizardModal = memo(function TaskWizardModal({
                 aria-label="Go back"
               >
                 <ArrowLeft className="h-3.5 w-3.5" />
-              </PanelIconButton>
+              </IconButton>
             ) : null}
             <div className="flex items-center gap-1.5">
               <Sparkles className="h-4 w-4 text-primary-text" />
@@ -216,12 +216,12 @@ export const TaskWizardModal = memo(function TaskWizardModal({
               </SectionLabel>
             </div>
           </div>
-          <PanelIconButton
+          <IconButton
             onClick={handleClose}
             aria-label="Close wizard"
           >
             <X className="h-3.5 w-3.5" />
-          </PanelIconButton>
+          </IconButton>
         </div>
 
         {/* Step content */}

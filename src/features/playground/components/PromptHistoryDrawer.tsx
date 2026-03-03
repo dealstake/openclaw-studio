@@ -12,7 +12,7 @@ import {
   Play,
 
 } from "lucide-react";
-import { PanelIconButton } from "@/components/PanelIconButton";
+import { IconButton } from "@/components/IconButton";
 import { SectionLabel } from "@/components/SectionLabel";
 import type { PromptHistoryEntry, UsePromptHistoryReturn } from "../hooks/usePromptHistory";
 import type { PromptPreset } from "../lib/types";
@@ -79,12 +79,12 @@ export const PromptHistoryDrawer = memo(function PromptHistoryDrawer({
         <div className="flex items-center gap-1">
           {tab === "presets" && (
             <>
-              <PanelIconButton onClick={handleExport} aria-label="Export presets" title="Export presets as JSON">
+              <IconButton onClick={handleExport} aria-label="Export presets" title="Export presets as JSON">
                 <Download className="h-3.5 w-3.5" />
-              </PanelIconButton>
-              <PanelIconButton onClick={handleImport} aria-label="Import presets" title="Import presets from JSON">
+              </IconButton>
+              <IconButton onClick={handleImport} aria-label="Import presets" title="Import presets from JSON">
                 <Upload className="h-3.5 w-3.5" />
-              </PanelIconButton>
+              </IconButton>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -95,18 +95,18 @@ export const PromptHistoryDrawer = memo(function PromptHistoryDrawer({
             </>
           )}
           {tab === "history" && history.history.length > 0 && (
-            <PanelIconButton
+            <IconButton
               onClick={history.clearHistory}
               aria-label="Clear history"
               title="Clear all history"
               variant="destructive"
             >
               <Trash2 className="h-3.5 w-3.5" />
-            </PanelIconButton>
+            </IconButton>
           )}
-          <PanelIconButton onClick={onClose} aria-label="Close prompt library">
+          <IconButton onClick={onClose} aria-label="Close prompt library">
             <X className="h-3.5 w-3.5" />
-          </PanelIconButton>
+          </IconButton>
         </div>
       </div>
 
@@ -240,15 +240,15 @@ function HistoryRow({
         </div>
       </div>
       <div className="flex flex-shrink-0 items-center gap-0.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
-        <PanelIconButton onClick={onReplay} aria-label="Replay prompt" title="Load into playground">
+        <IconButton onClick={onReplay} aria-label="Replay prompt" title="Load into playground">
           <Play className="h-3 w-3" />
-        </PanelIconButton>
-        <PanelIconButton onClick={onSavePreset} aria-label="Save as preset" title="Save as preset">
+        </IconButton>
+        <IconButton onClick={onSavePreset} aria-label="Save as preset" title="Save as preset">
           <BookmarkPlus className="h-3 w-3" />
-        </PanelIconButton>
-        <PanelIconButton onClick={onDelete} aria-label="Delete entry" variant="destructive">
+        </IconButton>
+        <IconButton onClick={onDelete} aria-label="Delete entry" variant="destructive">
           <Trash2 className="h-3 w-3" />
-        </PanelIconButton>
+        </IconButton>
       </div>
     </div>
   );
@@ -284,12 +284,12 @@ function PresetRow({
         </div>
       </div>
       <div className="flex flex-shrink-0 items-center gap-0.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
-        <PanelIconButton onClick={onReplay} aria-label="Load preset" title="Load into playground">
+        <IconButton onClick={onReplay} aria-label="Load preset" title="Load into playground">
           <Play className="h-3 w-3" />
-        </PanelIconButton>
-        <PanelIconButton onClick={onDelete} aria-label="Delete preset" variant="destructive">
+        </IconButton>
+        <IconButton onClick={onDelete} aria-label="Delete preset" variant="destructive">
           <Trash2 className="h-3 w-3" />
-        </PanelIconButton>
+        </IconButton>
       </div>
     </div>
   );

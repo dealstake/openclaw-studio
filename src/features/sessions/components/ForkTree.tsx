@@ -10,7 +10,7 @@
 
 import React, { memo, useCallback, useMemo } from "react";
 import { GitBranch, GitFork, MessageSquare, X } from "lucide-react";
-import { PanelIconButton } from "@/components/PanelIconButton";
+import { IconButton } from "@/components/IconButton";
 import { SectionLabel } from "@/components/SectionLabel";
 import type { ForkTreeNode } from "../lib/forkRegistry";
 
@@ -313,9 +313,9 @@ export const ForkTree = memo(function ForkTree({
           </span>
         </div>
         {onClose && (
-          <PanelIconButton onClick={onClose} aria-label="Close fork tree">
+          <IconButton onClick={onClose} aria-label="Close fork tree">
             <X className="h-3.5 w-3.5" />
-          </PanelIconButton>
+          </IconButton>
         )}
       </div>
 

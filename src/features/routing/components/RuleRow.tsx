@@ -2,7 +2,7 @@
 
 import { memo, useCallback } from "react";
 import { Pencil, Trash2, Clock, GitBranch, MessageSquare, Heart, Layers, User } from "lucide-react";
-import { PanelIconButton } from "@/components/PanelIconButton";
+import { IconButton } from "@/components/IconButton";
 import { ToggleSwitch } from "@/components/ui/ToggleSwitch";
 import type { RoutingRule, RoutingCondition, TaskTypeConditionValue } from "../lib/types";
 import { TASK_TYPE_LABELS } from "../lib/types";
@@ -111,15 +111,15 @@ export const RuleRow = memo(function RuleRow({
           disabled={disabled}
           label={`${rule.enabled ? "Disable" : "Enable"} rule "${rule.name}"`}
         />
-        <PanelIconButton
+        <IconButton
           onClick={handleEdit}
           aria-label={`Edit rule "${rule.name}"`}
           disabled={disabled}
           className="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 sm:opacity-100 transition-opacity"
         >
           <Pencil className="h-3 w-3" />
-        </PanelIconButton>
-        <PanelIconButton
+        </IconButton>
+        <IconButton
           onClick={handleDelete}
           variant="destructive"
           aria-label={`Delete rule "${rule.name}"`}
@@ -127,7 +127,7 @@ export const RuleRow = memo(function RuleRow({
           className="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 sm:opacity-100 transition-opacity"
         >
           <Trash2 className="h-3 w-3" />
-        </PanelIconButton>
+        </IconButton>
       </div>
     </div>
   );

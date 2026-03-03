@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { Bell, BellOff, CheckCheck, Settings } from "lucide-react";
 import { SectionLabel } from "@/components/SectionLabel";
-import { PanelIconButton } from "@/components/PanelIconButton";
+import { IconButton } from "@/components/IconButton";
 import { useNotificationStore, useNotificationActions } from "../hooks/useNotifications";
 import { requestNotificationPermission } from "../lib/browserNotifications";
 import { NotificationItem } from "./NotificationItem";
@@ -94,12 +94,12 @@ export const NotificationPanel = React.memo(function NotificationPanel() {
       {/* Header */}
       <div className="flex items-center gap-2 border-b border-border/60 px-3 py-2">
         <SectionLabel className="flex-1">Notifications</SectionLabel>
-        <PanelIconButton onClick={markAllRead} aria-label="Mark all read">
+        <IconButton onClick={markAllRead} aria-label="Mark all read">
           <CheckCheck className="h-3.5 w-3.5" />
-        </PanelIconButton>
-        <PanelIconButton onClick={() => setShowSettings(true)} aria-label="Notification settings">
+        </IconButton>
+        <IconButton onClick={() => setShowSettings(true)} aria-label="Notification settings">
           <Settings className="h-3.5 w-3.5" />
-        </PanelIconButton>
+        </IconButton>
       </div>
 
       {/* Permission banner — shown when user hasn't decided yet */}

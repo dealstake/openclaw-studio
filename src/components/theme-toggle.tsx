@@ -2,7 +2,7 @@
 
 import { memo, useEffect, useState } from "react";
 import { Moon, Sun } from "lucide-react";
-import { HeaderIconButton } from "@/components/HeaderIconButton";
+import { IconButton } from "@/components/IconButton";
 
 const THEME_STORAGE_KEY = "theme";
 
@@ -44,11 +44,11 @@ export const ThemeToggle = memo(function ThemeToggle() {
   const isDark = theme === "dark";
 
   return (
-    <HeaderIconButton
+    <IconButton variant="header"
       onClick={toggleTheme}
       aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
     >
       {isDark ? <Sun className="h-[15px] w-[15px]" /> : <Moon className="h-[15px] w-[15px]" />}
-    </HeaderIconButton>
+    </IconButton>
   );
 });

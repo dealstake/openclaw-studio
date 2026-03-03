@@ -3,7 +3,7 @@
 import { memo, useState } from "react";
 import { RefreshCw, ChevronDown, ChevronRight, FileText, AlertCircle } from "lucide-react";
 import { Skeleton } from "@/components/Skeleton";
-import { PanelIconButton } from "@/components/PanelIconButton";
+import { IconButton } from "@/components/IconButton";
 import { sectionLabelClass } from "@/components/SectionLabel";
 import { formatTokenEstimate } from "@/lib/text/tokens";
 import { formatSize } from "@/lib/text/format";
@@ -149,14 +149,14 @@ export const ContextBudgetCard = memo(function ContextBudgetCard({
       {/* Header */}
       <div className="flex items-center gap-2 px-4 pt-3 pb-2">
         <h2 className={`${sectionLabelClass} flex-1`}>Context Budget</h2>
-        <PanelIconButton
+        <IconButton
           onClick={() => void refresh()}
           aria-label="Refresh context budget"
           data-testid="budget-refresh-btn"
           disabled={loading}
         >
           <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-        </PanelIconButton>
+        </IconButton>
       </div>
 
       {/* Error state */}

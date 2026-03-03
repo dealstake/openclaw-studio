@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { PanelToolbar } from "@/components/ui/PanelToolbar";
-import { PanelIconButton } from "@/components/PanelIconButton";
+import { IconButton } from "@/components/IconButton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { CardSkeleton } from "@/components/ui/CardSkeleton";
 import { ErrorBanner } from "@/components/ErrorBanner";
@@ -97,17 +97,17 @@ export const ChannelsPanel = memo(function ChannelsPanel({
         <PanelToolbar
           actions={
             <>
-              <PanelIconButton onClick={refresh} title="Refresh" aria-label="Refresh channels">
+              <IconButton onClick={refresh} title="Refresh" aria-label="Refresh channels">
                 <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
-              </PanelIconButton>
-              <PanelIconButton
+              </IconButton>
+              <IconButton
                 onClick={handleAddNew}
                 title="Add channel"
                 aria-label="Add channel"
                 variant="primary"
               >
                 <Plus className="h-4 w-4" />
-              </PanelIconButton>
+              </IconButton>
             </>
           }
         />

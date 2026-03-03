@@ -4,7 +4,7 @@ import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { useVisibilityRefresh } from "@/hooks/useVisibilityRefresh";
 import { Skeleton } from "@/components/Skeleton";
 import { ErrorBanner } from "@/components/ErrorBanner";
-import { PanelIconButton } from "@/components/PanelIconButton";
+import { IconButton } from "@/components/IconButton";
 import {
   File,
   FileCode,
@@ -285,14 +285,14 @@ export const ArtifactsPanel = memo(function ArtifactsPanel({
           Files ({files.length})
         </p>
         <div className="flex items-center gap-1">
-          <PanelIconButton
+          <IconButton
             onClick={() => setGenerateDialogOpen(true)}
             title="New from template"
             aria-label="New document from template"
           >
             <FilePlus className="h-3.5 w-3.5" />
-          </PanelIconButton>
-          <PanelIconButton
+          </IconButton>
+          <IconButton
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
             title="Upload file"
@@ -301,8 +301,8 @@ export const ArtifactsPanel = memo(function ArtifactsPanel({
             <Upload
               className={`h-3.5 w-3.5 ${uploading ? "animate-pulse" : ""}`}
             />
-          </PanelIconButton>
-          <PanelIconButton
+          </IconButton>
+          <IconButton
             onClick={toggleSort}
             title={
               sortDir === "newest" ? "Sorted newest first" : "Sorted oldest first"
@@ -316,8 +316,8 @@ export const ArtifactsPanel = memo(function ArtifactsPanel({
             ) : (
               <ArrowUp className="h-3.5 w-3.5" />
             )}
-          </PanelIconButton>
-          <PanelIconButton
+          </IconButton>
+          <IconButton
             onClick={() => void fetchFiles(true)}
             disabled={refreshing}
             title="Refresh"
@@ -326,7 +326,7 @@ export const ArtifactsPanel = memo(function ArtifactsPanel({
             <RefreshCw
               className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`}
             />
-          </PanelIconButton>
+          </IconButton>
         </div>
       </div>
 

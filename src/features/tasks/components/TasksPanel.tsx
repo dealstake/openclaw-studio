@@ -12,7 +12,7 @@ import { TaskCard } from "./TaskCard";
 import { TaskDetailDrawer } from "./TaskDetailDrawer";
 import { TaskActionsProvider } from "@/features/tasks/context/TaskActionsContext";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
-import { PanelIconButton } from "@/components/PanelIconButton";
+import { IconButton } from "@/components/IconButton";
 import { SectionLabel } from "@/components/SectionLabel";
 import { PanelToolbar } from "@/components/ui/PanelToolbar";
 import { FilterGroup, type FilterGroupOption } from "@/components/ui/FilterGroup";
@@ -269,13 +269,13 @@ export const TasksPanel = memo(function TasksPanel({
               New
             </span>
           </button>
-          <PanelIconButton
+          <IconButton
             aria-label="Refresh tasks"
             onClick={onRefresh}
             disabled={loading}
           >
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-          </PanelIconButton>
+          </IconButton>
         </div>
       </div>
 

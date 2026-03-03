@@ -3,7 +3,7 @@
 import { memo, useCallback, useRef, useEffect, useMemo, useState, type KeyboardEvent, type ReactNode, type UIEvent } from "react";
 import { Maximize2, X } from "lucide-react";
 
-import { PanelIconButton } from "@/components/PanelIconButton";
+import { IconButton } from "@/components/IconButton";
 import { sectionLabelClass } from "@/components/SectionLabel";
 import { CONTEXT_TAB_CONFIG, tabPanelId, tabButtonId, type ContextTab } from "../lib/tabs";
 
@@ -209,14 +209,14 @@ export const ContextPanel = memo(function ContextPanel({
           {/* Pinned action buttons — never scroll off-screen */}
           <div className="ml-auto flex flex-shrink-0 items-center gap-1 pl-2">
             {onExpandToggle && (
-              <PanelIconButton onClick={onExpandToggle} aria-label="Expand panel" data-testid="expand-panel-btn">
+              <IconButton onClick={onExpandToggle} aria-label="Expand panel" data-testid="expand-panel-btn">
                 <Maximize2 className="h-3.5 w-3.5" />
-              </PanelIconButton>
+              </IconButton>
             )}
             {onClose && (
-              <PanelIconButton onClick={onClose} aria-label="Close panel" data-testid="close-panel-btn">
+              <IconButton onClick={onClose} aria-label="Close panel" data-testid="close-panel-btn">
                 <X className="h-3.5 w-3.5" />
-              </PanelIconButton>
+              </IconButton>
             )}
           </div>
         </div>

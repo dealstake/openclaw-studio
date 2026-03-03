@@ -5,7 +5,7 @@ import { ArrowLeft, Check, Pencil, Save, X } from "lucide-react";
 import { MarkdownViewer } from "@/components/MarkdownViewer";
 import { formatSize } from "@/lib/text/format";
 import { formatRelativeTime } from "@/lib/text/time";
-import { PanelIconButton } from "@/components/PanelIconButton";
+import { IconButton } from "@/components/IconButton";
 import { useFileEditor } from "@/hooks/useFileEditor";
 
 export const FileViewer = memo(function FileViewer({
@@ -94,13 +94,13 @@ export const FileViewer = memo(function FileViewer({
     >
       {/* File header */}
       <div className="flex items-center gap-2 border-b border-border/40 px-3 py-2">
-        <PanelIconButton
+        <IconButton
           onClick={handleBack}
           aria-label="Back to file list"
           data-testid="ws-back"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
-        </PanelIconButton>
+        </IconButton>
         <div className="min-w-0 flex-1">
           <div className="truncate text-xs font-medium text-foreground" title={file.path}>
             {file.path}
@@ -116,7 +116,7 @@ export const FileViewer = memo(function FileViewer({
           </div>
         </div>
         {canEdit && !editing && (
-          <PanelIconButton
+          <IconButton
             onClick={() => {
               handleStartEdit();
               requestAnimationFrame(() => textareaRef.current?.focus());
@@ -125,18 +125,18 @@ export const FileViewer = memo(function FileViewer({
             data-testid="ws-edit-btn"
           >
             <Pencil className="h-3.5 w-3.5" />
-          </PanelIconButton>
+          </IconButton>
         )}
         {editing && (
           <>
-            <PanelIconButton
+            <IconButton
               onClick={handleCancelEdit}
               aria-label="Cancel editing"
               disabled={saving}
             >
               <X className="h-3.5 w-3.5" />
-            </PanelIconButton>
-            <PanelIconButton
+            </IconButton>
+            <IconButton
               variant="primary"
               onClick={() => {
                 void editor.handleSave();
@@ -146,7 +146,7 @@ export const FileViewer = memo(function FileViewer({
               data-testid="ws-save-btn"
             >
               <Save className="h-3.5 w-3.5" />
-            </PanelIconButton>
+            </IconButton>
           </>
         )}
       </div>

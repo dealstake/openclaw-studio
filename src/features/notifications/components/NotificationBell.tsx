@@ -1,6 +1,6 @@
 import React from "react";
 import { Bell } from "lucide-react";
-import { HeaderIconButton } from "@/components/HeaderIconButton";
+import { IconButton } from "@/components/IconButton";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { useNotificationStore } from "../hooks/useNotifications";
 import { NotificationPanel } from "./NotificationPanel";
@@ -11,7 +11,7 @@ export const NotificationBell = React.memo(function NotificationBell() {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <HeaderIconButton aria-label="Notifications" data-testid="notification-bell">
+        <IconButton variant="header" aria-label="Notifications" data-testid="notification-bell">
           <div className="relative">
             <Bell className={`h-[15px] w-[15px] transition-transform duration-200 ${unreadCount > 0 ? "animate-in zoom-in-75 duration-300" : ""}`} />
             {/* Badge hidden during demo period — re-enable when notification system is production-ready */}
@@ -21,7 +21,7 @@ export const NotificationBell = React.memo(function NotificationBell() {
               </span>
             )}
           </div>
-        </HeaderIconButton>
+        </IconButton>
       </PopoverTrigger>
       <PopoverContent className="w-[calc(100vw-2rem)] p-0 sm:w-80" align="end">
         <NotificationPanel />

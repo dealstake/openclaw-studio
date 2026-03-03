@@ -3,7 +3,7 @@
 import { memo } from "react";
 import { ChevronRight, FilePlus, RefreshCw, Search } from "lucide-react";
 
-import { PanelIconButton } from "@/components/PanelIconButton";
+import { IconButton } from "@/components/IconButton";
 import { PanelToolbar } from "@/components/ui/PanelToolbar";
 import type { Breadcrumb } from "../lib/breadcrumbs";
 
@@ -35,30 +35,30 @@ export const WorkspaceBreadcrumbHeader = memo(function WorkspaceBreadcrumbHeader
       actions={
         <>
           {onSearch && (
-            <PanelIconButton
+            <IconButton
               onClick={onSearch}
               aria-label={searchActive ? "Close memory search" : "Search memory files"}
               data-testid="ws-search"
               className={searchActive ? "text-primary" : undefined}
             >
               <Search className="h-3.5 w-3.5" />
-            </PanelIconButton>
+            </IconButton>
           )}
-          <PanelIconButton
+          <IconButton
             onClick={onNewFile}
             aria-label="New file"
             data-testid="ws-new-file"
           >
             <FilePlus className="h-3.5 w-3.5" />
-          </PanelIconButton>
-          <PanelIconButton
+          </IconButton>
+          <IconButton
             onClick={onRefresh}
             disabled={loading}
             aria-label="Refresh workspace"
             data-testid="ws-refresh"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-          </PanelIconButton>
+          </IconButton>
         </>
       }
     >

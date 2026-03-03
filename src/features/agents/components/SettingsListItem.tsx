@@ -3,7 +3,7 @@
 import { memo, type ReactNode } from "react";
 import { Play, Trash2 } from "lucide-react";
 import { sectionLabelClass } from "@/components/SectionLabel";
-import { PanelIconButton } from "@/components/PanelIconButton";
+import { IconButton } from "@/components/IconButton";
 import {
   Tooltip,
   TooltipContent,
@@ -106,34 +106,34 @@ export const SettingsListItem = memo(function SettingsListItem({
             <TooltipContent>{enabled ? "Disable" : "Enable"}</TooltipContent>
           </Tooltip>
         ) : null}
-        <PanelIconButton aria-label={runLabel} onClick={onRun} disabled={busy}>
+        <IconButton aria-label={runLabel} onClick={onRun} disabled={busy}>
           <Play className="h-3.5 w-3.5" />
-        </PanelIconButton>
+        </IconButton>
         {!deleteAllowed && deleteDisabledTooltip ? (
           <Tooltip>
             <TooltipTrigger asChild>
               <span>
-                <PanelIconButton
+                <IconButton
                   variant="destructive"
                   aria-label={deleteLabel}
                   onClick={onDelete}
                   disabled
                 >
                   <Trash2 className="h-3.5 w-3.5" />
-                </PanelIconButton>
+                </IconButton>
               </span>
             </TooltipTrigger>
             <TooltipContent>{deleteDisabledTooltip}</TooltipContent>
           </Tooltip>
         ) : (
-          <PanelIconButton
+          <IconButton
             variant="destructive"
             aria-label={deleteLabel}
             onClick={onDelete}
             disabled={busy || !deleteAllowed}
           >
             <Trash2 className="h-3.5 w-3.5" />
-          </PanelIconButton>
+          </IconButton>
         )}
       </div>
     </li>

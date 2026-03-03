@@ -8,7 +8,7 @@ import { PanelHeader } from "@/components/ui/PanelHeader";
 import { FilterGroup, type FilterGroupOption } from "@/components/ui/FilterGroup";
 import { ErrorBanner } from "@/components/ErrorBanner";
 import { Skeleton } from "@/components/Skeleton";
-import { PanelIconButton } from "@/components/PanelIconButton";
+import { IconButton } from "@/components/IconButton";
 import { formatTokens, formatCost } from "@/lib/text/format";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DailyTrendChart } from "@/features/usage/components/DailyTrendChart";
@@ -118,12 +118,12 @@ export const UsagePanel = memo(function UsagePanel() {
                 cached
               </span>
             )}
-            <PanelIconButton
+            <IconButton
               aria-label="Refresh"
               onClick={() => void refresh()}
             >
               <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-            </PanelIconButton>
+            </IconButton>
           </div>
         }
         filters={

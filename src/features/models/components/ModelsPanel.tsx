@@ -7,7 +7,7 @@ import { useModels } from "@/features/models/hooks/useModels";
 import { PanelHeader } from "@/components/ui/PanelHeader";
 import { ErrorBanner } from "@/components/ErrorBanner";
 import { CardSkeleton } from "@/components/ui/CardSkeleton";
-import { PanelIconButton } from "@/components/PanelIconButton";
+import { IconButton } from "@/components/IconButton";
 import { useHasAiCredentials } from "@/features/models/hooks/useHasAiCredentials";
 import { BrainModelSection } from "./BrainModelSection";
 import { BrainKeysSection } from "./BrainKeysSection";
@@ -56,13 +56,13 @@ export const ModelsPanel = memo(function ModelsPanel({
         icon={<Cpu className="h-4 w-4" />}
         title="Models & Brains"
         actions={
-          <PanelIconButton
+          <IconButton
             aria-label="Refresh"
             onClick={() => void refresh()}
             disabled={loading}
           >
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-          </PanelIconButton>
+          </IconButton>
         }
       />
 

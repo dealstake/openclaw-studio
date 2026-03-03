@@ -16,7 +16,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MarkdownViewer } from "@/components/MarkdownViewer";
-import { PanelIconButton } from "@/components/PanelIconButton";
+import { IconButton } from "@/components/IconButton";
 import { ErrorBanner } from "@/components/ErrorBanner";
 import { Skeleton } from "@/components/Skeleton";
 import { SectionLabel } from "@/components/SectionLabel";
@@ -126,14 +126,14 @@ function Column({
                 {card.id}
               </p>
               <div className="flex items-center gap-1">
-                <PanelIconButton
+                <IconButton
                   className={`border-border/70 bg-background/60 transition-colors hover:bg-background hover:text-foreground ${card.description ? "" : "opacity-60"}`}
                   aria-label={`View details for ${card.id}`}
                   data-testid={`task-control-card-description-${card.id}`}
                   onClick={() => onOpenDetails(card)}
                 >
                   <FileText className="h-4 w-4" aria-hidden="true" />
-                </PanelIconButton>
+                </IconButton>
                 <PriorityDropdown
                   card={card}
                   saving={prioritySavingCardId === card.id}

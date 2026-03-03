@@ -2,7 +2,7 @@
 
 import { memo, useCallback, useState } from "react";
 import { Plus, RefreshCw, Route } from "lucide-react";
-import { PanelIconButton } from "@/components/PanelIconButton";
+import { IconButton } from "@/components/IconButton";
 import { SectionLabel } from "@/components/SectionLabel";
 import { ErrorBanner } from "@/components/ErrorBanner";
 import { Skeleton } from "@/components/Skeleton";
@@ -131,21 +131,21 @@ export const RoutingPanel = memo(function RoutingPanel({
           )}
         </div>
         <div className="flex items-center gap-1">
-          <PanelIconButton
+          <IconButton
             onClick={() => void reload()}
             aria-label="Refresh routing rules"
             disabled={loading || saving}
           >
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? "motion-safe:animate-spin" : ""}`} />
-          </PanelIconButton>
-          <PanelIconButton
+          </IconButton>
+          <IconButton
             variant="primary"
             onClick={handleNewRule}
             aria-label="Add routing rule"
             disabled={status !== "connected" || saving}
           >
             <Plus className="h-3.5 w-3.5" />
-          </PanelIconButton>
+          </IconButton>
         </div>
       </div>
 

@@ -4,7 +4,7 @@ import React from "react";
 import { Bot, Clock, Coins, Hash, X } from "lucide-react";
 
 import { SectionLabel } from "@/components/SectionLabel";
-import { PanelIconButton } from "@/components/PanelIconButton";
+import { IconButton } from "@/components/IconButton";
 import { formatCost, formatTokens } from "@/lib/text/format";
 import { formatDuration } from "@/lib/text/time";
 import type { TraceSummary } from "../../lib/traceParser";
@@ -22,9 +22,9 @@ export const TraceHeader = React.memo(function TraceHeader({
     <div className="flex flex-col gap-2 border-b border-border bg-card/80 px-4 py-3">
       <div className="flex items-center justify-between">
         <SectionLabel as="h3">Session Trace</SectionLabel>
-        <PanelIconButton onClick={onClose} aria-label="Close trace viewer">
+        <IconButton onClick={onClose} aria-label="Close trace viewer">
           <X className="h-3.5 w-3.5" />
-        </PanelIconButton>
+        </IconButton>
       </div>
 
       <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">

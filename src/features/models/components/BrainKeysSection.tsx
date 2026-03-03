@@ -6,7 +6,7 @@ import { SectionLabel } from "@/components/SectionLabel";
 import { BaseCard } from "@/components/ui/BaseCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorBanner } from "@/components/ErrorBanner";
-import { PanelIconButton } from "@/components/PanelIconButton";
+import { IconButton } from "@/components/IconButton";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { useAuthProfiles } from "@/features/models/hooks/useAuthProfiles";
 import { useManagementPanel } from "@/components/management/ManagementPanelContext";
@@ -101,7 +101,7 @@ const BrainKeyCard = memo(function BrainKeyCard({
           </div>
 
           {/* Actions */}
-          <PanelIconButton
+          <IconButton
             aria-label={`Remove key ${profile.id}`}
             onClick={(e) => {
               e.stopPropagation();
@@ -115,7 +115,7 @@ const BrainKeyCard = memo(function BrainKeyCard({
             ) : (
               <Trash2 className="h-3.5 w-3.5" />
             )}
-          </PanelIconButton>
+          </IconButton>
         </div>
       </BaseCard>
 
@@ -183,12 +183,12 @@ export const BrainKeysSection = memo(function BrainKeysSection({
         <SectionLabel>
           <span aria-hidden="true">🔑 </span>API Keys
         </SectionLabel>
-        <PanelIconButton
+        <IconButton
           aria-label="Add API key"
           onClick={() => setShowAdd(true)}
         >
           <Plus className="h-3.5 w-3.5" />
-        </PanelIconButton>
+        </IconButton>
       </div>
 
       <p className="text-xs text-muted-foreground">

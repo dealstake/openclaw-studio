@@ -3,7 +3,7 @@
 import React, { type ReactNode } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
-import { PanelIconButton } from "@/components/PanelIconButton";
+import { IconButton } from "@/components/IconButton";
 import { sectionLabelClass } from "@/components/SectionLabel";
 
 interface ManagementDrawerProps {
@@ -52,9 +52,9 @@ export const ManagementDrawer = React.memo(function ManagementDrawer({
               {title}
             </Dialog.Title>
             <Dialog.Close asChild>
-              <PanelIconButton aria-label="Close panel" className="min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0">
+              <IconButton aria-label="Close panel" className="min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0">
                 <X className="h-3.5 w-3.5" />
-              </PanelIconButton>
+              </IconButton>
             </Dialog.Close>
           </div>
 
