@@ -73,6 +73,12 @@ function rowToItem(row: Record<string, unknown>): PersonaListItem {
 // Hook
 // ---------------------------------------------------------------------------
 
+/**
+ * @deprecated Use AgentStore for persona data instead. Persona metadata is
+ * now merged into AgentState during hydration (see useLoadAgents). This hook
+ * is kept for backward compat during the Agent↔Persona Unification migration
+ * and will be removed in Phase 6.
+ */
 export function usePersonas(agentId: string | null, status: GatewayStatus) {
   const [personas, setPersonas] = useState<PersonaListItem[]>([]);
   const [loading, setLoading] = useState(false);

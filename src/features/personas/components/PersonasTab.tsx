@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { Search, Users, Plus } from "lucide-react";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { cn } from "@/lib/utils";
 import { ErrorBanner } from "@/components/ErrorBanner";
 import { usePersonas, type PersonaStatusFilter, type PersonaListItem } from "../hooks/usePersonas";
 import { PersonaCard } from "./PersonaCard";
+import { PersonaDetailModal } from "./PersonaDetailModal";
 import { PracticeSessionModal } from "./PracticeSessionModal";
 import { KnowledgePanel } from "./KnowledgePanel";
 import { TemplateBrowserModal } from "./TemplateBrowserModal";
@@ -14,6 +15,8 @@ import type { PersonaTemplate } from "../lib/templateTypes";
 import type { PracticeModeType } from "../lib/personaTypes";
 import type { OverallPreflightStatus } from "../lib/preflightTypes";
 import { usePersonaHealth } from "../hooks/usePersonaHealth";
+import type { AgentState } from "@/features/agents/state/store";
+import type { GatewayModelChoice } from "@/lib/gateway/models";
 
 // ---------------------------------------------------------------------------
 // Filter config
@@ -46,6 +49,10 @@ export interface PersonasTabProps {
   client: GatewayClient;
   agentId: string | null;
   status: GatewayStatus;
+  /** All hydrated agents (passed to PersonaDetailModal) */
+  agents?: AgentState[];
+  /** Available models (passed to PersonaDetailModal) */
+  models?: GatewayModelChoice[];
   /** Callback to launch persona creation wizard (legacy — modal now self-managed) */
   onCreatePersona?: () => void;
   /** Called when user selects a template → should start inline wizard */
@@ -56,6 +63,8 @@ export const PersonasTab = React.memo(function PersonasTab({
   client,
   agentId,
   status,
+  agents = [],
+  models,
   onCreatePersona,
   onSelectTemplate,
 }: PersonasTabProps) {
@@ -101,9 +110,15 @@ export const PersonasTab = React.memo(function PersonasTab({
     [onSelectTemplate],
   );
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleSelect = useCallback((_persona: PersonaListItem) => {
-    // Future: open persona detail sheet
+  // Detail modal state
+  const [detailPersonaId, setDetailPersonaId] = useState<string | null>(null);
+  const detailAgent = useMemo(
+    () => agents.find((a) => a.agentId === detailPersonaId) ?? null,
+    [agents, detailPersonaId],
+  );
+
+  const handleSelect = useCallback((persona: PersonaListItem) => {
+    setDetailPersonaId(persona.personaId);
   }, []);
 
   const handlePractice = useCallback((persona: PersonaListItem) => {
@@ -293,6 +308,17 @@ export const PersonasTab = React.memo(function PersonasTab({
         open={templateBrowserOpen}
         onOpenChange={setTemplateBrowserOpen}
         onSelectTemplate={handleSelectTemplate}
+      />
+
+      {/* Persona detail side sheet */}
+      <PersonaDetailModal
+        open={detailPersonaId !== null}
+        onOpenChange={(open) => { if (!open) setDetailPersonaId(null); }}
+        agent={detailAgent}
+        agents={agents}
+        client={client}
+        status={status}
+        models={models}
       />
     </div>
   );

@@ -2,6 +2,7 @@
 
 import { memo } from "react";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
+import { useAgentState } from "@/features/agents/state/store";
 import { PersonasTab } from "./PersonasTab";
 
 export interface PersonasPanelProps {
@@ -19,9 +20,16 @@ export const PersonasPanel = memo(function PersonasPanel({
   agentId,
   status,
 }: PersonasPanelProps) {
+  const { state } = useAgentState();
+
   return (
     <div className="flex h-full flex-col">
-      <PersonasTab client={client} agentId={agentId} status={status} />
+      <PersonasTab
+        client={client}
+        agentId={agentId}
+        status={status}
+        agents={state.agents}
+      />
     </div>
   );
 });
