@@ -887,6 +887,7 @@ export function useStudioOrchestrator() {
     onThinkingTracesToggle: (enabled: boolean) => { if (settingsAgent) handleThinkingTracesToggle(settingsAgent.agentId, enabled); },
     onAutonomyChange: (level: Parameters<typeof handleAutonomyChange>[1]) => { if (settingsAgent) void handleAutonomyChange(settingsAgent.agentId, level); },
     onNavigateToTasks: () => layout.setContextTab("tasks"),
+    onNavigateToCredentials: () => layout.setManagementView("credentials"),
     onTranscriptClick: handleDrawerTranscriptClick,
     onStartCredentialWizard: () => {
       layout.setManagementView(null);

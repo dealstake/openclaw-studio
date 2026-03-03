@@ -51,6 +51,7 @@ function defaultContext(overrides: Partial<ManagementPanelContextValue> = {}): M
     onThinkingTracesToggle: vi.fn(),
     onAutonomyChange: vi.fn(),
     onNavigateToTasks: vi.fn(),
+    onNavigateToCredentials: vi.fn(),
     onStartCredentialWizard: null,
     ...overrides,
   };

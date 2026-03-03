@@ -9,6 +9,7 @@ import { ErrorBanner } from "@/components/ErrorBanner";
 import { PanelIconButton } from "@/components/PanelIconButton";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { useAuthProfiles } from "@/features/models/hooks/useAuthProfiles";
+import { useManagementPanel } from "@/components/management/ManagementPanelContext";
 import type { AuthProfileInfo } from "@/features/models/lib/types";
 import { AddKeyDialog } from "./AddKeyDialog";
 
@@ -132,6 +133,7 @@ const BrainKeyCard = memo(function BrainKeyCard({
 export const BrainKeysSection = memo(function BrainKeysSection({
   agentId,
 }: BrainKeysSectionProps) {
+  const { onNavigateToCredentials } = useManagementPanel();
   const { profiles, loading, error, refresh, addKey, removeKey } =
     useAuthProfiles(agentId);
   const [showAdd, setShowAdd] = useState(false);
@@ -188,7 +190,14 @@ export const BrainKeysSection = memo(function BrainKeysSection({
 
       <p className="text-xs text-muted-foreground">
         Authentication keys for your agent&apos;s primary brain provider.
-        Multiple keys enable automatic failover.
+        Multiple keys enable automatic failover.{" "}
+        <button
+          type="button"
+          onClick={onNavigateToCredentials}
+          className="inline text-xs text-brand-gold/80 hover:text-brand-gold underline-offset-2 hover:underline transition-colors"
+        >
+          Manage service credentials →
+        </button>
       </p>
 
       {error && <ErrorBanner message={error} />}
@@ -198,6 +207,7 @@ export const BrainKeysSection = memo(function BrainKeysSection({
           icon={KeyRound}
           title="No API keys added yet"
           description="Keys are optional — your gateway may already have provider credentials configured."
+          action={{ label: "Open Credentials", onClick: onNavigateToCredentials }}
         />
       )}
 

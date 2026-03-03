@@ -29,6 +29,7 @@ export interface ManagementPanelContextValue {
   onThinkingTracesToggle: (enabled: boolean) => void;
   onAutonomyChange: (level: AutonomyLevel) => void;
   onNavigateToTasks: () => void;
+  onNavigateToCredentials: () => void;
   onStartCredentialWizard: (() => void) | null;
 }
 
@@ -53,7 +54,7 @@ export function ManagementPanelProvider({ children, ...value }: ManagementPanelP
     value.channelsSnapshot, value.channelsLoading, value.channelsError, value.onRefreshChannels,
     value.settingsAgent, value.onCloseSettings, value.onRenameAgent,
     value.onNewSession, value.onDeleteAgent, value.onToolCallingToggle,
-    value.onThinkingTracesToggle, value.onAutonomyChange, value.onNavigateToTasks,
+    value.onThinkingTracesToggle, value.onAutonomyChange, value.onNavigateToTasks, value.onNavigateToCredentials,
     value.onStartCredentialWizard,
   ]);
 
