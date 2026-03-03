@@ -112,12 +112,40 @@ export const PersonasTab = React.memo(function PersonasTab({
 
   // Detail modal state
   const [detailPersonaId, setDetailPersonaId] = useState<string | null>(null);
-  const detailAgent = useMemo(
-    () => agents.find((a) => a.agentId === detailPersonaId) ?? null,
-    [agents, detailPersonaId],
-  );
+  const detailAgent = useMemo(() => {
+    if (!detailPersonaId) return null;
+    // Try matching by agentId first (registered agents)
+    const byAgent = agents.find((a) => a.agentId === detailPersonaId);
+    if (byAgent) return byAgent;
+    // For Draft personas not yet registered as agents, build a synthetic AgentState
+    const persona = allPersonas.find((p) => p.personaId === detailPersonaId);
+    if (!persona) return null;
+    return {
+      agentId: persona.personaId,
+      name: persona.displayName,
+      sessionKey: "",
+      avatarSeed: persona.displayName,
+      avatarUrl: null,
+      model: null,
+      thinkingLevel: null,
+      autonomyLevel: "manual" as const,
+      group: null,
+      tags: [],
+      isMainAgent: false,
+      personaStatus: persona.status,
+      personaCategory: persona.category,
+      roleDescription: null,
+      templateKey: persona.templateKey,
+      optimizationGoals: persona.optimizationGoals,
+      practiceCount: persona.practiceCount,
+      toolCallingEnabled: true,
+      showThinkingTraces: false,
+    } satisfies Partial<AgentState> as unknown as AgentState;
+  }, [agents, allPersonas, detailPersonaId]);
 
   const handleSelect = useCallback((persona: PersonaListItem) => {
+    // personaId may match agentId if the persona was registered as an agent,
+    // otherwise fall through gracefully (detail modal handles null agent)
     setDetailPersonaId(persona.personaId);
   }, []);
 
