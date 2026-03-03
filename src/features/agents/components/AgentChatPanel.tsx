@@ -289,7 +289,7 @@ export const AgentChatPanel = memo(function AgentChatPanel({
     <div data-agent-panel className="group fade-up relative flex h-full w-full min-w-0 flex-col overflow-hidden bg-surface-sunken">
       {/* Context warning banner — slim pill at 80%+ utilization */}
       {typeof tokenUsed === "number" && tokenLimit && tokenLimit > 0 && tokenUsed / tokenLimit >= 0.8 && (
-        <div className="mx-auto mt-2 flex w-full max-w-3xl items-center gap-2 rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-3 py-1.5 text-xs sm:px-6">
+        <div className="mx-auto mt-2 flex w-full max-w-3xl 2xl:max-w-4xl items-center gap-2 rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-3 py-1.5 text-xs sm:px-6">
           <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-yellow-500" />
           <span className="text-yellow-200/90">
             Approaching context limit
@@ -302,7 +302,7 @@ export const AgentChatPanel = memo(function AgentChatPanel({
 
       {/* Session continuation banner — slim pill */}
       {sessionContinued && (
-        <div className="mx-auto mt-2 flex w-full max-w-3xl items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs sm:px-6">
+        <div className="mx-auto mt-2 flex w-full max-w-3xl 2xl:max-w-4xl items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs sm:px-6">
           <Zap className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
           <span className="text-emerald-200/90">
             Continuing from previous session
@@ -358,7 +358,7 @@ export const AgentChatPanel = memo(function AgentChatPanel({
               ) : viewingSessionHistory.length === 0 ? (
                 <EmptyStatePanel title="No messages in this session." compact className="p-3 text-xs" />
               ) : (
-                <div className="mx-auto flex w-full min-w-0 max-w-3xl flex-col gap-4 px-5 text-sm text-foreground sm:px-8 md:px-12">
+                <div className="mx-auto flex w-full min-w-0 max-w-3xl 2xl:max-w-4xl flex-col gap-4 px-5 text-sm text-foreground sm:px-8 md:px-12">
                   <AgentChatView
                     parts={viewingSessionHistory}
                     streaming={false}
@@ -370,7 +370,7 @@ export const AgentChatPanel = memo(function AgentChatPanel({
         ) : isWizardActive && wizard ? (
           /* Wizard mode — show wizard messages inline */
           <div className="h-full overflow-y-auto overflow-x-hidden pt-3 pb-28 sm:pt-4 sm:pb-32">
-            <div className="mx-auto flex w-full min-w-0 max-w-3xl flex-col gap-5 px-4 text-sm leading-relaxed text-foreground sm:px-8 md:px-12">
+            <div className="mx-auto flex w-full min-w-0 max-w-3xl 2xl:max-w-4xl flex-col gap-5 px-4 text-sm leading-relaxed text-foreground sm:px-8 md:px-12">
               {/* Show existing main chat messages (dimmed) */}
               {agent.messageParts.length > 0 && (
                 <div className="pointer-events-none opacity-40 blur-[0.5px] transition-all duration-300">

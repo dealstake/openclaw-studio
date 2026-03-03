@@ -47,7 +47,7 @@ export const AgentChatTranscript = memo(function AgentChatTranscript({
           style={{ paddingTop: `calc(0.75rem + env(safe-area-inset-top, 0px))`, scrollPaddingTop: `calc(0.75rem + env(safe-area-inset-top, 0px))` }}
           {...scrollContainerProps}
         >
-          <div className="mx-auto flex w-full min-w-0 max-w-3xl flex-col gap-5 px-4 text-sm leading-relaxed text-foreground sm:px-8 md:px-12">
+          <div className="mx-auto flex w-full min-w-0 max-w-3xl 2xl:max-w-4xl flex-col gap-5 px-4 text-sm leading-relaxed text-foreground sm:px-8 md:px-12">
             <AgentChatView
               parts={messageParts}
               streaming={streaming}

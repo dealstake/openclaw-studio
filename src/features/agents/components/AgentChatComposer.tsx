@@ -373,7 +373,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
       {/* Gradient fade */}
       <div className="pointer-events-none h-4 sm:h-8 bg-gradient-to-t from-background to-transparent" />
 
-      <div className="mx-auto max-w-3xl">
+      <div className="mx-auto max-w-3xl 2xl:max-w-4xl">
         {/* Wizard banner — floats above the split row */}
         {wizardType && wizardTheme && onWizardExit && (
           <div className="mb-2 rounded-2xl border border-border/50 glass-panel dark:bg-background/40">
