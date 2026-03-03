@@ -29,12 +29,11 @@ export async function GET(request: Request) {
       let baselines = baselineRepo.queryBaselines(db, agentId);
 
       // Auto-recompute if baselines are stale (>24h old) or missing
+      // queryBaselines sorts by computedAt desc — check newest only
       const staleThreshold = Date.now() - 24 * 60 * 60 * 1000;
       const isStale =
         baselines.length === 0 ||
-        baselines.every(
-          (b) => new Date(b.computedAt).getTime() < staleThreshold,
-        );
+        new Date(baselines[0].computedAt).getTime() < staleThreshold;
       if (isStale) {
         const result = baselineRepo.computeAndStoreBaselines(db, agentId, 7);
         baselines = result.baselines;

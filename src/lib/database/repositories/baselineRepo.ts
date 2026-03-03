@@ -7,7 +7,7 @@
  *  - Computing and storing baselines from the activity_events table
  */
 
-import { eq, gte, desc } from "drizzle-orm";
+import { and, eq, gte, desc } from "drizzle-orm";
 
 import { agentBaselines, activityEvents } from "../schema";
 import type { StudioDb } from "../index";
@@ -147,13 +147,16 @@ export function computeAndStoreBaselines(
   const cutoffMs = Date.now() - windowDays * 24 * 60 * 60 * 1000;
   const cutoffIso = new Date(cutoffMs).toISOString();
 
-  // Fetch events within the rolling window
-  // Filter to the agent (via agentId column) or events where taskId is non-empty
-  // (older events may not have agentId populated — we include them all)
+  // Fetch events within the rolling window, scoped to this agent
   const rows = db
     .select()
     .from(activityEvents)
-    .where(gte(activityEvents.timestamp, cutoffIso))
+    .where(
+      and(
+        gte(activityEvents.timestamp, cutoffIso),
+        eq(activityEvents.agentId, agentId),
+      ),
+    )
     .orderBy(desc(activityEvents.timestamp))
     .all();
 
