@@ -7,7 +7,7 @@
  * audio/mpeg stream in the browser.
  */
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ResolvedVoiceSettings } from "../lib/voiceTypes";
 
 /** Options passed to speak() — voice settings from the settings hierarchy */
@@ -75,6 +75,11 @@ export function useVoiceOutput(): UseVoiceOutputReturn {
     setIsPlaying(false);
     setIsLoading(false);
   }, []);
+
+  // Cleanup on unmount — abort pending fetch + stop audio
+  useEffect(() => {
+    return stop;
+  }, [stop]);
 
   const speak = useCallback(
     async (text: string, options?: SpeakOptions) => {

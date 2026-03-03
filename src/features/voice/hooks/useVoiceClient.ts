@@ -161,17 +161,18 @@ export function useVoiceClient(): UseVoiceClientReturn {
         // Will trigger onDisconnect → another attemptReconnect if under limit
       }
     }, delay);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [scribe]);
 
-  // Cleanup reconnect timer on unmount
+  // Cleanup connection + reconnect timer on unmount
   useEffect(() => {
     return () => {
+      intentionalDisconnectRef.current = true;
       if (reconnectTimerRef.current) {
         clearTimeout(reconnectTimerRef.current);
       }
+      scribe.disconnect();
     };
-  }, []);
+  }, [scribe]);
 
   const startListening = useCallback(async () => {
     if (scribe.isConnected || scribe.status === "connecting") return;
