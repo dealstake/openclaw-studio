@@ -14,6 +14,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import type { EventFrame } from "@/lib/gateway/types";
 import type { PracticeModeType } from "../lib/personaTypes";
+import type { ChatAttachment } from "@/features/agents/hooks/useFileUpload";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -39,8 +40,8 @@ export interface UsePracticeChatReturn {
   error: string | null;
   /** Start the practice session */
   start: () => Promise<void>;
-  /** Send a user message */
-  send: (text: string) => Promise<void>;
+  /** Send a user message (with optional attachments) */
+  send: (text: string, attachments?: ChatAttachment[]) => Promise<void>;
   /** End the session and request evaluation */
   evaluate: () => Promise<void>;
   /** Clean up the session */
@@ -259,7 +260,7 @@ export function usePracticeChat({
   // ── Send ───────────────────────────────────────────────────────────
 
   const send = useCallback(
-    async (text: string) => {
+    async (text: string, attachments?: ChatAttachment[]) => {
       if (!isActive || !sessionKeyRef.current) return;
       setError(null);
       streamBufferRef.current = "";
@@ -274,12 +275,23 @@ export function usePracticeChat({
       setIsStreaming(true);
 
       try {
-        await client.call("chat.send", {
+        const payload: Record<string, unknown> = {
           sessionKey: sessionKeyRef.current,
           message: text,
           deliver: false,
           idempotencyKey: crypto.randomUUID(),
-        });
+        };
+
+        // Attach files if provided
+        if (attachments && attachments.length > 0) {
+          payload.attachments = attachments.map((a) => ({
+            mimeType: a.mimeType,
+            fileName: a.fileName,
+            content: a.content,
+          }));
+        }
+
+        await client.call("chat.send", payload);
       } catch (err) {
         setError(
           err instanceof Error ? err.message : "Failed to send message.",

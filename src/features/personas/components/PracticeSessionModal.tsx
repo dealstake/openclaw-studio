@@ -44,6 +44,9 @@ import { VoiceInputControl } from "@/features/voice/components/VoiceControls";
 import type { SpeechInputData } from "@/components/ui/speech-input";
 import type { PersonaVoiceConfig } from "@/features/voice/lib/voiceTypes";
 import { MessageBubble } from "@/components/chat/MessageBubble";
+import { useFileUpload } from "@/features/agents/hooks/useFileUpload";
+import { ChatAttachmentPreview } from "@/features/agents/components/ChatAttachmentPreview";
+import { Paperclip } from "lucide-react";
 
 // ---------------------------------------------------------------------------
 // Mode icons
@@ -378,6 +381,11 @@ export const PracticeSessionModal = React.memo(function PracticeSessionModal({
     setInput("");
   }, []);
 
+  // File upload
+  const { files, addFiles, removeFile, clearFiles, getAttachments, hasFiles, isEncoding, acceptString } = useFileUpload();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
+
   // Chat input
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -433,10 +441,12 @@ export const PracticeSessionModal = React.memo(function PracticeSessionModal({
         void practiceChat.cleanup();
         voiceOutput.stop();
         setInput("");
+        clearFiles();
+        setFileError(null);
       }
       onOpenChange(nextOpen);
     },
-    [onOpenChange, reset, abandonSession, resetHealth, practiceChat, voiceOutput, session?.status],
+    [onOpenChange, reset, abandonSession, resetHealth, practiceChat, voiceOutput, session?.status, clearFiles],
   );
 
   const handleStart = useCallback(() => {
@@ -456,15 +466,17 @@ export const PracticeSessionModal = React.memo(function PracticeSessionModal({
 
   const handleSend = useCallback(() => {
     const trimmed = input.trim();
-    if (!trimmed || !session || session.status !== "active") return;
+    const attachments = getAttachments();
+    if ((!trimmed && attachments.length === 0) || !session || session.status !== "active") return;
 
     // Add to local transcript
-    addUserMessage(trimmed);
+    addUserMessage(trimmed || "(attached files)");
     setInput("");
 
-    // Send to real AI via gateway
-    void practiceChat.send(trimmed);
-  }, [input, session, addUserMessage, practiceChat]);
+    // Send to real AI via gateway (with attachments)
+    void practiceChat.send(trimmed || "(attached files)", attachments.length > 0 ? attachments : undefined);
+    clearFiles();
+  }, [input, session, addUserMessage, practiceChat, getAttachments, clearFiles]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -662,6 +674,37 @@ export const PracticeSessionModal = React.memo(function PracticeSessionModal({
                 )}
               </div>
 
+              {/* Attachment preview + errors */}
+              {(hasFiles || fileError) && (
+                <div className="border-t border-border/30 px-1 pt-2">
+                  {fileError && (
+                    <p className="mb-1 text-xs text-destructive">{fileError}</p>
+                  )}
+                  {hasFiles && <ChatAttachmentPreview files={files} onRemove={removeFile} />}
+                </div>
+              )}
+
+              {/* Hidden file input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                className="hidden"
+                accept={acceptString}
+                multiple
+                onChange={(e) => {
+                  const selected = Array.from(e.target.files ?? []);
+                  if (selected.length > 0) {
+                    void addFiles(selected).then((errs) => {
+                      if (errs && errs.length > 0) {
+                        setFileError(errs[0]);
+                        setTimeout(() => setFileError(null), 4000);
+                      }
+                    });
+                  }
+                  e.target.value = "";
+                }}
+              />
+
               {/* Input bar */}
               <div className="flex items-center gap-2 border-t border-border/30 pt-3">
                 <VoiceInputControl
@@ -669,12 +712,44 @@ export const PracticeSessionModal = React.memo(function PracticeSessionModal({
                   onStop={handleVoiceStop}
                   onCancel={handleVoiceCancel}
                 />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  aria-label="Attach file"
+                  className={cn(
+                    "flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg transition-colors",
+                    "text-muted-foreground hover:text-foreground hover:bg-muted/50",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
+                  )}
+                >
+                  <Paperclip className="h-4 w-4" />
+                </button>
                 <input
                   ref={inputRef}
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
+                  onPaste={(e) => {
+                    const items = e.clipboardData?.items;
+                    if (!items) return;
+                    const imageFiles: File[] = [];
+                    for (const item of Array.from(items)) {
+                      if (item.type.startsWith("image/")) {
+                        const file = item.getAsFile();
+                        if (file) imageFiles.push(file);
+                      }
+                    }
+                    if (imageFiles.length > 0) {
+                      e.preventDefault();
+                      void addFiles(imageFiles).then((errs) => {
+                        if (errs && errs.length > 0) {
+                          setFileError(errs[0]);
+                          setTimeout(() => setFileError(null), 4000);
+                        }
+                      });
+                    }
+                  }}
                   placeholder="Type or speak your response…"
                   aria-label="Practice message input"
                   className={cn(
@@ -686,12 +761,12 @@ export const PracticeSessionModal = React.memo(function PracticeSessionModal({
                 <button
                   type="button"
                   onClick={handleSend}
-                  disabled={!input.trim() || practiceChat.isStreaming}
+                  disabled={(!input.trim() && !hasFiles) || practiceChat.isStreaming || isEncoding}
                   aria-label="Send message"
                   className={cn(
                     "flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg transition-colors",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
-                    input.trim() && !practiceChat.isStreaming
+                    (input.trim() || hasFiles) && !practiceChat.isStreaming && !isEncoding
                       ? "bg-primary text-primary-foreground hover:bg-primary/90"
                       : "bg-muted text-muted-foreground",
                   )}
