@@ -360,21 +360,21 @@ export const AgentChatPanel = memo(function AgentChatPanel({
                   </span>
                 </div>
               ) : viewingSessionError ? (
-                <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
+                <div role="alert" className="flex flex-col items-center justify-center gap-3 py-12 text-center">
                   <AlertTriangle className="h-5 w-5 text-destructive/70" />
                   <p className="font-sans text-xs text-muted-foreground">
                     Unable to load this session&apos;s transcript.
                   </p>
-                  <p className="max-w-xs font-sans text-[10px] text-muted-foreground/60">
+                  <p className="max-w-xs font-sans text-xs text-muted-foreground/60">
                     {viewingSessionError}
                   </p>
                   {onRetryTranscript && (
                     <button
                       type="button"
                       onClick={onRetryTranscript}
-                      className="mt-1 flex items-center gap-1.5 rounded-md border border-border/50 px-3 py-1.5 font-sans text-xs font-medium text-foreground transition hover:bg-muted/50"
+                      className="mt-4 flex h-10 min-h-[44px] items-center gap-2 rounded-lg border border-border/50 px-4 py-2 font-sans text-sm font-medium text-foreground transition hover:bg-muted/50"
                     >
-                      <RefreshCw className="h-3 w-3" />
+                      <RefreshCw className="h-3.5 w-3.5" />
                       Retry
                     </button>
                   )}
