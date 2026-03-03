@@ -73,7 +73,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { agentId, personaId, displayName, category, templateKey, optimizationGoals } = body;
+    const { agentId, personaId, displayName, category, templateKey, optimizationGoals, toolProfile } = body;
 
     const validation = validateAgentId(agentId);
     if (!validation.ok) return validation.error;
@@ -111,6 +111,7 @@ export async function POST(request: Request) {
           createdAt: new Date().toISOString(),
           lastTrainedAt: null,
           practiceCount: 0,
+          toolProfile: toolProfile ?? "minimal",
           voiceProvider: "elevenlabs",
           voiceId: "Rachel",
           voiceModelId: "eleven_flash_v2_5",
@@ -187,6 +188,7 @@ export async function PATCH(request: Request) {
           "metricsJson", "practiceCount", "lastTrainedAt",
           "voiceProvider", "voiceId", "voiceModelId",
           "voiceStability", "voiceClarity", "voiceStyle",
+          "toolProfile",
         ] as const;
         const updateFields: Record<string, unknown> = {};
 

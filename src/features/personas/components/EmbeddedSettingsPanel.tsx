@@ -8,6 +8,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import type { AgentState } from "@/features/agents/state/store";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { setAgentAutonomyLevel, type AutonomyLevel } from "@/features/agents/lib/autonomyService";
+import { ToolProfileSelector } from "./ToolProfileSelector";
+import type { ToolProfile } from "../lib/personaTypes";
 
 // ---------------------------------------------------------------------------
 // Lightweight settings panel for embedding in PersonaDetailModal.
@@ -29,6 +31,23 @@ export const EmbeddedSettingsPanel = memo(function EmbeddedSettingsPanel({
   const [autonomyLevel, setAutonomyLevel] = useState<AutonomyLevel>(
     agent.autonomyLevel ?? "supervised",
   );
+
+  // Tool profile — stored in personas DB, fetched on mount
+  const [toolProfile, setToolProfile] = useState<ToolProfile>("minimal");
+  const [toolProfileLoaded, setToolProfileLoaded] = useState(false);
+
+  React.useEffect(() => {
+    fetch(`/api/workspace/personas?agentId=${encodeURIComponent(agent.agentId)}`)
+      .then((r) => r.json())
+      .then((data: { personas?: Array<{ toolProfile?: string }> }) => {
+        const persona = data.personas?.[0];
+        if (persona?.toolProfile) {
+          setToolProfile(persona.toolProfile as ToolProfile);
+        }
+        setToolProfileLoaded(true);
+      })
+      .catch(() => setToolProfileLoaded(true));
+  }, [agent.agentId]);
 
   const handleAutonomyChange = useCallback(
     async (level: AutonomyLevel) => {
@@ -88,6 +107,33 @@ export const EmbeddedSettingsPanel = memo(function EmbeddedSettingsPanel({
             onChange={handleAutonomyChange}
           />
         </section>
+
+        {/* Tool Profile */}
+        {toolProfileLoaded && (
+          <section className="flex flex-col gap-2">
+            <SectionLabel>Tool Profile</SectionLabel>
+            <ToolProfileSelector
+              value={toolProfile}
+              onChange={async (profile) => {
+                const prev = toolProfile;
+                setToolProfile(profile);
+                try {
+                  await fetch("/api/workspace/personas", {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      agentId: agent.agentId,
+                      personaId: agent.agentId,
+                      toolProfile: profile,
+                    }),
+                  });
+                } catch {
+                  setToolProfile(prev);
+                }
+              }}
+            />
+          </section>
+        )}
 
         {/* Guardrails */}
         <section className="flex flex-col gap-2">

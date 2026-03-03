@@ -3,7 +3,7 @@
  * Used by both the agent wizard and persona builder.
  */
 
-import type { PersonaConfig } from "@/features/personas/lib/personaTypes";
+import type { PersonaConfig, ToolProfile } from "@/features/personas/lib/personaTypes";
 
 // ---------------------------------------------------------------------------
 // Generic Templates (fallbacks when AI doesn't generate custom content)
@@ -120,6 +120,7 @@ export function generatePersonaMd(config: PersonaConfig): string {
 - **Template:** ${config.templateKey ?? "from-scratch"}
 - **Category:** ${config.category}
 - **Practice Mode:** ${config.practiceModeType}
+- **Tool Profile:** ${config.toolProfile ?? "minimal"}
 - **Status:** ${config.status}
 
 ## Optimization Goals
@@ -134,6 +135,75 @@ _No practice sessions yet._
 }
 
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Tool Profile → TOOLS.md
+// ---------------------------------------------------------------------------
+
+const TOOL_PROFILE_CONTENT: Record<ToolProfile, string> = {
+  full: `# TOOLS.md — Tool Access
+
+## Available Tools
+All tools are available. Use whatever tools are needed to accomplish the task.
+`,
+  research: `# TOOLS.md — Tool Access (Research Profile)
+
+## Available Tools
+- **web_search** — Search the web for information
+- **web_fetch** — Fetch and extract content from URLs
+- **read** — Read file contents from the workspace
+- **memory_search** / **memory_get** — Search and read memory files
+
+## Restricted
+Other tools (exec, write, edit, message, browser, etc.) are NOT available for this role.
+Focus on research, analysis, and information gathering.
+`,
+  development: `# TOOLS.md — Tool Access (Development Profile)
+
+## Available Tools
+- **exec** — Run shell commands
+- **read** — Read file contents
+- **write** — Create or overwrite files
+- **edit** — Make precise edits to files
+- **browser** — Control web browser for testing
+- **web_search** / **web_fetch** — Search and fetch web content
+- **memory_search** / **memory_get** — Search and read memory files
+
+## Restricted
+Messaging tools (message, tts) are NOT available for this role.
+Focus on code, file operations, and technical tasks.
+`,
+  communication: `# TOOLS.md — Tool Access (Communication Profile)
+
+## Available Tools
+- **message** — Send messages via configured channels
+- **tts** — Convert text to speech
+- **web_search** / **web_fetch** — Search and fetch web content for context
+- **read** — Read file contents from the workspace
+- **memory_search** / **memory_get** — Search and read memory files
+
+## Restricted
+Code execution tools (exec, write, edit, browser) are NOT available for this role.
+Focus on outbound communication and messaging.
+`,
+  minimal: `# TOOLS.md — Tool Access (Minimal Profile)
+
+## Available Tools
+- **memory_search** / **memory_get** — Search and read memory files
+
+## Note
+This role operates in pure conversation mode. No external tools are available.
+Focus on coaching, practice, and conversational skill-building.
+`,
+};
+
+/**
+ * Generate TOOLS.md based on the persona's tool profile.
+ */
+export function generatePersonaToolsMd(config: PersonaConfig): string {
+  const profile = config.toolProfile ?? "minimal";
+  return TOOL_PROFILE_CONTENT[profile];
+}
+
 // Full Brain File Set
 // ---------------------------------------------------------------------------
 
@@ -150,6 +220,7 @@ export function generateDefaultBrainFiles(
     "AGENTS.md": generatePersonaAgentsMd(config),
     "IDENTITY.md": generatePersonaIdentityMd(config),
     "USER.md": generatePersonaUserMd(),
+    "TOOLS.md": generatePersonaToolsMd(config),
     "PERSONA.md": generatePersonaMd(config),
     "MEMORY.md": `# MEMORY.md — ${config.displayName}\n\n_Created ${new Date().toISOString().split("T")[0]}. No memories yet._\n`,
   };

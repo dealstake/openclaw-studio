@@ -231,6 +231,7 @@ export function configToRow(config: PersonaConfig): PersonaRow {
     created_at: config.createdAt,
     last_trained_at: config.lastTrainedAt,
     practice_count: config.practiceCount,
+    tool_profile: config.toolProfile ?? "minimal",
     voice_provider: config.voiceConfig?.voiceId ? "elevenlabs" : null,
     voice_id: config.voiceConfig?.voiceId ?? null,
     voice_model_id: config.voiceConfig?.modelId ?? null,
@@ -246,7 +247,7 @@ export function configToRow(config: PersonaConfig): PersonaRow {
 export function rowToPartialConfig(row: PersonaRow): Pick<
   PersonaConfig,
   "personaId" | "displayName" | "templateKey" | "category" | "status" |
-  "optimizationGoals" | "createdAt" | "lastTrainedAt" | "practiceCount"
+  "optimizationGoals" | "toolProfile" | "createdAt" | "lastTrainedAt" | "practiceCount"
 > {
   let goals: string[] = [];
   try {
@@ -262,6 +263,7 @@ export function rowToPartialConfig(row: PersonaRow): Pick<
     category: row.category,
     status: row.status,
     optimizationGoals: goals,
+    toolProfile: (row.tool_profile as PersonaConfig["toolProfile"]) ?? "minimal",
     createdAt: row.created_at,
     lastTrainedAt: row.last_trained_at,
     practiceCount: row.practice_count,

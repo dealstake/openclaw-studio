@@ -26,6 +26,35 @@ export type PersonaStatus =
   | "paused"      // Temporarily disabled
   | "archived";   // Soft-deleted
 
+/**
+ * Tool profile — controls which gateway tools a persona agent may use.
+ * Mapped to a TOOLS.md that instructs the LLM on available tools.
+ */
+export type ToolProfile =
+  | "full"           // All tools (same as parent agent)
+  | "research"       // web_search, web_fetch, read (internet + file reading)
+  | "development"    // exec, read, write, edit, browser (coding tasks)
+  | "communication"  // message, tts (outbound messaging)
+  | "minimal";       // No tools — pure conversational practice
+
+/** Human-readable labels for tool profiles */
+export const TOOL_PROFILE_LABELS: Record<ToolProfile, string> = {
+  full: "Full Access",
+  research: "Research Only",
+  development: "Development",
+  communication: "Communication",
+  minimal: "Minimal (No Tools)",
+};
+
+/** Description of each tool profile for UI tooltips */
+export const TOOL_PROFILE_DESCRIPTIONS: Record<ToolProfile, string> = {
+  full: "All tools available — web search, code execution, file editing, messaging, and more.",
+  research: "Web search and file reading — for roles that need internet access and document review.",
+  development: "Code execution, file editing, and browser — for technical and development roles.",
+  communication: "Messaging and text-to-speech — for outbound communication roles.",
+  minimal: "No tools — pure conversation for practice and coaching scenarios.",
+};
+
 /** Practice mode types — each maps to a specialized prompt + scoring rubric */
 export type PracticeModeType =
   | "mock-call"         // Cold Caller, SDR, Account Exec
@@ -132,6 +161,7 @@ export interface PersonaBrainFiles {
   "AGENTS.md": string;
   "IDENTITY.md": string;
   "USER.md": string;
+  "TOOLS.md": string;
   "PERSONA.md": string;
   "HEARTBEAT.md"?: string;
   "MEMORY.md"?: string;
@@ -167,6 +197,9 @@ export interface PersonaConfig {
   practiceModeType: PracticeModeType;
   /** Scoring dimensions for practice */
   scoringDimensions: ScoringDimension[];
+
+  /** Tool profile — controls which gateway tools the persona may use */
+  toolProfile: ToolProfile;
 
   /** Skills this persona needs */
   skillRequirements: SkillRequirement[];
@@ -241,6 +274,8 @@ export interface PersonaRow {
   created_at: string;
   last_trained_at: string | null;
   practice_count: number;
+  // Tool profile
+  tool_profile: string | null;
   // Voice config (Phase 6)
   voice_provider: string | null;
   voice_id: string | null;

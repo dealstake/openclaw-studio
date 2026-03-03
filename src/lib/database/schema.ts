@@ -145,6 +145,8 @@ export const personas = sqliteTable("personas", {
     .$defaultFn(() => new Date().toISOString()),
   lastTrainedAt: text("last_trained_at"),
   practiceCount: integer("practice_count").notNull().default(0),
+  // ── Tool profile ──
+  toolProfile: text("tool_profile").default("minimal"),  // 'full' | 'research' | 'development' | 'communication' | 'minimal'
   // ── Voice config (Phase 6: persona-agent unification) ──
   voiceProvider: text("voice_provider"),      // 'elevenlabs' | 'openai' | null
   voiceId: text("voice_id"),                  // e.g. 'Rachel'
