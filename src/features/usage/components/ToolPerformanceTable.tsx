@@ -8,9 +8,9 @@ import type { ToolMetric } from "@/features/usage/lib/toolMetrics";
 type SortKey = "toolName" | "invocations" | "errorRate" | "avgLatencyMs";
 
 function errorRateColor(rate: number): string {
-  if (rate < 0.05) return "text-emerald-400";
-  if (rate < 0.15) return "text-amber-400";
-  return "text-red-400";
+  if (rate < 0.05) return "text-emerald-600 dark:text-emerald-400";
+  if (rate < 0.15) return "text-amber-600 dark:text-amber-400";
+  return "text-red-600 dark:text-red-400";
 }
 
 function errorRateBg(rate: number): string {
@@ -76,12 +76,12 @@ export const ToolPerformanceTable = memo(function ToolPerformanceTable({
               <th
                 key={key}
                 scope="col"
-                className={`px-3 py-3 font-medium text-foreground/80 ${align}`}
+                className={`p-0 font-medium text-foreground/80 ${align}`}
                 aria-sort={sortKey === key ? (sortAsc ? "ascending" : "descending") : "none"}
               >
                 <button
                   type="button"
-                  className={`flex w-full items-center gap-0.5 bg-transparent border-0 p-0 font-medium text-inherit cursor-pointer select-none hover:text-foreground transition-colors ${align === "text-right" ? "justify-end" : "justify-start"}`}
+                  className={`flex w-full min-h-[44px] items-center gap-0.5 bg-transparent border-0 px-3 py-3 font-medium text-inherit cursor-pointer select-none hover:text-foreground transition-colors ${align === "text-right" ? "justify-end" : "justify-start"}`}
                   onClick={() => handleSort(key as SortKey)}
                 >
                   {label}{sortIndicator(key as SortKey)}

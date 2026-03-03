@@ -70,8 +70,12 @@ export function useVoiceSettings({
     loadedRef.current = true;
     let cancelled = false;
     const load = async () => {
-      const s = await settingsCoordinator.loadSettings();
-      if (!cancelled && s) setStudioSettings(s);
+      try {
+        const s = await settingsCoordinator.loadSettings();
+        if (!cancelled && s) setStudioSettings(s);
+      } catch {
+        // Silent fail — settings will use defaults (e.g., in test environments)
+      }
     };
     void load();
     return () => { cancelled = true; };
