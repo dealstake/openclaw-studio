@@ -9,6 +9,7 @@ import {
   BookOpen,
   Dumbbell,
   BarChart3,
+  Play,
 } from "lucide-react";
 import {
   SideSheet,
@@ -24,6 +25,10 @@ import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import type { GatewayModelChoice } from "@/lib/gateway/models";
 import { AgentBrainPanel } from "@/features/agents/components/AgentBrainPanel";
 import { EmbeddedSettingsPanel } from "./EmbeddedSettingsPanel";
+import { VoiceSettingsPanelConnected } from "@/features/voice/components/VoiceSettingsPanelConnected";
+import { KnowledgePanel } from "./KnowledgePanel";
+import { PracticeSessionModal } from "./PracticeSessionModal";
+import type { PracticeModeType } from "../lib/personaTypes";
 
 // ---------------------------------------------------------------------------
 // Tab definition
@@ -142,15 +147,118 @@ function OverviewTab({ agent }: { agent: AgentState }) {
 }
 
 // ---------------------------------------------------------------------------
-// Placeholder tab (for tabs not yet implemented)
+// All available practice modes
 // ---------------------------------------------------------------------------
 
-function PlaceholderTab({ label }: { label: string }) {
+const ALL_PRACTICE_MODES: PracticeModeType[] = [
+  "mock-call",
+  "task-delegation",
+  "ticket-simulation",
+  "content-review",
+  "interview",
+  "analysis",
+  "scenario",
+];
+
+// ---------------------------------------------------------------------------
+// Practice tab — shows launcher button; opens PracticeSessionModal as overlay
+// ---------------------------------------------------------------------------
+
+interface PracticeTabProps {
+  agent: AgentState;
+  client: GatewayClient;
+}
+
+function PracticeTab({ agent, client }: PracticeTabProps) {
+  const [practiceOpen, setPracticeOpen] = useState(false);
+
+  const handleOpen = useCallback(() => setPracticeOpen(true), []);
+  const handleOpenChange = useCallback((open: boolean) => setPracticeOpen(open), []);
+
   return (
-    <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
-      <p className="text-sm text-muted-foreground">{label} — coming soon</p>
-      <p className="text-xs text-muted-foreground/70">
-        This tab will be implemented in subsequent phases.
+    <>
+      <div className="flex flex-col items-center justify-center gap-4 py-12 text-center">
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+          <Dumbbell className="h-7 w-7 text-primary" />
+        </div>
+        <div className="flex flex-col gap-1">
+          <p className="text-sm font-semibold text-foreground">
+            Practice with {agent.name ?? agent.agentId}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Run a mock session to evaluate and train this persona.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={handleOpen}
+          className={cn(
+            "flex min-h-[44px] items-center gap-2 rounded-lg",
+            "bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground",
+            "transition-colors hover:bg-primary/90",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
+          )}
+        >
+          <Play className="h-4 w-4" />
+          Start Practice
+        </button>
+      </div>
+
+      {/* Practice session modal — rendered as overlay when open */}
+      <PracticeSessionModal
+        open={practiceOpen}
+        onOpenChange={handleOpenChange}
+        client={client}
+        personaId={agent.agentId}
+        personaName={agent.name ?? agent.agentId}
+        availableModes={ALL_PRACTICE_MODES}
+      />
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Metrics tab — placeholder (real metrics in Phase 3+)
+// ---------------------------------------------------------------------------
+
+function MetricsTab({ agent }: { agent: AgentState }) {
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="grid grid-cols-2 gap-2">
+        {[
+          { label: "Practice Sessions", value: String(agent.practiceCount ?? 0) },
+          { label: "Status", value: agent.personaStatus ?? "unknown" },
+          { label: "Category", value: agent.personaCategory ?? "Custom" },
+          { label: "Template", value: agent.templateKey ?? "None" },
+        ].map((s) => (
+          <div
+            key={s.label}
+            className="flex flex-col rounded-lg border border-border/20 bg-muted/10 px-3 py-3"
+          >
+            <span className="text-sm font-semibold text-foreground">{s.value}</span>
+            <span className="text-[11px] text-muted-foreground">{s.label}</span>
+          </div>
+        ))}
+      </div>
+      {agent.optimizationGoals && agent.optimizationGoals.length > 0 && (
+        <div className="flex flex-col gap-1.5">
+          <span className="text-[11px] font-medium text-muted-foreground">
+            Optimization Goals
+          </span>
+          <div className="flex flex-wrap gap-1">
+            {agent.optimizationGoals.map((g) => (
+              <span
+                key={g}
+                className="rounded-md bg-primary/8 px-2 py-0.5 text-[11px] text-primary"
+              >
+                {g}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+      <p className="text-center text-xs text-muted-foreground/60 pt-4">
+        Detailed session analytics coming in Phase 3.
       </p>
     </div>
   );
@@ -217,13 +325,27 @@ export const PersonaDetailModal = memo(function PersonaDetailModal({
           />
         );
       case "voice":
-        return <PlaceholderTab label="Voice configuration" />;
+        return (
+          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto -mx-4 -mb-4">
+            <VoiceSettingsPanelConnected />
+          </div>
+        );
       case "knowledge":
-        return <PlaceholderTab label="Knowledge base" />;
+        return (
+          <div className="flex min-h-0 flex-1 flex-col -mx-4 -mb-4">
+            <KnowledgePanel
+              agentId={agent.agentId}
+              personaId={agent.agentId}
+              personaName={agent.name ?? agent.agentId}
+              status={status}
+              onClose={noop}
+            />
+          </div>
+        );
       case "practice":
-        return <PlaceholderTab label="Practice sessions" />;
+        return <PracticeTab agent={agent} client={client} />;
       case "metrics":
-        return <PlaceholderTab label="Performance metrics" />;
+        return <MetricsTab agent={agent} />;
       default:
         return null;
     }
