@@ -152,18 +152,7 @@ export const TemplateBrowserModal = React.memo(function TemplateBrowserModal({
 
         {/* From-scratch placeholder */}
         <div className="border-t border-border/30 pt-3">
-          <button
-            type="button"
-            disabled
-            className={cn(
-              "flex h-11 w-full items-center justify-center gap-2 rounded-md",
-              "border border-dashed border-border/40 text-xs text-muted-foreground/60",
-              "cursor-not-allowed",
-            )}
-          >
-            <Sparkles className="h-3.5 w-3.5" />
-            Start from Scratch — Coming Soon
-          </button>
+          {/* Start from Scratch — hidden until custom persona creation is implemented */}
         </div>
       </DialogContent>
     </Dialog>

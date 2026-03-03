@@ -136,7 +136,7 @@ export const UsagePanel = memo(function UsagePanel() {
         }
       />
 
-      {error && <ErrorBanner message={error} onRetry={() => void refresh()} />}
+      {error && !/gateway|websocket/i.test(error) && <ErrorBanner message={error} onRetry={() => void refresh()} />}
 
       {/* Budget alert */}
       <BudgetAlert currentSpend={totalCost} />

@@ -4,7 +4,6 @@ import { memo, useCallback, useMemo, useRef, useEffect, useState } from "react";
 import {
   MessageSquare,
   BarChart3,
-  Radio,
   KeyRound,
   Cpu,
   Settings2,
@@ -36,7 +35,7 @@ export type ManagementTab = "usage" | "channels" | "credentials" | "models" | "g
 
 const NAV_ITEMS: Array<{ value: ManagementTab; label: string; icon: typeof MessageSquare }> = [
   { value: "usage", label: "Usage", icon: BarChart3 },
-  { value: "channels", label: "Channels", icon: Radio },
+  // { value: "channels", label: "Channels", icon: Radio }, // Hidden until Channels has content
   { value: "credentials", label: "Credentials", icon: KeyRound },
   { value: "models", label: "Models", icon: Cpu },
   { value: "gateway", label: "Gateway", icon: Settings2 },

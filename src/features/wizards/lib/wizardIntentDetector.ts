@@ -32,11 +32,11 @@ const INTENT_TO_WIZARD: Record<string, WizardType> = {
   schedule: "task",
   cron: "task",
 
-  // Agent setup
-  create_agent: "agent",
-  setup_agent: "agent",
-  configure_agent: "agent",
-  new_agent: "agent",
+  // Agent setup — disabled until wizard is implemented; falls through to chat
+  // create_agent: "agent",
+  // setup_agent: "agent",
+  // configure_agent: "agent",
+  // new_agent: "agent",
 
   // Persona deployment
   deploy_persona: "persona",

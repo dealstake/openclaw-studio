@@ -102,7 +102,7 @@ describe("AppSidebar", () => {
       render(createElement(AppSidebar, defaultProps()));
       // Expanded mode has nav items with aria-labels (Sessions removed from nav)
       expect(screen.getByLabelText("Usage")).toBeInTheDocument();
-      expect(screen.getByLabelText("Channels")).toBeInTheDocument();
+      // Channels hidden until feature is implemented
     });
 
     it("calls onManagementNav when nav item clicked", () => {
@@ -156,7 +156,7 @@ describe("AppSidebar", () => {
     it("renders nav icon buttons with labels", () => {
       render(createElement(AppSidebar, defaultProps({ collapsed: true })));
       expect(screen.getByLabelText("Usage")).toBeInTheDocument();
-      expect(screen.getByLabelText("Channels")).toBeInTheDocument();
+      // Channels hidden until feature is implemented
     });
 
     it("highlights active management tab", () => {

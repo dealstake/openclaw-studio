@@ -14,7 +14,8 @@ export const NotificationBell = React.memo(function NotificationBell() {
         <HeaderIconButton aria-label="Notifications" data-testid="notification-bell">
           <div className="relative">
             <Bell className={`h-[15px] w-[15px] transition-transform duration-200 ${unreadCount > 0 ? "animate-in zoom-in-75 duration-300" : ""}`} />
-            {unreadCount > 0 && (
+            {/* Badge hidden during demo period — re-enable when notification system is production-ready */}
+            {false && unreadCount > 0 && (
               <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#D92D20] px-1 text-[10px] font-bold text-white animate-in fade-in zoom-in-50 duration-200">
                 {unreadCount > 99 ? "99+" : unreadCount}
               </span>
