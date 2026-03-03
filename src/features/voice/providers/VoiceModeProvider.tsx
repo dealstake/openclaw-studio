@@ -25,6 +25,8 @@ import type { VoiceModeState } from "../lib/voiceTypes";
 export interface VoiceModeContextValue {
   /** Current voice mode state */
   state: VoiceModeState;
+  /** Last error type for UI handling */
+  lastError: "mic-denied" | "api-key-missing" | "quota-exceeded" | null;
   /** Whether the full-screen overlay is visible */
   isOverlayOpen: boolean;
   /** Whether voice mode is minimized to floating pill */
@@ -45,6 +47,8 @@ export interface VoiceModeContextValue {
   expandVoiceMode: () => void;
   /** Update voice mode state (used by voice hooks) */
   setState: (state: VoiceModeState) => void;
+  /** Set last error type */
+  setLastError: (error: VoiceModeContextValue["lastError"]) => void;
   /** Update user transcript (used by STT hook) */
   setUserTranscript: (text: string) => void;
   /** Update agent transcript (used by TTS hook) */
@@ -89,6 +93,7 @@ interface VoiceModeProviderProps {
 
 export function VoiceModeProvider({ children }: VoiceModeProviderProps) {
   const [state, setState] = useState<VoiceModeState>("idle");
+  const [lastError, setLastError] = useState<VoiceModeContextValue["lastError"]>(null);
   const [isOverlayOpen, setIsOverlayOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [activeAgentId, setActiveAgentId] = useState<string | null>(null);
@@ -129,6 +134,7 @@ export function VoiceModeProvider({ children }: VoiceModeProviderProps) {
       setIsOverlayOpen(true);
       setIsMinimized(false);
       setState("connecting");
+      setLastError(null);
       setUserTranscript("");
       setAgentTranscript("");
       startTimer();
@@ -138,6 +144,7 @@ export function VoiceModeProvider({ children }: VoiceModeProviderProps) {
 
   const closeVoiceMode = useCallback(() => {
     setState("idle");
+    setLastError(null);
     setIsOverlayOpen(false);
     setIsMinimized(false);
     setActiveAgentId(null);
@@ -162,6 +169,7 @@ export function VoiceModeProvider({ children }: VoiceModeProviderProps) {
   const value = useMemo<VoiceModeContextValue>(
     () => ({
       state,
+      lastError,
       isOverlayOpen,
       isMinimized,
       activeAgentId,
@@ -172,6 +180,7 @@ export function VoiceModeProvider({ children }: VoiceModeProviderProps) {
       minimizeVoiceMode,
       expandVoiceMode,
       setState,
+      setLastError,
       setUserTranscript,
       setAgentTranscript,
       inputVolumeRef,
@@ -182,6 +191,7 @@ export function VoiceModeProvider({ children }: VoiceModeProviderProps) {
     }),
     [
       state,
+      lastError,
       isOverlayOpen,
       isMinimized,
       activeAgentId,

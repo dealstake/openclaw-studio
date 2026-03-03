@@ -49,7 +49,14 @@ export function useVoiceModeBridge(options?: UseVoiceModeBridgeOptions) {
       // Warm up audio element for iOS Safari (unlocks playback on user gesture chain)
       tts.warmup();
       if (!voice.isListening && !voice.isConnecting) {
-        void voice.startListening();
+        voice.startListening().catch((err) => {
+          const msg = (err as Error).message || "";
+          if (msg.includes("NotAllowedError") || msg.includes("Permission denied")) {
+            voiceMode.setLastError("mic-denied");
+          } else if (msg.includes("API key") || msg.includes("api key") || msg.includes("401")) {
+            voiceMode.setLastError("api-key-missing");
+          }
+        });
       }
     } else {
       // Voice mode closed — stop everything

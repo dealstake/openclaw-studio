@@ -14,7 +14,7 @@
  * - Mobile-first: 100dvh, safe areas, 44px touch targets
  */
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import FocusTrap from "focus-trap-react";
 import { Minimize2, PhoneOff, X } from "lucide-react";
@@ -23,6 +23,9 @@ import { Orb } from "@/components/ui/orb";
 import { BarVisualizer } from "@/components/ui/bar-visualizer";
 import { ShimmeringText } from "@/components/ui/shimmering-text";
 import { useVoiceMode } from "../providers/VoiceModeProvider";
+import { MicPermissionDialog } from "./MicPermissionDialog";
+import { ApiKeyMissingBanner } from "./ApiKeyMissingBanner";
+import { detectVoiceCapability } from "../lib/voiceCapability";
 import { voiceModeToOrbState } from "../lib/voiceTypes";
 import type { VoiceModeState } from "../lib/voiceTypes";
 
@@ -89,12 +92,14 @@ function statusDotClass(state: VoiceModeState): string {
 export const VoiceModeOverlay = React.memo(function VoiceModeOverlay() {
   const {
     state,
+    lastError,
     isOverlayOpen,
     activeAgentId,
     userTranscript,
     agentTranscript,
     closeVoiceMode,
     minimizeVoiceMode,
+    setLastError,
     inputVolumeRef,
     outputVolumeRef,
     elapsedSeconds,
@@ -102,6 +107,13 @@ export const VoiceModeOverlay = React.memo(function VoiceModeOverlay() {
 
   const overlayRef = useRef<HTMLDivElement>(null);
   const prefersReducedMotion = useReducedMotion();
+  // Detect voice capability tier
+  const capability = useMemo(() => detectVoiceCapability(), []);
+
+  // Derive dialog visibility from lastError (no effect needed)
+  const isActive = isOverlayOpen || state !== "idle";
+  const showMicDialog = isActive && lastError === "mic-denied";
+  const showApiKeyBanner = isActive && lastError === "api-key-missing";
 
   // Focus overlay on open (FocusTrap handles actual trapping)
   useEffect(() => {
@@ -162,23 +174,14 @@ export const VoiceModeOverlay = React.memo(function VoiceModeOverlay() {
   const orbState = useMemo(() => voiceModeToOrbState(state), [state]);
   const colors = useMemo(() => stateColors(state), [state]);
 
-  // WebGL support check — fallback to simple pulsing circle if no WebGL
-  const [hasWebGL] = useState(() => {
-    if (typeof document === "undefined") return true;
-    try {
-      const canvas = document.createElement("canvas");
-      const gl = canvas.getContext("webgl") ?? canvas.getContext("experimental-webgl");
-      return !!gl;
-    } catch {
-      return false;
-    }
-  });
+  const hasWebGL = capability.hasWebGL;
 
   const motionTransition = prefersReducedMotion
     ? { duration: 0.01 }
     : { type: "spring" as const, damping: 25, stiffness: 200 };
 
   return (
+    <>
     <AnimatePresence>
       {isOverlayOpen && (
         <FocusTrap focusTrapOptions={{ allowOutsideClick: true, escapeDeactivates: false }}>
@@ -262,6 +265,10 @@ export const VoiceModeOverlay = React.memo(function VoiceModeOverlay() {
 
           {/* ── Center: Orb ──────────────────────────────────────── */}
           <div className="flex flex-1 flex-col items-center justify-center gap-8 px-4">
+            {/* API key missing banner */}
+            {showApiKeyBanner && (
+              <ApiKeyMissingBanner onNavigateToCredentials={() => closeVoiceMode()} />
+            )}
             {/* Orb container — responsive sizing */}
             <div
               className="h-[200px] w-[200px] sm:h-[250px] sm:w-[250px] lg:h-[300px] lg:w-[300px]"
@@ -343,5 +350,25 @@ export const VoiceModeOverlay = React.memo(function VoiceModeOverlay() {
         </FocusTrap>
       )}
     </AnimatePresence>
+
+      {/* Disabled tier — show message instead of overlay */}
+      {capability.tier === "disabled" && capability.disabledReason && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/95" role="alert">
+          <div className="mx-4 max-w-sm text-center">
+            <p className="text-sm text-muted-foreground">{capability.disabledReason}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Mic permission dialog */}
+      <MicPermissionDialog
+        open={showMicDialog}
+        onClose={() => setLastError(null)}
+        onRetry={() => {
+          setLastError(null);
+          // Re-attempt opening voice mode — provider will retry mic access
+        }}
+      />
+    </>
   );
 });
