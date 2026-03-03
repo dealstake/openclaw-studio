@@ -4,6 +4,8 @@ import type { WizardExtractedConfig, WizardType } from "../lib/wizardTypes";
 import { WizardMessageBubble } from "./WizardMessageBubble";
 import { WizardConfigCard } from "./WizardConfigCard";
 import { WizardPreflightCard } from "./WizardPreflightCard";
+import { WizardCreationProgress, type CreationStep } from "./WizardCreationProgress";
+import { WizardCreationResult } from "./WizardCreationResult";
 import { ThinkingBlock } from "@/components/chat/ThinkingBlock";
 import type { PreflightResult } from "@/features/personas/lib/preflightTypes";
 
@@ -32,6 +34,14 @@ type WizardChatOverlayProps = {
   onRecheck?: () => void;
   /** Whether a re-check is in progress */
   rechecking?: boolean;
+  /** Creation progress steps — shown during resource creation */
+  creationSteps?: CreationStep[] | null;
+  /** Creation result — shown after creation completes */
+  creationResult?: { success: boolean; message: string; resourceName?: string } | null;
+  /** Called when user clicks "View" on creation result */
+  onViewCreated?: () => void;
+  /** Called to dismiss the creation result card */
+  onDismissResult?: () => void;
 };
 
 /**
@@ -57,6 +67,10 @@ export const WizardChatOverlay = memo(function WizardChatOverlay({
   onOAuthFlow,
   onRecheck,
   rechecking = false,
+  creationSteps = null,
+  creationResult = null,
+  onViewCreated,
+  onDismissResult,
 }: WizardChatOverlayProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -67,7 +81,7 @@ export const WizardChatOverlay = memo(function WizardChatOverlay({
       bottomRef.current?.scrollIntoView({ block: "end", behavior: "auto" });
     });
     return () => cancelAnimationFrame(raf);
-  }, [messages.length, streamText, thinkingTrace, extractedConfig]);
+  }, [messages.length, streamText, thinkingTrace, extractedConfig, creationSteps, creationResult]);
 
   return (
     // aria-live="polite" ensures streaming messages are announced to screen readers
@@ -130,6 +144,27 @@ export const WizardChatOverlay = memo(function WizardChatOverlay({
             onRevise={onReviseConfig}
             onCancel={onCancelWizard}
             confirming={confirming}
+          />
+        </div>
+      )}
+
+      {/* Creation progress — shown during resource creation */}
+      {creationSteps && creationSteps.length > 0 && !creationResult && (
+        <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <WizardCreationProgress wizardType={wizardType} steps={creationSteps} />
+        </div>
+      )}
+
+      {/* Creation result — shown after creation completes */}
+      {creationResult && (
+        <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <WizardCreationResult
+            wizardType={wizardType}
+            success={creationResult.success}
+            message={creationResult.message}
+            resourceName={creationResult.resourceName}
+            onView={onViewCreated}
+            onDismiss={onDismissResult ?? (() => {})}
           />
         </div>
       )}

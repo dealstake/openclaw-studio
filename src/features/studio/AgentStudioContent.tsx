@@ -39,7 +39,7 @@ export const AgentStudioPage = () => {
     agentTasks, tasksLoading, tasksError, busyTaskId, busyAction,
     toggleTask, updateTask, updateTaskSchedule, runTask, deleteTask, loadTasks,
     cronMaxConcurrentRuns, cronEventTick, createProjectTick,
-    wizard, handleStartWizard, handleWizardConfirm,
+    wizard, handleStartWizard, handleWizardConfirm, wizardConfirming, wizardCreationResult, clearWizardCreationResult,
     stopBusyAgentId, isOffline, queueLength,
     viewingSessionKey, viewingSessionHistory, viewingTrace,
     viewingSessionLoading, viewingSessionError, retryTranscript,
@@ -109,8 +109,12 @@ export const AgentStudioPage = () => {
     onDismissContinuationBanner: stableChatOnDismissContinuation,
     wizard,
     onWizardConfirm: () => void handleWizardConfirm(),
+    wizardConfirming,
+    wizardCreationResult,
+    onDismissWizardResult: clearWizardCreationResult,
     onOpenCredentialVault: () => setManagementView("credentials"),
     onOpenSettings: () => handleManagementNav("personas"),
+    onLaunchWizard: handleStartWizard,
   } : null;
 
   // ── Shared sidebar props ─────────────────────────────────────────

@@ -106,6 +106,8 @@ export function useStudioOrchestrator() {
   const runtimeEventHandlerRef = useRef<ReturnType<typeof createGatewayRuntimeEventHandler> | null>(null);
   const handleStartWizardRef = useRef<((type: WizardType) => void) | null>(null);
   const [createProjectTick, setCreateProjectTick] = useState(0);
+  const [wizardConfirming, setWizardConfirming] = useState(false);
+  const [wizardCreationResult, setWizardCreationResult] = useState<{ success: boolean; message: string; resourceName?: string } | null>(null);
 
   // ═══════════════════════════════════════════════════════════════════
   // Gateway Models
@@ -339,13 +341,19 @@ export function useStudioOrchestrator() {
     const extracted = wizard.extractedConfig;
     if (!extracted) return;
 
+    setWizardConfirming(true);
+    setWizardCreationResult(null);
+
     if (extracted.type === "task") {
       try {
         await createTask(extracted.config as CreateTaskPayload);
+        setWizardCreationResult({ success: true, message: "Task scheduled successfully.", resourceName: (extracted.config as Record<string, unknown>).name as string });
         void wizard.endWizard();
         void loadTasks();
       } catch {
         // Error shown by task creation flow
+      } finally {
+        setWizardConfirming(false);
       }
       return;
     }
@@ -435,9 +443,14 @@ export function useStudioOrchestrator() {
         }
 
         void wizard.endWizard();
+        setWizardCreationResult({ success: true, message: `Persona "${personaConfig.displayName}" created and activated.`, resourceName: personaConfig.displayName });
         toast.success(`Persona "${personaConfig.displayName}" created and activated`);
       } catch (err) {
-        toast.error(`Persona creation failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+        const msg = err instanceof Error ? err.message : "Unknown error";
+        setWizardCreationResult({ success: false, message: `Persona creation failed: ${msg}` });
+        toast.error(`Persona creation failed: ${msg}`);
+      } finally {
+        setWizardConfirming(false);
       }
       return;
     }
@@ -448,13 +461,20 @@ export function useStudioOrchestrator() {
     try {
       const result = await executeWizardCreation(extracted.type, extracted.config, client, agentId);
       if (result.success) {
+        const resourceName = (extracted.config as Record<string, unknown>).name as string | undefined;
+        setWizardCreationResult({ success: true, message: result.message, resourceName });
         void wizard.endWizard();
         toast.success(result.message);
       } else {
+        setWizardCreationResult({ success: false, message: result.message });
         toast.error(result.message);
       }
     } catch (err) {
-      toast.error(`Wizard creation failed: ${err instanceof Error ? err.message : "An unknown error occurred."}`);
+      const msg = err instanceof Error ? err.message : "An unknown error occurred.";
+      setWizardCreationResult({ success: false, message: msg });
+      toast.error(`Wizard creation failed: ${msg}`);
+    } finally {
+      setWizardConfirming(false);
     }
   }, [wizard, createTask, loadTasks, focusedAgent, client]);
 
@@ -976,6 +996,9 @@ export function useStudioOrchestrator() {
     handleStartWizard,
     handleSelectTemplate,
     handleWizardConfirm,
+    wizardConfirming,
+    wizardCreationResult,
+    clearWizardCreationResult: () => setWizardCreationResult(null),
 
     // Chat
     stopBusyAgentId,

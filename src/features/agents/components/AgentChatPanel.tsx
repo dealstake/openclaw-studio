@@ -22,6 +22,7 @@ import { AgentChatTranscript } from "./AgentChatTranscript";
 import { AgentChatComposer } from "./AgentChatComposer";
 import type { UseWizardInChatReturn } from "@/features/wizards/hooks/useWizardInChat";
 import { WizardChatOverlay } from "@/features/wizards/components/WizardChatOverlay";
+import type { WizardType } from "@/features/wizards/lib/wizardTypes";
 import type { ComposerAgent } from "./ComposerAgentMenu";
 
 type AgentChatPanelProps = {
@@ -66,6 +67,12 @@ type AgentChatPanelProps = {
   onOpenCredentialVault?: (templateKey: string) => void;
   /** Open agent settings panel — used by the autonomy badge click handler. */
   onOpenSettings?: () => void;
+  /** Called when user selects a wizard type from the manual launch menu */
+  onLaunchWizard?: (type: WizardType) => void;
+  /** Creation result — shown after wizard creation completes */
+  wizardCreationResult?: { success: boolean; message: string; resourceName?: string } | null;
+  /** Called to dismiss the creation result card */
+  onDismissWizardResult?: () => void;
 };
 
 export const AgentChatPanel = memo(function AgentChatPanel({
@@ -98,6 +105,9 @@ export const AgentChatPanel = memo(function AgentChatPanel({
   wizardConfirming = false,
   onOpenCredentialVault,
   onOpenSettings,
+  onLaunchWizard,
+  wizardCreationResult = null,
+  onDismissWizardResult,
 }: AgentChatPanelProps) {
   const draftRef = useRef<HTMLTextAreaElement | null>(null);
   const scrollToBottomNextOutputRef = useRef(false);
@@ -429,6 +439,8 @@ export const AgentChatPanel = memo(function AgentChatPanel({
                 onSetupCredential={handleSetupCredential}
                 onOAuthFlow={handleOAuthFlow}
                 onRecheck={handlePrefightRecheck}
+                creationResult={wizardCreationResult}
+                onDismissResult={onDismissWizardResult}
               />
             </div>
           </div>
@@ -483,6 +495,7 @@ export const AgentChatPanel = memo(function AgentChatPanel({
             selectedAgentId={agent.agentId}
             onSelectAgent={onSelectAgent}
             lastAssistantText={lastAssistantText}
+            onLaunchWizard={onLaunchWizard}
           />
         )}
       </div>

@@ -22,6 +22,7 @@ import { ComposerAgentMenu, type ComposerAgent } from "./ComposerAgentMenu";
 import { useFileUpload, type ChatAttachment } from "../hooks/useFileUpload";
 import type { WizardType, WizardTheme, WizardStarter } from "@/features/wizards/lib/wizardTypes";
 import { WizardBanner } from "@/features/wizards/components/WizardBanner";
+import { WizardLaunchMenu } from "@/features/wizards/components/WizardLaunchMenu";
 import { useVoiceOutput, resolvedToSpeakOptions } from "@/features/voice/hooks/useVoiceOutput";
 import { useElevenLabsKey } from "@/features/voice/hooks/useElevenLabsKey";
 import { useVoiceSettings } from "@/features/voice/hooks/useVoiceSettings";
@@ -67,6 +68,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   selectedAgentId,
   onSelectAgent,
   lastAssistantText,
+  onLaunchWizard,
 }: {
   onDraftChange: (value: string) => void;
   onSend: (message: string, attachments?: ChatAttachment[]) => void;
@@ -103,6 +105,8 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   onSelectAgent?: (agentId: string) => void;
   /** Latest assistant message text — used for TTS when voice output is enabled */
   lastAssistantText?: string;
+  /** Called when user selects a wizard type from the launch menu */
+  onLaunchWizard?: (type: WizardType) => void;
 }) {
   const localRef = useRef<HTMLTextAreaElement | null>(null);
   const pendingResizeRef = useRef<number | null>(null);
@@ -451,8 +455,11 @@ export const AgentChatComposer = memo(function AgentChatComposer({
           {/* ── Glass Input Pill ── */}
           <div className="min-w-0 flex-1 rounded-[20px] border border-border/50 glass-panel transition-all focus-within:border-border/80 focus-within:shadow-2xl dark:bg-background/40 dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)]">
             <div className="flex items-end">
-              {/* Voice controls — left side of pill */}
+              {/* Left controls — voice + wizard launcher */}
               <div className="flex shrink-0 items-center gap-0.5 pl-2 pb-1.5">
+                {!wizardType && onLaunchWizard && (
+                  <WizardLaunchMenu onLaunch={onLaunchWizard} disabled={isRunning} />
+                )}
                 <VoiceInputControl
                   onChange={handleVoiceChange}
                   onStart={handleVoiceStart}
