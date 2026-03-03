@@ -537,30 +537,48 @@ export const AgentChatComposer = memo(function AgentChatComposer({
               >
                 <ArrowUp className="h-[18px] w-[18px]" />
               </motion.button>
-            ) : composerAgents && composerAgents.length > 0 && selectedAgentId && onSelectAgent ? (
-              /* State 3: Idle → Avatar (agent menu) */
-              <motion.div
-                key="avatar"
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.8, opacity: 0 }}
-                transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              >
-                <ComposerAgentMenu
-                  agents={composerAgents}
-                  selectedAgentId={selectedAgentId}
-                  onSelectAgent={onSelectAgent}
-                  models={models}
-                  modelValue={modelValue}
-                  onModelChange={onModelChange}
-                  thinkingLevel={thinkingLevel}
-                  onThinkingChange={onThinkingChange}
-                  allowThinking={allowThinking}
-                  tokenPct={tokenPct}
-                  onNewSession={onNewSession}
-                  onAttach={triggerAttach}
-                />
-              </motion.div>
+            ) : selectedAgentId && voiceMode ? (
+              /* State 3a: Idle + mobile → Voice mode primary button (< 768px) */
+              /* State 3b: Idle + desktop → Avatar (agent menu) (≥ 768px) */
+              <>
+                {/* Mobile: voice mode button */}
+                <motion.div
+                  key="voice-mobile"
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.8, opacity: 0 }}
+                  transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                  className="sm:hidden"
+                >
+                  <VoiceModeButton agentId={selectedAgentId} variant="primary" />
+                </motion.div>
+                {/* Desktop: agent menu (unchanged) */}
+                {composerAgents && composerAgents.length > 0 && onSelectAgent && (
+                  <motion.div
+                    key="avatar"
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.8, opacity: 0 }}
+                    transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                    className="hidden sm:block"
+                  >
+                    <ComposerAgentMenu
+                      agents={composerAgents}
+                      selectedAgentId={selectedAgentId}
+                      onSelectAgent={onSelectAgent}
+                      models={models}
+                      modelValue={modelValue}
+                      onModelChange={onModelChange}
+                      thinkingLevel={thinkingLevel}
+                      onThinkingChange={onThinkingChange}
+                      allowThinking={allowThinking}
+                      tokenPct={tokenPct}
+                      onNewSession={onNewSession}
+                      onAttach={triggerAttach}
+                    />
+                  </motion.div>
+                )}
+              </>
             ) : (
               /* Fallback: disabled send button */
               <motion.button
