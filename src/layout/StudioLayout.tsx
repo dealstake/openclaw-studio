@@ -7,6 +7,9 @@
  *   Left sidebar (collapsible) | Center chat (flex, centered) | Right context (resizable)
  *
  * On smaller viewports, passes through children unchanged.
+ *
+ * NOTE: react-resizable-panels v4 treats numeric sizes as PIXELS, not percentages.
+ * Use string values like "15%" for percentage-based sizing.
  */
 
 import { type ReactNode, useCallback, useEffect, useRef } from "react";
@@ -111,15 +114,15 @@ export function StudioLayout({
         id="studio-layout"
         className="h-full w-full"
       >
-        {/* Left sidebar */}
+        {/* Left sidebar — 15% default, collapses to 56px (icon rail) */}
         <Panel
           panelRef={leftPanelRef as React.Ref<PanelImperativeHandle | null>}
           id="left-sidebar"
-          defaultSize={15}
-          minSize={4}
-          maxSize={22}
+          defaultSize="15%"
+          minSize="4%"
+          maxSize="22%"
           collapsible
-          collapsedSize={4}
+          collapsedSize="4%"
           onResize={handleLeftResize}
         >
           <div className="h-full overflow-hidden">
@@ -129,11 +132,11 @@ export function StudioLayout({
 
         <ResizeHandle />
 
-        {/* Center: chat area — content centered within via mx-auto */}
+        {/* Center: chat area — 55% default, min 30%, content centered via mx-auto */}
         <Panel
           id="center-chat"
-          defaultSize={55}
-          minSize={30}
+          defaultSize="55%"
+          minSize="30%"
         >
           <div className="relative h-full w-full overflow-hidden">
             {centerChat}
@@ -142,15 +145,15 @@ export function StudioLayout({
 
         <ResizeHandle />
 
-        {/* Right context panel */}
+        {/* Right context panel — 30% default, collapses to 0 */}
         <Panel
           panelRef={rightPanelRef as React.Ref<PanelImperativeHandle | null>}
           id="right-context"
-          defaultSize={30}
-          minSize={18}
-          maxSize={45}
+          defaultSize="30%"
+          minSize="18%"
+          maxSize="45%"
           collapsible
-          collapsedSize={0}
+          collapsedSize="0%"
           onResize={handleRightResize}
         >
           <div className="h-full w-full overflow-hidden bg-surface-elevated/60 backdrop-blur-xl ring-1 ring-white/[0.06]">
