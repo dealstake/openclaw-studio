@@ -1169,7 +1169,7 @@ export const AgentStudioPage = () => {
                     mobilePane="chat"
                     swipeDy={0}
                     swipeHandlers={{}}
-                    contextTab={contextTab}
+                    activeTab={contextTab}
                     expandedTab={expandedTab as "projects" | "tasks" | "workspace" | "skills" | "activity" | "budget" | "router" | "playground" | null}
                     onExpandToggle={handleExpandToggle}
                     onClose={() => setContextPanelOpen(false)}
@@ -1368,7 +1368,7 @@ export const AgentStudioPage = () => {
                 mobilePane={mobilePane}
                 swipeDy={swipeDy}
                 swipeHandlers={swipeHandlers}
-                contextTab={contextTab}
+                activeTab={contextTab}
                 expandedTab={expandedTab as "projects" | "tasks" | "workspace" | "skills" | "activity" | "budget" | "router" | "playground" | null}
                 onExpandToggle={handleExpandToggle}
                 onClose={() => setContextPanelOpen(false)}
