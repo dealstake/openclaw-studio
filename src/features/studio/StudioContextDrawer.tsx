@@ -16,7 +16,6 @@ import { PlaygroundPanel } from "@/features/playground/components/PlaygroundPane
 import { OrchestratorPanel } from "@/features/orchestrator/components/OrchestratorPanel";
 import { MemoryGraphPanel } from "@/features/memory-graph/components/MemoryGraphPanel";
 import { FeedbackPanel } from "@/features/feedback/components/FeedbackPanel";
-import type { PersonaTemplate } from "@/features/personas/lib/templateTypes";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import type { AgentState } from "@/features/agents/state/store";
 import type { GatewayModelChoice } from "@/lib/gateway/models";
@@ -76,7 +75,6 @@ interface StudioContextDrawerProps {
   focusedAgent: AgentState | null;
   // Wizard entry points
   onCreateSkill?: () => void;
-  onSelectTemplate?: (template: PersonaTemplate) => void;
 }
 
 export const StudioContextDrawer = React.memo(function StudioContextDrawer(props: StudioContextDrawerProps) {
@@ -93,7 +91,6 @@ export const StudioContextDrawer = React.memo(function StudioContextDrawer(props
     status, gatewayModels, modelValue, onModelChange, onBrainClose,
     focusedAgent,
     onCreateSkill,
-    onSelectTemplate,
   } = props;
 
   return (
@@ -187,7 +184,7 @@ export const StudioContextDrawer = React.memo(function StudioContextDrawer(props
         }
         skillsContent={
           <PanelErrorBoundary name="Skills">
-            <SkillsPanel client={client} status={status} onCreateSkill={onCreateSkill} focusedAgentId={focusedAgentId} onSelectTemplate={onSelectTemplate} />
+            <SkillsPanel client={client} status={status} onCreateSkill={onCreateSkill} />
           </PanelErrorBoundary>
         }
         activityContent={

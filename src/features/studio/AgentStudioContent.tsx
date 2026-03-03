@@ -1170,7 +1170,6 @@ export const AgentStudioPage = () => {
               gatewayModels={gatewayModels}
               defaultModel={focusedAgent?.model ?? (gatewayModels.length > 0 ? `${gatewayModels[0].provider}/${gatewayModels[0].id}` : undefined)}
               onCreateSkill={() => handleStartWizard("skill")}
-              onSelectTemplate={handleSelectTemplate}
               onNavigateToPlayground={handleNavigateToPlayground}
             />
             {/* Trace Viewer overlay */}
@@ -1262,7 +1261,6 @@ export const AgentStudioPage = () => {
               }}
               focusedAgent={focusedAgent}
               onCreateSkill={() => handleStartWizard("skill")}
-              onSelectTemplate={handleSelectTemplate}
             />
           </div>
         ) : (

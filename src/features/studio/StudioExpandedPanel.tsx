@@ -16,7 +16,6 @@ import { UnifiedFilesPanel } from "@/features/workspace/components/UnifiedFilesP
 import { ActivityPanel } from "@/features/activity/components/ActivityPanel";
 import { SkillsPanel } from "@/features/skills/components/SkillsPanel";
 import { ContextBudgetCard } from "@/features/context-budget";
-import type { PersonaTemplate } from "@/features/personas/lib/templateTypes";
 import type { ManagementTab } from "@/layout/AppSidebar";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import type { StudioTask, UpdateTaskPayload, TaskSchedule } from "@/features/tasks/types";
@@ -64,7 +63,6 @@ interface StudioExpandedPanelProps {
   defaultModel?: string;
   // Wizard entry points
   onCreateSkill?: () => void;
-  onSelectTemplate?: (template: PersonaTemplate) => void;
   // Cross-tab navigation
   onNavigateToPlayground?: (model: string) => void;
 }
@@ -100,7 +98,6 @@ export const StudioExpandedPanel = memo(function StudioExpandedPanel({
   gatewayModels = [],
   defaultModel,
   onCreateSkill,
-  onSelectTemplate,
   onNavigateToPlayground,
 }: StudioExpandedPanelProps) {
   if (!expandedTab) return null;
@@ -165,7 +162,7 @@ export const StudioExpandedPanel = memo(function StudioExpandedPanel({
           )}
           {expandedTab === "skills" && (
             <PanelErrorBoundary name="Skills">
-              <SkillsPanel client={client} status={status} onCreateSkill={onCreateSkill} focusedAgentId={focusedAgentId} onSelectTemplate={onSelectTemplate} />
+              <SkillsPanel client={client} status={status} onCreateSkill={onCreateSkill} />
             </PanelErrorBoundary>
           )}
           {expandedTab === "activity" && (

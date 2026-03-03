@@ -5,7 +5,6 @@ import { Download, Plus } from "lucide-react";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { SectionLabel } from "@/components/SectionLabel";
 import { ErrorBanner } from "@/components/ErrorBanner";
-import { cn } from "@/lib/utils";
 import { useSkills } from "../hooks/useSkills";
 import { useCredentials } from "@/features/credentials/hooks/useCredentials";
 import { findTemplateForSkillKey } from "@/features/credentials/lib/templates";
@@ -13,34 +12,20 @@ import { CredentialSheet } from "@/features/credentials/components/CredentialShe
 import { SkillsList } from "./SkillsList";
 import { SkillDetailSheet } from "./SkillDetailSheet";
 import { SkillInstallSheet } from "./SkillInstallSheet";
-import { PersonasTab } from "@/features/personas/components/PersonasTab";
-import type { PersonaTemplate } from "@/features/personas/lib/templateTypes";
 import type { Skill } from "../lib/types";
-
-type SubTab = "personas" | "system";
 
 export interface SkillsPanelProps {
   client: GatewayClient;
   status: GatewayStatus;
   /** Optional callback to launch the skill creation wizard in the main chat */
   onCreateSkill?: () => void;
-  /** Focused agent ID for persona queries */
-  focusedAgentId?: string | null;
-  /** Callback to launch persona creation wizard */
-  onCreatePersona?: () => void;
-  /** Called when user selects a template → starts inline persona wizard */
-  onSelectTemplate?: (template: PersonaTemplate) => void;
 }
 
 export const SkillsPanel = React.memo(function SkillsPanel({
   client,
   status,
   onCreateSkill,
-  focusedAgentId,
-  onCreatePersona,
-  onSelectTemplate,
 }: SkillsPanelProps) {
-  const [subTab, setSubTab] = useState<SubTab>("personas");
 
   const {
     report,
@@ -114,11 +99,11 @@ export const SkillsPanel = React.memo(function SkillsPanel({
 
   return (
     <div className="flex h-full flex-col">
-      {/* Header with sub-tab switcher */}
+      {/* Header */}
       <div className="flex items-center justify-between px-3 pt-3 pb-2">
         <SectionLabel>Skills</SectionLabel>
         <div className="flex items-center gap-2">
-          {subTab === "system" && onCreateSkill && (
+          {onCreateSkill && (
             <button
               type="button"
               onClick={onCreateSkill}
@@ -129,18 +114,16 @@ export const SkillsPanel = React.memo(function SkillsPanel({
               Create
             </button>
           )}
-          {subTab === "system" && (
-            <button
-              type="button"
-              onClick={() => setInstallSheetOpen(true)}
-              aria-label="Install skill from ClawHub"
-              className="flex h-6 items-center gap-1 rounded-md border border-border/60 bg-card/50 px-2 text-[11px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-            >
-              <Download className="h-3 w-3" />
-              Install
-            </button>
-          )}
-          {subTab === "system" && report && (
+          <button
+            type="button"
+            onClick={() => setInstallSheetOpen(true)}
+            aria-label="Install skill from ClawHub"
+            className="flex h-6 items-center gap-1 rounded-md border border-border/60 bg-card/50 px-2 text-[11px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          >
+            <Download className="h-3 w-3" />
+            Install
+          </button>
+          {report && (
             <span className="text-[11px] text-muted-foreground">
               {report.total} installed
             </span>
@@ -148,73 +131,26 @@ export const SkillsPanel = React.memo(function SkillsPanel({
         </div>
       </div>
 
-      {/* Sub-tab switcher */}
-      <div className="flex gap-1 px-3 pb-2" role="tablist" aria-label="Skills panel view">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={subTab === "personas"}
-          onClick={() => setSubTab("personas")}
-          className={cn(
-            "rounded-md px-3 py-2.5 text-xs font-medium transition-colors min-h-[44px]",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
-            subTab === "personas"
-              ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
-          )}
-        >
-          My Personas
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={subTab === "system"}
-          onClick={() => setSubTab("system")}
-          className={cn(
-            "rounded-md px-3 py-2.5 text-xs font-medium transition-colors min-h-[44px]",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
-            subTab === "system"
-              ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
-          )}
-        >
-          System Skills
-        </button>
-      </div>
-
-      {/* Tab content */}
-      {subTab === "personas" ? (
-        <PersonasTab
-          client={client}
-          agentId={focusedAgentId ?? null}
-          status={status}
-          onCreatePersona={onCreatePersona}
-          onSelectTemplate={onSelectTemplate}
-        />
-      ) : (
-        <>
-          {/* Error */}
-          {error && (
-            <div className="px-3 pb-2">
-              <ErrorBanner message={error} onRetry={reload} />
-            </div>
-          )}
-
-          {/* List */}
-          <SkillsList
-            skills={skills}
-            filter={filter}
-            search={search}
-            onFilterChange={setFilter}
-            onSearchChange={setSearch}
-            onToggle={onToggle}
-            onSelect={handleSelect}
-            onSetupCredential={setupCredentialHandler}
-            busyKey={busyKey}
-            loading={loading}
-          />
-        </>
+      {/* Error */}
+      {error && (
+        <div className="px-3 pb-2">
+          <ErrorBanner message={error} onRetry={reload} />
+        </div>
       )}
+
+      {/* Skills list */}
+      <SkillsList
+        skills={skills}
+        filter={filter}
+        search={search}
+        onFilterChange={setFilter}
+        onSearchChange={setSearch}
+        onToggle={onToggle}
+        onSelect={handleSelect}
+        onSetupCredential={setupCredentialHandler}
+        busyKey={busyKey}
+        loading={loading}
+      />
 
       {/* Detail sheet */}
       <SkillDetailSheet
