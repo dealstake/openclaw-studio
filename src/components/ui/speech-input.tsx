@@ -212,6 +212,11 @@ export interface SpeechInputProps {
    * Called when a quota exceeded error occurs
    */
   onQuotaExceededError?: (data: { error: string }) => void
+
+  /**
+   * Called when a rate limit error occurs
+   */
+  onRateLimitedError?: (data: { error: string }) => void
 }
 
 const SpeechInput = React.forwardRef<HTMLDivElement, SpeechInputProps>(
@@ -242,6 +247,7 @@ const SpeechInput = React.forwardRef<HTMLDivElement, SpeechInputProps>(
       onError,
       onAuthError,
       onQuotaExceededError,
+      onRateLimitedError,
     },
     ref
   ) {
@@ -275,6 +281,7 @@ const SpeechInput = React.forwardRef<HTMLDivElement, SpeechInputProps>(
       onError,
       onAuthError,
       onQuotaExceededError,
+      onRateLimitedError,
     })
 
     const isConnecting = scribe.status === "connecting"

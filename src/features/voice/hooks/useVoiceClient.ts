@@ -81,7 +81,10 @@ export function useVoiceClient(): UseVoiceClientReturn {
   const [finalTranscript, setFinalTranscript] = useState("");
   const [displayTranscript, setDisplayTranscript] = useState("");
   const finalTranscriptRef = useRef(finalTranscript);
-  finalTranscriptRef.current = finalTranscript;
+  // Sync ref in effect to avoid updating ref during render
+  useEffect(() => {
+    finalTranscriptRef.current = finalTranscript;
+  }, [finalTranscript]);
   const reconnectAttemptsRef = useRef(0);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const intentionalDisconnectRef = useRef(false);
