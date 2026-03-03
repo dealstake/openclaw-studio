@@ -18,6 +18,7 @@ import { ToolCallGroup } from "@/components/chat/ToolCallGroup";
 import { ChatStatusBar } from "@/components/chat/ChatStatusBar";
 import { MessageActions } from "./MessageActions";
 import { FeedbackToolbar } from "@/features/feedback/components/FeedbackToolbar";
+import { Bot } from "lucide-react";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -32,6 +33,8 @@ export type AgentChatViewProps = {
    * Omit for read-only transcript views (e.g., session history viewer).
    */
   sessionKey?: string;
+  /** Agent display name — shown at assistant turn boundaries */
+  agentName?: string;
   className?: string;
 };
 
@@ -245,6 +248,7 @@ export const AgentChatView = memo(function AgentChatView({
   parts,
   streaming,
   sessionKey,
+  agentName,
   className = "",
 }: AgentChatViewProps) {
   // Part-level streaming flags drive live rendering; top-level flag reserved
@@ -283,9 +287,17 @@ export const AgentChatView = memo(function AgentChatView({
         const groupStreaming = isGroupStreaming(group.parts);
         return (
           <div key={`assistant-${gi}`} className="group/turn flex flex-col gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            {/* Turn separator if previous group was user */}
+            {/* Turn separator + agent identity if previous group was user */}
             {gi > 0 && groups[gi - 1]?.kind === "user" && (
-              <div className="my-1 border-t border-border/30" role="separator" />
+              <>
+                <div className="my-1 border-t border-border/30" role="separator" />
+                {agentName && (
+                  <div className="flex items-center gap-1.5 px-4">
+                    <Bot className="h-3.5 w-3.5 text-muted-foreground/60" />
+                    <span className="text-xs font-medium text-muted-foreground/70">{agentName}</span>
+                  </div>
+                )}
+              </>
             )}
             {renderGroupedParts(group.parts, gi)}
             {/* Inline feedback — hidden until hover (or when annotated) */}

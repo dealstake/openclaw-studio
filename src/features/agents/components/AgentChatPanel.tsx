@@ -10,7 +10,7 @@ import {
 import type { AgentState as AgentRecord } from "@/features/agents/state/store";
 import type { MessagePart } from "@/lib/chat/types";
 import { isTextPart } from "@/lib/chat/types";
-import { AlertTriangle, ArrowLeft, RefreshCw, X, Zap } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Bot, RefreshCw, X, Zap } from "lucide-react";
 import { AutonomyLevelBadge } from "./AutonomyLevelSelector";
 import type { AutonomyLevel } from "@/features/agents/lib/autonomyService";
 import { DEFAULT_AUTONOMY_LEVEL } from "@/features/agents/lib/autonomyService";
@@ -344,6 +344,22 @@ export const AgentChatPanel = memo(function AgentChatPanel({
               <X className="h-3 w-3" />
             </button>
           )}
+        </div>
+      )}
+
+      {/* Mobile chat header — agent name + autonomy badge */}
+      {!viewingSessionKey && (
+        <div className="flex items-center justify-between px-4 pt-2 pb-1 sm:hidden">
+          <div className="flex items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10">
+              <Bot className="h-3.5 w-3.5 text-primary" />
+            </div>
+            <span className="text-sm font-semibold text-foreground">{agent.name || agent.agentId}</span>
+          </div>
+          <AutonomyLevelBadge
+            level={(agent.autonomyLevel as AutonomyLevel | undefined) ?? DEFAULT_AUTONOMY_LEVEL}
+            onClick={onOpenSettings}
+          />
         </div>
       )}
 

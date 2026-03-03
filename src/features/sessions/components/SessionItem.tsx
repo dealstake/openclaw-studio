@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useCallback, useEffect, useRef } from "react";
-import { MessageSquare, Pin, GitCompareArrows, Archive, GitBranch } from "lucide-react";
+import { MessageSquare, Pin, GitCompareArrows, Archive, GitBranch, Wand2, Swords, Bot } from "lucide-react";
 import { formatRelativeTime } from "@/lib/text/time";
 import type { SessionHistoryEntry } from "../hooks/useSessionHistory";
 import { SessionItemMenu } from "./SessionItemMenu";
@@ -107,6 +107,12 @@ export const SessionItem = memo(function SessionItem({
         <Archive className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground/50" />
       ) : pinned ? (
         <Pin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary/70" />
+      ) : session.key.includes(":wizard:") ? (
+        <Wand2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-gold/70" />
+      ) : session.key.includes(":practice:") ? (
+        <Swords className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500/70" />
+      ) : session.isMain ? (
+        <Bot className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary/70" />
       ) : (
         <MessageSquare className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
       )}

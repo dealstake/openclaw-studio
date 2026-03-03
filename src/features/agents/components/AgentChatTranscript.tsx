@@ -52,6 +52,7 @@ export const AgentChatTranscript = memo(function AgentChatTranscript({
               parts={messageParts}
               streaming={streaming}
               sessionKey={sessionKey}
+              agentName={agentName}
             />
             <div ref={bottomRef} />
           </div>
