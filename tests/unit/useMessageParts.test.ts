@@ -34,16 +34,16 @@ describe("parseMessageParts", () => {
     });
   });
 
-  it("parses user-quoted lines (> prefix)", () => {
+  it("parses user-quoted lines preserving > prefix", () => {
     const result = parseMessageParts({
       outputLines: ["> What is the weather?"],
       streamText: null,
       liveThinkingTrace: "",
     });
-    expect(result).toEqual([{ type: "text", text: "What is the weather?" }]);
+    expect(result).toEqual([{ type: "text", text: "> What is the weather?" }]);
   });
 
-  it("strips inbound metadata from user-quoted lines", () => {
+  it("strips inbound metadata from user-quoted lines preserving > prefix", () => {
     const line =
       '> Conversation info (untrusted metadata):\n```json\n{"channel":"whatsapp"}\n```\n\n[Thu 2026-02-19 11:41 EST] Hello';
     const result = parseMessageParts({
@@ -51,7 +51,7 @@ describe("parseMessageParts", () => {
       streamText: null,
       liveThinkingTrace: "",
     });
-    expect(result[0]).toMatchObject({ type: "text", text: "Hello" });
+    expect(result[0]).toMatchObject({ type: "text", text: "> Hello" });
   });
 
   it("parses thinking/trace lines", () => {

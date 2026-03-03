@@ -112,24 +112,24 @@ describe("parseMessageParts", () => {
   // ── User-quoted lines ────────────────────────────────────────────────
 
   describe("user-quoted lines", () => {
-    it("parses a > quoted line as text", () => {
+    it("parses a > quoted line as text preserving > prefix", () => {
       const parts = parseMessageParts(make({ outputLines: ["> Hello from user"] }));
       expect(parts).toHaveLength(1);
-      expect(parts[0]).toEqual({ type: "text", text: "Hello from user" });
+      expect(parts[0]).toEqual({ type: "text", text: "> Hello from user" });
     });
 
-    it("strips inbound metadata from quoted lines", () => {
+    it("strips inbound metadata from quoted lines preserving > prefix", () => {
       const metaLine = `> Conversation info (untrusted metadata):\n\`\`\`json\n{"channel":"whatsapp"}\n\`\`\`\nActual message`;
       const parts = parseMessageParts(make({ outputLines: [metaLine] }));
       expect(parts).toHaveLength(1);
-      expect(parts[0]).toMatchObject({ type: "text", text: "Actual message" });
+      expect(parts[0]).toMatchObject({ type: "text", text: "> Actual message" });
     });
 
-    it("strips timestamp prefix from quoted lines", () => {
+    it("strips timestamp prefix from quoted lines preserving > prefix", () => {
       const line = "> [Mon 2026-02-20 3:45 EST] Hey there";
       const parts = parseMessageParts(make({ outputLines: [line] }));
       expect(parts).toHaveLength(1);
-      expect(parts[0]).toMatchObject({ type: "text", text: "Hey there" });
+      expect(parts[0]).toMatchObject({ type: "text", text: "> Hey there" });
     });
   });
 

@@ -69,7 +69,7 @@ export const WizardLaunchMenu = memo(function WizardLaunchMenu({
     <div ref={containerRef} className="relative" onBlur={handleBlur}>
       <button
         type="button"
-        className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:opacity-40"
+        className="flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:opacity-40"
         aria-label="Create new resource"
         aria-expanded={open}
         aria-haspopup="menu"
@@ -90,7 +90,7 @@ export const WizardLaunchMenu = memo(function WizardLaunchMenu({
               key={type}
               type="button"
               role="menuitem"
-              className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left transition hover:bg-muted"
+              className="flex w-full min-h-11 items-center gap-2.5 rounded-md px-2.5 py-2 text-left transition hover:bg-muted"
               onClick={() => handleSelect(type)}
             >
               <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />

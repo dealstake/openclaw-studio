@@ -60,7 +60,7 @@ export const WizardCreationResult = memo(function WizardCreationResult({
         {success && onView && (
           <button
             type="button"
-            className="inline-flex h-8 items-center gap-1.5 rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground shadow-sm transition hover:brightness-110"
+            className="inline-flex h-11 items-center gap-1.5 rounded-md bg-primary px-4 text-xs font-medium text-primary-foreground shadow-sm transition hover:brightness-110"
             onClick={onView}
           >
             <ExternalLink className="h-3 w-3" />
@@ -69,7 +69,7 @@ export const WizardCreationResult = memo(function WizardCreationResult({
         )}
         <button
           type="button"
-          className="inline-flex h-8 items-center rounded-md px-3 text-xs text-muted-foreground transition hover:bg-muted hover:text-foreground"
+          className="inline-flex h-11 items-center rounded-md px-4 text-xs text-muted-foreground transition hover:bg-muted hover:text-foreground"
           onClick={onDismiss}
         >
           Dismiss

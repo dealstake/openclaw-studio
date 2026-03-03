@@ -187,11 +187,13 @@ export function parseMessageParts(input: ParseMessagePartsInput): MessagePart[] 
     }
 
     // User-quoted line (starts with >)
+    // Preserve the ">" prefix so groupParts in AgentChatView can detect user
+    // messages. The UserMessage component strips it at render time.
     const trimmed = line.trim();
     if (trimmed.startsWith(">")) {
-      const text = stripInboundMetadata(trimmed.replace(/^>\s?/, "").trim());
-      if (text) {
-        parts.push({ type: "text", text });
+      const inner = stripInboundMetadata(trimmed.replace(/^>\s?/, "").trim());
+      if (inner) {
+        parts.push({ type: "text", text: `> ${inner}` });
       }
       continue;
     }

@@ -44,7 +44,7 @@ export const WizardCreationProgress = memo(function WizardCreationProgress({
             ) : step.status === "error" ? (
               <span className="flex h-3.5 w-3.5 shrink-0 items-center justify-center text-red-400">✕</span>
             ) : (
-              <span className="flex h-3.5 w-3.5 shrink-0 items-center justify-center text-muted-foreground/40">○</span>
+              <span className="flex h-3.5 w-3.5 shrink-0 items-center justify-center text-muted-foreground">○</span>
             )}
             <span
               className={
@@ -54,7 +54,7 @@ export const WizardCreationProgress = memo(function WizardCreationProgress({
                     ? "text-foreground"
                     : step.status === "error"
                       ? "text-red-400"
-                      : "text-muted-foreground/60"
+                      : "text-muted-foreground"
               }
             >
               {step.label}

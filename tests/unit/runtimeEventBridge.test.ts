@@ -362,7 +362,7 @@ describe("runtime event bridge helpers", () => {
     });
     expect(withUserAndAssistant).toEqual({
       messageParts: [
-        { type: "text", text: "hello" },
+        { type: "text", text: "> hello" },
         { type: "text", text: "assistant final" },
       ],
       lastResult: "assistant final",
