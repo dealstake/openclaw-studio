@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Brain, Wrench, MessageSquare, Loader2, AlertTriangle } from "lucide-react";
+import { Brain, Wrench, MessageSquare, Loader2, AlertTriangle, type LucideIcon } from "lucide-react";
 import { SectionLabel } from "@/components/SectionLabel";
 
 export type ChatStatusBarProps = {
@@ -17,7 +17,7 @@ export type ChatStatusBarProps = {
 };
 
 /* ── state → icon + label mapping ── */
-const STATE_CONFIG: Record<string, { icon: React.ElementType; label: string }> = {
+const STATE_CONFIG: Record<string, { icon: LucideIcon; label: string }> = {
   idle: { icon: MessageSquare, label: "Idle" },
   thinking: { icon: Brain, label: "Thinking…" },
   tool: { icon: Wrench, label: "Using tool…" },

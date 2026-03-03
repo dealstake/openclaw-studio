@@ -17,7 +17,7 @@ interface RuleRowProps {
   disabled?: boolean;
 }
 
-const TASK_TYPE_ICON_MAP: Record<TaskTypeConditionValue, React.ElementType> = {
+const TASK_TYPE_ICON_MAP: Record<TaskTypeConditionValue, React.ComponentType<{ className?: string; size?: number; strokeWidth?: number }>> = {
   any: Layers,
   cron: Clock,
   subagent: GitBranch,

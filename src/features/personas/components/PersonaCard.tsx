@@ -66,7 +66,7 @@ const CATEGORY_LABELS: Record<PersonaCategory, string> = {
 /** Maps overall preflight status to icon + colour */
 const HEALTH_STATUS_META: Record<
   OverallPreflightStatus | "checking",
-  { Icon: React.ElementType; cls: string; label: string }
+  { Icon: React.ComponentType<{ className?: string; size?: number; strokeWidth?: number }>; cls: string; label: string }
 > = {
   ready: {
     Icon: ShieldCheck,

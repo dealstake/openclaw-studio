@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Wrench, ChevronRight, Clock, CheckCircle2, Loader2, AlertCircle } from "lucide-react";
+import { Wrench, ChevronRight, Clock, CheckCircle2, Loader2, AlertCircle, type LucideIcon } from "lucide-react";
 import {
   Collapsible,
   CollapsibleContent,
@@ -31,7 +31,7 @@ export type ToolCallBlockProps = {
 
 const phaseConfig: Record<
   ToolCallPhase,
-  { label: string; Icon: React.ElementType; iconClass: string }
+  { label: string; Icon: LucideIcon; iconClass: string }
 > = {
   pending: {
     label: "Pending",

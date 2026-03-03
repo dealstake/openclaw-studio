@@ -4,7 +4,7 @@ import type { Notification, AlertRuleType } from "../lib/types";
 import { formatRelativeTime } from "@/lib/text/time";
 import { BaseCard, CardHeader } from "@/components/ui/BaseCard";
 
-const typeIconMap: Record<AlertRuleType, { icon: React.ElementType; color: string }> = {
+const typeIconMap: Record<AlertRuleType, { icon: React.ComponentType<{ className?: string; size?: number; strokeWidth?: number }>; color: string }> = {
   completion: { icon: CheckCircle2, color: "text-emerald-500" },
   error: { icon: AlertTriangle, color: "text-destructive" },
   budget: { icon: DollarSign, color: "text-amber-500" },

@@ -25,7 +25,7 @@ export type TriggerNodeProps = NodeProps<Node<TriggerNodeData>>;
 
 // ─── Trigger type config ──────────────────────────────────────────────────────
 
-const TRIGGER_CONFIG: Record<TriggerType, { Icon: React.ElementType; color: string; bg: string; border: string }> = {
+const TRIGGER_CONFIG: Record<TriggerType, { Icon: React.ComponentType<{ className?: string; size?: number; strokeWidth?: number }>; color: string; bg: string; border: string }> = {
   manual:             { Icon: Play,    color: "text-sky-500",    bg: "bg-sky-500/15",    border: "border-sky-500/40" },
   cron:               { Icon: Clock4,  color: "text-violet-500", bg: "bg-violet-500/15", border: "border-violet-500/40" },
   webhook:            { Icon: Webhook, color: "text-amber-500",  bg: "bg-amber-500/15",  border: "border-amber-500/40" },

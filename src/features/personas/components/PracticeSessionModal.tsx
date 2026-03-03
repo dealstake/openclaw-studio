@@ -48,7 +48,7 @@ import type { PersonaVoiceConfig } from "@/features/voice/lib/voiceTypes";
 // Mode icons
 // ---------------------------------------------------------------------------
 
-const MODE_ICONS: Record<PracticeModeType, React.ElementType> = {
+const MODE_ICONS: Record<PracticeModeType, React.ComponentType<{ className?: string; size?: number; strokeWidth?: number }>> = {
   "mock-call": Phone,
   "task-delegation": ClipboardList,
   "ticket-simulation": Headphones,
