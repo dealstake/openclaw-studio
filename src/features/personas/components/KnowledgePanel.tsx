@@ -311,7 +311,7 @@ const SourceCard = React.memo(function SourceCard({
         className={cn(
           "flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded",
           "p-1 text-muted-foreground/50 transition-colors",
-          "opacity-100 md:opacity-0 group-hover:opacity-100 focus-visible:opacity-100",
+          "opacity-40 group-hover:opacity-100 focus-visible:opacity-100",
           "hover:bg-destructive/10 hover:text-destructive",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
           "disabled:cursor-not-allowed",
@@ -490,7 +490,7 @@ export const KnowledgePanel = React.memo(function KnowledgePanel({
                   )}
                 >
                   <Upload className="h-3 w-3" />
-                  Upload File
+                  Add File Path
                 </button>
                 {sources.length > 0 && (
                   <button

@@ -26,41 +26,25 @@ import type { UseVoiceSettingsReturn } from "../hooks/useVoiceSettings";
 interface VoiceCardProps {
   voice: ElevenLabsVoice;
   selected: boolean;
+  /** Whether THIS card's preview is currently playing (controlled by parent) */
+  playing: boolean;
   onSelect: (voiceId: string) => void;
+  /** Called by this card to request start/stop of its preview */
+  onPreview: (voice: ElevenLabsVoice, e: React.MouseEvent) => void;
 }
 
 const VoiceCard = React.memo(function VoiceCard({
   voice,
   selected,
+  playing,
   onSelect,
+  onPreview,
 }: VoiceCardProps) {
-  const [playing, setPlaying] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-
   const handlePreview = useCallback(
     (e: React.MouseEvent) => {
-      e.stopPropagation();
-      if (playing) {
-        audioRef.current?.pause();
-        audioRef.current = null;
-        setPlaying(false);
-        return;
-      }
-      if (!voice.previewUrl) return;
-      const audio = new Audio(voice.previewUrl);
-      audioRef.current = audio;
-      setPlaying(true);
-      audio.onended = () => {
-        setPlaying(false);
-        audioRef.current = null;
-      };
-      audio.onerror = () => {
-        setPlaying(false);
-        audioRef.current = null;
-      };
-      void audio.play();
+      onPreview(voice, e);
     },
-    [playing, voice.previewUrl],
+    [onPreview, voice],
   );
 
   const handleSelect = useCallback(() => {
@@ -206,6 +190,40 @@ export const VoiceSettingsPanel = React.memo(function VoiceSettingsPanel({
 
   const [advancedOpen, setAdvancedOpen] = useState(false);
 
+  // Lifted audio preview state — prevents multiple simultaneous previews
+  const previewAudioRef = useRef<HTMLAudioElement | null>(null);
+  const [playingVoiceId, setPlayingVoiceId] = useState<string | null>(null);
+
+  const handleVoicePreview = useCallback(
+    (voice: ElevenLabsVoice, e: React.MouseEvent) => {
+      e.stopPropagation();
+      // Stop any currently-playing preview
+      if (previewAudioRef.current) {
+        previewAudioRef.current.pause();
+        previewAudioRef.current = null;
+      }
+      // Toggle off if same voice is clicked again
+      if (playingVoiceId === voice.voiceId) {
+        setPlayingVoiceId(null);
+        return;
+      }
+      if (!voice.previewUrl) return;
+      const audio = new Audio(voice.previewUrl);
+      previewAudioRef.current = audio;
+      setPlayingVoiceId(voice.voiceId);
+      audio.onended = () => {
+        setPlayingVoiceId(null);
+        previewAudioRef.current = null;
+      };
+      audio.onerror = () => {
+        setPlayingVoiceId(null);
+        previewAudioRef.current = null;
+      };
+      void audio.play();
+    },
+    [playingVoiceId],
+  );
+
   const handleVoiceSelect = useCallback(
     (voiceId: string) => {
       updateGlobalVoice({ voiceId });
@@ -264,22 +282,27 @@ export const VoiceSettingsPanel = React.memo(function VoiceSettingsPanel({
             Automatically speak AI responses when in voice mode
           </p>
         </div>
+        {/* min-h/w-[44px] ensures ≥44px touch target per WCAG 2.5.8 */}
         <button
           type="button"
           onClick={toggleAutoSpeak}
           role="switch"
           aria-checked={settings.autoSpeak}
-          className={cn(
-            "relative h-6 w-11 shrink-0 rounded-full transition-colors",
-            settings.autoSpeak ? "bg-primary" : "bg-muted",
-          )}
+          className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
         >
-          <span
+          <div
             className={cn(
-              "block h-5 w-5 rounded-full bg-white shadow-sm transition-transform",
-              settings.autoSpeak ? "translate-x-[22px]" : "translate-x-[2px]",
+              "relative h-6 w-11 rounded-full transition-colors",
+              settings.autoSpeak ? "bg-primary" : "bg-muted",
             )}
-          />
+          >
+            <span
+              className={cn(
+                "absolute top-0.5 block h-5 w-5 rounded-full bg-white shadow-sm transition-transform",
+                settings.autoSpeak ? "translate-x-[22px]" : "translate-x-[2px]",
+              )}
+            />
+          </div>
         </button>
       </div>
 
@@ -342,7 +365,9 @@ export const VoiceSettingsPanel = React.memo(function VoiceSettingsPanel({
                 key={voice.voiceId}
                 voice={voice}
                 selected={voice.voiceId === settings.voiceId}
+                playing={playingVoiceId === voice.voiceId}
                 onSelect={handleVoiceSelect}
+                onPreview={handleVoicePreview}
               />
             ))}
           </div>
