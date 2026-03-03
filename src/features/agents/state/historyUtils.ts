@@ -92,11 +92,25 @@ export const mergeHistoryWithPending = (
 ): string[] => {
   if (currentLines.length === 0) return historyLines;
   if (historyLines.length === 0) return historyLines;
+
+  // Build a Set for O(1) existence checks (fast path for common case)
+  const historySet = new Set(historyLines);
   const merged = [...historyLines];
   let cursor = 0;
+  // Track insertion offset: as we splice items in, original indices shift
+  let offset = 0;
+
   for (const line of currentLines) {
+    // Fast path: line doesn't exist in history at all
+    if (!historySet.has(line)) {
+      merged.splice(cursor, 0, line);
+      offset += 1;
+      cursor += 1;
+      continue;
+    }
+    // Line exists — scan forward from cursor to find it
     let foundIndex = -1;
-    for (let i = cursor; i < merged.length; i += 1) {
+    for (let i = cursor; i < merged.length; i++) {
       if (merged[i] === line) {
         foundIndex = i;
         break;
@@ -104,10 +118,11 @@ export const mergeHistoryWithPending = (
     }
     if (foundIndex !== -1) {
       cursor = foundIndex + 1;
-      continue;
+    } else {
+      // Line exists in history but before cursor — insert at cursor
+      merged.splice(cursor, 0, line);
+      cursor += 1;
     }
-    merged.splice(cursor, 0, line);
-    cursor += 1;
   }
   return merged;
 };
