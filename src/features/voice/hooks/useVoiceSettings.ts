@@ -99,7 +99,7 @@ export function useVoiceSettings({
     };
     void load();
     return () => { cancelled = true; };
-  }, []);
+  }, [apiKey]); // eslint-disable-line react-hooks/exhaustive-deps -- re-fetch when key changes
 
   // Resolve merged settings
   const settings = useMemo((): ResolvedVoiceSettings => {
