@@ -200,7 +200,6 @@ export const PersonasTab = React.memo(function PersonasTab({
         <button
           type="button"
           onClick={handleOpenTemplateBrowser}
-          aria-label="Create new persona"
           className="flex min-h-[44px] items-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-3 text-xs text-primary transition-colors hover:bg-primary/20 md:min-h-8"
         >
           <Plus className="h-3 w-3" />
