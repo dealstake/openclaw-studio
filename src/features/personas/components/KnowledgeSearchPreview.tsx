@@ -210,7 +210,7 @@ export const KnowledgeSearchPreview = React.memo(
 
         {/* Search input */}
         <div className="relative">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/50" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/60" />
           <input
             type="text"
             value={query}
@@ -226,7 +226,7 @@ export const KnowledgeSearchPreview = React.memo(
             )}
           />
           {loading && (
-            <Loader2 className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 animate-spin text-muted-foreground/50" />
+            <Loader2 className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 animate-spin text-muted-foreground/60" />
           )}
         </div>
 
@@ -252,7 +252,7 @@ export const KnowledgeSearchPreview = React.memo(
         {/* Results */}
         {results.length > 0 && (
           <div className="flex flex-col gap-2">
-            <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground/50">
+            <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground/60">
               {results.length} chunk{results.length !== 1 ? "s" : ""} retrieved
             </p>
             {results.map((result, i) => (

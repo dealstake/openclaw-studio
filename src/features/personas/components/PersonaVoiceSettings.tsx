@@ -9,6 +9,7 @@
  */
 
 import React, { useMemo } from "react";
+import { toast } from "sonner";
 import { createStudioSettingsCoordinator } from "@/lib/studio/coordinator";
 import { useVoiceSettings } from "@/features/voice/hooks/useVoiceSettings";
 import { VoiceSettingsPanel } from "@/features/voice/components/VoiceSettingsPanel";
@@ -32,7 +33,9 @@ async function patchPersonaVoice(
     body: JSON.stringify({ personaId, ...fields }),
   });
   if (!res.ok) {
-    console.error("[PersonaVoiceSettings] PATCH failed:", res.status, await res.text());
+    const body = await res.text();
+    console.error("[PersonaVoiceSettings] PATCH failed:", res.status, body);
+    toast.error("Failed to save voice settings");
   }
 }
 

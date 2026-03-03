@@ -246,7 +246,7 @@ export const PersonasTab = React.memo(function PersonasTab({
 
       {/* Search */}
       <div className="relative px-3">
-        <Search className="absolute left-5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/50" />
+        <Search className="absolute left-5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/60" />
         <input
           type="text"
           value={search}

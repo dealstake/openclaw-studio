@@ -285,7 +285,7 @@ const SourceCard = React.memo(function SourceCard({
             {source.sourceUri}
           </p>
         )}
-        <div className="mt-0.5 flex items-center gap-2 text-[10px] text-muted-foreground/50">
+        <div className="mt-0.5 flex items-center gap-2 text-[10px] text-muted-foreground/60">
           <span>Added {fetchedDate}</span>
           {source.chunkCount !== undefined && (
             <>
@@ -310,7 +310,7 @@ const SourceCard = React.memo(function SourceCard({
         disabled={busy}
         className={cn(
           "flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded",
-          "p-1 text-muted-foreground/50 transition-colors",
+          "p-1 text-muted-foreground/60 transition-colors",
           "opacity-40 group-hover:opacity-100 focus-visible:opacity-100",
           "hover:bg-destructive/10 hover:text-destructive",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
