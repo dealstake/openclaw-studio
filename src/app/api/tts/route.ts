@@ -45,10 +45,11 @@ export async function POST(request: Request): Promise<Response> {
     // Truncate excessively long text (ElevenLabs limit ~5000 chars)
     const truncated = text.slice(0, 5000);
 
-    const apiKey = process.env.ELEVENLABS_API_KEY || clientKey;
+    const envKey = process.env.ELEVENLABS_API_KEY;
+    const apiKey = envKey || (typeof clientKey === "string" && clientKey.length >= 32 ? clientKey : null);
     if (!apiKey) {
       return NextResponse.json(
-        { error: "ElevenLabs API key not configured" },
+        { error: "ElevenLabs API key not configured. Add it in Settings > Credentials." },
         { status: 500 },
       );
     }

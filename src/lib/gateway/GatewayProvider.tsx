@@ -27,6 +27,11 @@ export function useGateway(): GatewayContextValue {
   return ctx;
 }
 
+/** Safe version — returns null outside GatewayProvider (safe for tests/Storybook). */
+export function useGatewaySafe(): GatewayContextValue | null {
+  return useContext(GatewayContext);
+}
+
 interface GatewayProviderProps {
   children: ReactNode;
 }

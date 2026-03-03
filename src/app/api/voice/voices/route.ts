@@ -1,10 +1,14 @@
 /**
  * Voice list API route — fetches available ElevenLabs voices.
  *
- * GET /api/voice/voices
- * Returns: { voices: ElevenLabsVoice[] }
+ * POST /api/voice/voices
+ * Body: { apiKey?: string }
+ * Returns: { voices: VoiceSummary[] }
  *
+ * Also supports GET (no client key, env var only) for backward compat.
  * Caches the response for 1 hour to reduce API calls.
+ *
+ * API key resolution: env var ELEVENLABS_API_KEY → client-provided apiKey (from credential vault)
  */
 
 import { NextResponse } from "next/server";
@@ -34,57 +38,85 @@ interface VoiceSummary {
   previewUrl: string | null;
 }
 
-// Simple in-memory cache
-let cachedVoices: VoiceSummary[] | null = null;
-let cacheExpiry = 0;
+// Simple in-memory cache (keyed by first 8 chars of API key to avoid cross-user leaks)
+const voiceCache = new Map<string, { voices: VoiceSummary[]; expiry: number }>();
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+
+function isValidApiKey(key: unknown): key is string {
+  return typeof key === "string" && key.length >= 32 && /^[a-zA-Z0-9_-]+$/.test(key);
+}
+
+async function fetchVoices(apiKey: string): Promise<Response> {
+  const cacheKey = apiKey.slice(0, 8);
+  const now = Date.now();
+  const cached = voiceCache.get(cacheKey);
+  if (cached && now < cached.expiry) {
+    return NextResponse.json({ voices: cached.voices });
+  }
+
+  const response = await fetch("https://api.elevenlabs.io/v1/voices", {
+    headers: { "xi-api-key": apiKey },
+  });
+
+  if (!response.ok) {
+    const errText = await response.text().catch(() => "Unknown error");
+    console.error(`[voice/voices] ElevenLabs returned ${response.status}: ${errText}`);
+    return NextResponse.json(
+      { error: `Failed to fetch voices: ${response.status}` },
+      { status: response.status },
+    );
+  }
+
+  const data = (await response.json()) as { voices: ElevenLabsVoiceRaw[] };
+  const voices: VoiceSummary[] = (data.voices ?? []).map((v) => {
+    const gender = (v.labels.gender ?? "neutral").toLowerCase();
+    return {
+      voiceId: v.voice_id,
+      name: v.name,
+      gender: gender === "male" ? "male" : gender === "female" ? "female" : "neutral",
+      accent: v.labels.accent ?? "",
+      useCase: v.labels.use_case ?? v.labels.description ?? "",
+      previewUrl: v.preview_url ?? null,
+    };
+  });
+
+  voiceCache.set(cacheKey, { voices, expiry: now + CACHE_TTL_MS });
+  return NextResponse.json({ voices });
+}
 
 export async function GET(): Promise<Response> {
   try {
-    const now = Date.now();
-    if (cachedVoices && now < cacheExpiry) {
-      return NextResponse.json({ voices: cachedVoices });
-    }
-
     const apiKey = process.env.ELEVENLABS_API_KEY;
     if (!apiKey) {
       return NextResponse.json(
-        { error: "ElevenLabs API key not configured" },
+        { error: "ElevenLabs API key not configured. Add it in Settings > Credentials." },
         { status: 500 },
       );
     }
+    return fetchVoices(apiKey);
+  } catch (err) {
+    console.error("[voice/voices] Error:", err);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
+  }
+}
 
-    const response = await fetch("https://api.elevenlabs.io/v1/voices", {
-      headers: { "xi-api-key": apiKey },
-    });
+export async function POST(request: Request): Promise<Response> {
+  try {
+    const body = (await request.json()) as { apiKey?: string };
+    const envKey = process.env.ELEVENLABS_API_KEY;
+    const clientKey = body.apiKey;
+    const apiKey = envKey || (isValidApiKey(clientKey) ? clientKey : null);
 
-    if (!response.ok) {
-      const errText = await response.text().catch(() => "Unknown error");
-      console.error(`[voice/voices] ElevenLabs returned ${response.status}: ${errText}`);
+    if (!apiKey) {
       return NextResponse.json(
-        { error: `Failed to fetch voices: ${response.status}` },
-        { status: response.status },
+        { error: "ElevenLabs API key not configured. Add it in Settings > Credentials." },
+        { status: 500 },
       );
     }
-
-    const data = (await response.json()) as { voices: ElevenLabsVoiceRaw[] };
-    const voices: VoiceSummary[] = (data.voices ?? []).map((v) => {
-      const gender = (v.labels.gender ?? "neutral").toLowerCase();
-      return {
-        voiceId: v.voice_id,
-        name: v.name,
-        gender: gender === "male" ? "male" : gender === "female" ? "female" : "neutral",
-        accent: v.labels.accent ?? "",
-        useCase: v.labels.use_case ?? v.labels.description ?? "",
-        previewUrl: v.preview_url ?? null,
-      };
-    });
-
-    // Cache it
-    cachedVoices = voices;
-    cacheExpiry = now + CACHE_TTL_MS;
-
-    return NextResponse.json({ voices });
+    return fetchVoices(apiKey);
   } catch (err) {
     console.error("[voice/voices] Error:", err);
     return NextResponse.json(
