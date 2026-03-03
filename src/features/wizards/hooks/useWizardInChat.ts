@@ -6,6 +6,7 @@ import type { GatewayClient, EventFrame } from "@/lib/gateway/GatewayClient";
 import type { WizardContext, WizardType, WizardExtractedConfig } from "../lib/wizardTypes";
 import { getWizardTheme, getWizardStarters } from "../lib/wizardThemes";
 import { extractJsonBlock } from "../lib/artifactExtractor";
+import { getWizardSchema } from "../lib/wizardSchemas";
 import type { PreflightResult } from "@/features/personas/lib/preflightTypes";
 import {
   extractWizardToolCall,
@@ -257,9 +258,10 @@ export function useWizardInChat({
           setThinkingTrace(null);
           setIsStreaming(false);
 
-          // Config extraction via unified artifact extractor
+          // Config extraction via unified artifact extractor with Zod validation
           const configLabel = `${ctx.extractorType}-config`;
-          const config = extractJsonBlock(finalText, configLabel);
+          const schema = getWizardSchema(ctx.extractorType);
+          const config = extractJsonBlock(finalText, configLabel, schema);
           if (config) {
             const extracted: WizardExtractedConfig = {
               type: wizardType,

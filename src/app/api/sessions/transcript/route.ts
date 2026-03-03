@@ -112,6 +112,8 @@ async function readTranscriptLocal(
     crlfDelay: Infinity,
   });
 
+  let hasMore = false;
+
   for await (const line of rl) {
     if (!line.trim()) continue;
     try {
@@ -125,6 +127,11 @@ async function readTranscriptLocal(
           content: entry.message.content ?? "",
           timestamp: entry.timestamp ?? "",
         });
+      } else if (messageIndex >= offset + limit) {
+        // We've collected all requested messages and confirmed there are more
+        hasMore = true;
+        messageIndex++;
+        break;
       }
       messageIndex++;
     } catch {
@@ -138,6 +145,6 @@ async function readTranscriptLocal(
     total: messageIndex,
     offset,
     limit,
-    hasMore: offset + limit < messageIndex,
+    hasMore,
   };
 }

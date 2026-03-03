@@ -10,15 +10,12 @@
 
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import type { WizardType } from "./wizardTypes";
-
-// ── Validation ─────────────────────────────────────────────────────────
-
-/** Validate that an object has the expected string properties */
-function hasStringProps(obj: unknown, keys: string[]): obj is Record<string, unknown> {
-  if (!obj || typeof obj !== "object") return false;
-  const record = obj as Record<string, unknown>;
-  return keys.every((k) => typeof record[k] === "string" && record[k] !== "");
-}
+import {
+  SkillWizardConfigSchema,
+  CredentialWizardConfigSchema,
+  ProjectWizardConfigSchema,
+  AgentWizardConfigSchema,
+} from "./wizardSchemas";
 
 // ── Skill creation types ───────────────────────────────────────────────
 
@@ -254,28 +251,35 @@ export async function executeWizardCreation(
   agentId: string,
 ): Promise<WizardCreationResult> {
   switch (type) {
-    case "skill":
-      if (!hasStringProps(config, ["name", "skillContent"])) {
-        return { success: false, message: "Invalid skill configuration: missing name or content." };
+    case "skill": {
+      const skillParse = SkillWizardConfigSchema.safeParse(config);
+      if (!skillParse.success) {
+        return { success: false, message: `Invalid skill configuration: ${skillParse.error.issues[0]?.message ?? "validation failed"}.` };
       }
-      return createSkill(client, agentId, config as unknown as SkillWizardConfig);
-    case "credential":
-      if (!hasStringProps(config, ["name", "key", "service"])) {
-        return { success: false, message: "Invalid credential configuration: missing name, key, or service." };
+      return createSkill(client, agentId, skillParse.data);
+    }
+    case "credential": {
+      const credParse = CredentialWizardConfigSchema.safeParse(config);
+      if (!credParse.success) {
+        return { success: false, message: `Invalid credential configuration: ${credParse.error.issues[0]?.message ?? "validation failed"}.` };
       }
-      return prepareCredentialSetup(config as unknown as CredentialWizardConfig);
-    case "project":
-      if (!hasStringProps(config, ["name", "slug", "description"])) {
-        return { success: false, message: "Invalid project configuration: missing name, slug, or description." };
+      return prepareCredentialSetup(credParse.data);
+    }
+    case "project": {
+      const projParse = ProjectWizardConfigSchema.safeParse(config);
+      if (!projParse.success) {
+        return { success: false, message: `Invalid project configuration: ${projParse.error.issues[0]?.message ?? "validation failed"}.` };
       }
-      return createProject(client, agentId, config as unknown as ProjectWizardConfig);
+      return createProject(client, agentId, projParse.data);
+    }
     case "agent": {
-      if (!hasStringProps(config, ["name"])) {
-        return { success: false, message: "Invalid agent configuration: missing name." };
+      const agentParse = AgentWizardConfigSchema.safeParse(config);
+      if (!agentParse.success) {
+        return { success: false, message: `Invalid agent configuration: ${agentParse.error.issues[0]?.message ?? "validation failed"}.` };
       }
-      const agentConf = config as Record<string, unknown>;
-      const name = agentConf.name as string;
-      const purpose = (agentConf.purpose as string) ?? (agentConf.roleDescription as string) ?? "AI agent";
+      const agentConf = agentParse.data;
+      const name = agentConf.name;
+      const purpose = agentConf.purpose ?? agentConf.roleDescription ?? "AI agent";
       const agentSlug = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
       try {
         // 1. Register in gateway config
