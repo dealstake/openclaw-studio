@@ -15,6 +15,8 @@ import { AddKeyDialog } from "./AddKeyDialog";
 
 interface BrainKeysSectionProps {
   agentId: string | null;
+  /** Whether AI-category credentials exist in the Credentials vault */
+  hasAiCredentials?: boolean;
 }
 
 /** Format a timestamp (ms) as relative time */
@@ -132,6 +134,7 @@ const BrainKeyCard = memo(function BrainKeyCard({
 
 export const BrainKeysSection = memo(function BrainKeysSection({
   agentId,
+  hasAiCredentials = false,
 }: BrainKeysSectionProps) {
   const { onNavigateToCredentials } = useManagementPanel();
   const { profiles, loading, error, refresh, addKey, removeKey } =
@@ -202,13 +205,29 @@ export const BrainKeysSection = memo(function BrainKeysSection({
 
       {error && <ErrorBanner message={error} />}
 
-      {!loading && profiles.length === 0 && (
+      {!loading && profiles.length === 0 && !hasAiCredentials && (
         <EmptyState
           icon={KeyRound}
           title="No API keys added yet"
           description="Keys are optional — your gateway may already have provider credentials configured."
           action={{ label: "Open Credentials", onClick: onNavigateToCredentials }}
         />
+      )}
+
+      {!loading && profiles.length === 0 && hasAiCredentials && (
+        <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-3 py-2.5">
+          <p className="text-xs text-emerald-400">
+            ✓ Provider credentials configured via{" "}
+            <button
+              type="button"
+              onClick={onNavigateToCredentials}
+              className="inline min-h-[44px] px-0 underline underline-offset-2 hover:text-emerald-300 transition-colors"
+            >
+              Credentials vault
+            </button>
+            . Add per-agent keys here for failover.
+          </p>
+        </div>
       )}
 
       {Object.entries(byProvider).map(([provider, providerProfiles]) => (

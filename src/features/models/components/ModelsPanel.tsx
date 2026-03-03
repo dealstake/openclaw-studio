@@ -8,6 +8,7 @@ import { PanelHeader } from "@/components/ui/PanelHeader";
 import { ErrorBanner } from "@/components/ErrorBanner";
 import { CardSkeleton } from "@/components/ui/CardSkeleton";
 import { PanelIconButton } from "@/components/PanelIconButton";
+import { useHasAiCredentials } from "@/features/models/hooks/useHasAiCredentials";
 import { BrainModelSection } from "./BrainModelSection";
 import { BrainKeysSection } from "./BrainKeysSection";
 import { SpecialistEnginesSection } from "./SpecialistEnginesSection";
@@ -41,6 +42,8 @@ export const ModelsPanel = memo(function ModelsPanel({
     changeThinking,
     changeCronModel,
   } = useModels(client, status);
+
+  const { hasAiCredentials } = useHasAiCredentials(client, status);
 
   useEffect(() => {
     void refresh();
@@ -81,7 +84,7 @@ export const ModelsPanel = memo(function ModelsPanel({
             onChangePrimary={changeBrainModel}
             disabled={loading}
           />
-          <BrainKeysSection agentId={agentId ?? null} />
+          <BrainKeysSection agentId={agentId ?? null} hasAiCredentials={hasAiCredentials} />
           <SpecialistEnginesSection
             engines={engines}
             onSaveEngine={saveEngine}
