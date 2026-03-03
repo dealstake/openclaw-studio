@@ -26,7 +26,20 @@ export async function GET(request: Request) {
 
     return withSidecarGetFallback("/activity/baselines", sidecarParams, () => {
       const db = getDb();
-      const baselines = baselineRepo.queryBaselines(db, agentId);
+      let baselines = baselineRepo.queryBaselines(db, agentId);
+
+      // Auto-recompute if baselines are stale (>24h old) or missing
+      const staleThreshold = Date.now() - 24 * 60 * 60 * 1000;
+      const isStale =
+        baselines.length === 0 ||
+        baselines.every(
+          (b) => new Date(b.computedAt).getTime() < staleThreshold,
+        );
+      if (isStale) {
+        const result = baselineRepo.computeAndStoreBaselines(db, agentId, 7);
+        baselines = result.baselines;
+      }
+
       return { agentId, baselines };
     });
   } catch (err) {
