@@ -389,7 +389,7 @@ export function useStudioDataSync(params: UseStudioDataSyncParams): UseStudioDat
   // ── Settings agent follows selected agent ──
   useEffect(() => {
     if (!selectedAgentId) return;
-    if ((expandedTab === "settings" || managementView === "settings") && selectedAgentId !== settingsAgentId) {
+    if ((expandedTab === "personas" || managementView === "personas") && selectedAgentId !== settingsAgentId) {
       setSettingsAgentId(selectedAgentId);
     } else if (settingsAgentId && selectedAgentId !== settingsAgentId) {
       setSettingsAgentId(null);

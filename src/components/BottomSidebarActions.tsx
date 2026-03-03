@@ -81,7 +81,7 @@ export const BottomSidebarActions = memo(function BottomSidebarActions({
           onClick={onOpenSettings}
         >
           <Settings className="h-3.5 w-3.5 text-muted-foreground" />
-          Agent Settings
+          Agent Persona
         </DropdownMenuItem>
 
         {emergency && (

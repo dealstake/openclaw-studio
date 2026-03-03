@@ -33,7 +33,7 @@ const TAB_COMMANDS: Array<{
   { tab: "usage", label: "Go to Usage", icon: BarChart3, keywords: ["usage", "cost", "tokens", "spend"] },
   { tab: "channels", label: "Go to Channels", icon: Radio, keywords: ["channel", "whatsapp", "telegram", "discord"] },
   { tab: "router", label: "Go to Model Router", icon: Route, shortcut: "⌘⇧R", keywords: ["router", "routing", "model", "route", "cost"] },
-  { tab: "settings", label: "Go to Settings", icon: Settings, keywords: ["settings", "config", "configuration"] },
+  { tab: "personas", label: "Go to Personas", icon: Settings, keywords: ["settings", "config", "configuration", "personas", "agents"] },
 ];
 
 // --- Pure action builder functions (extracted from monolithic useMemo) ---

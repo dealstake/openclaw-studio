@@ -88,7 +88,7 @@ export const StudioExpandedPanel = memo(function StudioExpandedPanel({
   if (!expandedTab) return null;
 
   const title = CONTEXT_TAB_CONFIG.find((t) => t.value === expandedTab)?.label
-    ?? ({ usage: "Usage", channels: "Channels", cron: "Cron", settings: "Settings" } as Record<string, string>)[expandedTab]
+    ?? ({ usage: "Usage", channels: "Channels", cron: "Cron" } as Record<string, string>)[expandedTab]
     ?? "";
 
   return (
@@ -186,8 +186,7 @@ export const StudioExpandedPanel = memo(function StudioExpandedPanel({
             </PanelErrorBoundary>
           )}
           <ManagementPanelContent
-            tab={expandedTab === "usage" || expandedTab === "channels" || expandedTab === "settings" ? expandedTab : null}
-            onCloseSettings={onClose}
+            tab={expandedTab === "usage" || expandedTab === "channels" ? expandedTab : null}
             onTranscriptClick={onTranscriptClick}
           />
         </div>

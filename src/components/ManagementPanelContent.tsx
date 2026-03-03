@@ -45,30 +45,21 @@ const PersonasPanel = lazy(() =>
     default: m.PersonasPanel,
   }))
 );
-import {
-  AgentSettingsPanel,
-} from "@/features/agents/components/AgentInspectPanels";
-import { LogoutButton } from "@/components/brand/LogoutButton";
 
-const RESERVED_MAIN_AGENT_ID = "main";
 
 export interface ManagementPanelContentProps {
   tab: ManagementTab | null;
   /** Override context onTranscriptClick for specific usage sites */
   onTranscriptClick?: (sessionId: string, agentId: string | null) => void;
-  /** Override context onCloseSettings for specific usage sites */
-  onCloseSettings?: () => void;
 }
 
 export const ManagementPanelContent = memo(function ManagementPanelContent({
   tab,
   onTranscriptClick: onTranscriptClickOverride,
-  onCloseSettings: onCloseSettingsOverride,
 }: ManagementPanelContentProps) {
   const ctx = useManagementPanel();
 
   const onTranscriptClick = onTranscriptClickOverride ?? ctx.onTranscriptClick;
-  const onCloseSettings = onCloseSettingsOverride ?? ctx.onCloseSettings;
 
   if (!tab) return null;
 
@@ -111,28 +102,12 @@ export const ManagementPanelContent = memo(function ManagementPanelContent({
       )}
       {tab === "personas" && (
         <PanelErrorBoundary name="Personas">
-          <PersonasPanel client={ctx.client} agentId={ctx.focusedAgentId} status={ctx.status} />
-        </PanelErrorBoundary>
-      )}
-      {tab === "settings" && ctx.settingsAgent && (
-        <PanelErrorBoundary name="Settings">
-          <AgentSettingsPanel
-            key={ctx.settingsAgent.agentId}
-            agent={ctx.settingsAgent}
-            onClose={onCloseSettings}
-            onRename={ctx.onRenameAgent}
-            onNewSession={ctx.onNewSession}
-            onDelete={ctx.onDeleteAgent}
-            canDelete={ctx.settingsAgent.agentId !== RESERVED_MAIN_AGENT_ID}
-            onToolCallingToggle={ctx.onToolCallingToggle}
-            onThinkingTracesToggle={ctx.onThinkingTracesToggle}
-            onAutonomyChange={ctx.onAutonomyChange}
+          <PersonasPanel
             client={ctx.client}
+            agentId={ctx.focusedAgentId}
             status={ctx.status}
+            initialDetailAgentId={ctx.settingsAgent?.agentId ?? null}
           />
-          <div className="mt-4 border-t border-border/40 px-4 pt-4">
-            <LogoutButton />
-          </div>
         </PanelErrorBoundary>
       )}
     </Suspense>

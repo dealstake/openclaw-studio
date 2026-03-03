@@ -9,6 +9,8 @@ export interface PersonasPanelProps {
   client: GatewayClient;
   agentId: string | null;
   status: GatewayStatus;
+  /** If set, auto-open the detail modal for this agent */
+  initialDetailAgentId?: string | null;
 }
 
 /**
@@ -19,6 +21,7 @@ export const PersonasPanel = memo(function PersonasPanel({
   client,
   agentId,
   status,
+  initialDetailAgentId,
 }: PersonasPanelProps) {
   const { state } = useAgentState();
 
@@ -29,6 +32,7 @@ export const PersonasPanel = memo(function PersonasPanel({
         agentId={agentId}
         status={status}
         agents={state.agents}
+        initialDetailAgentId={initialDetailAgentId}
       />
     </div>
   );

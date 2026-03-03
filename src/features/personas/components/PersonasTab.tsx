@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Search, Users, Plus } from "lucide-react";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { cn } from "@/lib/utils";
@@ -57,6 +57,8 @@ export interface PersonasTabProps {
   onCreatePersona?: () => void;
   /** Called when user selects a template → should start inline wizard */
   onSelectTemplate?: (template: PersonaTemplate) => void;
+  /** If set, auto-open the detail modal for this agent on mount */
+  initialDetailAgentId?: string | null;
 }
 
 export const PersonasTab = React.memo(function PersonasTab({
@@ -67,6 +69,7 @@ export const PersonasTab = React.memo(function PersonasTab({
   models,
   onCreatePersona,
   onSelectTemplate,
+  initialDetailAgentId,
 }: PersonasTabProps) {
   const {
     personas,
@@ -111,7 +114,15 @@ export const PersonasTab = React.memo(function PersonasTab({
   );
 
   // Detail modal state
-  const [detailPersonaId, setDetailPersonaId] = useState<string | null>(null);
+  const [detailPersonaId, setDetailPersonaId] = useState<string | null>(initialDetailAgentId ?? null);
+
+  // Sync detail modal with external initialDetailAgentId changes
+  useEffect(() => {
+    if (initialDetailAgentId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing prop → state for externally-driven modal open
+      setDetailPersonaId(initialDetailAgentId);
+    }
+  }, [initialDetailAgentId]);
   const detailAgent = useMemo(() => {
     if (!detailPersonaId) return null;
     // Try matching by agentId first (registered agents)

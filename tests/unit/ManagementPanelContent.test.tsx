@@ -20,8 +20,8 @@ vi.mock("@/features/channels/components/ChannelsPanel", () => ({
   ChannelsPanel: () => createElement("div", { "data-testid": "channels-panel" }, "Channels"),
 }));
 
-vi.mock("@/features/agents/components/AgentInspectPanels", () => ({
-  AgentSettingsPanel: () => createElement("div", { "data-testid": "settings-panel" }, "Settings"),
+vi.mock("@/features/personas/components/PersonasPanel", () => ({
+  PersonasPanel: () => createElement("div", { "data-testid": "personas-panel" }, "Personas"),
 }));
 
 afterEach(cleanup);
@@ -82,19 +82,8 @@ describe("ManagementPanelContent", () => {
     expect(await screen.findByTestId("channels-panel")).toBeInTheDocument();
   });
 
-  it("renders AgentSettingsPanel when tab is settings and agent provided", async () => {
-    const settingsAgent = {
-      agentId: "agent-1",
-      name: "Agent One",
-      sessionKey: "key",
-      status: "idle",
-    } as ManagementPanelContextValue["settingsAgent"];
-    renderWithProvider({ tab: "settings" }, { settingsAgent });
-    expect(await screen.findByTestId("settings-panel")).toBeInTheDocument();
-  });
-
-  it("does not render settings panel when settingsAgent is null", () => {
-    renderWithProvider({ tab: "settings" }, { settingsAgent: null });
-    expect(screen.queryByTestId("settings-panel")).not.toBeInTheDocument();
+  it("renders PersonasPanel when tab is personas", async () => {
+    renderWithProvider({ tab: "personas" });
+    expect(await screen.findByTestId("personas-panel")).toBeInTheDocument();
   });
 });

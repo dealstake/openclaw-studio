@@ -228,14 +228,14 @@ export const AgentStudioPage = () => {
 
   // Command Palette (Cmd+K)
   const handleManagementNav = useCallback((tab: ManagementTab) => {
-    if (tab === "settings" && focusedAgent && !settingsAgentId) {
+    if (tab === "personas" && focusedAgent && !settingsAgentId) {
       setSettingsAgentId(focusedAgent.agentId);
     }
     // Toggle: clicking the active tab closes the drawer
     setManagementView((prev) => (prev === tab ? null : tab));
   }, [focusedAgent, settingsAgentId, setSettingsAgentId, setManagementView]);
 
-  const handleCmdNavTab = useCallback((tab: ContextTab | "usage" | "channels" | "settings") => {
+  const handleCmdNavTab = useCallback((tab: ContextTab | "usage" | "channels" | "personas") => {
     const contextTabs = new Set<string>(["projects", "tasks", "workspace", "activity", "router", "playground"]);
     if (contextTabs.has(tab)) {
       setContextTab(tab as ContextTab);
@@ -243,7 +243,7 @@ export const AgentStudioPage = () => {
       if (mobilePane !== "context") setMobilePane("context");
     } else {
       // Management tabs show inline in center area
-      if (tab === "settings" && focusedAgent && !settingsAgentId) {
+      if (tab === "personas" && focusedAgent && !settingsAgentId) {
         setSettingsAgentId(focusedAgent.agentId);
       }
       setManagementView(tab as ManagementTab);
@@ -1079,7 +1079,7 @@ export const AgentStudioPage = () => {
               <ManagementDrawer
                 open={managementView !== null}
                 onOpenChange={(open) => { if (!open) setManagementView(null); }}
-                title={managementView ? ({ usage: "Usage", channels: "Channels", credentials: "Credentials", models: "Models", gateway: "Gateway", cron: "Cron", settings: "Settings", contacts: "Contacts", voice: "Voice", personas: "Personas" } as Record<ManagementTab, string>)[managementView] : ""}
+                title={managementView ? ({ usage: "Usage", channels: "Channels", credentials: "Credentials", models: "Models", gateway: "Gateway", cron: "Cron", contacts: "Contacts", voice: "Voice", personas: "Personas" } as Record<string, string>)[managementView] ?? "" : ""}
                 sidebarOffsetPx={sessionSidebarCollapsed ? 56 : 288}
               >
                 <ManagementPanelContent
@@ -1117,7 +1117,7 @@ export const AgentStudioPage = () => {
                   wizard={wizard}
                   onWizardConfirm={() => void handleWizardConfirm()}
                   onOpenCredentialVault={() => setManagementView("credentials")}
-                  onOpenSettings={() => handleManagementNav("settings")}
+                  onOpenSettings={() => handleManagementNav("personas")}
                 />
               ) : (
                 <div className="flex h-full w-full flex-col items-center justify-center gap-3 text-center text-muted-foreground">

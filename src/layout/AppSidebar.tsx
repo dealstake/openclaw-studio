@@ -32,7 +32,7 @@ import { useComparisonStore, toggleComparison } from "@/features/sessions/state/
 import { useFeedbackFilter } from "@/features/feedback/hooks/useFeedbackFilter";
 
 /** Management nav items that open in expanded modal */
-export type ManagementTab = "usage" | "channels" | "credentials" | "models" | "gateway" | "settings" | "contacts" | "voice" | "personas";
+export type ManagementTab = "usage" | "channels" | "credentials" | "models" | "gateway" | "contacts" | "voice" | "personas";
 
 const NAV_ITEMS: Array<{ value: ManagementTab; label: string; icon: typeof MessageSquare }> = [
   { value: "personas", label: "Personas", icon: Users },
@@ -262,8 +262,8 @@ export const AppSidebar = memo(function AppSidebar({
           {/* Notifications + Theme + Settings dropdown pinned to bottom */}
           <BottomSidebarActions
             collapsed
-            onOpenSettings={() => onManagementNav("settings")}
-            settingsActive={activeManagementTab === "settings"}
+            onOpenSettings={() => onManagementNav("personas")}
+            settingsActive={activeManagementTab === "personas"}
           />
         </>
       ) : (
@@ -418,8 +418,8 @@ export const AppSidebar = memo(function AppSidebar({
           {/* Notifications + Theme + Settings dropdown pinned to bottom */}
           <BottomSidebarActions
             collapsed={false}
-            onOpenSettings={() => onManagementNav("settings")}
-            settingsActive={activeManagementTab === "settings"}
+            onOpenSettings={() => onManagementNav("personas")}
+            settingsActive={activeManagementTab === "personas"}
           />
         </>
       )}

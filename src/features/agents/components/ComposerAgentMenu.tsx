@@ -143,7 +143,7 @@ export const ComposerAgentMenu = memo(function ComposerAgentMenu({
         type="button"
         onClick={toggle}
         className={`relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-border/80 bg-muted/80 shadow-lg ring-1 ring-white/[0.12] backdrop-blur-xl transition-all duration-300 ease-out hover:brightness-110 hover:shadow-xl active:scale-90 ${glowClass} ${open ? "ring-2 ring-primary/40" : ""}`}
-        aria-label={`Agent settings — ${selected.name}`}
+        aria-label={`Persona settings — ${selected.name}`}
         aria-expanded={open}
         aria-haspopup="menu"
       >
@@ -159,7 +159,7 @@ export const ComposerAgentMenu = memo(function ComposerAgentMenu({
         <div
           className="absolute bottom-full right-0 z-50 mb-2 min-w-[240px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-border/80 bg-popover/95 shadow-2xl backdrop-blur-xl dark:bg-popover/90"
           role="menu"
-          aria-label="Agent settings"
+          aria-label="Persona settings"
         >
           {/* Header with context % */}
           {tokenPct !== null && tokenPct !== undefined && (
@@ -207,9 +207,12 @@ export const ComposerAgentMenu = memo(function ComposerAgentMenu({
 
           <div className="mx-3 border-t border-border/40" />
 
-          {/* Agent switcher (only if multiple) */}
+          {/* Persona switcher (only if multiple) */}
           {agents.length > 1 && (
             <div className="py-1">
+              <span className="px-3 py-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                Switch Persona
+              </span>
               {agents.map((agent) => (
                 <button
                   key={agent.agentId}
