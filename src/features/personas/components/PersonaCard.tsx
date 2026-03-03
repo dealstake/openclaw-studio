@@ -215,7 +215,7 @@ export const PersonaCard = React.memo(function PersonaCard({
     >
       <CardHeader>
         <div className="flex min-w-0 flex-1 items-center gap-2">
-          <CardTitle as="div">{persona.displayName}</CardTitle>
+          <CardTitle as="h3">{persona.displayName}</CardTitle>
           <span
             className={cn(
               "shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium",

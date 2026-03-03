@@ -125,6 +125,7 @@ export const PersonasTab = React.memo(function PersonasTab({
     async (personaId: string) => {
       if (!agentId) return;
       setBusyId(personaId);
+      setError(null);
       try {
         const res = await fetch(
           `/api/workspace/personas?agentId=${encodeURIComponent(agentId)}&personaId=${encodeURIComponent(personaId)}`,
@@ -148,6 +149,7 @@ export const PersonasTab = React.memo(function PersonasTab({
     async (personaId: string, newStatus: PersonaListItem["status"]) => {
       if (!agentId) return;
       setBusyId(personaId);
+      setError(null);
       try {
         const res = await fetch("/api/workspace/personas", {
           method: "PATCH",
@@ -168,7 +170,7 @@ export const PersonasTab = React.memo(function PersonasTab({
   );
 
   const reload = useCallback(() => {
-    // No-op: agents are hydrated from the store; trigger re-fetch externally if needed
+    setError(null);
   }, []);
 
   // Template browser modal state
@@ -359,13 +361,12 @@ export const PersonasTab = React.memo(function PersonasTab({
       </div>
 
       {/* Filter tabs */}
-      <div className="flex gap-1 px-3" role="radiogroup" aria-label="Filter personas by status">
+      <div className="flex gap-1 px-3" aria-label="Filter personas by status">
         {FILTERS.map((f) => (
           <button
             key={f.value}
             type="button"
-            role="radio"
-            aria-checked={filter === f.value}
+            aria-pressed={filter === f.value}
             onClick={() => setFilter(f.value)}
             className={cn(
               "min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0",
