@@ -7,7 +7,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { ToolCallBlock, type ToolCallBlockProps } from "./ToolCallBlock";
+import { ToolCallBlock, friendlyToolName, type ToolCallBlockProps } from "./ToolCallBlock";
 import { formatElapsedLabel } from "@/lib/text/time";
 
 export type ToolCallGroupProps = {
@@ -71,10 +71,11 @@ export const ToolCallGroup = React.memo(function ToolCallGroup({
         ? "Complete"
         : "Done";
 
-  // Tool name summary — e.g., "exec, read, web_search" or "exec ×3, read ×2"
+  // Tool name summary — e.g., "Read File, Search Web" or "Run Command ×3, Read File ×2"
   const nameCounts = new Map<string, number>();
   for (const t of tools) {
-    nameCounts.set(t.name, (nameCounts.get(t.name) ?? 0) + 1);
+    const friendly = friendlyToolName(t.name);
+    nameCounts.set(friendly, (nameCounts.get(friendly) ?? 0) + 1);
   }
   const namesSummary = [...nameCounts.entries()]
     .map(([name, count]) => (count > 1 ? `${name} ×${count}` : name))

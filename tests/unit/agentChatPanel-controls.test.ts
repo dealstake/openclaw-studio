@@ -143,7 +143,7 @@ describe("AgentChatPanel controls", () => {
     );
 
     // ToolCallBlock renders tool name in trigger
-    expect(screen.getByText("web_search")).toBeInTheDocument();
+    expect(screen.getByText("Search Web")).toBeInTheDocument();
   });
 
   it("does_not_render_non_error_status_inline", () => {

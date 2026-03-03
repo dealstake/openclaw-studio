@@ -98,7 +98,7 @@ describe("AgentChatView groupParts logic", () => {
     ];
 
     render(createElement(AgentChatView, { parts, streaming: false }));
-    expect(screen.getByText("web_search")).toBeTruthy();
+    expect(screen.getByText("Search Web")).toBeTruthy();
     expect(screen.getByText("Complete")).toBeTruthy();
   });
 

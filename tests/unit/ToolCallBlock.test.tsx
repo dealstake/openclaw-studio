@@ -15,7 +15,7 @@ vi.mock("@/components/MarkdownViewer", () => ({
 describe("ToolCallBlock", () => {
   it("renders tool name", () => {
     render(<ToolCallBlock name="web_search" phase="pending" />);
-    expect(screen.getByText("web_search")).toBeDefined();
+    expect(screen.getByText("Search Web")).toBeDefined();
   });
 
   it("shows Pending badge for pending phase", () => {

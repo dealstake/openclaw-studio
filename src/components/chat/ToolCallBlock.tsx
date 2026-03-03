@@ -126,7 +126,7 @@ export const ToolCallBlock = React.memo(function ToolCallBlock({
         <Wrench size={14} strokeWidth={1.75} className="shrink-0 text-muted-foreground/60" />
 
         {/* Tool name */}
-        <span className="text-xs font-medium text-foreground/80">{name}</span>
+        <span className="text-xs font-medium text-foreground/80">{friendlyToolName(name)}</span>
 
         {/* Phase indicator */}
         <span className="flex items-center gap-1 text-xs">
@@ -179,6 +179,36 @@ export const ToolCallBlock = React.memo(function ToolCallBlock({
 });
 
 /* ── Helpers ── */
+
+/** Human-friendly labels for common tool names (shown to non-technical users). */
+const TOOL_DISPLAY_NAMES: Record<string, string> = {
+  exec: "Run Command",
+  read: "Read File",
+  Read: "Read File",
+  write: "Write File",
+  Write: "Write File",
+  edit: "Edit File",
+  Edit: "Edit File",
+  web_search: "Search Web",
+  web_fetch: "Fetch Page",
+  browser: "Browser",
+  image: "Analyze Image",
+  memory_search: "Search Memory",
+  memory_get: "Read Memory",
+  message: "Send Message",
+  tts: "Text to Speech",
+  process: "Manage Process",
+  canvas: "Canvas",
+  nodes: "Device Control",
+  sessions_spawn: "Launch Agent",
+  sessions_send: "Message Agent",
+  subagents: "Manage Agents",
+  session_status: "Session Status",
+};
+
+export function friendlyToolName(name: string): string {
+  return TOOL_DISPLAY_NAMES[name] ?? name;
+}
 
 function formatArgs(args: string): string {
   try {
