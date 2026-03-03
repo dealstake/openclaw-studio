@@ -91,7 +91,7 @@ export const mergeHistoryWithPending = (
   currentLines: string[]
 ): string[] => {
   if (currentLines.length === 0) return historyLines;
-  if (historyLines.length === 0) return currentLines;
+  if (historyLines.length === 0) return historyLines;
 
   // Build a Set for O(1) existence checks (fast path for common case)
   const historySet = new Set(historyLines);
