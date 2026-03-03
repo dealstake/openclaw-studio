@@ -53,7 +53,7 @@ export const ChatEmptyState = memo(function ChatEmptyState({
             style={{ animationDelay: `${i * 75}ms`, animationFillMode: "backwards" }}
           >
             <div className="flex items-start gap-3">
-              <span className="text-lg leading-none mt-0.5">{s.emoji}</span>
+              <span className="text-lg leading-none mt-0.5" aria-hidden="true">{s.emoji}</span>
               <div className="flex flex-col gap-1">
                 <span className="text-sm font-medium text-foreground">
                   {s.title}

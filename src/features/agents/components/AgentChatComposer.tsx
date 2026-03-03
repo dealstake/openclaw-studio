@@ -246,9 +246,13 @@ export const AgentChatComposer = memo(function AgentChatComposer({
 
   const handleChange = useCallback(
     (event: ChangeEvent<HTMLTextAreaElement>) => {
-      const value = event.target.value;
+      const el = event.target;
+      const value = el.value;
       setIsEmpty(!value.trim());
       onDraftChange(value);
+      // Auto-resize: reset to single row then expand to fit content
+      el.style.height = "auto";
+      el.style.height = `${el.scrollHeight}px`;
       // User is typing — exit voice mode
       if (voiceOutputRef.current.enabled && value.trim()) {
         voiceOutputRef.current.setEnabled(false);

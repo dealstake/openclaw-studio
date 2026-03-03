@@ -75,7 +75,7 @@ export const ThinkingBlock = React.memo(function ThinkingBlock({
 
         {/* Duration */}
         {durationLabel ? (
-          <span className="font-sans text-[10px] tabular-nums text-muted-foreground/70">
+          <span className="font-sans text-[11px] tabular-nums text-muted-foreground/70">
             {durationLabel}
           </span>
         ) : null}
@@ -91,7 +91,7 @@ export const ThinkingBlock = React.memo(function ThinkingBlock({
           ) : streaming ? (
             <div className="flex items-center gap-2">
               <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-muted-foreground/60" />
-              <span className="text-[10px] text-muted-foreground/50">
+              <span className="text-[11px] text-muted-foreground/70">
                 Reasoning…
               </span>
             </div>
