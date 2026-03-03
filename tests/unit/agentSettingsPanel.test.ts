@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { AgentState } from "@/features/agents/state/store";
 import { PERSONA_DEFAULTS } from "../helpers/agentFixtures";
-import { AgentSettingsPanel } from "@/features/agents/components/AgentInspectPanels";
+import { AgentSettingsPanel } from "@/features/agents/components/AgentSettingsPanel";
 
 const createAgent = (): AgentState => ({
   agentId: "agent-1",
