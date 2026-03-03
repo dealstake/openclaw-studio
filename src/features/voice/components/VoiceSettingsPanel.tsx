@@ -90,7 +90,7 @@ const VoiceCard = React.memo(function VoiceCard({
         onClick={handlePreview}
         aria-label={playing ? "Stop preview" : `Preview ${displayName}`}
         className={cn(
-          "flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors",
+          "flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors",
           playing
             ? "bg-primary text-primary-foreground"
             : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -107,11 +107,11 @@ const VoiceCard = React.memo(function VoiceCard({
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-foreground">{displayName}</span>
-          <span className="shrink-0 rounded-full bg-muted/50 px-1.5 py-0.5 text-[10px] text-muted-foreground">
+          <span className="shrink-0 rounded-full bg-muted/50 px-1.5 py-0.5 text-xs text-muted-foreground">
             {voice.gender}
           </span>
           {voice.accent && (
-            <span className="shrink-0 rounded-full bg-muted/50 px-1.5 py-0.5 text-[10px] text-muted-foreground">
+            <span className="shrink-0 rounded-full bg-muted/50 px-1.5 py-0.5 text-xs text-muted-foreground">
               {voice.accent}
             </span>
           )}
@@ -131,9 +131,11 @@ const VoiceCard = React.memo(function VoiceCard({
   );
 });
 
-// ── Slider ──────────────────────────────────────────────────────────────
+// ── Voice Slider ────────────────────────────────────────────────────────
 
-interface SliderProps {
+import { Slider as RadixSlider } from "@/components/ui/slider";
+
+interface VoiceSliderProps {
   label: string;
   value: number;
   min?: number;
@@ -143,7 +145,7 @@ interface SliderProps {
   description?: string;
 }
 
-const Slider = React.memo(function Slider({
+const VoiceSlider = React.memo(function VoiceSlider({
   label,
   value,
   min = 0,
@@ -151,33 +153,31 @@ const Slider = React.memo(function Slider({
   step = 0.05,
   onChange,
   description,
-}: SliderProps) {
+}: VoiceSliderProps) {
   const handleChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      onChange(parseFloat(e.target.value));
+    (values: number[]) => {
+      onChange(values[0]);
     },
     [onChange],
   );
 
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1.5">
       <div className="flex items-center justify-between">
         <label className="text-xs font-medium text-foreground">{label}</label>
         <span className="text-xs text-muted-foreground">
           {(value * 100).toFixed(0)}%
         </span>
       </div>
-      <input
-        type="range"
+      <RadixSlider
         min={min}
         max={max}
         step={step}
-        value={value}
-        onChange={handleChange}
-        className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-muted accent-primary"
+        value={[value]}
+        onValueChange={handleChange}
       />
       {description && (
-        <p className="text-[10px] text-muted-foreground">{description}</p>
+        <p className="text-xs text-muted-foreground">{description}</p>
       )}
     </div>
   );
@@ -363,19 +363,19 @@ export const VoiceSettingsPanel = React.memo(function VoiceSettingsPanel({
         </button>
         {advancedOpen && (
           <div className="flex flex-col gap-4 rounded-lg border border-border/20 bg-card/30 p-3">
-            <Slider
+            <VoiceSlider
               label="Stability"
               value={settings.voiceConfig.stability}
               onChange={handleStabilityChange}
               description="Higher = more consistent but can sound robotic"
             />
-            <Slider
+            <VoiceSlider
               label="Clarity + Similarity"
               value={settings.voiceConfig.similarityBoost}
               onChange={handleSimilarityChange}
               description="Higher = closer to original voice"
             />
-            <Slider
+            <VoiceSlider
               label="Style"
               value={settings.voiceConfig.style}
               onChange={handleStyleChange}

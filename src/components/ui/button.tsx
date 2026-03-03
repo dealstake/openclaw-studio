@@ -23,6 +23,8 @@ const buttonVariants = cva(
           "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost:
           "hover:bg-muted hover:text-foreground",
+        active:
+          "bg-[oklch(from_var(--voice-listening)_l_c_h_/_0.2)] text-[var(--voice-listening)] ring-2 ring-[oklch(from_var(--voice-listening)_l_c_h_/_0.4)]",
         link:
           "text-primary underline-offset-4 hover:underline",
       },
