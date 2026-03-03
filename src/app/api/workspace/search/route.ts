@@ -68,6 +68,8 @@ export async function POST(request: Request) {
       try {
         const { content } = readWorkspaceFile(agentId, filePath);
         if (!content) continue;
+        // Skip files larger than 1MB to prevent OOM on pathological inputs
+        if (content.length > 1_048_576) continue;
 
         filesSearched++;
         const lines = content.split("\n");

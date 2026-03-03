@@ -19,11 +19,23 @@ const tokenBodySchema = z.object({
 });
 
 // Simple per-IP rate limit: max 10 tokens per hour
+// Bounded to MAX_ENTRIES to prevent OOM from spoofed x-forwarded-for headers
 const tokenCounts = new Map<string, { count: number; resetAt: number }>();
 const MAX_TOKENS_PER_HOUR = 10;
+const MAX_ENTRIES = 10_000;
 
 function isRateLimited(ip: string): boolean {
   const now = Date.now();
+
+  // Periodic cleanup: evict expired entries when map grows large
+  if (tokenCounts.size > MAX_ENTRIES) {
+    for (const [key, val] of tokenCounts) {
+      if (now >= val.resetAt) tokenCounts.delete(key);
+    }
+    // If still over limit after cleanup, reject (likely under attack)
+    if (tokenCounts.size > MAX_ENTRIES) return true;
+  }
+
   const entry = tokenCounts.get(ip);
   if (!entry || now >= entry.resetAt) {
     tokenCounts.set(ip, { count: 1, resetAt: now + 3600_000 });

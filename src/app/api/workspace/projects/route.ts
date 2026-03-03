@@ -5,7 +5,7 @@ import { getDb } from "@/lib/database";
 import * as projectsRepo from "@/lib/database/repositories/projectsRepo";
 import * as projectDetailsRepo from "@/lib/database/repositories/projectDetailsRepo";
 import { parseProjectFile } from "@/features/projects/lib/parseProject";
-import fs from "fs";
+import fs from "node:fs/promises";
 
 export const runtime = "nodejs";
 
@@ -45,7 +45,7 @@ export async function GET(request: Request) {
               let fileMtimeMs: number | null = null;
               try {
                 const { absolute: filePath } = resolveWorkspacePath(agentId, `projects/${project.doc}`);
-                const stat = fs.statSync(filePath);
+                const stat = await fs.stat(filePath);
                 fileMtimeMs = Math.floor(stat.mtimeMs);
               } catch {
                 // File doesn't exist — use cached data if available
