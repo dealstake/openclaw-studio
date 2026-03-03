@@ -33,6 +33,7 @@ const METRIC_META: Record<AnomalyMetric, MetricMeta> = {
   costUsd: { label: "Cost", icon: <DollarSign size={12} /> },
   durationMs: { label: "Duration", icon: <Clock size={12} /> },
   errorRate: { label: "Error Rate", icon: <AlertCircle size={12} /> },
+  toolErrorRate: { label: "Tool Error Rate", icon: <AlertCircle size={12} /> },
 };
 
 // ─── Severity Styles ──────────────────────────────────────────────────────────
@@ -72,6 +73,8 @@ function formatObserved(metric: AnomalyMetric, value: number): string {
         : `${(value / 1_000).toFixed(1)}s`;
     case "errorRate":
       return value === 1 ? "error" : `${(value * 100).toFixed(0)}%`;
+    case "toolErrorRate":
+      return `${(value * 100).toFixed(1)}%`;
   }
 }
 

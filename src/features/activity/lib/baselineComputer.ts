@@ -14,6 +14,7 @@
 import type { ActivityEvent } from "./activityTypes";
 import type { AgentBaseline, MetricStats } from "./anomalyTypes";
 import { estimateCostUsd } from "@/features/playground/lib/costEstimator";
+import { extractToolInvocations } from "@/features/usage/lib/toolMetrics";
 
 // ─── Statistical Helpers ─────────────────────────────────────────────────────
 
@@ -150,6 +151,20 @@ export function computeBaselinesFromEvents(
     // The mean of this binary array is the error rate over the window.
     const errorValues = runs.map((e) => (e.status === "error" ? 1 : 0));
 
+    // ── Tool error rate ──────────────────────────────────────────────────
+    // Extract per-run tool error rate from transcript JSON (fraction of
+    // tool invocations that errored). Skips runs without transcript data.
+    const toolErrorValues: number[] = [];
+    for (const run of runs) {
+      if (run.transcriptJson) {
+        const invocations = extractToolInvocations(run.transcriptJson);
+        if (invocations.length > 0) {
+          const errorCount = invocations.filter((i) => i.isError).length;
+          toolErrorValues.push(errorCount / invocations.length);
+        }
+      }
+    }
+
     baselines.push({
       id: compositeId,
       agentId: group.agentId,
@@ -159,6 +174,7 @@ export function computeBaselinesFromEvents(
       costUsd: computeMetricStats(costValues),
       durationMs: computeMetricStats(durationValues),
       errorRate: computeMetricStats(errorValues),
+      toolErrorRate: computeMetricStats(toolErrorValues),
       computedAt,
       windowDays,
       sensitivity: 3, // default; preserved on upsert if already customized

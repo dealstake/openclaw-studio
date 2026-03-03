@@ -28,6 +28,7 @@ import type {
   MetricStats,
 } from "./anomalyTypes";
 import { estimateCostUsd } from "@/features/playground/lib/costEstimator";
+import { extractToolInvocations } from "@/features/usage/lib/toolMetrics";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -134,6 +135,11 @@ function buildExplanation(
       return (
         `'${taskName}' threw an error (error rate spike detected). ` +
         `Baseline error rate is ${(baselineMean * 100).toFixed(1)}%`
+      );
+    case "toolErrorRate":
+      return (
+        `Tool error rate for '${taskName}' was ${(observed * 100).toFixed(1)}%, ` +
+        `${multiplier} ${direction} the baseline average of ${(baselineMean * 100).toFixed(1)}%`
       );
   }
 }
@@ -279,6 +285,38 @@ export function scoreEventAgainstBaseline(
           dismissed: false,
           detectedAt,
         });
+      }
+    }
+  }
+
+  // ── toolErrorRate ────────────────────────────────────────────────────────
+  if (event.transcriptJson && baseline.toolErrorRate) {
+    const invocations = extractToolInvocations(event.transcriptJson);
+    if (invocations.length > 0) {
+      const toolErrRate = invocations.filter((i) => i.isError).length / invocations.length;
+      metricsChecked.push("toolErrorRate");
+      const z = zScore(toolErrRate, baseline.toolErrorRate);
+      if (z !== null) {
+        const severity = severityFromZ(z, warningThreshold);
+        if (severity) {
+          anomalies.push({
+            id: randomUUID(),
+            agentId,
+            taskId: event.taskId,
+            taskName,
+            eventId: event.id,
+            eventTimestamp: event.timestamp,
+            metric: "toolErrorRate",
+            observedValue: toolErrRate,
+            baselineMean: baseline.toolErrorRate.mean,
+            baselineStdDev: baseline.toolErrorRate.stdDev,
+            zScore: z,
+            severity,
+            explanation: buildExplanation("toolErrorRate", taskName, toolErrRate, baseline.toolErrorRate.mean, z),
+            dismissed: false,
+            detectedAt,
+          });
+        }
       }
     }
   }

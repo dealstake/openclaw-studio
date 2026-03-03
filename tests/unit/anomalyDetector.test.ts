@@ -19,6 +19,7 @@ function makeBaseline(overrides: Partial<AgentBaseline> = {}): AgentBaseline {
     costUsd: makeStats(0.10, 0.02),
     durationMs: makeStats(60000, 10000),
     errorRate: makeStats(0.05, 0.05),
+    toolErrorRate: makeStats(0.03, 0.02),
     computedAt: "2026-03-01T00:00:00Z",
     windowDays: 7,
     sensitivity: 3,
@@ -194,5 +195,36 @@ describe("scoreEventAgainstBaseline", () => {
     expect(result.metricsChecked).toContain("durationMs");
     expect(result.metricsChecked).toContain("errorRate");
     // costUsd depends on model being recognized
+  });
+
+  it("detects toolErrorRate anomaly from transcript", () => {
+    // Transcript with 4 tool calls, 3 erroring = 75% error rate
+    const transcript = JSON.stringify([
+      { role: "assistant", content: [{ type: "tool_use", id: "t1", name: "read", input: {} }] },
+      { role: "tool", tool_use_id: "t1", content: [{ type: "error", content: "fail", is_error: true }] },
+      { role: "assistant", content: [{ type: "tool_use", id: "t2", name: "read", input: {} }] },
+      { role: "tool", tool_use_id: "t2", content: [{ type: "error", content: "fail", is_error: true }] },
+      { role: "assistant", content: [{ type: "tool_use", id: "t3", name: "read", input: {} }] },
+      { role: "tool", tool_use_id: "t3", content: [{ type: "error", content: "fail", is_error: true }] },
+      { role: "assistant", content: [{ type: "tool_use", id: "t4", name: "write", input: {} }] },
+      { role: "tool", tool_use_id: "t4", content: [{ type: "text", content: "ok" }] },
+    ]);
+    const event = makeEvent({ transcriptJson: transcript });
+    // Baseline: tool error rate is 3% ± 2% (10 samples). 75% = huge deviation
+    const baseline = makeBaseline({
+      toolErrorRate: makeStats(0.03, 0.02, 10),
+    });
+    const result = scoreEventAgainstBaseline(event, baseline);
+    expect(result.metricsChecked).toContain("toolErrorRate");
+    const toolAnomaly = result.anomalies.find((a) => a.metric === "toolErrorRate");
+    expect(toolAnomaly).toBeDefined();
+    expect(toolAnomaly!.severity).toBe("critical"); // 0.75 is way beyond 5σ
+    expect(toolAnomaly!.explanation).toContain("Tool error rate");
+  });
+
+  it("skips toolErrorRate when no transcript", () => {
+    const event = makeEvent(); // no transcriptJson
+    const result = scoreEventAgainstBaseline(event, makeBaseline());
+    expect(result.metricsChecked).not.toContain("toolErrorRate");
   });
 });

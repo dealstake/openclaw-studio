@@ -351,6 +351,10 @@ export const agentBaselines = sqliteTable("agent_baselines", {
   errorRateMean: real("error_rate_mean").notNull().default(0),
   errorRateStdDev: real("error_rate_std_dev").notNull().default(0),
   errorRateSampleCount: integer("error_rate_sample_count").notNull().default(0),
+  // Tool error rate (0.0–1.0) — fraction of tool invocations that errored
+  toolErrorRateMean: real("tool_error_rate_mean").notNull().default(0),
+  toolErrorRateStdDev: real("tool_error_rate_std_dev").notNull().default(0),
+  toolErrorRateSampleCount: integer("tool_error_rate_sample_count").notNull().default(0),
   computedAt: text("computed_at").notNull(),
   windowDays: integer("window_days").notNull().default(7),
   /** Sensitivity threshold in σ (1, 2, or 3). Default 3. */

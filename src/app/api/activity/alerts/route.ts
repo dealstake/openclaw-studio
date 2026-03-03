@@ -140,7 +140,7 @@ export async function POST(request: Request) {
           summary: row.summary,
           meta: row.metaJson ? (JSON.parse(row.metaJson) as ActivityMeta) : {},
           sessionKey: row.sessionKey ?? null,
-          transcriptJson: null,
+          transcriptJson: row.transcriptJson ?? null,
           tokensIn: row.tokensIn ?? null,
           tokensOut: row.tokensOut ?? null,
           model: row.model ?? null,
@@ -148,7 +148,18 @@ export async function POST(request: Request) {
         };
 
         // 2. Look up the stored baseline for this (agentId, taskId)
-        const baselines = baselineRepo.queryBaselines(db, agentId);
+        //    Auto-recompute if baselines are stale (>24h old)
+        let baselines = baselineRepo.queryBaselines(db, agentId);
+        const staleThreshold = Date.now() - 24 * 60 * 60 * 1000;
+        const isStale =
+          baselines.length === 0 ||
+          baselines.every(
+            (b) => new Date(b.computedAt).getTime() < staleThreshold
+          );
+        if (isStale) {
+          const result = baselineRepo.computeAndStoreBaselines(db, agentId, 7);
+          baselines = result.baselines;
+        }
         const baselineKey = `${event.agentId ?? agentId}:${event.taskId}`;
         const baseline = baselines.find((b) => b.id === baselineKey) ?? null;
 

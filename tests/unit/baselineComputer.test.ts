@@ -203,4 +203,37 @@ describe("computeBaselinesFromEvents", () => {
     expect(b.costUsd.sampleCount).toBe(0);
     expect(b.costUsd.mean).toBe(0);
   });
+
+  it("computes toolErrorRate from transcript data", () => {
+    const goodTranscript = JSON.stringify([
+      { role: "assistant", content: [{ type: "tool_use", id: "t1", name: "read", input: {} }] },
+      { role: "tool", tool_use_id: "t1", content: [{ type: "text", content: "ok" }] },
+      { role: "assistant", content: [{ type: "tool_use", id: "t2", name: "write", input: {} }] },
+      { role: "tool", tool_use_id: "t2", content: [{ type: "text", content: "ok" }] },
+    ]);
+    const badTranscript = JSON.stringify([
+      { role: "assistant", content: [{ type: "tool_use", id: "t1", name: "read", input: {} }] },
+      { role: "tool", tool_use_id: "t1", content: [{ type: "error", content: "fail", is_error: true }] },
+      { role: "assistant", content: [{ type: "tool_use", id: "t2", name: "write", input: {} }] },
+      { role: "tool", tool_use_id: "t2", content: [{ type: "text", content: "ok" }] },
+    ]);
+    const events = [
+      makeEvent({ taskId: "task-1", transcriptJson: goodTranscript }), // 0% error
+      makeEvent({ taskId: "task-1", transcriptJson: badTranscript }),  // 50% error
+    ];
+    const baselines = computeBaselinesFromEvents("alex", events);
+    const b = baselines[0];
+    expect(b.toolErrorRate.sampleCount).toBe(2);
+    expect(b.toolErrorRate.mean).toBeCloseTo(0.25, 5); // (0 + 0.5) / 2
+  });
+
+  it("skips toolErrorRate when no transcripts available", () => {
+    const events = [
+      makeEvent({ taskId: "task-1" }), // no transcriptJson
+    ];
+    const baselines = computeBaselinesFromEvents("alex", events);
+    const b = baselines[0];
+    expect(b.toolErrorRate.sampleCount).toBe(0);
+    expect(b.toolErrorRate.mean).toBe(0);
+  });
 });

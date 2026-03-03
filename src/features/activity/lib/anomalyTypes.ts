@@ -44,6 +44,8 @@ export interface AgentBaseline {
   durationMs: MetricStats;
   /** Error rate: fraction of runs where status === "error" (0.0–1.0) */
   errorRate: MetricStats;
+  /** Tool error rate: fraction of tool invocations that errored (0.0–1.0), from transcript parsing */
+  toolErrorRate: MetricStats;
   /** ISO timestamp when this baseline was last computed */
   computedAt: string;
   /** Rolling window in days (default: 7) */
@@ -74,7 +76,7 @@ export interface BaselineComputeResult {
 // ─── Anomalies ───────────────────────────────────────────────────────────────
 
 /** Which metric triggered the anomaly. */
-export type AnomalyMetric = "totalTokens" | "costUsd" | "durationMs" | "errorRate";
+export type AnomalyMetric = "totalTokens" | "costUsd" | "durationMs" | "errorRate" | "toolErrorRate";
 
 /**
  * Severity of a flagged anomaly.
