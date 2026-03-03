@@ -64,6 +64,7 @@ export function useAudioVolume(
   const frameId = useRef<number | undefined>(undefined)
 
   // Memoize options to prevent unnecessary re-renders
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally memo on individual fields
   const memoizedOptions = useMemo(
     () => options,
     [
@@ -159,6 +160,7 @@ export function useMultibandVolume(
   mediaStream?: MediaStream | null,
   options: MultiBandVolumeOptions = {}
 ) {
+// eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally memo on individual fields
   const opts = useMemo(
     () => ({ ...multibandDefaults, ...options }),
     [

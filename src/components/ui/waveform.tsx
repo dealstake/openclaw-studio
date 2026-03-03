@@ -600,6 +600,7 @@ export const MicrophoneWaveform = ({
       }
       return
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- data ref is stable
   }, [processing, active])
 
   useEffect(() => {

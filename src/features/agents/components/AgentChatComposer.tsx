@@ -17,7 +17,7 @@ import type { MessagePart } from "@/lib/chat/types";
 import type { GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { AlertCircle, ArrowUp, Square, UploadCloud, WifiOff } from "lucide-react";
 import { ChatAttachmentPreview } from "./ChatAttachmentPreview";
-import { AgentAvatar } from "./AgentAvatar";
+// AgentAvatar available for future composer enhancements
 import { ComposerAgentMenu, type ComposerAgent } from "./ComposerAgentMenu";
 import { useFileUpload, type ChatAttachment } from "../hooks/useFileUpload";
 import type { WizardType, WizardTheme, WizardStarter } from "@/features/wizards/lib/wizardTypes";
@@ -51,8 +51,8 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   tokenLimit,
   agentName,
   allowThinking,
-  messageParts,
-  runStartedAt,
+  messageParts: _messageParts,
+  runStartedAt: _runStartedAt,
   gatewayStatus,
   queueLength,
   wizardType,

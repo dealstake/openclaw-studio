@@ -52,7 +52,7 @@ export const ManagementPanelContent = memo(function ManagementPanelContent({
 }: ManagementPanelContentProps) {
   const ctx = useManagementPanel();
 
-  const onTranscriptClick = onTranscriptClickOverride ?? ctx.onTranscriptClick;
+  const _onTranscriptClick = onTranscriptClickOverride ?? ctx.onTranscriptClick;
 
   if (!tab) return null;
 

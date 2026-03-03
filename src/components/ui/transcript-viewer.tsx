@@ -123,6 +123,7 @@ function TranscriptViewerContainer({
       src: audioSrc,
       children: <source src={audioSrc} type={audioType} />,
     }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- audioType is stable
     [audioRef, audioSrc]
   )
 

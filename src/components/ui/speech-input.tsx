@@ -365,6 +365,7 @@ const SpeechInput = React.forwardRef<HTMLDivElement, SpeechInputProps>(
         startRequestIdRef.current += 1
         scribe.disconnect()
       }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- disconnect is stable
     }, [scribe.disconnect])
 
     return (

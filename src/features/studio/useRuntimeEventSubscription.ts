@@ -125,7 +125,6 @@ export function useRuntimeEventSubscription({
       onSystemEvent: () => {
         // System events routed via onActivityMessage to useActivityMessageStore
       },
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       onSubAgentLifecycle: (_sessionKey: string, _phase: string) => {
         // Sub-agent lifecycle tracking — available for future use
       },
