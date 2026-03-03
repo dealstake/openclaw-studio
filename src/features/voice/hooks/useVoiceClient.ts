@@ -3,14 +3,12 @@
 /**
  * Voice input hook — SDK-based wrapper around ElevenLabs `useScribe`.
  *
- * Replaces the hand-rolled WebSocket + ScriptProcessorNode implementation
- * (useVoiceInput) with the official ElevenLabs client SDK.
+ * Uses the official ElevenLabs client SDK (`useScribe`).
  *
  * Features:
  * - Automatic microphone management via SDK
  * - Typed error callbacks with toast notifications
  * - Auto-reconnect with exponential backoff (max 3 attempts)
- * - Compatible interface with the old useVoiceInput for easy migration
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";

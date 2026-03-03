@@ -25,8 +25,6 @@ export {
 
 // Hooks
 export { useVoiceClient, type UseVoiceClientReturn } from "./hooks/useVoiceClient";
-/** @deprecated Use useVoiceClient instead */
-export { useVoiceInput, type UseVoiceInputReturn } from "./hooks/useVoiceInput";
 export {
   useVoiceOutput,
   resolvedToSpeakOptions,
@@ -40,6 +38,6 @@ export {
 } from "./hooks/useVoiceSettings";
 
 // Components
-export { VoiceInputControl, SpeakerToggle } from "./components/VoiceControls";
+export { VoiceInputControl } from "./components/VoiceControls";
 export { VoiceSettingsPanel } from "./components/VoiceSettingsPanel";
 export { VoiceSettingsPanelConnected } from "./components/VoiceSettingsPanelConnected";

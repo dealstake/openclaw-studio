@@ -3,13 +3,12 @@
 /**
  * Voice controls for the chat composer.
  *
- * - VoiceInputControl: SpeechInput compound component (record + preview + cancel)
- *   with error recovery (toast mapping, retry logic, disabled after 3 failures)
- * - SpeakerToggle: toggle auto-read responses (ElevenLabs TTS)
+ * VoiceInputControl: SpeechInput compound component (record + preview + cancel)
+ * with error recovery (toast mapping, retry logic, disabled after 3 failures).
  */
 
 import React, { useCallback, useRef, useState } from "react";
-import { Volume2, VolumeX, Loader2, MicOff } from "lucide-react";
+import { MicOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { CommitStrategy } from "@elevenlabs/client";
@@ -21,7 +20,6 @@ import {
   type SpeechInputData,
 } from "@/components/ui/speech-input";
 import { PanelErrorBoundary } from "@/components/PanelErrorBoundary";
-import type { UseVoiceOutputReturn } from "../hooks/useVoiceOutput";
 
 // ── Constants ───────────────────────────────────────────────────────────
 
@@ -188,57 +186,4 @@ export const VoiceInputControl = React.memo(function VoiceInputControl({
   );
 });
 
-// ── Speaker Toggle ──────────────────────────────────────────────────────
 
-interface SpeakerToggleProps {
-  voiceOutput: UseVoiceOutputReturn;
-  className?: string;
-}
-
-export const SpeakerToggle = React.memo(function SpeakerToggle({
-  voiceOutput,
-  className,
-}: SpeakerToggleProps) {
-  const { enabled, setEnabled, isPlaying, isLoading, stop } = voiceOutput;
-
-  const handleToggle = useCallback(() => {
-    if (isPlaying) {
-      stop();
-    } else {
-      setEnabled(!enabled);
-    }
-  }, [enabled, setEnabled, isPlaying, stop]);
-
-  return (
-    <button
-      type="button"
-      onClick={handleToggle}
-      aria-label={
-        isPlaying
-          ? "Stop speaking"
-          : enabled
-            ? "Voice responses (on, press to disable)"
-            : "Voice responses (off, press to enable)"
-      }
-      aria-pressed={enabled}
-      className={cn(
-        "flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg transition-all",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
-        isPlaying
-          ? "bg-primary/20 text-primary"
-          : enabled
-            ? "text-primary hover:bg-primary/10"
-            : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
-        className,
-      )}
-    >
-      {isLoading ? (
-        <Loader2 className="h-4 w-4 animate-spin" />
-      ) : enabled || isPlaying ? (
-        <Volume2 className="h-4 w-4" />
-      ) : (
-        <VolumeX className="h-4 w-4" />
-      )}
-    </button>
-  );
-});
