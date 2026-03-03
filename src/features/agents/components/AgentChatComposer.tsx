@@ -26,6 +26,7 @@ import { useVoiceOutput, resolvedToSpeakOptions } from "@/features/voice/hooks/u
 import { useVoiceSettings } from "@/features/voice/hooks/useVoiceSettings";
 import { createStudioSettingsCoordinator } from "@/lib/studio/coordinator";
 import { VoiceInputControl } from "@/features/voice/components/VoiceControls";
+import { VoiceModeButton } from "@/features/voice/components/VoiceModeButton";
 import type { SpeechInputData } from "@/components/ui/speech-input";
 
 export const AgentChatComposer = memo(function AgentChatComposer({
@@ -426,14 +427,17 @@ export const AgentChatComposer = memo(function AgentChatComposer({
           {/* ── Glass Input Pill ── */}
           <div className="min-w-0 flex-1 rounded-[20px] border border-border/50 glass-panel transition-all focus-within:border-border/80 focus-within:shadow-2xl dark:bg-background/40 dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)]">
             <div className="flex items-end">
-              {/* Voice mic — left side of pill */}
-              <div className="flex shrink-0 items-center pl-2 pb-1.5">
+              {/* Voice controls — left side of pill */}
+              <div className="flex shrink-0 items-center gap-0.5 pl-2 pb-1.5">
                 <VoiceInputControl
                   onChange={handleVoiceChange}
                   onStart={handleVoiceStart}
                   onStop={handleVoiceStop}
                   onCancel={handleVoiceCancel}
                 />
+                {selectedAgentId && (
+                  <VoiceModeButton agentId={selectedAgentId} />
+                )}
               </div>
               <textarea
                 ref={handleRef}

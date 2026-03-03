@@ -108,6 +108,41 @@ export const defaultStudioVoiceSettings = (): StudioVoiceSettings => ({
 
 // ── TTS request shape (sent to /api/tts) ──────────────────────────────
 
+// ── Voice Mode State Machine ──────────────────────────────────────────
+
+/**
+ * Voice mode state machine:
+ *   idle → connecting → listening → thinking → speaking → listening (loop)
+ *                                                       → idle (end call)
+ */
+export type VoiceModeState =
+  | "idle"
+  | "connecting"
+  | "listening"
+  | "thinking"
+  | "speaking";
+
+/** Maps VoiceModeState to the ElevenLabs Orb AgentState */
+export function voiceModeToOrbState(
+  state: VoiceModeState,
+): "listening" | "thinking" | "talking" | null {
+  switch (state) {
+    case "listening":
+      return "listening";
+    case "thinking":
+      return "thinking";
+    case "speaking":
+      return "talking";
+    case "connecting":
+      return "thinking"; // Show "thinking" animation while connecting
+    case "idle":
+    default:
+      return null;
+  }
+}
+
+// ── TTS request shape (sent to /api/tts) ──────────────────────────────
+
 export interface TtsRequestBody {
   text: string;
   voiceId?: string;
