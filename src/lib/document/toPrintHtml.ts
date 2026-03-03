@@ -49,6 +49,52 @@ export interface PrintDocumentOptions {
 }
 
 // ---------------------------------------------------------------------------
+// HTML Sanitization
+// ---------------------------------------------------------------------------
+
+import sanitize from "sanitize-html";
+
+/**
+ * Sanitize raw HTML input to prevent XSS/SSRF vectors.
+ * Allows formatting tags but strips scripts, iframes, objects, embeds,
+ * event handlers, and dangerous link protocols.
+ */
+function sanitizeHtmlInput(html: string): string {
+  return sanitize(html, {
+    allowedTags: sanitize.defaults.allowedTags.concat([
+      "img", "h1", "h2", "h3", "h4", "h5", "h6",
+      "table", "thead", "tbody", "tr", "th", "td",
+      "pre", "code", "blockquote", "hr", "br",
+      "dl", "dt", "dd", "figure", "figcaption",
+      "span", "div", "p", "ul", "ol", "li",
+      "strong", "em", "s", "u", "sub", "sup",
+    ]),
+    disallowedTagsMode: "discard",
+    allowedAttributes: {
+      ...sanitize.defaults.allowedAttributes,
+      img: ["src", "alt", "width", "height"],
+      td: ["colspan", "rowspan", "align"],
+      th: ["colspan", "rowspan", "align"],
+      span: ["class", "style"],
+      div: ["class", "style"],
+      p: ["class", "style"],
+      code: ["class"],
+      pre: ["class"],
+    },
+    allowedSchemes: ["http", "https", "data"],
+    allowedStyles: {
+      "*": {
+        "text-align": [/.*/],
+        "font-weight": [/.*/],
+        "font-style": [/.*/],
+        "color": [/.*/],
+        "background-color": [/.*/],
+      },
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
@@ -93,7 +139,8 @@ export function toPrintHtml(content: string, opts: PrintDocumentOptions = {}): s
     showFooter = false,
   } = opts;
 
-  const bodyHtml = inputType === "markdown" ? markdownToHtml(content) : content;
+  const bodyHtml =
+    inputType === "markdown" ? markdownToHtml(content) : sanitizeHtmlInput(content);
   const formattedDate = formatDate(date);
 
   const paperWidth = paperSize === "a4" ? "210mm" : "8.5in";
