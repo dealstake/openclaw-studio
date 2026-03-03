@@ -58,15 +58,19 @@ function checkSupport(): boolean {
 
 // ── Token fetcher ───────────────────────────────────────────────────────
 
-async function fetchToken(): Promise<string> {
+async function fetchToken(apiKey?: string | null): Promise<string> {
   const res = await fetch("/api/voice/token", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ type: "realtime_scribe" }),
+    body: JSON.stringify({
+      type: "realtime_scribe",
+      ...(apiKey ? { apiKey } : {}),
+    }),
   });
 
   if (!res.ok) {
-    throw new Error(`Failed to get voice token: ${res.status}`);
+    const errBody = await res.json().catch(() => ({ error: `Failed: ${res.status}` }));
+    throw new Error((errBody as { error?: string }).error || `Failed to get voice token: ${res.status}`);
   }
 
   const data = (await res.json()) as { token: string };
@@ -75,7 +79,12 @@ async function fetchToken(): Promise<string> {
 
 // ── Hook ────────────────────────────────────────────────────────────────
 
-export function useVoiceClient(): UseVoiceClientReturn {
+interface UseVoiceClientOptions {
+  /** ElevenLabs API key from credential vault (passed to token route as fallback) */
+  apiKey?: string | null;
+}
+
+export function useVoiceClient(options?: UseVoiceClientOptions): UseVoiceClientReturn {
   const [finalTranscript, setFinalTranscript] = useState("");
   const [displayTranscript, setDisplayTranscript] = useState("");
   const finalTranscriptRef = useRef(finalTranscript);
@@ -83,6 +92,8 @@ export function useVoiceClient(): UseVoiceClientReturn {
   useEffect(() => {
     finalTranscriptRef.current = finalTranscript;
   }, [finalTranscript]);
+  const apiKeyRef = useRef(options?.apiKey);
+  useEffect(() => { apiKeyRef.current = options?.apiKey; }, [options?.apiKey]);
   const reconnectAttemptsRef = useRef(0);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const intentionalDisconnectRef = useRef(false);
@@ -156,7 +167,7 @@ export function useVoiceClient(): UseVoiceClientReturn {
 
     reconnectTimerRef.current = setTimeout(async () => {
       try {
-        const token = await fetchToken();
+        const token = await fetchToken(apiKeyRef.current);
         await scribe.connect({ token });
       } catch {
         // Will trigger onDisconnect → another attemptReconnect if under limit
@@ -182,7 +193,7 @@ export function useVoiceClient(): UseVoiceClientReturn {
     reconnectAttemptsRef.current = 0;
 
     try {
-      const token = await fetchToken();
+      const token = await fetchToken(apiKeyRef.current);
       await scribe.connect({ token });
     } catch (err) {
       const msg = (err as Error).message || "Failed to start voice input";

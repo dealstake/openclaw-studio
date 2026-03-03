@@ -53,7 +53,12 @@ export function resolvedToSpeakOptions(resolved: ResolvedVoiceSettings): SpeakOp
   };
 }
 
-export function useVoiceOutput(): UseVoiceOutputReturn {
+interface UseVoiceOutputOptions {
+  /** ElevenLabs API key from credential vault (passed to TTS route as fallback) */
+  apiKey?: string | null;
+}
+
+export function useVoiceOutput(options?: UseVoiceOutputOptions): UseVoiceOutputReturn {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -81,8 +86,11 @@ export function useVoiceOutput(): UseVoiceOutputReturn {
     return stop;
   }, [stop]);
 
+  const apiKeyRef = useRef(options?.apiKey);
+  useEffect(() => { apiKeyRef.current = options?.apiKey; }, [options?.apiKey]);
+
   const speak = useCallback(
-    async (text: string, options?: SpeakOptions) => {
+    async (text: string, speakOpts?: SpeakOptions) => {
       if (!text.trim()) return;
 
       // Stop any current playback
@@ -100,9 +108,10 @@ export function useVoiceOutput(): UseVoiceOutputReturn {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             text,
-            ...(options?.voiceId ? { voiceId: options.voiceId } : {}),
-            ...(options?.modelId ? { modelId: options.modelId } : {}),
-            ...(options?.voiceSettings ? { voiceSettings: options.voiceSettings } : {}),
+            ...(speakOpts?.voiceId ? { voiceId: speakOpts.voiceId } : {}),
+            ...(speakOpts?.modelId ? { modelId: speakOpts.modelId } : {}),
+            ...(speakOpts?.voiceSettings ? { voiceSettings: speakOpts.voiceSettings } : {}),
+            ...(apiKeyRef.current ? { apiKey: apiKeyRef.current } : {}),
           }),
           signal: controller.signal,
         });

@@ -23,6 +23,7 @@ import { useFileUpload, type ChatAttachment } from "../hooks/useFileUpload";
 import type { WizardType, WizardTheme, WizardStarter } from "@/features/wizards/lib/wizardTypes";
 import { WizardBanner } from "@/features/wizards/components/WizardBanner";
 import { useVoiceOutput, resolvedToSpeakOptions } from "@/features/voice/hooks/useVoiceOutput";
+import { useElevenLabsKey } from "@/features/voice/hooks/useElevenLabsKey";
 import { useVoiceSettings } from "@/features/voice/hooks/useVoiceSettings";
 import { createStudioSettingsCoordinator } from "@/lib/studio/coordinator";
 import { VoiceInputControl } from "@/features/voice/components/VoiceControls";
@@ -117,13 +118,15 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   const isRunning = wizardType ? (wizardIsStreaming ?? false) : running;
 
   // ── Voice controls ────────────────────────────────────────────────────
-  const voiceOutput = useVoiceOutput();
+  const { apiKey: elevenLabsKey } = useElevenLabsKey();
+  const voiceOutput = useVoiceOutput({ apiKey: elevenLabsKey });
   const voiceSettingsCoordinator = useMemo(
     () => createStudioSettingsCoordinator({ debounceMs: 200 }),
     [],
   );
   const { settings: voiceResolvedSettings } = useVoiceSettings({
     settingsCoordinator: voiceSettingsCoordinator,
+    apiKey: elevenLabsKey,
   });
 
   // Stable ref for voiceOutput to avoid re-creating callbacks
@@ -206,8 +209,8 @@ export const AgentChatComposer = memo(function AgentChatComposer({
           if (voiceModeActive) {
             // Voice overlay is open — use bridge (updates overlay state + TTS)
             void bridgeSpeakResponse(plainText);
-          } else if (voiceOutput.enabled) {
-            // Inline mic mode — use direct TTS
+          } else if (voiceOutput.enabled || voiceResolvedSettings.autoSpeak) {
+            // Inline mic mode or auto-speak setting enabled — use direct TTS
             void voiceOutput.speak(plainText, resolvedToSpeakOptions(voiceResolvedSettings));
           }
         }

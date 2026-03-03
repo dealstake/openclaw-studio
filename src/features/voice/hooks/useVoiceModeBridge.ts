@@ -16,6 +16,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useVoiceModeSafe } from "../providers/VoiceModeProvider";
 import { useVoiceClient } from "./useVoiceClient";
 import { useVoiceOutput, resolvedToSpeakOptions } from "./useVoiceOutput";
+import { useElevenLabsKey } from "./useElevenLabsKey";
 import { useVoiceSettings } from "./useVoiceSettings";
 import { createStudioSettingsCoordinator } from "@/lib/studio/coordinator";
 
@@ -26,30 +27,36 @@ interface UseVoiceModeBridgeOptions {
 
 export function useVoiceModeBridge(options?: UseVoiceModeBridgeOptions) {
   const voiceMode = useVoiceModeSafe();
-  const voice = useVoiceClient();
-  const tts = useVoiceOutput();
+  const { apiKey: elevenLabsKey } = useElevenLabsKey();
+  const voice = useVoiceClient({ apiKey: elevenLabsKey });
+  const tts = useVoiceOutput({ apiKey: elevenLabsKey });
   const [coordinator] = useState(() => createStudioSettingsCoordinator({ debounceMs: 200 }));
   const voiceSettings = useVoiceSettings({
     settingsCoordinator: coordinator,
     agentId: voiceMode?.activeAgentId,
+    apiKey: elevenLabsKey,
   });
 
   const prevFinalRef = useRef("");
 
-  // Start/stop STT when voice mode opens/closes
+  const voiceModeActive = !!(voiceMode?.isOverlayOpen || voiceMode?.isMinimized);
+
+  // Start/stop STT + TTS when voice mode opens/closes
   useEffect(() => {
     if (!voiceMode) return;
 
-    if (voiceMode.isOverlayOpen || voiceMode.isMinimized) {
+    if (voiceModeActive) {
       if (!voice.isListening && !voice.isConnecting) {
         void voice.startListening();
       }
     } else {
+      // Voice mode closed — stop everything
       if (voice.isListening) {
         voice.stopListening();
       }
+      tts.stop();
     }
-  }, [voiceMode?.isOverlayOpen, voiceMode?.isMinimized]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [voiceModeActive]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Feed transcript to provider + detect committed segments
   useEffect(() => {
@@ -84,10 +91,16 @@ export function useVoiceModeBridge(options?: UseVoiceModeBridgeOptions) {
     }
   }, [voice.finalTranscript]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Track active state in ref so async speakResponse can check it
+  const voiceModeActiveRef = useRef(voiceModeActive);
+  useEffect(() => {
+    voiceModeActiveRef.current = voiceModeActive;
+  }, [voiceModeActive]);
+
   // Speak agent response
   const speakResponse = useCallback(
     async (text: string) => {
-      if (!voiceMode) return;
+      if (!voiceMode || !voiceModeActiveRef.current) return;
 
       voiceMode.setAgentTranscript(text);
       voiceMode.setState("speaking");
@@ -95,11 +108,13 @@ export function useVoiceModeBridge(options?: UseVoiceModeBridgeOptions) {
       const speakOpts = resolvedToSpeakOptions(voiceSettings.settings);
       await tts.speak(text, speakOpts);
 
-      // After speaking, go back to listening
-      voiceMode.setState("listening");
-      voiceMode.setAgentTranscript("");
-      voice.resetTranscript();
-      prevFinalRef.current = "";
+      // Only reset state if voice mode is still active (user didn't close during playback)
+      if (voiceModeActiveRef.current) {
+        voiceMode.setState("listening");
+        voiceMode.setAgentTranscript("");
+        voice.resetTranscript();
+        prevFinalRef.current = "";
+      }
     },
     [voiceMode, voiceSettings.settings, tts, voice],
   );
