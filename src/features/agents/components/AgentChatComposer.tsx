@@ -27,6 +27,8 @@ import { useVoiceSettings } from "@/features/voice/hooks/useVoiceSettings";
 import { createStudioSettingsCoordinator } from "@/lib/studio/coordinator";
 import { VoiceInputControl } from "@/features/voice/components/VoiceControls";
 import { VoiceModeButton } from "@/features/voice/components/VoiceModeButton";
+import { useVoiceModeBridge } from "@/features/voice/hooks/useVoiceModeBridge";
+import { useVoiceModeSafe } from "@/features/voice/providers/VoiceModeProvider";
 import type { SpeechInputData } from "@/components/ui/speech-input";
 
 export const AgentChatComposer = memo(function AgentChatComposer({
@@ -130,6 +132,19 @@ export const AgentChatComposer = memo(function AgentChatComposer({
     voiceOutputRef.current = voiceOutput;
   }, [voiceOutput]);
 
+  // ── Voice mode bridge (full-screen overlay STT↔TTS↔Agent loop) ──────
+  const voiceMode = useVoiceModeSafe();
+  const voiceModeActive = !!(voiceMode?.isOverlayOpen || voiceMode?.isMinimized);
+
+  const { speakResponse: bridgeSpeakResponse } = useVoiceModeBridge({
+    onUserMessage: useCallback(
+      (text: string) => {
+        onSend(text);
+      },
+      [onSend],
+    ),
+  });
+
   /** When voice transcript updates, sync it into the textarea */
   const handleVoiceChange = useCallback((data: SpeechInputData) => {
     const el = localRef.current;
@@ -170,12 +185,12 @@ export const AgentChatComposer = memo(function AgentChatComposer({
     onDraftChange("");
   }, [onDraftChange]);
 
-  /** Auto-speak assistant responses when voice output is enabled */
+  /** Auto-speak assistant responses when voice is active (overlay or inline) */
   const prevRunningRef = useRef(false);
   const prevAssistantTextRef = useRef<string | undefined>(undefined);
   useEffect(() => {
     // Detect transition from running → not running with new text
-    if (prevRunningRef.current && !isRunning && voiceOutput.enabled && lastAssistantText) {
+    if (prevRunningRef.current && !isRunning && lastAssistantText) {
       if (lastAssistantText !== prevAssistantTextRef.current) {
         // Strip markdown for cleaner speech
         const plainText = lastAssistantText
@@ -188,13 +203,19 @@ export const AgentChatComposer = memo(function AgentChatComposer({
           .replace(/\n{2,}/g, ". ")
           .trim();
         if (plainText.length > 0 && plainText.length < 5000) {
-          void voiceOutput.speak(plainText, resolvedToSpeakOptions(voiceResolvedSettings));
+          if (voiceModeActive) {
+            // Voice overlay is open — use bridge (updates overlay state + TTS)
+            void bridgeSpeakResponse(plainText);
+          } else if (voiceOutput.enabled) {
+            // Inline mic mode — use direct TTS
+            void voiceOutput.speak(plainText, resolvedToSpeakOptions(voiceResolvedSettings));
+          }
         }
         prevAssistantTextRef.current = lastAssistantText;
       }
     }
     prevRunningRef.current = isRunning;
-  }, [isRunning, lastAssistantText, voiceOutput]);
+  }, [isRunning, lastAssistantText, voiceOutput, voiceModeActive, bridgeSpeakResponse, voiceResolvedSettings]);
 
   const showFileError = useCallback((msg: string) => {
     setFileError(msg);
