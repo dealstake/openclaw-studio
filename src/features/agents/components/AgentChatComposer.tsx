@@ -21,7 +21,7 @@ import { ComposerAgentMenu, type ComposerAgent } from "./ComposerAgentMenu";
 import { useFileUpload, type ChatAttachment } from "../hooks/useFileUpload";
 import type { WizardType, WizardTheme, WizardStarter } from "@/features/wizards/lib/wizardTypes";
 import { WizardBanner } from "@/features/wizards/components/WizardBanner";
-import { useVoiceInput } from "@/features/voice/hooks/useVoiceInput";
+import { useVoiceClient } from "@/features/voice/hooks/useVoiceClient";
 import { useVoiceOutput, resolvedToSpeakOptions } from "@/features/voice/hooks/useVoiceOutput";
 import { useVoiceSettings } from "@/features/voice/hooks/useVoiceSettings";
 import { createStudioSettingsCoordinator } from "@/lib/studio/coordinator";
@@ -113,7 +113,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   const isRunning = wizardType ? (wizardIsStreaming ?? false) : running;
 
   // ── Voice controls ────────────────────────────────────────────────────
-  const voiceInput = useVoiceInput();
+  const voiceInput = useVoiceClient();
   const voiceOutput = useVoiceOutput();
   const voiceSettingsCoordinator = useMemo(
     () => createStudioSettingsCoordinator({ debounceMs: 200 }),

@@ -11,13 +11,13 @@
 import React, { useCallback, useEffect, useRef } from "react";
 import { Mic, Volume2, VolumeX, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { UseVoiceInputReturn } from "../hooks/useVoiceInput";
+import type { UseVoiceClientReturn } from "../hooks/useVoiceClient";
 import type { UseVoiceOutputReturn } from "../hooks/useVoiceOutput";
 
 // ── Mic Button ──────────────────────────────────────────────────────────
 
 interface MicButtonProps {
-  voiceInput: UseVoiceInputReturn;
+  voiceInput: UseVoiceClientReturn;
   onTranscript: (text: string) => void;
   onSend?: (text: string) => void;
   className?: string;
@@ -176,7 +176,7 @@ export const SpeakerToggle = React.memo(function SpeakerToggle({
 // ── Voice Transcript Overlay ────────────────────────────────────────────
 
 interface VoiceTranscriptOverlayProps {
-  voiceInput: UseVoiceInputReturn;
+  voiceInput: UseVoiceClientReturn;
 }
 
 export const VoiceTranscriptOverlay = React.memo(

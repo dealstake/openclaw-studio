@@ -37,7 +37,7 @@ import { usePracticeSession } from "../hooks/usePracticeSession";
 import { usePracticeChat } from "../hooks/usePracticeChat";
 import { usePersonaHealth } from "../hooks/usePersonaHealth";
 import { PracticeScoreCard } from "./PracticeScoreCard";
-import { useVoiceInput } from "@/features/voice/hooks/useVoiceInput";
+import { useVoiceClient } from "@/features/voice/hooks/useVoiceClient";
 import { useVoiceOutput, resolvedToSpeakOptions } from "@/features/voice/hooks/useVoiceOutput";
 import { useVoiceSettings } from "@/features/voice/hooks/useVoiceSettings";
 import { createStudioSettingsCoordinator } from "@/lib/studio/coordinator";
@@ -338,7 +338,7 @@ export const PracticeSessionModal = React.memo(function PracticeSessionModal({
     usePersonaHealth();
 
   // Voice support
-  const voiceInput = useVoiceInput();
+  const voiceInput = useVoiceClient();
   const voiceOutput = useVoiceOutput();
   const voiceCoordinator = useMemo(
     () => createStudioSettingsCoordinator({ debounceMs: 200 }),
