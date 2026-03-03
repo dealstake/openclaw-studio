@@ -287,18 +287,23 @@ export const AgentChatView = memo(function AgentChatView({
         const groupStreaming = isGroupStreaming(group.parts);
         return (
           <div key={`assistant-${gi}`} className="group/turn flex flex-col gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            {/* Turn separator + agent identity if previous group was user */}
-            {gi > 0 && groups[gi - 1]?.kind === "user" && (
-              <>
-                <div className="my-1 border-t border-border/30" role="separator" />
-                {agentName && (
-                  <div className="flex items-center gap-1.5 px-4">
-                    <Bot className="h-3.5 w-3.5 text-muted-foreground/60" />
-                    <span className="text-xs font-medium text-muted-foreground/70">{agentName}</span>
-                  </div>
-                )}
-              </>
-            )}
+            {/* Turn separator + agent identity */}
+            {(() => {
+              const isFirstAssistant = gi === 0;
+              const isFollowingUser = gi > 0 && groups[gi - 1]?.kind === "user";
+              if (!isFirstAssistant && !isFollowingUser) return null;
+              return (
+                <>
+                  {isFollowingUser && <div className="my-1 border-t border-border/30" role="separator" />}
+                  {agentName && (
+                    <div className="flex items-center gap-1.5 px-4">
+                      <Bot className="h-3.5 w-3.5 text-muted-foreground/60" />
+                      <span className="text-xs font-medium text-muted-foreground/70">{agentName}</span>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
             {renderGroupedParts(group.parts, gi)}
             {/* Inline feedback — hidden until hover (or when annotated) */}
             {sessionKey && !groupStreaming && (

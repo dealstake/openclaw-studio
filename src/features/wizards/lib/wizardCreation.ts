@@ -283,17 +283,17 @@ export async function executeWizardCreation(
       const purpose = agentConf.purpose ?? agentConf.roleDescription ?? "AI agent";
       const agentSlug = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 
+      if (!agentSlug) {
+        return { success: false, message: "Invalid agent name — could not generate a valid ID." };
+      }
+
+      const { createGatewayAgent, deleteGatewayAgent } = await import("@/lib/gateway/agentCrud");
+
       const atomicResult = await atomicCreate([
         {
           name: "Register gateway agent",
-          execute: async () => {
-            const { createGatewayAgent } = await import("@/lib/gateway/agentCrud");
-            await createGatewayAgent({ client, name });
-          },
-          rollback: async () => {
-            const { deleteGatewayAgent } = await import("@/lib/gateway/agentCrud");
-            await deleteGatewayAgent({ client, agentId: agentSlug }).catch(() => {/* best-effort */});
-          },
+          execute: () => createGatewayAgent({ client, name }).then(() => {}),
+          rollback: async () => { await deleteGatewayAgent({ client, agentId: agentSlug }).catch(() => {/* best-effort */}); },
         },
         {
           name: "Create agent files",

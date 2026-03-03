@@ -318,7 +318,7 @@ export const AgentChatPanel = memo(function AgentChatPanel({
           </span>
           <button
             type="button"
-            className="ml-auto flex h-5 w-5 shrink-0 items-center justify-center rounded text-yellow-400/60 transition hover:text-yellow-300"
+            className="ml-auto flex h-8 w-8 -mr-1 shrink-0 items-center justify-center rounded text-yellow-400/60 transition hover:text-yellow-300"
             aria-label="Dismiss context limit banner"
             onClick={() => setContextBannerDismissed(true)}
           >
@@ -337,7 +337,7 @@ export const AgentChatPanel = memo(function AgentChatPanel({
           {onDismissContinuationBanner && (
             <button
               type="button"
-              className="ml-auto flex h-5 w-5 shrink-0 items-center justify-center rounded text-emerald-400/60 transition hover:text-emerald-300"
+              className="ml-auto flex h-8 w-8 -mr-1 shrink-0 items-center justify-center rounded text-emerald-400/60 transition hover:text-emerald-300"
               aria-label="Dismiss continuation banner"
               onClick={onDismissContinuationBanner}
             >

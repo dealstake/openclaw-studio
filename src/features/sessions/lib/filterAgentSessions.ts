@@ -19,7 +19,7 @@ type RawSession = {
  */
 function prettifySessionKey(suffix: string): string {
   // wizard:TYPE:ID → "Type Wizard"
-  const wizardMatch = suffix.match(/^wizard:(\w+):/);
+  const wizardMatch = suffix.match(/^wizard:(\w+)(?::|$)/);
   if (wizardMatch) {
     const type = wizardMatch[1];
     const label = type.charAt(0).toUpperCase() + type.slice(1);

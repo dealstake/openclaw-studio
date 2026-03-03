@@ -72,9 +72,12 @@ export const SessionItem = memo(function SessionItem({
       if (e.key === "F2" && !renaming) {
         e.preventDefault();
         onRenameStart(session.key);
+      } else if ((e.key === "Enter" || e.key === " ") && !renaming) {
+        e.preventDefault();
+        onSelect(session.key);
       }
     },
-    [renaming, onRenameStart, session.key],
+    [renaming, onRenameStart, onSelect, session.key],
   );
 
   useEffect(() => {
