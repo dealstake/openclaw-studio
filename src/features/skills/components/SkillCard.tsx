@@ -122,7 +122,7 @@ export const SkillCard = React.memo(function SkillCard({
                 e.stopPropagation();
                 onSetupCredential(skill);
               }}
-              className="flex items-center gap-1 rounded-sm px-2 py-1 min-h-[36px] text-xs text-amber-600 dark:text-amber-400 underline decoration-amber-600/40 transition-colors hover:text-amber-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber-500"
+              className="flex items-center gap-1 rounded-sm px-2 py-1 min-h-[44px] text-xs text-amber-600 dark:text-amber-400 underline decoration-amber-600/70 transition-colors hover:text-amber-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber-500"
               aria-label={`Set up API key for ${skill.name}`}
             >
               <AlertTriangle className="h-3 w-3" />
