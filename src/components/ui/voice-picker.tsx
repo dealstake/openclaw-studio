@@ -75,7 +75,7 @@ function VoicePicker({
             {selectedVoice ? (
               <div className="flex items-center gap-2 overflow-hidden">
                 <div className="relative size-6 shrink-0 overflow-visible">
-                  <Orb agentState="thinking" colors={orbColors} colorsRef={orbColorsRef} className="absolute inset-0" />
+                  <Orb colors={orbColors} colorsRef={orbColorsRef} className="absolute inset-0" />
                 </div>
                 <span className="truncate">{selectedVoice.name}</span>
               </div>
