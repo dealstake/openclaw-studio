@@ -61,7 +61,7 @@ export const ProjectsPanel = memo(function ProjectsPanel({
 }: ProjectsPanelProps) {
   const [showWizard, setShowWizard] = useState(false);
   const [archiveTarget, setArchiveTarget] = useState<ProjectEntry | null>(null);
-  const [statusFilter, setStatusFilter] = useState<string[]>(["all"]);
+  const [statusFilter, setStatusFilter] = useState<string[]>(["🔨", "🚧"]);
   const [editingProjectDoc, setEditingProjectDoc] = useState<string | null>(null);
 
   // Open wizard programmatically when requestCreateProject increments
