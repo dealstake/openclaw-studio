@@ -43,6 +43,7 @@ import { createStudioSettingsCoordinator } from "@/lib/studio/coordinator";
 import { VoiceInputControl } from "@/features/voice/components/VoiceControls";
 import type { SpeechInputData } from "@/components/ui/speech-input";
 import type { PersonaVoiceConfig } from "@/features/voice/lib/voiceTypes";
+import { MessageBubble } from "@/components/chat/MessageBubble";
 
 // ---------------------------------------------------------------------------
 // Mode icons
@@ -67,7 +68,6 @@ const TranscriptBubble = React.memo(function TranscriptBubble({
 }: {
   entry: PracticeTranscriptEntry;
 }) {
-  const isUser = entry.role === "user";
   const isSystem = entry.role === "system" || entry.role === "evaluator";
 
   if (isSystem) {
@@ -79,18 +79,10 @@ const TranscriptBubble = React.memo(function TranscriptBubble({
   }
 
   return (
-    <div className={cn("flex", isUser ? "justify-end" : "justify-start")}>
-      <div
-        className={cn(
-          "max-w-[80%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed",
-          isUser
-            ? "rounded-br-md bg-primary text-primary-foreground"
-            : "rounded-bl-md border border-border/30 bg-card text-foreground",
-        )}
-      >
-        {entry.content}
-      </div>
-    </div>
+    <MessageBubble
+      role={entry.role === "user" ? "user" : "assistant"}
+      content={entry.content}
+    />
   );
 });
 
@@ -655,12 +647,11 @@ export const PracticeSessionModal = React.memo(function PracticeSessionModal({
                 ))}
                 {/* Streaming indicator — show AI typing */}
                 {practiceChat.isStreaming && practiceChat.streamText && (
-                  <div className="flex justify-start">
-                    <div className="max-w-[80%] rounded-2xl rounded-bl-md border border-border/30 bg-card px-3.5 py-2.5 text-sm leading-relaxed text-foreground">
-                      {practiceChat.streamText}
-                      <span className="ml-1 inline-block h-3 w-0.5 animate-pulse bg-foreground/50" />
-                    </div>
-                  </div>
+                  <MessageBubble
+                    role="assistant"
+                    content={practiceChat.streamText}
+                    streaming
+                  />
                 )}
                 {practiceChat.isStreaming && !practiceChat.streamText && (
                   <div className="flex justify-start">
