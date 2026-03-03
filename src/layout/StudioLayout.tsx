@@ -13,7 +13,7 @@
  */
 
 import { type ReactNode, useCallback, useEffect, useRef } from "react";
-import { Group, Panel, Separator, usePanelRef, type PanelImperativeHandle } from "react-resizable-panels";
+import { Group, Panel, Separator, usePanelRef, useDefaultLayout, type PanelImperativeHandle, type GroupImperativeHandle } from "react-resizable-panels";
 import { isWide, isUltrawide, type Breakpoint } from "@/hooks/useBreakpoint";
 import { GripVertical } from "lucide-react";
 
@@ -30,9 +30,22 @@ interface StudioLayoutProps {
   onSidebarCollapsedChange?: (collapsed: boolean) => void;
 }
 
+// ── Panel IDs (stable across renders for persistence) ────────────
+
+const LEFT_PANEL_ID = "left-sidebar";
+const CENTER_PANEL_ID = "center-chat";
+const RIGHT_PANEL_ID = "right-context";
+const PANEL_IDS = [LEFT_PANEL_ID, CENTER_PANEL_ID, RIGHT_PANEL_ID];
+
 // ── Resize Handle ────────────────────────────────────────────────
 
-function ResizeHandle({ className = "" }: { className?: string }) {
+function ResizeHandle({
+  className = "",
+  onDoubleClick,
+}: {
+  className?: string;
+  onDoubleClick?: () => void;
+}) {
   return (
     <Separator
       className={`group relative flex w-2 items-center justify-center
@@ -41,9 +54,12 @@ function ResizeHandle({ className = "" }: { className?: string }) {
         focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1
         transition-colors duration-150 ${className}`}
     >
-      <div className="flex h-10 w-4 items-center justify-center rounded-sm
-        bg-border/30 group-hover:bg-border/60 group-active:bg-primary/40
-        transition-all duration-150">
+      <div
+        className="flex h-10 w-4 items-center justify-center rounded-sm
+          bg-border/30 group-hover:bg-border/60 group-active:bg-primary/40
+          transition-all duration-150"
+        onDoubleClick={onDoubleClick}
+      >
         <GripVertical className="h-4 w-4 text-muted-foreground/50 group-hover:text-muted-foreground" />
       </div>
     </Separator>
@@ -64,12 +80,34 @@ export function StudioLayout({
 }: StudioLayoutProps) {
   const rightPanelRef = usePanelRef();
   const leftPanelRef = usePanelRef();
+  const groupRef = useRef<GroupImperativeHandle | null>(null);
+
   // Skip onResize sync during first 500ms to avoid mount-time race conditions
   const mountedRef = useRef(false);
   useEffect(() => {
     const t = setTimeout(() => { mountedRef.current = true; }, 500);
     return () => clearTimeout(t);
   }, []);
+
+  const ultra = isUltrawide(breakpoint);
+
+  // ── Persistence via useDefaultLayout ───────────────────────────
+  const { defaultLayout, onLayoutChanged } = useDefaultLayout({
+    id: "studio-layout",
+    panelIds: PANEL_IDS,
+    storage: typeof window !== "undefined" ? localStorage : undefined,
+  });
+
+  // ── Double-click resize handle → reset to defaults ─────────────
+  const handleResetLayout = useCallback(() => {
+    const g = groupRef.current;
+    if (!g) return;
+    // setLayout expects { [panelId]: number } where numbers are percentages as plain numbers
+    const layout = ultra
+      ? { [LEFT_PANEL_ID]: 15, [CENTER_PANEL_ID]: 59, [RIGHT_PANEL_ID]: 26 }
+      : { [LEFT_PANEL_ID]: 15, [CENTER_PANEL_ID]: 55, [RIGHT_PANEL_ID]: 30 };
+    g.setLayout(layout);
+  }, [ultra]);
 
   // Sync external state → panel collapse/expand
   useEffect(() => {
@@ -107,21 +145,19 @@ export function StudioLayout({
     else if (!collapsed && sidebarCollapsed) onSidebarCollapsedChange?.(false);
   }, [leftPanelRef, sidebarCollapsed, onSidebarCollapsedChange]);
 
-  // On wide viewports: 3-column PanelGroup
-  // Ultrawide (≥1920px): right panel bigger default (26%), max 42%
-  // Wide (1440-1919px): right panel 25% default, max 38%
-  const ultra = isUltrawide(breakpoint);
-
   if (isWide(breakpoint)) {
     return (
       <Group
         id="studio-layout"
+        groupRef={groupRef}
         className="h-full w-full"
+        defaultLayout={defaultLayout}
+        onLayoutChanged={onLayoutChanged}
       >
         {/* Left sidebar — 15% default, collapses to 56px (icon rail) */}
         <Panel
           panelRef={leftPanelRef as React.Ref<PanelImperativeHandle | null>}
-          id="left-sidebar"
+          id={LEFT_PANEL_ID}
           defaultSize="15%"
           minSize="4%"
           maxSize="22%"
@@ -134,11 +170,11 @@ export function StudioLayout({
           </div>
         </Panel>
 
-        <ResizeHandle />
+        <ResizeHandle onDoubleClick={handleResetLayout} />
 
         {/* Center: chat area — content centered via mx-auto */}
         <Panel
-          id="center-chat"
+          id={CENTER_PANEL_ID}
           defaultSize={ultra ? "59%" : "55%"}
           minSize="30%"
         >
@@ -147,12 +183,12 @@ export function StudioLayout({
           </div>
         </Panel>
 
-        <ResizeHandle />
+        <ResizeHandle onDoubleClick={handleResetLayout} />
 
         {/* Right context panel — ultrawide gets more space */}
         <Panel
           panelRef={rightPanelRef as React.Ref<PanelImperativeHandle | null>}
-          id="right-context"
+          id={RIGHT_PANEL_ID}
           defaultSize={ultra ? "26%" : "30%"}
           minSize={ultra ? "18%" : "18%"}
           maxSize={ultra ? "42%" : "45%"}
