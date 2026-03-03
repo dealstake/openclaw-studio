@@ -376,5 +376,10 @@ function escapeTitle(str: string): string {
 }
 
 function escapeAttr(str: string): string {
-  return str.replace(/"/g, "&quot;");
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }

@@ -46,6 +46,8 @@ export function useVoiceModeBridge(options?: UseVoiceModeBridgeOptions) {
     if (!voiceMode) return;
 
     if (voiceModeActive) {
+      // Warm up audio element for iOS Safari (unlocks playback on user gesture chain)
+      tts.warmup();
       if (!voice.isListening && !voice.isConnecting) {
         void voice.startListening();
       }

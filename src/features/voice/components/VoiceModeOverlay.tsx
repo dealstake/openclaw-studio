@@ -15,10 +15,12 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import FocusTrap from "focus-trap-react";
 import { Minimize2, PhoneOff, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Orb } from "@/components/ui/orb";
+import { BarVisualizer } from "@/components/ui/bar-visualizer";
 import { ShimmeringText } from "@/components/ui/shimmering-text";
 import { useVoiceMode } from "../providers/VoiceModeProvider";
 import { voiceModeToOrbState } from "../lib/voiceTypes";
@@ -99,8 +101,9 @@ export const VoiceModeOverlay = React.memo(function VoiceModeOverlay() {
   } = useVoiceMode();
 
   const overlayRef = useRef<HTMLDivElement>(null);
+  const prefersReducedMotion = useReducedMotion();
 
-  // Focus trap: focus overlay on open
+  // Focus overlay on open (FocusTrap handles actual trapping)
   useEffect(() => {
     if (isOverlayOpen && overlayRef.current) {
       overlayRef.current.focus();
@@ -171,15 +174,20 @@ export const VoiceModeOverlay = React.memo(function VoiceModeOverlay() {
     }
   });
 
+  const motionTransition = prefersReducedMotion
+    ? { duration: 0.01 }
+    : { type: "spring" as const, damping: 25, stiffness: 200 };
+
   return (
     <AnimatePresence>
       {isOverlayOpen && (
+        <FocusTrap focusTrapOptions={{ allowOutsideClick: true, escapeDeactivates: false }}>
         <motion.div
           ref={overlayRef}
-          initial={{ opacity: 0, scale: 0.95 }}
+          initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.95 }}
-          transition={{ type: "spring", damping: 25, stiffness: 200 }}
+          exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.95 }}
+          transition={motionTransition}
           className={cn(
             "fixed inset-0 z-50 flex flex-col",
             "bg-background/95 backdrop-blur-xl",
@@ -259,7 +267,7 @@ export const VoiceModeOverlay = React.memo(function VoiceModeOverlay() {
               className="h-[200px] w-[200px] sm:h-[250px] sm:w-[250px] lg:h-[300px] lg:w-[300px]"
               aria-label={`Voice visualizer, currently ${stateLabel(state).toLowerCase()}`}
             >
-              {hasWebGL ? (
+              {hasWebGL && !prefersReducedMotion ? (
                 <Orb
                   agentState={orbState}
                   colors={colors}
@@ -267,17 +275,12 @@ export const VoiceModeOverlay = React.memo(function VoiceModeOverlay() {
                   outputVolumeRef={outputVolumeRef}
                 />
               ) : (
-                /* Fallback: simple pulsing circle for no-WebGL devices */
+                /* Fallback: BarVisualizer for no-WebGL or reduced motion */
                 <div className="flex h-full w-full items-center justify-center">
-                  <div
-                    className={cn(
-                      "h-32 w-32 rounded-full transition-all duration-700",
-                      state === "listening" && "bg-emerald-500/30 shadow-[0_0_60px_20px_rgba(52,211,153,0.3)] animate-pulse",
-                      state === "thinking" && "bg-amber-500/30 shadow-[0_0_60px_20px_rgba(251,191,36,0.3)] animate-pulse",
-                      state === "speaking" && "bg-blue-500/30 shadow-[0_0_60px_20px_rgba(96,165,250,0.3)] scale-110",
-                      state === "connecting" && "bg-violet-500/30 shadow-[0_0_60px_20px_rgba(167,139,250,0.3)] animate-pulse",
-                      state === "idle" && "bg-muted/30",
-                    )}
+                  <BarVisualizer
+                    state={state === "speaking" ? "speaking" : state === "thinking" ? "thinking" : state === "connecting" ? "connecting" : "listening"}
+                    barCount={5}
+                    className="h-32 w-48"
                   />
                 </div>
               )}
@@ -337,6 +340,7 @@ export const VoiceModeOverlay = React.memo(function VoiceModeOverlay() {
             </button>
           </div>
         </motion.div>
+        </FocusTrap>
       )}
     </AnimatePresence>
   );
