@@ -217,8 +217,8 @@ export const SpeakerToggle = React.memo(function SpeakerToggle({
         isPlaying
           ? "Stop speaking"
           : enabled
-            ? "Disable voice responses"
-            : "Enable voice responses"
+            ? "Voice responses (on, press to disable)"
+            : "Voice responses (off, press to enable)"
       }
       aria-pressed={enabled}
       className={cn(
