@@ -10,6 +10,7 @@ import {
   type DragEvent,
   type KeyboardEvent,
 } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 import type { GatewayModelChoice } from "@/lib/gateway/models";
 import type { MessagePart } from "@/lib/chat/types";
@@ -475,55 +476,80 @@ export const AgentChatComposer = memo(function AgentChatComposer({
             {isRunning && tokenPct === null && (
               <div className="absolute inset-[-3px] rounded-full border-2 border-primary/50 animate-pulse" aria-hidden />
             )}
+            <AnimatePresence mode="wait" initial={false}>
             {/* State 1: Running → Stop button (wizard-aware) */}
             {isRunning ? (
-              <button
-                className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-lg ring-1 ring-white/[0.06] backdrop-blur-xl transition-all duration-300 ease-out hover:brightness-110 active:scale-90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
+              <motion.button
+                key="stop"
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.8, opacity: 0 }}
+                transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-lg ring-1 ring-white/[0.06] backdrop-blur-xl hover:brightness-110 active:scale-90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
                 type="button"
                 aria-label="Stop agent"
                 onClick={onStop}
                 disabled={!canSend || stopBusy}
               >
                 <Square className="h-3.5 w-3.5 fill-current" />
-              </button>
+              </motion.button>
             ) : !isEmpty || hasFiles ? (
               /* State 2: Has text/files → Send button */
-              <button
-                className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg ring-1 ring-white/[0.06] backdrop-blur-xl transition-all duration-300 ease-out hover:brightness-110 active:scale-90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
+              <motion.button
+                key="send"
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.8, opacity: 0 }}
+                transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg ring-1 ring-white/[0.06] backdrop-blur-xl hover:brightness-110 active:scale-90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
                 type="button"
                 aria-label="Send message"
                 onClick={handleClickSend}
                 disabled={sendDisabled}
               >
                 <ArrowUp className="h-[18px] w-[18px]" />
-              </button>
+              </motion.button>
             ) : composerAgents && composerAgents.length > 0 && selectedAgentId && onSelectAgent ? (
               /* State 3: Idle → Avatar (agent menu) */
-              <ComposerAgentMenu
-                agents={composerAgents}
-                selectedAgentId={selectedAgentId}
-                onSelectAgent={onSelectAgent}
-                models={models}
-                modelValue={modelValue}
-                onModelChange={onModelChange}
-                thinkingLevel={thinkingLevel}
-                onThinkingChange={onThinkingChange}
-                allowThinking={allowThinking}
-                tokenPct={tokenPct}
-                onNewSession={onNewSession}
-                onAttach={triggerAttach}
-              />
+              <motion.div
+                key="avatar"
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.8, opacity: 0 }}
+                transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              >
+                <ComposerAgentMenu
+                  agents={composerAgents}
+                  selectedAgentId={selectedAgentId}
+                  onSelectAgent={onSelectAgent}
+                  models={models}
+                  modelValue={modelValue}
+                  onModelChange={onModelChange}
+                  thinkingLevel={thinkingLevel}
+                  onThinkingChange={onThinkingChange}
+                  allowThinking={allowThinking}
+                  tokenPct={tokenPct}
+                  onNewSession={onNewSession}
+                  onAttach={triggerAttach}
+                />
+              </motion.div>
             ) : (
               /* Fallback: disabled send button */
-              <button
+              <motion.button
+                key="disabled"
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.8, opacity: 0 }}
+                transition={{ type: "spring", damping: 25, stiffness: 200 }}
                 className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-border/30 bg-background/60 text-muted-foreground shadow-lg ring-1 ring-white/[0.06] backdrop-blur-xl dark:bg-background/40"
                 type="button"
                 aria-label="Send message"
                 disabled
               >
                 <ArrowUp className="h-[18px] w-[18px]" />
-              </button>
+              </motion.button>
             )}
+            </AnimatePresence>
           </div>
         </div>
       </div>
