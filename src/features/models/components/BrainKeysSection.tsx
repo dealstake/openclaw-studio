@@ -178,7 +178,7 @@ export const BrainKeysSection = memo(function BrainKeysSection({
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <SectionLabel>
-          🔑 API Keys
+          <span aria-hidden="true">🔑 </span>API Keys
         </SectionLabel>
         <PanelIconButton
           aria-label="Add API key"
@@ -190,15 +190,15 @@ export const BrainKeysSection = memo(function BrainKeysSection({
 
       <p className="text-xs text-muted-foreground">
         Authentication keys for your agent&apos;s primary brain provider.
-        Multiple keys enable automatic failover.{" "}
-        <button
-          type="button"
-          onClick={onNavigateToCredentials}
-          className="inline text-xs text-brand-gold/80 hover:text-brand-gold underline-offset-2 hover:underline transition-colors"
-        >
-          Manage service credentials →
-        </button>
+        Multiple keys enable automatic failover.
       </p>
+      <button
+        type="button"
+        onClick={onNavigateToCredentials}
+        className="inline-flex items-center min-h-[44px] px-1 -ml-1 text-xs text-brand-gold/80 hover:text-brand-gold underline-offset-2 hover:underline transition-colors"
+      >
+        Manage service credentials →
+      </button>
 
       {error && <ErrorBanner message={error} />}
 

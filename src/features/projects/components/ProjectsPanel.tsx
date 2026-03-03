@@ -107,7 +107,9 @@ export const ProjectsPanel = memo(function ProjectsPanel({
   const handleFilterChange = useCallback((next: string[]) => {
     const hadAll = statusFilter.includes("all");
     const hasAll = next.includes("all");
-    if (hasAll && !hadAll) {
+    if (next.length === 0) {
+      setStatusFilter(["all"]);
+    } else if (hasAll && !hadAll) {
       setStatusFilter(["all"]);
     } else if (hasAll && next.length > 1) {
       setStatusFilter(next.filter((v) => v !== "all"));
@@ -151,6 +153,7 @@ export const ProjectsPanel = memo(function ProjectsPanel({
           next = len - 1;
           break;
         case "Enter":
+        case " ":
           if (focusedIndex >= 0 && focusedIndex < len) {
             e.preventDefault();
             setEditingProjectDoc(filteredProjects[focusedIndex].doc);
@@ -166,6 +169,13 @@ export const ProjectsPanel = memo(function ProjectsPanel({
 
   // Clamp focus when list shrinks
   const effectiveFocusIndex = focusedIndex >= filteredProjects.length ? -1 : focusedIndex;
+
+  // Scroll focused item into view
+  useEffect(() => {
+    if (effectiveFocusIndex >= 0) {
+      document.getElementById(`project-item-${effectiveFocusIndex}`)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+  }, [effectiveFocusIndex]);
 
   if (!agentId) return null;
 
@@ -240,6 +250,8 @@ export const ProjectsPanel = memo(function ProjectsPanel({
         <EmptyState
           icon={FolderKanban}
           title="No matching projects"
+          description="No projects match your current filters."
+          action={{ label: "Clear filters", onClick: () => setStatusFilter(["all"]) }}
           className="py-8"
         />
       )}
@@ -250,12 +262,14 @@ export const ProjectsPanel = memo(function ProjectsPanel({
         className="flex flex-col gap-4 animate-in fade-in duration-300"
         role="listbox"
         aria-label="Projects"
+        aria-activedescendant={effectiveFocusIndex >= 0 ? `project-item-${effectiveFocusIndex}` : undefined}
         tabIndex={0}
         onKeyDown={handleListKeyDown}
       >
         {filteredProjects.map((project, i) => (
           <div
             key={project.doc}
+            id={`project-item-${i}`}
             role="option"
             aria-selected={effectiveFocusIndex === i}
             className={`animate-in fade-in slide-in-from-bottom-1 duration-200 fill-mode-both ${effectiveFocusIndex === i ? "ring-2 ring-primary/50 rounded-lg" : ""}`}
