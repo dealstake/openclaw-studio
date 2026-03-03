@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import { Toaster } from "sonner";
+import { ChunkErrorRecovery } from "@/components/ChunkErrorRecovery";
 import "./globals.css";
 
 export const viewport: Viewport = {
@@ -42,6 +43,7 @@ export default function RootLayout({
         />
       </head>
       <body className={`${sans.variable} ${mono.variable} antialiased overflow-x-hidden`}>
+        <ChunkErrorRecovery />
         {children}
         <Toaster
           theme="system"

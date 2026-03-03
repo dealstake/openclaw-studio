@@ -1,49 +1,42 @@
 "use client";
 
-import { lazy, memo, Suspense } from "react";
+import { memo, Suspense } from "react";
+import dynamic from "next/dynamic";
 import { PanelErrorBoundary } from "@/components/PanelErrorBoundary";
 import type { ManagementTab } from "@/layout/AppSidebar";
-const ChannelsPanel = lazy(() =>
-  import("@/features/channels/components/ChannelsPanel").then((m) => ({
-    default: m.ChannelsPanel,
-  }))
-);
 import { useManagementPanel } from "@/components/management/ManagementPanelContext";
 
-const UsagePanel = lazy(() =>
-  import("@/features/usage/components/UsagePanel").then((m) => ({
-    default: m.UsagePanel,
-  }))
+const ChannelsPanel = dynamic(
+  () => import("@/features/channels/components/ChannelsPanel").then((m) => ({ default: m.ChannelsPanel })),
+  { ssr: false },
 );
-const CredentialsPanel = lazy(() =>
-  import("@/features/credentials/components/CredentialsPanel").then((m) => ({
-    default: m.CredentialsPanel,
-  }))
+const UsagePanel = dynamic(
+  () => import("@/features/usage/components/UsagePanel").then((m) => ({ default: m.UsagePanel })),
+  { ssr: false },
 );
-const ModelsPanel = lazy(() =>
-  import("@/features/models/components/ModelsPanel").then((m) => ({
-    default: m.ModelsPanel,
-  }))
+const CredentialsPanel = dynamic(
+  () => import("@/features/credentials/components/CredentialsPanel").then((m) => ({ default: m.CredentialsPanel })),
+  { ssr: false },
 );
-const GatewaySettingsPanel = lazy(() =>
-  import("@/features/gateway-settings/components/GatewaySettingsPanel").then((m) => ({
-    default: m.GatewaySettingsPanel,
-  }))
+const ModelsPanel = dynamic(
+  () => import("@/features/models/components/ModelsPanel").then((m) => ({ default: m.ModelsPanel })),
+  { ssr: false },
 );
-const ContactsPanel = lazy(() =>
-  import("@/features/contacts/components/ContactsPanel").then((m) => ({
-    default: m.ContactsPanel,
-  }))
+const GatewaySettingsPanel = dynamic(
+  () => import("@/features/gateway-settings/components/GatewaySettingsPanel").then((m) => ({ default: m.GatewaySettingsPanel })),
+  { ssr: false },
 );
-const VoiceSettingsPanelConnected = lazy(() =>
-  import("@/features/voice/components/VoiceSettingsPanelConnected").then((m) => ({
-    default: m.VoiceSettingsPanelConnected,
-  }))
+const ContactsPanel = dynamic(
+  () => import("@/features/contacts/components/ContactsPanel").then((m) => ({ default: m.ContactsPanel })),
+  { ssr: false },
 );
-const PersonasPanel = lazy(() =>
-  import("@/features/personas/components/PersonasPanel").then((m) => ({
-    default: m.PersonasPanel,
-  }))
+const VoiceSettingsPanelConnected = dynamic(
+  () => import("@/features/voice/components/VoiceSettingsPanelConnected").then((m) => ({ default: m.VoiceSettingsPanelConnected })),
+  { ssr: false },
+);
+const PersonasPanel = dynamic(
+  () => import("@/features/personas/components/PersonasPanel").then((m) => ({ default: m.PersonasPanel })),
+  { ssr: false },
 );
 
 

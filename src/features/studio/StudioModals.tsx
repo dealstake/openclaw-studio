@@ -1,11 +1,15 @@
 "use client";
 
-import { lazy, memo, Suspense } from "react";
+import { memo, Suspense } from "react";
+import dynamic from "next/dynamic";
 import { CommandPalette } from "@/features/command-palette/components/CommandPalette";
 import { EmergencyOverlay } from "@/features/emergency/components/EmergencyOverlay";
 import type { AgentState } from "@/features/agents/state/store";
 
-const ConfigMutationModals = lazy(() => import("@/features/agents/components/ConfigMutationModals").then(m => ({ default: m.ConfigMutationModals })));
+const ConfigMutationModals = dynamic(
+  () => import("@/features/agents/components/ConfigMutationModals").then(m => ({ default: m.ConfigMutationModals })),
+  { ssr: false },
+);
 
 import type { useCommandPalette } from "@/features/command-palette/hooks/useCommandPalette";
 import type { useDeleteAgent } from "@/features/agents/hooks/useDeleteAgent";
