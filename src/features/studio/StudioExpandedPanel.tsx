@@ -9,9 +9,6 @@ import { ExpandedContext } from "@/features/context/lib/expandedContext";
 import { ManagementPanelContent } from "@/components/ManagementPanelContent";
 import { ProjectsPanel } from "@/features/projects/components/ProjectsPanel";
 import { TasksPanel } from "@/features/tasks/components/TasksPanel";
-import {
-  AgentBrainPanel,
-} from "@/features/agents/components/AgentInspectPanels";
 import { UnifiedFilesPanel } from "@/features/workspace/components/UnifiedFilesPanel";
 import { ActivityPanel } from "@/features/activity/components/ActivityPanel";
 import { SkillsPanel } from "@/features/skills/components/SkillsPanel";
@@ -20,7 +17,6 @@ import type { ManagementTab } from "@/layout/AppSidebar";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import type { StudioTask, UpdateTaskPayload, TaskSchedule } from "@/features/tasks/types";
 import type { AgentState } from "@/features/agents/state/store";
-import type { AgentFileName } from "@/lib/agents/agentFiles";
 import type { GatewayModelChoice } from "@/lib/gateway/models";
 import { PlaygroundPanel } from "@/features/playground/components/PlaygroundPanel";
 import { RoutingPanel } from "@/features/routing/components/RoutingPanel";
@@ -49,13 +45,7 @@ interface StudioExpandedPanelProps {
   onRefreshTasks: () => void;
   onNewTask: () => void;
   cronMaxConcurrentRuns: number | undefined;
-  // Brain
   agents: AgentState[];
-  selectedBrainAgentId: string | null;
-  brainFileTab: AgentFileName;
-  onBrainFileTabChange: (tab: AgentFileName) => void;
-  brainPreviewMode: boolean;
-  onBrainPreviewModeChange: (mode: boolean) => void;
   // Transcript
   onTranscriptClick: (sessionId: string, agentId: string | null) => void;
   // Playground
@@ -89,11 +79,6 @@ export const StudioExpandedPanel = memo(function StudioExpandedPanel({
   onNewTask,
   cronMaxConcurrentRuns,
   agents,
-  selectedBrainAgentId,
-  brainFileTab,
-  onBrainFileTabChange,
-  brainPreviewMode,
-  onBrainPreviewModeChange,
   onTranscriptClick,
   gatewayModels = [],
   defaultModel,
@@ -133,20 +118,6 @@ export const StudioExpandedPanel = memo(function StudioExpandedPanel({
                 onRefresh={onRefreshTasks}
                 onNewTask={onNewTask}
                 maxConcurrentRuns={cronMaxConcurrentRuns}
-              />
-            </PanelErrorBoundary>
-          )}
-          {expandedTab === "brain" && (
-            <PanelErrorBoundary name="Brain">
-              <AgentBrainPanel
-                client={client}
-                agents={agents}
-                selectedAgentId={selectedBrainAgentId}
-                onClose={onClose}
-                activeTab={brainFileTab}
-                onTabChange={onBrainFileTabChange}
-                previewMode={brainPreviewMode}
-                onPreviewModeChange={onBrainPreviewModeChange}
               />
             </PanelErrorBoundary>
           )}

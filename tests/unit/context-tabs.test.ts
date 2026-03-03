@@ -2,8 +2,8 @@ import { describe, it, expect } from "vitest";
 import { CONTEXT_TAB_CONFIG, tabPanelId, tabButtonId, type ContextTab } from "@/features/context/lib/tabs";
 
 describe("CONTEXT_TAB_CONFIG", () => {
-  it("defines 12 tabs", () => {
-    expect(CONTEXT_TAB_CONFIG).toHaveLength(12);
+  it("defines 11 tabs", () => {
+    expect(CONTEXT_TAB_CONFIG).toHaveLength(11);
   });
 
   it("has unique values", () => {
@@ -18,7 +18,7 @@ describe("CONTEXT_TAB_CONFIG", () => {
 
   it("includes expected tabs", () => {
     const values = CONTEXT_TAB_CONFIG.map((t) => t.value);
-    expect(values).toEqual(["projects", "tasks", "brain", "workspace", "skills", "activity", "budget", "router", "playground", "orchestrator", "memory-graph", "feedback"]);
+    expect(values).toEqual(["projects", "tasks", "workspace", "skills", "activity", "budget", "router", "playground", "orchestrator", "memory-graph", "feedback"]);
   });
 
   it("each entry has Icon, label, shortLabel", () => {
@@ -38,7 +38,7 @@ describe("tabPanelId / tabButtonId", () => {
 
   it("generates correct button IDs", () => {
     expect(tabButtonId("tasks")).toBe("context-tab-tasks");
-    expect(tabButtonId("brain")).toBe("context-tab-brain");
+    expect(tabButtonId("workspace")).toBe("context-tab-workspace");
   });
 
   it("panel and button IDs are distinct for same tab", () => {

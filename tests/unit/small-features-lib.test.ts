@@ -140,8 +140,8 @@ describe("sortFiles", () => {
 // ─── context/tabs ────────────────────────────────────────────────────────────
 
 describe("context tabs", () => {
-  it("has 12 tabs", () => {
-    expect(CONTEXT_TAB_CONFIG).toHaveLength(12);
+  it("has 11 tabs", () => {
+    expect(CONTEXT_TAB_CONFIG).toHaveLength(11);
   });
 
   it("tabPanelId formats correctly", () => {
@@ -149,7 +149,7 @@ describe("context tabs", () => {
   });
 
   it("tabButtonId formats correctly", () => {
-    expect(tabButtonId("brain")).toBe("context-tab-brain");
+    expect(tabButtonId("workspace")).toBe("context-tab-workspace");
   });
 });
 

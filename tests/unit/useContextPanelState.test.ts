@@ -53,8 +53,8 @@ describe("useContextPanelState", () => {
 
   it("sets and clears expanded tab", () => {
     const { result } = renderHook(() => useContextPanelState());
-    act(() => result.current.setExpandedTab("brain"));
-    expect(result.current.expandedTab).toBe("brain");
+    act(() => result.current.setExpandedTab("workspace"));
+    expect(result.current.expandedTab).toBe("workspace");
     act(() => result.current.clearExpandedTab());
     expect(result.current.expandedTab).toBeNull();
   });

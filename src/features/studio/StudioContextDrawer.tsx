@@ -6,7 +6,6 @@ import { ContextPanel } from "@/features/context/components/ContextPanel";
 import type { ContextTab } from "@/features/context/components/ContextPanel";
 import { ProjectsPanel } from "@/features/projects/components/ProjectsPanel";
 import { TasksPanel } from "@/features/tasks/components/TasksPanel";
-import { AgentBrainPanel } from "@/features/agents/components/AgentInspectPanels";
 import { UnifiedFilesPanel } from "@/features/workspace/components/UnifiedFilesPanel";
 import { ActivityPanel } from "@/features/activity/components/ActivityPanel";
 import { SkillsPanel } from "@/features/skills/components/SkillsPanel";
@@ -19,9 +18,8 @@ import { FeedbackPanel } from "@/features/feedback/components/FeedbackPanel";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import type { AgentState } from "@/features/agents/state/store";
 import type { GatewayModelChoice } from "@/lib/gateway/models";
-import type { AgentFileName } from "@/lib/agents/agentFiles";
 
-export type ExpandableTab = "projects" | "tasks" | "brain" | "workspace" | "skills" | "activity" | "budget" | "router" | "playground" | "orchestrator" | "memory-graph" | "feedback";
+export type ExpandableTab = "projects" | "tasks" | "workspace" | "skills" | "activity" | "budget" | "router" | "playground" | "orchestrator" | "memory-graph" | "feedback";
 
 interface StudioContextDrawerProps {
   isMobileLayout: boolean;
@@ -59,18 +57,9 @@ interface StudioContextDrawerProps {
   onRefreshTasks: () => void;
   onNewTask: () => void;
   cronMaxConcurrentRuns: number | undefined;
-  // Brain
-  agents: AgentState[];
-  selectedBrainAgentId: string | null;
-  brainFileTab: AgentFileName;
-  onBrainFileTabChange: (tab: AgentFileName) => void;
-  brainPreviewMode: boolean;
-  onBrainPreviewModeChange: (mode: boolean) => void;
   status: GatewayStatus;
+  agents: AgentState[];
   gatewayModels: GatewayModelChoice[];
-  modelValue: string;
-  onModelChange: (value: string | null) => void;
-  onBrainClose: () => void;
   // Workspace
   focusedAgent: AgentState | null;
   // Wizard entry points
@@ -86,9 +75,7 @@ export const StudioContextDrawer = React.memo(function StudioContextDrawer(props
     agentTasks, tasksLoading, tasksError, busyTaskId, busyAction,
     onToggleTask, onUpdateTask, onUpdateTaskSchedule, onRunTask, onDeleteTask,
     onRefreshTasks, onNewTask, cronMaxConcurrentRuns,
-    agents, selectedBrainAgentId, brainFileTab, onBrainFileTabChange,
-    brainPreviewMode, onBrainPreviewModeChange,
-    status, gatewayModels, modelValue, onModelChange, onBrainClose,
+    status, agents, gatewayModels,
     focusedAgent,
     onCreateSkill,
   } = props;
@@ -151,24 +138,6 @@ export const StudioContextDrawer = React.memo(function StudioContextDrawer(props
                 maxConcurrentRuns={cronMaxConcurrentRuns}
               />
             </div>
-          </PanelErrorBoundary>
-        }
-        brainContent={
-          <PanelErrorBoundary name="Brain">
-            <AgentBrainPanel
-              client={client}
-              agents={agents}
-              selectedAgentId={selectedBrainAgentId}
-              activeTab={brainFileTab}
-              onTabChange={onBrainFileTabChange}
-              previewMode={brainPreviewMode}
-              onPreviewModeChange={onBrainPreviewModeChange}
-              status={status}
-              models={gatewayModels}
-              modelValue={modelValue}
-              onModelChange={onModelChange}
-              onClose={onBrainClose}
-            />
           </PanelErrorBoundary>
         }
         workspaceContent={

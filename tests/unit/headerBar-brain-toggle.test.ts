@@ -42,12 +42,12 @@ describe("HeaderBar mobile context menu", () => {
     // Context tabs should be visible
     expect(screen.getByText("Projects")).toBeInTheDocument();
     expect(screen.getByText("Tasks")).toBeInTheDocument();
-    expect(screen.getByText("Brain")).toBeInTheDocument();
+    expect(screen.queryByText("Brain")).not.toBeInTheDocument();
     expect(screen.getByText("Files")).toBeInTheDocument();
     expect(screen.getByText("Activity")).toBeInTheDocument();
 
     // Click a tab
-    fireEvent.click(screen.getByText("Brain"));
-    expect(onContextTabClick).toHaveBeenCalledWith("brain");
+    fireEvent.click(screen.getByText("Files"));
+    expect(onContextTabClick).toHaveBeenCalledWith("workspace");
   });
 });

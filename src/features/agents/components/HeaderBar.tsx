@@ -8,7 +8,6 @@ import {
   FolderOpen,
   FolderKanban,
   ListChecks,
-  Brain,
   Activity,
   ShieldAlert,
   X,
@@ -41,7 +40,6 @@ const CONTEXT_TAB_ITEMS: Array<{
 }> = [
   { value: "projects", label: "Projects", Icon: FolderKanban },
   { value: "tasks", label: "Tasks", Icon: ListChecks },
-  { value: "brain", label: "Brain", Icon: Brain },
   { value: "workspace", label: "Files", Icon: FolderOpen },
   { value: "activity", label: "Activity", Icon: Activity },
 ];

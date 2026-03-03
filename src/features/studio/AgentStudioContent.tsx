@@ -102,8 +102,8 @@ export const AgentStudioPage = () => {
     setContextMode,
     contextTab, setContextTab,
     expandedTab, setExpandedTab,
-    brainFileTab, setBrainFileTab,
-    brainPreviewMode, setBrainPreviewMode,
+    brainFileTab: _brainFileTab, setBrainFileTab: _setBrainFileTab,
+    brainPreviewMode: _brainPreviewMode, setBrainPreviewMode: _setBrainPreviewMode,
     managementView, setManagementView,
     headerVisible, onHoverZoneEnter, onHoverZoneLeave, onFocusZoneEnter, onFocusZoneLeave,
     handleExpandToggle, clearExpandedTab, switchToChat,
@@ -236,7 +236,7 @@ export const AgentStudioPage = () => {
   }, [focusedAgent, settingsAgentId, setSettingsAgentId, setManagementView]);
 
   const handleCmdNavTab = useCallback((tab: ContextTab | "usage" | "channels" | "settings") => {
-    const contextTabs = new Set<string>(["projects", "tasks", "brain", "workspace", "activity", "router", "playground"]);
+    const contextTabs = new Set<string>(["projects", "tasks", "workspace", "activity", "router", "playground"]);
     if (contextTabs.has(tab)) {
       setContextTab(tab as ContextTab);
       setContextPanelOpen(true);
@@ -489,9 +489,7 @@ export const AgentStudioPage = () => {
   // eslint-disable-next-line react-hooks/refs
   focusedAgentRef.current = focusedAgent;
   const focusedAgentRunning = focusedAgent?.status === "running";
-  const selectedBrainAgentId = useMemo(() => {
-    return focusedAgent?.agentId ?? agents[0]?.agentId ?? null;
-  }, [agents, focusedAgent]);
+  // selectedBrainAgentId removed — brain editing now lives in PersonaDetailModal
   // Match a model key (could be "claude-opus-4-6" or "anthropic/claude-opus-4-6") against gateway model list
   const findModelMatch = useCallback(
     (modelKey: string | undefined | null) => {
@@ -563,7 +561,6 @@ export const AgentStudioPage = () => {
     focusedSessionKey: focusedAgent?.sessionKey ?? null,
     focusedAgentStatus: focusedAgent?.status ?? null,
     hasRunningAgents,
-    selectedBrainAgentId,
     loadSessionUsageRef,
     loadGatewayStatus,
     parsePresenceFromStatus,
@@ -1161,11 +1158,6 @@ export const AgentStudioPage = () => {
               onNewTask={() => handleStartWizard("task")}
               cronMaxConcurrentRuns={cronMaxConcurrentRuns}
               agents={agents}
-              selectedBrainAgentId={selectedBrainAgentId}
-              brainFileTab={brainFileTab}
-              onBrainFileTabChange={setBrainFileTab}
-              brainPreviewMode={brainPreviewMode}
-              onBrainPreviewModeChange={setBrainPreviewMode}
               onTranscriptClick={handleExpandedTranscriptClick}
               gatewayModels={gatewayModels}
               defaultModel={focusedAgent?.model ?? (gatewayModels.length > 0 ? `${gatewayModels[0].provider}/${gatewayModels[0].id}` : undefined)}
@@ -1222,7 +1214,7 @@ export const AgentStudioPage = () => {
               swipeDy={swipeDy}
               swipeHandlers={swipeHandlers}
               contextTab={contextTab}
-              expandedTab={expandedTab as "projects" | "tasks" | "brain" | "workspace" | "skills" | "activity" | "budget" | "router" | "playground" | null}
+              expandedTab={expandedTab as "projects" | "tasks" | "workspace" | "skills" | "activity" | "budget" | "router" | "playground" | null}
               onExpandToggle={handleExpandToggle}
               onClose={() => setContextPanelOpen(false)}
               onTabChange={setContextTab}
@@ -1245,20 +1237,9 @@ export const AgentStudioPage = () => {
               onRefreshTasks={() => { void loadTasks(); }}
               onNewTask={() => handleStartWizard("task")}
               cronMaxConcurrentRuns={cronMaxConcurrentRuns}
-              agents={agents}
-              selectedBrainAgentId={selectedBrainAgentId}
-              brainFileTab={brainFileTab}
-              onBrainFileTabChange={setBrainFileTab}
-              brainPreviewMode={brainPreviewMode}
-              onBrainPreviewModeChange={setBrainPreviewMode}
               status={status}
+              agents={agents}
               gatewayModels={gatewayModels}
-              modelValue={focusedAgent?.model ?? (gatewayModels.length > 0 ? `${gatewayModels[0].provider}/${gatewayModels[0].id}` : "")}
-              onModelChange={stableChatOnModelChange}
-              onBrainClose={() => {
-                setContextMode("agent");
-                setMobilePane("chat");
-              }}
               focusedAgent={focusedAgent}
               onCreateSkill={() => handleStartWizard("skill")}
             />

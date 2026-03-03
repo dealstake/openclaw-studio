@@ -41,7 +41,6 @@ export interface UseStudioDataSyncParams {
   focusedSessionKey: string | null;
   focusedAgentStatus: string | null;
   hasRunningAgents: boolean;
-  selectedBrainAgentId: string | null;
 
   // Refs for load functions (stable refs to avoid re-render loops)
   loadSessionUsageRef: MutableRefObject<(key: string) => Promise<void>>;
@@ -105,7 +104,6 @@ export function useStudioDataSync(params: UseStudioDataSyncParams): UseStudioDat
     focusedSessionKey,
     focusedAgentStatus,
     hasRunningAgents,
-    selectedBrainAgentId,
     loadSessionUsageRef,
     loadGatewayStatus,
     parsePresenceFromStatus,
@@ -397,13 +395,6 @@ export function useStudioDataSync(params: UseStudioDataSyncParams): UseStudioDat
       setSettingsAgentId(null);
     }
   }, [expandedTab, managementView, selectedAgentId, settingsAgentId, setSettingsAgentId]);
-
-  // Auto-close brain tab in context panel if no agents
-  useEffect(() => {
-    if (contextTab !== "brain" || contextMode !== "agent") return;
-    if (selectedBrainAgentId) return;
-    setContextTab("tasks");
-  }, [contextMode, contextTab, selectedBrainAgentId, setContextTab]);
 
   return {
     refreshContextWindow,

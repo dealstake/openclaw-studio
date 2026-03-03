@@ -24,7 +24,7 @@ describe("useCommandPalette", () => {
   it("returns navigation commands for all tabs", () => {
     const { result } = renderHook(() => useCommandPalette(makeProps()));
     const navActions = result.current.actions.filter((a) => a.group === "navigation");
-    expect(navActions.length).toBe(8);
+    expect(navActions.length).toBe(7);
     expect(navActions.map((a) => a.id)).toContain("nav-projects");
     expect(navActions.map((a) => a.id)).not.toContain("nav-sessions");
   });

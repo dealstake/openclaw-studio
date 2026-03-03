@@ -1,10 +1,9 @@
-import { FolderKanban, ListChecks, Brain, FolderOpen, Activity, Puzzle, PieChart, Route, FlaskConical, Network, Share2, MessageSquarePlus, type LucideIcon } from "lucide-react";
+import { FolderKanban, ListChecks, FolderOpen, Activity, Puzzle, PieChart, Route, FlaskConical, Network, Share2, MessageSquarePlus, type LucideIcon } from "lucide-react";
 
 /** Canonical tab configuration — single source of truth for all context panel components. */
 export const CONTEXT_TAB_CONFIG = [
   { value: "projects", label: "Projects", shortLabel: "Proj", Icon: FolderKanban },
   { value: "tasks", label: "Tasks", shortLabel: "Tasks", Icon: ListChecks },
-  { value: "brain", label: "Brain", shortLabel: "Brain", Icon: Brain },
   { value: "workspace", label: "Files", shortLabel: "Files", Icon: FolderOpen },
   { value: "skills", label: "Skills", shortLabel: "Skills", Icon: Puzzle },
   { value: "activity", label: "Activity", shortLabel: "Act", Icon: Activity },

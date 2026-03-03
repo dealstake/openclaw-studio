@@ -20,7 +20,6 @@ interface ContextPanelProps {
   hideTabBar?: boolean;
   projectsContent?: ReactNode;
   tasksContent: ReactNode;
-  brainContent: ReactNode;
   workspaceContent?: ReactNode;
   skillsContent?: ReactNode;
   activityContent?: ReactNode;
@@ -41,7 +40,6 @@ export const ContextPanel = memo(function ContextPanel({
   hideTabBar,
   projectsContent,
   tasksContent,
-  brainContent,
   workspaceContent,
   skillsContent,
   activityContent,
@@ -147,7 +145,6 @@ export const ContextPanel = memo(function ContextPanel({
   const contentMap = useMemo<Record<ContextTab, ReactNode | undefined>>(() => ({
     projects: projectsContent,
     tasks: tasksContent,
-    brain: brainContent,
     workspace: workspaceContent,
     skills: skillsContent,
     activity: activityContent,
@@ -157,7 +154,7 @@ export const ContextPanel = memo(function ContextPanel({
     orchestrator: orchestratorContent,
     "memory-graph": memoryGraphContent,
     feedback: feedbackContent,
-  }), [projectsContent, tasksContent, brainContent, workspaceContent, skillsContent, activityContent, budgetContent, routerContent, playgroundContent, orchestratorContent, memoryGraphContent, feedbackContent]);
+  }), [projectsContent, tasksContent, workspaceContent, skillsContent, activityContent, budgetContent, routerContent, playgroundContent, orchestratorContent, memoryGraphContent, feedbackContent]);
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden">

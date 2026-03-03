@@ -192,12 +192,13 @@ describe("useAppLayout", () => {
       expect(result.current.contextTab).toBe("tasks");
     });
 
-    it("Cmd+Shift+B opens brain tab", () => {
+    it("Cmd+Shift+B does not open brain tab (removed)", () => {
       const { result } = renderHook(() => useAppLayout());
+      const before = result.current.contextTab;
       act(() => {
         document.dispatchEvent(new KeyboardEvent("keydown", { key: "B", metaKey: true, shiftKey: true }));
       });
-      expect(result.current.contextTab).toBe("brain");
+      expect(result.current.contextTab).toBe(before);
     });
 
     it("Cmd+Shift+A opens activity tab", () => {

@@ -15,7 +15,6 @@ function renderPanel(overrides: Record<string, unknown> = {}) {
     activeTab: "projects" as const,
     onTabChange: vi.fn(),
     tasksContent: <div data-testid="tasks-content">Tasks</div>,
-    brainContent: <div data-testid="brain-content">Brain</div>,
     projectsContent: <div data-testid="projects-content">Projects</div>,
     workspaceContent: <div data-testid="workspace-content">Workspace</div>,
     activityContent: <div data-testid="activity-content">Activity</div>,
@@ -24,10 +23,10 @@ function renderPanel(overrides: Record<string, unknown> = {}) {
 }
 
 describe("ContextPanel", () => {
-  it("renders 12 tab buttons from config", () => {
+  it("renders 11 tab buttons from config", () => {
     renderPanel();
     const tabs = screen.getAllByRole("tab");
-    expect(tabs).toHaveLength(12);
+    expect(tabs).toHaveLength(11);
   });
 
   it("marks active tab as selected", () => {
@@ -40,8 +39,8 @@ describe("ContextPanel", () => {
   it("calls onTabChange when clicking a tab", () => {
     const onTabChange = vi.fn();
     renderPanel({ onTabChange });
-    fireEvent.click(screen.getByTestId("context-tab-brain"));
-    expect(onTabChange).toHaveBeenCalledWith("brain");
+    fireEvent.click(screen.getByTestId("context-tab-workspace"));
+    expect(onTabChange).toHaveBeenCalledWith("workspace");
   });
 
   it("lazy mounts only the active tab initially", () => {
@@ -91,7 +90,7 @@ describe("ContextPanel", () => {
 
   it("navigates to first tab with Home key", () => {
     const onTabChange = vi.fn();
-    renderPanel({ activeTab: "brain", onTabChange });
+    renderPanel({ activeTab: "workspace", onTabChange });
     const tablist = screen.getByRole("tablist");
     fireEvent.keyDown(tablist, { key: "Home" });
     expect(onTabChange).toHaveBeenCalledWith("projects");
@@ -127,7 +126,6 @@ describe("ContextPanel", () => {
         activeTab="projects"
         onTabChange={onTabChange}
         tasksContent={<div data-testid="tasks-content">Tasks</div>}
-        brainContent={<div data-testid="brain-content">Brain</div>}
         projectsContent={<div data-testid="projects-content">Projects</div>}
       />
     );
@@ -139,7 +137,6 @@ describe("ContextPanel", () => {
         activeTab="tasks"
         onTabChange={onTabChange}
         tasksContent={<div data-testid="tasks-content">Tasks</div>}
-        brainContent={<div data-testid="brain-content">Brain</div>}
         projectsContent={<div data-testid="projects-content">Projects</div>}
       />
     );
