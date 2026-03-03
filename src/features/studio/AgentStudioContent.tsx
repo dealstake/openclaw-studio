@@ -68,8 +68,9 @@ import { StudioStatusBanners } from "@/features/studio/StudioStatusBanners";
 import { StudioContextDrawer } from "@/features/studio/StudioContextDrawer";
 import { useSettingsPanel } from "@/features/agents/hooks/useSettingsPanel";
 import { useChatCallbacks } from "@/features/agents/hooks/useChatCallbacks";
-import { isWide } from "@/hooks/useBreakpoint";
+import { isWide, type Breakpoint } from "@/hooks/useBreakpoint";
 import { useAppLayout } from "@/hooks/useAppLayout";
+import { StudioLayout } from "@/layout/StudioLayout";
 
 import { useLoadAgents } from "@/features/studio/useLoadAgents";
 import { useStudioDataSync } from "@/features/studio/useStudioDataSync";
@@ -1070,91 +1071,225 @@ export const AgentStudioPage = () => {
                 onViewForkTree={handleViewForkTree}
               />
             ) : null}
-            {/* App sidebar — desktop only, collapsible: floating overlay */}
-            <div className={`${showSidebarInline ? "fixed inset-y-0 left-0 z-20 flex" : "hidden"}`}>
-              <AppSidebar
-                client={client}
-                status={status}
-                agentId={focusedAgentId}
-                activeSessionKey={viewingSessionKey ?? (focusedAgent ? `${focusedAgent.agentId}:main` : null)}
-                onSelectSession={(key) => key === `${focusedAgentId}:main` ? handleSidebarSessionSelect(null) : handleSidebarSessionSelect(key)}
-                onNewSession={stableChatOnNewSession}
-                collapsed={sessionSidebarCollapsed}
-                onToggleCollapse={() => setSessionSidebarCollapsed((p) => !p)}
-                onManagementNav={handleManagementNav}
-                activeManagementTab={managementView}
-                onViewTrace={(key) => handleViewTrace(key, focusedAgentId)}
-                onViewReplay={(key) => handleViewReplay(key, focusedAgentId)}
-                onResume={handleResumeSession}
-                onViewForkTree={handleViewForkTree}
-              />
-            </div>
-            {/* ── Chat canvas: base layer filling viewport ─────────── */}
-            <div
-              className="absolute inset-0 z-0 flex overflow-hidden"
-              data-testid="focused-agent-panel"
-              {...swipeHandlers}
-            >
-              {/* Management drawer — slides in from left beside sidebar */}
-              <ManagementDrawer
-                open={managementView !== null}
-                onOpenChange={(open) => { if (!open) setManagementView(null); }}
-                title={managementView ? ({ usage: "Usage", channels: "Channels", credentials: "Credentials", models: "Models", gateway: "Gateway", cron: "Cron", contacts: "Contacts", voice: "Voice", personas: "Personas" } as Record<string, string>)[managementView] ?? "" : ""}
-                sidebarOffsetPx={sessionSidebarCollapsed ? 56 : 288}
-              >
-                <ManagementPanelContent
-                  tab={managementView}
-                />
-              </ManagementDrawer>
 
-              {focusedAgent ? (
-                <AgentChatPanel
-                  agent={focusedAgent}
-                  composerAgents={breadcrumbAgents}
-                  onSelectAgent={(agentId) => {
-                    flushPendingDraft(focusedAgent?.agentId ?? null);
-                    dispatch({ type: "selectAgent", agentId });
-                  }}
-                  canSend={status === "connected" || isOffline}
-                  gatewayStatus={status}
-                  queueLength={queueLength}
-                  models={gatewayModels}
-                  stopBusy={stopBusyAgentId === focusedAgent.agentId}
-                  onModelChange={stableChatOnModelChange}
-                  onThinkingChange={stableChatOnThinkingChange}
-                  onDraftChange={stableChatOnDraftChange}
-                  onSend={stableChatOnSend}
-                  onStopRun={stableChatOnStopRun}
-                  onNewSession={stableChatOnNewSession}
-                  tokenUsed={stableChatTokenUsed}
-                  tokenLimit={stableChatTokenLimit}
-                  viewingSessionKey={viewingSessionKey}
-                  viewingSessionHistory={viewingSessionHistory}
-                  viewingSessionLoading={viewingSessionLoading}
-                  onExitSessionView={stableChatOnExitSessionView}
-                  sessionContinued={sessionContinuedAgents.has(focusedAgent.agentId)}
-                  onDismissContinuationBanner={stableChatOnDismissContinuation}
-                  wizard={wizard}
-                  onWizardConfirm={() => void handleWizardConfirm()}
-                  onOpenCredentialVault={() => setManagementView("credentials")}
-                  onOpenSettings={() => handleManagementNav("personas")}
-                />
-              ) : (
-                <div className="flex h-full w-full flex-col items-center justify-center gap-3 text-center text-muted-foreground">
-                  <Users className="h-10 w-10 opacity-30" />
-                  <p className="text-sm">
-                    {hasAnyAgents
-                      ? "No agents match this filter."
-                      : "No agents available."}
-                  </p>
-                  {!hasAnyAgents && (
-                    <p className="text-xs text-muted-foreground">
-                      Use New Agent in the sidebar to add your first agent.
-                    </p>
+            {/* ── THREE-COLUMN RESIZABLE LAYOUT (wide ≥1440px) ─────────── */}
+            {isWide(breakpoint) ? (
+              <StudioLayout
+                breakpoint={breakpoint}
+                sidebarCollapsed={sessionSidebarCollapsed}
+                contextPanelOpen={contextPanelOpen}
+                onContextPanelOpenChange={setContextPanelOpen}
+                onSidebarCollapsedChange={setSessionSidebarCollapsed}
+                leftSidebar={
+                  <AppSidebar
+                    client={client}
+                    status={status}
+                    agentId={focusedAgentId}
+                    activeSessionKey={viewingSessionKey ?? (focusedAgent ? `${focusedAgent.agentId}:main` : null)}
+                    onSelectSession={(key) => key === `${focusedAgentId}:main` ? handleSidebarSessionSelect(null) : handleSidebarSessionSelect(key)}
+                    onNewSession={stableChatOnNewSession}
+                    collapsed={sessionSidebarCollapsed}
+                    onToggleCollapse={() => setSessionSidebarCollapsed((p) => !p)}
+                    onManagementNav={handleManagementNav}
+                    activeManagementTab={managementView}
+                    onViewTrace={(key) => handleViewTrace(key, focusedAgentId)}
+                    onViewReplay={(key) => handleViewReplay(key, focusedAgentId)}
+                    onResume={handleResumeSession}
+                    onViewForkTree={handleViewForkTree}
+                  />
+                }
+                centerChat={
+                  <>
+                    {/* Management drawer — slides in from left beside sidebar */}
+                    <ManagementDrawer
+                      open={managementView !== null}
+                      onOpenChange={(open) => { if (!open) setManagementView(null); }}
+                      title={managementView ? ({ usage: "Usage", channels: "Channels", credentials: "Credentials", models: "Models", gateway: "Gateway", cron: "Cron", contacts: "Contacts", voice: "Voice", personas: "Personas" } as Record<string, string>)[managementView] ?? "" : ""}
+                      sidebarOffsetPx={0}
+                    >
+                      <ManagementPanelContent
+                        tab={managementView}
+                      />
+                    </ManagementDrawer>
+
+                    {focusedAgent ? (
+                      <AgentChatPanel
+                        agent={focusedAgent}
+                        composerAgents={breadcrumbAgents}
+                        onSelectAgent={(agentId) => {
+                          flushPendingDraft(focusedAgent?.agentId ?? null);
+                          dispatch({ type: "selectAgent", agentId });
+                        }}
+                        canSend={status === "connected" || isOffline}
+                        gatewayStatus={status}
+                        queueLength={queueLength}
+                        models={gatewayModels}
+                        stopBusy={stopBusyAgentId === focusedAgent.agentId}
+                        onModelChange={stableChatOnModelChange}
+                        onThinkingChange={stableChatOnThinkingChange}
+                        onDraftChange={stableChatOnDraftChange}
+                        onSend={stableChatOnSend}
+                        onStopRun={stableChatOnStopRun}
+                        onNewSession={stableChatOnNewSession}
+                        tokenUsed={stableChatTokenUsed}
+                        tokenLimit={stableChatTokenLimit}
+                        viewingSessionKey={viewingSessionKey}
+                        viewingSessionHistory={viewingSessionHistory}
+                        viewingSessionLoading={viewingSessionLoading}
+                        onExitSessionView={stableChatOnExitSessionView}
+                        sessionContinued={sessionContinuedAgents.has(focusedAgent.agentId)}
+                        onDismissContinuationBanner={stableChatOnDismissContinuation}
+                        wizard={wizard}
+                        onWizardConfirm={() => void handleWizardConfirm()}
+                        onOpenCredentialVault={() => setManagementView("credentials")}
+                        onOpenSettings={() => handleManagementNav("personas")}
+                      />
+                    ) : (
+                      <div className="flex h-full w-full flex-col items-center justify-center gap-3 text-center text-muted-foreground">
+                        <Users className="h-10 w-10 opacity-30" />
+                        <p className="text-sm">
+                          {hasAnyAgents
+                            ? "No agents match this filter."
+                            : "No agents available."}
+                        </p>
+                        {!hasAnyAgents && (
+                          <p className="text-xs text-muted-foreground">
+                            Use New Agent in the sidebar to add your first agent.
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </>
+                }
+                rightPanel={
+                  <StudioContextDrawer
+                    renderMode="panel"
+                    isMobileLayout={false}
+                    showContextInline={true}
+                    mobilePane="chat"
+                    swipeDy={0}
+                    swipeHandlers={{}}
+                    contextTab={contextTab}
+                    expandedTab={expandedTab as "projects" | "tasks" | "workspace" | "skills" | "activity" | "budget" | "router" | "playground" | null}
+                    onExpandToggle={handleExpandToggle}
+                    onClose={() => setContextPanelOpen(false)}
+                    onTabChange={setContextTab}
+                    switchToChat={switchToChat}
+                    hideTabBar={false}
+                    focusedAgentId={focusedAgent?.agentId ?? null}
+                    client={client}
+                    cronEventTick={cronEventTick}
+                    createProjectTick={createProjectTick}
+                    agentTasks={agentTasks}
+                    tasksLoading={tasksLoading}
+                    tasksError={tasksError}
+                    busyTaskId={busyTaskId}
+                    busyAction={busyAction}
+                    onToggleTask={toggleTask}
+                    onUpdateTask={updateTask}
+                    onUpdateTaskSchedule={updateTaskSchedule}
+                    onRunTask={runTask}
+                    onDeleteTask={deleteTask}
+                    onRefreshTasks={() => { void loadTasks(); }}
+                    onNewTask={() => handleStartWizard("task")}
+                    cronMaxConcurrentRuns={cronMaxConcurrentRuns}
+                    status={status}
+                    agents={agents}
+                    gatewayModels={gatewayModels}
+                    focusedAgent={focusedAgent}
+                    onCreateSkill={() => handleStartWizard("skill")}
+                  />
+                }
+              />
+            ) : (
+              <>
+                {/* App sidebar — desktop (non-wide), collapsible: floating overlay */}
+                <div className={`${showSidebarInline ? "fixed inset-y-0 left-0 z-20 flex" : "hidden"}`}>
+                  <AppSidebar
+                    client={client}
+                    status={status}
+                    agentId={focusedAgentId}
+                    activeSessionKey={viewingSessionKey ?? (focusedAgent ? `${focusedAgent.agentId}:main` : null)}
+                    onSelectSession={(key) => key === `${focusedAgentId}:main` ? handleSidebarSessionSelect(null) : handleSidebarSessionSelect(key)}
+                    onNewSession={stableChatOnNewSession}
+                    collapsed={sessionSidebarCollapsed}
+                    onToggleCollapse={() => setSessionSidebarCollapsed((p) => !p)}
+                    onManagementNav={handleManagementNav}
+                    activeManagementTab={managementView}
+                    onViewTrace={(key) => handleViewTrace(key, focusedAgentId)}
+                    onViewReplay={(key) => handleViewReplay(key, focusedAgentId)}
+                    onResume={handleResumeSession}
+                    onViewForkTree={handleViewForkTree}
+                  />
+                </div>
+                {/* ── Chat canvas: base layer filling viewport ─────────── */}
+                <div
+                  className="absolute inset-0 z-0 flex overflow-hidden"
+                  data-testid="focused-agent-panel"
+                  {...swipeHandlers}
+                >
+                  {/* Management drawer — slides in from left beside sidebar */}
+                  <ManagementDrawer
+                    open={managementView !== null}
+                    onOpenChange={(open) => { if (!open) setManagementView(null); }}
+                    title={managementView ? ({ usage: "Usage", channels: "Channels", credentials: "Credentials", models: "Models", gateway: "Gateway", cron: "Cron", contacts: "Contacts", voice: "Voice", personas: "Personas" } as Record<string, string>)[managementView] ?? "" : ""}
+                    sidebarOffsetPx={sessionSidebarCollapsed ? 56 : 288}
+                  >
+                    <ManagementPanelContent
+                      tab={managementView}
+                    />
+                  </ManagementDrawer>
+
+                  {focusedAgent ? (
+                    <AgentChatPanel
+                      agent={focusedAgent}
+                      composerAgents={breadcrumbAgents}
+                      onSelectAgent={(agentId) => {
+                        flushPendingDraft(focusedAgent?.agentId ?? null);
+                        dispatch({ type: "selectAgent", agentId });
+                      }}
+                      canSend={status === "connected" || isOffline}
+                      gatewayStatus={status}
+                      queueLength={queueLength}
+                      models={gatewayModels}
+                      stopBusy={stopBusyAgentId === focusedAgent.agentId}
+                      onModelChange={stableChatOnModelChange}
+                      onThinkingChange={stableChatOnThinkingChange}
+                      onDraftChange={stableChatOnDraftChange}
+                      onSend={stableChatOnSend}
+                      onStopRun={stableChatOnStopRun}
+                      onNewSession={stableChatOnNewSession}
+                      tokenUsed={stableChatTokenUsed}
+                      tokenLimit={stableChatTokenLimit}
+                      viewingSessionKey={viewingSessionKey}
+                      viewingSessionHistory={viewingSessionHistory}
+                      viewingSessionLoading={viewingSessionLoading}
+                      onExitSessionView={stableChatOnExitSessionView}
+                      sessionContinued={sessionContinuedAgents.has(focusedAgent.agentId)}
+                      onDismissContinuationBanner={stableChatOnDismissContinuation}
+                      wizard={wizard}
+                      onWizardConfirm={() => void handleWizardConfirm()}
+                      onOpenCredentialVault={() => setManagementView("credentials")}
+                      onOpenSettings={() => handleManagementNav("personas")}
+                    />
+                  ) : (
+                    <div className="flex h-full w-full flex-col items-center justify-center gap-3 text-center text-muted-foreground">
+                      <Users className="h-10 w-10 opacity-30" />
+                      <p className="text-sm">
+                        {hasAnyAgents
+                          ? "No agents match this filter."
+                          : "No agents available."}
+                      </p>
+                      {!hasAnyAgents && (
+                        <p className="text-xs text-muted-foreground">
+                          Use New Agent in the sidebar to add your first agent.
+                        </p>
+                      )}
+                    </div>
                   )}
                 </div>
-              )}
-            </div>
+              </>
+            )}
             {/* Expanded panel modal */}
             <StudioExpandedPanel
               expandedTab={expandedTab}
@@ -1225,44 +1360,45 @@ export const AgentStudioPage = () => {
                 </div>
               </div>
             )}
-            {/* Context tab cluster is now integrated into HeaderBar on wide viewports */}
-            {/* Context Panel: floating overlay — bottom sheet on mobile, right panel on desktop */}
-            <StudioContextDrawer
-              isMobileLayout={isMobileLayout}
-              showContextInline={showContextInline}
-              mobilePane={mobilePane}
-              swipeDy={swipeDy}
-              swipeHandlers={swipeHandlers}
-              contextTab={contextTab}
-              expandedTab={expandedTab as "projects" | "tasks" | "workspace" | "skills" | "activity" | "budget" | "router" | "playground" | null}
-              onExpandToggle={handleExpandToggle}
-              onClose={() => setContextPanelOpen(false)}
-              onTabChange={setContextTab}
-              switchToChat={switchToChat}
-              hideTabBar={isWide(breakpoint)}
-              focusedAgentId={focusedAgent?.agentId ?? null}
-              client={client}
-              cronEventTick={cronEventTick}
-              createProjectTick={createProjectTick}
-              agentTasks={agentTasks}
-              tasksLoading={tasksLoading}
-              tasksError={tasksError}
-              busyTaskId={busyTaskId}
-              busyAction={busyAction}
-              onToggleTask={toggleTask}
-              onUpdateTask={updateTask}
-              onUpdateTaskSchedule={updateTaskSchedule}
-              onRunTask={runTask}
-              onDeleteTask={deleteTask}
-              onRefreshTasks={() => { void loadTasks(); }}
-              onNewTask={() => handleStartWizard("task")}
-              cronMaxConcurrentRuns={cronMaxConcurrentRuns}
-              status={status}
-              agents={agents}
-              gatewayModels={gatewayModels}
-              focusedAgent={focusedAgent}
-              onCreateSkill={() => handleStartWizard("skill")}
-            />
+            {/* Context Panel: overlay mode for non-wide viewports (wide uses PanelGroup above) */}
+            {!isWide(breakpoint) && (
+              <StudioContextDrawer
+                isMobileLayout={isMobileLayout}
+                showContextInline={showContextInline}
+                mobilePane={mobilePane}
+                swipeDy={swipeDy}
+                swipeHandlers={swipeHandlers}
+                contextTab={contextTab}
+                expandedTab={expandedTab as "projects" | "tasks" | "workspace" | "skills" | "activity" | "budget" | "router" | "playground" | null}
+                onExpandToggle={handleExpandToggle}
+                onClose={() => setContextPanelOpen(false)}
+                onTabChange={setContextTab}
+                switchToChat={switchToChat}
+                hideTabBar={false}
+                focusedAgentId={focusedAgent?.agentId ?? null}
+                client={client}
+                cronEventTick={cronEventTick}
+                createProjectTick={createProjectTick}
+                agentTasks={agentTasks}
+                tasksLoading={tasksLoading}
+                tasksError={tasksError}
+                busyTaskId={busyTaskId}
+                busyAction={busyAction}
+                onToggleTask={toggleTask}
+                onUpdateTask={updateTask}
+                onUpdateTaskSchedule={updateTaskSchedule}
+                onRunTask={runTask}
+                onDeleteTask={deleteTask}
+                onRefreshTasks={() => { void loadTasks(); }}
+                onNewTask={() => handleStartWizard("task")}
+                cronMaxConcurrentRuns={cronMaxConcurrentRuns}
+                status={status}
+                agents={agents}
+                gatewayModels={gatewayModels}
+                focusedAgent={focusedAgent}
+                onCreateSkill={() => handleStartWizard("skill")}
+              />
+            )}
           </div>
         ) : (
           <div className="absolute inset-0 bg-background rounded-lg fade-up-delay flex flex-col overflow-hidden p-5 sm:p-6">

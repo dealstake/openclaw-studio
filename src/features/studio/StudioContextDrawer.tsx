@@ -26,6 +26,11 @@ interface StudioContextDrawerProps {
   showContextInline: boolean;
   mobilePane: string;
   swipeDy: number;
+  /**
+   * When "panel", renders without any fixed/absolute positioning — the parent
+   * PanelGroup handles geometry. Used on wide viewports with react-resizable-panels.
+   */
+  renderMode?: "overlay" | "panel";
   swipeHandlers: {
     onTouchStart?: React.TouchEventHandler;
     onTouchMove?: React.TouchEventHandler;
@@ -70,7 +75,7 @@ export const StudioContextDrawer = React.memo(function StudioContextDrawer(props
   const {
     isMobileLayout, showContextInline, mobilePane, swipeDy, swipeHandlers,
     contextTab, expandedTab, onExpandToggle, onClose, onTabChange,
-    switchToChat, hideTabBar,
+    switchToChat, hideTabBar, renderMode = "overlay",
     focusedAgentId, client, cronEventTick, createProjectTick,
     agentTasks, tasksLoading, tasksError, busyTaskId, busyAction,
     onToggleTask, onUpdateTask, onUpdateTaskSchedule, onRunTask, onDeleteTask,
@@ -80,17 +85,20 @@ export const StudioContextDrawer = React.memo(function StudioContextDrawer(props
     onCreateSkill,
   } = props;
 
+  // Panel mode: no positioning/sizing — parent PanelGroup handles it
+  const containerClassName = renderMode === "panel"
+    ? "h-full w-full pt-14 min-h-0 overflow-hidden p-0"
+    : isMobileLayout
+      ? `fixed inset-x-0 bottom-0 z-50 h-[70vh] rounded-t-3xl transform-gpu ${swipeDy > 0 ? "" : "transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]"} ${mobilePane === "context" ? "translate-y-0" : "translate-y-full"} bg-surface-elevated/95 backdrop-blur-xl ring-1 ring-white/[0.06] border-t border-border/50 min-h-0 overflow-hidden p-0 shadow-[0_-4px_24px_-6px_rgba(0,0,0,0.3)]`
+      : `fixed inset-y-0 right-0 z-20 w-[300px] lg:w-[360px] pt-4 min-[1440px]:pt-20 pb-16 lg:pb-0 transform-gpu transition-transform duration-300 ease-out ${showContextInline ? "translate-x-0" : "translate-x-full"} bg-surface-elevated/60 backdrop-blur-xl ring-1 ring-white/[0.06] min-h-0 overflow-hidden p-0 shadow-[-4px_0_24px_-6px_rgba(0,0,0,0.3)]`;
+
   return (
     <div
-      className={
-        isMobileLayout
-          ? `fixed inset-x-0 bottom-0 z-50 h-[70vh] rounded-t-3xl transform-gpu ${swipeDy > 0 ? "" : "transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]"} ${mobilePane === "context" ? "translate-y-0" : "translate-y-full"} bg-surface-elevated/95 backdrop-blur-xl ring-1 ring-white/[0.06] border-t border-border/50 min-h-0 overflow-hidden p-0 shadow-[0_-4px_24px_-6px_rgba(0,0,0,0.3)]`
-          : `fixed inset-y-0 right-0 z-20 w-[300px] lg:w-[360px] pt-4 min-[1440px]:pt-20 pb-16 lg:pb-0 transform-gpu transition-transform duration-300 ease-out ${showContextInline ? "translate-x-0" : "translate-x-full"} bg-surface-elevated/60 backdrop-blur-xl ring-1 ring-white/[0.06] min-h-0 overflow-hidden p-0 shadow-[-4px_0_24px_-6px_rgba(0,0,0,0.3)]`
-      }
-      style={isMobileLayout && swipeDy > 0 ? { transform: `translateY(${swipeDy}px)` } : undefined}
-      onTouchStart={isMobileLayout ? swipeHandlers.onTouchStart : undefined}
-      onTouchMove={isMobileLayout ? swipeHandlers.onTouchMove : undefined}
-      onTouchEnd={isMobileLayout ? swipeHandlers.onTouchEnd : undefined}
+      className={containerClassName}
+      style={isMobileLayout && swipeDy > 0 && renderMode !== "panel" ? { transform: `translateY(${swipeDy}px)` } : undefined}
+      onTouchStart={isMobileLayout && renderMode !== "panel" ? swipeHandlers.onTouchStart : undefined}
+      onTouchMove={isMobileLayout && renderMode !== "panel" ? swipeHandlers.onTouchMove : undefined}
+      onTouchEnd={isMobileLayout && renderMode !== "panel" ? swipeHandlers.onTouchEnd : undefined}
     >
       {isMobileLayout && (
         <div className="flex justify-center py-5 cursor-grab active:cursor-grabbing" aria-hidden="true">
