@@ -32,14 +32,14 @@ interface StudioLayoutProps {
 function ResizeHandle({ className = "" }: { className?: string }) {
   return (
     <Separator
-      className={`group relative flex w-1.5 items-center justify-center
-        hover:bg-border/40 active:bg-border/60
+      className={`group relative flex w-2 items-center justify-center
+        hover:bg-primary/20 active:bg-primary/30
         transition-colors duration-150 ${className}`}
     >
-      <div className="flex h-8 w-3 items-center justify-center rounded-sm
-        opacity-0 group-hover:opacity-100 group-active:opacity-100
-        transition-opacity duration-150">
-        <GripVertical className="h-3.5 w-3.5 text-muted-foreground/60" />
+      <div className="flex h-10 w-4 items-center justify-center rounded-sm
+        bg-border/20 group-hover:bg-border/50 group-active:bg-primary/40
+        transition-all duration-150">
+        <GripVertical className="h-4 w-4 text-muted-foreground/40 group-hover:text-muted-foreground/80" />
       </div>
     </Separator>
   );
