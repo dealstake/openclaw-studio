@@ -80,14 +80,14 @@ function OverviewTab({ agent }: { agent: AgentState }) {
           <div className="flex items-center gap-2 pt-0.5">
             <span
               className={cn(
-                "rounded-full px-2 py-0.5 text-[10px] font-medium",
+                "rounded-full px-2 py-0.5 text-[11px] font-medium",
                 STATUS_STYLES[statusLabel] ?? STATUS_STYLES.draft,
               )}
             >
               {statusLabel.charAt(0).toUpperCase() + statusLabel.slice(1)}
             </span>
             {agent.personaCategory && (
-              <span className="text-[10px] text-muted-foreground/70">
+              <span className="text-[11px] text-muted-foreground/70">
                 {agent.personaCategory}
               </span>
             )}
@@ -112,7 +112,7 @@ function OverviewTab({ agent }: { agent: AgentState }) {
             <span className="text-xs font-medium text-foreground">
               {s.value}
             </span>
-            <span className="text-[10px] text-muted-foreground">{s.label}</span>
+            <span className="text-[11px] text-muted-foreground">{s.label}</span>
           </div>
         ))}
       </div>
