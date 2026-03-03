@@ -29,7 +29,7 @@ import type { OverallPreflightStatus } from "../lib/preflightTypes";
 const STATUS_BADGES: Record<PersonaStatus, { label: string; cls: string }> = {
   draft: {
     label: "Draft",
-    cls: "bg-muted text-muted-foreground",
+    cls: "bg-muted text-foreground",
   },
   configuring: {
     label: "Configuring",
