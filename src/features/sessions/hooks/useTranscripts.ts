@@ -236,10 +236,25 @@ export async function fetchTranscriptMessages(
     offset: String(offset),
     limit: String(limit),
   });
-  const resp = await fetch(`/api/sessions/transcript?${params}`);
-  if (!resp.ok) {
-    const body = await resp.json().catch(() => null);
-    throw new Error(body?.error ?? `HTTP ${resp.status}`);
+  const maxRetries = 2;
+  let lastError: Error | null = null;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      if (attempt > 0) {
+        await new Promise((r) => setTimeout(r, attempt * 1000));
+      }
+      const resp = await fetch(`/api/sessions/transcript?${params}`);
+      if (!resp.ok) {
+        const body = await resp.json().catch(() => null);
+        throw new Error(body?.error ?? `HTTP ${resp.status}`);
+      }
+      return await resp.json();
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err));
+      if (attempt < maxRetries) {
+        console.warn(`Transcript fetch attempt ${attempt + 1} failed, retrying...`, lastError.message);
+      }
+    }
   }
-  return resp.json();
+  throw lastError ?? new Error("Failed to fetch transcript");
 }
