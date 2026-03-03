@@ -41,6 +41,7 @@ import { useVoiceOutput, resolvedToSpeakOptions } from "@/features/voice/hooks/u
 import { useVoiceSettings } from "@/features/voice/hooks/useVoiceSettings";
 import { createStudioSettingsCoordinator } from "@/lib/studio/coordinator";
 import { VoiceInputControl } from "@/features/voice/components/VoiceControls";
+import { VoiceModeButton } from "@/features/voice/components/VoiceModeButton";
 import type { SpeechInputData } from "@/components/ui/speech-input";
 import type { PersonaVoiceConfig } from "@/features/voice/lib/voiceTypes";
 import { MessageBubble } from "@/components/chat/MessageBubble";
@@ -712,6 +713,7 @@ export const PracticeSessionModal = React.memo(function PracticeSessionModal({
                   onStop={handleVoiceStop}
                   onCancel={handleVoiceCancel}
                 />
+                <VoiceModeButton agentId={personaId} />
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}

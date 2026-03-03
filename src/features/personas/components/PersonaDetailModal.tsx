@@ -212,6 +212,19 @@ function PracticeTab({ agent, client }: PracticeTabProps) {
         personaId={agent.agentId}
         personaName={agent.name ?? agent.agentId}
         availableModes={ALL_PRACTICE_MODES}
+        personaVoiceConfig={
+          agent.voiceId
+            ? {
+                voiceId: agent.voiceId,
+                modelId: agent.voiceModelId ?? undefined,
+                voiceConfig: {
+                  stability: agent.voiceStability,
+                  similarityBoost: agent.voiceClarity,
+                  style: agent.voiceStyle,
+                },
+              }
+            : undefined
+        }
       />
     </>
   );
