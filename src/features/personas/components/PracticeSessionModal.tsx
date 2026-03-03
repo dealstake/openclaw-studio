@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   SideSheet,
   SideSheetContent,
@@ -37,6 +37,12 @@ import { usePracticeSession } from "../hooks/usePracticeSession";
 import { usePracticeChat } from "../hooks/usePracticeChat";
 import { usePersonaHealth } from "../hooks/usePersonaHealth";
 import { PracticeScoreCard } from "./PracticeScoreCard";
+import { useVoiceInput } from "@/features/voice/hooks/useVoiceInput";
+import { useVoiceOutput, resolvedToSpeakOptions } from "@/features/voice/hooks/useVoiceOutput";
+import { useVoiceSettings } from "@/features/voice/hooks/useVoiceSettings";
+import { createStudioSettingsCoordinator } from "@/lib/studio/coordinator";
+import { MicButton, VoiceTranscriptOverlay } from "@/features/voice/components/VoiceControls";
+import type { PersonaVoiceConfig } from "@/features/voice/lib/voiceTypes";
 
 // ---------------------------------------------------------------------------
 // Mode icons
@@ -286,6 +292,8 @@ export interface PracticeSessionModalProps {
   personaName: string;
   availableModes: PracticeModeType[];
   defaultMode?: PracticeModeType;
+  /** Persona-specific voice config (for per-persona TTS voice) */
+  personaVoiceConfig?: PersonaVoiceConfig | null;
 }
 
 export const PracticeSessionModal = React.memo(function PracticeSessionModal({
@@ -296,6 +304,7 @@ export const PracticeSessionModal = React.memo(function PracticeSessionModal({
   personaName,
   availableModes,
   defaultMode,
+  personaVoiceConfig,
 }: PracticeSessionModalProps) {
   const {
     session,
@@ -327,6 +336,50 @@ export const PracticeSessionModal = React.memo(function PracticeSessionModal({
   // Preflight health check — runs automatically when modal opens in pre-session state
   const { checkHealth, checking: healthChecking, healthResult, error: healthError, reset: resetHealth } =
     usePersonaHealth();
+
+  // Voice support
+  const voiceInput = useVoiceInput();
+  const voiceOutput = useVoiceOutput();
+  const voiceCoordinator = useMemo(
+    () => createStudioSettingsCoordinator({ debounceMs: 200 }),
+    [],
+  );
+  const { settings: voiceSettings } = useVoiceSettings({
+    settingsCoordinator: voiceCoordinator,
+    personaVoiceConfig: personaVoiceConfig ?? undefined,
+  });
+
+  // Auto-speak persona responses
+  const prevMessagesLenRef = useRef(0);
+  useEffect(() => {
+    const msgs = practiceChat.messages;
+    if (msgs.length <= prevMessagesLenRef.current) {
+      prevMessagesLenRef.current = msgs.length;
+      return;
+    }
+    prevMessagesLenRef.current = msgs.length;
+    const lastMsg = msgs[msgs.length - 1];
+    if (lastMsg?.role === "assistant" && voiceSettings.autoSpeak) {
+      void voiceOutput.speak(lastMsg.content, resolvedToSpeakOptions(voiceSettings));
+    }
+  }, [practiceChat.messages, voiceSettings, voiceOutput]);
+
+  // Voice transcript → input
+  const handleVoiceTranscript = useCallback(
+    (text: string) => setInput(text),
+    [],
+  );
+
+  // Voice send → send message
+  const handleVoiceSend = useCallback(
+    (text: string) => {
+      if (!text.trim() || !session || session.status !== "active") return;
+      addUserMessage(text);
+      setInput("");
+      void practiceChat.send(text);
+    },
+    [session, addUserMessage, practiceChat],
+  );
 
   // Chat input
   const [input, setInput] = useState("");
@@ -381,11 +434,12 @@ export const PracticeSessionModal = React.memo(function PracticeSessionModal({
         reset();
         resetHealth();
         void practiceChat.cleanup();
+        voiceOutput.stop();
         setInput("");
       }
       onOpenChange(nextOpen);
     },
-    [onOpenChange, reset, abandonSession, resetHealth, practiceChat, session?.status],
+    [onOpenChange, reset, abandonSession, resetHealth, practiceChat, voiceOutput, session?.status],
   );
 
   const handleStart = useCallback(() => {
@@ -612,15 +666,23 @@ export const PracticeSessionModal = React.memo(function PracticeSessionModal({
                 )}
               </div>
 
+              {/* Voice transcript overlay */}
+              <VoiceTranscriptOverlay voiceInput={voiceInput} />
+
               {/* Input bar */}
               <div className="flex items-center gap-2 border-t border-border/30 pt-3">
+                <MicButton
+                  voiceInput={voiceInput}
+                  onTranscript={handleVoiceTranscript}
+                  onSend={handleVoiceSend}
+                />
                 <input
                   ref={inputRef}
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Type your response…"
+                  placeholder="Type or speak your response…"
                   aria-label="Practice message input"
                   className={cn(
                     "min-h-[44px] flex-1 rounded-lg border border-border/40 bg-background/50 px-3",
