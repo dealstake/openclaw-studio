@@ -44,6 +44,7 @@ describe("formatRelativeTime", () => {
   });
 
   it("handles future timestamps", () => {
-    expect(formatRelativeTime(Date.now() + 60_000)).toBe("in 1m");
+    // Use 61s to avoid flaky boundary (execution time can consume ~1s)
+    expect(formatRelativeTime(Date.now() + 61_000)).toBe("in 1m");
   });
 });
