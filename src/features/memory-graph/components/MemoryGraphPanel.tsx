@@ -69,7 +69,24 @@ export function MemoryGraphPanel({
   className,
   onNavigateToFile,
 }: MemoryGraphPanelProps) {
-  const { data, loading, error, reload } = useMemoryGraph(agentId);
+  const { data: rawData, loading, error, reload } = useMemoryGraph(agentId);
+
+  // Defensive defaults — API may return partial data
+  const data = rawData
+    ? {
+        ...rawData,
+        health: rawData.health ?? {
+          totalEntities: 0,
+          staleCount: 0,
+          conflictCount: 0,
+          avgFreshnessDays: 0,
+          newestEntityDate: null,
+          oldestEntityDate: null,
+        },
+        conflicts: rawData.conflicts ?? [],
+        entityHealth: rawData.entityHealth ?? {},
+      }
+    : null;
   const [search, setSearch] = useState("");
   const [activeTypes, setActiveTypes] = useState<Set<EntityType>>(
     new Set(ALL_TYPES),
