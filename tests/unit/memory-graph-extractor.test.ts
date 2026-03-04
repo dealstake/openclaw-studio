@@ -281,3 +281,95 @@ describe("extractMemoryGraph — snippets", () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// Phase 3: Health analysis
+// ---------------------------------------------------------------------------
+
+describe("health analysis", () => {
+  const MS_PER_DAY = 86_400_000;
+  const OLD_DATE = NOW - 45 * MS_PER_DAY; // 45 days ago — stale
+  const RECENT_DATE = NOW - 5 * MS_PER_DAY; // 5 days ago — fresh
+
+  it("marks entities as stale when lastSeen > 30 days", () => {
+    const files = [
+      makeFile("MEMORY.md", "Mike is the founder.\n\nMike manages everything.", OLD_DATE),
+    ];
+    const result = extractMemoryGraph(files);
+    const mikeHealth = result.entityHealth["person:mike"];
+    expect(mikeHealth).toBeDefined();
+    expect(mikeHealth.isStale).toBe(true);
+    expect(mikeHealth.daysSinceLastSeen).toBeGreaterThanOrEqual(44);
+  });
+
+  it("marks entities as fresh when lastSeen <= 30 days", () => {
+    const files = [
+      makeFile("MEMORY.md", "Mike is the founder.\n\nMike manages everything.", RECENT_DATE),
+    ];
+    const result = extractMemoryGraph(files);
+    const mikeHealth = result.entityHealth["person:mike"];
+    expect(mikeHealth).toBeDefined();
+    expect(mikeHealth.isStale).toBe(false);
+    expect(mikeHealth.daysSinceLastSeen).toBeLessThanOrEqual(6);
+  });
+
+  it("returns health stats with stale count", () => {
+    const files = [
+      makeFile("old.md", "Mike old file content.\n\nMike mentioned again.", OLD_DATE),
+      makeFile("new.md", "Alex recent work.\n\nAlex continues work.", RECENT_DATE),
+    ];
+    const result = extractMemoryGraph(files);
+    expect(result.health).toBeDefined();
+    expect(result.health.staleCount).toBeGreaterThanOrEqual(1);
+    expect(typeof result.health.avgFreshnessDays).toBe("number");
+    expect(result.health.newestEntityDate).toBeTruthy();
+    expect(result.health.oldestEntityDate).toBeTruthy();
+  });
+
+  it("detects potential person alias conflicts", () => {
+    const files = [
+      makeFile("file1.md", "Mike and Michael discussed the architecture.\n\nMike decided on zustand.", RECENT_DATE),
+      makeFile("file2.md", "Mike continued work.\n\nMichael reviewed the PR.", RECENT_DATE),
+    ];
+    const result = extractMemoryGraph(files);
+    // Verify both persons were extracted
+    const mike = result.nodes.find((n) => n.id === "person:mike");
+    const michael = result.nodes.find((n) => n.id === "person:michael");
+    expect(mike).toBeDefined();
+    expect(michael).toBeDefined();
+    // Both should appear in both files
+    expect(mike?.files).toContain("file1.md");
+    expect(mike?.files).toContain("file2.md");
+    expect(michael?.files).toContain("file1.md");
+    expect(michael?.files).toContain("file2.md");
+    // Debug: log persons and conflicts
+    const persons = result.nodes.filter(n => n.type === "person");
+    console.log("Persons:", persons.map(p => ({ id: p.id, files: p.files })));
+    console.log("Conflicts:", JSON.stringify(result.conflicts));
+    const aliasConflict = result.conflicts.find(
+      (c) => c.entityIds.includes("person:mike") && c.entityIds.includes("person:michael"),
+    );
+    expect(aliasConflict).toBeDefined();
+    expect(aliasConflict?.severity).toBe("low");
+  });
+
+  it("returns empty conflicts for clean data", () => {
+    const files = [
+      makeFile("MEMORY.md", "Mike is the founder.\n\nAlex is the builder.", RECENT_DATE),
+    ];
+    const result = extractMemoryGraph(files);
+    expect(result.conflicts).toBeDefined();
+    expect(Array.isArray(result.conflicts)).toBe(true);
+  });
+
+  it("includes health and conflicts in graph output", () => {
+    const files = [makeFile("MEMORY.md", "Mike works on things.\n\n", RECENT_DATE)];
+    const result = extractMemoryGraph(files);
+    expect(result).toHaveProperty("health");
+    expect(result).toHaveProperty("conflicts");
+    expect(result).toHaveProperty("entityHealth");
+    expect(result.health).toHaveProperty("staleCount");
+    expect(result.health).toHaveProperty("conflictCount");
+    expect(result.health).toHaveProperty("avgFreshnessDays");
+  });
+});

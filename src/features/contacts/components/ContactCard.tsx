@@ -84,7 +84,7 @@ export const ContactCard = memo(function ContactCard({
       type="button"
       onClick={() => onClick(contact.id)}
       className="group w-full rounded-lg border border-border/40 bg-card px-3 py-2.5 text-left transition-all hover:border-border hover:bg-muted/30 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
-      aria-label={`Open contact: ${contact.name}`}
+      aria-label={`${contact.name} — ${contact.company ?? "No company"}, ${contact.stage ?? "No stage"}`}
     >
       <div className="flex gap-2.5">
         {/* Avatar */}

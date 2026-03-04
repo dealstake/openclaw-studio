@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMemoryGraph } from "../hooks/useMemoryGraph";
-import type { EntityType } from "../lib/types";
+import type { EntityType, EntityHealthStatus } from "../lib/types";
 
 const ForceGraph2D = dynamic(() => import("react-force-graph-2d"), {
   ssr: false,
@@ -55,6 +55,8 @@ interface GraphLink {
   weight: number;
 }
 
+type HealthView = "graph" | "conflicts";
+
 interface MemoryGraphPanelProps {
   agentId: string | null;
   className?: string;
@@ -70,6 +72,8 @@ export function MemoryGraphPanel({
     new Set(ALL_TYPES),
   );
   const [selected, setSelected] = useState<ForceNode | null>(null);
+  const [healthView, setHealthView] = useState<HealthView>("graph");
+  const [showStaleOnly, setShowStaleOnly] = useState(false);
   const selectedIdRef = useRef<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 600, height: 400 });
@@ -116,6 +120,7 @@ export function MemoryGraphPanel({
           n.label.toLowerCase().includes(sl) ||
           n.id.toLowerCase().includes(sl),
       )
+      .filter((n) => !showStaleOnly || data.entityHealth[n.id]?.isStale)
       .map((n) => ({
         id: n.id,
         label: n.label,
@@ -135,7 +140,7 @@ export function MemoryGraphPanel({
         weight: e.weight,
       }));
     return { nodes, links };
-  }, [data, search, activeTypes]);
+  }, [data, search, activeTypes, showStaleOnly]);
 
   const toggleType = useCallback((t: EntityType) => {
     setActiveTypes((p) => {
@@ -146,26 +151,42 @@ export function MemoryGraphPanel({
     });
   }, []);
 
+  // Store entityHealth ref for paint callback
+  const entityHealthRef = useRef<Record<string, EntityHealthStatus>>({});
+  useEffect(() => {
+    entityHealthRef.current = data?.entityHealth ?? {};
+  }, [data?.entityHealth]);
+
   // Stable paint callback — uses ref for selected state to avoid recreating
   const paintNode = useCallback(
     (node: object, ctx: CanvasRenderingContext2D) => {
       const n = node as ForceNode;
       const isSelected = selectedIdRef.current === n.id;
+      const isStale = entityHealthRef.current[n.id]?.isStale ?? false;
       const s = Math.max(4, Math.min(16, n.mentions * 2));
       ctx.beginPath();
       ctx.arc(n.x ?? 0, n.y ?? 0, s, 0, 2 * Math.PI);
-      ctx.fillStyle = ENTITY_COLORS[n.type] ?? "#6b7280";
+      ctx.fillStyle = isStale
+        ? "rgba(107, 114, 128, 0.4)"  // dimmed gray for stale
+        : (ENTITY_COLORS[n.type] ?? "#6b7280");
       ctx.fill();
       if (isSelected) {
         ctx.strokeStyle = "#fff";
         ctx.lineWidth = 2;
         ctx.stroke();
+      } else if (isStale) {
+        // Dashed ring for stale entities
+        ctx.setLineDash([3, 3]);
+        ctx.strokeStyle = "#f59e0b";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.setLineDash([]);
       }
       if (n.mentions >= 3 || isSelected) {
         ctx.font = `${isSelected ? "bold " : ""}10px Inter, system-ui, sans-serif`;
         ctx.textAlign = "center";
         ctx.textBaseline = "top";
-        ctx.fillStyle = "#e5e7eb";
+        ctx.fillStyle = isStale ? "#9ca3af" : "#e5e7eb";
         ctx.fillText(n.label, n.x ?? 0, (n.y ?? 0) + s + 2);
       }
     },
@@ -242,6 +263,34 @@ export function MemoryGraphPanel({
         </div>
         {data && (
           <div className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
+            <button
+              onClick={() => setShowStaleOnly((p) => !p)}
+              className={`px-2 py-1 rounded border transition-colors min-h-[32px] ${
+                showStaleOnly
+                  ? "border-amber-500 text-amber-400 bg-amber-500/10"
+                  : "border-border hover:bg-muted"
+              }`}
+              aria-pressed={showStaleOnly}
+              aria-label="Show stale entities only"
+            >
+              {showStaleOnly ? "⏳ Stale" : "⏳"}
+              {data.health.staleCount > 0 && (
+                <span className="ml-1 text-amber-400">{data.health.staleCount}</span>
+              )}
+            </button>
+            {data.conflicts.length > 0 && (
+              <button
+                onClick={() => setHealthView((p) => p === "conflicts" ? "graph" : "conflicts")}
+                className={`px-2 py-1 rounded border transition-colors min-h-[32px] ${
+                  healthView === "conflicts"
+                    ? "border-red-500 text-red-400 bg-red-500/10"
+                    : "border-border hover:bg-muted"
+                }`}
+                aria-label="Toggle conflicts view"
+              >
+                ⚠ {data.conflicts.length}
+              </button>
+            )}
             <span>
               {graphData.nodes.length} nodes · {graphData.links.length} edges
             </span>
@@ -255,6 +304,66 @@ export function MemoryGraphPanel({
           </div>
         )}
       </div>
+
+      {/* Health summary bar */}
+      {data && data.health && (
+        <div className="flex items-center gap-4 px-3 py-1.5 border-b border-border text-xs text-muted-foreground bg-muted/30">
+          <span title="Average days since entity last seen">
+            Freshness: <strong className="text-foreground">{data.health.avgFreshnessDays}d avg</strong>
+          </span>
+          {data.health.staleCount > 0 && (
+            <span className="text-amber-400" title="Entities not seen in 30+ days">
+              ⏳ {data.health.staleCount} stale
+            </span>
+          )}
+          {data.health.conflictCount > 0 && (
+            <span className="text-red-400" title="Potential conflicts detected">
+              ⚠ {data.health.conflictCount} conflicts
+            </span>
+          )}
+          {data.health.newestEntityDate && (
+            <span title="Most recently seen entity">
+              Newest: {data.health.newestEntityDate}
+            </span>
+          )}
+          {data.health.oldestEntityDate && (
+            <span title="Oldest entity reference">
+              Oldest: {data.health.oldestEntityDate}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Conflicts panel */}
+      {healthView === "conflicts" && data && data.conflicts.length > 0 && (
+        <div className="border-b border-border p-3 max-h-48 overflow-y-auto bg-muted/20">
+          <h3 className="text-sm font-medium mb-2 text-foreground">Detected Conflicts</h3>
+          <div className="space-y-2">
+            {data.conflicts.map((c) => (
+              <div
+                key={c.id}
+                className={`p-2 rounded-lg border text-xs ${
+                  c.severity === "high"
+                    ? "border-red-500/30 bg-red-500/5"
+                    : "border-amber-500/30 bg-amber-500/5"
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <span className={c.severity === "high" ? "text-red-400" : "text-amber-400"}>
+                    {c.severity === "high" ? "🔴" : "🟡"} {c.severity}
+                  </span>
+                </div>
+                <p className="text-muted-foreground">{c.description}</p>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {c.files.map((f) => (
+                    <span key={f} className="px-1.5 py-0.5 bg-muted rounded text-[11px]">{f}</span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Graph canvas */}
       <div ref={containerRef} className="flex-1 relative bg-background min-h-0">
@@ -349,11 +458,19 @@ export function MemoryGraphPanel({
           <div className="text-xs text-muted-foreground space-y-1">
             <p>
               {selected.mentions} mentions across {selected.files.length} files
+              {data?.entityHealth[selected.id]?.isStale && (
+                <span className="ml-2 text-amber-400">⏳ Stale</span>
+              )}
             </p>
             {selected.lastSeen && (
               <p>
                 Last seen:{" "}
                 {new Date(selected.lastSeen).toLocaleDateString()}
+                {data?.entityHealth[selected.id]?.daysSinceLastSeen != null && (
+                  <span className="ml-1 text-muted-foreground">
+                    ({data.entityHealth[selected.id].daysSinceLastSeen}d ago)
+                  </span>
+                )}
               </p>
             )}
             {selected.snippets.length > 0 && (

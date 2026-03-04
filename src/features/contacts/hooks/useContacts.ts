@@ -100,6 +100,8 @@ export function useContacts(agentId: string | null) {
 
   const loadingRef = useRef(false);
   const lastFiltersRef = useRef<ContactFilters>({});
+  const listAbortRef = useRef<AbortController | null>(null);
+  const detailAbortRef = useRef<AbortController | null>(null);
 
   // ── Load list ──────────────────────────────────────────────────────────────
 
@@ -111,6 +113,11 @@ export function useContacts(agentId: string | null) {
       setListState((s) => ({ ...s, loading: true, error: null }));
 
       try {
+        // Abort any in-flight list fetch to prevent race conditions
+        listAbortRef.current?.abort();
+        const controller = new AbortController();
+        listAbortRef.current = controller;
+
         const params = new URLSearchParams({
           agentId,
           limit: String(limit),
@@ -121,12 +128,13 @@ export function useContacts(agentId: string | null) {
         if (filters.tag) params.set("tag", filters.tag);
         if (filters.q?.trim()) params.set("q", filters.q.trim());
 
-        const res = await fetch(`/api/workspace/contacts?${params.toString()}`);
+        const res = await fetch(`/api/workspace/contacts?${params.toString()}`, { signal: controller.signal });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = (await res.json()) as { contacts: ClientContactRow[]; total: number };
 
         setListState({ contacts: data.contacts, total: data.total, loading: false, error: null });
       } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") return;
         const msg = err instanceof Error ? err.message : String(err);
         setListState((s) => ({ ...s, loading: false, error: msg }));
       } finally {
@@ -144,12 +152,18 @@ export function useContacts(agentId: string | null) {
       setDetailState({ contact: null, loading: true, error: null });
 
       try {
+        // Abort any in-flight detail fetch to prevent race conditions
+        detailAbortRef.current?.abort();
+        const controller = new AbortController();
+        detailAbortRef.current = controller;
+
         const params = new URLSearchParams({ agentId, id });
-        const res = await fetch(`/api/workspace/contact?${params.toString()}`);
+        const res = await fetch(`/api/workspace/contact?${params.toString()}`, { signal: controller.signal });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = (await res.json()) as { contact: ClientContactDetail };
         setDetailState({ contact: data.contact, loading: false, error: null });
       } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") return;
         const msg = err instanceof Error ? err.message : String(err);
         setDetailState({ contact: null, loading: false, error: msg });
       }
@@ -189,7 +203,9 @@ export function useContacts(agentId: string | null) {
 
         return data.contact;
       } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
         console.error("[useContacts] upsertContact error:", err);
+        setListState((s) => ({ ...s, error: `Save failed: ${msg}` }));
         return null;
       }
     },
@@ -218,8 +234,10 @@ export function useContacts(agentId: string | null) {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return true;
       } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
         console.error("[useContacts] deleteContact error:", err);
-        // Revert on failure
+        setListState((s) => ({ ...s, error: `Delete failed: ${msg}` }));
+        // Revert optimistic removal on failure
         void loadContacts(lastFiltersRef.current);
         return false;
       }

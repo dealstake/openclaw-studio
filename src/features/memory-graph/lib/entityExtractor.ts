@@ -9,10 +9,13 @@
  */
 
 import type {
+  EntityHealthStatus,
   EntityType,
+  MemoryConflict,
   MemoryEntity,
   MemoryFile,
   MemoryGraphData,
+  MemoryHealthStats,
   MemoryRelation,
   RelationType,
 } from "./types";
@@ -343,6 +346,149 @@ function escapeRegExp(s: string): string {
 // Public API
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Health analysis (Phase 3)
+// ---------------------------------------------------------------------------
+
+const MS_PER_DAY = 86_400_000;
+
+/** Default staleness threshold in days. */
+const STALE_THRESHOLD_DAYS = 30;
+
+/**
+ * Compute per-entity health status based on staleness.
+ */
+function computeEntityHealth(
+  nodes: MemoryEntity[],
+  nowMs: number,
+  staleDays: number = STALE_THRESHOLD_DAYS,
+): Record<string, EntityHealthStatus> {
+  const result: Record<string, EntityHealthStatus> = {};
+  for (const node of nodes) {
+    if (node.lastSeen) {
+      const lastMs = new Date(node.lastSeen).getTime();
+      const daysSince = Math.floor((nowMs - lastMs) / MS_PER_DAY);
+      result[node.id] = {
+        isStale: daysSince > staleDays,
+        daysSinceLastSeen: daysSince,
+      };
+    } else {
+      result[node.id] = { isStale: true, daysSinceLastSeen: null };
+    }
+  }
+  return result;
+}
+
+/**
+ * Detect conflicting memory entries.
+ *
+ * Current heuristics:
+ * 1. Same entity (person/tool) referenced with different labels (alias conflict)
+ * 2. Decision entities with contradictory verbs in different files
+ */
+function detectConflicts(
+  nodes: MemoryEntity[],
+  entityMap: EntityMap,
+): MemoryConflict[] {
+  const conflicts: MemoryConflict[] = [];
+  let conflictIdx = 0;
+
+  // 1. Decision contradictions: look for "switched from X to Y" vs entity for X
+  const decisionNodes = nodes.filter((n) => n.type === "decision");
+  const switchRe = /switched (?:from|away from)\s+([A-Za-z][A-Za-z0-9 _/.-]+?)\s+to\s+/i;
+  for (const dn of decisionNodes) {
+    for (const snippet of dn.snippets) {
+      const match = switchRe.exec(snippet);
+      if (match) {
+        const oldTool = match[1].trim().toLowerCase();
+        // See if the old tool is still referenced as actively "uses"
+        const oldToolId = `tool:${oldTool.replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`;
+        const oldEntity = entityMap.get(oldToolId);
+        if (oldEntity && oldEntity.mentions >= 3) {
+          conflicts.push({
+            id: `conflict-${conflictIdx++}`,
+            entityIds: [dn.id, oldToolId],
+            description: `Decision to switch away from "${match[1].trim()}" but it still has ${oldEntity.mentions} mentions`,
+            files: [...new Set([...dn.files, ...oldEntity.files])].sort(),
+            severity: "low",
+          });
+        }
+      }
+    }
+  }
+
+  // 2. Person aliases: different person entities with overlapping snippets
+  const personNodes = nodes.filter((n) => n.type === "person");
+  for (let i = 0; i < personNodes.length; i++) {
+    for (let j = i + 1; j < personNodes.length; j++) {
+      const a = personNodes[i];
+      const b = personNodes[j];
+      // Check if they share files and one label contains the other (e.g. "Mike" vs "Michael")
+      const sharedFiles = a.files.filter((f) => b.files.includes(f));
+      const al = a.label.toLowerCase();
+      const bl = b.label.toLowerCase();
+      // Alias candidate: one is prefix of the other, OR they share enough common chars
+      const shorter = al.length <= bl.length ? al : bl;
+      const longer = al.length <= bl.length ? bl : al;
+      const isAliasCandidate = longer.startsWith(shorter) || longer.includes(shorter);
+      if (sharedFiles.length >= 2 && isAliasCandidate) {
+        conflicts.push({
+          id: `conflict-${conflictIdx++}`,
+          entityIds: [a.id, b.id],
+          description: `"${a.label}" and "${b.label}" may be the same person (appear in ${sharedFiles.length} shared files)`,
+          files: sharedFiles.sort(),
+          severity: "low",
+        });
+      }
+    }
+  }
+
+  return conflicts;
+}
+
+/**
+ * Compute aggregate health statistics.
+ */
+function computeHealthStats(
+  entityHealth: Record<string, EntityHealthStatus>,
+  conflicts: MemoryConflict[],
+): MemoryHealthStats {
+  let staleCount = 0;
+  let totalDays = 0;
+  let countWithDays = 0;
+  let newestDate: string | null = null;
+  let oldestDate: string | null = null;
+  let minDays = Infinity;
+  let maxDays = -Infinity;
+
+  for (const h of Object.values(entityHealth)) {
+    if (h.isStale) staleCount++;
+    if (h.daysSinceLastSeen !== null) {
+      totalDays += h.daysSinceLastSeen;
+      countWithDays++;
+      if (h.daysSinceLastSeen < minDays) minDays = h.daysSinceLastSeen;
+      if (h.daysSinceLastSeen > maxDays) maxDays = h.daysSinceLastSeen;
+    }
+  }
+
+  // Reconstruct dates from days offset
+  const now = Date.now();
+  if (minDays < Infinity) {
+    newestDate = new Date(now - minDays * MS_PER_DAY).toISOString().slice(0, 10);
+  }
+  if (maxDays > -Infinity) {
+    oldestDate = new Date(now - maxDays * MS_PER_DAY).toISOString().slice(0, 10);
+  }
+
+  return {
+    staleCount,
+    conflictCount: conflicts.length,
+    avgFreshnessDays: countWithDays > 0 ? Math.round(totalDays / countWithDays) : 0,
+    newestEntityDate: newestDate,
+    oldestEntityDate: oldestDate,
+  };
+}
+
 /**
  * Extract a knowledge graph from a list of memory files.
  *
@@ -411,6 +557,12 @@ export function extractMemoryGraph(files: MemoryFile[]): MemoryGraphData {
 
   const lastUpdated = files.reduce((max, f) => Math.max(max, f.updatedAt), 0);
 
+  // Phase 3: Health analysis
+  const nowMs = Date.now();
+  const entityHealth = computeEntityHealth(nodes, nowMs);
+  const conflicts = detectConflicts(nodes, entityMap);
+  const health = computeHealthStats(entityHealth, conflicts);
+
   return {
     nodes,
     edges,
@@ -420,5 +572,8 @@ export function extractMemoryGraph(files: MemoryFile[]): MemoryGraphData {
       totalRelations: edges.length,
       lastUpdated,
     },
+    health,
+    conflicts,
+    entityHealth,
   };
 }

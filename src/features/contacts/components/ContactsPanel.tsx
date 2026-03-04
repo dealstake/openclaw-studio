@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Users,
   Plus,
@@ -425,7 +425,11 @@ const KanbanColumn = memo(function KanbanColumn({
 
 function escapeCSV(value: string | null | undefined): string {
   if (value == null) return "";
-  const str = String(value);
+  let str = String(value);
+  // Prevent CSV formula injection — prefix dangerous first chars with single quote
+  if (/^[=+\-@\t\r]/.test(str)) {
+    str = `'${str}`;
+  }
   if (str.includes(",") || str.includes('"') || str.includes("\n")) {
     return `"${str.replace(/"/g, '""')}"`;
   }
@@ -572,8 +576,12 @@ export const ContactsPanel = memo(function ContactsPanel() {
   const handleSave = useCallback(
     async (input: ContactUpsertInput) => {
       setSaving(true);
-      await upsertContact(input);
+      const result = await upsertContact(input);
       setSaving(false);
+      if (!result) {
+        // Save failed — keep form open so user can retry (error shown via hook state)
+        return;
+      }
       setEditSheetOpen(false);
       setEditingContact(null);
       // Refresh to sync with server
@@ -591,21 +599,28 @@ export const ContactsPanel = memo(function ContactsPanel() {
 
   const confirmDelete = useCallback(async () => {
     if (!deleteTarget) return;
-    await deleteContact(deleteTarget.id);
+    const ok = await deleteContact(deleteTarget.id);
     setDeleteTarget(null);
-    clearDetail();
+    if (ok) clearDetail();
   }, [deleteTarget, deleteContact, clearDetail]);
 
-  // Kanban: group contacts by stage
-  const contactsByStage = PIPELINE_STAGES.reduce(
-    (acc, s) => {
-      acc[s] = contacts.filter((c) => c.stage === s);
-      return acc;
-    },
-    {} as Record<string, ClientContactRow[]>,
+  // Kanban: group contacts by stage (memoized to avoid recomputation on every render)
+  const contactsByStage = useMemo(
+    () =>
+      PIPELINE_STAGES.reduce(
+        (acc, s) => {
+          acc[s] = contacts.filter((c) => c.stage === s);
+          return acc;
+        },
+        {} as Record<string, ClientContactRow[]>,
+      ),
+    [contacts],
   );
 
-  const unstagedContacts = contacts.filter((c) => !c.stage || !PIPELINE_STAGES.includes(c.stage as typeof PIPELINE_STAGES[number]));
+  const unstagedContacts = useMemo(
+    () => contacts.filter((c) => !c.stage || !PIPELINE_STAGES.includes(c.stage as typeof PIPELINE_STAGES[number])),
+    [contacts],
+  );
 
   return (
     <TooltipProvider>
@@ -683,7 +698,6 @@ export const ContactsPanel = memo(function ContactsPanel() {
         {viewMode === "list" && (
           <div
             className="flex items-center gap-1 overflow-x-auto px-4 pb-2 scrollbar-hide"
-            role="tablist"
             aria-label="Filter by stage"
           >
             {ALL_STAGES_FILTER.map((opt) => {
@@ -692,8 +706,7 @@ export const ContactsPanel = memo(function ContactsPanel() {
                 <button
                   key={opt.value}
                   type="button"
-                  role="tab"
-                  aria-selected={active}
+                  aria-pressed={active}
                   onClick={() => handleStageChange(opt.value)}
                   className={`shrink-0 rounded-full px-2.5 py-1 min-h-[32px] text-[10px] font-semibold uppercase tracking-wider transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
                     active

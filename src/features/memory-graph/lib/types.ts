@@ -73,6 +73,50 @@ export interface MemoryGraphData {
   nodes: MemoryEntity[];
   edges: MemoryRelation[];
   stats: MemoryGraphStats;
+  health: MemoryHealthStats;
+  conflicts: MemoryConflict[];
+  /** Per-entity health keyed by entity ID */
+  entityHealth: Record<string, EntityHealthStatus>;
+}
+
+// ---------------------------------------------------------------------------
+// Memory Health types (Phase 3)
+// ---------------------------------------------------------------------------
+
+/** Health status for an individual entity. */
+export interface EntityHealthStatus {
+  /** Entity is stale if not referenced in any file modified within staleDays. */
+  isStale: boolean;
+  /** Number of days since the entity was last seen. */
+  daysSinceLastSeen: number | null;
+}
+
+/** A detected conflict between memory entries. */
+export interface MemoryConflict {
+  /** Unique ID for the conflict */
+  id: string;
+  /** Entity IDs involved in the conflict */
+  entityIds: string[];
+  /** Human-readable description of the conflict */
+  description: string;
+  /** Files containing the conflicting statements */
+  files: string[];
+  /** Severity: "low" = minor inconsistency, "high" = direct contradiction */
+  severity: "low" | "high";
+}
+
+/** Aggregate health stats for the entire memory graph. */
+export interface MemoryHealthStats {
+  /** Number of entities not referenced in >staleDays */
+  staleCount: number;
+  /** Number of detected conflicts */
+  conflictCount: number;
+  /** Average days since last seen across all entities (with dates) */
+  avgFreshnessDays: number;
+  /** Freshest entity date (ISO string) */
+  newestEntityDate: string | null;
+  /** Stalest entity date (ISO string) */
+  oldestEntityDate: string | null;
 }
 
 // ---------------------------------------------------------------------------
