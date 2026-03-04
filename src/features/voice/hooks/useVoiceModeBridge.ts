@@ -61,11 +61,16 @@ export function useVoiceModeBridge(options?: UseVoiceModeBridgeOptions) {
     } catch (err) {
       const msg = (err as Error).message || "";
       console.error("[VoiceModeBridge] STT start failed:", msg);
-      voiceMode.setState("idle");
-      if (msg.includes("NotAllowedError") || msg.includes("Permission denied")) {
+      if (msg.includes("NotAllowedError") || msg.includes("Permission denied") || msg.includes("not found")) {
+        voiceMode.setState("idle");
         voiceMode.setLastError("mic-denied");
       } else if (msg.includes("API key") || msg.includes("api key") || msg.includes("401")) {
+        voiceMode.setState("idle");
         voiceMode.setLastError("api-key-missing");
+      } else {
+        // Unknown error — close the overlay so user isn't stuck
+        console.error("[VoiceModeBridge] Unknown error, closing voice mode");
+        voiceMode.closeVoiceMode();
       }
     }
   }, [voiceMode, voice, tts]);
