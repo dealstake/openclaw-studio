@@ -82,6 +82,7 @@ export function useVoiceClient(): UseVoiceClientReturn {
 
     onSessionStarted: () => {
       log("SESSION_STARTED — Scribe connection fully established");
+      reconnectAttemptsRef.current = 0;
     },
 
     onPartialTranscript: (data) => {
@@ -90,6 +91,8 @@ export function useVoiceClient(): UseVoiceClientReturn {
 
     onCommittedTranscript: (data) => {
       log("Committed transcript:", data.text.substring(0, 50));
+      // Skip empty commits (ambient noise / silence)
+      if (!data.text.trim()) return;
       setTranscripts((prev) => ({
         committed: prev.committed ? `${prev.committed} ${data.text}` : data.text,
         partial: "",

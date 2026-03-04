@@ -33,7 +33,7 @@ const MAX_CONSECUTIVE_FAILURES = 3;
  * After a VAD commit and this many ms of silence (no new partial transcripts),
  * auto-stop recording and preserve text in the textarea.
  */
-const AUTO_STOP_SILENCE_MS = 2000;
+const AUTO_STOP_SILENCE_MS = 3500;
 
 // ── Token fetcher ───────────────────────────────────────────────────────
 

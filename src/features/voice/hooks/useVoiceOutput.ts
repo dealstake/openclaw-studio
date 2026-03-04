@@ -71,7 +71,10 @@ export function useVoiceOutput(): UseVoiceOutputReturn {
 
     if (audioRef.current) {
       audioRef.current.pause();
-      audioRef.current.src = "";
+      // Don't clear src on the warmed element — iOS Safari needs it to stay "unlocked"
+      if (audioRef.current !== warmedAudioRef.current) {
+        audioRef.current.src = "";
+      }
       audioRef.current = null;
     }
 
@@ -145,14 +148,29 @@ export function useVoiceOutput(): UseVoiceOutputReturn {
 
         // iOS Safari requires audio playback to be initiated from a user gesture.
         // We use the pre-warmed audio element if available (warmed during openVoiceMode click).
+        // The warmed element stays unlocked across multiple plays — we reuse it every time.
         if (warmedAudioRef.current) {
           console.log("[VoiceOutput] Using pre-warmed audio element for playback");
-          warmedAudioRef.current.src = url;
-          warmedAudioRef.current.onplay = audio.onplay;
-          warmedAudioRef.current.onended = audio.onended;
-          warmedAudioRef.current.onerror = audio.onerror;
-          audioRef.current = warmedAudioRef.current;
-          await warmedAudioRef.current.play();
+          const warmed = warmedAudioRef.current;
+          warmed.onplay = () => {
+            setIsPlaying(true);
+            setIsLoading(false);
+          };
+          warmed.onended = () => {
+            setIsPlaying(false);
+            URL.revokeObjectURL(url);
+            audioRef.current = null;
+          };
+          warmed.onerror = () => {
+            setError("Failed to play audio");
+            setIsPlaying(false);
+            setIsLoading(false);
+            URL.revokeObjectURL(url);
+            audioRef.current = null;
+          };
+          warmed.src = url;
+          audioRef.current = warmed;
+          await warmed.play();
         } else {
           console.log("[VoiceOutput] Using fresh Audio element for playback");
           // Fallback: create fresh Audio (works on desktop, may fail on iOS)

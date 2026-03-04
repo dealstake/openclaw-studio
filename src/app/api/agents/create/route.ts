@@ -168,6 +168,15 @@ export async function POST(request: NextRequest) {
     const agentValidation = validateAgentId(agentId);
     if (!agentValidation.ok) return agentValidation.error;
 
+    // Check for existing agent to prevent slug collisions
+    const agentDir = path.join(os.homedir(), ".openclaw", "agents", agentId.trim());
+    if (fs.existsSync(agentDir)) {
+      return NextResponse.json(
+        { error: `An agent with ID "${agentId.trim()}" already exists. Please choose a different name.` },
+        { status: 409 },
+      );
+    }
+
     if (knowledgeFiles) {
       for (const filename of Object.keys(knowledgeFiles)) {
         if (!isValidKnowledgeFilename(filename)) {

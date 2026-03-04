@@ -130,8 +130,8 @@ export function useWizardInChat({
   const cleanedUpRef = useRef(false);
   const wizardContextRef = useRef<WizardContext | null>(null);
   const onConfigExtractedRef = useRef(onConfigExtracted);
-  // Prevent duplicate tool-call processing for the same message
-  const pendingToolCallRef = useRef<string | null>(null);
+  // Prevent duplicate tool-call processing — boolean lock
+  const pendingToolCallRef = useRef<boolean>(false);
   // Stable ref for agentId — avoids re-registering the event listener on agentId change
   const agentIdRef = useRef(agentId);
   useEffect(() => {
@@ -143,18 +143,24 @@ export function useWizardInChat({
     onConfigExtractedRef.current = onConfigExtracted;
   }, [onConfigExtracted]);
 
+  // Track the localStorage key used when the wizard was started
+  const storageKeyRef = useRef<string | null>(null);
+
   // Keep context ref in sync and persist to localStorage for leak cleanup.
   // Key includes TAB_ID to prevent cross-tab collisions when multiple tabs
   // share the same agentId.
   useEffect(() => {
     wizardContextRef.current = wizardContext;
-    const STORAGE_KEY = `wizard-session:${agentId}:${TAB_ID}`;
     if (wizardContext) {
+      // Use the agentId from when the wizard was started (stored in storageKeyRef)
+      const key = storageKeyRef.current ?? `wizard-session:${agentId}:${TAB_ID}`;
+      storageKeyRef.current = key;
       try {
-        localStorage.setItem(STORAGE_KEY, wizardContext.sessionKey);
+        localStorage.setItem(key, wizardContext.sessionKey);
       } catch { /* quota exceeded — non-critical */ }
-    } else {
-      localStorage.removeItem(STORAGE_KEY);
+    } else if (storageKeyRef.current) {
+      localStorage.removeItem(storageKeyRef.current);
+      storageKeyRef.current = null;
     }
   }, [wizardContext, agentId]);
 
@@ -278,9 +284,9 @@ export function useWizardInChat({
           // result back into the conversation, and update preflightResult
           // so the rendering layer can show a WizardPreflightCard.
           const toolCall = extractWizardToolCall(finalText);
-          if (toolCall && pendingToolCallRef.current !== finalText) {
-            // Mark this message as processed to prevent re-entrant calls
-            pendingToolCallRef.current = finalText;
+          if (toolCall && !pendingToolCallRef.current) {
+            // Lock to prevent duplicate dispatch
+            pendingToolCallRef.current = true;
             const sessionKey = ctx.sessionKey;
             // Use ref to avoid capturing stale agentId in closure
             const currentAgentId = agentIdRef.current;
@@ -326,7 +332,7 @@ export function useWizardInChat({
                   // Ignore injection failures
                 }
               } finally {
-                pendingToolCallRef.current = null;
+                pendingToolCallRef.current = false;
               }
             })();
           }
@@ -385,7 +391,7 @@ export function useWizardInChat({
       setPreflightResult(null);
       sessionInitRef.current = false;
       cleanedUpRef.current = false;
-      pendingToolCallRef.current = null;
+      pendingToolCallRef.current = false;
     },
     [agentId],
   );
@@ -490,7 +496,7 @@ export function useWizardInChat({
     setExtractedConfig(null);
     setPreflightResult(null);
     sessionInitRef.current = false;
-    pendingToolCallRef.current = null;
+    pendingToolCallRef.current = false;
   }, [client]);
 
   return {
