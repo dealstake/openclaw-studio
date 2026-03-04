@@ -159,7 +159,7 @@ export const UsagePanel = memo(function UsagePanel() {
             <SummaryCard
               label="Projected Monthly"
               value={formatCost(projectedMonthlyCost)}
-              subValue={`~${formatCost(projectedMonthlyCost / 30)}/day avg`}
+              subValue={projectedMonthlyCost / 30 >= 0.01 ? `~${formatCost(projectedMonthlyCost / 30)}/day avg` : undefined}
             />
             <SummaryCard
               label="Cost / Session"
