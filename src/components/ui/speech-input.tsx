@@ -496,7 +496,7 @@ const SpeechInputPreview = React.forwardRef<
         showPlaceholder
           ? "text-muted-foreground italic"
           : "text-muted-foreground",
-        speechInput.isConnected ? "w-28 opacity-100" : "w-0 opacity-0",
+        speechInput.isConnected ? "w-20 sm:w-28 opacity-100" : "w-0 opacity-0",
         className
       )}
       title={displayText}
