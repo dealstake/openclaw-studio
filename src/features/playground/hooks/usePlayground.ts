@@ -5,6 +5,31 @@ import type { GatewayClient, EventFrame } from "@/lib/gateway/GatewayClient";
 import { syncGatewaySessionSettings } from "@/lib/gateway/GatewayClient";
 import { estimateCostUsd } from "../lib/costEstimator";
 import type { PlaygroundRequest, PlaygroundResponse, PlaygroundResult } from "../lib/types";
+import { extractMessageText } from "../lib/messageTextExtractor";
+
+/** Typed subset of gateway event payloads relevant to playground streaming. */
+interface PlaygroundEventPayload {
+  sessionKey?: string;
+  stream?: string;
+  state?: string;
+  data?: {
+    delta?: string;
+    text?: string;
+    phase?: string;
+  };
+  message?: {
+    role?: string;
+    text?: string;
+    content?: string | Array<{ type?: string; text?: string }>;
+  };
+  usage?: {
+    inputTokens?: number;
+    outputTokens?: number;
+    promptTokens?: number;
+    completionTokens?: number;
+  };
+  errorMessage?: string;
+}
 
 export interface UsePlaygroundOptions {
   client: GatewayClient;
@@ -60,19 +85,17 @@ export function usePlayground({
       if (!activeRunId) return;
       if (event.event !== "chat" && event.event !== "agent") return;
 
-      const payload = event.payload as Record<string, unknown> | undefined;
+      const payload = event.payload as PlaygroundEventPayload | undefined;
       if (!payload || payload.sessionKey !== sessionKey) return;
 
       // ── runtime.agent events ──
       if (event.event === "agent") {
-        const stream = typeof payload.stream === "string" ? payload.stream : "";
-        const data = payload.data && typeof payload.data === "object"
-          ? (payload.data as Record<string, unknown>)
-          : null;
+        const stream = payload.stream ?? "";
+        const data = payload.data ?? null;
 
         if (stream === "assistant") {
-          const delta = typeof data?.delta === "string" ? data.delta : "";
-          const text = typeof data?.text === "string" ? data.text : "";
+          const delta = data?.delta ?? "";
+          const text = data?.text ?? "";
           if (text) {
             streamAccRef.current = text;
             setStreamText(text);
@@ -85,7 +108,7 @@ export function usePlayground({
         }
 
         if (stream === "lifecycle") {
-          const phase = typeof data?.phase === "string" ? data.phase : "";
+          const phase = data?.phase ?? "";
           if (phase === "end" || phase === "error") {
             // Finalize from lifecycle end
             const finalText = streamAccRef.current;
@@ -124,12 +147,12 @@ export function usePlayground({
       }
 
       // ── runtime.chat events ──
-      const state = typeof payload.state === "string" ? payload.state : "";
-      const message = payload.message as Record<string, unknown> | undefined;
-      const role = message ? (typeof message.role === "string" ? message.role : null) : null;
+      const state = payload.state ?? "";
+      const message = payload.message;
+      const role = message?.role ?? null;
 
       if (state === "delta") {
-        const text = extractText(message);
+        const text = extractMessageText(message);
         if (text) {
           streamAccRef.current = text;
           setStreamText(text);
@@ -139,17 +162,11 @@ export function usePlayground({
       }
 
       if (state === "final" && role === "assistant") {
-        const finalText = extractText(message) ?? streamAccRef.current;
+        const finalText = extractMessageText(message) ?? streamAccRef.current;
         const latencyMs = runStartRef.current ? Date.now() - runStartRef.current : undefined;
 
-        // Try to read usage from payload
-        const usage = payload.usage as Record<string, unknown> | undefined;
-        const tokensIn = typeof usage?.inputTokens === "number" ? usage.inputTokens :
-                         typeof usage?.promptTokens === "number" ? usage.promptTokens :
-                         undefined;
-        const tokensOut = typeof usage?.outputTokens === "number" ? usage.outputTokens :
-                          typeof usage?.completionTokens === "number" ? usage.completionTokens :
-                          undefined;
+        const tokensIn = payload.usage?.inputTokens ?? payload.usage?.promptTokens;
+        const tokensOut = payload.usage?.outputTokens ?? payload.usage?.completionTokens;
 
         setResults((prev) => {
           const idx = prev.findIndex((r) => r.id === activeRunId);
@@ -181,9 +198,7 @@ export function usePlayground({
       }
 
       if (state === "error") {
-        const errorMsg = typeof payload.errorMessage === "string"
-          ? payload.errorMessage
-          : "Playground run failed.";
+        const errorMsg = payload.errorMessage ?? "Playground run failed.";
         setResults((prev) => {
           const idx = prev.findIndex((r) => r.id === activeRunId);
           if (idx === -1) return prev;
@@ -311,19 +326,4 @@ export function usePlayground({
   return { results, streamText, isStreaming, error, run, abort, clearResults };
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
 
-function extractText(message: Record<string, unknown> | undefined): string | null {
-  if (!message) return null;
-  if (typeof message.text === "string") return message.text;
-  if (typeof message.content === "string") return message.content;
-  if (Array.isArray(message.content)) {
-    const texts = (message.content as unknown[])
-      .filter((p): p is Record<string, unknown> => !!p && typeof p === "object")
-      .filter((p) => p.type === "text")
-      .map((p) => p.text)
-      .filter((t): t is string => typeof t === "string");
-    return texts.length > 0 ? texts.join("") : null;
-  }
-  return null;
-}

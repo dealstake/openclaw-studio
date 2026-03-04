@@ -5,6 +5,30 @@ import type { GatewayClient, EventFrame } from "@/lib/gateway/GatewayClient";
 import { syncGatewaySessionSettings } from "@/lib/gateway/GatewayClient";
 import { estimateCostUsd } from "../lib/costEstimator";
 import type { CompareColumnResult, CompareRun, PlaygroundResponse } from "../lib/types";
+import { extractMessageText } from "../lib/messageTextExtractor";
+
+/** Typed subset of gateway event payloads relevant to compare streaming. */
+interface CompareEventPayload {
+  sessionKey?: string;
+  session?: string;
+  stream?: string;
+  state?: string;
+  data?: {
+    delta?: string;
+    text?: string;
+    phase?: string;
+  };
+  message?: {
+    role?: string;
+    text?: string;
+    content?: string | Array<{ type?: string; text?: string }>;
+  };
+  usage?: {
+    inputTokens?: number;
+    outputTokens?: number;
+  };
+  errorMessage?: string;
+}
 
 export interface UseCompareOptions {
   client: GatewayClient;
@@ -85,12 +109,10 @@ export function useCompare({ client, agentId }: UseCompareOptions): UseCompareRe
       if (!runId) return;
       if (event.event !== "chat" && event.event !== "agent") return;
 
-      const payload = event.payload as Record<string, unknown> | undefined;
+      const payload = event.payload as CompareEventPayload | undefined;
       if (!payload) return;
 
-      const sessionKey =
-        typeof payload.sessionKey === "string" ? payload.sessionKey :
-        typeof payload.session === "string" ? payload.session : null;
+      const sessionKey = payload.sessionKey ?? payload.session ?? null;
       if (!sessionKey) return;
 
       // Which column index does this event belong to?
@@ -102,15 +124,12 @@ export function useCompare({ client, agentId }: UseCompareOptions): UseCompareRe
 
       // ── runtime.agent ──────────────────────────────────────────────────────
       if (event.event === "agent") {
-        const stream = typeof payload.stream === "string" ? payload.stream : "";
-        const data =
-          payload.data && typeof payload.data === "object"
-            ? (payload.data as Record<string, unknown>)
-            : null;
+        const stream = payload.stream ?? "";
+        const data = payload.data ?? null;
 
         if (stream === "assistant") {
-          const delta = typeof data?.delta === "string" ? data.delta : "";
-          const text = typeof data?.text === "string" ? data.text : "";
+          const delta = data?.delta ?? "";
+          const text = data?.text ?? "";
           const acc = streamAccRef.current.get(colIdx) ?? "";
           const next = text || acc + delta;
           streamAccRef.current.set(colIdx, next);
@@ -121,7 +140,7 @@ export function useCompare({ client, agentId }: UseCompareOptions): UseCompareRe
         }
 
         if (stream === "lifecycle") {
-          const phase = typeof data?.phase === "string" ? data.phase : "";
+          const phase = data?.phase ?? "";
           if (phase === "end" || phase === "error") {
             finalizeColumn(runId, colIdx, models);
           }
@@ -130,16 +149,12 @@ export function useCompare({ client, agentId }: UseCompareOptions): UseCompareRe
       }
 
       // ── runtime.chat ───────────────────────────────────────────────────────
-      const state = typeof payload.state === "string" ? payload.state : "";
-      const message = payload.message as Record<string, unknown> | undefined;
-      const role = message
-        ? typeof message.role === "string"
-          ? message.role
-          : null
-        : null;
+      const state = payload.state ?? "";
+      const message = payload.message;
+      const role = message?.role ?? null;
 
       if (state === "delta") {
-        const text = extractText(message);
+        const text = extractMessageText(message);
         if (text) {
           streamAccRef.current.set(colIdx, text);
           setCurrentRun((prev) =>
@@ -151,15 +166,12 @@ export function useCompare({ client, agentId }: UseCompareOptions): UseCompareRe
 
       if (state === "final" && role === "assistant") {
         const finalText =
-          extractText(message) ?? streamAccRef.current.get(colIdx) ?? "";
+          extractMessageText(message) ?? streamAccRef.current.get(colIdx) ?? "";
         const latencyMs = runStartRef.current
           ? Date.now() - runStartRef.current
           : undefined;
-        const usage = payload.usage as Record<string, unknown> | undefined;
-        const tokensIn =
-          typeof usage?.inputTokens === "number" ? usage.inputTokens : undefined;
-        const tokensOut =
-          typeof usage?.outputTokens === "number" ? usage.outputTokens : undefined;
+        const tokensIn = payload.usage?.inputTokens;
+        const tokensOut = payload.usage?.outputTokens;
         const model = models[colIdx] ?? "";
 
         const resolvedIn = tokensIn ?? Math.ceil(promptLengthRef.current / 4);
@@ -188,10 +200,7 @@ export function useCompare({ client, agentId }: UseCompareOptions): UseCompareRe
       }
 
       if (state === "error") {
-        const errorMsg =
-          typeof payload.errorMessage === "string"
-            ? payload.errorMessage
-            : "Model request failed.";
+        const errorMsg = payload.errorMessage ?? "Model request failed.";
         streamingRef.current.delete(colIdx);
         setCurrentRun((prev) =>
           prev
@@ -335,21 +344,4 @@ function patchColumn(
   return { ...run, columns };
 }
 
-function extractText(
-  message: Record<string, unknown> | undefined
-): string | null {
-  if (!message) return null;
-  if (typeof message.text === "string") return message.text;
-  if (typeof message.content === "string") return message.content;
-  if (Array.isArray(message.content)) {
-    const texts = (message.content as unknown[])
-      .filter(
-        (p): p is Record<string, unknown> => !!p && typeof p === "object"
-      )
-      .filter((p) => p.type === "text")
-      .map((p) => p.text)
-      .filter((t): t is string => typeof t === "string");
-    return texts.length > 0 ? texts.join("") : null;
-  }
-  return null;
-}
+
