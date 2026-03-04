@@ -5,9 +5,12 @@
  *
  * VoiceInputControl: SpeechInput compound component (record + preview + cancel)
  * with error recovery (toast mapping, retry logic, disabled after 3 failures).
+ *
+ * AutoStopOnSilence: Monitors VAD commits and auto-stops recording after
+ * sustained silence, placing captured text in the textarea for review.
  */
 
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { MicOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -17,6 +20,7 @@ import {
   SpeechInputRecordButton,
   SpeechInputPreview,
   SpeechInputCancelButton,
+  useSpeechInput,
   type SpeechInputData,
 } from "@/components/ui/speech-input";
 import { PanelErrorBoundary } from "@/components/PanelErrorBoundary";
@@ -24,6 +28,12 @@ import { PanelErrorBoundary } from "@/components/PanelErrorBoundary";
 // ── Constants ───────────────────────────────────────────────────────────
 
 const MAX_CONSECUTIVE_FAILURES = 3;
+
+/**
+ * After a VAD commit and this many ms of silence (no new partial transcripts),
+ * auto-stop recording and preserve text in the textarea.
+ */
+const AUTO_STOP_SILENCE_MS = 2000;
 
 // ── Token fetcher ───────────────────────────────────────────────────────
 
@@ -38,6 +48,73 @@ async function fetchVoiceToken(): Promise<string> {
   }
   const data = (await res.json()) as { token: string };
   return data.token;
+}
+
+// ── Auto-Stop on Silence ────────────────────────────────────────────────
+
+/**
+ * Invisible child component placed inside SpeechInput that monitors for
+ * silence after a VAD commit and auto-stops recording.
+ *
+ * Uses the useSpeechInput() hook to access transcript state and stop().
+ * This means it must be a direct child of <SpeechInput>.
+ */
+function AutoStopOnSilence() {
+  const speechInput = useSpeechInput();
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasCommitRef = useRef(false);
+
+  useEffect(() => {
+    if (!speechInput.isConnected) {
+      // Reset when disconnected
+      hasCommitRef.current = false;
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+      return;
+    }
+
+    // Check if we have committed transcripts (VAD fired)
+    if (speechInput.committedTranscripts.length > 0) {
+      hasCommitRef.current = true;
+    }
+
+    // If we have commits and no active partial transcript → start silence timer
+    if (hasCommitRef.current && !speechInput.partialTranscript.trim()) {
+      if (!timerRef.current) {
+        timerRef.current = setTimeout(() => {
+          timerRef.current = null;
+          // Auto-stop recording — text will be preserved by onStop handler
+          if (speechInput.isConnected) {
+            speechInput.stop();
+          }
+        }, AUTO_STOP_SILENCE_MS);
+      }
+    } else {
+      // User is speaking again — cancel the timer
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+    }
+  }, [
+    speechInput.isConnected,
+    speechInput.committedTranscripts.length,
+    speechInput.partialTranscript,
+    speechInput.stop,
+  ]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, []);
+
+  return null; // Invisible controller
 }
 
 // ── Voice Unavailable Fallback ──────────────────────────────────────────
@@ -70,11 +147,11 @@ function VoiceUnavailable({ onRetry }: VoiceUnavailableProps) {
 interface VoiceInputControlProps {
   /** Called while transcript updates */
   onChange?: (data: SpeechInputData) => void;
-  /** Called when recording stops — use for auto-send */
+  /** Called when recording stops — text preserved in textarea */
   onStop?: (data: SpeechInputData) => void;
   /** Called when recording starts */
   onStart?: (data: SpeechInputData) => void;
-  /** Called when recording is cancelled */
+  /** Called when recording is cancelled — text preserved in textarea */
   onCancel?: (data: SpeechInputData) => void;
   className?: string;
 }
@@ -105,7 +182,6 @@ export const VoiceInputControl = React.memo(function VoiceInputControl({
 
   const handleStart = useCallback(
     (data: SpeechInputData) => {
-      // Successful start resets failure counter
       failureCountRef.current = 0;
       onStart?.(data);
     },
@@ -136,7 +212,6 @@ export const VoiceInputControl = React.memo(function VoiceInputControl({
 
   const handleQuotaExceeded = useCallback(() => {
     toast.error("Voice quota reached. Try again later.");
-    // Quota exceeded = disable immediately, no point retrying
     failureCountRef.current = MAX_CONSECUTIVE_FAILURES;
     setIsDisabled(true);
   }, []);
@@ -180,9 +255,8 @@ export const VoiceInputControl = React.memo(function VoiceInputControl({
         />
         <SpeechInputPreview placeholder="Listening…" />
         <SpeechInputCancelButton />
+        <AutoStopOnSilence />
       </SpeechInput>
     </PanelErrorBoundary>
   );
 });
-
-
