@@ -49,7 +49,7 @@ export const VoiceModeButton = React.memo(function VoiceModeButton({
       // KEEP the stream alive! iOS Safari requires an active stream for
       // subsequent getUserMedia calls to succeed without re-prompting.
       // Store in provider ref so the bridge can clean it up after Scribe connects.
-      voiceMode.micStreamRef.current = stream;
+      voiceMode.setMicStream(stream);
       console.log("[VoiceModeButton] Mic stream acquired and stored, opening voice mode...");
     } catch (err) {
       console.error("[VoiceModeButton] Mic permission denied:", err);

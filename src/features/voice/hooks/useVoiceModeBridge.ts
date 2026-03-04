@@ -84,9 +84,8 @@ export function useVoiceModeBridge(options?: UseVoiceModeBridgeOptions) {
         voiceMode.setState("listening");
         // Release the pre-acquired mic stream from VoiceModeButton click handler.
         // Scribe now has its own mic stream via internal getUserMedia.
-        if (voiceMode.micStreamRef.current) {
-          voiceMode.micStreamRef.current.getTracks().forEach((t) => t.stop());
-          voiceMode.micStreamRef.current = null;
+        if (voiceMode.getMicStream()) {
+          voiceMode.setMicStream(null);
           console.log("[VoiceModeBridge] Pre-acquired mic stream released");
         }
       }

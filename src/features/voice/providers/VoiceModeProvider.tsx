@@ -51,8 +51,10 @@ export interface VoiceModeContextValue {
   setUserTranscript: (text: string) => void;
   /** Update agent transcript (used by TTS hook) */
   setAgentTranscript: (text: string) => void;
-  /** Ref for pre-acquired mic stream (kept alive for iOS Safari) */
-  micStreamRef: React.RefObject<MediaStream | null>;
+  /** Store pre-acquired mic stream (kept alive for iOS Safari) */
+  setMicStream: (stream: MediaStream | null) => void;
+  /** Get current pre-acquired mic stream */
+  getMicStream: () => MediaStream | null;
   /** Ref for input volume (0-1) — fed to Orb */
   inputVolumeRef: React.RefObject<number>;
   /** Ref for output volume (0-1) — fed to Orb */
@@ -101,6 +103,17 @@ export function VoiceModeProvider({ children }: VoiceModeProviderProps) {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
   const micStreamRef = useRef<MediaStream | null>(null);
+
+  const setMicStream = useCallback((stream: MediaStream | null) => {
+    // Release old stream if replacing
+    if (micStreamRef.current && stream !== micStreamRef.current) {
+      micStreamRef.current.getTracks().forEach((t) => t.stop());
+    }
+    micStreamRef.current = stream;
+  }, []);
+
+  const getMicStream = useCallback(() => micStreamRef.current, []);
+
   const inputVolumeRef = useRef<number>(0);
   const outputVolumeRef = useRef<number>(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -151,10 +164,7 @@ export function VoiceModeProvider({ children }: VoiceModeProviderProps) {
     setUserTranscript("");
     setAgentTranscript("");
     // Release pre-acquired mic stream
-    if (micStreamRef.current) {
-      micStreamRef.current.getTracks().forEach((t) => t.stop());
-      micStreamRef.current = null;
-    }
+    setMicStream(null);
     stopTimer();
     setElapsedSeconds(0);
     inputVolumeRef.current = 0;
@@ -188,7 +198,8 @@ export function VoiceModeProvider({ children }: VoiceModeProviderProps) {
       setLastError,
       setUserTranscript,
       setAgentTranscript,
-      micStreamRef,
+      setMicStream,
+      getMicStream,
       inputVolumeRef,
       outputVolumeRef,
       setInputVolume,
@@ -207,6 +218,8 @@ export function VoiceModeProvider({ children }: VoiceModeProviderProps) {
       closeVoiceMode,
       minimizeVoiceMode,
       expandVoiceMode,
+      setMicStream,
+      getMicStream,
       setInputVolume,
       setOutputVolume,
       elapsedSeconds,
