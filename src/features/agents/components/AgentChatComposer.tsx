@@ -253,14 +253,18 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   useEffect(() => {
     // Detect transition from running → not running with new text
     if (prevRunningRef.current && !isRunning && lastAssistantText) {
+      console.log("[VoiceLoop] Agent finished responding, lastAssistantText length:", lastAssistantText.length, "voiceModeActive:", voiceModeActive);
       if (lastAssistantText !== prevAssistantTextRef.current) {
         const plainText = stripMarkdownForSpeech(lastAssistantText);
+        console.log("[VoiceLoop] Stripped text length:", plainText.length);
         if (plainText.length > 0 && plainText.length < 5000) {
           if (voiceModeActive) {
             // Voice overlay is open — use bridge (updates overlay state + TTS)
+            console.log("[VoiceLoop] Calling bridgeSpeakResponse (voice overlay active)");
             void bridgeSpeakResponse(plainText);
           } else if (voiceOutput.enabled) {
             // Inline mic was just used — speak this ONE response, then disable
+            console.log("[VoiceLoop] Calling voiceOutput.speak (inline voice)");
             void voiceOutput.speak(plainText, resolvedToSpeakOptions(voiceResolvedSettings));
             voiceOutput.setEnabled(false);
           }

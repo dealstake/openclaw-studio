@@ -86,6 +86,7 @@ export function useVoiceOutput(): UseVoiceOutputReturn {
 
   const speak = useCallback(
     async (text: string, speakOpts?: SpeakOptions) => {
+      console.log("[VoiceOutput] speak called, text length:", text.length, "voiceId:", speakOpts?.voiceId);
       if (!text.trim()) return;
 
       // Stop any current playback
@@ -98,6 +99,7 @@ export function useVoiceOutput(): UseVoiceOutputReturn {
       setError(null);
 
       try {
+        console.log("[VoiceOutput] Fetching /api/tts...");
         const res = await fetch("/api/tts", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -139,9 +141,12 @@ export function useVoiceOutput(): UseVoiceOutputReturn {
           audioRef.current = null;
         };
 
+        console.log("[VoiceOutput] TTS response OK, blob size:", blob.size, "type:", blob.type);
+
         // iOS Safari requires audio playback to be initiated from a user gesture.
         // We use the pre-warmed audio element if available (warmed during openVoiceMode click).
         if (warmedAudioRef.current) {
+          console.log("[VoiceOutput] Using pre-warmed audio element for playback");
           warmedAudioRef.current.src = url;
           warmedAudioRef.current.onplay = audio.onplay;
           warmedAudioRef.current.onended = audio.onended;
@@ -149,6 +154,7 @@ export function useVoiceOutput(): UseVoiceOutputReturn {
           audioRef.current = warmedAudioRef.current;
           await warmedAudioRef.current.play();
         } else {
+          console.log("[VoiceOutput] Using fresh Audio element for playback");
           // Fallback: create fresh Audio (works on desktop, may fail on iOS)
           await audio.play();
         }

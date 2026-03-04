@@ -115,11 +115,15 @@ export function useVoiceModeBridge(options?: UseVoiceModeBridgeOptions) {
     if (!voiceMode || !voice.finalTranscript) return;
     if (voice.finalTranscript === prevFinalRef.current) return;
 
+    console.log("[VoiceModeBridge] New committed transcript:", voice.finalTranscript.substring(0, 80));
     prevFinalRef.current = voice.finalTranscript;
 
     if (options?.onUserMessage) {
+      console.log("[VoiceModeBridge] Sending to agent via onUserMessage");
       options.onUserMessage(voice.finalTranscript);
       voiceMode.setState("thinking");
+    } else {
+      console.warn("[VoiceModeBridge] No onUserMessage callback — transcript not sent to agent!");
     }
   }, [voice.finalTranscript]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -132,13 +136,23 @@ export function useVoiceModeBridge(options?: UseVoiceModeBridgeOptions) {
   // Speak agent response
   const speakResponse = useCallback(
     async (text: string) => {
-      if (!voiceMode || !voiceModeActiveRef.current) return;
+      console.log("[VoiceModeBridge] speakResponse called, text length:", text.length, "voiceModeActive:", voiceModeActiveRef.current);
+      if (!voiceMode || !voiceModeActiveRef.current) {
+        console.log("[VoiceModeBridge] speakResponse skipped — voiceMode:", !!voiceMode, "active:", voiceModeActiveRef.current);
+        return;
+      }
 
       voiceMode.setAgentTranscript(text);
       voiceMode.setState("speaking");
 
       const speakOpts = resolvedToSpeakOptions(voiceSettings.settings);
-      await tts.speak(text, speakOpts);
+      console.log("[VoiceModeBridge] Calling TTS speak, voiceId:", speakOpts.voiceId, "modelId:", speakOpts.modelId);
+      try {
+        await tts.speak(text, speakOpts);
+        console.log("[VoiceModeBridge] TTS speak completed");
+      } catch (err) {
+        console.error("[VoiceModeBridge] TTS speak failed:", (err as Error).message);
+      }
 
       // Only reset state if voice mode is still active
       if (voiceModeActiveRef.current) {
@@ -146,6 +160,7 @@ export function useVoiceModeBridge(options?: UseVoiceModeBridgeOptions) {
         voiceMode.setAgentTranscript("");
         voice.resetTranscript();
         prevFinalRef.current = "";
+        console.log("[VoiceModeBridge] Reset to listening state");
       }
     },
     [voiceMode, voiceSettings.settings, tts, voice],
