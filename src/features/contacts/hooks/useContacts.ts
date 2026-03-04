@@ -109,7 +109,6 @@ export function useContacts(agentId: string | null) {
     error: null,
   });
 
-  const loadingRef = useRef(false);
   const lastFiltersRef = useRef<ContactFilters>({});
   const listAbortRef = useRef<AbortController | null>(null);
   const detailAbortRef = useRef<AbortController | null>(null);
@@ -118,16 +117,15 @@ export function useContacts(agentId: string | null) {
 
   const loadContacts = useCallback(
     async (filters: ContactFilters = {}, limit = 50, offset = 0) => {
-      if (!agentId || loadingRef.current) return;
-      loadingRef.current = true;
+      if (!agentId) return;
+      // Abort any in-flight list fetch to prevent race conditions from rapid searches
+      listAbortRef.current?.abort();
+      const controller = new AbortController();
+      listAbortRef.current = controller;
       lastFiltersRef.current = filters;
       setListState((s) => ({ ...s, loading: true, error: null }));
 
       try {
-        // Abort any in-flight list fetch to prevent race conditions
-        listAbortRef.current?.abort();
-        const controller = new AbortController();
-        listAbortRef.current = controller;
 
         const params = new URLSearchParams({
           agentId,
@@ -148,8 +146,6 @@ export function useContacts(agentId: string | null) {
         if (err instanceof DOMException && err.name === "AbortError") return;
         const msg = err instanceof Error ? err.message : String(err);
         setListState((s) => ({ ...s, loading: false, error: msg }));
-      } finally {
-        loadingRef.current = false;
       }
     },
     [agentId],
@@ -214,9 +210,7 @@ export function useContacts(agentId: string | null) {
 
         return data.contact;
       } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
         console.error("[useContacts] upsertContact error:", err);
-        setListState((s) => ({ ...s, error: `Save failed: ${msg}` }));
         return null;
       }
     },

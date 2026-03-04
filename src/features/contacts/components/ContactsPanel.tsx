@@ -87,17 +87,21 @@ const ContactForm = memo(function ContactForm({
       ? tagsRaw.split(",").map((t) => t.trim()).filter(Boolean)
       : null;
 
-    await onSave({
-      id: initial?.id,
-      name: name.trim(),
-      email: email.trim() || null,
-      phone: phone.trim() || null,
-      company: company.trim() || null,
-      title: title.trim() || null,
-      stage: stage || null,
-      tags,
-      notes: notes.trim() || null,
-    });
+    try {
+      await onSave({
+        id: initial?.id,
+        name: name.trim(),
+        email: email.trim() || null,
+        phone: phone.trim() || null,
+        company: company.trim() || null,
+        title: title.trim() || null,
+        stage: stage || null,
+        tags,
+        notes: notes.trim() || null,
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save contact");
+    }
   };
 
   const inputCls =
@@ -567,8 +571,8 @@ export const ContactsPanel = memo(function ContactsPanel() {
       const result = await upsertContact(input);
       setSaving(false);
       if (!result) {
-        // Save failed — keep form open so user can retry (error shown via hook state)
-        return;
+        // Save failed — throw so the form's onSave handler can display the error
+        throw new Error("Failed to save contact. Please try again.");
       }
       setEditSheetOpen(false);
       setEditingContact(null);
