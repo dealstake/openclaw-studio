@@ -195,14 +195,29 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   }, [onDraftChange]);
 
   /** When voice input is cancelled, clear the textarea */
-  const handleVoiceCancel = useCallback(() => {
+    /** When voice input is cancelled, preserve any captured text */
+  const handleVoiceCancel = useCallback((data: SpeechInputData) => {
+    const text = data.transcript.trim();
     const el = localRef.current;
-    if (el) {
-      el.value = "";
-      el.style.height = "auto";
+    if (!text) {
+      // Nothing was said — just clear
+      if (el) {
+        el.value = "";
+        el.style.height = "auto";
+      }
+      setIsEmpty(true);
+      onDraftChange("");
+      return;
     }
-    setIsEmpty(true);
-    onDraftChange("");
+    // Preserve text in textarea for review/editing (same as stop)
+    if (el) {
+      el.value = text;
+      el.style.height = "auto";
+      el.style.height = `${el.scrollHeight}px`;
+      el.focus();
+    }
+    setIsEmpty(false);
+    onDraftChange(text);
   }, [onDraftChange]);
 
   /** Auto-speak assistant responses when voice is active (overlay or inline) */

@@ -6,6 +6,7 @@
  * Uses the official ElevenLabs client SDK (`useScribe`).
  *
  * Features:
+ * - Pre-acquires mic permission before Scribe connection (iOS Safari fix)
  * - Automatic microphone management via SDK
  * - Consolidated transcript state to prevent stale closure bugs
  * - Auto-reconnect with exponential backoff (max 3 attempts)
@@ -74,6 +75,38 @@ async function fetchToken(): Promise<string> {
   return data.token;
 }
 
+// ── Mic permission pre-acquisition ──────────────────────────────────────
+
+/**
+ * Pre-acquire microphone permission by calling getUserMedia and immediately
+ * stopping the stream. This ensures the browser has granted mic access before
+ * Scribe.connect() tries to acquire it internally (which happens in a WebSocket
+ * open handler, outside the user gesture chain on iOS Safari).
+ *
+ * This follows ElevenLabs' recommended pattern from their SDK docs.
+ */
+async function preAcquireMicPermission(): Promise<void> {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+        channelCount: 1,
+      },
+    });
+    // Immediately stop — we just needed the permission grant
+    stream.getTracks().forEach((track) => track.stop());
+  } catch (err) {
+    // Re-throw with a clear message
+    const msg = (err as Error).message || "";
+    if (msg.includes("NotAllowedError") || msg.includes("Permission denied")) {
+      throw new Error("NotAllowedError: Microphone permission denied");
+    }
+    throw err;
+  }
+}
+
 // ── Hook ────────────────────────────────────────────────────────────────
 
 /**
@@ -112,7 +145,6 @@ export function useVoiceClient(): UseVoiceClientReturn {
     languageCode: "en",
 
     onPartialTranscript: (data) => {
-      // Functional update reads latest committed state — no stale closures
       setTranscripts((prev) => ({
         ...prev,
         partial: data.text,
@@ -122,7 +154,7 @@ export function useVoiceClient(): UseVoiceClientReturn {
     onCommittedTranscript: (data) => {
       setTranscripts((prev) => ({
         committed: prev.committed ? `${prev.committed} ${data.text}` : data.text,
-        partial: "", // Clear partial on commit
+        partial: "",
       }));
       reconnectAttemptsRef.current = 0;
     },
@@ -141,7 +173,6 @@ export function useVoiceClient(): UseVoiceClientReturn {
 
     onError: (err) => {
       const msg = err instanceof Error ? err.message : String(err);
-      // Don't toast for mic permission — parent handles via MicPermissionDialog
       if (!(msg.includes("NotAllowedError") || msg.includes("Permission denied"))) {
         console.warn("[useVoiceClient] STT error:", msg);
       }
@@ -191,6 +222,13 @@ export function useVoiceClient(): UseVoiceClientReturn {
     reconnectAttemptsRef.current = 0;
 
     try {
+      // Pre-acquire mic permission BEFORE Scribe.connect().
+      // Scribe.connect() calls getUserMedia in a WebSocket "open" event handler,
+      // which is outside the user gesture chain. By pre-acquiring here,
+      // the browser caches the permission grant and Scribe's internal
+      // getUserMedia succeeds even outside the gesture window.
+      await preAcquireMicPermission();
+
       const token = await fetchToken();
       const connectPromise = scribe.connect({ token });
       const timeoutPromise = new Promise<never>((_, reject) =>
@@ -207,6 +245,7 @@ export function useVoiceClient(): UseVoiceClientReturn {
         toast.error("Voice connection failed — please try again.");
       }
       try { scribe.disconnect(); } catch { /* ignore */ }
+      throw err; // Re-throw so callers can handle
     }
   }, [scribe]);
 

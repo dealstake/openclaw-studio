@@ -3,9 +3,9 @@
 /**
  * VoiceModeButton — Launches the full-screen voice mode overlay.
  *
- * CRITICAL: Starts STT connection in the click handler (user gesture)
- * so iOS Safari allows getUserMedia access. The bridge registers its
- * startListeningNow via the provider, and we call it here synchronously.
+ * The mic permission is now pre-acquired by useVoiceClient.startListening()
+ * (which is called by the bridge when voice mode activates), so we don't
+ * need any special gesture handling here.
  */
 
 import React, { useCallback } from "react";
@@ -30,11 +30,7 @@ export const VoiceModeButton = React.memo(function VoiceModeButton({
 
   const handleClick = useCallback(() => {
     if (!voiceMode) return;
-    // Open voice mode overlay
     voiceMode.openVoiceMode(agentId);
-    // Start STT immediately in the user gesture handler chain
-    // This is critical for iOS Safari which requires getUserMedia from a user gesture
-    void voiceMode.startListeningFromGesture();
   }, [voiceMode, agentId]);
 
   // Don't render if provider isn't available

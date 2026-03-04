@@ -4,10 +4,8 @@
  * VoiceModeProvider — Global context for voice mode state.
  *
  * Wraps the entire app so voice mode persists across navigation.
- * Manages: overlay visibility, voice state machine, active agent binding,
- * STT (useVoiceClient) and TTS (useVoiceOutput) lifecycle.
- *
- * Any chat interface can call `openVoiceMode(agentId)` to launch voice.
+ * Manages: overlay visibility, voice state machine, active agent binding.
+ * STT and TTS lifecycle are managed by useVoiceModeBridge.
  */
 
 import React, {
@@ -37,10 +35,6 @@ export interface VoiceModeContextValue {
   userTranscript: string;
   /** Current agent response text */
   agentTranscript: string;
-  /** Whether STT was started from user gesture (skip auto-start in bridge) */
-  sttStartedFromGesture: boolean;
-  /** Mark STT as started from gesture */
-  setSttStartedFromGesture: (v: boolean) => void;
   /** Open voice mode for a specific agent */
   openVoiceMode: (agentId: string) => void;
   /** Close voice mode entirely */
@@ -57,10 +51,6 @@ export interface VoiceModeContextValue {
   setUserTranscript: (text: string) => void;
   /** Update agent transcript (used by TTS hook) */
   setAgentTranscript: (text: string) => void;
-  /** Register the bridge's startListening for user-gesture invocation */
-  registerStartListening: (fn: () => Promise<void>) => void;
-  /** Call registered startListening (for VoiceModeButton click handler) */
-  startListeningFromGesture: () => Promise<void>;
   /** Ref for input volume (0-1) — fed to Orb */
   inputVolumeRef: React.RefObject<number>;
   /** Ref for output volume (0-1) — fed to Orb */
@@ -86,8 +76,7 @@ export function useVoiceMode(): VoiceModeContextValue {
 }
 
 /**
- * Safe version — returns null outside provider (for components that may
- * render before provider is mounted, e.g. in Storybook or tests).
+ * Safe version — returns null outside provider.
  */
 export function useVoiceModeSafe(): VoiceModeContextValue | null {
   return useContext(VoiceModeContext);
@@ -108,22 +97,10 @@ export function VoiceModeProvider({ children }: VoiceModeProviderProps) {
   const [userTranscript, setUserTranscript] = useState("");
   const [agentTranscript, setAgentTranscript] = useState("");
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const [sttStartedFromGesture, setSttStartedFromGesture] = useState(false);
 
   const inputVolumeRef = useRef<number>(0);
   const outputVolumeRef = useRef<number>(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const startListeningFnRef = useRef<(() => Promise<void>) | null>(null);
-
-  const registerStartListening = useCallback((fn: () => Promise<void>) => {
-    startListeningFnRef.current = fn;
-  }, []);
-
-  const startListeningFromGesture = useCallback(async () => {
-    if (startListeningFnRef.current) {
-      await startListeningFnRef.current();
-    }
-  }, []);
 
   const setInputVolume = useCallback((v: number) => {
     inputVolumeRef.current = v;
@@ -170,7 +147,6 @@ export function VoiceModeProvider({ children }: VoiceModeProviderProps) {
     setActiveAgentId(null);
     setUserTranscript("");
     setAgentTranscript("");
-    setSttStartedFromGesture(false);
     stopTimer();
     setElapsedSeconds(0);
     inputVolumeRef.current = 0;
@@ -209,10 +185,6 @@ export function VoiceModeProvider({ children }: VoiceModeProviderProps) {
       setInputVolume,
       setOutputVolume,
       elapsedSeconds,
-      sttStartedFromGesture,
-      setSttStartedFromGesture,
-      registerStartListening,
-      startListeningFromGesture,
     }),
     [
       state,
@@ -229,9 +201,6 @@ export function VoiceModeProvider({ children }: VoiceModeProviderProps) {
       setInputVolume,
       setOutputVolume,
       elapsedSeconds,
-      sttStartedFromGesture,
-      registerStartListening,
-      startListeningFromGesture,
     ],
   );
 

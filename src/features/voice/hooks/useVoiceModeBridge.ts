@@ -5,11 +5,12 @@
  *
  * When voice mode opens:
  * 1. Starts STT (useVoiceClient) → feeds transcript to VoiceModeProvider
- * 2. On committed transcript → sends to agent via gateway chat.send
+ * 2. On committed transcript → sends to agent via onUserMessage callback
  * 3. On agent response → feeds to TTS (useVoiceOutput) → updates provider
  *
- * IMPORTANT: STT is started via startListeningNow() which MUST be called
- * from a user gesture handler (click/tap) for iOS Safari getUserMedia.
+ * STT starts automatically when voiceModeActive becomes true.
+ * The useVoiceClient hook pre-acquires mic permission before Scribe.connect(),
+ * so getUserMedia succeeds even when called outside the user gesture window.
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -38,44 +39,12 @@ export function useVoiceModeBridge(options?: UseVoiceModeBridgeOptions) {
 
   const voiceModeActive = !!(voiceMode?.isOverlayOpen || voiceMode?.isMinimized);
 
-  /**
-   * Start STT — MUST be called from a user gesture (click/tap) for iOS Safari.
-   * Returns a promise that resolves when connected.
-   */
-  const startListeningNow = useCallback(async () => {
-    if (!voiceMode) return;
-    tts.warmup();
-    try {
-      await voice.startListening();
-      voiceMode.setSttStartedFromGesture(true);
-    } catch (err) {
-      const msg = (err as Error).message || "";
-      voiceMode.setState("idle");
-      if (msg.includes("NotAllowedError") || msg.includes("Permission denied")) {
-        voiceMode.setLastError("mic-denied");
-      } else if (msg.includes("API key") || msg.includes("api key") || msg.includes("401")) {
-        voiceMode.setLastError("api-key-missing");
-      } else if (msg.includes("timeout") || msg.includes("Timeout")) {
-        voiceMode.setLastError("mic-denied");
-      }
-    }
-  }, [voiceMode, voice, tts]);
-
-  // Register startListeningNow so VoiceModeButton can call it from gesture
-  useEffect(() => {
-    if (!voiceMode) return;
-    voiceMode.registerStartListening(startListeningNow);
-  }, [voiceMode, startListeningNow]);
-
-  // When voice mode opens, start STT if not already started from gesture
-  // When voice mode closes, stop STT + TTS
+  // Start STT when voice mode opens, stop when it closes
   useEffect(() => {
     if (!voiceMode) return;
 
     if (voiceModeActive) {
-      // If STT wasn't started from user gesture (e.g. keyboard shortcut),
-      // start it now. This may fail on iOS Safari but works on desktop.
-      if (!voiceMode.sttStartedFromGesture && !voice.isListening && !voice.isConnecting) {
+      if (!voice.isListening && !voice.isConnecting) {
         tts.warmup();
         voice.startListening().catch((err) => {
           const msg = (err as Error).message || "";
@@ -95,7 +64,7 @@ export function useVoiceModeBridge(options?: UseVoiceModeBridgeOptions) {
     }
   }, [voiceModeActive]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Feed transcript to provider + detect committed segments
+  // Feed transcript to provider + update state from STT status
   useEffect(() => {
     if (!voiceMode) return;
 
@@ -123,7 +92,6 @@ export function useVoiceModeBridge(options?: UseVoiceModeBridgeOptions) {
 
     prevFinalRef.current = voice.finalTranscript;
 
-    // Send to agent
     if (options?.onUserMessage) {
       options.onUserMessage(voice.finalTranscript);
       voiceMode.setState("thinking");
@@ -158,15 +126,13 @@ export function useVoiceModeBridge(options?: UseVoiceModeBridgeOptions) {
     [voiceMode, voiceSettings.settings, tts, voice],
   );
 
-  // Update volume refs for Orb visualization via provider setter
+  // Update volume refs for Orb visualization
   useEffect(() => {
     if (!voiceMode) return;
     voiceMode.setOutputVolume(tts.isPlaying ? 0.7 : 0);
   }, [tts.isPlaying, voiceMode]);
 
   return {
-    /** Start STT — call from user gesture handler */
-    startListeningNow,
     /** Call this when agent sends a response to speak it */
     speakResponse,
     /** Whether STT is active */
