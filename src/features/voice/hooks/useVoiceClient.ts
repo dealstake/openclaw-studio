@@ -44,7 +44,7 @@ export interface UseVoiceClientReturn {
 
 const MAX_RECONNECT_ATTEMPTS = 3;
 const BASE_RECONNECT_DELAY_MS = 1000;
-const SCRIBE_MODEL_ID = "scribe_v1";
+const SCRIBE_MODEL_ID = "scribe_v2_realtime";
 
 // ── Support check ───────────────────────────────────────────────────────
 

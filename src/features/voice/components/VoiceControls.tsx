@@ -163,7 +163,7 @@ export const VoiceInputControl = React.memo(function VoiceInputControl({
         onQuotaExceededError={handleQuotaExceeded}
         onRateLimitedError={handleRateLimited}
         size="sm"
-        modelId="scribe_v1"
+        modelId="scribe_v2_realtime"
         languageCode="en"
         microphone={{
           echoCancellation: true,
