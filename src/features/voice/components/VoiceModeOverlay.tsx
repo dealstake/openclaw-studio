@@ -246,7 +246,7 @@ export const VoiceModeOverlay = React.memo(function VoiceModeOverlay() {
                 )}
                 aria-label="Minimize voice mode"
               >
-                <Minimize2 className="h-4 w-4" />
+                <Minimize2 className="h-5 w-5" />
               </button>
 
               {/* Close button */}
@@ -260,7 +260,7 @@ export const VoiceModeOverlay = React.memo(function VoiceModeOverlay() {
                 )}
                 aria-label="Close voice mode"
               >
-                <X className="h-4 w-4" />
+                <X className="h-5 w-5" />
               </button>
             </div>
           </div>

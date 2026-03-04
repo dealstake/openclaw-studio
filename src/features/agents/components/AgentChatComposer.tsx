@@ -458,7 +458,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
           <div className="min-w-0 flex-1 rounded-[20px] border border-border/50 glass-panel transition-all focus-within:border-border/80 focus-within:shadow-2xl dark:bg-background/40 dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)]">
             <div className="flex items-end">
               {/* Left controls — voice + wizard launcher */}
-              <div className="flex shrink-0 items-center gap-0.5 pl-2 pb-1.5">
+              <div className="flex shrink-0 items-center gap-1.5 pl-2 pb-1.5">
                 {!wizardType && onLaunchWizard && (
                   <WizardLaunchMenu onLaunch={onLaunchWizard} disabled={isRunning} />
                 )}

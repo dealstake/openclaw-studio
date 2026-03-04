@@ -7,7 +7,7 @@
  *
  * Features:
  * - Automatic microphone management via SDK
- * - Typed error callbacks with toast notifications
+ * - Consolidated transcript state to prevent stale closure bugs
  * - Auto-reconnect with exponential backoff (max 3 attempts)
  */
 
@@ -76,14 +76,24 @@ async function fetchToken(): Promise<string> {
 
 // ── Hook ────────────────────────────────────────────────────────────────
 
+/**
+ * Consolidated transcript state to avoid stale closure bugs.
+ * Both fields are updated atomically via functional setState,
+ * eliminating the ref-sync timing gap that caused mic input to silently fail.
+ */
+interface TranscriptState {
+  /** All committed (final) transcript segments concatenated */
+  committed: string;
+  /** Current partial transcript (in-progress speech) */
+  partial: string;
+}
+
 export function useVoiceClient(): UseVoiceClientReturn {
-  const [finalTranscript, setFinalTranscript] = useState("");
-  const [displayTranscript, setDisplayTranscript] = useState("");
-  const finalTranscriptRef = useRef(finalTranscript);
-  // Sync ref in effect to avoid updating ref during render
-  useEffect(() => {
-    finalTranscriptRef.current = finalTranscript;
-  }, [finalTranscript]);
+  const [transcripts, setTranscripts] = useState<TranscriptState>({
+    committed: "",
+    partial: "",
+  });
+
   const reconnectAttemptsRef = useRef(0);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const intentionalDisconnectRef = useRef(false);
@@ -102,24 +112,22 @@ export function useVoiceClient(): UseVoiceClientReturn {
     languageCode: "en",
 
     onPartialTranscript: (data) => {
-      // Show committed + partial for live display
-      setDisplayTranscript(() => {
-        const base = finalTranscriptRef.current;
-        return base ? `${base} ${data.text}` : data.text;
-      });
+      // Functional update reads latest committed state — no stale closures
+      setTranscripts((prev) => ({
+        ...prev,
+        partial: data.text,
+      }));
     },
 
     onCommittedTranscript: (data) => {
-      setFinalTranscript((prev) => {
-        const combined = prev ? `${prev} ${data.text}` : data.text;
-        setDisplayTranscript(combined);
-        return combined;
-      });
-      reconnectAttemptsRef.current = 0; // Successful transcription = reset reconnect counter
+      setTranscripts((prev) => ({
+        committed: prev.committed ? `${prev.committed} ${data.text}` : data.text,
+        partial: "", // Clear partial on commit
+      }));
+      reconnectAttemptsRef.current = 0;
     },
 
     onAuthError: () => {
-      toast.error("Voice session expired. Reconnecting...");
       attemptReconnect();
     },
 
@@ -133,13 +141,13 @@ export function useVoiceClient(): UseVoiceClientReturn {
 
     onError: (err) => {
       const msg = err instanceof Error ? err.message : String(err);
-      if (msg.includes("NotAllowedError") || msg.includes("Permission denied")) {
-        toast.error("Microphone access denied — check browser settings.");
+      // Don't toast for mic permission — parent handles via MicPermissionDialog
+      if (!(msg.includes("NotAllowedError") || msg.includes("Permission denied"))) {
+        console.warn("[useVoiceClient] STT error:", msg);
       }
     },
 
     onDisconnect: () => {
-      // Auto-reconnect on unexpected disconnect
       if (!intentionalDisconnectRef.current) {
         attemptReconnect();
       }
@@ -184,22 +192,20 @@ export function useVoiceClient(): UseVoiceClientReturn {
 
     try {
       const token = await fetchToken();
-      // Race connection against a timeout to prevent indefinite "Connecting..." state
       const connectPromise = scribe.connect({ token });
       const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("Connection timeout — microphone may be blocked")), 15000)
+        setTimeout(() => reject(new Error("Connection timeout — microphone may be blocked")), 15000),
       );
       await Promise.race([connectPromise, timeoutPromise]);
     } catch (err) {
       const msg = (err as Error).message || "Failed to start voice input";
       if (msg.includes("NotAllowedError") || msg.includes("Permission denied")) {
-        toast.error("Microphone access denied — check browser settings.");
+        // Don't toast — parent component shows MicPermissionDialog
       } else if (msg.includes("timeout") || msg.includes("Timeout")) {
         toast.error("Voice connection timed out — check microphone permissions.");
       } else {
         toast.error("Voice connection failed — please try again.");
       }
-      // Ensure we're disconnected on any error
       try { scribe.disconnect(); } catch { /* ignore */ }
     }
   }, [scribe]);
@@ -214,12 +220,17 @@ export function useVoiceClient(): UseVoiceClientReturn {
   }, [scribe]);
 
   const resetTranscript = useCallback(() => {
-    setFinalTranscript("");
-    setDisplayTranscript("");
+    setTranscripts({ committed: "", partial: "" });
     scribe.clearTranscripts();
   }, [scribe]);
 
-  // Map SDK status to isListening/isConnecting
+  // Derive display values from consolidated state
+  const displayTranscript = transcripts.committed
+    ? transcripts.partial
+      ? `${transcripts.committed} ${transcripts.partial}`
+      : transcripts.committed
+    : transcripts.partial;
+
   const isListening = scribe.isConnected || scribe.isTranscribing;
   const isConnecting = scribe.status === "connecting";
 
@@ -228,7 +239,7 @@ export function useVoiceClient(): UseVoiceClientReturn {
     isListening,
     isConnecting,
     transcript: displayTranscript,
-    finalTranscript,
+    finalTranscript: transcripts.committed,
     startListening,
     stopListening,
     resetTranscript,
