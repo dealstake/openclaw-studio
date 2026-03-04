@@ -84,8 +84,11 @@ export function useVoiceModeBridge(options?: UseVoiceModeBridgeOptions) {
       if (voiceMode.state === "connecting") {
         voiceMode.setState("listening");
       }
+    } else if (voice.error && voiceMode.state === "connecting") {
+      // Connection failed — fall back to idle instead of staying stuck on "connecting"
+      voiceMode.setState("idle");
     }
-  }, [voice.transcript, voice.isConnecting, voice.isListening]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [voice.transcript, voice.isConnecting, voice.isListening, voice.error]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // On new committed transcript, send to agent
   useEffect(() => {
