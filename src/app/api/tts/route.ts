@@ -5,9 +5,8 @@
  * Body: { text: string; voiceId?: string; modelId?: string }
  * Returns: audio/mpeg stream
  *
- * API key resolution order:
- * 1. ELEVENLABS_API_KEY env var
- * 2. Client-provided apiKey in body (from credential vault)
+ * API key is resolved exclusively from ELEVENLABS_API_KEY env var.
+ * Client-side keys are never accepted (security: API keys must not transit the browser).
  */
 
 import { NextResponse } from "next/server";
@@ -28,19 +27,17 @@ const ttsBodySchema = z.object({
   text: z.string().min(1, "text is required").max(10000),
   voiceId: z.string().optional(),
   modelId: z.string().optional(),
-  apiKey: z.string().optional(),
   voiceSettings: voiceSettingsSchema,
 });
 
 export async function POST(request: Request): Promise<Response> {
   try {
-    const { text, voiceId, modelId, apiKey: clientKey, voiceSettings } = await parseBody(request, ttsBodySchema);
+    const { text, voiceId, modelId, voiceSettings } = await parseBody(request, ttsBodySchema);
 
     // Truncate excessively long text (ElevenLabs limit ~5000 chars)
     const truncated = text.slice(0, 5000);
 
-    const envKey = process.env.ELEVENLABS_API_KEY;
-    const apiKey = envKey || (typeof clientKey === "string" && clientKey.length >= 32 ? clientKey : null);
+    const apiKey = process.env.ELEVENLABS_API_KEY;
     if (!apiKey) {
       return NextResponse.json(
         { error: "ElevenLabs API key not configured. Add it in Settings > Credentials." },

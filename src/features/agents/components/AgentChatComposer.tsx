@@ -24,7 +24,6 @@ import type { WizardType, WizardTheme, WizardStarter } from "@/features/wizards/
 import { WizardBanner } from "@/features/wizards/components/WizardBanner";
 import { WizardLaunchMenu } from "@/features/wizards/components/WizardLaunchMenu";
 import { useVoiceOutput, resolvedToSpeakOptions } from "@/features/voice/hooks/useVoiceOutput";
-import { useElevenLabsKey } from "@/features/voice/hooks/useElevenLabsKey";
 import { useVoiceSettings } from "@/features/voice/hooks/useVoiceSettings";
 import { createStudioSettingsCoordinator } from "@/lib/studio/coordinator";
 import { VoiceInputControl } from "@/features/voice/components/VoiceControls";
@@ -122,15 +121,13 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   const isRunning = wizardType ? (wizardIsStreaming ?? false) : running;
 
   // ── Voice controls ────────────────────────────────────────────────────
-  const { apiKey: elevenLabsKey } = useElevenLabsKey();
-  const voiceOutput = useVoiceOutput({ apiKey: elevenLabsKey });
+  const voiceOutput = useVoiceOutput();
   const voiceSettingsCoordinator = useMemo(
     () => createStudioSettingsCoordinator({ debounceMs: 200 }),
     [],
   );
   const { settings: voiceResolvedSettings } = useVoiceSettings({
     settingsCoordinator: voiceSettingsCoordinator,
-    apiKey: elevenLabsKey,
   });
 
   // Stable ref for voiceOutput to avoid re-creating callbacks

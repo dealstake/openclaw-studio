@@ -38,7 +38,6 @@ import { usePracticeChat } from "../hooks/usePracticeChat";
 import { usePersonaHealth } from "../hooks/usePersonaHealth";
 import { PracticeScoreCard } from "./PracticeScoreCard";
 import { useVoiceOutput, resolvedToSpeakOptions } from "@/features/voice/hooks/useVoiceOutput";
-import { useElevenLabsKey } from "@/features/voice/hooks/useElevenLabsKey";
 import { useVoiceSettings } from "@/features/voice/hooks/useVoiceSettings";
 import { createStudioSettingsCoordinator } from "@/lib/studio/coordinator";
 import { VoiceInputControl } from "@/features/voice/components/VoiceControls";
@@ -335,8 +334,7 @@ export const PracticeSessionModal = React.memo(function PracticeSessionModal({
     usePersonaHealth();
 
   // Voice support
-  const { apiKey: elevenLabsKey } = useElevenLabsKey();
-  const voiceOutput = useVoiceOutput({ apiKey: elevenLabsKey });
+  const voiceOutput = useVoiceOutput();
   const voiceCoordinator = useMemo(
     () => createStudioSettingsCoordinator({ debounceMs: 200 }),
     [],
@@ -344,7 +342,6 @@ export const PracticeSessionModal = React.memo(function PracticeSessionModal({
   const { settings: voiceSettings } = useVoiceSettings({
     settingsCoordinator: voiceCoordinator,
     personaVoiceConfig: personaVoiceConfig ?? undefined,
-    apiKey: elevenLabsKey,
   });
 
   // Auto-speak persona responses

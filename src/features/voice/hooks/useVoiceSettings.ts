@@ -34,8 +34,7 @@ export interface UseVoiceSettingsParams {
   agentId?: string | null;
   /** Persona voice config (highest priority override) */
   personaVoiceConfig?: PersonaVoiceConfig | null;
-  /** ElevenLabs API key from credential vault (fallback for voices fetch) */
-  apiKey?: string | null;
+
 }
 
 export interface UseVoiceSettingsReturn {
@@ -60,7 +59,6 @@ export function useVoiceSettings({
   gatewayUrl,
   agentId,
   personaVoiceConfig,
-  apiKey,
 }: UseVoiceSettingsParams): UseVoiceSettingsReturn {
   const [studioSettings, setStudioSettings] = useState<StudioSettings | null>(null);
   const [voices, setVoices] = useState<ElevenLabsVoice[]>([]);
@@ -90,11 +88,7 @@ export function useVoiceSettings({
     const load = async () => {
       setVoicesLoading(true);
       try {
-        const res = await fetch("/api/voice/voices", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(apiKey ? { apiKey } : {}),
-        });
+        const res = await fetch("/api/voice/voices");
         if (!res.ok) return;
         const data = (await res.json()) as { voices: ElevenLabsVoice[] };
         if (!cancelled) setVoices(data.voices ?? []);
@@ -106,7 +100,7 @@ export function useVoiceSettings({
     };
     void load();
     return () => { cancelled = true; };
-  }, [apiKey]);
+  }, []);
 
   // Resolve merged settings
   const settings = useMemo((): ResolvedVoiceSettings => {

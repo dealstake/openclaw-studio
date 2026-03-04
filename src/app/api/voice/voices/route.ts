@@ -1,23 +1,14 @@
 /**
  * Voice list API route — fetches available ElevenLabs voices.
  *
- * POST /api/voice/voices
- * Body: { apiKey?: string }
+ * GET/POST /api/voice/voices
  * Returns: { voices: VoiceSummary[] }
  *
- * Also supports GET (no client key, env var only) for backward compat.
  * Caches the response for 1 hour to reduce API calls.
- *
- * API key resolution: env var ELEVENLABS_API_KEY → client-provided apiKey (from credential vault)
+ * API key resolved exclusively from ELEVENLABS_API_KEY env var.
  */
 
 import { NextResponse } from "next/server";
-import { z } from "zod";
-import { parseBody } from "@/lib/api/validation";
-
-const voicesBodySchema = z.object({
-  apiKey: z.string().optional(),
-});
 
 interface VoiceLabel {
   accent?: string;
@@ -47,10 +38,6 @@ interface VoiceSummary {
 // Simple in-memory cache (keyed by first 8 chars of API key to avoid cross-user leaks)
 const voiceCache = new Map<string, { voices: VoiceSummary[]; expiry: number }>();
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
-
-function isValidApiKey(key: unknown): key is string {
-  return typeof key === "string" && key.length >= 32 && /^[a-zA-Z0-9_-]+$/.test(key);
-}
 
 async function fetchVoices(apiKey: string): Promise<Response> {
   const cacheKey = apiKey.slice(0, 8);
@@ -109,26 +96,6 @@ export async function GET(): Promise<Response> {
   }
 }
 
-export async function POST(request: Request): Promise<Response> {
-  try {
-    const body = await parseBody(request, voicesBodySchema);
-    const envKey = process.env.ELEVENLABS_API_KEY;
-    const clientKey = body.apiKey;
-    const apiKey = envKey || (isValidApiKey(clientKey) ? clientKey : null);
-
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: "ElevenLabs API key not configured. Add it in Settings > Credentials." },
-        { status: 500 },
-      );
-    }
-    return fetchVoices(apiKey);
-  } catch (err) {
-    if (err instanceof NextResponse) return err;
-    console.error("[voice/voices] Error:", err);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
-  }
+export async function POST(): Promise<Response> {
+  return GET();
 }

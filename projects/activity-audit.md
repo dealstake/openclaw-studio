@@ -3,7 +3,7 @@
 > Codebase audit of `src/features/activity/` — 17 files (7 components, 3 hooks, 4 lib, 3 supporting)
 
 ## Continuation Context
-- **Last worked on**: 2026-03-01
+- **Last worked on**: 2026-03-04
 - **Immediate next step**: Address P0 and P1 findings below
 - **Blocked by**: Nothing
 - **Context needed**: Read `src/features/activity/`, `reference/architecture.md`
@@ -84,5 +84,32 @@ None found. No security issues, no data loss risks, no crashes.
 - **Pagination**: Scroll-based infinite loading in `HistoryFeed` with dedup — solid
 - **Separation**: Clean lib/hooks/components split following project conventions
 
+## Re-Audit 2026-03-04
+
+### Previously Found — Now Fixed
+- ~~#4 `useCronAnalytics` abort signal~~ — Fixed. Hooks now use `AbortController` properly.
+- ~~#6 `formatTime` locale~~ — Fixed. Uses default locale correctly.
+- ~~#7 Unused `rtf` variable~~ — Fixed. Now used in `formatHistoryTime`.
+- ~~#8 `heartbeatFilter` fragile~~ — Removed/refactored out of feature.
+- ~~#9 `CronJobRankingTable` re-fetches~~ — Component no longer in this feature folder.
+
+### Previously Found — Still Open
+- #1 Linear scan in `useActivityMessageStore` (downgraded P2 — MAX_ENTRIES=200 is fine)
+- #2 Duplicated card layout (P2 — bodies are substantially different, less impactful than initially assessed)
+- #3 No error boundary around expanded content (P1 — still the top priority)
+- #5 Token display duplication — now also in `baselineComputer.ts:60` and `anomalyDetector.ts:42` (P2)
+- #10 MessagePartsRenderer index-based keys (P2)
+- #11 TrendSparkline missing `role="img"` or `aria-hidden="true"` (P2)
+- #12 STATUS_COLORS typed as `Record<string, string>` instead of ActivityStatus (P2)
+
+### New Findings
+- **P2: DRY in anomalyDetector.ts** — `scoreEventAgainstBaseline` (:143-290) repeats Z-score/severity/anomaly-object boilerplate per metric. Extract helper.
+- **P2: Magic number 200** in `ActivityMessageCard.tsx:40` for truncation. Extract constant.
+- **P2: Hardcoded UI strings** throughout (e.g., `SensitivityPicker.tsx:15`). Flag for future i18n.
+
+### Re-Audit Summary
+20 files reviewed. 5 of 12 original issues fixed. 0 P0, 1 P1, 9 P2. 3 new P2 findings. Overall code quality improved since initial audit.
+
 ## History
+- 2026-03-04: Re-audit (Codebase Auditor cron). 5/12 issues fixed, 3 new P2s found.
 - 2026-03-01: Initial audit (Codebase Auditor cron). 17 files reviewed. 0 P0, 5 P1, 7 P2.

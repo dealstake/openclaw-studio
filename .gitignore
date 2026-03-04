@@ -69,3 +69,4 @@ AGENTS.md
 # local issue tracker
 /.beads
 .openclaw-studio.db
+e2e-mobile.js

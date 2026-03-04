@@ -3,10 +3,10 @@
  * client-side real-time STT WebSocket connections.
  *
  * POST /api/voice/token
- * Body: { type: "realtime_scribe" | "tts_websocket", apiKey?: string }
+ * Body: { type: "realtime_scribe" | "tts_websocket" }
  * Returns: { token: string }
  *
- * API key resolution: env var ELEVENLABS_API_KEY → client-provided apiKey (from credential vault)
+ * API key resolved exclusively from ELEVENLABS_API_KEY env var (never from client).
  */
 
 import { NextResponse } from "next/server";
@@ -15,7 +15,6 @@ import { parseBody } from "@/lib/api/validation";
 
 const tokenBodySchema = z.object({
   type: z.enum(["realtime_scribe", "tts_websocket"]).optional().default("realtime_scribe"),
-  apiKey: z.string().optional(),
 });
 
 // Simple per-IP rate limit: max 10 tokens per hour
@@ -45,10 +44,6 @@ function isRateLimited(ip: string): boolean {
   return entry.count > MAX_TOKENS_PER_HOUR;
 }
 
-function isValidApiKey(key: unknown): key is string {
-  return typeof key === "string" && key.length >= 32 && /^[a-zA-Z0-9_-]+$/.test(key);
-}
-
 export async function POST(request: Request): Promise<Response> {
   try {
     const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
@@ -62,10 +57,7 @@ export async function POST(request: Request): Promise<Response> {
     const body = await parseBody(request, tokenBodySchema);
     const tokenType = body.type;
 
-    // Resolve API key: env var takes priority, client key as fallback
-    const envKey = process.env.ELEVENLABS_API_KEY;
-    const clientKey = body.apiKey;
-    const apiKey = envKey || (isValidApiKey(clientKey) ? clientKey : null);
+    const apiKey = process.env.ELEVENLABS_API_KEY;
 
     if (!apiKey) {
       return NextResponse.json(

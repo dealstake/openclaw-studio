@@ -16,7 +16,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useVoiceModeSafe } from "../providers/VoiceModeProvider";
 import { useVoiceClient } from "./useVoiceClient";
 import { useVoiceOutput, resolvedToSpeakOptions } from "./useVoiceOutput";
-import { useElevenLabsKey } from "./useElevenLabsKey";
 import { useVoiceSettings } from "./useVoiceSettings";
 import { createStudioSettingsCoordinator } from "@/lib/studio/coordinator";
 
@@ -27,14 +26,12 @@ interface UseVoiceModeBridgeOptions {
 
 export function useVoiceModeBridge(options?: UseVoiceModeBridgeOptions) {
   const voiceMode = useVoiceModeSafe();
-  const { apiKey: elevenLabsKey } = useElevenLabsKey();
-  const voice = useVoiceClient({ apiKey: elevenLabsKey });
-  const tts = useVoiceOutput({ apiKey: elevenLabsKey });
+  const voice = useVoiceClient();
+  const tts = useVoiceOutput();
   const [coordinator] = useState(() => createStudioSettingsCoordinator({ debounceMs: 200 }));
   const voiceSettings = useVoiceSettings({
     settingsCoordinator: coordinator,
     agentId: voiceMode?.activeAgentId,
-    apiKey: elevenLabsKey,
   });
 
   const prevFinalRef = useRef("");
