@@ -18,6 +18,13 @@ import {
 } from "@/lib/text/message-extract";
 import type { MessagePart } from "./types";
 
+/** Strip ANSI escape codes (colors, cursor, etc.) from terminal output */
+// eslint-disable-next-line no-control-regex
+const ANSI_RE = /\x1b\[[0-9;]*[a-zA-Z]|\x1b\].*?\x07/g;
+function stripAnsi(text: string): string {
+  return text.replace(ANSI_RE, "");
+}
+
 // ── Pure parser (no React, testable standalone) ────────────────────────
 
 export type ParseMessagePartsInput = {
@@ -45,7 +52,7 @@ function stripInboundMetadata(text: string): string {
 
 /** Normalize assistant text — collapse redundant blank lines, trim trailing whitespace. */
 function normalizeText(value: string): string {
-  const lines = value.replace(/\r\n?/g, "\n").split("\n");
+  const lines = stripAnsi(value).replace(/\r\n?/g, "\n").split("\n");
   const normalized: string[] = [];
   let lastWasBlank = false;
   for (const rawLine of lines) {

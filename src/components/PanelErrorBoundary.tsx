@@ -9,25 +9,37 @@ interface PanelErrorFallbackProps {
   onReset: () => void;
 }
 
+function isChunkError(error: Error): boolean {
+  const msg = error.message || "";
+  return (
+    msg.includes("ChunkLoadError") ||
+    msg.includes("Loading chunk") ||
+    msg.includes("Failed to fetch dynamically imported module")
+  );
+}
+
 function PanelErrorFallback({ name, error, onReset }: PanelErrorFallbackProps) {
+  const chunk = isChunkError(error);
   return (
     <div className="flex h-full w-full flex-col items-center justify-center gap-3 p-6 text-center">
-      <AlertTriangle className="h-6 w-6 text-destructive/70" />
+      <AlertTriangle className="h-6 w-6 text-destructive/70" aria-hidden />
       <div>
         <p className="text-sm font-medium text-foreground">
-          {name} crashed
+          {chunk ? "Update available" : `${name} crashed`}
         </p>
         <p className="mt-1 text-xs text-muted-foreground">
-          {error.message || "An unexpected error occurred"}
+          {chunk
+            ? "A new version has been deployed. Reload to get the latest."
+            : error.message || "An unexpected error occurred"}
         </p>
       </div>
       <button
         type="button"
-        onClick={onReset}
+        onClick={chunk ? () => window.location.reload() : onReset}
         className="inline-flex items-center gap-1.5 rounded-md border border-border/60 bg-card/60 px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted/50"
       >
-        <RefreshCw className="h-3 w-3" />
-        Retry
+        <RefreshCw className="h-3 w-3" aria-hidden />
+        {chunk ? "Reload page" : "Retry"}
       </button>
     </div>
   );
@@ -57,6 +69,22 @@ export class PanelErrorBoundary extends React.Component<
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     console.error(`[PanelErrorBoundary] ${this.props.name} crashed:`, error, info);
+
+    // ChunkLoadError means a new deployment invalidated old chunks.
+    // Force a full page reload to fetch fresh assets (once per session).
+    const msg = error.message || "";
+    if (
+      msg.includes("ChunkLoadError") ||
+      msg.includes("Loading chunk") ||
+      msg.includes("Failed to fetch dynamically imported module")
+    ) {
+      const key = "__chunk_panel_reload";
+      if (typeof window !== "undefined" && !sessionStorage.getItem(key)) {
+        sessionStorage.setItem(key, "1");
+        window.location.reload();
+        return;
+      }
+    }
   }
 
   handleReset = () => {
