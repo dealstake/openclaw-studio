@@ -9,6 +9,14 @@ import { listCronJobs, updateCronJob } from "@/lib/cron/types";
 import type { CronJobSummary } from "@/lib/cron/types";
 import type { ActionResult, ActionStatus, EmergencyActionKind } from "../lib/types";
 
+/** Shared threshold for "active" and "zombie" session detection (ms). */
+const STALE_THRESHOLD_MINUTES = 30;
+
+export interface RestoreCronResult {
+  restored: string[];
+  failed: string[];
+}
+
 export interface EmergencyActionsState {
   status: Record<EmergencyActionKind, ActionStatus>;
   lastResult: ActionResult | null;
@@ -132,7 +140,7 @@ export const useEmergencyActions = (client: GatewayClient, gatewayStatus: Gatewa
       fetchItems: async () => {
         const res = await client.call<{ sessions: Array<{ sessionKey: string; kind?: string }> }>(
           "sessions.list",
-          { activeMinutes: 30 },
+          { activeMinutes: STALE_THRESHOLD_MINUTES },
         );
         return res.sessions ?? [];
       },
@@ -159,10 +167,10 @@ export const useEmergencyActions = (client: GatewayClient, gatewayStatus: Gatewa
           { includeGlobal: true },
         );
         const now = Date.now();
-        const thirtyMinMs = 30 * 60 * 1000;
+        const thresholdMs = STALE_THRESHOLD_MINUTES * 60 * 1000;
         return (res.sessions ?? []).filter((s) => {
           if (!s.lastActiveAt) return false;
-          return now - new Date(s.lastActiveAt).getTime() > thirtyMinMs;
+          return now - new Date(s.lastActiveAt).getTime() > thresholdMs;
         });
       },
       processItem: async (zombie) => {
@@ -191,8 +199,10 @@ export const useEmergencyActions = (client: GatewayClient, gatewayStatus: Gatewa
     [pauseAllCron, stopActiveSessions, cleanupZombies],
   );
 
-  const restoreCron = useCallback(async () => {
-    if (gatewayStatus !== "connected") return;
+  const restoreCron = useCallback(async (): Promise<RestoreCronResult> => {
+    if (gatewayStatus !== "connected") {
+      return { restored: [], failed: state.pausedJobIds };
+    }
     const restored: string[] = [];
     const failed: string[] = [];
     for (const id of state.pausedJobIds) {
@@ -206,10 +216,17 @@ export const useEmergencyActions = (client: GatewayClient, gatewayStatus: Gatewa
     setState((prev) => ({
       ...prev,
       pausedJobIds: prev.pausedJobIds.filter((id) => !restored.includes(id)),
+      lastResult: {
+        kind: "pause-all-cron",
+        status: failed.length > 0 ? (restored.length > 0 ? "partial" : "error") : "success",
+        message: failed.length > 0
+          ? `Restored ${restored.length} of ${restored.length + failed.length} cron jobs. ${failed.length} failed.`
+          : `Restored ${restored.length} cron job${restored.length === 1 ? "" : "s"}`,
+        affected: restored.length,
+        failed: failed.length,
+      },
     }));
-    if (failed.length > 0) {
-      throw new Error(`Restored ${restored.length}, failed ${failed.length}`);
-    }
+    return { restored, failed };
   }, [client, gatewayStatus, state.pausedJobIds]);
 
   return {

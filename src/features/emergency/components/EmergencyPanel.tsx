@@ -22,7 +22,7 @@ interface EmergencyPanelProps {
   lastResult: ActionResult | null;
   pausedJobIds: string[];
   onExecute: (kind: EmergencyActionKind) => Promise<ActionResult>;
-  onRestoreCron?: () => Promise<void>;
+  onRestoreCron?: () => Promise<{ restored: string[]; failed: string[] }>;
 }
 
 export const EmergencyPanel = memo(function EmergencyPanel({
@@ -54,8 +54,14 @@ export const EmergencyPanel = memo(function EmergencyPanel({
   const handleRestore = useCallback(async () => {
     if (!onRestoreCron) return;
     try {
-      await onRestoreCron();
-      toast.success("Restored previously paused cron jobs");
+      const { restored, failed } = await onRestoreCron();
+      if (failed.length > 0) {
+        toast.warning(`Restored ${restored.length}, failed ${failed.length} cron jobs`);
+      } else if (restored.length > 0) {
+        toast.success(`Restored ${restored.length} cron job${restored.length === 1 ? "" : "s"}`);
+      } else {
+        toast.info("No cron jobs to restore");
+      }
     } catch {
       toast.error("Failed to restore cron jobs");
     }

@@ -22,7 +22,7 @@ interface EmergencyContextValue {
   lastResult: ActionResult | null;
   pausedJobIds: string[];
   executeAction: (kind: EmergencyActionKind) => Promise<ActionResult>;
-  restoreCron: () => Promise<void>;
+  restoreCron: () => Promise<{ restored: string[]; failed: string[] }>;
 }
 
 const EmergencyContext = createContext<EmergencyContextValue | null>(null);
