@@ -271,10 +271,26 @@ export const VoiceModeOverlay = React.memo(function VoiceModeOverlay() {
             {showApiKeyBanner && (
               <ApiKeyMissingBanner onNavigateToCredentials={() => closeVoiceMode()} />
             )}
-            {/* Orb container — responsive sizing */}
+            {/* Orb container — responsive sizing, tap to send */}
             <div
-              className="h-[200px] w-[200px] sm:h-[250px] sm:w-[250px] lg:h-[300px] lg:w-[300px]"
-              aria-label={`Voice visualizer, currently ${stateLabel(state).toLowerCase()}`}
+              className="h-[200px] w-[200px] sm:h-[250px] sm:w-[250px] lg:h-[300px] lg:w-[300px] cursor-pointer"
+              aria-label={
+                state === "listening" && userTranscript
+                  ? "Tap to send your message"
+                  : `Voice visualizer, currently ${stateLabel(state).toLowerCase()}`
+              }
+              role={state === "listening" && userTranscript ? "button" : undefined}
+              tabIndex={state === "listening" && userTranscript ? 0 : undefined}
+              onClick={() => {
+                if (state === "listening" && userTranscript) {
+                  window.dispatchEvent(new Event("voicemode:forcecommit"));
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && state === "listening" && userTranscript) {
+                  window.dispatchEvent(new Event("voicemode:forcecommit"));
+                }
+              }}
             >
               {hasWebGL && !prefersReducedMotion ? (
                 <Orb
@@ -319,6 +335,17 @@ export const VoiceModeOverlay = React.memo(function VoiceModeOverlay() {
                 <p className="text-sm text-muted-foreground">
                   {userTranscript}
                 </p>
+              )}
+
+              {/* Tap to send hint — shows when listening with text */}
+              {userTranscript && state === "listening" && (
+                <button
+                  type="button"
+                  onClick={() => window.dispatchEvent(new Event("voicemode:forcecommit"))}
+                  className="mt-1 rounded-full bg-emerald-500/20 px-4 py-1.5 text-xs font-medium text-emerald-400 transition-colors hover:bg-emerald-500/30 active:bg-emerald-500/40"
+                >
+                  Tap to send
+                </button>
               )}
 
               {/* Empty state */}

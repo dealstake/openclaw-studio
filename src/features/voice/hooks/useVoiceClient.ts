@@ -23,6 +23,8 @@ export interface UseVoiceClientReturn {
   startListening: () => Promise<void>;
   stopListening: () => void;
   resetTranscript: () => void;
+  /** Force-commit current partial transcript (bypasses VAD silence detection) */
+  forceCommit: () => void;
   error: string | null;
   status: ScribeStatus;
 }
@@ -238,6 +240,61 @@ export function useVoiceClient(): UseVoiceClientReturn {
     scribe.clearTranscripts();
   }, [scribe]);
 
+  /**
+   * Force-commit current partial transcript — bypasses VAD silence detection.
+   * Use when VAD fails to detect silence (noisy environment, mobile mic, etc.)
+   */
+  const forceCommit = useCallback(() => {
+    if (!scribe.isConnected && !scribe.isTranscribing) {
+      log("forceCommit: not connected, ignoring");
+      return;
+    }
+    log("forceCommit: manually committing current partial transcript");
+    try {
+      scribe.commit();
+    } catch (err) {
+      logError("forceCommit failed:", (err as Error).message);
+    }
+  }, [scribe]);
+
+  // Auto-commit fallback: if partial transcript hasn't changed for 2.5s,
+  // force a commit. This handles noisy environments where VAD can't detect silence.
+  const autoCommitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastPartialRef = useRef("");
+  useEffect(() => {
+    if (autoCommitTimerRef.current) {
+      clearTimeout(autoCommitTimerRef.current);
+      autoCommitTimerRef.current = null;
+    }
+
+    // Only auto-commit if we have partial text and are actively listening
+    if (!transcripts.partial || (!scribe.isConnected && !scribe.isTranscribing)) {
+      lastPartialRef.current = "";
+      return;
+    }
+
+    // If partial text changed, restart the timer
+    if (transcripts.partial !== lastPartialRef.current) {
+      lastPartialRef.current = transcripts.partial;
+      autoCommitTimerRef.current = setTimeout(() => {
+        // If partial text is still the same after 2.5s, force commit
+        log("Auto-commit: partial transcript unchanged for 2.5s, forcing commit");
+        try {
+          scribe.commit();
+        } catch (err) {
+          logError("Auto-commit failed:", (err as Error).message);
+        }
+      }, 2500);
+    }
+
+    return () => {
+      if (autoCommitTimerRef.current) {
+        clearTimeout(autoCommitTimerRef.current);
+        autoCommitTimerRef.current = null;
+      }
+    };
+  }, [transcripts.partial, scribe]);
+
   const displayTranscript = transcripts.committed
     ? transcripts.partial
       ? `${transcripts.committed} ${transcripts.partial}`
@@ -256,6 +313,7 @@ export function useVoiceClient(): UseVoiceClientReturn {
     startListening,
     stopListening,
     resetTranscript,
+    forceCommit,
     error: scribe.error,
     status: scribe.status,
   };

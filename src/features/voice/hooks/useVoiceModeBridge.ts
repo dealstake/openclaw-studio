@@ -177,6 +177,16 @@ export function useVoiceModeBridge(options?: UseVoiceModeBridgeOptions) {
     [voiceMode, voiceSettings.settings, tts, voice],
   );
 
+  // Listen for force-commit events from the overlay (tap-to-send)
+  useEffect(() => {
+    const handler = () => {
+      console.log("[VoiceModeBridge] Force-commit event received");
+      voice.forceCommit();
+    };
+    window.addEventListener("voicemode:forcecommit", handler);
+    return () => window.removeEventListener("voicemode:forcecommit", handler);
+  }, [voice]);
+
   // Update volume refs for Orb visualization
   useEffect(() => {
     if (!voiceMode) return;
@@ -188,6 +198,8 @@ export function useVoiceModeBridge(options?: UseVoiceModeBridgeOptions) {
     startVoiceMode,
     /** Call this when agent sends a response to speak it */
     speakResponse,
+    /** Force-commit current partial transcript (tap-to-send on overlay) */
+    forceCommit: voice.forceCommit,
     /** Whether STT is active */
     isListening: voice.isListening,
     /** Whether TTS is playing */
