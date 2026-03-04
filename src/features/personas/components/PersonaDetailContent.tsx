@@ -67,7 +67,7 @@ const STATUS_STYLES: Record<string, string> = {
 // ---------------------------------------------------------------------------
 
 function OverviewTab({ agent }: { agent: AgentState }) {
-  const statusLabel = agent.personaStatus ?? "unknown";
+  const statusLabel = agent.personaStatus ?? "active";
   return (
     <div className="flex flex-col gap-4">
       {/* Identity card */}

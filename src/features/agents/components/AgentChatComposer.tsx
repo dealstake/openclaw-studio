@@ -485,7 +485,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
                 onKeyDown={handleKeyDown}
                 onFocus={handleFocus}
                 onPaste={handlePaste}
-                placeholder={wizardType && wizardTheme ? "Describe what you need..." : `Message ${agentName}...`}
+                placeholder={wizardType && wizardTheme ? "Type your requirements or pick a template..." : `Message ${agentName}...`}
               />
             </div>
           </div>

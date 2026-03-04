@@ -215,7 +215,9 @@ export const VoiceModeOverlay = React.memo(function VoiceModeOverlay() {
               {/* Agent name + status */}
               <div className="flex flex-col">
                 <span className="text-sm font-medium text-foreground">
-                  {activeAgentId ?? "Voice Mode"}
+                  {activeAgentId
+                    ? activeAgentId.charAt(0).toUpperCase() + activeAgentId.slice(1)
+                    : "Voice Mode"}
                 </span>
                 <span
                   className="text-xs text-muted-foreground"
