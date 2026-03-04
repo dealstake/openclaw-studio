@@ -138,13 +138,16 @@ export function useVoiceClient(): UseVoiceClientReturn {
     }, delay);
   }, [scribe]);
 
+  // Cleanup on unmount only — scribe object changes every render, so we use a ref
+  const scribeRef = useRef(scribe);
+  scribeRef.current = scribe;
   useEffect(() => {
     return () => {
       intentionalDisconnectRef.current = true;
       if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
-      scribe.disconnect();
+      scribeRef.current.disconnect();
     };
-  }, [scribe]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   /**
    * Start listening. MUST be called from a user gesture handler chain
