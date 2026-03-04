@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useScribe, type ScribeStatus } from "@/hooks/use-scribe";
+import { useScribe, type ScribeStatus } from "@elevenlabs/react";
 import { toast } from "sonner";
 
 export interface UseVoiceClientReturn {

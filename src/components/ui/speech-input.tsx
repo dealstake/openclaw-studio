@@ -9,9 +9,9 @@ import { MicIcon, SquareIcon, XIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
   useScribe,
-  type AudioFormat,
-  type CommitStrategy,
-} from "@/hooks/use-scribe"
+  AudioFormat,
+  CommitStrategy,
+} from "@elevenlabs/react"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 

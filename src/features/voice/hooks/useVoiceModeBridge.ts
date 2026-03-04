@@ -107,14 +107,8 @@ export function useVoiceModeBridge(options?: UseVoiceModeBridgeOptions) {
       voiceMode.setState("connecting");
     } else if (voice.isListening) {
       if (voiceMode.state === "connecting") {
-        console.log("[VoiceModeBridge] STT connected! Transitioning to listening, releasing pre-acquired stream...");
+        console.log("[VoiceModeBridge] STT connected! Transitioning to listening");
         voiceMode.setState("listening");
-        // Release the pre-acquired mic stream from VoiceModeButton click handler.
-        // Scribe now has its own mic stream via internal getUserMedia.
-        if (voiceMode.getMicStream()) {
-          voiceMode.setMicStream(null);
-          console.log("[VoiceModeBridge] Pre-acquired mic stream released");
-        }
       }
     } else if (voice.error && voiceMode.state === "connecting") {
       voiceMode.setState("idle");
@@ -136,7 +130,7 @@ export function useVoiceModeBridge(options?: UseVoiceModeBridgeOptions) {
     } else {
       console.warn("[VoiceModeBridge] No onUserMessage callback — transcript not sent to agent!");
     }
-  }, [voice.finalTranscript]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [voiceMode, voice.finalTranscript]);
 
   // Track active state in ref so async speakResponse can check it
   const voiceModeActiveRef = useRef(voiceModeActive);

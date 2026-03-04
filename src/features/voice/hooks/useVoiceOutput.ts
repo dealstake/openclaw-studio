@@ -3,8 +3,12 @@
 /**
  * Voice output hook — plays AI responses as speech via ElevenLabs TTS.
  *
- * Calls /api/tts (server-side proxy to ElevenLabs) and plays the returned
- * audio/mpeg stream in the browser.
+ * Uses Web Audio API (AudioContext) instead of HTMLAudioElement for reliable
+ * iOS Safari playback. The AudioContext is created and resumed during a user
+ * gesture (warmup), then stays unlocked for the page lifecycle.
+ *
+ * Reference: https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Best_practices
+ * iOS fix pattern: https://gist.github.com/kus/3f01d60569eeadefe3a1
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -37,7 +41,7 @@ export interface UseVoiceOutputReturn {
   enabled: boolean;
   /** Toggle voice output on/off */
   setEnabled: (enabled: boolean) => void;
-  /** Pre-warm audio for iOS Safari — call during user gesture */
+  /** Pre-warm AudioContext for iOS Safari — MUST call during user gesture */
   warmup: () => void;
 }
 
@@ -55,34 +59,49 @@ export function resolvedToSpeakOptions(resolved: ResolvedVoiceSettings): SpeakOp
   };
 }
 
+// Singleton AudioContext — shared across all hook instances on the page.
+// Created once during first warmup(), stays alive for page lifecycle.
+let globalAudioContext: AudioContext | null = null;
+
+function getOrCreateAudioContext(): AudioContext {
+  if (!globalAudioContext || globalAudioContext.state === "closed") {
+    const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    globalAudioContext = new AudioCtx();
+  }
+  return globalAudioContext;
+}
+
 export function useVoiceOutput(): UseVoiceOutputReturn {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [enabled, setEnabled] = useState(false);
 
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const sourceRef = useRef<AudioBufferSourceNode | null>(null);
   const abortRef = useRef<AbortController | null>(null);
-  const warmedAudioRef = useRef<HTMLAudioElement | null>(null);
+  const warmedRef = useRef(false);
+  // Gain node for volume control
+  const gainRef = useRef<GainNode | null>(null);
 
   const stop = useCallback(() => {
     abortRef.current?.abort();
     abortRef.current = null;
 
-    if (audioRef.current) {
-      audioRef.current.pause();
-      // Don't clear src on the warmed element — iOS Safari needs it to stay "unlocked"
-      if (audioRef.current !== warmedAudioRef.current) {
-        audioRef.current.src = "";
+    if (sourceRef.current) {
+      try {
+        sourceRef.current.stop();
+      } catch {
+        // Already stopped — ignore
       }
-      audioRef.current = null;
+      sourceRef.current.disconnect();
+      sourceRef.current = null;
     }
 
     setIsPlaying(false);
     setIsLoading(false);
   }, []);
 
-  // Cleanup on unmount — abort pending fetch + stop audio
+  // Cleanup on unmount
   useEffect(() => {
     return stop;
   }, [stop]);
@@ -102,6 +121,15 @@ export function useVoiceOutput(): UseVoiceOutputReturn {
       setError(null);
 
       try {
+        // Get or create AudioContext
+        const audioCtx = getOrCreateAudioContext();
+
+        // Ensure AudioContext is running (iOS Safari suspends it)
+        if (audioCtx.state === "suspended") {
+          console.log("[VoiceOutput] AudioContext suspended, resuming...");
+          await audioCtx.resume();
+        }
+
         console.log("[VoiceOutput] Fetching /api/tts...");
         const res = await fetch("/api/tts", {
           method: "POST",
@@ -111,7 +139,6 @@ export function useVoiceOutput(): UseVoiceOutputReturn {
             ...(speakOpts?.voiceId ? { voiceId: speakOpts.voiceId } : {}),
             ...(speakOpts?.modelId ? { modelId: speakOpts.modelId } : {}),
             ...(speakOpts?.voiceSettings ? { voiceSettings: speakOpts.voiceSettings } : {}),
-
           }),
           signal: controller.signal,
         });
@@ -121,85 +148,82 @@ export function useVoiceOutput(): UseVoiceOutputReturn {
           throw new Error((errBody as { error?: string }).error || `TTS failed: ${res.status}`);
         }
 
-        // Standard blob playback — works cross-browser (Chrome, Safari, Firefox, iOS)
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const audio = new Audio(url);
-        audioRef.current = audio;
+        // Get audio as ArrayBuffer for Web Audio API decoding
+        const arrayBuffer = await res.arrayBuffer();
+        console.log("[VoiceOutput] TTS response OK, buffer size:", arrayBuffer.byteLength);
 
-        audio.onplay = () => {
-          setIsPlaying(true);
-          setIsLoading(false);
-        };
-        audio.onended = () => {
-          setIsPlaying(false);
-          URL.revokeObjectURL(url);
-          audioRef.current = null;
-        };
-        audio.onerror = () => {
-          setError("Failed to play audio");
-          setIsPlaying(false);
-          setIsLoading(false);
-          URL.revokeObjectURL(url);
-          audioRef.current = null;
-        };
+        if (controller.signal.aborted) return;
 
-        console.log("[VoiceOutput] TTS response OK, blob size:", blob.size, "type:", blob.type);
+        // Decode audio data
+        const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+        console.log("[VoiceOutput] Audio decoded, duration:", audioBuffer.duration.toFixed(1), "s");
 
-        // iOS Safari requires audio playback to be initiated from a user gesture.
-        // We use the pre-warmed audio element if available (warmed during openVoiceMode click).
-        // The warmed element stays unlocked across multiple plays — we reuse it every time.
-        if (warmedAudioRef.current) {
-          console.log("[VoiceOutput] Using pre-warmed audio element for playback");
-          const warmed = warmedAudioRef.current;
-          warmed.onplay = () => {
-            setIsPlaying(true);
-            setIsLoading(false);
-          };
-          warmed.onended = () => {
-            setIsPlaying(false);
-            URL.revokeObjectURL(url);
-            audioRef.current = null;
-          };
-          warmed.onerror = () => {
-            setError("Failed to play audio");
-            setIsPlaying(false);
-            setIsLoading(false);
-            URL.revokeObjectURL(url);
-            audioRef.current = null;
-          };
-          warmed.src = url;
-          audioRef.current = warmed;
-          await warmed.play();
-        } else {
-          console.log("[VoiceOutput] Using fresh Audio element for playback");
-          // Fallback: create fresh Audio (works on desktop, may fail on iOS)
-          await audio.play();
+        if (controller.signal.aborted) return;
+
+        // Create source node and connect to output
+        const source = audioCtx.createBufferSource();
+        source.buffer = audioBuffer;
+
+        // Create gain node if not exists
+        if (!gainRef.current || gainRef.current.context !== audioCtx) {
+          gainRef.current = audioCtx.createGain();
+          gainRef.current.connect(audioCtx.destination);
         }
+
+        source.connect(gainRef.current);
+        sourceRef.current = source;
+
+        source.onended = () => {
+          console.log("[VoiceOutput] Playback ended");
+          setIsPlaying(false);
+          sourceRef.current = null;
+        };
+
+        // Start playback
+        source.start(0);
+        setIsPlaying(true);
+        setIsLoading(false);
+        console.log("[VoiceOutput] Playback started");
       } catch (err) {
         if ((err as Error).name === "AbortError") return;
+        console.error("[VoiceOutput] Error:", err);
         setError((err as Error).message || "TTS failed");
         setIsLoading(false);
+        setIsPlaying(false);
       }
     },
     [stop],
   );
 
   /**
-   * Pre-warm an HTMLAudioElement during a user gesture (e.g., clicking "Open voice mode").
-   * This unlocks audio playback on iOS Safari where play() must originate from a user tap.
-   * Call this once on the initial click, then TTS can play later without gesture restrictions.
+   * Pre-warm the AudioContext during a user gesture (e.g., clicking "Open voice mode").
+   * This is CRITICAL for iOS Safari — the AudioContext must be created/resumed within
+   * a user gesture to unlock audio playback. After this, all subsequent audio plays
+   * through the AudioContext will work without gesture requirements.
+   *
+   * Pattern: https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Best_practices
    */
   const warmup = useCallback(() => {
-    if (warmedAudioRef.current) return;
+    if (warmedRef.current) return;
     try {
-      const audio = new Audio();
-      // Load a silent data URI to unlock the audio element
-      audio.src = "data:audio/mp3;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gTGFTb25vdGhlcXVlLm9yZwBURU5DAAAAHQAAA1N3aXRjaCBQbHVzIMKpIE5DSCBTb2Z0d2FyZQBUSVQyAAAABgAAAzIyMzUAVFNTRQAAAA8AAANMYXZmNTcuODMuMTAwAAAAAAAAAAAAAAD/80DEAAAAA0gAAAAATEFNRTMuMTAwVVVVVVVVVVVVVUxBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQsRbAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVQ==";
-      void audio.play().then(() => audio.pause()).catch(() => { /* silent failure OK */ });
-      warmedAudioRef.current = audio;
-    } catch {
-      // Audio creation failed — will fall back to fresh Audio() in speak()
+      const audioCtx = getOrCreateAudioContext();
+
+      // Resume if suspended (required on iOS Safari)
+      if (audioCtx.state === "suspended") {
+        void audioCtx.resume();
+      }
+
+      // Play a silent buffer to fully unlock the AudioContext
+      const buffer = audioCtx.createBuffer(1, 1, 22050);
+      const source = audioCtx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(audioCtx.destination);
+      source.start(0);
+
+      warmedRef.current = true;
+      console.log("[VoiceOutput] AudioContext warmed up, state:", audioCtx.state);
+    } catch (err) {
+      console.warn("[VoiceOutput] Warmup failed:", err);
     }
   }, []);
 
@@ -211,7 +235,6 @@ export function useVoiceOutput(): UseVoiceOutputReturn {
     stop,
     enabled,
     setEnabled,
-    /** Call during user gesture to unlock iOS Safari audio playback */
     warmup,
   };
 }
