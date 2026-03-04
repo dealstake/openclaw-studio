@@ -177,19 +177,22 @@ export const AgentChatComposer = memo(function AgentChatComposer({
     voiceOutputRef.current.setEnabled(true);
   }, []);
 
-  /** When voice input stops, auto-send the transcript */
+  /** When voice input stops, preserve text in textarea for review/editing */
   const handleVoiceStop = useCallback((data: SpeechInputData) => {
     const text = data.transcript.trim();
     if (!text) return;
-    onSend(text);
+    // Leave text in the textarea so user can review/edit before sending
     const el = localRef.current;
     if (el) {
-      el.value = "";
+      el.value = text;
       el.style.height = "auto";
+      el.style.height = `${el.scrollHeight}px`;
+      // Focus the textarea so user can edit or hit Enter to send
+      el.focus();
     }
-    setIsEmpty(true);
-    onDraftChange("");
-  }, [onSend, onDraftChange]);
+    setIsEmpty(!text);
+    onDraftChange(text);
+  }, [onDraftChange]);
 
   /** When voice input is cancelled, clear the textarea */
   const handleVoiceCancel = useCallback(() => {
@@ -500,7 +503,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
                   onCancel={handleVoiceCancel}
                 />
                 {selectedAgentId && (
-                  <VoiceModeButton agentId={selectedAgentId} />
+                  <VoiceModeButton agentId={selectedAgentId} className="hidden sm:flex" />
                 )}
               </div>
               <textarea
