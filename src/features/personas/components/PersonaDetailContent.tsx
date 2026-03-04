@@ -105,11 +105,11 @@ function OverviewTab({ agent }: { agent: AgentState }) {
       {/* Quick stats */}
       <div className="grid grid-cols-3 gap-2">
         {[
-          { label: "Practice", value: String(agent.practiceCount ?? 0) },
-          { label: "Template", value: agent.templateKey ?? "Custom" },
+          { label: "Practice Sessions", value: String(agent.practiceCount ?? 0) },
+          { label: "Template", value: agent.templateKey ? agent.templateKey.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase()) : "Custom" },
           {
-            label: "Main Agent",
-            value: agent.isMainAgent ? "Yes" : "No",
+            label: "Role",
+            value: agent.isMainAgent ? "Main Agent" : "Persona",
           },
         ].map((s) => (
           <div
