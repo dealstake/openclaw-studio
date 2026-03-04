@@ -506,10 +506,10 @@ export const AgentChatComposer = memo(function AgentChatComposer({
           {/* ── Glass Input Pill ── */}
           <div className="min-w-0 flex-1 rounded-[20px] border border-border/50 glass-panel transition-all focus-within:border-border/80 focus-within:shadow-2xl dark:bg-background/40 dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)]">
             <div className="flex items-end">
-              {/* Left controls — voice + wizard launcher */}
-              <div className="flex shrink-0 items-center gap-1 sm:gap-2 pl-2 pb-1.5">
+              {/* Left controls — voice + wizard launcher (desktop only, mobile uses native keyboard dictation) */}
+              <div className="hidden shrink-0 items-center gap-2 pl-2 pb-1.5 sm:flex">
                 {!wizardType && onLaunchWizard && (
-                  <WizardLaunchMenu onLaunch={onLaunchWizard} disabled={isRunning} className="hidden sm:inline-flex" />
+                  <WizardLaunchMenu onLaunch={onLaunchWizard} disabled={isRunning} />
                 )}
                 <VoiceInputControl
                   onChange={handleVoiceChange}
@@ -518,14 +518,14 @@ export const AgentChatComposer = memo(function AgentChatComposer({
                   onCancel={handleVoiceCancel}
                 />
                 {selectedAgentId && (
-                  <VoiceModeButton agentId={selectedAgentId} className="hidden sm:flex" />
+                  <VoiceModeButton agentId={selectedAgentId} />
                 )}
               </div>
               <textarea
                 ref={handleRef}
                 rows={1}
                 defaultValue={initialDraft}
-                className="max-h-[200px] min-h-[36px] min-w-0 flex-1 resize-none bg-transparent px-3 py-2.5 text-base leading-relaxed text-foreground outline-none placeholder:text-muted-foreground"
+                className="max-h-[200px] min-h-[36px] min-w-0 flex-1 resize-none bg-transparent py-2.5 pl-4 pr-3 text-base leading-relaxed text-foreground outline-none sm:pl-3 placeholder:text-muted-foreground"
                 aria-label="Message to agent"
                 onChange={handleChange}
                 onKeyDown={handleKeyDown}
