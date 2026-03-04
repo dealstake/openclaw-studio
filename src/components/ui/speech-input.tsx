@@ -15,12 +15,12 @@ import {
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 
-const buttonVariants = cva("!px-0", {
+const buttonVariants = cva("!px-0 min-h-[44px] min-w-[44px]", {
   variants: {
     size: {
-      default: "h-9 w-9",
-      sm: "h-8 w-8",
-      lg: "h-10 w-10",
+      default: "h-11 w-11",
+      sm: "h-11 w-11 sm:h-9 sm:w-9",
+      lg: "h-12 w-12",
     },
   },
   defaultVariants: {
