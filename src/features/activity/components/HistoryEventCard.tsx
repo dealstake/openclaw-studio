@@ -27,13 +27,12 @@ export const HistoryEventCard = memo(function HistoryEventCard({
   const feedbackSessionKey =
     event.sessionKey ??
     (event.agentId ? `agent:${event.agentId}` : "activity");
+  const traceSessionKey = event.sessionKey ?? (event.agentId ? `agent:${event.agentId}` : null);
   const handleViewTrace = useCallback(() => {
-    if (event.sessionKey) {
-      openTraceFromKey(event.sessionKey, event.agentId);
-    } else if (event.agentId) {
-      openTraceFromKey(event.taskId, event.agentId);
+    if (traceSessionKey) {
+      openTraceFromKey(traceSessionKey, event.agentId);
     }
-  }, [event.sessionKey, event.agentId, event.taskId]);
+  }, [traceSessionKey, event.agentId]);
   const pill = STATUS_PILL[event.status] ?? STATUS_PILL.success;
   const hasSummary = !!event.summary?.trim();
 
@@ -73,8 +72,9 @@ export const HistoryEventCard = memo(function HistoryEventCard({
                 <button
                   type="button"
                   onClick={handleViewTrace}
+                  disabled={!traceSessionKey}
                   aria-label="View trace"
-                  className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md px-1 py-0.5 text-muted-foreground opacity-0 transition-all group-hover/card:opacity-100 group-hover/card:text-foreground/80 hover:bg-muted/60 hover:text-foreground focus:opacity-100"
+                  className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md px-1 py-0.5 text-muted-foreground opacity-0 transition-all group-hover/card:opacity-100 group-hover/card:text-foreground/80 hover:bg-muted/60 hover:text-foreground focus:opacity-100 disabled:opacity-30 disabled:pointer-events-none"
                 >
                   <FileSearch size={12} />
                 </button>
