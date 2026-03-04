@@ -18,6 +18,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import type { ElevenLabsVoice } from "../lib/voiceTypes";
 import type { UseVoiceSettingsReturn } from "../hooks/useVoiceSettings";
 
@@ -241,6 +242,7 @@ export const VoiceSettingsPanel = React.memo(function VoiceSettingsPanel({
       audio.onerror = () => {
         setPlayingVoiceId(null);
         previewAudioRef.current = null;
+        toast.error("Failed to play voice preview");
       };
       void audio.play();
     },
