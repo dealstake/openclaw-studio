@@ -266,7 +266,7 @@ export const VoiceModeOverlay = React.memo(function VoiceModeOverlay() {
           </div>
 
           {/* ── Center: Orb ──────────────────────────────────────── */}
-          <div className="flex flex-1 flex-col items-center justify-center gap-8 px-4">
+          <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-4 overflow-y-auto px-4 sm:gap-8">
             {/* API key missing banner */}
             {showApiKeyBanner && (
               <ApiKeyMissingBanner onNavigateToCredentials={() => closeVoiceMode()} />
