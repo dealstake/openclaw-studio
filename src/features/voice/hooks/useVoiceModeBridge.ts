@@ -48,14 +48,14 @@ export function useVoiceModeBridge(options?: UseVoiceModeBridgeOptions) {
       if (!voice.isListening && !voice.isConnecting) {
         voice.startListening().catch((err) => {
           const msg = (err as Error).message || "";
+          // Always transition out of "connecting" on error
+          voiceMode.setState("idle");
           if (msg.includes("NotAllowedError") || msg.includes("Permission denied")) {
             voiceMode.setLastError("mic-denied");
           } else if (msg.includes("API key") || msg.includes("api key") || msg.includes("401")) {
             voiceMode.setLastError("api-key-missing");
           } else if (msg.includes("timeout") || msg.includes("Timeout")) {
             voiceMode.setLastError("mic-denied");
-          } else {
-            voiceMode.setState("idle");
           }
         });
       }
