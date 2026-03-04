@@ -491,14 +491,27 @@ export function MemoryGraphPanel({
                 <p className="font-medium text-foreground">Files:</p>
                 <div className="flex flex-wrap gap-1 mt-1">
                   {selected.files.map((f) => (
-                    <span
+                    <button
                       key={f}
-                      className="px-1.5 py-0.5 bg-muted rounded text-[11px]"
+                      className={`px-1.5 py-0.5 bg-muted rounded text-[11px] ${
+                        onNavigateToFile ? "hover:bg-muted/80 cursor-pointer underline-offset-2 hover:underline" : ""
+                      }`}
+                      onClick={() => onNavigateToFile?.(f)}
+                      disabled={!onNavigateToFile}
+                      aria-label={`Open ${f}`}
                     >
                       {f}
-                    </span>
+                    </button>
                   ))}
                 </div>
+              </div>
+            )}
+            {data?.entityHealth[selected.id]?.isStale && (
+              <div className="mt-2 p-2 rounded-lg border border-amber-500/30 bg-amber-500/5">
+                <p className="text-amber-400 text-[11px]">
+                  ⏳ This entity hasn&apos;t been referenced in {data.entityHealth[selected.id].daysSinceLastSeen ?? "30+"}+ days.
+                  Consider reviewing the source files to clean up outdated references.
+                </p>
               </div>
             )}
           </div>
