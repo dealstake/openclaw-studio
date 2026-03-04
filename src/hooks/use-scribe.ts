@@ -264,6 +264,7 @@ export function useScribe(options: ScribeHookOptions = {}): UseScribeReturn {
 
         if (microphone) {
           // Microphone mode
+          console.log("[useScribe] Calling Scribe.connect() with microphone mode, token length:", token?.length);
           connection = Scribe.connect({
             token,
             modelId,
@@ -324,9 +325,11 @@ export function useScribe(options: ScribeHookOptions = {}): UseScribeReturn {
           }
 
         // Set up event listeners
+        console.log("[useScribe] Setting up event listeners on connection");
         connection.on(
           RealtimeEvents.SESSION_STARTED,
           runIfCurrent(() => {
+            console.log("[useScribe] SESSION_STARTED received — connection established!");
             setStatus("connected")
             onSessionStarted?.()
           })
@@ -378,6 +381,7 @@ export function useScribe(options: ScribeHookOptions = {}): UseScribeReturn {
           RealtimeEvents.ERROR,
           runIfCurrent((err: unknown) => {
             const message = err as ScribeErrorMessage
+            console.error("[useScribe] ERROR event:", message.error);
             setError(message.error)
             setStatus("error")
             onError?.(new Error(message.error))
@@ -514,6 +518,7 @@ export function useScribe(options: ScribeHookOptions = {}): UseScribeReturn {
         connection.on(
           RealtimeEvents.CLOSE,
           runIfCurrent(() => {
+            console.log("[useScribe] CLOSE event — WebSocket disconnected");
             activeConnectionIdRef.current = null
             connectionRef.current = null
             setStatus("disconnected")
@@ -523,6 +528,7 @@ export function useScribe(options: ScribeHookOptions = {}): UseScribeReturn {
       } catch (err) {
         const errorMessage =
           err instanceof Error ? err.message : "Failed to connect"
+        console.error("[useScribe] Scribe.connect() threw:", errorMessage);
         setError(errorMessage)
         setStatus("error")
         throw err

@@ -3,9 +3,15 @@
 /**
  * VoiceModeButton — Launches the full-screen voice mode overlay.
  *
- * The mic permission is now pre-acquired by useVoiceClient.startListening()
- * (which is called by the bridge when voice mode activates), so we don't
- * need any special gesture handling here.
+ * CRITICAL iOS Safari fix: getUserMedia MUST be called in the click handler
+ * AND the stream must be KEPT ALIVE (not stopped). iOS Safari does not persist
+ * getUserMedia permissions — if the stream is stopped, subsequent getUserMedia
+ * calls from non-gesture contexts (like useEffect) are blocked.
+ *
+ * The pre-acquired stream is stored in VoiceModeProvider.micStreamRef.
+ * When Scribe.connect() calls getUserMedia internally (from a WebSocket open
+ * handler), iOS Safari sees an active mic stream and allows it.
+ * The pre-acquired stream is cleaned up after Scribe connects or on close.
  */
 
 import React, { useCallback } from "react";
@@ -14,9 +20,7 @@ import { cn } from "@/lib/utils";
 import { useVoiceModeSafe } from "../providers/VoiceModeProvider";
 
 interface VoiceModeButtonProps {
-  /** Agent ID to bind voice mode to */
   agentId: string;
-  /** "inline" = small icon in pill; "primary" = large circular morphing button */
   variant?: "inline" | "primary";
   className?: string;
 }
@@ -28,15 +32,34 @@ export const VoiceModeButton = React.memo(function VoiceModeButton({
 }: VoiceModeButtonProps) {
   const voiceMode = useVoiceModeSafe();
 
-  const handleClick = useCallback(() => {
+  const handleClick = useCallback(async () => {
     if (!voiceMode) return;
+
+    try {
+      console.log("[VoiceModeButton] Acquiring mic in click handler (user gesture)...");
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          channelCount: 1,
+        },
+      });
+
+      // KEEP the stream alive! iOS Safari requires an active stream for
+      // subsequent getUserMedia calls to succeed without re-prompting.
+      // Store in provider ref so the bridge can clean it up after Scribe connects.
+      voiceMode.micStreamRef.current = stream;
+      console.log("[VoiceModeButton] Mic stream acquired and stored, opening voice mode...");
+    } catch (err) {
+      console.error("[VoiceModeButton] Mic permission denied:", err);
+      // Still open voice mode — bridge will show mic-denied error state
+    }
+
     voiceMode.openVoiceMode(agentId);
   }, [voiceMode, agentId]);
 
-  // Don't render if provider isn't available
   if (!voiceMode) return null;
-
-  // Don't render if already in voice mode
   if (voiceMode.isOverlayOpen || voiceMode.isMinimized) return null;
 
   if (variant === "primary") {

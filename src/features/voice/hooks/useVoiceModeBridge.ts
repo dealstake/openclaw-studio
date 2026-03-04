@@ -44,7 +44,9 @@ export function useVoiceModeBridge(options?: UseVoiceModeBridgeOptions) {
     if (!voiceMode) return;
 
     if (voiceModeActive) {
+      console.log("[VoiceModeBridge] Voice mode active, isListening:", voice.isListening, "isConnecting:", voice.isConnecting);
       if (!voice.isListening && !voice.isConnecting) {
+        console.log("[VoiceModeBridge] Starting STT...");
         tts.warmup();
         voice.startListening().catch((err) => {
           const msg = (err as Error).message || "";
@@ -78,7 +80,15 @@ export function useVoiceModeBridge(options?: UseVoiceModeBridgeOptions) {
       voiceMode.setState("connecting");
     } else if (voice.isListening) {
       if (voiceMode.state === "connecting") {
+        console.log("[VoiceModeBridge] STT connected! Transitioning to listening, releasing pre-acquired stream...");
         voiceMode.setState("listening");
+        // Release the pre-acquired mic stream from VoiceModeButton click handler.
+        // Scribe now has its own mic stream via internal getUserMedia.
+        if (voiceMode.micStreamRef.current) {
+          voiceMode.micStreamRef.current.getTracks().forEach((t) => t.stop());
+          voiceMode.micStreamRef.current = null;
+          console.log("[VoiceModeBridge] Pre-acquired mic stream released");
+        }
       }
     } else if (voice.error && voiceMode.state === "connecting") {
       voiceMode.setState("idle");

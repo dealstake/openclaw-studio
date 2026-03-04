@@ -51,6 +51,8 @@ export interface VoiceModeContextValue {
   setUserTranscript: (text: string) => void;
   /** Update agent transcript (used by TTS hook) */
   setAgentTranscript: (text: string) => void;
+  /** Ref for pre-acquired mic stream (kept alive for iOS Safari) */
+  micStreamRef: React.RefObject<MediaStream | null>;
   /** Ref for input volume (0-1) — fed to Orb */
   inputVolumeRef: React.RefObject<number>;
   /** Ref for output volume (0-1) — fed to Orb */
@@ -98,6 +100,7 @@ export function VoiceModeProvider({ children }: VoiceModeProviderProps) {
   const [agentTranscript, setAgentTranscript] = useState("");
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
+  const micStreamRef = useRef<MediaStream | null>(null);
   const inputVolumeRef = useRef<number>(0);
   const outputVolumeRef = useRef<number>(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -147,6 +150,11 @@ export function VoiceModeProvider({ children }: VoiceModeProviderProps) {
     setActiveAgentId(null);
     setUserTranscript("");
     setAgentTranscript("");
+    // Release pre-acquired mic stream
+    if (micStreamRef.current) {
+      micStreamRef.current.getTracks().forEach((t) => t.stop());
+      micStreamRef.current = null;
+    }
     stopTimer();
     setElapsedSeconds(0);
     inputVolumeRef.current = 0;
@@ -180,6 +188,7 @@ export function VoiceModeProvider({ children }: VoiceModeProviderProps) {
       setLastError,
       setUserTranscript,
       setAgentTranscript,
+      micStreamRef,
       inputVolumeRef,
       outputVolumeRef,
       setInputVolume,
