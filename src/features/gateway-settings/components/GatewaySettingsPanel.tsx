@@ -29,9 +29,9 @@ export const GatewaySettingsPanel = memo(function GatewaySettingsPanel({
   // Load available providers for ModelPicker (once per connection)
   useEffect(() => {
     if (status !== "connected") return;
-    void fetchModelsData(client).then((data) => {
-      setProviders(data.providers);
-    });
+    void fetchModelsData(client)
+      .then((data) => setProviders(data.providers))
+      .catch((err) => console.warn("[GatewaySettings] Failed to load models:", err));
   }, [client, status]);
 
   return (

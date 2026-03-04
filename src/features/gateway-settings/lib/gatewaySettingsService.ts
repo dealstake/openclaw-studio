@@ -80,13 +80,16 @@ export function parseGatewaySettings(
   };
 
   // Security (read-only display)
-  // Store raw token — SecureInput handles its own masking (P2 audit fix: do not pre-mask)
+  // Mask token at parse boundary — never store raw token in React state (security audit P0)
   const tokenValue =
     typeof auth.token === "string" ? auth.token : null;
+  const maskedToken = tokenValue
+    ? `${tokenValue.slice(0, 8)}${"•".repeat(Math.max(0, tokenValue.length - 12))}${tokenValue.slice(-4)}`
+    : null;
   const security: SecurityDisplayConfig = {
     authMode: typeof auth.mode === "string" ? auth.mode : "token",
     hasToken: !!tokenValue,
-    tokenRaw: tokenValue,
+    tokenRaw: maskedToken,
     dangerouslyDisableDeviceAuth: controlUi.dangerouslyDisableDeviceAuth === true,
     trustedProxies: Array.isArray(gateway.trustedProxies)
       ? gateway.trustedProxies.filter((p): p is string => typeof p === "string")

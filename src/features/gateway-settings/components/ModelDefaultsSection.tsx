@@ -1,6 +1,7 @@
 "use client";
 
 import { memo, useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 import {
   ChevronDown,
   ChevronUp,
@@ -56,7 +57,7 @@ export const ModelDefaultsSection = memo(function ModelDefaultsSection({
     try {
       await updateModelPrimary(client, pendingPrimary);
       await onSaved();
-    } finally {
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Settings update failed"); } finally {
       setSavingPrimary(false);
       setPendingPrimary(null);
       setConfirmPrimary(false);
@@ -107,7 +108,7 @@ export const ModelDefaultsSection = memo(function ModelDefaultsSection({
     try {
       await updateModelFallbacks(client, fallbacks);
       await onSaved();
-    } finally {
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Settings update failed"); } finally {
       setSavingFallbacks(false);
     }
   }, [client, fallbacks, onSaved]);
@@ -139,7 +140,7 @@ export const ModelDefaultsSection = memo(function ModelDefaultsSection({
       setNewCatalogKey("");
       setNewCatalogAlias("");
       await onSaved();
-    } finally {
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Settings update failed"); } finally {
       setSavingCatalog(false);
     }
   }, [client, newCatalogAlias, newCatalogKey, onSaved]);
@@ -150,7 +151,7 @@ export const ModelDefaultsSection = memo(function ModelDefaultsSection({
       try {
         await removeCatalogEntry(client, key);
         await onSaved();
-      } finally {
+      } catch (err) { toast.error(err instanceof Error ? err.message : "Settings update failed"); } finally {
         setSavingCatalog(false);
       }
     },
@@ -172,7 +173,7 @@ export const ModelDefaultsSection = memo(function ModelDefaultsSection({
         await updateCatalogAlias(client, key, editAliasValue.trim());
         setEditingAlias(null);
         await onSaved();
-      } finally {
+      } catch (err) { toast.error(err instanceof Error ? err.message : "Settings update failed"); } finally {
         setSavingCatalog(false);
       }
     },

@@ -1,6 +1,7 @@
 "use client";
 
 import { memo, useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 import { Check, Loader2 } from "lucide-react";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { SectionLabel } from "@/components/SectionLabel";
@@ -131,7 +132,7 @@ export const SessionDefaultsSection = memo(function SessionDefaultsSection({
 
       await updateSessionDefaults(client, sessionPatch, compactionPatch);
       await onSaved();
-    } finally {
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Settings update failed"); } finally {
       setSaving(false);
     }
   }, [

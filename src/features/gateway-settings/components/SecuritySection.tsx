@@ -146,7 +146,7 @@ const RotateTokenSheet = memo(function RotateTokenSheet({
             {/* Disconnect warning banner */}
             <div className="rounded-md border border-amber-500/30 bg-amber-500/8 px-3 py-2.5">
               <div className="flex items-start gap-2">
-                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" aria-hidden="true" />
                 <p className="text-[11px] leading-relaxed text-amber-200/90">
                   Rotating the token will immediately disconnect this browser
                   session and all other connected clients. You will need to log
