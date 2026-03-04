@@ -116,10 +116,11 @@ export const WhatsAppQRFlow = React.memo(function WhatsAppQRFlow({
     [client, onComplete, clearTimer, startCountdown],
   );
 
-  // Auto-start on mount
+  // Auto-start on mount via ref to avoid stale closure lint suppression
+  const startFlowRef = useRef(startFlow);
+  useEffect(() => { startFlowRef.current = startFlow; }, [startFlow]);
   useEffect(() => {
-    void startFlow();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    void startFlowRef.current();
   }, []);
 
   const handleCancel = useCallback(() => {

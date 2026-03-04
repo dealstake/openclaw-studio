@@ -59,6 +59,14 @@ export const ChannelCard = React.memo(function ChannelCard({
       variant="compact"
       isHoverable
       onClick={onEdit}
+      onKeyDown={(e: React.KeyboardEvent) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onEdit();
+        }
+      }}
+      role="button"
+      tabIndex={0}
       style={style}
       className="animate-in fade-in slide-in-from-bottom-1 fill-mode-both duration-200"
       aria-label={`${label} — ${CHANNEL_STATUS_LABELS[connectionStatus]}`}

@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { ArrowLeft } from "lucide-react";
+import { toast } from "sonner";
 import {
   SideSheet,
   SideSheetContent,
@@ -154,8 +155,10 @@ export const ChannelSheet = React.memo(function ChannelSheet({
     const config: ChannelConfig = (configForQrFlow ?? {}) as ChannelConfig;
     try {
       await onCreate("whatsapp", config);
-    } catch {
-      // Best-effort — channel may have already been saved by the gateway
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to save WhatsApp config — check channel settings.",
+      );
     }
     handleOpenChange(false);
   }, [configForQrFlow, onCreate, handleOpenChange]);
@@ -174,22 +177,12 @@ export const ChannelSheet = React.memo(function ChannelSheet({
       <SideSheetContent aria-describedby={undefined}>
         <SideSheetHeader>
           <div className="flex flex-1 items-center gap-2">
-            {step === "setup" && !isEditMode && (
+            {((step === "setup" && !isEditMode) || step === "qr_flow") && (
               <button
                 type="button"
-                onClick={() => setStep("select")}
+                onClick={() => setStep(step === "qr_flow" ? "setup" : "select")}
                 className="flex h-11 w-11 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground"
-                aria-label="Back to channel selection"
-              >
-                <ArrowLeft className="h-4 w-4" />
-              </button>
-            )}
-            {step === "qr_flow" && (
-              <button
-                type="button"
-                onClick={() => setStep("setup")}
-                className="flex h-11 w-11 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground"
-                aria-label="Back to setup"
+                aria-label={step === "qr_flow" ? "Back to setup" : "Back to channel selection"}
               >
                 <ArrowLeft className="h-4 w-4" />
               </button>

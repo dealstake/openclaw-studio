@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
 import type { ChannelsStatusSnapshot } from "@/lib/gateway/channels";
 import { resolveChannelHealth } from "@/lib/gateway/channels";
@@ -94,9 +94,13 @@ export function useChannels(client: GatewayClient, status: GatewayStatus) {
   }, [status]);
 
   // Auto-poll when any channel is in "connecting" state.
-  // Stops when all channels have resolved (connected/error/disconnected) or gateway disconnects.
+  // Memoize to avoid resetting the interval on every channels array change.
+  const hasConnecting = useMemo(
+    () => channels.some((c) => c.connectionStatus === "connecting"),
+    [channels],
+  );
+
   useEffect(() => {
-    const hasConnecting = channels.some((c) => c.connectionStatus === "connecting");
     if (!hasConnecting || status !== "connected") return;
 
     const id = setInterval(() => {
@@ -104,7 +108,7 @@ export function useChannels(client: GatewayClient, status: GatewayStatus) {
     }, 10_000);
 
     return () => clearInterval(id);
-  }, [channels, status]);
+  }, [hasConnecting, status]);
 
   const create = useCallback(
     async (channelId: string, config: ChannelConfig) => {

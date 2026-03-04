@@ -104,7 +104,7 @@ export interface ChannelTemplate {
 
 export interface ChannelEntry {
   channelId: string;
-  config: Record<string, unknown>;
+  config: Partial<ChannelConfig>;
   connectionStatus: ChannelConnectionStatus;
   lastError?: string;
   template?: ChannelTemplate;

@@ -61,6 +61,7 @@ function FieldInput({
               value={value}
               onChange={(e) => onChange(field.key, e.target.value)}
               disabled={disabled}
+              aria-invalid={!!error}
               className="h-9 w-full rounded-md border border-border/50 bg-background px-3 text-sm text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 disabled:opacity-50"
             >
               {(field.options ?? []).map((opt) => (
@@ -79,6 +80,7 @@ function FieldInput({
               required={field.required}
               disabled={disabled}
               autoComplete="off"
+              aria-invalid={!!error}
               className="h-9 w-full rounded-md border border-border/50 bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 disabled:opacity-50"
             />
           )}
