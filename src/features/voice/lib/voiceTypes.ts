@@ -99,7 +99,7 @@ export const DEFAULT_VOICE_CONFIG: ElevenLabsVoiceConfig = {
 };
 
 export const defaultStudioVoiceSettings = (): StudioVoiceSettings => ({
-  autoSpeak: true,
+  autoSpeak: false,
   voiceId: DEFAULT_VOICE_ID,
   modelId: DEFAULT_MODEL_ID,
   language: DEFAULT_LANGUAGE,

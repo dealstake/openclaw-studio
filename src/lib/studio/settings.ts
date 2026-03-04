@@ -155,7 +155,7 @@ const normalizeAvatars = (value: unknown): Record<string, Record<string, string>
 };
 
 const defaultVoiceSettings = (): StudioVoiceSettings => ({
-  autoSpeak: true,
+  autoSpeak: false,
   voiceId: "21m00Tcm4TlvDq8ikWAM", // Rachel
   modelId: "eleven_flash_v2_5",
   language: "en",

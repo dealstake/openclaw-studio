@@ -116,7 +116,7 @@ export function useVoiceSettings({
     let voiceId = globalVoice?.voiceId ?? DEFAULT_VOICE_ID;
     let modelId = globalVoice?.modelId ?? DEFAULT_MODEL_ID;
     const language = globalVoice?.language ?? DEFAULT_LANGUAGE;
-    const autoSpeak = globalVoice?.autoSpeak ?? true;
+    const autoSpeak = globalVoice?.autoSpeak ?? false;
     const voiceConfig = globalVoice?.voiceConfig ?? { ...DEFAULT_VOICE_CONFIG };
     let source: ResolvedVoiceSettings["source"] = "global";
 
