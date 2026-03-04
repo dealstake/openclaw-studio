@@ -206,9 +206,22 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   const prevRunningRef = useRef(false);
   const prevAssistantTextRef = useRef<string | undefined>(undefined);
 
+  // Track when a NEW generation starts so we only stream text from current generation
+  const generationStartedRef = useRef(false);
+  useEffect(() => {
+    if (isRunning && !prevRunningRef.current) {
+      // New generation started
+      generationStartedRef.current = true;
+    } else if (!isRunning) {
+      generationStartedRef.current = false;
+    }
+  }, [isRunning]);
+
   // Stream agent text into voice overlay in real-time (visual only — TTS waits for completion)
   useEffect(() => {
     if (!voiceModeActive || !voiceMode || !isRunning || !lastAssistantText) return;
+    // Only stream text from the current generation, not pre-existing chat history
+    if (!generationStartedRef.current) return;
     const plain = stripMarkdownForSpeech(lastAssistantText);
     if (plain) {
       voiceMode.setAgentTranscript(plain);
