@@ -203,16 +203,18 @@ export function useVoiceClient(): UseVoiceClientReturn {
 
     if (blob.size < 1000) {
       log("Recording too short/small, skipping transcription");
-      setStatus(sessionActiveRef.current ? "listening" : "idle");
       isStoppingRef.current = false;
-      // Restart recording if session is still active
+      // Restart recording if session is still active — no status flicker
       if (sessionActiveRef.current) {
+        setStatus("listening");
         startRecordingRef.current();
+      } else {
+        setStatus("idle");
       }
       return;
     }
 
-    // Transcribe
+    // Blob is valid — now show transcribing state
     setStatus("transcribing");
     setTranscript("Transcribing...");
 
@@ -381,44 +383,10 @@ export function useVoiceClient(): UseVoiceClientReturn {
   const stopListening = useCallback(() => {
     log("stopListening called");
     sessionActiveRef.current = false;
-
-    // Cancel VAD
-    if (rafRef.current) {
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
-    }
-    if (maxTimerRef.current) {
-      clearTimeout(maxTimerRef.current);
-      maxTimerRef.current = null;
-    }
-
-    // Stop recorder
-    if (recorderRef.current && recorderRef.current.state !== "inactive") {
-      try {
-        recorderRef.current.stop();
-      } catch {
-        /* ignore */
-      }
-    }
-    recorderRef.current = null;
-    chunksRef.current = [];
     isStoppingRef.current = false;
-
-    // Close audio context
-    if (audioContextRef.current && audioContextRef.current.state !== "closed") {
-      audioContextRef.current.close().catch(() => {});
-    }
-    audioContextRef.current = null;
-    analyserRef.current = null;
-
-    // Release mic stream
-    if (mediaStreamRef.current) {
-      mediaStreamRef.current.getTracks().forEach((t) => t.stop());
-      mediaStreamRef.current = null;
-    }
-
+    cleanup();
     setStatus("idle");
-  }, []);
+  }, [cleanup]);
 
   /** Reset transcript state */
   const resetTranscript = useCallback(() => {

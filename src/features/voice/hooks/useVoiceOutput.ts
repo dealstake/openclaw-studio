@@ -59,17 +59,13 @@ export function resolvedToSpeakOptions(resolved: ResolvedVoiceSettings): SpeakOp
   };
 }
 
-// Singleton AudioContext — shared across all hook instances on the page.
-// Created once during first warmup(), stays alive for page lifecycle.
-let globalAudioContext: AudioContext | null = null;
-
-function getOrCreateAudioContext(): AudioContext {
-  if (!globalAudioContext || globalAudioContext.state === "closed") {
-    const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-    globalAudioContext = new AudioCtx();
-  }
-  return globalAudioContext;
-}
+/**
+ * Audio playback strategy:
+ * - warmup() plays a silent audio element during user gesture to unlock iOS Safari
+ * - speak() fetches TTS as a blob, creates a Blob URL, plays via HTMLAudioElement
+ * - HTMLAudioElement with Blob URL starts playback as soon as enough data is buffered
+ *   (much faster than AudioContext which requires full download + decode first)
+ */
 
 export function useVoiceOutput(): UseVoiceOutputReturn {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -77,29 +73,31 @@ export function useVoiceOutput(): UseVoiceOutputReturn {
   const [error, setError] = useState<string | null>(null);
   const [enabled, setEnabled] = useState(false);
 
-  const sourceRef = useRef<AudioBufferSourceNode | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const blobUrlRef = useRef<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const warmedRef = useRef(false);
-  // Gain node for volume control
-  const gainRef = useRef<GainNode | null>(null);
+
+  const cleanupAudio = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.removeAttribute("src");
+      audioRef.current.load(); // Release resources
+      audioRef.current = null;
+    }
+    if (blobUrlRef.current) {
+      URL.revokeObjectURL(blobUrlRef.current);
+      blobUrlRef.current = null;
+    }
+  }, []);
 
   const stop = useCallback(() => {
     abortRef.current?.abort();
     abortRef.current = null;
-
-    if (sourceRef.current) {
-      try {
-        sourceRef.current.stop();
-      } catch {
-        // Already stopped — ignore
-      }
-      sourceRef.current.disconnect();
-      sourceRef.current = null;
-    }
-
+    cleanupAudio();
     setIsPlaying(false);
     setIsLoading(false);
-  }, []);
+  }, [cleanupAudio]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -121,15 +119,6 @@ export function useVoiceOutput(): UseVoiceOutputReturn {
       setError(null);
 
       try {
-        // Get or create AudioContext
-        const audioCtx = getOrCreateAudioContext();
-
-        // Ensure AudioContext is running (iOS Safari suspends it)
-        if (audioCtx.state === "suspended") {
-          console.log("[VoiceOutput] AudioContext suspended, resuming...");
-          await audioCtx.resume();
-        }
-
         console.log("[VoiceOutput] Fetching /api/tts...");
         const res = await fetch("/api/tts", {
           method: "POST",
@@ -148,42 +137,49 @@ export function useVoiceOutput(): UseVoiceOutputReturn {
           throw new Error((errBody as { error?: string }).error || `TTS failed: ${res.status}`);
         }
 
-        // Get audio as ArrayBuffer for Web Audio API decoding
-        const arrayBuffer = await res.arrayBuffer();
-        console.log("[VoiceOutput] TTS response OK, buffer size:", arrayBuffer.byteLength);
+        // Create Blob URL from response — HTMLAudioElement can start playing
+        // as soon as enough data is buffered (no need to wait for full download)
+        const blob = await res.blob();
+        console.log("[VoiceOutput] TTS response OK, blob size:", blob.size);
 
         if (controller.signal.aborted) return;
 
-        // Decode audio data
-        const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-        console.log("[VoiceOutput] Audio decoded, duration:", audioBuffer.duration.toFixed(1), "s");
+        const blobUrl = URL.createObjectURL(blob);
+        blobUrlRef.current = blobUrl;
 
-        if (controller.signal.aborted) return;
+        const audio = new Audio(blobUrl);
+        audioRef.current = audio;
 
-        // Create source node and connect to output
-        const source = audioCtx.createBufferSource();
-        source.buffer = audioBuffer;
+        // Set up event handlers before triggering play
+        const playPromise = new Promise<void>((resolve, reject) => {
+          audio.onplay = () => {
+            setIsLoading(false);
+            setIsPlaying(true);
+            console.log("[VoiceOutput] Playback started");
+          };
 
-        // Create gain node if not exists
-        if (!gainRef.current || gainRef.current.context !== audioCtx) {
-          gainRef.current = audioCtx.createGain();
-          gainRef.current.connect(audioCtx.destination);
-        }
+          audio.onended = () => {
+            console.log("[VoiceOutput] Playback ended");
+            setIsPlaying(false);
+            cleanupAudio();
+            resolve();
+          };
 
-        source.connect(gainRef.current);
-        sourceRef.current = source;
+          audio.onerror = () => {
+            const msg = "Audio playback failed";
+            console.error("[VoiceOutput]", msg);
+            setError(msg);
+            setIsPlaying(false);
+            setIsLoading(false);
+            cleanupAudio();
+            reject(new Error(msg));
+          };
+        });
 
-        source.onended = () => {
-          console.log("[VoiceOutput] Playback ended");
-          setIsPlaying(false);
-          sourceRef.current = null;
-        };
-
-        // Start playback
-        source.start(0);
-        setIsPlaying(true);
-        setIsLoading(false);
-        console.log("[VoiceOutput] Playback started");
+        // Start playback — works on iOS Safari because warmup() already
+        // unlocked audio during the user gesture
+        await audio.play();
+        await playPromise;
       } catch (err) {
         if ((err as Error).name === "AbortError") return;
         console.error("[VoiceOutput] Error:", err);
@@ -192,36 +188,34 @@ export function useVoiceOutput(): UseVoiceOutputReturn {
         setIsPlaying(false);
       }
     },
-    [stop],
+    [stop, cleanupAudio],
   );
 
   /**
-   * Pre-warm the AudioContext during a user gesture (e.g., clicking "Open voice mode").
-   * This is CRITICAL for iOS Safari — the AudioContext must be created/resumed within
-   * a user gesture to unlock audio playback. After this, all subsequent audio plays
-   * through the AudioContext will work without gesture requirements.
-   *
-   * Pattern: https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Best_practices
+   * Pre-warm audio playback during a user gesture (clicking "Open voice mode").
+   * CRITICAL for iOS Safari — plays a tiny silent audio element within the gesture
+   * chain to unlock autoplay for the page lifecycle.
    */
   const warmup = useCallback(() => {
     if (warmedRef.current) return;
     try {
-      const audioCtx = getOrCreateAudioContext();
-
-      // Resume if suspended (required on iOS Safari)
-      if (audioCtx.state === "suspended") {
-        void audioCtx.resume();
-      }
-
-      // Play a silent buffer to fully unlock the AudioContext
-      const buffer = audioCtx.createBuffer(1, 1, 22050);
-      const source = audioCtx.createBufferSource();
-      source.buffer = buffer;
-      source.connect(audioCtx.destination);
-      source.start(0);
-
+      // Tiny silent WAV (44 bytes) — plays instantly, unlocks audio on iOS
+      const audio = new Audio(
+        "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA",
+      );
+      audio.play().catch(() => {
+        // Fallback: try AudioContext approach
+        const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+        const ctx = new AudioCtx();
+        const buf = ctx.createBuffer(1, 1, 22050);
+        const src = ctx.createBufferSource();
+        src.buffer = buf;
+        src.connect(ctx.destination);
+        src.start(0);
+        // Don't close — keep alive for future use
+      });
       warmedRef.current = true;
-      console.log("[VoiceOutput] AudioContext warmed up, state:", audioCtx.state);
+      console.log("[VoiceOutput] Audio playback unlocked");
     } catch (err) {
       console.warn("[VoiceOutput] Warmup failed:", err);
     }
