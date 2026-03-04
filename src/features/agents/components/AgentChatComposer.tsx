@@ -24,6 +24,19 @@ import type { WizardType, WizardTheme, WizardStarter } from "@/features/wizards/
 import { WizardBanner } from "@/features/wizards/components/WizardBanner";
 import { WizardLaunchMenu } from "@/features/wizards/components/WizardLaunchMenu";
 import { useVoiceOutput, resolvedToSpeakOptions } from "@/features/voice/hooks/useVoiceOutput";
+
+/** Strip markdown syntax for cleaner speech output */
+function stripMarkdownForSpeech(text: string): string {
+  return text
+    .replace(/```[\s\S]*?```/g, " code block ")
+    .replace(/\*\*(.*?)\*\*/g, "$1")
+    .replace(/\*(.*?)\*/g, "$1")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/#{1,6}\s/g, "")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/\n{2,}/g, ". ")
+    .trim();
+}
 import { useVoiceSettings } from "@/features/voice/hooks/useVoiceSettings";
 import { createStudioSettingsCoordinator } from "@/lib/studio/coordinator";
 import { VoiceInputControl } from "@/features/voice/components/VoiceControls";
@@ -192,20 +205,25 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   /** Auto-speak assistant responses when voice is active (overlay or inline) */
   const prevRunningRef = useRef(false);
   const prevAssistantTextRef = useRef<string | undefined>(undefined);
+
+  // Stream agent text into voice overlay in real-time (visual only — TTS waits for completion)
+  useEffect(() => {
+    if (!voiceModeActive || !voiceMode || !isRunning || !lastAssistantText) return;
+    const plain = stripMarkdownForSpeech(lastAssistantText);
+    if (plain) {
+      voiceMode.setAgentTranscript(plain);
+      // Show "thinking" → "speaking" transition as text streams in
+      if (voiceMode.state === "thinking") {
+        voiceMode.setState("speaking");
+      }
+    }
+  }, [isRunning, lastAssistantText, voiceModeActive]); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     // Detect transition from running → not running with new text
     if (prevRunningRef.current && !isRunning && lastAssistantText) {
       if (lastAssistantText !== prevAssistantTextRef.current) {
-        // Strip markdown for cleaner speech
-        const plainText = lastAssistantText
-          .replace(/```[\s\S]*?```/g, " code block ")
-          .replace(/\*\*(.*?)\*\*/g, "$1")
-          .replace(/\*(.*?)\*/g, "$1")
-          .replace(/`([^`]+)`/g, "$1")
-          .replace(/#{1,6}\s/g, "")
-          .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-          .replace(/\n{2,}/g, ". ")
-          .trim();
+        const plainText = stripMarkdownForSpeech(lastAssistantText);
         if (plainText.length > 0 && plainText.length < 5000) {
           if (voiceModeActive) {
             // Voice overlay is open — use bridge (updates overlay state + TTS)
