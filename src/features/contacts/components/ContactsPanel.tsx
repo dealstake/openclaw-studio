@@ -32,7 +32,7 @@ import {
 import { useManagementPanel } from "@/components/management/ManagementPanelContext";
 import { ContactCard, PIPELINE_STAGES, stageBadge } from "./ContactCard";
 import { InteractionTimeline } from "./InteractionTimeline";
-import { useContacts, type ContactUpsertInput } from "../hooks/useContacts";
+import { useContacts, parseTags, type ContactUpsertInput } from "../hooks/useContacts";
 import type { ClientContactRow } from "../hooks/useContacts";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -69,13 +69,8 @@ const ContactForm = memo(function ContactForm({
   const [title, setTitle] = useState(initial?.title ?? "");
   const [stage, setStage] = useState(initial?.stage ?? "");
   const [tagsRaw, setTagsRaw] = useState(() => {
-    if (!initial?.tags) return "";
-    try {
-      const arr = JSON.parse(initial.tags) as string[];
-      return arr.join(", ");
-    } catch {
-      return initial.tags;
-    }
+    const arr = parseTags(initial?.tags);
+    return arr.length > 0 ? arr.join(", ") : (initial?.tags ?? "");
   });
   const [notes, setNotes] = useState(initial?.notes ?? "");
   const [error, setError] = useState<string | null>(null);
@@ -263,13 +258,7 @@ const ContactDetail = memo(function ContactDetail({
   onDelete,
 }: ContactDetailProps) {
   const badge = stageBadge(contact.stage);
-  let tags: string[] = [];
-  if (contact.tags) {
-    try {
-      const parsed = JSON.parse(contact.tags) as unknown;
-      if (Array.isArray(parsed)) tags = parsed.filter((t): t is string => typeof t === "string");
-    } catch { /* ignore */ }
-  }
+  const tags = parseTags(contact.tags);
 
   return (
     <div className="space-y-4">
@@ -440,12 +429,8 @@ function exportContactsCSV(contacts: ClientContactRow[]): void {
   const headers = ["Name", "Email", "Phone", "Company", "Title", "Stage", "Tags", "Notes", "Created"];
   const rows = contacts.map((c) => {
     let tags = "";
-    if (c.tags) {
-      try {
-        const arr = JSON.parse(c.tags) as string[];
-        tags = arr.join("; ");
-      } catch { tags = c.tags; }
-    }
+    const tagsArr = parseTags(c.tags);
+    if (tagsArr.length > 0) tags = tagsArr.join("; ");
     return [
       escapeCSV(c.name),
       escapeCSV(c.email),

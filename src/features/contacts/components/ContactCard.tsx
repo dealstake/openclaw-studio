@@ -2,7 +2,7 @@
 
 import { memo } from "react";
 import { Building2, Mail, Phone, Clock } from "lucide-react";
-import type { ClientContactRow } from "../hooks/useContacts";
+import { parseTags, type ClientContactRow } from "../hooks/useContacts";
 
 // ─── Pipeline stage config ─────────────────────────────────────────────────────
 
@@ -61,16 +61,7 @@ export const ContactCard = memo(function ContactCard({
 }: ContactCardProps) {
   const badge = stageBadge(contact.stage);
 
-  // Parse tags
-  let tags: string[] = [];
-  if (contact.tags) {
-    try {
-      const parsed = JSON.parse(contact.tags) as unknown;
-      if (Array.isArray(parsed)) tags = parsed.filter((t): t is string => typeof t === "string");
-    } catch {
-      /* ignore malformed tags */
-    }
-  }
+  const tags = parseTags(contact.tags);
 
   // Initials avatar
   const initials = contact.name

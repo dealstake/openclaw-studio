@@ -11,6 +11,17 @@ import { useCallback, useRef, useState } from "react";
 
 // ─── Client-side types (mirrors DB schema; no server imports) ─────────────────
 
+/** Parse JSON-encoded tags string into a string array, safely. */
+export function parseTags(raw: string | null | undefined): string[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 export type ClientContactRow = {
   id: string;
   agentId: string;
