@@ -3,14 +3,13 @@
 /**
  * useVoiceModeBridge — Connects voice mode state to STT/TTS hooks.
  *
- * When voice mode opens:
- * 1. Starts STT (useVoiceClient) → feeds transcript to VoiceModeProvider
- * 2. On committed transcript → sends to agent via onUserMessage callback
- * 3. On agent response → feeds to TTS (useVoiceOutput) → updates provider
- *
- * STT starts automatically when voiceModeActive becomes true.
- * The useVoiceClient hook pre-acquires mic permission before Scribe.connect(),
- * so getUserMedia succeeds even when called outside the user gesture window.
+ * Architecture (server-side STT):
+ * 1. User taps mic → getUserMedia + MediaRecorder (useVoiceClient)
+ * 2. VAD detects silence → audio blob POST'd to /api/voice/transcribe
+ * 3. Server calls ElevenLabs Scribe REST API → returns transcript
+ * 4. Transcript sent to agent via onUserMessage (chat.send over existing WS)
+ * 5. Agent response → TTS via /api/tts → AudioContext playback
+ * 6. After TTS finishes → auto-restart recording for next turn
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -35,7 +34,9 @@ export function useVoiceModeBridge(options?: UseVoiceModeBridgeOptions) {
     onUserMessageRef.current = options?.onUserMessage;
   }, [options?.onUserMessage]);
   const tts = useVoiceOutput();
-  const [coordinator] = useState(() => createStudioSettingsCoordinator({ debounceMs: 200 }));
+  const [coordinator] = useState(() =>
+    createStudioSettingsCoordinator({ debounceMs: 200 }),
+  );
   const voiceSettings = useVoiceSettings({
     settingsCoordinator: coordinator,
     agentId: voiceMode?.activeAgentId,
@@ -47,41 +48,50 @@ export function useVoiceModeBridge(options?: UseVoiceModeBridgeOptions) {
 
   /**
    * Start voice mode — MUST be called from a user gesture (click/tap handler).
-   * This calls getUserMedia + Scribe.connect in the same gesture chain,
-   * which is required for iOS Safari.
+   * getUserMedia happens in the same gesture chain for iOS Safari.
    */
-  const startVoiceMode = useCallback(async (agentId: string) => {
-    if (!voiceMode) return;
+  const startVoiceMode = useCallback(
+    async (agentId: string) => {
+      if (!voiceMode) return;
 
-    console.log("[VoiceModeBridge] startVoiceMode called from user gesture");
+      console.log("[VoiceModeBridge] startVoiceMode called from user gesture");
 
-    // Open the UI immediately
-    voiceMode.openVoiceMode(agentId);
-    tts.warmup();
+      // Open the UI immediately
+      voiceMode.openVoiceMode(agentId);
+      tts.warmup();
 
-    // Start STT in the SAME call chain as the user gesture
-    try {
-      console.log("[VoiceModeBridge] Starting STT in gesture chain...");
-      await voice.startListening();
-      console.log("[VoiceModeBridge] STT started successfully");
-    } catch (err) {
-      const msg = (err as Error).message || "";
-      console.error("[VoiceModeBridge] STT start failed:", msg);
-      if (msg.includes("NotAllowedError") || msg.includes("Permission denied") || msg.includes("not found")) {
-        voiceMode.setState("idle");
-        voiceMode.setLastError("mic-denied");
-      } else if (msg.includes("API key") || msg.includes("api key") || msg.includes("401")) {
-        voiceMode.setState("idle");
-        voiceMode.setLastError("api-key-missing");
-      } else {
-        // Unknown error — close the overlay so user isn't stuck
-        console.error("[VoiceModeBridge] Unknown error, closing voice mode");
-        voiceMode.closeVoiceMode();
+      // Start recording in the SAME call chain as the user gesture
+      try {
+        console.log("[VoiceModeBridge] Starting voice input...");
+        await voice.startListening();
+        console.log("[VoiceModeBridge] Voice input started successfully");
+      } catch (err) {
+        const msg = (err as Error).message || "";
+        console.error("[VoiceModeBridge] Voice input start failed:", msg);
+        if (
+          msg.includes("NotAllowedError") ||
+          msg.includes("Permission denied") ||
+          msg.includes("not found")
+        ) {
+          voiceMode.setState("idle");
+          voiceMode.setLastError("mic-denied");
+        } else if (
+          msg.includes("API key") ||
+          msg.includes("api key") ||
+          msg.includes("401")
+        ) {
+          voiceMode.setState("idle");
+          voiceMode.setLastError("api-key-missing");
+        } else {
+          console.error("[VoiceModeBridge] Unknown error, closing voice mode");
+          voiceMode.closeVoiceMode();
+        }
       }
-    }
-  }, [voiceMode, voice, tts]);
+    },
+    [voiceMode, voice, tts],
+  );
 
-  // When voice mode closes, stop STT + TTS
+  // When voice mode closes, stop recording + TTS
   useEffect(() => {
     if (!voiceMode) return;
 
@@ -93,34 +103,50 @@ export function useVoiceModeBridge(options?: UseVoiceModeBridgeOptions) {
     }
   }, [voiceModeActive]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Feed transcript to provider + update state from STT status
+  // Map voice client status to VoiceMode provider state
   useEffect(() => {
-    if (!voiceMode) return;
+    if (!voiceMode || !voiceModeActive) return;
 
     // Update user transcript display
-    if (voice.transcript) {
+    if (voice.transcript && voice.status !== "transcribing") {
       voiceMode.setUserTranscript(voice.transcript);
     }
 
-    // Update state based on STT status
-    if (voice.isConnecting) {
-      voiceMode.setState("connecting");
-    } else if (voice.isListening) {
-      if (voiceMode.state === "connecting") {
-        console.log("[VoiceModeBridge] STT connected! Transitioning to listening");
-        voiceMode.setState("listening");
-      }
-    } else if (voice.error && voiceMode.state === "connecting") {
-      voiceMode.setState("idle");
+    // Map status to overlay state
+    switch (voice.status) {
+      case "requesting-mic":
+        voiceMode.setState("connecting");
+        break;
+      case "listening":
+        if (
+          voiceMode.state === "connecting" ||
+          voiceMode.state === "idle"
+        ) {
+          console.log("[VoiceModeBridge] Now listening");
+          voiceMode.setState("listening");
+        }
+        break;
+      case "transcribing":
+        voiceMode.setUserTranscript(voice.transcript);
+        // Don't change state — stay in "listening" visually while transcribing
+        break;
+      case "error":
+        if (voiceMode.state === "connecting") {
+          voiceMode.setState("idle");
+        }
+        break;
     }
-  }, [voice.transcript, voice.isConnecting, voice.isListening, voice.error]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [voice.status, voice.transcript]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // On new committed transcript, send to agent
   useEffect(() => {
     if (!voiceMode || !voice.finalTranscript) return;
     if (voice.finalTranscript === prevFinalRef.current) return;
 
-    console.log("[VoiceModeBridge] New committed transcript:", voice.finalTranscript.substring(0, 80));
+    console.log(
+      "[VoiceModeBridge] New transcript:",
+      voice.finalTranscript.substring(0, 80),
+    );
     prevFinalRef.current = voice.finalTranscript;
 
     if (onUserMessageRef.current) {
@@ -128,7 +154,9 @@ export function useVoiceModeBridge(options?: UseVoiceModeBridgeOptions) {
       onUserMessageRef.current(voice.finalTranscript);
       voiceMode.setState("thinking");
     } else {
-      console.warn("[VoiceModeBridge] No onUserMessage callback — transcript not sent to agent!");
+      console.warn(
+        "[VoiceModeBridge] No onUserMessage callback — transcript not sent!",
+      );
     }
   }, [voiceMode, voice.finalTranscript]);
 
@@ -141,9 +169,14 @@ export function useVoiceModeBridge(options?: UseVoiceModeBridgeOptions) {
   // Speak agent response
   const speakResponse = useCallback(
     async (text: string) => {
-      console.log("[VoiceModeBridge] speakResponse called, text length:", text.length, "voiceModeActive:", voiceModeActiveRef.current);
+      console.log(
+        "[VoiceModeBridge] speakResponse called, text length:",
+        text.length,
+        "voiceModeActive:",
+        voiceModeActiveRef.current,
+      );
       if (!voiceMode || !voiceModeActiveRef.current) {
-        console.log("[VoiceModeBridge] speakResponse skipped — voiceMode:", !!voiceMode, "active:", voiceModeActiveRef.current);
+        console.log("[VoiceModeBridge] speakResponse skipped — not active");
         return;
       }
 
@@ -151,15 +184,24 @@ export function useVoiceModeBridge(options?: UseVoiceModeBridgeOptions) {
       voiceMode.setState("speaking");
 
       const speakOpts = resolvedToSpeakOptions(voiceSettings.settings);
-      console.log("[VoiceModeBridge] Calling TTS speak, voiceId:", speakOpts.voiceId, "modelId:", speakOpts.modelId);
+      console.log(
+        "[VoiceModeBridge] TTS speak, voiceId:",
+        speakOpts.voiceId,
+        "modelId:",
+        speakOpts.modelId,
+      );
       try {
         await tts.speak(text, speakOpts);
         console.log("[VoiceModeBridge] TTS speak completed");
       } catch (err) {
-        console.error("[VoiceModeBridge] TTS speak failed:", (err as Error).message);
+        console.error(
+          "[VoiceModeBridge] TTS speak failed:",
+          (err as Error).message,
+        );
       }
 
-      // Only reset state if voice mode is still active
+      // Reset state if voice mode is still active — recording auto-restarts
+      // via useVoiceClient's sessionActive mechanism
       if (voiceModeActiveRef.current) {
         voiceMode.setState("listening");
         voiceMode.setAgentTranscript("");
@@ -192,9 +234,9 @@ export function useVoiceModeBridge(options?: UseVoiceModeBridgeOptions) {
     startVoiceMode,
     /** Call this when agent sends a response to speak it */
     speakResponse,
-    /** Force-commit current partial transcript (tap-to-send on overlay) */
+    /** Force-commit current recording (tap-to-send on overlay) */
     forceCommit: voice.forceCommit,
-    /** Whether STT is active */
+    /** Whether recording is active */
     isListening: voice.isListening,
     /** Whether TTS is playing */
     isSpeaking: tts.isPlaying,

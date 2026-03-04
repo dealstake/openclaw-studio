@@ -1,18 +1,25 @@
 "use client";
 
 /**
- * Voice input hook — SDK-based wrapper around ElevenLabs `useScribe`.
+ * Voice input hook — captures audio via MediaRecorder, transcribes via
+ * server-side ElevenLabs Scribe REST API.
  *
- * CRITICAL for iOS Safari: startListening() MUST be called from a user
- * gesture handler (click/tap). The bridge's startVoiceMode() ensures this.
- * getUserMedia is called first to trigger the permission prompt, then
- * Scribe.connect() is called immediately after (within the same async chain).
- * iOS Safari's transient activation window (~5s) allows this.
+ * Architecture: Browser captures raw audio → POST /api/voice/transcribe →
+ * server calls ElevenLabs STT → returns transcript. Zero browser-specific
+ * SDK dependencies. Works reliably on iOS Safari, Chrome, Firefox.
+ *
+ * Silence detection: simple energy-based VAD. When silence exceeds threshold,
+ * recording stops and audio is sent for transcription.
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useScribe, type ScribeStatus } from "@elevenlabs/react";
-import { toast } from "sonner";
+
+export type VoiceClientStatus =
+  | "idle"
+  | "requesting-mic"
+  | "listening"
+  | "transcribing"
+  | "error";
 
 export interface UseVoiceClientReturn {
   isSupported: boolean;
@@ -23,298 +30,424 @@ export interface UseVoiceClientReturn {
   startListening: () => Promise<void>;
   stopListening: () => void;
   resetTranscript: () => void;
-  /** Force-commit current partial transcript (bypasses VAD silence detection) */
+  /** Force-commit current recording (stop + transcribe immediately) */
   forceCommit: () => void;
   error: string | null;
-  status: ScribeStatus;
+  status: VoiceClientStatus;
 }
 
-const MAX_RECONNECT_ATTEMPTS = 5;
-const BASE_RECONNECT_DELAY_MS = 1000;
-const SCRIBE_MODEL_ID = "scribe_v2_realtime";
+// VAD constants
+const SILENCE_THRESHOLD = 0.01; // RMS energy threshold for "silence"
+const SILENCE_DURATION_MS = 1500; // ms of silence before auto-stop
+const MIN_RECORDING_MS = 500; // minimum recording duration
+const MAX_RECORDING_MS = 60_000; // maximum recording duration (1 min)
+const ANALYSER_FFT_SIZE = 512;
 
-const log = (msg: string, ...args: unknown[]) => console.log(`[VoiceClient] ${msg}`, ...args);
-const logError = (msg: string, ...args: unknown[]) => console.error(`[VoiceClient] ${msg}`, ...args);
+const log = (msg: string, ...args: unknown[]) =>
+  console.log(`[VoiceClient] ${msg}`, ...args);
+const logError = (msg: string, ...args: unknown[]) =>
+  console.error(`[VoiceClient] ${msg}`, ...args);
 
 function checkSupport(): boolean {
   if (typeof window === "undefined") return false;
-  return !!(typeof navigator.mediaDevices?.getUserMedia === "function" && typeof WebSocket !== "undefined");
+  return !!(
+    typeof navigator.mediaDevices?.getUserMedia === "function" &&
+    typeof MediaRecorder !== "undefined"
+  );
 }
 
-async function fetchToken(): Promise<string> {
-  log("Fetching STT token...");
-  const res = await fetch("/api/voice/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ type: "realtime_scribe" }),
-  });
-  log("Token response:", res.status, res.statusText);
-  if (!res.ok) {
-    const errBody = await res.json().catch(() => ({ error: `Failed: ${res.status}` }));
-    throw new Error((errBody as { error?: string }).error || `Failed to get voice token: ${res.status}`);
+/** Pick the best supported MIME type for MediaRecorder */
+function getPreferredMimeType(): string {
+  // Prefer webm (Chrome/Firefox), fall back to mp4 (Safari)
+  const candidates = [
+    "audio/webm;codecs=opus",
+    "audio/webm",
+    "audio/mp4",
+    "audio/ogg;codecs=opus",
+    "",
+  ];
+  for (const mime of candidates) {
+    if (!mime || MediaRecorder.isTypeSupported(mime)) return mime;
   }
-  const data = (await res.json()) as { token: string };
-  log("Token received, length:", data.token?.length);
-  return data.token;
+  return ""; // browser default
 }
 
-interface TranscriptState {
-  committed: string;
-  partial: string;
+async function transcribeAudio(blob: Blob): Promise<string> {
+  log("Transcribing", blob.size, "bytes, type:", blob.type);
+  const form = new FormData();
+  // Determine file extension from MIME type
+  const ext = blob.type.includes("mp4")
+    ? "mp4"
+    : blob.type.includes("ogg")
+      ? "ogg"
+      : "webm";
+  form.append("audio", blob, `recording.${ext}`);
+
+  const res = await fetch("/api/voice/transcribe", {
+    method: "POST",
+    body: form,
+  });
+
+  if (!res.ok) {
+    const errBody = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+    throw new Error(
+      (errBody as { error?: string }).error || `Transcription failed: ${res.status}`,
+    );
+  }
+
+  const data = (await res.json()) as { transcript: string; language?: string };
+  return data.transcript;
 }
 
 export function useVoiceClient(): UseVoiceClientReturn {
-  const [transcripts, setTranscripts] = useState<TranscriptState>({ committed: "", partial: "" });
-  const reconnectAttemptsRef = useRef(0);
-  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const intentionalDisconnectRef = useRef(false);
+  const [status, setStatus] = useState<VoiceClientStatus>("idle");
+  const [transcript, setTranscript] = useState("");
+  const [finalTranscript, setFinalTranscript] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const isSupported = checkSupport();
 
-  const scribe = useScribe({
-    modelId: SCRIBE_MODEL_ID,
-    microphone: {
-      echoCancellation: true,
-      noiseSuppression: true,
-      autoGainControl: true,
-      channelCount: 1,
-    },
-    commitStrategy: "vad" as never,
-    vadSilenceThresholdSecs: 1.2,
-    languageCode: "en",
+  // Refs for recording state
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const silenceStartRef = useRef<number | null>(null);
+  const recordStartRef = useRef<number>(0);
+  const maxTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isStoppingRef = useRef(false);
+  // Track whether we're actively in a voice mode session (between startListening and explicit close)
+  const sessionActiveRef = useRef(false);
+  // Ref for startRecordingInternal to break circular dependency with processRecording
+  const startRecordingRef = useRef<() => void>(() => {});
 
-    onSessionStarted: () => {
-      log("SESSION_STARTED — Scribe connection fully established");
-      reconnectAttemptsRef.current = 0;
-    },
-
-    onPartialTranscript: (data) => {
-      setTranscripts((prev) => ({ ...prev, partial: data.text }));
-    },
-
-    onCommittedTranscript: (data) => {
-      log("Committed transcript:", data.text.substring(0, 50));
-      // Skip empty commits (ambient noise / silence)
-      if (!data.text.trim()) return;
-      setTranscripts((prev) => ({
-        committed: prev.committed ? `${prev.committed} ${data.text}` : data.text,
-        partial: "",
-      }));
-      reconnectAttemptsRef.current = 0;
-    },
-
-    onAuthError: () => {
-      logError("Auth error");
-      attemptReconnect();
-    },
-    onQuotaExceededError: () => {
-      logError("Quota exceeded");
-      toast.error("Voice quota reached. Try again later.");
-    },
-    onRateLimitedError: () => {
-      logError("Rate limited");
-      toast.error("Too many requests. Please wait.");
-    },
-    onError: (err) => {
-      const msg = err instanceof Error ? err.message : String(err);
-      logError("STT error:", msg);
-    },
-    onDisconnect: () => {
-      log("Scribe disconnected, intentional:", intentionalDisconnectRef.current);
-      if (!intentionalDisconnectRef.current) {
-        attemptReconnect();
+  /** Clean up all audio resources */
+  const cleanup = useCallback(() => {
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    if (maxTimerRef.current) {
+      clearTimeout(maxTimerRef.current);
+      maxTimerRef.current = null;
+    }
+    if (recorderRef.current && recorderRef.current.state !== "inactive") {
+      try {
+        recorderRef.current.stop();
+      } catch {
+        /* ignore */
       }
-    },
-  });
+    }
+    recorderRef.current = null;
+    chunksRef.current = [];
 
-  const attemptReconnect = useCallback(() => {
-    if (reconnectAttemptsRef.current >= MAX_RECONNECT_ATTEMPTS) {
-      logError("Max reconnect attempts reached");
-      toast.error("Voice unavailable — please try again.");
+    if (audioContextRef.current && audioContextRef.current.state !== "closed") {
+      audioContextRef.current.close().catch(() => {});
+    }
+    audioContextRef.current = null;
+    analyserRef.current = null;
+
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach((t) => t.stop());
+      mediaStreamRef.current = null;
+    }
+  }, []);
+
+  // Cleanup on unmount
+  useEffect(() => cleanup, [cleanup]);
+
+  /** Process recorded audio — stop, collect blob, transcribe */
+  const processRecording = useCallback(async () => {
+    if (isStoppingRef.current) return;
+    isStoppingRef.current = true;
+
+    const recorder = recorderRef.current;
+    if (!recorder || recorder.state === "inactive") {
+      isStoppingRef.current = false;
       return;
     }
-    const delay = BASE_RECONNECT_DELAY_MS * Math.pow(2, reconnectAttemptsRef.current);
-    reconnectAttemptsRef.current++;
-    log(`Reconnecting in ${delay}ms (attempt ${reconnectAttemptsRef.current})`);
-    reconnectTimerRef.current = setTimeout(async () => {
-      try {
-        const token = await fetchToken();
-        await scribe.connect({ token });
-      } catch { /* Will trigger onDisconnect */ }
-    }, delay);
-  }, [scribe]);
 
-  // Cleanup on unmount only — scribe object changes every render, so we use a ref
-  const scribeRef = useRef(scribe);
-  useEffect(() => { scribeRef.current = scribe; });
-  useEffect(() => {
-    return () => {
-      intentionalDisconnectRef.current = true;
-      if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
-      scribeRef.current.disconnect();
+    // Cancel VAD monitoring
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    if (maxTimerRef.current) {
+      clearTimeout(maxTimerRef.current);
+      maxTimerRef.current = null;
+    }
+
+    // Stop recorder and collect blob
+    const blob = await new Promise<Blob>((resolve) => {
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+      recorder.onstop = () => {
+        const mimeType = recorder.mimeType || "audio/webm";
+        resolve(new Blob(chunksRef.current, { type: mimeType }));
+        chunksRef.current = [];
+      };
+      recorder.stop();
+    });
+
+    // Close audio context (no longer need analyser)
+    if (audioContextRef.current && audioContextRef.current.state !== "closed") {
+      audioContextRef.current.close().catch(() => {});
+    }
+    audioContextRef.current = null;
+    analyserRef.current = null;
+
+    // Don't release mic stream yet — keep it for continuous mode
+    // It will be released in stopListening()
+
+    if (blob.size < 1000) {
+      log("Recording too short/small, skipping transcription");
+      setStatus(sessionActiveRef.current ? "listening" : "idle");
+      isStoppingRef.current = false;
+      // Restart recording if session is still active
+      if (sessionActiveRef.current) {
+        startRecordingRef.current();
+      }
+      return;
+    }
+
+    // Transcribe
+    setStatus("transcribing");
+    setTranscript("Transcribing...");
+
+    try {
+      const text = await transcribeAudio(blob);
+      log("Transcript:", text.substring(0, 80));
+
+      if (text.trim()) {
+        setTranscript(text);
+        setFinalTranscript(text);
+      } else {
+        log("Empty transcript, continuing to listen");
+        setTranscript("");
+      }
+    } catch (err) {
+      const msg = (err as Error).message || "Transcription failed";
+      logError("Transcription error:", msg);
+      setError(msg);
+    }
+
+    isStoppingRef.current = false;
+
+    // Restart recording for continuous conversation if session is active
+    if (sessionActiveRef.current) {
+      setStatus("listening");
+      startRecordingRef.current();
+    } else {
+      setStatus("idle");
+    }
+  }, []);
+
+  /** Internal: start a new recording segment (mic stream already acquired) */
+  const startRecordingInternal = useCallback(() => {
+    const stream = mediaStreamRef.current;
+    if (!stream) {
+      logError("startRecordingInternal: no media stream");
+      return;
+    }
+
+    isStoppingRef.current = false;
+    chunksRef.current = [];
+    silenceStartRef.current = null;
+    recordStartRef.current = Date.now();
+
+    const mimeType = getPreferredMimeType();
+    log("Starting MediaRecorder, mimeType:", mimeType || "(default)");
+
+    const recorder = new MediaRecorder(stream, {
+      mimeType: mimeType || undefined,
+      audioBitsPerSecond: 64000,
+    });
+    recorderRef.current = recorder;
+
+    recorder.ondataavailable = (e) => {
+      if (e.data.size > 0) chunksRef.current.push(e.data);
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Collect data every 250ms for progressive chunking
+    recorder.start(250);
+
+    // Set up audio analysis for VAD
+    try {
+      const audioCtx = new AudioContext();
+      audioContextRef.current = audioCtx;
+      const source = audioCtx.createMediaStreamSource(stream);
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = ANALYSER_FFT_SIZE;
+      source.connect(analyser);
+      analyserRef.current = analyser;
+
+      // Start VAD monitoring loop
+      const buffer = new Float32Array(analyser.fftSize);
+      const checkVAD = () => {
+        if (!analyserRef.current || isStoppingRef.current) return;
+
+        analyserRef.current.getFloatTimeDomainData(buffer);
+
+        // Calculate RMS energy
+        let sum = 0;
+        for (let i = 0; i < buffer.length; i++) {
+          sum += buffer[i] * buffer[i];
+        }
+        const rms = Math.sqrt(sum / buffer.length);
+
+        const now = Date.now();
+        const elapsed = now - recordStartRef.current;
+
+        if (rms < SILENCE_THRESHOLD) {
+          // Silence detected
+          if (!silenceStartRef.current) {
+            silenceStartRef.current = now;
+          }
+          const silenceDuration = now - silenceStartRef.current;
+          if (silenceDuration >= SILENCE_DURATION_MS && elapsed >= MIN_RECORDING_MS) {
+            log(`VAD: ${silenceDuration}ms silence, stopping recording`);
+            void processRecording();
+            return;
+          }
+        } else {
+          // Speech detected — reset silence timer
+          silenceStartRef.current = null;
+        }
+
+        rafRef.current = requestAnimationFrame(checkVAD);
+      };
+
+      rafRef.current = requestAnimationFrame(checkVAD);
+    } catch (err) {
+      logError("AudioContext/Analyser setup failed:", (err as Error).message);
+      // Continue without VAD — user will have to manually stop
+    }
+
+    // Safety: max recording duration
+    maxTimerRef.current = setTimeout(() => {
+      log("Max recording duration reached");
+      void processRecording();
+    }, MAX_RECORDING_MS);
+  }, [processRecording]);
+
+  // Keep ref in sync so processRecording can call it without circular deps
+  useEffect(() => {
+    startRecordingRef.current = startRecordingInternal;
+  });
 
   /**
    * Start listening. MUST be called from a user gesture handler chain
-   * (click/tap → bridge.startVoiceMode → this function).
-   *
-   * Flow:
-   * 1. getUserMedia() — triggers iOS Safari permission prompt (within gesture)
-   * 2. fetchToken() — gets ElevenLabs token (fast, stays within ~5s activation)
-   * 3. scribe.connect() — Scribe.connect() internally calls getUserMedia again,
-   *    but since permission was just granted in step 1, it succeeds
-   *
-   * The key: steps 1-3 happen in the SAME async chain starting from the
-   * user's click. iOS Safari's transient activation window allows all of this.
+   * (click/tap) for iOS Safari mic permission.
    */
   const startListening = useCallback(async () => {
-    log("startListening called, status:", scribe.status, "isConnected:", scribe.isConnected);
-    if (scribe.isConnected || scribe.status === "connecting") {
-      log("Already connected/connecting, skipping");
+    log("startListening called");
+    if (status === "listening" || status === "requesting-mic") {
+      log("Already listening/requesting, skipping");
       return;
     }
 
-    intentionalDisconnectRef.current = false;
-    reconnectAttemptsRef.current = 0;
+    setError(null);
+    setStatus("requesting-mic");
+    sessionActiveRef.current = true;
 
-    // Step 1: getUserMedia — triggers permission prompt on iOS Safari
-    // This MUST happen in the user gesture chain
-    log("Step 1: Requesting microphone permission...");
-    let micStream: MediaStream | null = null;
     try {
-      micStream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 },
+      // Request microphone — must happen in user gesture chain for iOS
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          channelCount: 1,
+        },
       });
-      log("Step 1: Mic permission GRANTED, tracks:", micStream.getTracks().length);
-      // DON'T stop the stream yet — keep it alive so Scribe's internal getUserMedia succeeds
+      log("Mic permission granted, tracks:", stream.getTracks().length);
+      mediaStreamRef.current = stream;
+
+      setStatus("listening");
+      startRecordingInternal();
     } catch (err) {
-      const msg = (err as Error).message || "";
-      logError("Step 1: Mic permission DENIED:", msg);
-      throw err; // Re-throw so bridge shows error state
+      const msg = (err as Error).message || "Microphone access denied";
+      logError("getUserMedia failed:", msg);
+      setError(msg);
+      setStatus("error");
+      sessionActiveRef.current = false;
+      throw err; // Re-throw so bridge can handle UI state
     }
+  }, [status, startRecordingInternal]);
 
-    try {
-      // Step 2: Fetch token (fast — should complete within activation window)
-      const token = await fetchToken();
-
-      // Step 3: Connect Scribe — its internal getUserMedia should succeed
-      // because we just got permission and the stream is still alive
-      log("Step 3: Connecting Scribe...");
-      const connectPromise = scribe.connect({ token });
-      const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("Connection timeout")), 15000),
-      );
-      await Promise.race([connectPromise, timeoutPromise]);
-      log("Step 3: Scribe.connect() resolved");
-    } catch (err) {
-      const msg = (err as Error).message || "Failed to start voice input";
-      logError("startListening failed:", msg);
-      if (msg.includes("timeout") || msg.includes("Timeout")) {
-        toast.error("Voice connection timed out.");
-      } else if (!msg.includes("NotAllowedError") && !msg.includes("Permission denied")) {
-        toast.error("Voice connection failed — please try again.");
-      }
-      try { scribe.disconnect(); } catch { /* ignore */ }
-      throw err;
-    } finally {
-      // Release our pre-acquired stream now that Scribe has its own
-      if (micStream) {
-        micStream.getTracks().forEach((t) => t.stop());
-        log("Pre-acquired mic stream released");
-      }
-    }
-  }, [scribe]);
-
+  /** Stop listening completely — end session, release mic */
   const stopListening = useCallback(() => {
     log("stopListening called");
-    intentionalDisconnectRef.current = true;
-    if (reconnectTimerRef.current) {
-      clearTimeout(reconnectTimerRef.current);
-      reconnectTimerRef.current = null;
-    }
-    scribe.disconnect();
-  }, [scribe]);
+    sessionActiveRef.current = false;
 
-  const resetTranscript = useCallback(() => {
-    setTranscripts({ committed: "", partial: "" });
-    scribe.clearTranscripts();
-  }, [scribe]);
-
-  /**
-   * Force-commit current partial transcript — bypasses VAD silence detection.
-   * Use when VAD fails to detect silence (noisy environment, mobile mic, etc.)
-   */
-  const forceCommit = useCallback(() => {
-    if (!scribe.isConnected && !scribe.isTranscribing) {
-      log("forceCommit: not connected, ignoring");
-      return;
+    // Cancel VAD
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
     }
-    log("forceCommit: manually committing current partial transcript");
-    try {
-      scribe.commit();
-    } catch (err) {
-      logError("forceCommit failed:", (err as Error).message);
-    }
-  }, [scribe]);
-
-  // Auto-commit fallback: if partial transcript hasn't changed for 2.5s,
-  // force a commit. This handles noisy environments where VAD can't detect silence.
-  const autoCommitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastPartialRef = useRef("");
-  useEffect(() => {
-    if (autoCommitTimerRef.current) {
-      clearTimeout(autoCommitTimerRef.current);
-      autoCommitTimerRef.current = null;
+    if (maxTimerRef.current) {
+      clearTimeout(maxTimerRef.current);
+      maxTimerRef.current = null;
     }
 
-    // Only auto-commit if we have partial text and are actively listening
-    if (!transcripts.partial || (!scribe.isConnected && !scribe.isTranscribing)) {
-      lastPartialRef.current = "";
-      return;
-    }
-
-    // If partial text changed, restart the timer
-    if (transcripts.partial !== lastPartialRef.current) {
-      lastPartialRef.current = transcripts.partial;
-      autoCommitTimerRef.current = setTimeout(() => {
-        // If partial text is still the same after 2.5s, force commit
-        log("Auto-commit: partial transcript unchanged for 2.5s, forcing commit");
-        try {
-          scribe.commit();
-        } catch (err) {
-          logError("Auto-commit failed:", (err as Error).message);
-        }
-      }, 2500);
-    }
-
-    return () => {
-      if (autoCommitTimerRef.current) {
-        clearTimeout(autoCommitTimerRef.current);
-        autoCommitTimerRef.current = null;
+    // Stop recorder
+    if (recorderRef.current && recorderRef.current.state !== "inactive") {
+      try {
+        recorderRef.current.stop();
+      } catch {
+        /* ignore */
       }
-    };
-  }, [transcripts.partial, scribe]);
+    }
+    recorderRef.current = null;
+    chunksRef.current = [];
+    isStoppingRef.current = false;
 
-  const displayTranscript = transcripts.committed
-    ? transcripts.partial
-      ? `${transcripts.committed} ${transcripts.partial}`
-      : transcripts.committed
-    : transcripts.partial;
+    // Close audio context
+    if (audioContextRef.current && audioContextRef.current.state !== "closed") {
+      audioContextRef.current.close().catch(() => {});
+    }
+    audioContextRef.current = null;
+    analyserRef.current = null;
 
-  const isListening = scribe.isConnected || scribe.isTranscribing;
-  const isConnecting = scribe.status === "connecting";
+    // Release mic stream
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach((t) => t.stop());
+      mediaStreamRef.current = null;
+    }
+
+    setStatus("idle");
+  }, []);
+
+  /** Reset transcript state */
+  const resetTranscript = useCallback(() => {
+    setTranscript("");
+    setFinalTranscript("");
+  }, []);
+
+  /** Force-commit: stop current recording and transcribe immediately */
+  const forceCommit = useCallback(() => {
+    log("forceCommit called");
+    if (recorderRef.current && recorderRef.current.state !== "inactive") {
+      void processRecording();
+    }
+  }, [processRecording]);
+
+  const isListening = status === "listening";
+  const isConnecting = status === "requesting-mic";
 
   return {
     isSupported,
     isListening,
     isConnecting,
-    transcript: displayTranscript,
-    finalTranscript: transcripts.committed,
+    transcript,
+    finalTranscript,
     startListening,
     stopListening,
     resetTranscript,
     forceCommit,
-    error: scribe.error,
-    status: scribe.status,
+    error,
+    status,
   };
 }
