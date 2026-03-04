@@ -55,6 +55,10 @@ export function useVoiceModeBridge(options?: UseVoiceModeBridgeOptions) {
             voiceMode.setLastError("mic-denied");
           } else if (msg.includes("API key") || msg.includes("api key") || msg.includes("401")) {
             voiceMode.setLastError("api-key-missing");
+          } else if (msg.includes("timeout") || msg.includes("Timeout")) {
+            voiceMode.setLastError("mic-denied");
+          } else {
+            voiceMode.setState("idle");
           }
         });
       }

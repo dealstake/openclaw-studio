@@ -215,17 +215,18 @@ export const BrainKeysSection = memo(function BrainKeysSection({
       )}
 
       {!loading && profiles.length === 0 && hasAiCredentials && (
-        <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-3 py-2.5">
-          <p className="text-xs text-emerald-400">
+        <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-4 py-3">
+          <p className="text-xs text-emerald-400 leading-relaxed">
             <span aria-hidden="true">✓ </span>Provider credentials configured via{" "}
             <button
               type="button"
               onClick={onNavigateToCredentials}
-              className="inline-flex items-center min-h-[44px] px-1 rounded underline underline-offset-2 hover:text-emerald-300 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="inline-flex items-center whitespace-nowrap min-h-[44px] px-1 rounded underline underline-offset-2 hover:text-emerald-300 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               Credentials vault
             </button>
-            . Add per-agent keys here for failover.
+            .{" "}
+            <span className="whitespace-nowrap">Add per-agent keys here for failover.</span>
           </p>
         </div>
       )}

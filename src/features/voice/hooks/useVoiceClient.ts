@@ -194,12 +194,23 @@ export function useVoiceClient(options?: UseVoiceClientOptions): UseVoiceClientR
 
     try {
       const token = await fetchToken(apiKeyRef.current);
-      await scribe.connect({ token });
+      // Race connection against a timeout to prevent indefinite "Connecting..." state
+      const connectPromise = scribe.connect({ token });
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Connection timeout — microphone may be blocked")), 15000)
+      );
+      await Promise.race([connectPromise, timeoutPromise]);
     } catch (err) {
       const msg = (err as Error).message || "Failed to start voice input";
       if (msg.includes("NotAllowedError") || msg.includes("Permission denied")) {
         toast.error("Microphone access denied — check browser settings.");
+      } else if (msg.includes("timeout") || msg.includes("Timeout")) {
+        toast.error("Voice connection timed out — check microphone permissions.");
+      } else {
+        toast.error("Voice connection failed — please try again.");
       }
+      // Ensure we're disconnected on any error
+      try { scribe.disconnect(); } catch { /* ignore */ }
     }
   }, [scribe]);
 

@@ -192,7 +192,7 @@ export const VoiceModeOverlay = React.memo(function VoiceModeOverlay() {
           exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.95 }}
           transition={motionTransition}
           className={cn(
-            "fixed inset-0 z-50 flex flex-col",
+            "fixed inset-0 z-[60] flex flex-col",
             "bg-background/95 backdrop-blur-xl",
             "h-[100dvh]",
             "pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]",
