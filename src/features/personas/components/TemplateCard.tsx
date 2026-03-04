@@ -120,11 +120,15 @@ export const TemplateCard = React.memo(function TemplateCard({
       {/* Meta row */}
       <div className="flex w-full items-center gap-3 text-xs text-muted-foreground/90">
         <span>~{template.estimatedSetupMinutes} min setup</span>
-        <span className="text-muted-foreground/40">·</span>
-        <span>
-          {template.skillRequirements.length} skill
-          {template.skillRequirements.length !== 1 ? "s" : ""}
-        </span>
+        {template.skillRequirements.length > 0 && (
+          <>
+            <span className="text-muted-foreground/40">·</span>
+            <span>
+              {template.skillRequirements.length} skill
+              {template.skillRequirements.length !== 1 ? "s" : ""}
+            </span>
+          </>
+        )}
         <span className="text-muted-foreground/40">·</span>
         <span>{template.discoveryPhases.length} phases</span>
       </div>
