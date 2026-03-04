@@ -39,6 +39,25 @@ const KNOWN_NAMES = new Set([
 /** Matches capitalized words that appear in the known names set. */
 const STANDALONE_NAME_RE = /\b([A-Z][a-z]{2,})\b/g;
 
+/**
+ * Common name alias groups for conflict detection.
+ * Each set contains lowercase variants that likely refer to the same person.
+ */
+const NAME_ALIAS_GROUPS: ReadonlySet<string>[] = [
+  new Set(["mike", "michael"]),
+  new Set(["bob", "robert"]),
+  new Set(["dave", "david"]),
+  new Set(["matt", "matthew"]),
+  new Set(["nick", "nicholas"]),
+  new Set(["tom", "thomas"]),
+  new Set(["will", "william"]),
+  new Set(["sam", "samuel", "samantha"]),
+  new Set(["jake", "jacob"]),
+  new Set(["kate", "katherine", "catherine"]),
+  new Set(["steve", "steven", "stephen"]),
+  new Set(["alex", "alexander", "alexandra"]),
+];
+
 
 
 /**
@@ -430,7 +449,10 @@ function detectConflicts(
       // Alias candidate: one is prefix of the other, OR they share enough common chars
       const shorter = al.length <= bl.length ? al : bl;
       const longer = al.length <= bl.length ? bl : al;
-      const isAliasCandidate = longer.startsWith(shorter) || longer.includes(shorter);
+      const isAliasCandidate =
+        longer.startsWith(shorter) ||
+        longer.includes(shorter) ||
+        NAME_ALIAS_GROUPS.some((g) => g.has(al) && g.has(bl));
       if (sharedFiles.length >= 2 && isAliasCandidate) {
         conflicts.push({
           id: `conflict-${conflictIdx++}`,
