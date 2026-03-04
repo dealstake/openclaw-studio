@@ -27,7 +27,7 @@ export interface UseVoiceClientReturn {
   status: ScribeStatus;
 }
 
-const MAX_RECONNECT_ATTEMPTS = 3;
+const MAX_RECONNECT_ATTEMPTS = 5;
 const BASE_RECONNECT_DELAY_MS = 1000;
 const SCRIBE_MODEL_ID = "scribe_v2_realtime";
 

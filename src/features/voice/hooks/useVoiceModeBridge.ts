@@ -28,6 +28,10 @@ interface UseVoiceModeBridgeOptions {
 export function useVoiceModeBridge(options?: UseVoiceModeBridgeOptions) {
   const voiceMode = useVoiceModeSafe();
   const voice = useVoiceClient();
+
+  // Keep onUserMessage in a ref to avoid stale closures in effects
+  const onUserMessageRef = useRef(options?.onUserMessage);
+  onUserMessageRef.current = options?.onUserMessage;
   const tts = useVoiceOutput();
   const [coordinator] = useState(() => createStudioSettingsCoordinator({ debounceMs: 200 }));
   const voiceSettings = useVoiceSettings({
@@ -123,9 +127,9 @@ export function useVoiceModeBridge(options?: UseVoiceModeBridgeOptions) {
     console.log("[VoiceModeBridge] New committed transcript:", voice.finalTranscript.substring(0, 80));
     prevFinalRef.current = voice.finalTranscript;
 
-    if (options?.onUserMessage) {
+    if (onUserMessageRef.current) {
       console.log("[VoiceModeBridge] Sending to agent via onUserMessage");
-      options.onUserMessage(voice.finalTranscript);
+      onUserMessageRef.current(voice.finalTranscript);
       voiceMode.setState("thinking");
     } else {
       console.warn("[VoiceModeBridge] No onUserMessage callback — transcript not sent to agent!");
