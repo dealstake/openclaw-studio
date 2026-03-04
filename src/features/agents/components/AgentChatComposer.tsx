@@ -153,7 +153,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   const voiceMode = useVoiceModeSafe();
   const voiceModeActive = !!(voiceMode?.isOverlayOpen || voiceMode?.isMinimized);
 
-  const { speakResponse: bridgeSpeakResponse } = useVoiceModeBridge({
+  const { startVoiceMode, speakResponse: bridgeSpeakResponse } = useVoiceModeBridge({
     onUserMessage: useCallback(
       (text: string) => {
         onSend(text);
@@ -518,7 +518,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
                   onCancel={handleVoiceCancel}
                 />
                 {selectedAgentId && (
-                  <VoiceModeButton agentId={selectedAgentId} />
+                  <VoiceModeButton agentId={selectedAgentId} onActivate={startVoiceMode} />
                 )}
               </div>
               <textarea
@@ -608,7 +608,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
                   transition={{ type: "spring", damping: 25, stiffness: 200 }}
                   className="sm:hidden"
                 >
-                  <VoiceModeButton agentId={selectedAgentId} variant="primary" />
+                  <VoiceModeButton agentId={selectedAgentId} variant="primary" onActivate={startVoiceMode} />
                 </motion.div>
                 {/* Desktop: agent menu (unchanged) */}
                 {composerAgents && composerAgents.length > 0 && onSelectAgent && (

@@ -39,26 +39,42 @@ export function useVoiceModeBridge(options?: UseVoiceModeBridgeOptions) {
 
   const voiceModeActive = !!(voiceMode?.isOverlayOpen || voiceMode?.isMinimized);
 
-  // Start STT when voice mode opens, stop when it closes
+  /**
+   * Start voice mode — MUST be called from a user gesture (click/tap handler).
+   * This calls getUserMedia + Scribe.connect in the same gesture chain,
+   * which is required for iOS Safari.
+   */
+  const startVoiceMode = useCallback(async (agentId: string) => {
+    if (!voiceMode) return;
+
+    console.log("[VoiceModeBridge] startVoiceMode called from user gesture");
+
+    // Open the UI immediately
+    voiceMode.openVoiceMode(agentId);
+    tts.warmup();
+
+    // Start STT in the SAME call chain as the user gesture
+    try {
+      console.log("[VoiceModeBridge] Starting STT in gesture chain...");
+      await voice.startListening();
+      console.log("[VoiceModeBridge] STT started successfully");
+    } catch (err) {
+      const msg = (err as Error).message || "";
+      console.error("[VoiceModeBridge] STT start failed:", msg);
+      voiceMode.setState("idle");
+      if (msg.includes("NotAllowedError") || msg.includes("Permission denied")) {
+        voiceMode.setLastError("mic-denied");
+      } else if (msg.includes("API key") || msg.includes("api key") || msg.includes("401")) {
+        voiceMode.setLastError("api-key-missing");
+      }
+    }
+  }, [voiceMode, voice, tts]);
+
+  // When voice mode closes, stop STT + TTS
   useEffect(() => {
     if (!voiceMode) return;
 
-    if (voiceModeActive) {
-      console.log("[VoiceModeBridge] Voice mode active, isListening:", voice.isListening, "isConnecting:", voice.isConnecting);
-      if (!voice.isListening && !voice.isConnecting) {
-        console.log("[VoiceModeBridge] Starting STT...");
-        tts.warmup();
-        voice.startListening().catch((err) => {
-          const msg = (err as Error).message || "";
-          voiceMode.setState("idle");
-          if (msg.includes("NotAllowedError") || msg.includes("Permission denied")) {
-            voiceMode.setLastError("mic-denied");
-          } else if (msg.includes("API key") || msg.includes("api key") || msg.includes("401")) {
-            voiceMode.setLastError("api-key-missing");
-          }
-        });
-      }
-    } else {
+    if (!voiceModeActive) {
       if (voice.isListening) {
         voice.stopListening();
       }
@@ -142,6 +158,8 @@ export function useVoiceModeBridge(options?: UseVoiceModeBridgeOptions) {
   }, [tts.isPlaying, voiceMode]);
 
   return {
+    /** Start voice mode — MUST be called from user gesture (click handler) */
+    startVoiceMode,
     /** Call this when agent sends a response to speak it */
     speakResponse,
     /** Whether STT is active */

@@ -3,19 +3,16 @@
 /**
  * Voice input hook — SDK-based wrapper around ElevenLabs `useScribe`.
  *
- * Features:
- * - Pre-acquires mic permission before Scribe connection (iOS Safari safety net)
- * - Automatic microphone management via SDK
- * - Consolidated transcript state to prevent stale closure bugs
- * - Auto-reconnect with exponential backoff (max 3 attempts)
- * - Comprehensive logging for debugging voice mode issues
+ * CRITICAL for iOS Safari: startListening() MUST be called from a user
+ * gesture handler (click/tap). The bridge's startVoiceMode() ensures this.
+ * getUserMedia is called first to trigger the permission prompt, then
+ * Scribe.connect() is called immediately after (within the same async chain).
+ * iOS Safari's transient activation window (~5s) allows this.
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useScribe, type ScribeStatus } from "@/hooks/use-scribe";
 import { toast } from "sonner";
-
-// ── Types ───────────────────────────────────────────────────────────────
 
 export interface UseVoiceClientReturn {
   isSupported: boolean;
@@ -30,8 +27,6 @@ export interface UseVoiceClientReturn {
   status: ScribeStatus;
 }
 
-// ── Constants ───────────────────────────────────────────────────────────
-
 const MAX_RECONNECT_ATTEMPTS = 3;
 const BASE_RECONNECT_DELAY_MS = 1000;
 const SCRIBE_MODEL_ID = "scribe_v2_realtime";
@@ -39,17 +34,10 @@ const SCRIBE_MODEL_ID = "scribe_v2_realtime";
 const log = (msg: string, ...args: unknown[]) => console.log(`[VoiceClient] ${msg}`, ...args);
 const logError = (msg: string, ...args: unknown[]) => console.error(`[VoiceClient] ${msg}`, ...args);
 
-// ── Support check ───────────────────────────────────────────────────────
-
 function checkSupport(): boolean {
   if (typeof window === "undefined") return false;
-  return !!(
-    typeof navigator.mediaDevices?.getUserMedia === "function" &&
-    typeof WebSocket !== "undefined"
-  );
+  return !!(typeof navigator.mediaDevices?.getUserMedia === "function" && typeof WebSocket !== "undefined");
 }
-
-// ── Token fetcher ───────────────────────────────────────────────────────
 
 async function fetchToken(): Promise<string> {
   log("Fetching STT token...");
@@ -58,20 +46,15 @@ async function fetchToken(): Promise<string> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ type: "realtime_scribe" }),
   });
-
   log("Token response:", res.status, res.statusText);
-
   if (!res.ok) {
     const errBody = await res.json().catch(() => ({ error: `Failed: ${res.status}` }));
     throw new Error((errBody as { error?: string }).error || `Failed to get voice token: ${res.status}`);
   }
-
   const data = (await res.json()) as { token: string };
   log("Token received, length:", data.token?.length);
   return data.token;
 }
-
-// ── Hook ────────────────────────────────────────────────────────────────
 
 interface TranscriptState {
   committed: string;
@@ -79,11 +62,7 @@ interface TranscriptState {
 }
 
 export function useVoiceClient(): UseVoiceClientReturn {
-  const [transcripts, setTranscripts] = useState<TranscriptState>({
-    committed: "",
-    partial: "",
-  });
-
+  const [transcripts, setTranscripts] = useState<TranscriptState>({ committed: "", partial: "" });
   const reconnectAttemptsRef = useRef(0);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const intentionalDisconnectRef = useRef(false);
@@ -102,15 +81,11 @@ export function useVoiceClient(): UseVoiceClientReturn {
     languageCode: "en",
 
     onSessionStarted: () => {
-      log("SESSION_STARTED — Scribe connection established");
+      log("SESSION_STARTED — Scribe connection fully established");
     },
 
     onPartialTranscript: (data) => {
-      log("Partial transcript:", data.text.substring(0, 50));
-      setTranscripts((prev) => ({
-        ...prev,
-        partial: data.text,
-      }));
+      setTranscripts((prev) => ({ ...prev, partial: data.text }));
     },
 
     onCommittedTranscript: (data) => {
@@ -123,28 +98,21 @@ export function useVoiceClient(): UseVoiceClientReturn {
     },
 
     onAuthError: () => {
-      logError("Auth error from Scribe");
+      logError("Auth error");
       attemptReconnect();
     },
-
     onQuotaExceededError: () => {
       logError("Quota exceeded");
       toast.error("Voice quota reached. Try again later.");
     },
-
     onRateLimitedError: () => {
       logError("Rate limited");
       toast.error("Too many requests. Please wait.");
     },
-
     onError: (err) => {
       const msg = err instanceof Error ? err.message : String(err);
       logError("STT error:", msg);
-      if (!(msg.includes("NotAllowedError") || msg.includes("Permission denied"))) {
-        // Don't toast mic permission — parent handles
-      }
     },
-
     onDisconnect: () => {
       log("Scribe disconnected, intentional:", intentionalDisconnectRef.current);
       if (!intentionalDisconnectRef.current) {
@@ -159,34 +127,40 @@ export function useVoiceClient(): UseVoiceClientReturn {
       toast.error("Voice unavailable — please try again.");
       return;
     }
-
     const delay = BASE_RECONNECT_DELAY_MS * Math.pow(2, reconnectAttemptsRef.current);
     reconnectAttemptsRef.current++;
     log(`Reconnecting in ${delay}ms (attempt ${reconnectAttemptsRef.current})`);
-
     reconnectTimerRef.current = setTimeout(async () => {
       try {
         const token = await fetchToken();
         await scribe.connect({ token });
-      } catch {
-        // Will trigger onDisconnect → another attemptReconnect
-      }
+      } catch { /* Will trigger onDisconnect */ }
     }, delay);
   }, [scribe]);
 
   useEffect(() => {
     return () => {
       intentionalDisconnectRef.current = true;
-      if (reconnectTimerRef.current) {
-        clearTimeout(reconnectTimerRef.current);
-      }
+      if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
       scribe.disconnect();
     };
   }, [scribe]);
 
+  /**
+   * Start listening. MUST be called from a user gesture handler chain
+   * (click/tap → bridge.startVoiceMode → this function).
+   *
+   * Flow:
+   * 1. getUserMedia() — triggers iOS Safari permission prompt (within gesture)
+   * 2. fetchToken() — gets ElevenLabs token (fast, stays within ~5s activation)
+   * 3. scribe.connect() — Scribe.connect() internally calls getUserMedia again,
+   *    but since permission was just granted in step 1, it succeeds
+   *
+   * The key: steps 1-3 happen in the SAME async chain starting from the
+   * user's click. iOS Safari's transient activation window allows all of this.
+   */
   const startListening = useCallback(async () => {
     log("startListening called, status:", scribe.status, "isConnected:", scribe.isConnected);
-    
     if (scribe.isConnected || scribe.status === "connecting") {
       log("Already connected/connecting, skipping");
       return;
@@ -195,44 +169,51 @@ export function useVoiceClient(): UseVoiceClientReturn {
     intentionalDisconnectRef.current = false;
     reconnectAttemptsRef.current = 0;
 
+    // Step 1: getUserMedia — triggers permission prompt on iOS Safari
+    // This MUST happen in the user gesture chain
+    log("Step 1: Requesting microphone permission...");
+    let micStream: MediaStream | null = null;
     try {
-      // Pre-acquire mic permission as safety net.
-      // The primary mic acquisition should happen in the VoiceModeButton click handler.
-      // This is a fallback for desktop/keyboard shortcut scenarios.
-      log("Pre-acquiring mic permission (safety net)...");
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 },
-        });
-        stream.getTracks().forEach((track) => track.stop());
-        log("Mic permission pre-acquired (safety net)");
-      } catch (micErr) {
-        logError("Mic permission pre-acquire failed (may already be granted from click handler):", micErr);
-        // Don't throw — the click handler may have already acquired permission
-      }
+      micStream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 },
+      });
+      log("Step 1: Mic permission GRANTED, tracks:", micStream.getTracks().length);
+      // DON'T stop the stream yet — keep it alive so Scribe's internal getUserMedia succeeds
+    } catch (err) {
+      const msg = (err as Error).message || "";
+      logError("Step 1: Mic permission DENIED:", msg);
+      throw err; // Re-throw so bridge shows error state
+    }
 
+    try {
+      // Step 2: Fetch token (fast — should complete within activation window)
       const token = await fetchToken();
-      
-      log("Connecting Scribe with token...");
+
+      // Step 3: Connect Scribe — its internal getUserMedia should succeed
+      // because we just got permission and the stream is still alive
+      log("Step 3: Connecting Scribe...");
       const connectPromise = scribe.connect({ token });
       const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("Connection timeout — microphone may be blocked")), 15000),
+        setTimeout(() => reject(new Error("Connection timeout")), 15000),
       );
       await Promise.race([connectPromise, timeoutPromise]);
-      log("Scribe.connect() resolved");
+      log("Step 3: Scribe.connect() resolved");
     } catch (err) {
       const msg = (err as Error).message || "Failed to start voice input";
       logError("startListening failed:", msg);
-      
-      if (msg.includes("NotAllowedError") || msg.includes("Permission denied")) {
-        // Parent shows MicPermissionDialog
-      } else if (msg.includes("timeout") || msg.includes("Timeout")) {
-        toast.error("Voice connection timed out — check microphone permissions.");
-      } else {
+      if (msg.includes("timeout") || msg.includes("Timeout")) {
+        toast.error("Voice connection timed out.");
+      } else if (!msg.includes("NotAllowedError") && !msg.includes("Permission denied")) {
         toast.error("Voice connection failed — please try again.");
       }
       try { scribe.disconnect(); } catch { /* ignore */ }
       throw err;
+    } finally {
+      // Release our pre-acquired stream now that Scribe has its own
+      if (micStream) {
+        micStream.getTracks().forEach((t) => t.stop());
+        log("Pre-acquired mic stream released");
+      }
     }
   }, [scribe]);
 
