@@ -79,12 +79,12 @@ export const RuleRow = memo(function RuleRow({
       {/* Rule info */}
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
-          <span className="truncate text-[13px] font-medium text-foreground leading-tight">
+          <span className="truncate text-[13px] font-medium text-foreground leading-tight" title={rule.name}>
             {rule.name}
           </span>
         </div>
         <div className="mt-0.5 flex items-center gap-2 flex-wrap">
-          <span className="truncate text-[11px] text-muted-foreground leading-tight">
+          <span className="truncate text-[11px] text-muted-foreground leading-tight" title={conditionSummary(rule.conditions)}>
             {conditionSummary(rule.conditions)}
           </span>
           {agentValue && agentValue !== "*" && (
@@ -98,7 +98,7 @@ export const RuleRow = memo(function RuleRow({
 
       {/* Model target badge */}
       <div className="flex-shrink-0">
-        <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary ring-1 ring-primary/20 leading-tight max-w-[100px] truncate">
+        <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary ring-1 ring-primary/20 leading-tight max-w-[100px] truncate" title={modelLabel}>
           {modelLabel}
         </span>
       </div>
