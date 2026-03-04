@@ -295,9 +295,23 @@ export const AgentChatPanel = memo(function AgentChatPanel({
   );
 
   // Extract last assistant text from message parts for TTS
+  // Only include text from the LAST run (after the last "running" status marker)
+  // to avoid showing/speaking accumulated system messages from earlier turns
   const lastAssistantText = useMemo(() => {
     if (!agent.messageParts || agent.messageParts.length === 0) return undefined;
-    const textParts = agent.messageParts.filter(isTextPart);
+
+    // Find the last "running" status marker — text after this is the current response
+    let startIdx = 0;
+    for (let i = agent.messageParts.length - 1; i >= 0; i--) {
+      const part = agent.messageParts[i];
+      if (part.type === "status" && (part as { state?: string }).state === "running") {
+        startIdx = i + 1;
+        break;
+      }
+    }
+
+    const recentParts = agent.messageParts.slice(startIdx);
+    const textParts = recentParts.filter(isTextPart);
     if (textParts.length === 0) return undefined;
     return textParts.map(p => p.text).join("");
   }, [agent.messageParts]);
