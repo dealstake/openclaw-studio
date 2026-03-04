@@ -200,6 +200,8 @@ export const useOrchestrations = (
               setOrchestrations((prev) =>
                 prev.map((o) => (o.id === updated.id ? updated : o)),
               );
+            }).catch((patchErr) => {
+              console.error("[useOrchestrations] Failed to sync run status:", patchErr);
             });
           }
         }

@@ -11,6 +11,7 @@
  */
 
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import dynamic from "next/dynamic";
 import {
   Network, Plus, Play, Save, Trash2, Bot, GitBranch, Zap,
@@ -271,8 +272,9 @@ const CanvasToolbar = memo(function CanvasToolbar({
       <button
         type="button"
         onClick={onAddTrigger}
+        disabled={isBusy}
         title="Add trigger node"
-        className="flex items-center gap-1 rounded-md border border-border/60 bg-muted/50 px-1.5 py-1 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        className="flex items-center gap-1 rounded-md border border-border/60 bg-muted/50 px-1.5 py-1 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-40"
       >
         <Zap className="h-3 w-3" />
         Trigger
@@ -280,8 +282,9 @@ const CanvasToolbar = memo(function CanvasToolbar({
       <button
         type="button"
         onClick={onAddAgent}
+        disabled={isBusy}
         title="Add agent node"
-        className="flex items-center gap-1 rounded-md border border-border/60 bg-muted/50 px-1.5 py-1 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        className="flex items-center gap-1 rounded-md border border-border/60 bg-muted/50 px-1.5 py-1 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-40"
       >
         <Bot className="h-3 w-3" />
         Agent
@@ -289,8 +292,9 @@ const CanvasToolbar = memo(function CanvasToolbar({
       <button
         type="button"
         onClick={onAddCondition}
+        disabled={isBusy}
         title="Add condition node"
-        className="flex items-center gap-1 rounded-md border border-border/60 bg-muted/50 px-1.5 py-1 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        className="flex items-center gap-1 rounded-md border border-border/60 bg-muted/50 px-1.5 py-1 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-40"
       >
         <GitBranch className="h-3 w-3" />
         If
@@ -582,6 +586,8 @@ const OrchestratorPanel = memo(function OrchestratorPanel({
       setActiveOrchestration(o);
       openOrchestration(o.id, o.graph);
       setViewMode("canvas");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to create orchestration");
     } finally {
       setIsBusy(false);
     }
@@ -593,6 +599,8 @@ const OrchestratorPanel = memo(function OrchestratorPanel({
     try {
       await updateOrchestration(activeOrchestration.id, { graph });
       setActiveOrchestration((prev) => prev ? { ...prev, graph } : null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to save orchestration");
     } finally {
       setIsBusy(false);
     }
@@ -602,6 +610,8 @@ const OrchestratorPanel = memo(function OrchestratorPanel({
     setIsBusy(true);
     try {
       await runOrchestration(id);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to run orchestration");
     } finally {
       setIsBusy(false);
     }
