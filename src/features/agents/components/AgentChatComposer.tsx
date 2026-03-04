@@ -213,9 +213,10 @@ export const AgentChatComposer = memo(function AgentChatComposer({
           if (voiceModeActive) {
             // Voice overlay is open — use bridge (updates overlay state + TTS)
             void bridgeSpeakResponse(plainText);
-          } else if (voiceOutput.enabled || voiceResolvedSettings.autoSpeak) {
-            // Inline mic mode or auto-speak setting enabled — use direct TTS
+          } else if (voiceOutput.enabled) {
+            // Inline mic was just used — speak this ONE response, then disable
             void voiceOutput.speak(plainText, resolvedToSpeakOptions(voiceResolvedSettings));
+            voiceOutput.setEnabled(false);
           }
         }
         prevAssistantTextRef.current = lastAssistantText;
