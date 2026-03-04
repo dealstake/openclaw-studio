@@ -494,7 +494,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
               {/* Left controls — voice + wizard launcher */}
               <div className="flex shrink-0 items-center gap-1 sm:gap-2 pl-2 pb-1.5">
                 {!wizardType && onLaunchWizard && (
-                  <WizardLaunchMenu onLaunch={onLaunchWizard} disabled={isRunning} />
+                  <WizardLaunchMenu onLaunch={onLaunchWizard} disabled={isRunning} className="hidden sm:inline-flex" />
                 )}
                 <VoiceInputControl
                   onChange={handleVoiceChange}

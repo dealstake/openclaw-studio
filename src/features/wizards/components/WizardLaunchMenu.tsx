@@ -1,4 +1,5 @@
 import { memo, useCallback, useRef, useState } from "react";
+import { cn } from "@/lib/utils";
 import {
   Bot,
   CalendarClock,
@@ -31,6 +32,7 @@ const WIZARD_MENU_ITEMS: {
 type WizardLaunchMenuProps = {
   onLaunch: (type: WizardType) => void;
   disabled?: boolean;
+  className?: string;
 };
 
 // ── Component ──────────────────────────────────────────────────────────
@@ -42,6 +44,7 @@ type WizardLaunchMenuProps = {
 export const WizardLaunchMenu = memo(function WizardLaunchMenu({
   onLaunch,
   disabled = false,
+  className,
 }: WizardLaunchMenuProps) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -66,7 +69,7 @@ export const WizardLaunchMenu = memo(function WizardLaunchMenu({
   }, []);
 
   return (
-    <div ref={containerRef} className="relative" onBlur={handleBlur}>
+    <div ref={containerRef} className={cn("relative", className)} onBlur={handleBlur}>
       <button
         type="button"
         className="flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:opacity-40"
