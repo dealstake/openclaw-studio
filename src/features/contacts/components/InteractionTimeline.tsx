@@ -17,29 +17,25 @@ import type { ClientInteractionRow } from "../hooks/useContacts";
 
 // ─── Type config ──────────────────────────────────────────────────────────────
 
-const TYPE_ICON: Record<string, typeof Phone> = {
-  call:    Phone,
-  email:   Mail,
-  meeting: CalendarDays,
-  note:    StickyNote,
-  task:    CheckSquare,
+/** Consolidated interaction type configuration — icon, label, and color in one place. */
+const TYPE_CONFIG: Record<string, { Icon: typeof Phone; label: string; color: string }> = {
+  call:    { Icon: Phone,        label: "Call",    color: "text-blue-500 dark:text-blue-400"    },
+  email:   { Icon: Mail,         label: "Email",   color: "text-violet-500 dark:text-violet-400" },
+  meeting: { Icon: CalendarDays, label: "Meeting", color: "text-amber-500 dark:text-amber-400"  },
+  note:    { Icon: StickyNote,   label: "Note",    color: "text-slate-500 dark:text-slate-400"  },
+  task:    { Icon: CheckSquare,  label: "Task",    color: "text-emerald-500 dark:text-emerald-400" },
 };
 
-const TYPE_LABEL: Record<string, string> = {
-  call:    "Call",
-  email:   "Email",
-  meeting: "Meeting",
-  note:    "Note",
-  task:    "Task",
-};
-
-const TYPE_COLOR: Record<string, string> = {
-  call:    "text-blue-500 dark:text-blue-400",
-  email:   "text-violet-500 dark:text-violet-400",
-  meeting: "text-amber-500 dark:text-amber-400",
-  note:    "text-slate-500 dark:text-slate-400",
-  task:    "text-emerald-500 dark:text-emerald-400",
-};
+// Legacy accessors for backward compat (used in render)
+const TYPE_ICON: Record<string, typeof Phone> = Object.fromEntries(
+  Object.entries(TYPE_CONFIG).map(([k, v]) => [k, v.Icon]),
+);
+const TYPE_LABEL: Record<string, string> = Object.fromEntries(
+  Object.entries(TYPE_CONFIG).map(([k, v]) => [k, v.label]),
+);
+const TYPE_COLOR: Record<string, string> = Object.fromEntries(
+  Object.entries(TYPE_CONFIG).map(([k, v]) => [k, v.color]),
+);
 
 const OUTCOME_CONFIG: Record<string, { icon: typeof ThumbsUp; color: string; label: string }> = {
   positive:  { icon: ThumbsUp,   color: "text-emerald-500", label: "Positive"  },

@@ -60,11 +60,14 @@ type HealthView = "graph" | "conflicts";
 interface MemoryGraphPanelProps {
   agentId: string | null;
   className?: string;
+  /** Called when user wants to navigate to a file (e.g., to prune stale entries). */
+  onNavigateToFile?: (filePath: string) => void;
 }
 
 export function MemoryGraphPanel({
   agentId,
   className,
+  onNavigateToFile,
 }: MemoryGraphPanelProps) {
   const { data, loading, error, reload } = useMemoryGraph(agentId);
   const [search, setSearch] = useState("");

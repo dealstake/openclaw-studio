@@ -78,6 +78,9 @@ const ContactForm = memo(function ContactForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) { setError("Name is required"); return; }
+    if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setError("Invalid email format"); return;
+    }
     setError(null);
 
     const tags = tagsRaw.trim()
