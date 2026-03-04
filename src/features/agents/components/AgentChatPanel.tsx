@@ -135,9 +135,7 @@ export const AgentChatPanel = memo(function AgentChatPanel({
     const el = draftRef.current;
     if (!el) return;
     el.style.height = "auto";
-    const isMobile = window.matchMedia("(max-width: 639px)").matches;
-    const cap = isMobile ? 80 : 160;
-    const maxH = Math.min(el.scrollHeight, cap);
+    const maxH = Math.min(el.scrollHeight, 200);
     el.style.height = `${maxH}px`;
     el.style.overflowY = el.scrollHeight > maxH ? "auto" : "hidden";
   }, []);
