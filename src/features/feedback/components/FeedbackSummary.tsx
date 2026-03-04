@@ -21,7 +21,11 @@ const RatioBar = memo(function RatioBar({
   return (
     <div
       className="h-1 w-full overflow-hidden rounded-full bg-muted"
-      title={`${upPct}% positive`}
+      aria-label={`${upPct}% positive feedback`}
+      role="meter"
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={upPct}
     >
       <div
         className="h-full rounded-full bg-emerald-500/70 transition-all"

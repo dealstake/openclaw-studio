@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import type { Annotation, AnnotationRating } from "../lib/types";
 
@@ -81,6 +81,17 @@ export function useFeedback({
     const store = readStore();
     return store[storeKey] ?? null;
   });
+
+  // Cross-tab sync — listen for storage changes from other tabs
+  useEffect(() => {
+    const handler = (e: StorageEvent) => {
+      if (e.key !== LS_KEY) return;
+      const store = readStore();
+      setAnnotation(store[storeKey] ?? null);
+    };
+    window.addEventListener("storage", handler);
+    return () => window.removeEventListener("storage", handler);
+  }, [storeKey]);
 
   const annotate = useCallback(
     (rating: AnnotationRating) => {
