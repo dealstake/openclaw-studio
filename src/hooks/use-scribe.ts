@@ -218,7 +218,8 @@ export function useScribe(options: ScribeHookOptions = {}): UseScribeReturn {
 
   // Cleanup on unmount only — use ref to avoid re-running when disconnect changes
   const disconnectRef = useRef(disconnect)
-  disconnectRef.current = disconnect
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { disconnectRef.current = disconnect })
   useEffect(() => {
     return () => {
       disconnectRef.current()

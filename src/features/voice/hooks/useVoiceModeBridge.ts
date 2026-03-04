@@ -31,7 +31,9 @@ export function useVoiceModeBridge(options?: UseVoiceModeBridgeOptions) {
 
   // Keep onUserMessage in a ref to avoid stale closures in effects
   const onUserMessageRef = useRef(options?.onUserMessage);
-  onUserMessageRef.current = options?.onUserMessage;
+  useEffect(() => {
+    onUserMessageRef.current = options?.onUserMessage;
+  }, [options?.onUserMessage]);
   const tts = useVoiceOutput();
   const [coordinator] = useState(() => createStudioSettingsCoordinator({ debounceMs: 200 }));
   const voiceSettings = useVoiceSettings({
