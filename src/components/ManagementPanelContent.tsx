@@ -99,7 +99,7 @@ export const ManagementPanelContent = memo(function ManagementPanelContent({
             client={ctx.client}
             agentId={ctx.focusedAgentId}
             status={ctx.status}
-            initialDetailAgentId={ctx.settingsAgent?.agentId ?? null}
+            initialDetailAgentId={ctx.settingsAgent?.personaStatus ? ctx.settingsAgent.agentId : null}
           />
         </PanelErrorBoundary>
       )}

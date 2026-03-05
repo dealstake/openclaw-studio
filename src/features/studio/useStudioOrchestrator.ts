@@ -204,11 +204,10 @@ export function useStudioOrchestrator() {
   // Command Palette & Navigation
   // ═══════════════════════════════════════════════════════════════════
   const handleManagementNav = useCallback((tab: ManagementTab) => {
-    if (tab === "personas" && focusedAgent && !settingsAgentId) {
-      setSettingsAgentId(focusedAgent.agentId);
-    }
+    // Don't auto-set settingsAgentId for personas — the focused agent (e.g. Alex)
+    // is usually not a persona, and auto-opening its detail blocks the personas list.
     layout.setManagementView((prev) => (prev === tab ? null : tab));
-  }, [focusedAgent, settingsAgentId, setSettingsAgentId, layout]);
+  }, [layout]);
 
   const handleCmdNavTab = useCallback((tab: ContextTab | "usage" | "channels" | "personas") => {
     const contextTabs = new Set<string>(["projects", "tasks", "workspace", "activity", "router", "playground"]);
@@ -217,12 +216,9 @@ export function useStudioOrchestrator() {
       layout.setContextPanelOpen(true);
       if (layout.mobilePane !== "context") layout.setMobilePane("context");
     } else {
-      if (tab === "personas" && focusedAgent && !settingsAgentId) {
-        setSettingsAgentId(focusedAgent.agentId);
-      }
       layout.setManagementView(tab as ManagementTab);
     }
-  }, [layout, focusedAgent, settingsAgentId, setSettingsAgentId]);
+  }, [layout]);
 
   const handleCmdOpenCtx = useCallback(() => layout.setContextPanelOpen(true), [layout]);
 
