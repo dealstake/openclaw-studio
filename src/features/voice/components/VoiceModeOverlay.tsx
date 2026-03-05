@@ -340,16 +340,16 @@ export const VoiceModeOverlay = React.memo(function VoiceModeOverlay() {
 
             {/* ── Transcript area ─────────────────────────────── */}
             <div
-              className="flex w-full max-w-lg flex-col items-center gap-3 text-center"
+              className="flex w-full max-w-lg flex-col items-center gap-3 px-6 text-center sm:px-8"
               aria-live="polite"
               aria-atomic="false"
             >
               {/* Agent response */}
               {agentTranscript && (
-                <div className="min-h-[2rem]">
+                <div className="max-h-[40vh] min-h-[2rem] overflow-y-auto">
                   <ShimmeringText
                     text={agentTranscript}
-                    className="text-lg font-medium text-foreground sm:text-xl"
+                    className="text-lg font-medium leading-relaxed text-foreground sm:text-xl"
                     aria-hidden="true"
                   />
                   {/* Accessible version */}
