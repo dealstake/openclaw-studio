@@ -14,6 +14,8 @@ interface MobileBottomNavProps {
   onOpenSessionDrawer: () => void;
   contextTab: ContextTab;
   contextPanelOpen: boolean;
+  /** Whether the context panel is actually visible on screen (not just state) */
+  contextPaneVisible?: boolean;
   onContextTabClick: (tab: ContextTab) => void;
   visible: boolean;
 }
@@ -22,9 +24,12 @@ export const MobileBottomNav = memo(function MobileBottomNav({
   onOpenSessionDrawer,
   contextTab,
   contextPanelOpen,
+  contextPaneVisible,
   onContextTabClick,
   visible,
 }: MobileBottomNavProps) {
+  // Use contextPaneVisible if provided, otherwise fall back to contextPanelOpen
+  const isContextVisible = contextPaneVisible ?? contextPanelOpen;
   const emergency = useEmergencyOptional();
   const [moreOpen, setMoreOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
@@ -69,7 +74,7 @@ export const MobileBottomNav = memo(function MobileBottomNav({
       {/* Primary context tabs */}
       {CONTEXT_TAB_CONFIG.filter((t) => PRIMARY_TAB_SET.has(t.value)).map(
         ({ value, label, shortLabel, Icon }) => {
-          const isActive = contextPanelOpen && contextTab === value;
+          const isActive = isContextVisible && contextTab === value;
           return (
             <button
               key={value}
@@ -111,7 +116,7 @@ export const MobileBottomNav = memo(function MobileBottomNav({
         {moreOpen && (
           <div className="absolute bottom-full right-0 mb-2 min-w-48 rounded-lg border border-border/80 bg-popover/95 p-1.5 shadow-xl backdrop-blur-xl">
             {overflowTabs.map(({ value, label, Icon }) => {
-              const isActive = contextPanelOpen && contextTab === value;
+              const isActive = isContextVisible && contextTab === value;
               return (
                 <button
                   key={value}

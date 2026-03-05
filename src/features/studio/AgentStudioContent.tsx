@@ -247,6 +247,7 @@ export const AgentStudioPage = () => {
             onOpenSessionDrawer={() => setMobileSessionDrawerOpen(true)}
             contextTab={contextTab}
             contextPanelOpen={contextPanelOpen}
+            contextPaneVisible={isMobileLayout ? mobilePane === "context" && contextPanelOpen : contextPanelOpen}
             onContextTabClick={(tab) => {
               if (contextPanelOpen && contextTab === tab) {
                 setContextPanelOpen(false);
