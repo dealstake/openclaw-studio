@@ -17,8 +17,8 @@ interface ManagementDrawerProps {
 
 /**
  * Slide-out management drawer that appears beside the sidebar.
- * Unlike PanelExpandModal (full-screen), this overlays the chat area only —
- * the sidebar remains visible on the left.
+ * On mobile (<640px), takes over the full screen for usability.
+ * On desktop, overlays the chat area — sidebar remains visible.
  */
 export const ManagementDrawer = React.memo(function ManagementDrawer({
   open,
@@ -30,20 +30,21 @@ export const ManagementDrawer = React.memo(function ManagementDrawer({
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        {/* Backdrop — covers everything to the right of the sidebar */}
+        {/* Backdrop — on mobile covers everything, on desktop covers right of sidebar */}
         <Dialog.Overlay
-          className="fixed inset-0 z-40 bg-background/50 backdrop-blur-[2px] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 duration-200"
-          style={{ left: sidebarOffsetPx }}
+          className="fixed inset-0 z-40 bg-background/50 backdrop-blur-[2px] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 duration-200 sm:left-[var(--sidebar-offset)]"
+          style={{ "--sidebar-offset": `${sidebarOffsetPx}px` } as React.CSSProperties}
         />
 
-        {/* Drawer panel */}
+        {/* Drawer panel — full-screen on mobile, fixed-width beside sidebar on desktop */}
         <Dialog.Content
-          className="fixed top-0 z-50 flex h-full w-[400px] flex-col overflow-hidden bg-card/95 border-r border-border shadow-[4px_0_32px_-8px_rgba(0,0,0,0.5)] backdrop-blur-xl
+          className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-card/95 border-r border-border shadow-[4px_0_32px_-8px_rgba(0,0,0,0.5)] backdrop-blur-xl
+            sm:inset-auto sm:top-0 sm:left-[var(--sidebar-offset)] sm:h-full sm:w-[400px]
             data-[state=open]:animate-in data-[state=closed]:animate-out
             data-[state=closed]:slide-out-to-left
             data-[state=open]:slide-in-from-left
             duration-200 ease-out"
-          style={{ left: sidebarOffsetPx }}
+          style={{ "--sidebar-offset": `${sidebarOffsetPx}px` } as React.CSSProperties}
           aria-describedby={undefined}
         >
           {/* Header */}
