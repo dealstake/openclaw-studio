@@ -35,12 +35,13 @@ interface MobileSessionDrawerProps {
 }
 
 const MANAGEMENT_ITEMS: { value: ManagementTab; label: string }[] = [
+  { value: "personas", label: "Personas" },
+  { value: "voice", label: "Voice" },
+  { value: "contacts", label: "Contacts" },
   { value: "usage", label: "Usage" },
-  { value: "channels", label: "Channels" },
   { value: "credentials", label: "Credentials" },
   { value: "models", label: "Models" },
   { value: "gateway", label: "Gateway" },
-
 ];
 
 export const MobileSessionDrawer = memo(function MobileSessionDrawer({
