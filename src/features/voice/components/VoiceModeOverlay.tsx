@@ -122,6 +122,33 @@ export const VoiceModeOverlay = React.memo(function VoiceModeOverlay() {
     }
   }, [isOverlayOpen]);
 
+  // Make background content inert for screen readers when overlay is open
+  useEffect(() => {
+    if (!isOverlayOpen) return;
+
+    // Find sibling elements (the main app content) and hide them from a11y tree
+    const overlayEl = overlayRef.current?.parentElement;
+    if (!overlayEl) return;
+
+    const parent = overlayEl.parentElement;
+    if (!parent) return;
+
+    const hidden: Element[] = [];
+    for (const child of Array.from(parent.children)) {
+      if (child === overlayEl || child.contains(overlayEl)) continue;
+      if (!child.getAttribute("aria-hidden")) {
+        child.setAttribute("aria-hidden", "true");
+        hidden.push(child);
+      }
+    }
+
+    return () => {
+      for (const el of hidden) {
+        el.removeAttribute("aria-hidden");
+      }
+    };
+  }, [isOverlayOpen]);
+
   // Keyboard shortcuts
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {

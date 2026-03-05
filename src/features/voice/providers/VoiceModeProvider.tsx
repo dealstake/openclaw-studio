@@ -12,6 +12,7 @@ import React, {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -139,6 +140,15 @@ export function VoiceModeProvider({ children }: VoiceModeProviderProps) {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
+  }, []);
+
+  // Clean up timer on unmount to prevent leaks
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
   }, []);
 
   const openVoiceMode = useCallback(

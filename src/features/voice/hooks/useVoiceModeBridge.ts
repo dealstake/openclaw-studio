@@ -136,7 +136,7 @@ export function useVoiceModeBridge(options?: UseVoiceModeBridgeOptions) {
         }
         break;
     }
-  }, [voice.status, voice.transcript]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [voice.status, voice.transcript, voiceMode, voiceModeActive]);
 
   // On new committed transcript, send to agent
   useEffect(() => {
