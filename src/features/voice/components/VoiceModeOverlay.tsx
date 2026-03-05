@@ -263,7 +263,7 @@ export const VoiceModeOverlay = React.memo(function VoiceModeOverlay() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               {/* Elapsed time */}
               <span className="text-xs tabular-nums text-muted-foreground">
                 {formatElapsed(elapsedSeconds)}
