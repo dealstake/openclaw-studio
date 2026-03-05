@@ -100,6 +100,16 @@ export const MobileSessionDrawer = memo(function MobileSessionDrawer({
   );
   const handleRetry = useCallback(() => void load(), [load]);
 
+  // Lock body scroll while drawer is open
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
   // Close on Escape key
   useEffect(() => {
     if (!open) return;
@@ -158,7 +168,7 @@ export const MobileSessionDrawer = memo(function MobileSessionDrawer({
     <div className="fixed inset-0 z-50" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="mobile-drawer-title" ref={drawerRef}>
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
       <div
-        className="absolute inset-y-0 left-0 w-[min(280px,85vw)] animate-in slide-in-from-left duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] bg-surface-elevated flex flex-col overflow-hidden pb-[env(safe-area-inset-bottom)]"
+        className="absolute inset-y-0 left-0 w-[min(280px,85vw)] animate-in slide-in-from-left duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] bg-surface-elevated flex flex-col overflow-hidden overscroll-contain pb-[env(safe-area-inset-bottom)]"
         onClick={(e) => e.stopPropagation()}
       >
         <h2 id="mobile-drawer-title" className="sr-only">Main Menu</h2>
