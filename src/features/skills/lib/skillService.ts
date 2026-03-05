@@ -19,7 +19,7 @@ function parseSkillEntry(key: string, raw: unknown): Skill | null {
   const name = typeof raw.name === "string" ? raw.name : key;
   const description =
     typeof raw.description === "string" ? raw.description : "";
-  const enabled = raw.enabled !== false;
+  const enabled = raw.disabled === true ? false : raw.enabled !== false;
   const blocked = raw.blocked === true;
   const blockReason =
     typeof raw.blockReason === "string" ? raw.blockReason : undefined;
@@ -93,9 +93,13 @@ export function parseSkillsReport(response: unknown): SkillsReport {
   if (Array.isArray(response.skills)) {
     for (const raw of response.skills) {
       const key =
-        isRecord(raw) && typeof raw.key === "string" && raw.key.trim()
-          ? raw.key
-          : null;
+        isRecord(raw) && typeof raw.skillKey === "string" && raw.skillKey.trim()
+          ? raw.skillKey
+          : isRecord(raw) && typeof raw.key === "string" && raw.key.trim()
+            ? raw.key
+            : isRecord(raw) && typeof raw.name === "string" && raw.name.trim()
+              ? raw.name
+              : null;
       if (!key) continue; // skip malformed entries
       const skill = parseSkillEntry(key, raw);
       if (skill) {

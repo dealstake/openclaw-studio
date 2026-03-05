@@ -216,11 +216,68 @@ export const PersonasTab = React.memo(function PersonasTab({
   }, [onCreatePersona]);
 
   const handleSelectTemplate = useCallback(
-    (template: PersonaTemplate) => {
+    async (template: PersonaTemplate) => {
       setTemplateBrowserOpen(false);
-      onSelectTemplate?.(template);
+
+      // If parent provides a handler (wizard flow), delegate to it
+      if (onSelectTemplate) {
+        onSelectTemplate(template);
+        return;
+      }
+
+      // Otherwise, create the persona inline
+      if (!agentId) return;
+      setError(null);
+
+      try {
+        // 1. Create gateway agent
+        const agent = await createGatewayAgent({ client, name: template.name });
+        const personaId = agent.id;
+
+        // 2. Create persona DB row via API
+        const res = await fetch("/api/workspace/personas", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            agentId,
+            personaId,
+            displayName: template.name,
+            category: template.category,
+            templateKey: template.key,
+            optimizationGoals: [],
+          }),
+        });
+        if (!res.ok) {
+          const data = (await res.json().catch(() => ({}))) as { error?: string };
+          throw new Error(data.error ?? `HTTP ${res.status}`);
+        }
+
+        // 3. Write brain files from template defaults (placeholders left as-is)
+        for (const tmpl of template.brainFileTemplates ?? []) {
+          try {
+            await fetch("/api/workspace/file", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                agentId: personaId,
+                path: tmpl.filename,
+                content: tmpl.content,
+              }),
+            });
+          } catch {
+            // Non-fatal — brain files can be edited later
+          }
+        }
+
+        // 4. Open the detail view for the new persona
+        setDetailPersonaId(personaId);
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Failed to create persona.",
+        );
+      }
     },
-    [onSelectTemplate],
+    [onSelectTemplate, agentId, client],
   );
 
   // Detail modal state
