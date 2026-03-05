@@ -10,10 +10,14 @@ import {
 import type { AgentState as AgentRecord } from "@/features/agents/state/store";
 import type { MessagePart } from "@/lib/chat/types";
 import { isTextPart } from "@/lib/chat/types";
-import { AlertTriangle, ArrowLeft, Bot, RefreshCw, X, Zap } from "lucide-react";
-import { AutonomyLevelBadge } from "./AutonomyLevelSelector";
-import type { AutonomyLevel } from "@/features/agents/lib/autonomyService";
-import { DEFAULT_AUTONOMY_LEVEL } from "@/features/agents/lib/autonomyService";
+import { AlertTriangle, ArrowLeft, Bot, Info, RefreshCw, X, Zap } from "lucide-react";
+import {
+  CalendarClock,
+  FolderKanban,
+  KeyRound,
+  Puzzle,
+  UserCog,
+} from "lucide-react";
 import type { GatewayModelChoice } from "@/lib/gateway/models";
 import type { GatewayStatus } from "@/lib/gateway/GatewayClient";
 import type { ChatAttachment } from "../hooks/useFileUpload";
@@ -114,6 +118,17 @@ export const AgentChatPanel = memo(function AgentChatPanel({
   onDismissWizardResult,
 }: AgentChatPanelProps) {
   const [contextBannerDismissed, setContextBannerDismissed] = useState(false);
+  const [wizardInfoOpen, setWizardInfoOpen] = useState(false);
+
+  // Icon map for wizard types — used in mobile header transition
+  const WIZARD_HEADER_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+    CalendarClock,
+    Bot,
+    FolderKanban,
+    Puzzle,
+    KeyRound,
+    UserCog,
+  };
   const draftRef = useRef<HTMLTextAreaElement | null>(null);
   const scrollToBottomNextOutputRef = useRef(false);
   const plainDraftRef = useRef(agent.draft);
@@ -371,29 +386,68 @@ export const AgentChatPanel = memo(function AgentChatPanel({
         </div>
       )}
 
-      {/* Mobile chat header — agent name + autonomy badge */}
+      {/* Mobile chat header — agent name, transitions to wizard theme when active */}
       {!viewingSessionKey && (
         <div className="flex items-center justify-between px-4 pt-2 pb-1 sm:hidden">
-          <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10">
-              <Bot className="h-3.5 w-3.5 text-primary" />
+          {isWizardActive && wizard?.wizardContext?.theme ? (() => {
+            const theme = wizard.wizardContext.theme;
+            const WizIcon = WIZARD_HEADER_ICONS[theme.icon];
+            return (
+              <div className="flex items-center gap-2 min-w-0">
+                <div className={`flex h-7 w-7 items-center justify-center rounded-full ${theme.bg}`}>
+                  {WizIcon ? <WizIcon className={`h-3.5 w-3.5 ${theme.accent}`} /> : <Bot className={`h-3.5 w-3.5 ${theme.accent}`} />}
+                </div>
+                <span className={`text-sm font-semibold truncate ${theme.accent}`}>{theme.label}</span>
+                <button
+                  type="button"
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                  aria-label={`About ${theme.label}`}
+                  onClick={() => setWizardInfoOpen(v => !v)}
+                >
+                  <Info className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            );
+          })() : (
+            <div className="flex items-center gap-2">
+              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10">
+                <Bot className="h-3.5 w-3.5 text-primary" />
+              </div>
+              <span className="text-sm font-semibold text-foreground">{agent.name || agent.agentId}</span>
             </div>
-            <span className="text-sm font-semibold text-foreground">{agent.name || agent.agentId}</span>
-          </div>
-          <AutonomyLevelBadge
-            level={(agent.autonomyLevel as AutonomyLevel | undefined) ?? DEFAULT_AUTONOMY_LEVEL}
-            onClick={onOpenSettings}
-          />
+          )}
+          {/* Exit button when wizard is active */}
+          {isWizardActive && onWizardConfirm && (
+            <button
+              type="button"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground"
+              aria-label="Exit wizard"
+              onClick={() => wizard?.endWizard()}
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
       )}
 
-      {/* Session header — autonomy level badge (desktop only, hidden on mobile) */}
-      {!viewingSessionKey && (
-        <div className="hidden items-center justify-end px-4 pt-1.5 pb-0 sm:flex">
-          <AutonomyLevelBadge
-            level={(agent.autonomyLevel as AutonomyLevel | undefined) ?? DEFAULT_AUTONOMY_LEVEL}
-            onClick={onOpenSettings}
-          />
+      {/* Mobile wizard info tooltip — appears below header when ⓘ tapped */}
+      {wizardInfoOpen && isWizardActive && wizard?.wizardContext?.theme && (
+        <div className="mx-4 mb-1 rounded-lg border border-border/50 bg-card px-3 py-2 text-xs text-muted-foreground sm:hidden animate-in fade-in slide-in-from-top-1 duration-150">
+          <p>
+            {wizard.wizardContext.type === "persona" && "Describe the persona you want to create — role, tone, expertise. The builder will guide you through the process."}
+            {wizard.wizardContext.type === "task" && "Describe the task you want to automate — what it does, how often, and any conditions."}
+            {wizard.wizardContext.type === "project" && "Describe your project — goals, scope, and timeline. The wizard will help you plan it out."}
+            {wizard.wizardContext.type === "skill" && "Describe the skill you want to build — what tool or API it wraps, and how the agent should use it."}
+            {wizard.wizardContext.type === "agent" && "Describe the agent you want to create — its purpose, personality, and capabilities."}
+            {wizard.wizardContext.type === "credential" && "Add an API key or service credential. The wizard will securely store it in your vault."}
+          </p>
+          <button
+            type="button"
+            className="mt-1 text-[10px] text-primary hover:underline"
+            onClick={() => setWizardInfoOpen(false)}
+          >
+            Dismiss
+          </button>
         </div>
       )}
 

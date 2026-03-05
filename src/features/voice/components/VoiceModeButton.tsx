@@ -9,7 +9,7 @@
  */
 
 import React, { useCallback } from "react";
-import { Headphones } from "lucide-react";
+import { AudioWaveform } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useVoiceModeSafe } from "../providers/VoiceModeProvider";
 
@@ -58,7 +58,7 @@ export const VoiceModeButton = React.memo(function VoiceModeButton({
         aria-label="Open voice mode"
         title="Voice mode (Ctrl+Shift+V)"
       >
-        <Headphones className="h-[18px] w-[18px]" />
+        <AudioWaveform className="h-[18px] w-[18px]" />
       </button>
     );
   }
@@ -77,7 +77,7 @@ export const VoiceModeButton = React.memo(function VoiceModeButton({
       aria-label="Open voice mode"
       title="Voice mode (Ctrl+Shift+V)"
     >
-      <Headphones className="h-4 w-4" />
+      <AudioWaveform className="h-4 w-4" />
     </button>
   );
 });

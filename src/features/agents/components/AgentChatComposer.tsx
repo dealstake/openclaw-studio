@@ -486,9 +486,9 @@ export const AgentChatComposer = memo(function AgentChatComposer({
       <div className="pointer-events-none h-4 sm:h-8 bg-gradient-to-t from-background to-transparent" />
 
       <div className="mx-auto max-w-3xl 2xl:max-w-4xl">
-        {/* Wizard banner — floats above the split row */}
+        {/* Wizard banner — desktop only (mobile uses header transition) */}
         {wizardType && wizardTheme && onWizardExit && (
-          <div className="mb-2 rounded-2xl border border-border/50 glass-panel dark:bg-background/40">
+          <div className="mb-2 hidden rounded-2xl border border-border/50 glass-panel dark:bg-background/40 sm:block">
             <WizardBanner
               type={wizardType}
               theme={wizardTheme}
@@ -497,6 +497,21 @@ export const AgentChatComposer = memo(function AgentChatComposer({
               onStarterClick={onWizardStarterClick}
               isStreaming={wizardIsStreaming}
             />
+          </div>
+        )}
+        {/* Mobile wizard starters — shown inline when no messages yet */}
+        {wizardType && wizardTheme && !wizardHasMessages && wizardStarters && wizardStarters.length > 0 && onWizardStarterClick && (
+          <div className="mb-2 flex flex-wrap gap-1.5 sm:hidden">
+            {wizardStarters.map((starter) => (
+              <button
+                key={starter.label}
+                type="button"
+                className={`rounded-full border px-3 py-1.5 text-xs font-medium transition hover:bg-muted/50 ${wizardTheme.border} ${wizardTheme.accent}`}
+                onClick={() => onWizardStarterClick(starter.message)}
+              >
+                {starter.label}
+              </button>
+            ))}
           </div>
         )}
 
