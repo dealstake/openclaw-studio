@@ -239,7 +239,7 @@ export const ModelDefaultsSection = memo(function ModelDefaultsSection({
                       aria-label={`Move ${f} up`}
                       onClick={() => handleMoveFallback(i, -1)}
                       disabled={i === 0}
-                      className="inline-flex h-6 w-6 items-center justify-center rounded text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:opacity-30"
+                      className="inline-flex h-6 w-6 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 items-center justify-center rounded text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:opacity-30"
                     >
                       <ChevronUp className="h-3.5 w-3.5" />
                     </button>
@@ -248,7 +248,7 @@ export const ModelDefaultsSection = memo(function ModelDefaultsSection({
                       aria-label={`Move ${f} down`}
                       onClick={() => handleMoveFallback(i, 1)}
                       disabled={i === fallbacks.length - 1}
-                      className="inline-flex h-6 w-6 items-center justify-center rounded text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:opacity-30"
+                      className="inline-flex h-6 w-6 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 items-center justify-center rounded text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:opacity-30"
                     >
                       <ChevronDown className="h-3.5 w-3.5" />
                     </button>
@@ -256,7 +256,7 @@ export const ModelDefaultsSection = memo(function ModelDefaultsSection({
                       type="button"
                       aria-label={`Remove ${f} from fallbacks`}
                       onClick={() => handleRemoveFallback(i)}
-                      className="inline-flex h-6 w-6 items-center justify-center rounded text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive"
+                      className="inline-flex h-6 w-6 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 items-center justify-center rounded text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
@@ -345,7 +345,7 @@ export const ModelDefaultsSection = memo(function ModelDefaultsSection({
                           type="button"
                           aria-label={`Edit alias for ${key}`}
                           onClick={() => handleStartEditAlias(key, entry.alias)}
-                          className="inline-flex h-6 w-6 items-center justify-center rounded text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                          className="inline-flex h-6 w-6 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 items-center justify-center rounded text-muted-foreground transition hover:bg-muted hover:text-foreground"
                         >
                           <Pencil className="h-3 w-3" />
                         </button>
@@ -355,7 +355,7 @@ export const ModelDefaultsSection = memo(function ModelDefaultsSection({
                         aria-label={`Remove ${key} from catalog`}
                         onClick={() => void handleRemoveCatalogEntry(key)}
                         disabled={savingCatalog}
-                        className="inline-flex h-6 w-6 items-center justify-center rounded text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
+                        className="inline-flex h-6 w-6 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 items-center justify-center rounded text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
                       >
                         <Trash2 className="h-3 w-3" />
                       </button>

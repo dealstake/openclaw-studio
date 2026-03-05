@@ -76,7 +76,7 @@ export const TemplateBrowserModal = React.memo(function TemplateBrowserModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="max-h-[85vh] max-w-2xl overflow-hidden flex flex-col gap-4 sm:max-w-2xl"
+        className="max-h-[100dvh] sm:max-h-[85vh] max-w-2xl overflow-hidden flex flex-col gap-4 p-4 sm:p-6 sm:max-w-2xl inset-0 sm:inset-auto sm:top-[50%] sm:left-[50%] sm:translate-x-[-50%] sm:translate-y-[-50%] rounded-none sm:rounded-lg"
         aria-describedby="template-browser-desc"
       >
         <DialogHeader>
