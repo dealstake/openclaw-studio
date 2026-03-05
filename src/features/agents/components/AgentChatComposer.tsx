@@ -251,24 +251,34 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   }, [isRunning, lastAssistantText, voiceModeActive]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    // Debug: log every state change
-    console.log("[VoiceLoop] Effect fired — isRunning:", isRunning, "prevRunning:", prevRunningRef.current, "hasText:", !!lastAssistantText, "textLen:", lastAssistantText?.length ?? 0, "voiceModeActive:", voiceModeActive);
-    
     // Detect transition from running → not running with new text
     if (prevRunningRef.current && !isRunning && lastAssistantText) {
-      console.log("[VoiceLoop] Agent finished responding, lastAssistantText length:", lastAssistantText.length, "voiceModeActive:", voiceModeActive);
       if (lastAssistantText !== prevAssistantTextRef.current) {
-        const plainText = stripMarkdownForSpeech(lastAssistantText);
-        console.log("[VoiceLoop] Stripped text length:", plainText.length);
+        // Extract only the NEW text from this response (not the full chat history)
+        const prevText = prevAssistantTextRef.current || "";
+        const newText = lastAssistantText.startsWith(prevText)
+          ? lastAssistantText.slice(prevText.length).trim()
+          : lastAssistantText;
+        const plainText = stripMarkdownForSpeech(newText);
+        console.log("[VoiceLoop] Agent finished. newText:", plainText.length, "chars, fullText:", lastAssistantText.length, "chars, voiceModeActive:", voiceModeActive);
+
         if (plainText.length > 0 && plainText.length < 5000) {
           if (voiceModeActive) {
-            // Voice overlay is open — use bridge (updates overlay state + TTS)
             console.log("[VoiceLoop] Calling bridgeSpeakResponse (voice overlay active)");
             void bridgeSpeakResponse(plainText);
           } else if (voiceOutput.enabled) {
-            // Inline mic was just used — speak this ONE response, then disable
             console.log("[VoiceLoop] Calling voiceOutput.speak (inline voice)");
             void voiceOutput.speak(plainText, resolvedToSpeakOptions(voiceResolvedSettings));
+            voiceOutput.setEnabled(false);
+          }
+        } else if (plainText.length >= 5000) {
+          // Response too long for TTS — truncate to first 4000 chars
+          const truncated = plainText.slice(0, 4000);
+          console.log("[VoiceLoop] Response too long, truncating to 4000 chars");
+          if (voiceModeActive) {
+            void bridgeSpeakResponse(truncated);
+          } else if (voiceOutput.enabled) {
+            void voiceOutput.speak(truncated, resolvedToSpeakOptions(voiceResolvedSettings));
             voiceOutput.setEnabled(false);
           }
         }
