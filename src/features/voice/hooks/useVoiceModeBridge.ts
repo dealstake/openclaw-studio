@@ -183,6 +183,11 @@ export function useVoiceModeBridge(options?: UseVoiceModeBridgeOptions) {
       voiceMode.setAgentTranscript(text);
       voiceMode.setState("speaking");
 
+      // Pause mic recording during TTS to prevent speaker→mic feedback loop.
+      // Keeps mic stream alive for quick resume after TTS completes.
+      voice.pauseRecording();
+      console.log("[VoiceModeBridge] Mic paused for TTS playback");
+
       const speakOpts = resolvedToSpeakOptions(voiceSettings.settings);
       console.log(
         "[VoiceModeBridge] TTS speak, voiceId:",
@@ -200,14 +205,15 @@ export function useVoiceModeBridge(options?: UseVoiceModeBridgeOptions) {
         );
       }
 
-      // Reset state if voice mode is still active — recording auto-restarts
-      // via useVoiceClient's sessionActive mechanism
+      // Reset state if voice mode is still active
       if (voiceModeActiveRef.current) {
         voiceMode.setState("listening");
         voiceMode.setAgentTranscript("");
         voice.resetTranscript();
         prevFinalRef.current = "";
-        console.log("[VoiceModeBridge] Reset to listening state");
+        // Resume mic recording after TTS finishes — no feedback risk
+        voice.resumeRecording();
+        console.log("[VoiceModeBridge] Mic resumed, reset to listening state");
       }
     },
     [voiceMode, voiceSettings.settings, tts, voice],

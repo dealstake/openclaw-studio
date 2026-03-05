@@ -32,6 +32,10 @@ export interface UseVoiceClientReturn {
   resetTranscript: () => void;
   /** Force-commit current recording (stop + transcribe immediately) */
   forceCommit: () => void;
+  /** Pause recording (stop MediaRecorder but keep mic stream alive) */
+  pauseRecording: () => void;
+  /** Resume recording after pause (reuses existing mic stream) */
+  resumeRecording: () => void;
   error: string | null;
   status: VoiceClientStatus;
 }
@@ -388,6 +392,61 @@ export function useVoiceClient(): UseVoiceClientReturn {
     setStatus("idle");
   }, [cleanup]);
 
+  /**
+   * Pause recording — stops MediaRecorder and VAD but keeps the mic stream
+   * alive. Used during TTS playback to prevent feedback loops.
+   * Session remains active; call resumeRecording() to restart.
+   */
+  const pauseRecording = useCallback(() => {
+    log("pauseRecording called");
+    // Stop VAD monitoring
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    if (maxTimerRef.current) {
+      clearTimeout(maxTimerRef.current);
+      maxTimerRef.current = null;
+    }
+    // Stop recorder but keep mic stream alive
+    if (recorderRef.current && recorderRef.current.state !== "inactive") {
+      try {
+        recorderRef.current.stop();
+      } catch {
+        /* ignore */
+      }
+    }
+    recorderRef.current = null;
+    chunksRef.current = [];
+    // Close audio context (analyser)
+    if (audioContextRef.current && audioContextRef.current.state !== "closed") {
+      audioContextRef.current.close().catch(() => {});
+    }
+    audioContextRef.current = null;
+    analyserRef.current = null;
+    isStoppingRef.current = false;
+    // Don't change sessionActiveRef — session is still conceptually alive
+    // Don't release mediaStreamRef — we'll reuse it
+  }, []);
+
+  /**
+   * Resume recording after a pause — starts a new recording segment
+   * using the existing mic stream. Only works if mic stream is still alive.
+   */
+  const resumeRecording = useCallback(() => {
+    log("resumeRecording called");
+    if (!mediaStreamRef.current) {
+      logError("resumeRecording: no mic stream — call startListening instead");
+      return;
+    }
+    if (!sessionActiveRef.current) {
+      log("resumeRecording: session not active, skipping");
+      return;
+    }
+    startRecordingInternal();
+    setStatus("listening");
+  }, [startRecordingInternal]);
+
   /** Reset transcript state */
   const resetTranscript = useCallback(() => {
     setTranscript("");
@@ -415,6 +474,8 @@ export function useVoiceClient(): UseVoiceClientReturn {
     stopListening,
     resetTranscript,
     forceCommit,
+    pauseRecording,
+    resumeRecording,
     error,
     status,
   };
