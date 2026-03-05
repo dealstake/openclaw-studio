@@ -73,7 +73,7 @@ export const BudgetAlert = memo(function BudgetAlert({
         className="flex items-center gap-2 rounded-lg border border-dashed border-border px-3 py-3 text-xs text-muted-foreground hover:border-foreground/30 hover:text-foreground transition-colors w-full"
       >
         <Settings2 className="h-3.5 w-3.5 shrink-0" />
-        <span>Set a monthly budget to track spending limits</span>
+        <span className="min-w-0 text-left">Set a monthly budget to track spending limits</span>
       </button>
     );
   }
