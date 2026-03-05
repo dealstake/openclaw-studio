@@ -297,6 +297,23 @@ const SpeechInput = React.forwardRef<HTMLDivElement, SpeechInputProps>(
       scribe.clearTranscripts()
 
       try {
+        // Pre-acquire mic permission in the gesture chain BEFORE any async
+        // network calls. On iOS Safari, getUserMedia must be called directly
+        // from a user gesture handler. The getToken() fetch below breaks the
+        // gesture chain, so we warm up the mic grant here. Scribe.connect()
+        // will reuse the cached browser permission.
+        // Ref: ElevenLabs recommended pattern for gesture-chain compliance.
+        try {
+          const warmupStream = await navigator.mediaDevices.getUserMedia({
+            audio: microphone ?? { echoCancellation: true, noiseSuppression: true },
+          })
+          // Release the stream immediately — we just need the permission grant cached
+          warmupStream.getTracks().forEach((t) => t.stop())
+        } catch {
+          // If mic is denied here, scribe.connect() will also fail — let it
+          // surface the error naturally below.
+        }
+
         const token = await getToken()
         if (startRequestIdRef.current !== requestId) {
           return
@@ -313,7 +330,7 @@ const SpeechInput = React.forwardRef<HTMLDivElement, SpeechInputProps>(
       } catch (error) {
         onError?.(error instanceof Error ? error : new Error(String(error)))
       }
-    }, [getToken, scribe, onStart, onError])
+    }, [getToken, scribe, onStart, onError, microphone])
 
     const stop = React.useCallback(() => {
       startRequestIdRef.current += 1
