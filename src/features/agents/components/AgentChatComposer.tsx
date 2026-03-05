@@ -26,14 +26,29 @@ import { WizardLaunchMenu } from "@/features/wizards/components/WizardLaunchMenu
 import { useVoiceOutput, resolvedToSpeakOptions } from "@/features/voice/hooks/useVoiceOutput";
 
 /** Strip markdown syntax for cleaner speech output */
+/**
+ * Strip ANSI escape codes (CSI sequences, colors, cursor movement, OSC).
+ * Reuses the same pattern as logParser.ts.
+ */
+const ANSI_RE =
+  // eslint-disable-next-line no-control-regex
+  /[\u001b\u009b][\[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g;
+
 function stripMarkdownForSpeech(text: string): string {
   return text
+    // Strip ANSI escape codes first (terminal formatting)
+    .replace(ANSI_RE, "")
+    // Remove code blocks entirely (don't speak code)
     .replace(/```[\s\S]*?```/g, " code block ")
+    // Strip inline formatting
     .replace(/\*\*(.*?)\*\*/g, "$1")
     .replace(/\*(.*?)\*/g, "$1")
     .replace(/`([^`]+)`/g, "$1")
+    // Strip heading markers
     .replace(/#{1,6}\s/g, "")
+    // Strip links, keep text
     .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    // Compress whitespace
     .replace(/\n{2,}/g, ". ")
     .trim();
 }

@@ -220,7 +220,8 @@ export function useVoiceClient(): UseVoiceClientReturn {
 
     // Blob is valid — now show transcribing state
     setStatus("transcribing");
-    setTranscript("Transcribing...");
+    // Don't set transcript to "Transcribing..." — the voice mode bridge handles
+    // visual state without this text, and displaying it in the overlay is confusing.
 
     try {
       const text = await transcribeAudio(blob);

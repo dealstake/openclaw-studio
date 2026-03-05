@@ -29,6 +29,13 @@ import { detectVoiceCapability } from "../lib/voiceCapability";
 import { voiceModeToOrbState } from "../lib/voiceTypes";
 import type { VoiceModeState } from "../lib/voiceTypes";
 
+/** Strip ANSI escape codes from transcript text */
+// eslint-disable-next-line no-control-regex
+const ANSI_RE = /[\u001b\u009b][\[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g;
+function stripAnsi(text: string): string {
+  return text.replace(ANSI_RE, "");
+}
+
 // ── Helpers ─────────────────────────────────────────────────────────────
 
 function formatElapsed(seconds: number): string {
@@ -348,12 +355,12 @@ export const VoiceModeOverlay = React.memo(function VoiceModeOverlay() {
               {agentTranscript && (
                 <div className="max-h-[40vh] min-h-[2rem] overflow-y-auto">
                   <ShimmeringText
-                    text={agentTranscript}
+                    text={stripAnsi(agentTranscript)}
                     className="text-lg font-medium leading-relaxed text-foreground sm:text-xl"
                     aria-hidden="true"
                   />
                   {/* Accessible version */}
-                  <span className="sr-only">{agentTranscript}</span>
+                  <span className="sr-only">{stripAnsi(agentTranscript)}</span>
                 </div>
               )}
 
