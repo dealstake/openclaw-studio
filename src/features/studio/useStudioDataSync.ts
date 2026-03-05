@@ -386,12 +386,16 @@ export function useStudioDataSync(params: UseStudioDataSyncParams): UseStudioDat
     }
   }, [setLoading, status]);
 
-  // ── Settings agent follows selected agent ──
+  // ── Settings agent follows selected agent (except for personas panel) ──
+  // Personas panel should NOT auto-open a detail view — the focused agent (e.g. Alex)
+  // is typically not a persona, and auto-opening blocks the personas list.
   useEffect(() => {
     if (!selectedAgentId) return;
-    if ((expandedTab === "personas" || managementView === "personas") && selectedAgentId !== settingsAgentId) {
-      setSettingsAgentId(selectedAgentId);
-    } else if (settingsAgentId && selectedAgentId !== settingsAgentId) {
+    if (expandedTab === "personas" || managementView === "personas") {
+      // Don't auto-set for personas — let the user click into a specific persona
+      return;
+    }
+    if (settingsAgentId && selectedAgentId !== settingsAgentId) {
       setSettingsAgentId(null);
     }
   }, [expandedTab, managementView, selectedAgentId, settingsAgentId, setSettingsAgentId]);
