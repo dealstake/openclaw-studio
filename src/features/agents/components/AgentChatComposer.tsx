@@ -251,6 +251,9 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   }, [isRunning, lastAssistantText, voiceModeActive]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
+    // Debug: log every state change
+    console.log("[VoiceLoop] Effect fired — isRunning:", isRunning, "prevRunning:", prevRunningRef.current, "hasText:", !!lastAssistantText, "textLen:", lastAssistantText?.length ?? 0, "voiceModeActive:", voiceModeActive);
+    
     // Detect transition from running → not running with new text
     if (prevRunningRef.current && !isRunning && lastAssistantText) {
       console.log("[VoiceLoop] Agent finished responding, lastAssistantText length:", lastAssistantText.length, "voiceModeActive:", voiceModeActive);
