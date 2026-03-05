@@ -61,7 +61,7 @@ export const AgentStudioPage = () => {
   } = o;
 
   const {
-    breakpoint, showSidebarInline, showContextInline, isMobileLayout,
+    breakpoint, showSidebarInline, showContextInline, showContextSlideOver, isMobileLayout,
     mobilePane, setMobilePane,
     sessionSidebarCollapsed, setSessionSidebarCollapsed,
     mobileSessionDrawerOpen, setMobileSessionDrawerOpen,
@@ -408,7 +408,7 @@ export const AgentStudioPage = () => {
             )}
             {/* Context panel: overlay for non-wide viewports */}
             {!isWide(breakpoint) && (
-              <StudioContextDrawer isMobileLayout={isMobileLayout} showContextInline={showContextInline} mobilePane={mobilePane} swipeDy={swipeDy} swipeHandlers={swipeHandlers} {...contextDrawerProps} />
+              <StudioContextDrawer isMobileLayout={isMobileLayout} showContextInline={showContextInline} showContextSlideOver={showContextSlideOver} mobilePane={mobilePane} swipeDy={swipeDy} swipeHandlers={swipeHandlers} {...contextDrawerProps} />
             )}
           </div>
         ) : (

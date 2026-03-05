@@ -27,8 +27,11 @@ export function useAppLayout() {
   // ── Mobile pane ────────────────────────────────────────────────
   const [mobilePane, setMobilePane] = useState<"chat" | "context">("chat");
 
-  // Tablet + wide both show context as inline right column (not bottom sheet)
-  const showContextInline = (isWide(breakpoint) || isTabletLayout) && contextPanel.contextPanelOpen;
+  // Wide viewports: show context as inline right column.
+  // Tablet: show as slide-over with backdrop (not inline — would overlap content).
+  // Mobile: handled separately via bottom sheet.
+  const showContextInline = isWide(breakpoint) && contextPanel.contextPanelOpen;
+  const showContextSlideOver = isTabletLayout && contextPanel.contextPanelOpen;
 
   // ── Management view (inline center area) ───────────────────────
   const [managementView, setManagementView] = useState<ManagementTab | null>(null);
@@ -158,6 +161,7 @@ export function useAppLayout() {
     breakpoint,
     showSidebarInline,
     showContextInline,
+    showContextSlideOver,
     isMobileLayout,
     isTabletLayout,
 
