@@ -70,7 +70,7 @@ export const PromptEditor = memo(function PromptEditor({
       <div className="flex flex-col gap-1">
         <label htmlFor={userMsgId} className={`${sectionLabelClass} text-muted-foreground`}>
           User message
-          <span className="ml-2 font-normal text-muted-foreground normal-case tracking-normal">⌘↵ to send</span>
+          <span className="ml-2 hidden font-normal text-muted-foreground normal-case tracking-normal sm:inline">⌘↵ to send</span>
         </label>
         <div className="relative">
           <textarea

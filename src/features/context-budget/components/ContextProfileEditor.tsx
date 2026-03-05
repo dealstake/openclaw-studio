@@ -112,7 +112,7 @@ const FileRow = memo(function FileRow({ file, mode, saving, onModeChange }: File
         className={`h-3 w-3 flex-shrink-0 ${isOverridden ? "text-foreground/60" : "text-muted-foreground/50"}`}
       />
       <span
-        className={`min-w-0 flex-1 truncate text-[10px] ${isOverridden ? "font-medium text-foreground/80" : "text-muted-foreground"}`}
+        className={`min-w-0 flex-1 truncate text-xs ${isOverridden ? "font-medium text-foreground/80" : "text-muted-foreground"}`}
         title={file.path}
       >
         {file.name}
