@@ -300,11 +300,23 @@ export const AgentChatPanel = memo(function AgentChatPanel({
   const lastAssistantText = useMemo(() => {
     if (!agent.messageParts || agent.messageParts.length === 0) return undefined;
 
-    // Find the last "running" status marker — text after this is the current response
+    // Find the start of the LAST assistant response by searching backwards
+    // for the last "running" status marker (marks a new generation start).
+    // If no marker found, look for the last "ended"/"idle" status to find
+    // where the previous response ended.
     let startIdx = 0;
+
     for (let i = agent.messageParts.length - 1; i >= 0; i--) {
       const part = agent.messageParts[i];
-      if (part.type === "status" && (part as { state?: string }).state === "running") {
+      if (part.type !== "status") continue;
+      const state = (part as { state?: string }).state;
+      if (state === "running") {
+        // Last generation start — take text after this
+        startIdx = i + 1;
+        break;
+      }
+      if (state === "ended" || state === "idle") {
+        // Previous generation ended — take text after this
         startIdx = i + 1;
         break;
       }
