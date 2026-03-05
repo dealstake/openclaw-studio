@@ -172,87 +172,92 @@ export const MobileSessionDrawer = memo(function MobileSessionDrawer({
         onClick={(e) => e.stopPropagation()}
       >
         <h2 id="mobile-drawer-title" className="sr-only">Main Menu</h2>
-        {/* Agent list for mobile */}
-        {breadcrumbAgents.length > 1 && (
-          <div className="border-b border-border/40 px-3 py-3">
-            <p className={`${sectionLabelClass} mb-1.5 px-0.5`}>Agents</p>
-            <div className="flex flex-col gap-0.5">
-              {breadcrumbAgents.map((agent) => (
-                <button
-                  key={agent.agentId}
-                  type="button"
-                  onClick={() => {
-                    onSelectAgent(agent.agentId);
-                    onClose();
-                  }}
-                  className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2.5 text-left text-[13px] font-medium transition-colors min-h-[44px] ${
-                    agent.agentId === focusedAgentId
-                      ? "bg-muted text-foreground"
-                      : "text-foreground/80 hover:bg-muted"
-                  }`}
-                >
-                  <span className={`inline-block h-2 w-2 rounded-full shrink-0 ${
-                    agent.status === "running" ? "bg-emerald-400" : "bg-muted-foreground/30"
-                  }`} />
-                  {agent.name}
-                </button>
-              ))}
+        {/* Scrollable top navigation — shrinks to yield space to sessions */}
+        <div className="flex shrink flex-col min-h-0 overflow-y-auto overscroll-contain">
+          {/* Agent list for mobile */}
+          {breadcrumbAgents.length > 1 && (
+            <div className="border-b border-border/40 px-3 py-3">
+              <p className={`${sectionLabelClass} mb-1.5 px-0.5`}>Agents</p>
+              <div className="flex flex-col gap-0.5">
+                {breadcrumbAgents.map((agent) => (
+                  <button
+                    key={agent.agentId}
+                    type="button"
+                    onClick={() => {
+                      onSelectAgent(agent.agentId);
+                      onClose();
+                    }}
+                    className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2.5 text-left text-[13px] font-medium transition-colors min-h-[44px] ${
+                      agent.agentId === focusedAgentId
+                        ? "bg-muted text-foreground"
+                        : "text-foreground/80 hover:bg-muted"
+                    }`}
+                  >
+                    <span className={`inline-block h-2 w-2 rounded-full shrink-0 ${
+                      agent.status === "running" ? "bg-emerald-400" : "bg-muted-foreground/30"
+                    }`} />
+                    {agent.name}
+                  </button>
+                ))}
+              </div>
             </div>
+          )}
+          {/* Management nav items for mobile */}
+          <div className="flex flex-col gap-0.5 border-b border-border/40 px-3 py-3">
+            {MANAGEMENT_ITEMS.map((item) => (
+              <button
+                key={item.value}
+                type="button"
+                onClick={() => {
+                  onManagementNav(item.value);
+                  onClose();
+                }}
+                className={`flex w-full items-center rounded-lg px-3 py-2.5 text-left text-[13px] font-medium transition-colors min-h-[44px] ${
+                  managementView === item.value
+                    ? "bg-muted text-foreground"
+                    : "text-foreground/80 hover:bg-muted"
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
           </div>
-        )}
-        {/* Management nav items for mobile */}
-        <div className="flex flex-col gap-0.5 border-b border-border/40 px-3 py-3">
-          {MANAGEMENT_ITEMS.map((item) => (
+          {/* Utilities: Notifications + Theme + Logout */}
+          <div className="flex items-center justify-between border-b border-border/40 px-3 py-3">
+            <div className="flex items-center gap-2">
+              <NotificationBell />
+              <ThemeToggle />
+            </div>
+            <LogoutButton iconOnly={false} className="text-[11px]" />
+          </div>
+        </div>
+        {/* Sessions section — takes remaining space */}
+        <div className="flex flex-1 flex-col min-h-0">
+          {/* Session history header */}
+          <div className="flex items-center gap-2 px-3 py-2.5 shrink-0">
+            <span className={`${sectionLabelClass} flex-1`}>Sessions</span>
             <button
-              key={item.value}
               type="button"
               onClick={() => {
-                onManagementNav(item.value);
+                onNewSession();
                 onClose();
               }}
-              className={`flex w-full items-center rounded-lg px-3 py-2.5 text-left text-[13px] font-medium transition-colors min-h-[44px] ${
-                managementView === item.value
-                  ? "bg-muted text-foreground"
-                  : "text-foreground/80 hover:bg-muted"
-              }`}
+              className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-primary hover:text-primary-foreground"
+              aria-label="New session"
             >
-              {item.label}
+              <Plus className="h-4 w-4" />
             </button>
-          ))}
-        </div>
-        {/* Utilities: Notifications + Theme + Logout */}
-        <div className="flex items-center justify-between border-b border-border/40 px-3 py-3">
-          <div className="flex items-center gap-2">
-            <NotificationBell />
-            <ThemeToggle />
           </div>
-          <LogoutButton iconOnly={false} className="text-[11px]" />
-        </div>
-        {/* Session history header */}
-        <div className="flex items-center gap-2 px-3 py-2.5 shrink-0">
-          <span className={`${sectionLabelClass} flex-1`}>Sessions</span>
-          <button
-            type="button"
-            onClick={() => {
-              onNewSession();
-              onClose();
-            }}
-            className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-primary hover:text-primary-foreground"
-            aria-label="New session"
-          >
-            <Plus className="h-4 w-4" />
-          </button>
-        </div>
-        {/* Search */}
-        <div className="px-3 py-2 shrink-0">
-          <SearchInput
-            value={search}
-            onChange={setSearch}
-            placeholder="Search sessions…"
-          />
-        </div>
-        {/* Session list */}
-        <SessionList
+          {/* Search */}
+          <div className="px-3 py-2 shrink-0">
+            <SearchInput
+              value={search}
+              onChange={setSearch}
+              placeholder="Search sessions…"
+            />
+          </div>
+          {/* Session list */}
+          <SessionList
           groups={groups}
           loading={loading}
           error={error}
@@ -275,6 +280,7 @@ export const MobileSessionDrawer = memo(function MobileSessionDrawer({
           onToggleCompare={toggleComparison}
           onViewForkTree={onViewForkTree}
         />
+        </div>
       </div>
     </div>
   );
