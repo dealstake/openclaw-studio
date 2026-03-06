@@ -265,12 +265,12 @@ export const ProjectCard = memo(function ProjectCard({
             >
               {phaseGroups.map((phase) => (
                 <div key={phase.name} className="flex items-center gap-2">
-                  <span className={`text-xs min-w-0 flex-1 truncate ${phase.percent === 100 ? "text-emerald-400 line-through" : "text-muted-foreground"}`} title={phase.name}>
+                  <span className={`text-xs min-w-0 flex-1 truncate ${phase.percent === 100 ? "text-muted-foreground line-through" : "text-muted-foreground"}`} title={phase.name}>
                     {phase.name}
                   </span>
                   <div className="h-1 w-16 shrink-0 rounded-full bg-border overflow-hidden">
                     <div
-                      className={`h-full transition-all duration-500 ${phase.percent === 100 ? "bg-emerald-500/60" : "bg-primary/60"}`}
+                      className={`h-full transition-all duration-500 ${phase.percent === 100 ? "bg-muted-foreground/50" : "bg-primary/60"}`}
                       style={{ width: `${phase.percent}%` }}
                     />
                   </div>

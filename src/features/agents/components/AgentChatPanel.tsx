@@ -348,17 +348,17 @@ export const AgentChatPanel = memo(function AgentChatPanel({
     <div data-agent-panel className="group fade-up relative flex h-full w-full min-w-0 flex-col overflow-hidden bg-surface-sunken">
       {/* Context warning banner — slim pill at 80%+ utilization */}
       {typeof tokenUsed === "number" && tokenLimit && tokenLimit > 0 && tokenUsed / tokenLimit >= 0.8 && !contextBannerDismissed && (
-        <div className="mx-auto mt-2 flex w-full max-w-3xl 2xl:max-w-4xl items-center gap-2 rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-3 py-1.5 text-xs sm:px-6">
-          <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-yellow-500" />
-          <span className="text-yellow-200/90">
+        <div className="mx-auto mt-2 flex w-full max-w-3xl 2xl:max-w-4xl items-center gap-2 rounded-lg border border-border/60 bg-muted/60 px-3 py-1.5 text-xs sm:px-6">
+          <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          <span className="text-foreground/80">
             Approaching context limit
           </span>
-          <span className="shrink-0 font-sans text-[10px] text-yellow-300">
+          <span className="shrink-0 font-sans text-[10px] text-muted-foreground">
             {Math.round((tokenUsed / tokenLimit) * 100)}%
           </span>
           <button
             type="button"
-            className="ml-auto flex h-8 w-8 -mr-1 shrink-0 items-center justify-center rounded text-yellow-400/60 transition hover:text-yellow-300"
+            className="ml-auto flex h-8 w-8 -mr-1 shrink-0 items-center justify-center rounded text-muted-foreground/60 transition hover:text-foreground/80"
             aria-label="Dismiss context limit banner"
             onClick={() => setContextBannerDismissed(true)}
           >
@@ -369,15 +369,15 @@ export const AgentChatPanel = memo(function AgentChatPanel({
 
       {/* Session continuation banner — slim pill */}
       {sessionContinued && (
-        <div className="mx-auto mt-2 flex w-full max-w-3xl 2xl:max-w-4xl items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs sm:px-6">
-          <Zap className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
-          <span className="text-emerald-200/90">
+        <div className="mx-auto mt-2 flex w-full max-w-3xl 2xl:max-w-4xl items-center gap-2 rounded-lg border border-border/60 bg-muted/60 px-3 py-1.5 text-xs sm:px-6">
+          <Zap className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          <span className="text-foreground/80">
             Continuing from previous session
           </span>
           {onDismissContinuationBanner && (
             <button
               type="button"
-              className="ml-auto flex h-8 w-8 -mr-1 shrink-0 items-center justify-center rounded text-emerald-400/60 transition hover:text-emerald-300"
+              className="ml-auto flex h-8 w-8 -mr-1 shrink-0 items-center justify-center rounded text-muted-foreground/60 transition hover:text-foreground/80"
               aria-label="Dismiss continuation banner"
               onClick={onDismissContinuationBanner}
             >
@@ -512,7 +512,7 @@ export const AgentChatPanel = memo(function AgentChatPanel({
         ) : isWizardActive && wizard ? (
           /* Wizard mode — show wizard messages inline */
           <div className="h-full overflow-y-auto overflow-x-hidden pt-3 pb-28 sm:pt-4 sm:pb-32">
-            <div className="mx-auto flex w-full min-w-0 max-w-3xl 2xl:max-w-4xl flex-col gap-5 px-4 text-sm leading-relaxed text-foreground sm:px-8 md:px-12">
+            <div className="mx-auto flex w-full min-w-0 max-w-3xl 2xl:max-w-4xl flex-col gap-5 px-5 text-sm leading-relaxed text-foreground sm:px-8 md:px-12">
               {/* Show existing main chat messages (dimmed) */}
               {agent.messageParts.length > 0 && (
                 <div className="pointer-events-none opacity-40 blur-[0.5px] transition-all duration-300">

@@ -124,7 +124,7 @@ export const TaskCard = memo(function TaskCard({
             className="flex items-center gap-1"
             title={task.lastRunAt ? `Last run: ${new Date(task.lastRunAt).toLocaleString()}${task.lastDurationMs ? ` (${formatDuration(task.lastDurationMs)})` : ""}` : "Never run"}
           >
-            {task.lastRunStatus === "success" && <CheckCircle2 className="h-3 w-3 shrink-0 text-emerald-400" />}
+            {task.lastRunStatus === "success" && <CheckCircle2 className="h-3 w-3 shrink-0 text-muted-foreground" />}
             {task.lastRunStatus === "error" && <XCircle className="h-3 w-3 shrink-0 text-destructive" />}
             {!task.lastRunStatus && <Minus className="h-3 w-3 shrink-0 opacity-40" />}
             <span>

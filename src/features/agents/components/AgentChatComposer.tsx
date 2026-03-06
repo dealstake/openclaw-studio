@@ -242,15 +242,17 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   const prevAssistantTextRef = useRef<string | undefined>(undefined);
 
   // When voice mode opens, snapshot current lastAssistantText as baseline
-  // and reset generation tracking so stale text doesn't display/speak
-  const voiceModeJustOpened = useRef(false);
+  // so we don't display/speak text from before voice mode was activated
+  const voiceModeBaselineRef = useRef<string | undefined>(undefined);
+  const voiceModeWasActive = useRef(false);
   useEffect(() => {
-    if (voiceModeActive && !voiceModeJustOpened.current) {
-      voiceModeJustOpened.current = true;
+    if (voiceModeActive && !voiceModeWasActive.current) {
+      voiceModeWasActive.current = true;
+      voiceModeBaselineRef.current = lastAssistantText;
       prevAssistantTextRef.current = lastAssistantText;
-      generationStartedRef.current = false;
     } else if (!voiceModeActive) {
-      voiceModeJustOpened.current = false;
+      voiceModeWasActive.current = false;
+      voiceModeBaselineRef.current = undefined;
     }
   }, [voiceModeActive, lastAssistantText]);
 
@@ -269,7 +271,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   useEffect(() => {
     if (!voiceModeActive || !voiceMode || !isRunning || !lastAssistantText) return;
     if (!generationStartedRef.current) return;
-    const baseline = prevAssistantTextRef.current || "";
+    const baseline = voiceModeBaselineRef.current || "";
     const newText = lastAssistantText.startsWith(baseline)
       ? lastAssistantText.slice(baseline.length).trim()
       : lastAssistantText;
