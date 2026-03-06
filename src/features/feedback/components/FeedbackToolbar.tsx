@@ -128,7 +128,7 @@ export const FeedbackToolbar = memo(function FeedbackToolbar({
               key={rating}
               type="button"
               onClick={() => annotate(rating)}
-              aria-label={isActive ? `Remove ${label.toLowerCase()}` : label}
+              aria-label={isActive ? `Remove ${label.toLowerCase()} for message ${messageId}` : `${label} for message ${messageId}`}
               aria-pressed={isActive}
               title={isActive ? "Click to remove" : label}
               className={cn(

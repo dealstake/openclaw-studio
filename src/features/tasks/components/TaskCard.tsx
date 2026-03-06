@@ -59,7 +59,7 @@ export const TaskCard = memo(function TaskCard({
       variant="flush"
       isSelected={selected}
       isHoverable={!selected && !focused}
-      className={`cursor-pointer ${
+      className={`${
         focused && !selected
           ? "border-primary/30 bg-card/90 ring-1 ring-primary/10"
           : ""

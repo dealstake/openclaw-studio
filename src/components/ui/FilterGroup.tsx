@@ -54,7 +54,7 @@ export const FilterGroup = React.memo(function FilterGroup<V extends string = st
       role="group"
       aria-label="Filters"
       aria-controls={controlsId}
-      className={`flex flex-wrap items-center gap-1 ${className}`}
+      className={`flex flex-wrap items-center gap-1.5 ${className}`}
     >
       {options.map((opt) => {
         const active = value.includes(opt.value);
@@ -63,7 +63,7 @@ export const FilterGroup = React.memo(function FilterGroup<V extends string = st
             key={opt.value}
             type="button"
             aria-pressed={active}
-            className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 min-h-[44px] lg:min-h-0 font-sans text-xs font-semibold tracking-[0.08em] transition-all focus-ring ${
+            className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 min-h-[44px] md:min-h-0 font-sans text-xs font-semibold tracking-[0.08em] transition-all focus-ring ${
               active
                 ? "bg-primary text-primary-foreground"
                 : "bg-transparent text-foreground/80 border border-border/60 hover:bg-muted/40 hover:border-border/70"

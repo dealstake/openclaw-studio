@@ -114,7 +114,7 @@ export const MobileBottomNav = memo(function MobileBottomNav({
         </button>
 
         {moreOpen && (
-          <div className="absolute bottom-full right-0 mb-2 min-w-48 rounded-lg border border-border/80 bg-popover/95 p-1.5 shadow-xl backdrop-blur-xl">
+          <div className="absolute bottom-full right-0 mb-2 min-w-48 rounded-lg border border-border/80 bg-popover p-1.5 shadow-xl">
             {overflowTabs.map(({ value, label, Icon }) => {
               const isActive = isContextVisible && contextTab === value;
               return (
