@@ -64,7 +64,7 @@ export const MobileBottomNav = memo(function MobileBottomNav({
       <button
         type="button"
         onClick={onOpenSessionDrawer}
-        className="flex min-h-[52px] flex-1 flex-col items-center justify-center gap-0.5 text-muted-foreground transition-colors active:bg-muted/60"
+        className="flex min-h-[52px] flex-1 flex-col items-center justify-center gap-0.5 text-muted-foreground transition-colors active:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-inset"
         aria-label="Sessions"
       >
         <Menu className="h-5 w-5" />
@@ -80,7 +80,7 @@ export const MobileBottomNav = memo(function MobileBottomNav({
               key={value}
               type="button"
               onClick={() => onContextTabClick(value as ContextTab)}
-              className={`flex min-h-[52px] flex-1 flex-col items-center justify-center gap-0.5 transition-colors active:bg-muted/60 ${
+              className={`flex min-h-[52px] flex-1 flex-col items-center justify-center gap-0.5 transition-colors active:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-inset ${
                 isActive
                   ? "text-accent-foreground"
                   : "text-muted-foreground"
@@ -103,7 +103,7 @@ export const MobileBottomNav = memo(function MobileBottomNav({
         <button
           type="button"
           onClick={() => setMoreOpen((v) => !v)}
-          className={`flex min-h-[52px] flex-1 flex-col items-center justify-center gap-0.5 transition-colors active:bg-muted/60 ${
+          className={`flex min-h-[52px] flex-1 flex-col items-center justify-center gap-0.5 transition-colors active:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-inset ${
             moreOpen ? "text-accent-foreground" : "text-muted-foreground"
           }`}
           aria-label="More options"
