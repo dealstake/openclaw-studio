@@ -137,7 +137,7 @@ export const SessionItem = memo(function SessionItem({
           </p>
         )}
         <div className="mt-0.5 flex items-center gap-1.5">
-          <p className="truncate text-[11px] text-muted-foreground">
+          <p className="truncate text-[11px] text-muted-foreground/85">
             {formatRelativeTime(session.updatedAt)}
             {session.messageCount > 0 ? ` · ${session.messageCount} msgs` : ""}
           </p>

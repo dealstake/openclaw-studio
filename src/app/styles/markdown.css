@@ -118,7 +118,9 @@
 
 .agent-markdown blockquote {
   border-left: 3px solid color-mix(in oklch, var(--primary) 28%, var(--border));
-  padding-left: 0.7rem;
+  padding: 0.5rem 0.7rem;
+  background: color-mix(in oklch, var(--muted) 40%, transparent);
+  border-radius: 0 0.375rem 0.375rem 0;
   color: var(--muted-foreground);
 }
 
@@ -128,6 +130,8 @@
   overflow-x: auto;
   border-collapse: collapse;
   font-size: 0.85em;
+  background: color-mix(in oklch, var(--muted) 30%, transparent);
+  border-radius: 0.375rem;
 }
 
 .agent-markdown th {

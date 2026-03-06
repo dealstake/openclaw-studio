@@ -41,10 +41,12 @@ export const MessagePartsRenderer = memo(function MessagePartsRenderer({
       completedAt: part.completedAt,
     }));
     elements.push(
-      <ToolCallGroup
+      <div
         key={`toolgroup-${toolBatch[0].index}`}
-        tools={tools}
-      />
+        className="border-l-2 border-muted-foreground/20 pl-2 ml-0.5"
+      >
+        <ToolCallGroup tools={tools} />
+      </div>
     );
     toolBatch = [];
   };
@@ -66,17 +68,21 @@ export const MessagePartsRenderer = memo(function MessagePartsRenderer({
       );
     } else if (isReasoningPart(part)) {
       elements.push(
-        <ThinkingBlock
+        <div
           key={`think-${i}`}
-          text={part.text}
-          streaming={part.streaming}
-          startedAt={part.startedAt}
-          completedAt={part.completedAt}
-        />
+          className="rounded-md bg-muted/30 border border-border/20"
+        >
+          <ThinkingBlock
+            text={part.text}
+            streaming={part.streaming}
+            startedAt={part.startedAt}
+            completedAt={part.completedAt}
+          />
+        </div>
       );
     }
   }
   flushTools();
 
-  return <div className="space-y-2">{elements}</div>;
+  return <div className="space-y-3">{elements}</div>;
 });

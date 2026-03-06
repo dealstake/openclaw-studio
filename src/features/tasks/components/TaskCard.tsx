@@ -84,7 +84,7 @@ export const TaskCard = memo(function TaskCard({
           {isRunning && <span className="ml-1.5 text-xs font-normal text-purple-300">Running…</span>}
         </span>
         <span
-          className="ml-2 shrink-0 rounded bg-muted/50 px-1.5 py-0.5 font-sans text-[10px] text-muted-foreground"
+          className="ml-2 shrink-0 rounded bg-muted/50 px-1.5 py-0.5 font-sans text-[10px] text-foreground/70"
           title={task.model}
         >
           {abbreviateModel(task.model)}
