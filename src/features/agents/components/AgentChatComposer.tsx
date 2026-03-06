@@ -169,9 +169,14 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   const voiceMode = useVoiceModeSafe();
   const voiceModeActive = !!(voiceMode?.isOverlayOpen || voiceMode?.isMinimized);
 
+  // Track whether voice mode has sent a message this session
+  // (prevents streaming stale chat history into the overlay)
+  const voiceMessageSentRef = useRef(false);
+
   const { start: startVoiceMode, speakResponse: sessionSpeakResponse } = useVoiceSession({
     onUserMessage: useCallback(
       (text: string) => {
+        voiceMessageSentRef.current = true;
         onSend(text);
       },
       [onSend],
@@ -253,6 +258,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
     } else if (!voiceModeActive) {
       voiceModeWasActive.current = false;
       voiceModeBaselineRef.current = undefined;
+      voiceMessageSentRef.current = false;
     }
   }, [voiceModeActive, lastAssistantText]);
 
@@ -267,10 +273,10 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   }, [isRunning]);
 
   // Stream agent text into voice overlay in real-time (visual only — TTS waits for completion)
-  // Only shows NEW text (diff against baseline captured when voice mode opened)
+  // Only shows text when: voice mode is active AND a voice message was sent this session
   useEffect(() => {
     if (!voiceModeActive || !voiceMode || !isRunning || !lastAssistantText) return;
-    if (!generationStartedRef.current) return;
+    if (!generationStartedRef.current || !voiceMessageSentRef.current) return;
     const baseline = voiceModeBaselineRef.current || "";
     const newText = lastAssistantText.startsWith(baseline)
       ? lastAssistantText.slice(baseline.length).trim()
@@ -284,7 +290,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
     }
   }, [isRunning, lastAssistantText, voiceModeActive]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // When agent finishes, speak the response
+  // When agent finishes, speak the response (only for voice-mode-initiated messages)
   useEffect(() => {
     if (prevRunningRef.current && !isRunning && lastAssistantText) {
       if (lastAssistantText !== prevAssistantTextRef.current) {
@@ -296,7 +302,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
         if (plainText.length >= 5000) plainText = plainText.slice(0, 4000);
 
         if (plainText.length > 0) {
-          if (voiceModeActive) {
+          if (voiceModeActive && voiceMessageSentRef.current) {
             void sessionSpeakResponse(plainText);
           } else if (voiceOutput.enabled) {
             void voiceOutput.speak(plainText, resolvedToSpeakOptions(voiceResolvedSettings));
