@@ -518,7 +518,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
 
         {/* Minimal status strip — only offline/errors/attachments, no streaming chrome */}
         {((gatewayStatus && gatewayStatus !== "connected") || fileError || hasFiles) && (
-          <div className="mb-2 rounded-2xl border border-border/50 glass-panel px-4 py-2 dark:bg-background/40 animate-in slide-in-from-bottom-2 fade-in duration-200">
+          <div className="mb-2 rounded-2xl border border-border/30 bg-background/95 px-4 py-2 shadow-sm animate-in slide-in-from-bottom-2 fade-in duration-200">
             {gatewayStatus && gatewayStatus !== "connected" && (
               <div className="flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400" role="status">
                 <WifiOff className="h-3.5 w-3.5 shrink-0" aria-hidden />
@@ -552,10 +552,10 @@ export const AgentChatComposer = memo(function AgentChatComposer({
         <div className="flex items-end gap-2 sm:gap-2.5">
 
           {/* ── Glass Input Pill ── */}
-          <div className="min-w-0 flex-1 rounded-[20px] border border-border/40 bg-background/70 backdrop-blur-xl transition-all focus-within:border-border/70 dark:bg-background/40">
+          <div className="min-w-0 flex-1 rounded-[24px] border border-border/30 bg-background shadow-sm transition-colors focus-within:border-border/50">
             <div className="flex items-end">
               {/* Left controls — wizard always visible, voice controls desktop-only (mobile uses native keyboard dictation) */}
-              <div className="flex shrink-0 items-center gap-0.5 pl-1.5 pb-1.5 sm:pl-2">
+              <div className="flex shrink-0 items-center gap-0.5 pl-2 pb-1.5 sm:pl-2.5">
                 {!wizardType && onLaunchWizard && (
                   <WizardLaunchMenu onLaunch={onLaunchWizard} disabled={isRunning} />
                 )}
@@ -575,7 +575,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
                 ref={handleRef}
                 rows={1}
                 defaultValue={initialDraft}
-                className="max-h-[200px] min-h-[44px] min-w-0 flex-1 resize-none bg-transparent pl-2 pr-3 pt-3 pb-3 text-base leading-relaxed text-foreground outline-none sm:pl-2 placeholder:text-muted-foreground/80"
+                className="max-h-[200px] min-h-[44px] min-w-0 flex-1 resize-none bg-transparent px-3 py-2.5 text-base leading-relaxed text-foreground outline-none placeholder:text-muted-foreground/60"
                 aria-label="Message to agent"
                 onChange={handleChange}
                 onKeyDown={handleKeyDown}
@@ -592,20 +592,20 @@ export const AgentChatComposer = memo(function AgentChatComposer({
             {isRunning && tokenPct !== null && (
               <svg
                 className="pointer-events-none absolute inset-0 -rotate-90"
-                viewBox="0 0 48 48"
-                width="48"
-                height="48"
+                viewBox="0 0 44 44"
+                width="44"
+                height="44"
                 aria-hidden
               >
-                <circle cx="24" cy="24" r="21" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-muted/30" />
+                <circle cx="22" cy="22" r="19" fill="none" stroke="currentColor" strokeWidth="2" className="text-muted/30" />
                 <circle
-                  cx="24" cy="24" r="21" fill="none"
-                  strokeWidth="2.5"
+                  cx="22" cy="22" r="19" fill="none"
+                  strokeWidth="2"
                   strokeLinecap="round"
                   className={`transition-all duration-700 ${tokenPct >= 80 ? "text-yellow-500" : "text-primary"}`}
                   stroke="currentColor"
-                  strokeDasharray={`${2 * Math.PI * 21}`}
-                  strokeDashoffset={`${2 * Math.PI * 21 * (1 - Math.min(tokenPct, 100) / 100)}`}
+                  strokeDasharray={`${2 * Math.PI * 19}`}
+                  strokeDashoffset={`${2 * Math.PI * 19 * (1 - Math.min(tokenPct, 100) / 100)}`}
                 />
               </svg>
             )}
@@ -621,7 +621,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.8, opacity: 0 }}
                 transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-md ring-1 ring-white/[0.06] hover:brightness-110 active:scale-90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
+                className="relative flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-sm ring-1 ring-white/[0.06] transition-all hover:bg-destructive/90 active:scale-95 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
                 type="button"
                 aria-label="Stop agent"
                 onClick={onStop}
@@ -637,7 +637,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.8, opacity: 0 }}
                 transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md ring-1 ring-white/[0.06] hover:brightness-110 active:scale-90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
+                className="relative flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm ring-1 ring-white/[0.06] transition-all hover:bg-primary/90 active:scale-95 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
                 type="button"
                 aria-label="Send message"
                 onClick={handleClickSend}
@@ -695,7 +695,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.8, opacity: 0 }}
                 transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-border/30 bg-background/60 text-muted-foreground shadow-md ring-1 ring-white/[0.06] dark:bg-background/40"
+                className="relative flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-full border border-border/20 bg-muted/30 text-muted-foreground shadow-sm ring-1 ring-white/[0.06]"
                 type="button"
                 aria-label="Send message"
                 disabled

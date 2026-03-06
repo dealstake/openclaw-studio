@@ -255,7 +255,7 @@ export const VoiceInputControl = React.memo(function VoiceInputControl({
         className={className}
       >
         <SpeechInputRecordButton
-          className="text-muted-foreground hover:text-foreground"
+          className="text-muted-foreground/70 transition-colors hover:bg-muted/50 hover:text-foreground"
         />
         <AutoStopOnSilence />
       </SpeechInput>

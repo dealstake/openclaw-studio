@@ -48,10 +48,10 @@ export const VoiceModeButton = React.memo(function VoiceModeButton({
         type="button"
         onClick={handleClick}
         className={cn(
-          "relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full",
-          "bg-primary text-primary-foreground shadow-lg",
-          "ring-1 ring-white/[0.06] backdrop-blur-xl",
-          "hover:brightness-110 active:scale-90",
+          "relative flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-full",
+          "bg-primary text-primary-foreground shadow-sm",
+          "ring-1 ring-white/[0.06] transition-all",
+          "hover:bg-primary/90 active:scale-95",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
           className,
         )}
@@ -68,9 +68,9 @@ export const VoiceModeButton = React.memo(function VoiceModeButton({
       type="button"
       onClick={handleClick}
       className={cn(
-        "flex h-9 w-9 items-center justify-center rounded-full",
+        "flex h-8 w-8 items-center justify-center rounded-full",
         "text-muted-foreground/70 transition-colors",
-        "hover:bg-muted hover:text-foreground",
+        "hover:bg-muted/50 hover:text-foreground",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         className,
       )}
