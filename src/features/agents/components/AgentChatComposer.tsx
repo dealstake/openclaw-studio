@@ -265,10 +265,15 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   }, [isRunning]);
 
   // Stream agent text into voice overlay in real-time (visual only — TTS waits for completion)
+  // Only shows NEW text (diff against baseline captured when voice mode opened)
   useEffect(() => {
     if (!voiceModeActive || !voiceMode || !isRunning || !lastAssistantText) return;
     if (!generationStartedRef.current) return;
-    const plain = stripMarkdownForSpeech(lastAssistantText);
+    const baseline = prevAssistantTextRef.current || "";
+    const newText = lastAssistantText.startsWith(baseline)
+      ? lastAssistantText.slice(baseline.length).trim()
+      : lastAssistantText;
+    const plain = stripMarkdownForSpeech(newText);
     if (plain) {
       voiceMode.setAgentTranscript(plain);
       if (voiceMode.state === "thinking") {
