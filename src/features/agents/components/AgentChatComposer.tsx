@@ -554,11 +554,11 @@ export const AgentChatComposer = memo(function AgentChatComposer({
           <div className="min-w-0 flex-1 rounded-[24px] border border-border/50 glass-panel transition-all focus-within:border-border/80 focus-within:shadow-2xl dark:bg-background/40 dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)]">
             <div className="flex items-end">
               {/* Left controls — wizard always visible, voice controls desktop-only (mobile uses native keyboard dictation) */}
-              <div className="flex shrink-0 items-center gap-1 pl-2.5 pb-2 sm:gap-2 sm:pl-3">
+              <div className="flex shrink-0 items-center gap-0.5 pl-2 pb-2 sm:pl-2.5">
                 {!wizardType && onLaunchWizard && (
                   <WizardLaunchMenu onLaunch={onLaunchWizard} disabled={isRunning} />
                 )}
-                <div className="hidden sm:flex items-center gap-2">
+                <div className="hidden sm:flex items-center gap-0.5">
                   <VoiceInputControl
                     onChange={handleVoiceChange}
                     onStart={handleVoiceStart}
@@ -574,7 +574,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
                 ref={handleRef}
                 rows={1}
                 defaultValue={initialDraft}
-                className="max-h-[200px] min-h-[44px] min-w-0 flex-1 resize-none bg-transparent pl-4 pr-2 pt-3 pb-3.5 text-base leading-relaxed text-foreground outline-none sm:pl-3 placeholder:text-muted-foreground/80"
+                className="max-h-[200px] min-h-[44px] min-w-0 flex-1 resize-none bg-transparent pl-2 pr-2 pt-3 pb-3.5 text-base leading-relaxed text-foreground outline-none sm:pl-2 placeholder:text-muted-foreground/80"
                 aria-label="Message to agent"
                 onChange={handleChange}
                 onKeyDown={handleKeyDown}

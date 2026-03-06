@@ -397,10 +397,7 @@ const SpeechInput = React.forwardRef<HTMLDivElement, SpeechInputProps>(
         <div
           ref={ref}
           className={cn(
-            "relative inline-flex items-center overflow-hidden rounded-md transition-all duration-200",
-            scribe.isConnected
-              ? "bg-background dark:bg-muted shadow-[inset_0_0_0_1px_var(--color-input),0_1px_2px_0_rgba(0,0,0,0.05)]"
-              : "",
+            "relative inline-flex items-center transition-all duration-200",
             className
           )}
         >
@@ -448,7 +445,7 @@ const SpeechInputRecordButton = React.forwardRef<
       className={cn(
         buttonVariants({ size: speechInput.size }),
         "relative flex items-center justify-center transition-all",
-        speechInput.isConnected && "scale-[80%]",
+        speechInput.isConnected && "bg-destructive/10 dark:bg-destructive/20",
         className
       )}
       aria-label={
@@ -464,13 +461,6 @@ const SpeechInputRecordButton = React.forwardRef<
             : "scale-[60%] bg-transparent"
         )}
       />
-      {/* Pulsing recording indicator */}
-      {!speechInput.isConnecting && speechInput.isConnected && (
-        <span className="absolute top-1 right-1 flex h-2 w-2">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
-        </span>
-      )}
       <SquareIcon
         className={cn(
           "text-destructive absolute h-4 w-4 fill-current transition-all duration-200",

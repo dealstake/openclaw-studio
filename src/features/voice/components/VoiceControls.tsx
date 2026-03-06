@@ -18,8 +18,6 @@ import { CommitStrategy } from "@elevenlabs/client";
 import {
   SpeechInput,
   SpeechInputRecordButton,
-  SpeechInputPreview,
-  SpeechInputCancelButton,
   useSpeechInput,
   type SpeechInputData,
 } from "@/components/ui/speech-input";
@@ -259,8 +257,6 @@ export const VoiceInputControl = React.memo(function VoiceInputControl({
         <SpeechInputRecordButton
           className="text-muted-foreground hover:text-foreground"
         />
-        <SpeechInputPreview placeholder="Listening…" />
-        <SpeechInputCancelButton />
         <AutoStopOnSilence />
       </SpeechInput>
     </PanelErrorBoundary>
