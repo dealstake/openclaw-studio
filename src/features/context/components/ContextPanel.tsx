@@ -160,7 +160,7 @@ export const ContextPanel = memo(function ContextPanel({
   }), [projectsContent, tasksContent, workspaceContent, skillsContent, activityContent, budgetContent, routerContent, playgroundContent, orchestratorContent, memoryGraphContent, feedbackContent]);
 
   return (
-    <div className="flex h-full w-full flex-col overflow-hidden">
+    <div className="flex h-full w-full flex-col overflow-hidden bg-[color:var(--surface-1)] border-l border-white/[0.06]">
       {/* Single tab bar — responsive via CSS, no duplication */}
       {!hideTabBar && (
         <div className="flex items-center px-3 pt-0">
