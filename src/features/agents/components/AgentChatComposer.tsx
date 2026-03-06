@@ -555,11 +555,11 @@ export const AgentChatComposer = memo(function AgentChatComposer({
           <div className="min-w-0 flex-1 rounded-[24px] border border-border/30 bg-background shadow-sm transition-colors focus-within:border-border/50">
             <div className="flex items-end">
               {/* Left controls — wizard always visible, voice controls desktop-only (mobile uses native keyboard dictation) */}
-              <div className="flex shrink-0 items-center gap-0.5 pl-2 pb-1.5 sm:pl-2.5">
+              <div className="flex shrink-0 items-center gap-1 pl-2 pb-1.5 sm:pl-2.5">
                 {!wizardType && onLaunchWizard && (
                   <WizardLaunchMenu onLaunch={onLaunchWizard} disabled={isRunning} />
                 )}
-                <div className="hidden sm:flex items-center gap-0.5">
+                <div className="hidden sm:flex items-center gap-1">
                   <VoiceInputControl
                     onChange={handleVoiceChange}
                     onStart={handleVoiceStart}

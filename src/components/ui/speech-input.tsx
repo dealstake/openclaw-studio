@@ -18,8 +18,8 @@ import { Skeleton } from "@/components/ui/skeleton"
 const buttonVariants = cva("!px-0 rounded-full", {
   variants: {
     size: {
-      default: "h-8 w-8 min-h-[32px] min-w-[32px]",
-      sm: "h-8 w-8 min-h-[32px] min-w-[32px]",
+      default: "h-9 w-9 min-h-[36px] min-w-[36px]",
+      sm: "h-9 w-9 min-h-[36px] min-w-[36px]",
       lg: "h-10 w-10 min-h-[40px] min-w-[40px]",
     },
   },
