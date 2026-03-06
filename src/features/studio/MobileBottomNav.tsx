@@ -6,8 +6,8 @@ import { CONTEXT_TAB_CONFIG } from "@/features/context/lib/tabs";
 import type { ContextTab } from "@/features/context/components/ContextPanel";
 import { useEmergencyOptional } from "@/features/emergency/EmergencyProvider";
 
-/** Primary tabs shown directly in the bottom nav (max 4 for comfortable tap targets). */
-const PRIMARY_TABS = ["projects", "tasks", "skills", "workspace"] as const;
+/** Primary tabs shown directly in the bottom nav (max 3 for comfortable tap targets). */
+const PRIMARY_TABS = ["projects", "tasks"] as const;
 const PRIMARY_TAB_SET = new Set<string>(PRIMARY_TABS);
 
 interface MobileBottomNavProps {
