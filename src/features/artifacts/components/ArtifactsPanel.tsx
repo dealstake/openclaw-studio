@@ -144,7 +144,7 @@ const ArtifactRow = memo(function ArtifactRow({
           className={`flex h-11 w-11 items-center justify-center rounded-md transition ${
             isCopied
               ? "text-emerald-500 opacity-100 hover:bg-muted/50"
-              : "text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-foreground/80 hover:bg-muted/50 disabled:cursor-not-allowed"
+              : "text-muted-foreground opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 hover:text-foreground/80 hover:bg-muted/50 disabled:cursor-not-allowed"
           }`}
           title={isCopied ? "Link copied!" : "Copy share link"}
           aria-label={isCopied ? "Share link copied" : "Copy share link"}
@@ -163,7 +163,7 @@ const ArtifactRow = memo(function ArtifactRow({
           className={`flex h-11 w-11 items-center justify-center rounded-md transition ${
             isPinned
               ? "text-primary opacity-100 hover:bg-muted/50"
-              : "text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-foreground/80 hover:bg-muted/50"
+              : "text-muted-foreground opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 hover:text-foreground/80 hover:bg-muted/50"
           }`}
           title={isPinned ? "Unpin" : "Pin to top"}
           aria-label={isPinned ? "Unpin" : "Pin to top"}

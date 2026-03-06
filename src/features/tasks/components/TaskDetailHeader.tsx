@@ -61,7 +61,7 @@ export const TaskDetailHeader = memo(function TaskDetailHeader({
         {editing ? (
           <>
             <button
-              className="flex h-7 items-center gap-1 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-2 text-emerald-400 transition hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex h-7 min-h-[44px] items-center gap-1 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 text-emerald-400 transition hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-60"
               type="button"
               aria-label="Save changes"
               onClick={onSaveEdits}
@@ -73,7 +73,7 @@ export const TaskDetailHeader = memo(function TaskDetailHeader({
               </span>
             </button>
             <button
-              className="flex h-7 items-center justify-center rounded-md border border-border/80 bg-card/70 px-2 text-muted-foreground transition hover:border-border hover:bg-muted/65"
+              className="flex h-7 min-h-[44px] items-center justify-center rounded-md border border-border/80 bg-card/70 px-3 text-muted-foreground transition hover:border-border hover:bg-muted/65"
               type="button"
               aria-label="Cancel editing"
               onClick={onCancelEditing}
