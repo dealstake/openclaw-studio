@@ -241,6 +241,18 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   const prevRunningRef = useRef(false);
   const prevAssistantTextRef = useRef<string | undefined>(undefined);
 
+  // When voice mode opens, snapshot current lastAssistantText as baseline
+  // so we don't display/speak text from before voice mode was activated
+  const voiceModeJustOpened = useRef(false);
+  useEffect(() => {
+    if (voiceModeActive && !voiceModeJustOpened.current) {
+      voiceModeJustOpened.current = true;
+      prevAssistantTextRef.current = lastAssistantText;
+    } else if (!voiceModeActive) {
+      voiceModeJustOpened.current = false;
+    }
+  }, [voiceModeActive, lastAssistantText]);
+
   // Track when a NEW generation starts so we only stream text from current generation
   const generationStartedRef = useRef(false);
   useEffect(() => {
