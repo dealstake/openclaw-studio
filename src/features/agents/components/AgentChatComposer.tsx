@@ -178,61 +178,62 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   });
 
   /** When voice transcript updates, sync it into the textarea */
+  const voiceBaseTextRef = useRef("");
   const handleVoiceChange = useCallback((data: SpeechInputData) => {
     const el = localRef.current;
     if (el) {
-      el.value = data.transcript;
-      setIsEmpty(!data.transcript.trim());
-      onDraftChange(data.transcript);
+      const base = voiceBaseTextRef.current;
+      const full = base ? `${base} ${data.transcript}` : data.transcript;
+      el.value = full;
+      // Auto-resize textarea to fit content
+      el.style.height = "auto";
+      el.style.height = `${el.scrollHeight}px`;
+      setIsEmpty(!full.trim());
+      onDraftChange(full);
     }
   }, [onDraftChange]);
 
-  /** When voice recording starts, enable voice output for auto-speak */
+  /** When voice recording starts, capture existing text as base and enable voice output */
   const handleVoiceStart = useCallback(() => {
+    const el = localRef.current;
+    voiceBaseTextRef.current = el?.value?.trim() || "";
     voiceOutputRef.current.setEnabled(true);
   }, []);
 
   /** When voice input stops, preserve text in textarea for review/editing */
   const handleVoiceStop = useCallback((data: SpeechInputData) => {
-    const text = data.transcript.trim();
-    if (!text) return;
-    // Leave text in the textarea so user can review/edit before sending
+    const newText = data.transcript.trim();
+    const base = voiceBaseTextRef.current;
+    const full = base && newText ? `${base} ${newText}` : (newText || base);
+    if (!full) return;
     const el = localRef.current;
     if (el) {
-      el.value = text;
+      el.value = full;
       el.style.height = "auto";
       el.style.height = `${el.scrollHeight}px`;
-      // Focus the textarea so user can edit or hit Enter to send
       el.focus();
     }
-    setIsEmpty(!text);
-    onDraftChange(text);
+    setIsEmpty(!full);
+    onDraftChange(full);
+    // Reset base text — next recording will capture the new full value
+    voiceBaseTextRef.current = "";
   }, [onDraftChange]);
 
-  /** When voice input is cancelled, clear the textarea */
-    /** When voice input is cancelled, preserve any captured text */
-  const handleVoiceCancel = useCallback((data: SpeechInputData) => {
-    const text = data.transcript.trim();
+  /** When voice input is cancelled, restore base text (don't add new transcript) */
+  const handleVoiceCancel = useCallback((_data: SpeechInputData) => {
+    const base = voiceBaseTextRef.current;
     const el = localRef.current;
-    if (!text) {
-      // Nothing was said — just clear
-      if (el) {
-        el.value = "";
-        el.style.height = "auto";
-      }
-      setIsEmpty(true);
-      onDraftChange("");
-      return;
-    }
-    // Preserve text in textarea for review/editing (same as stop)
     if (el) {
-      el.value = text;
+      el.value = base;
       el.style.height = "auto";
-      el.style.height = `${el.scrollHeight}px`;
-      el.focus();
+      if (base) {
+        el.style.height = `${el.scrollHeight}px`;
+        el.focus();
+      }
     }
-    setIsEmpty(false);
-    onDraftChange(text);
+    setIsEmpty(!base);
+    onDraftChange(base);
+    voiceBaseTextRef.current = "";
   }, [onDraftChange]);
 
   /** Auto-speak assistant responses when voice is active (overlay or inline) */
@@ -554,7 +555,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
           <div className="min-w-0 flex-1 rounded-[24px] border border-border/50 glass-panel transition-all focus-within:border-border/80 focus-within:shadow-2xl dark:bg-background/40 dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)]">
             <div className="flex items-end">
               {/* Left controls — wizard always visible, voice controls desktop-only (mobile uses native keyboard dictation) */}
-              <div className="flex shrink-0 items-center gap-0.5 pl-2 pb-2 sm:pl-2.5">
+              <div className="flex shrink-0 items-center gap-0.5 pl-1.5 pb-1.5 sm:pl-2">
                 {!wizardType && onLaunchWizard && (
                   <WizardLaunchMenu onLaunch={onLaunchWizard} disabled={isRunning} />
                 )}

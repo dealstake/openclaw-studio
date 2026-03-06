@@ -15,12 +15,12 @@ import {
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 
-const buttonVariants = cva("!px-0 min-h-[44px] min-w-[44px]", {
+const buttonVariants = cva("!px-0 rounded-full", {
   variants: {
     size: {
-      default: "h-11 w-11",
-      sm: "h-11 w-11 sm:h-9 sm:w-9",
-      lg: "h-12 w-12",
+      default: "h-9 w-9 min-h-[36px] min-w-[36px]",
+      sm: "h-9 w-9 min-h-[36px] min-w-[36px]",
+      lg: "h-10 w-10 min-h-[40px] min-w-[40px]",
     },
   },
   defaultVariants: {

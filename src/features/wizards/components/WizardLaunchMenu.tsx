@@ -118,7 +118,7 @@ export const WizardLaunchMenu = memo(function WizardLaunchMenu({
       <button
         ref={buttonRef}
         type="button"
-        className="flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:opacity-40"
+        className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:opacity-40"
         aria-label="Create new resource"
         aria-expanded={open}
         aria-haspopup="menu"
