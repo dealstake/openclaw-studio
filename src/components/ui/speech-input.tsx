@@ -397,7 +397,7 @@ const SpeechInput = React.forwardRef<HTMLDivElement, SpeechInputProps>(
         <div
           ref={ref}
           className={cn(
-            "relative inline-flex items-center transition-all duration-200",
+            "relative inline-flex items-center outline-none transition-all duration-200",
             className
           )}
         >
@@ -444,7 +444,7 @@ const SpeechInputRecordButton = React.forwardRef<
       disabled={disabled ?? speechInput.isConnecting}
       className={cn(
         buttonVariants({ size: speechInput.size }),
-        "relative flex items-center justify-center transition-all",
+        "relative flex items-center justify-center transition-all focus-visible:ring-0 focus-visible:ring-offset-0",
         speechInput.isConnected && "bg-destructive/10 dark:bg-destructive/20",
         className
       )}
