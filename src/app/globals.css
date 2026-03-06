@@ -88,6 +88,47 @@
   --surface-elevated: oklch(0.96 0.01 250);
   --surface-sunken: oklch(0.955 0.006 245);
 
+  /* Surface depth scale — layered neutrals for visual hierarchy
+   *   surface-1: deepest background (sidebars, sunken areas)
+   *   surface-2: default page background
+   *   surface-3: raised cards, panels
+   *   surface-4: elevated elements (popovers, dropdowns)
+   *   surface-5: highest elevation (modals, overlays) */
+  --surface-1: oklch(0.945 0.006 245);
+  --surface-2: oklch(0.96 0.005 245);
+  --surface-3: oklch(0.975 0.004 240);
+  --surface-4: oklch(0.985 0.003 235);
+  --surface-5: oklch(0.995 0.002 230);
+
+  /* Type scale — rem-based, optimized for readability
+   *   text-hero:  Page titles, empty state headlines
+   *   text-title: Section headings (H2)
+   *   text-heading: Sub-section headings (H3)
+   *   text-body:  Default body text
+   *   text-label: Labels, metadata, secondary text
+   *   text-caption: Timestamps, badges, fine print */
+  --text-hero: 1.5rem;
+  --text-title: 1.125rem;
+  --text-heading: 0.9375rem;
+  --text-body: 0.875rem;
+  --text-label: 0.8125rem;
+  --text-caption: 0.6875rem;
+
+  --leading-hero: 1.35;
+  --leading-title: 1.4;
+  --leading-heading: 1.45;
+  --leading-body: 1.6;
+  --leading-label: 1.45;
+  --leading-caption: 1.4;
+
+  /* Semantic spacing — 4px grid, named for intent */
+  --space-xs: 0.25rem;   /* 4px — tight inline gaps */
+  --space-sm: 0.5rem;    /* 8px — related element gaps */
+  --space-md: 0.75rem;   /* 12px — standard component padding */
+  --space-lg: 1rem;      /* 16px — section gaps */
+  --space-xl: 1.5rem;    /* 24px — panel padding, group gaps */
+  --space-2xl: 2rem;     /* 32px — page-level spacing */
+
   /* Voice state colors */
   --voice-listening: oklch(0.65 0.2 150);
   --voice-thinking: oklch(0.75 0.15 85);
@@ -147,6 +188,14 @@
   --panel-border: oklch(0.35 0.02 250 / 0.53);
   --surface-elevated: oklch(0.21 0.016 250);
   --surface-sunken: oklch(0.165 0.016 250);
+
+  /* Surface depth scale — dark mode (progressively lighter) */
+  --surface-1: oklch(0.155 0.016 250);
+  --surface-2: oklch(0.175 0.018 250);
+  --surface-3: oklch(0.205 0.016 250);
+  --surface-4: oklch(0.225 0.015 250);
+  --surface-5: oklch(0.245 0.014 250);
+
   --shadow-color: oklch(0.08 0.012 250);
   --shadow-opacity: 0.40;
 
@@ -200,6 +249,23 @@
   --color-voice-speaking: var(--voice-speaking);
   --color-voice-idle: var(--voice-idle);
   --color-voice-error: var(--voice-error);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-surface-4: var(--surface-4);
+  --color-surface-5: var(--surface-5);
+  --text-hero: var(--text-hero);
+  --text-title: var(--text-title);
+  --text-heading: var(--text-heading);
+  --text-body: var(--text-body);
+  --text-label: var(--text-label);
+  --text-caption: var(--text-caption);
+  --leading-hero: var(--leading-hero);
+  --leading-title: var(--leading-title);
+  --leading-heading: var(--leading-heading);
+  --leading-body: var(--leading-body);
+  --leading-label: var(--leading-label);
+  --leading-caption: var(--leading-caption);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
