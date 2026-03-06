@@ -47,7 +47,7 @@ describe("useAppLayout", () => {
   it("returns initial state with defaults", () => {
     const { result } = renderHook(() => useAppLayout());
     expect(result.current.mobilePane).toBe("chat");
-    expect(result.current.contextPanelOpen).toBe(true);
+    expect(result.current.contextPanelOpen).toBe(false);
     expect(result.current.sessionSidebarCollapsed).toBe(false);
     expect(result.current.expandedTab).toBeNull();
     expect(result.current.managementView).toBeNull();
@@ -69,6 +69,8 @@ describe("useAppLayout", () => {
   it("computes showContextInline when wide and panel open", () => {
     mockBreakpoint = "wide";
     const { result } = renderHook(() => useAppLayout());
+    // Default is collapsed; open it first
+    act(() => result.current.setContextPanelOpen(true));
     expect(result.current.showContextInline).toBe(true);
   });
 

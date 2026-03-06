@@ -21,7 +21,7 @@ afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 describe("useContextPanelState", () => {
   it("returns default state", () => {
     const { result } = renderHook(() => useContextPanelState());
-    expect(result.current.contextPanelOpen).toBe(true);
+    expect(result.current.contextPanelOpen).toBe(false);
     expect(result.current.contextMode).toBe("agent");
     expect(result.current.contextTab).toBe("projects");
     expect(result.current.expandedTab).toBeNull();
