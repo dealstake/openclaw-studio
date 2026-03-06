@@ -15,8 +15,11 @@ export type MobilePane = "chat" | "context";
  */
 export function useContextPanelState() {
   const [contextPanelOpen, setContextPanelOpen] = useState(() => {
-    if (typeof window === "undefined") return true;
-    return localStorage.getItem("studio:context-panel-open") !== "false";
+    if (typeof window === "undefined") return false;
+    const stored = localStorage.getItem("studio:context-panel-open");
+    // Default collapsed for new users (progressive disclosure)
+    if (stored === null) return false;
+    return stored !== "false";
   });
   const [contextMode, setContextMode] = useState<"agent" | "files">("agent");
   const [contextTab, setContextTab] = useState<ContextTab>("projects");
