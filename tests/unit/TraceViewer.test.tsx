@@ -236,7 +236,7 @@ describe("TraceNodeDetail", () => {
 
   it("shows loading skeletons", () => {
     const { container } = render(<TraceNodeDetail node={null} loading={true} />);
-    expect(container.querySelectorAll("[class*='animate-pulse']").length).toBeGreaterThan(0);
+    expect(container.querySelectorAll("[class*='animate-shimmer']").length).toBeGreaterThan(0);
   });
 });
 
@@ -299,7 +299,7 @@ describe("TraceViewer", () => {
   it("shows loading skeleton when loading with no turns", () => {
     hookReturnValue = { ...hookReturnValue, turns: [], summary: null, loading: true };
     const { container } = render(<TraceViewer agentId="alex" sessionId="s1" onClose={vi.fn()} />);
-    expect(container.querySelectorAll("[class*='animate-pulse']").length).toBeGreaterThan(0);
+    expect(container.querySelectorAll("[class*='animate-shimmer']").length).toBeGreaterThan(0);
   });
 
   it("handles Escape key to close", () => {

@@ -6,7 +6,7 @@ describe("Skeleton", () => {
   it("renders with default classes", () => {
     const { container } = render(<Skeleton />);
     const el = container.firstElementChild!;
-    expect(el.className).toContain("animate-pulse");
+    expect(el.className).toContain("overflow-hidden");
     expect(el.className).toContain("rounded-md");
     expect(el.className).toContain("bg-muted/80");
   });
