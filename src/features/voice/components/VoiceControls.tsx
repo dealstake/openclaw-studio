@@ -221,6 +221,11 @@ export const VoiceInputControl = React.memo(function VoiceInputControl({
     incrementFailures();
   }, [incrementFailures]);
 
+  const handleInsufficientAudio = useCallback(() => {
+    toast.error("No audio detected. Check your microphone is working and not muted.");
+    incrementFailures();
+  }, [incrementFailures]);
+
   if (isDisabled) {
     return <VoiceUnavailable onRetry={handleRetry} />;
   }
@@ -237,6 +242,7 @@ export const VoiceInputControl = React.memo(function VoiceInputControl({
         onAuthError={handleAuthError}
         onQuotaExceededError={handleQuotaExceeded}
         onRateLimitedError={handleRateLimited}
+        onInsufficientAudioActivityError={handleInsufficientAudio}
         size="sm"
         modelId="scribe_v2_realtime"
         languageCode="en"

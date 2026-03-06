@@ -217,6 +217,11 @@ export interface SpeechInputProps {
    * Called when a rate limit error occurs
    */
   onRateLimitedError?: (data: { error: string }) => void
+
+  /**
+   * Called when ElevenLabs detects insufficient audio activity (silence)
+   */
+  onInsufficientAudioActivityError?: (data: { error: string }) => void
 }
 
 const SpeechInput = React.forwardRef<HTMLDivElement, SpeechInputProps>(
@@ -248,6 +253,7 @@ const SpeechInput = React.forwardRef<HTMLDivElement, SpeechInputProps>(
       onAuthError,
       onQuotaExceededError,
       onRateLimitedError,
+      onInsufficientAudioActivityError,
     },
     ref
   ) {
@@ -282,6 +288,7 @@ const SpeechInput = React.forwardRef<HTMLDivElement, SpeechInputProps>(
       onAuthError,
       onQuotaExceededError,
       onRateLimitedError,
+      onInsufficientAudioActivityError,
     })
 
     const isConnecting = scribe.status === "connecting"
@@ -457,6 +464,13 @@ const SpeechInputRecordButton = React.forwardRef<
             : "scale-[60%] bg-transparent"
         )}
       />
+      {/* Pulsing recording indicator */}
+      {!speechInput.isConnecting && speechInput.isConnected && (
+        <span className="absolute top-1 right-1 flex h-2 w-2">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
+        </span>
+      )}
       <SquareIcon
         className={cn(
           "text-destructive absolute h-4 w-4 fill-current transition-all duration-200",
@@ -512,8 +526,8 @@ const SpeechInputPreview = React.forwardRef<
         "relative self-stretch text-sm transition-[opacity,transform,width] duration-200 ease-out",
         showPlaceholder
           ? "text-muted-foreground italic"
-          : "text-muted-foreground",
-        speechInput.isConnected ? "w-20 sm:w-28 opacity-100" : "w-0 opacity-0",
+          : "text-foreground font-medium",
+        speechInput.isConnected ? "flex-1 min-w-[5rem] max-w-[12rem] sm:max-w-[16rem] opacity-100" : "w-0 opacity-0",
         className
       )}
       title={displayText}
