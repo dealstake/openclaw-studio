@@ -97,7 +97,7 @@ function toolLineToPart(line: string): MessagePart {
  * the user-facing chat stream. These include compaction prompts, heartbeat
  * tokens, post-compaction audit notices, and bare "NO_REPLY" responses.
  */
-function isInternalSystemLine(line: string): boolean {
+export function isInternalSystemLine(line: string): boolean {
   const trimmed = line.trim();
 
   // Exact match tokens

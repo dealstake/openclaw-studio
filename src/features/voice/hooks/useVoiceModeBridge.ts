@@ -140,7 +140,7 @@ export function useVoiceModeBridge(options?: UseVoiceModeBridgeOptions) {
 
   // On new committed transcript, send to agent
   useEffect(() => {
-    if (!voiceMode || !voice.finalTranscript) return;
+    if (!voiceMode || !voice.finalTranscript || !voice.finalTranscript.trim()) return;
     if (voice.finalTranscript === prevFinalRef.current) return;
 
     console.log(

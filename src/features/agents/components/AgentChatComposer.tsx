@@ -24,6 +24,7 @@ import type { WizardType, WizardTheme, WizardStarter } from "@/features/wizards/
 import { WizardBanner } from "@/features/wizards/components/WizardBanner";
 import { WizardLaunchMenu } from "@/features/wizards/components/WizardLaunchMenu";
 import { useVoiceOutput, resolvedToSpeakOptions } from "@/features/voice/hooks/useVoiceOutput";
+import { useVoiceSession } from "@/features/voice/hooks/useVoiceSession";
 
 /** Strip markdown syntax for cleaner speech output */
 /**
@@ -56,7 +57,7 @@ import { useVoiceSettings } from "@/features/voice/hooks/useVoiceSettings";
 import { createStudioSettingsCoordinator } from "@/lib/studio/coordinator";
 import { VoiceInputControl } from "@/features/voice/components/VoiceControls";
 import { VoiceModeButton } from "@/features/voice/components/VoiceModeButton";
-import { useVoiceModeBridge } from "@/features/voice/hooks/useVoiceModeBridge";
+// useVoiceModeBridge replaced by useVoiceSession (unified hook)
 import { useVoiceModeSafe } from "@/features/voice/providers/VoiceModeProvider";
 import type { SpeechInputData } from "@/components/ui/speech-input";
 
@@ -164,11 +165,11 @@ export const AgentChatComposer = memo(function AgentChatComposer({
     voiceOutputRef.current = voiceOutput;
   }, [voiceOutput]);
 
-  // ── Voice mode bridge (full-screen overlay STT↔TTS↔Agent loop) ──────
+  // ── Voice mode (unified session: STT↔TTS↔Agent loop) ─────────────
   const voiceMode = useVoiceModeSafe();
   const voiceModeActive = !!(voiceMode?.isOverlayOpen || voiceMode?.isMinimized);
 
-  const { startVoiceMode, speakResponse: bridgeSpeakResponse } = useVoiceModeBridge({
+  const { start: startVoiceMode, speakResponse: sessionSpeakResponse } = useVoiceSession({
     onUserMessage: useCallback(
       (text: string) => {
         onSend(text);
@@ -244,7 +245,6 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   const generationStartedRef = useRef(false);
   useEffect(() => {
     if (isRunning && !prevRunningRef.current) {
-      // New generation started
       generationStartedRef.current = true;
     } else if (!isRunning) {
       generationStartedRef.current = false;
@@ -254,47 +254,32 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   // Stream agent text into voice overlay in real-time (visual only — TTS waits for completion)
   useEffect(() => {
     if (!voiceModeActive || !voiceMode || !isRunning || !lastAssistantText) return;
-    // Only stream text from the current generation, not pre-existing chat history
     if (!generationStartedRef.current) return;
     const plain = stripMarkdownForSpeech(lastAssistantText);
     if (plain) {
       voiceMode.setAgentTranscript(plain);
-      // Show "thinking" → "speaking" transition as text streams in
       if (voiceMode.state === "thinking") {
         voiceMode.setState("speaking");
       }
     }
   }, [isRunning, lastAssistantText, voiceModeActive]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // When agent finishes, speak the response
   useEffect(() => {
-    // Detect transition from running → not running with new text
     if (prevRunningRef.current && !isRunning && lastAssistantText) {
       if (lastAssistantText !== prevAssistantTextRef.current) {
-        // Extract only the NEW text from this response (not the full chat history)
         const prevText = prevAssistantTextRef.current || "";
         const newText = lastAssistantText.startsWith(prevText)
           ? lastAssistantText.slice(prevText.length).trim()
           : lastAssistantText;
-        const plainText = stripMarkdownForSpeech(newText);
-        console.log("[VoiceLoop] Agent finished. newText:", plainText.length, "chars, fullText:", lastAssistantText.length, "chars, voiceModeActive:", voiceModeActive);
+        let plainText = stripMarkdownForSpeech(newText);
+        if (plainText.length >= 5000) plainText = plainText.slice(0, 4000);
 
-        if (plainText.length > 0 && plainText.length < 5000) {
+        if (plainText.length > 0) {
           if (voiceModeActive) {
-            console.log("[VoiceLoop] Calling bridgeSpeakResponse (voice overlay active)");
-            void bridgeSpeakResponse(plainText);
+            void sessionSpeakResponse(plainText);
           } else if (voiceOutput.enabled) {
-            console.log("[VoiceLoop] Calling voiceOutput.speak (inline voice)");
             void voiceOutput.speak(plainText, resolvedToSpeakOptions(voiceResolvedSettings));
-            voiceOutput.setEnabled(false);
-          }
-        } else if (plainText.length >= 5000) {
-          // Response too long for TTS — truncate to first 4000 chars
-          const truncated = plainText.slice(0, 4000);
-          console.log("[VoiceLoop] Response too long, truncating to 4000 chars");
-          if (voiceModeActive) {
-            void bridgeSpeakResponse(truncated);
-          } else if (voiceOutput.enabled) {
-            void voiceOutput.speak(truncated, resolvedToSpeakOptions(voiceResolvedSettings));
             voiceOutput.setEnabled(false);
           }
         }
@@ -302,7 +287,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
       }
     }
     prevRunningRef.current = isRunning;
-  }, [isRunning, lastAssistantText, voiceOutput, voiceModeActive, bridgeSpeakResponse, voiceResolvedSettings]);
+  }, [isRunning, lastAssistantText, voiceOutput, voiceModeActive, sessionSpeakResponse, voiceResolvedSettings]);
 
   const showFileError = useCallback((msg: string) => {
     setFileError(msg);

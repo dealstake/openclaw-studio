@@ -44,6 +44,7 @@ export { voiceModeToOrbState } from "./lib/voiceTypes";
 // Voice Mode Hooks
 export { useVoiceModeShortcut } from "./hooks/useVoiceModeShortcut";
 export { useVoiceModeBridge } from "./hooks/useVoiceModeBridge";
+export { useVoiceSession } from "./hooks/useVoiceSession";
 
 // Providers
 export { VoiceModeProvider, useVoiceMode, useVoiceModeSafe } from "./providers/VoiceModeProvider";

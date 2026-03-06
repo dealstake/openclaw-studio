@@ -10,6 +10,7 @@ import {
 import type { AgentState as AgentRecord } from "@/features/agents/state/store";
 import type { MessagePart } from "@/lib/chat/types";
 import { isTextPart } from "@/lib/chat/types";
+import { isInternalSystemLine } from "@/lib/chat/parseMessageParts";
 import { AlertTriangle, ArrowLeft, Bot, Info, RefreshCw, X, Zap } from "lucide-react";
 import {
   CalendarClock,
@@ -309,36 +310,36 @@ export const AgentChatPanel = memo(function AgentChatPanel({
     [handleSend, handleWizardSend, isWizardActive]
   );
 
-  // Extract last assistant text from message parts for TTS
-  // Only include text from the LAST run (after the last "running" status marker)
-  // to avoid showing/speaking accumulated system messages from earlier turns
+  // Extract last assistant text from message parts for TTS.
+  // Filters internal system content (compaction prompts, heartbeat tokens, etc.)
+  // and user-quoted lines so only the agent's conversational response is spoken.
   const lastAssistantText = useMemo(() => {
     if (!agent.messageParts || agent.messageParts.length === 0) return undefined;
 
-    // Find the start of the LAST assistant response by searching backwards
-    // for the last "running" status marker (marks a new generation start).
-    // If no marker found, look for the last "ended"/"idle" status to find
-    // where the previous response ended.
+    // Find start of the LAST assistant response by searching backwards
+    // for a status marker (running/ended/idle).
     let startIdx = 0;
-
     for (let i = agent.messageParts.length - 1; i >= 0; i--) {
       const part = agent.messageParts[i];
       if (part.type !== "status") continue;
       const state = (part as { state?: string }).state;
-      if (state === "running") {
-        // Last generation start — take text after this
-        startIdx = i + 1;
-        break;
-      }
-      if (state === "ended" || state === "idle") {
-        // Previous generation ended — take text after this
+      if (state === "running" || state === "ended" || state === "idle") {
         startIdx = i + 1;
         break;
       }
     }
 
     const recentParts = agent.messageParts.slice(startIdx);
-    const textParts = recentParts.filter(isTextPart);
+    const textParts = recentParts
+      .filter(isTextPart)
+      .filter(p => {
+        const trimmed = p.text.trim();
+        // Skip user-quoted lines (echoed back in assistant text)
+        if (trimmed.startsWith(">")) return false;
+        // Skip internal system/infrastructure messages
+        if (isInternalSystemLine(trimmed)) return false;
+        return true;
+      });
     if (textParts.length === 0) return undefined;
     return textParts.map(p => p.text).join("");
   }, [agent.messageParts]);
