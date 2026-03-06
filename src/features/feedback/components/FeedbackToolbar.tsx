@@ -151,7 +151,7 @@ export const FeedbackToolbar = memo(function FeedbackToolbar({
         <PopoverTrigger asChild>
           <button
             type="button"
-            aria-label={annotation?.comment ? "Edit comment" : "Add comment"}
+            aria-label={annotation?.comment ? `Edit comment for message ${messageId}` : `Add comment for message ${messageId}`}
             title={annotation?.comment ? `Comment: ${annotation.comment}` : "Add comment"}
             className={cn(
               "flex h-6 w-6 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 sm:h-6 sm:w-6 items-center justify-center rounded-md transition-colors",
