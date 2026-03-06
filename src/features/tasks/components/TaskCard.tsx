@@ -79,7 +79,7 @@ export const TaskCard = memo(function TaskCard({
         ) : (
           <span className={`h-2 w-2 shrink-0 rounded-full ${dotClass}`} />
         )}
-        <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground transition-colors duration-150 group-hover/card:text-primary" title={task.name}>
+        <span className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground transition-colors duration-150 group-hover/card:text-primary" title={task.name}>
           {task.name}
           {isRunning && <span className="ml-1.5 text-xs font-normal text-purple-300">Running…</span>}
         </span>
@@ -100,7 +100,7 @@ export const TaskCard = memo(function TaskCard({
 
       {/* Row 3: Metadata — frequency, next run, last run, errors */}
       {!isOrphan ? (
-        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground/70">
           {/* Frequency */}
           <div className="flex items-center gap-1" title="Schedule frequency">
             <Clock className="h-3 w-3 shrink-0 opacity-60" />

@@ -286,7 +286,7 @@ export const AgentChatView = memo(function AgentChatView({
         // Assistant group — render parts, grouping consecutive tool calls
         const groupStreaming = isGroupStreaming(group.parts);
         return (
-          <div key={`assistant-${gi}`} className="group/turn flex flex-col gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <div key={`assistant-${gi}`} className="group/turn flex flex-col gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300 rounded-lg bg-muted/20 border border-border/10 py-3">
             {/* Turn separator + agent identity */}
             {(() => {
               const isFirstAssistant = gi === 0;
