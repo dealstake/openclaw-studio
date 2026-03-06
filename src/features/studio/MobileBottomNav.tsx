@@ -52,7 +52,7 @@ export const MobileBottomNav = memo(function MobileBottomNav({
 
   return (
     <nav
-      className={`fixed inset-x-0 bottom-0 z-[var(--z-header)] flex items-stretch justify-around border-t border-border/40 bg-surface-elevated/95 backdrop-blur-xl lg:hidden safe-area-bottom transform-gpu transition-all duration-300 ease-in-out ${
+      className={`fixed inset-x-0 bottom-0 z-[var(--z-header)] flex items-stretch justify-around border-t border-border/40 bg-surface-elevated/95 shadow-[0_-4px_12px_rgb(0_0_0/0.15)] backdrop-blur-xl lg:hidden safe-area-bottom transform-gpu transition-all duration-300 ease-in-out ${
         visible
           ? "opacity-100 translate-y-0"
           : "opacity-0 translate-y-4 pointer-events-none"

@@ -15,12 +15,15 @@ export type BaseCardVariant = keyof typeof variantClasses;
 
 // ─── BaseCard ────────────────────────────────────────────────────────────────
 
-export interface BaseCardProps extends React.HTMLAttributes<HTMLDivElement> {
+export type BaseCardProps = {
   variant?: BaseCardVariant;
   isSelected?: boolean;
   isHoverable?: boolean;
   children: React.ReactNode;
-}
+} & (
+  | (React.ButtonHTMLAttributes<HTMLButtonElement> & { onClick: React.MouseEventHandler<HTMLButtonElement> })
+  | (React.HTMLAttributes<HTMLDivElement> & { onClick?: undefined })
+);
 
 export const BaseCard = React.memo(function BaseCard({
   variant = "default",
@@ -32,33 +35,35 @@ export const BaseCard = React.memo(function BaseCard({
   ...props
 }: BaseCardProps) {
   const isInteractive = !!onClick;
+  const classes = cn(
+    "group/card relative transition-all duration-150 outline-none text-left w-full",
+    "focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-1 focus-visible:ring-offset-background",
+    variantClasses[variant],
+    isHoverable && !isSelected && variant === "flush"
+      ? "hover:bg-muted/30 hover:translate-x-0.5"
+      : isHoverable && !isSelected && "hover:bg-card hover:shadow-[0_0_0_1px_var(--border-subtle-hover),0_1px_3px_0_rgb(0_0_0/0.06)] hover:translate-x-0.5",
+    isSelected && "ring-1 ring-primary/30 shadow-[0_0_0_1px_oklch(from_var(--primary)_l_c_h/0.3)] bg-primary/5",
+    isInteractive && "cursor-pointer",
+    className,
+  );
+
+  if (isInteractive) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className={classes}
+        {...(props as React.ButtonHTMLAttributes<HTMLButtonElement>)}
+      >
+        {children}
+      </button>
+    );
+  }
+
   return (
     <div
-      role={isInteractive ? "button" : undefined}
-      tabIndex={isInteractive ? 0 : undefined}
-      onKeyDown={
-        isInteractive
-          ? (e: React.KeyboardEvent<HTMLDivElement>) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                onClick?.(e as unknown as React.MouseEvent<HTMLDivElement>);
-              }
-            }
-          : undefined
-      }
-      onClick={onClick}
-      className={cn(
-        "group/card relative transition-all duration-150 outline-none",
-        "focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-1 focus-visible:ring-offset-background",
-        variantClasses[variant],
-        isHoverable && !isSelected && variant === "flush"
-          ? "hover:bg-muted/30 hover:translate-x-0.5"
-          : isHoverable && !isSelected && "hover:bg-card hover:shadow-[0_0_0_1px_var(--border-subtle-hover),0_1px_3px_0_rgb(0_0_0/0.06)] hover:translate-x-0.5",
-        isSelected && "ring-1 ring-primary/30 shadow-[0_0_0_1px_oklch(from_var(--primary)_l_c_h/0.3)] bg-primary/5",
-        isInteractive && "cursor-pointer",
-        className,
-      )}
-      {...props}
+      className={classes}
+      {...(props as React.HTMLAttributes<HTMLDivElement>)}
     >
       {children}
     </div>

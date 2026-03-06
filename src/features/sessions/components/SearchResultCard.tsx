@@ -48,12 +48,6 @@ export const SearchResultCard = memo(function SearchResultCard({
       aria-selected={false}
       tabIndex={0}
       onClick={onClick}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onClick?.();
-        }
-      }}
     >
       <CardHeader>
         <Search className="h-3 w-3 flex-shrink-0 text-muted-foreground/60" />
