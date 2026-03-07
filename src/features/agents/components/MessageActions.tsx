@@ -16,7 +16,7 @@ export const MessageActions = memo(function MessageActions({ text }: MessageActi
     <div className="pointer-events-auto flex justify-end px-4 pt-1 sm:absolute sm:-top-3 sm:right-1 sm:z-10 sm:px-0 sm:pt-0 sm:pointer-events-none sm:opacity-0 sm:transition-opacity sm:duration-150 sm:group-hover/message:pointer-events-auto sm:group-hover/message:opacity-100 sm:group-focus-within/message:pointer-events-auto sm:group-focus-within/message:opacity-100">
       <button
         type="button"
-        className="flex h-7 w-7 min-h-[44px] min-w-[44px] items-center justify-center rounded-md border border-border/80 bg-card shadow-sm transition hover:bg-muted"
+        className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md border border-border/80 bg-card shadow-sm transition-colors duration-150 hover:bg-muted sm:h-7 sm:w-7 sm:min-h-0 sm:min-w-0"
         onClick={() => copyToClipboard(text)}
         aria-label={isCopied ? "Copied message" : "Copy message"}
         title={isCopied ? "Copied!" : "Copy to clipboard"}

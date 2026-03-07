@@ -144,9 +144,9 @@ export const SessionList = memo(function SessionList({
           className="py-8"
         />
       ) : (
-        groups.map((group) => (
-          <div key={group.label} className="mb-2">
-            <div className={`${sectionLabelClass} px-2.5 py-1.5`}>
+        groups.map((group, groupIndex) => (
+          <div key={group.label} className={groupIndex > 0 ? "mb-2 mt-3" : "mb-2"}>
+            <div className={`${sectionLabelClass} px-2.5 py-2 text-muted-foreground/70`}>
               {group.label}
             </div>
             <div className="flex flex-col gap-0.5">
