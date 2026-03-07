@@ -218,14 +218,6 @@ function handleFinalEvent(
   }
 
   const thinkingText = nextThinking ?? agent?.thinkingTrace ?? null;
-  if (
-    !thinkingText &&
-    role === "assistant" &&
-    agent &&
-    !agent.messageParts.some((p) => p.type === "reasoning")
-  ) {
-    void deps.loadAgentHistory(agentId);
-  }
 
   // Finalize streaming parts BEFORE clearing run tracking
   if (thinkingText && payload.runId) {

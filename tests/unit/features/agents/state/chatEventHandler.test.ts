@@ -346,7 +346,7 @@ describe("chatEventHandler", () => {
       expect(deps.clearedPatches).toContain("agent-1");
     });
 
-    it("loads history when no thinking trace found", () => {
+    it("does not reload history when no thinking trace found (fallback removed)", () => {
       const agent = makeAgent();
       const deps = makeDeps([agent]);
       const state = new RuntimeTrackingState(deps);
@@ -358,7 +358,7 @@ describe("chatEventHandler", () => {
         }),
         state
       );
-      expect(deps.loadAgentHistory).toHaveBeenCalledWith("agent-1");
+      expect(deps.loadAgentHistory).not.toHaveBeenCalled();
     });
 
     it("does not dispatch lastResult for tool role messages", () => {

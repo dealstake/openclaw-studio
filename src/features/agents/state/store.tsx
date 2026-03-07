@@ -63,7 +63,32 @@ export type AgentStoreSeed = {
   voiceStyle?: number;
 };
 
-export type AgentState = AgentStoreSeed & {
+/**
+ * Keys from AgentStoreSeed that are optional in the seed but required at runtime.
+ * Using Required<Pick<…>> avoids redeclaring each field and keeps a single source of truth.
+ */
+type RequiredSeedKeys =
+  | "toolCallingEnabled"
+  | "showThinkingTraces"
+  | "autonomyLevel"
+  | "group"
+  | "tags"
+  | "isMainAgent"
+  | "personaStatus"
+  | "personaCategory"
+  | "roleDescription"
+  | "templateKey"
+  | "optimizationGoals"
+  | "practiceCount"
+  | "voiceProvider"
+  | "voiceId"
+  | "voiceModelId"
+  | "voiceStability"
+  | "voiceClarity"
+  | "voiceStyle";
+
+export type AgentState = Omit<AgentStoreSeed, RequiredSeedKeys> &
+  Required<Pick<AgentStoreSeed, RequiredSeedKeys>> & {
   status: AgentStatus;
   sessionCreated: boolean;
   awaitingUserInput: boolean;
@@ -84,43 +109,8 @@ export type AgentState = AgentStoreSeed & {
   draft: string;
   sessionSettingsSynced: boolean;
   historyLoadedAt: number | null;
-  toolCallingEnabled: boolean;
-  showThinkingTraces: boolean;
-  autonomyLevel: AutonomyLevel;
-  /** Optional group/team category (e.g. "ops", "dev", "data"). */
-  group: string | null;
-  /** Optional flexible labels for filtering (e.g. ["monitoring", "critical"]). */
-  tags: string[];
   /** Active wizard context — null when no wizard is running */
   wizardContext: WizardContext | null;
-  // ── Persona metadata (unified model) ──────────────────────────────
-  /** Whether this is the primary/main agent */
-  isMainAgent: boolean;
-  /** Persona lifecycle status (draft/active/paused/archived) — distinct from runtime `status` */
-  personaStatus: PersonaLifecycleStatus | null;
-  /** Persona category (sales, admin, support, etc.) */
-  personaCategory: PersonaCategory | null;
-  /** Short role description from persona config */
-  roleDescription: string | null;
-  /** Template key if created from Starter Kit */
-  templateKey: string | null;
-  /** Optimization goals set by user */
-  optimizationGoals: string[];
-  /** Number of practice sessions completed */
-  practiceCount: number;
-  // ── Voice config (Phase 6: persona-agent unification) ──
-  /** Voice provider (elevenlabs, openai, or null) */
-  voiceProvider: "elevenlabs" | "openai" | null;
-  /** Voice ID (e.g. 'Rachel') */
-  voiceId: string | null;
-  /** Voice model ID (e.g. 'eleven_flash_v2_5') */
-  voiceModelId: string | null;
-  /** Voice stability (0-1, default 0.5) */
-  voiceStability: number;
-  /** Voice clarity/similarity boost (0-1, default 0.75) */
-  voiceClarity: number;
-  /** Voice style exaggeration (0-1, default 0) */
-  voiceStyle: number;
 };
 
 export const buildNewSessionAgentPatch = (agent: AgentState): Partial<AgentState> => {

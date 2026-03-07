@@ -9,8 +9,7 @@ import {
 
 import type { AgentState as AgentRecord } from "@/features/agents/state/store";
 import type { MessagePart } from "@/lib/chat/types";
-import { isTextPart } from "@/lib/chat/types";
-import { isInternalSystemLine } from "@/lib/chat/parseMessageParts";
+import { extractLastAssistantText } from "@/features/agents/lib/extractLastAssistantText";
 import { AlertTriangle, ArrowLeft, Bot, Info, RefreshCw, X, Zap } from "lucide-react";
 import {
   CalendarClock,
@@ -308,38 +307,10 @@ export const AgentChatPanel = memo(function AgentChatPanel({
   );
 
   // Extract last assistant text from message parts for TTS.
-  // Filters internal system content (compaction prompts, heartbeat tokens, etc.)
-  // and user-quoted lines so only the agent's conversational response is spoken.
-  const lastAssistantText = useMemo(() => {
-    if (!agent.messageParts || agent.messageParts.length === 0) return undefined;
-
-    // Find start of the LAST assistant response by searching backwards
-    // for a status marker (running/ended/idle).
-    let startIdx = 0;
-    for (let i = agent.messageParts.length - 1; i >= 0; i--) {
-      const part = agent.messageParts[i];
-      if (part.type !== "status") continue;
-      const state = (part as { state?: string }).state;
-      if (state === "running" || state === "ended" || state === "idle") {
-        startIdx = i + 1;
-        break;
-      }
-    }
-
-    const recentParts = agent.messageParts.slice(startIdx);
-    const textParts = recentParts
-      .filter(isTextPart)
-      .filter(p => {
-        const trimmed = p.text.trim();
-        // Skip user-quoted lines (echoed back in assistant text)
-        if (trimmed.startsWith(">")) return false;
-        // Skip internal system/infrastructure messages
-        if (isInternalSystemLine(trimmed)) return false;
-        return true;
-      });
-    if (textParts.length === 0) return undefined;
-    return textParts.map(p => p.text).join("");
-  }, [agent.messageParts]);
+  const lastAssistantText = useMemo(
+    () => extractLastAssistantText(agent.messageParts ?? []),
+    [agent.messageParts],
+  );
 
   return (
     <div data-agent-panel className="group fade-up relative flex h-full w-full min-w-0 flex-col overflow-hidden bg-surface-sunken">

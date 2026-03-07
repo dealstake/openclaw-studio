@@ -223,8 +223,8 @@ describe("gateway runtime event handler (chat)", () => {
       },
     });
 
-    expect(loadAgentHistory).toHaveBeenCalledTimes(1);
-    expect(loadAgentHistory).toHaveBeenCalledWith("agent-1");
+    // loadAgentHistory fallback was removed — missing thinking trace no longer triggers reload
+    expect(loadAgentHistory).not.toHaveBeenCalled();
   });
 
   it("handles aborted/error by appending output and clearing stream fields", () => {
