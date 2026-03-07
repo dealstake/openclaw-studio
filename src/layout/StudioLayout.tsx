@@ -15,7 +15,7 @@
 import { type ReactNode, useCallback, useEffect, useRef } from "react";
 import { Group, Panel, Separator, usePanelRef, useDefaultLayout, type PanelImperativeHandle, type GroupImperativeHandle } from "react-resizable-panels";
 import { isWide, isUltrawide, type Breakpoint } from "@/hooks/useBreakpoint";
-import { GripVertical } from "lucide-react";
+import { GripVertical, PanelRightOpen } from "lucide-react";
 
 // ── Types ──────────────────────────────────────────────────────────
 
@@ -200,6 +200,18 @@ export function StudioLayout({
             {rightPanel}
           </div>
         </Panel>
+
+        {/* Collapsed expand affordance — thin strip when right panel is hidden */}
+        {!contextPanelOpen && (
+          <button
+            onClick={() => onContextPanelOpenChange?.(true)}
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-6 h-16 rounded-l-md bg-muted/50 hover:bg-muted border border-r-0 border-border/50 text-muted-foreground hover:text-foreground transition-all duration-150 group"
+            aria-label="Open context panel"
+            title="Open context panel (⌘\)"
+          >
+            <PanelRightOpen className="h-3.5 w-3.5 group-hover:scale-110 transition-transform duration-150" />
+          </button>
+        )}
       </Group>
     );
   }
