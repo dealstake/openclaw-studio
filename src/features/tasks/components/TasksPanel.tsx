@@ -263,6 +263,7 @@ export const TasksPanel = memo(function TasksPanel({
             variant="outline"
             size="sm"
             aria-label="Create new task"
+            className="min-h-[44px] md:min-h-0"
             onClick={onNewTask}
           >
             <Plus className="h-3.5 w-3.5" />
