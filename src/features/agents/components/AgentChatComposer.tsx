@@ -177,6 +177,9 @@ export const AgentChatComposer = memo(function AgentChatComposer({
     onUserMessage: useCallback(
       (text: string) => {
         voiceMessageSentRef.current = true;
+        // Reset generation tracking — we're waiting for a NEW generation
+        // in response to this voice message, not an existing one
+        generationStartedRef.current = false;
         onSend(text);
       },
       [onSend],
@@ -262,15 +265,17 @@ export const AgentChatComposer = memo(function AgentChatComposer({
     }
   }, [voiceModeActive, lastAssistantText]);
 
-  // Track when a NEW generation starts so we only stream text from current generation
+  // Track when a NEW generation starts so we only stream text from current generation.
+  // In voice mode, only flag as started when a voice message was sent (prevents
+  // capturing a generation that was already in progress when voice mode opened).
   const generationStartedRef = useRef(false);
   useEffect(() => {
     if (isRunning && !prevRunningRef.current) {
-      generationStartedRef.current = true;
-    } else if (!isRunning) {
-      generationStartedRef.current = false;
+      if (!voiceModeActive || voiceMessageSentRef.current) {
+        generationStartedRef.current = true;
+      }
     }
-  }, [isRunning]);
+  }, [isRunning, voiceModeActive]);
 
   // Stream agent text into voice overlay in real-time (visual only — TTS waits for completion)
   // Only shows text when: voice mode is active AND a voice message was sent this session
