@@ -122,7 +122,7 @@ function Column({
         {cards.map((card) => (
           <article key={card.id} className="rounded-lg border border-border/70 bg-card/90 p-3 shadow-xs">
             <div className="mb-2 flex items-start justify-between gap-2">
-              <p className="font-sans text-xs font-medium uppercase text-muted-foreground">
+              <p className="font-sans text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
                 {card.id}
               </p>
               <div className="flex items-center gap-1">
