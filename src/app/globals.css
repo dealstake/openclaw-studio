@@ -71,8 +71,8 @@
   --sidebar-border: oklch(0.85 0.012 85 / 0.48);
   --sidebar-ring: oklch(0.76 0.14 85);
   --radius: 0.88rem;
-  --font-display: "IBM Plex Sans", sans-serif;
-  --font-sans: "IBM Plex Sans", sans-serif;
+  --font-display: "Inter", sans-serif;
+  --font-sans: "Inter", sans-serif;
   --font-mono: "IBM Plex Mono", monospace;
   --shadow-color: oklch(0.19 0.01 255);
   --shadow-opacity: 0.16;
