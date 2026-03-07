@@ -26,7 +26,7 @@ export const TaskActions = memo(function TaskActions({
         <>
           <button
             type="button"
-            className={`flex h-8 items-center gap-1.5 rounded-md border px-2.5 transition disabled:cursor-not-allowed disabled:opacity-60 ${
+            className={`flex h-8 min-h-[44px] items-center gap-1.5 rounded-md border px-2.5 transition disabled:cursor-not-allowed disabled:opacity-60 ${
               enabled
                 ? "border-amber-500/40 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20"
                 : "border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
@@ -40,7 +40,7 @@ export const TaskActions = memo(function TaskActions({
           </button>
           <button
             type="button"
-            className="flex h-8 items-center gap-1.5 rounded-md border border-border/80 bg-card/70 px-2.5 text-muted-foreground transition hover:border-border hover:bg-muted/65 disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex h-8 min-h-[44px] items-center gap-1.5 rounded-md border border-border/80 bg-card/70 px-2.5 text-muted-foreground transition hover:border-border hover:bg-muted/65 disabled:cursor-not-allowed disabled:opacity-60"
             onClick={() => onRun(taskId)}
             disabled={busy}
           >
@@ -53,7 +53,7 @@ export const TaskActions = memo(function TaskActions({
       ) : null}
       <button
         type="button"
-        className="flex h-8 items-center gap-1.5 rounded-md border border-destructive/40 bg-transparent px-2.5 text-destructive transition hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-60"
+        className="flex h-8 min-h-[44px] items-center gap-1.5 rounded-md border border-destructive/40 bg-transparent px-2.5 text-destructive transition hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-60"
         onClick={() => onDelete(taskId)}
         disabled={busy}
       >
