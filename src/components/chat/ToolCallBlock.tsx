@@ -104,7 +104,7 @@ export const ToolCallBlock = React.memo(function ToolCallBlock({
   const hasContent = !!(args || result);
 
   return (
-    <Collapsible open={open} onOpenChange={setOpen} className={className}>
+    <Collapsible open={open} onOpenChange={setOpen} className={`${className} mt-1`}>
       <CollapsibleTrigger
         aria-label={`Tool call: ${friendlyToolName(name)} — ${config.label}${durationLabel ? ` (${durationLabel})` : ""}`}
         className="group/tool flex items-center gap-2 rounded-md px-3 py-3 min-h-[44px] sm:px-2 sm:py-1.5 sm:min-h-[36px] text-left transition-colors duration-150 hover:bg-muted/50"
@@ -131,12 +131,12 @@ export const ToolCallBlock = React.memo(function ToolCallBlock({
         {/* Phase indicator */}
         <span className="flex items-center gap-1 text-xs">
           <Icon size={14} strokeWidth={1.75} className={config.iconClass} />
-          <span className="text-muted-foreground/60">{config.label}</span>
+          <span className="text-muted-foreground/80">{config.label}</span>
         </span>
 
         {/* Duration */}
         {durationLabel ? (
-          <span className="font-sans text-xs tabular-nums text-muted-foreground/50">
+          <span className="font-sans text-xs tabular-nums text-muted-foreground/70">
             {durationLabel}
           </span>
         ) : null}
