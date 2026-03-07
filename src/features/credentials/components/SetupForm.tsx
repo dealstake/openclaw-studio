@@ -119,7 +119,7 @@ export const SetupForm = React.memo(function SetupForm({
             placeholder="e.g. skills.entries.myservice.apiKey"
             className="h-9 w-full rounded-md border border-border/50 bg-background px-3 font-mono text-sm text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
           />
-          <p className="text-[11px] leading-snug text-muted-foreground/70">
+          <p className="text-xs leading-snug text-muted-foreground/70">
             The dotted config path where the secret will be stored.
           </p>
         </div>

@@ -190,7 +190,7 @@ const AnnotationRow = memo(function AnnotationRow({
           </span>
         </div>
         {annotation.comment && (
-          <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground line-clamp-2">
+          <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground line-clamp-2">
             <MessageSquare className="mr-1 inline h-2.5 w-2.5 text-blue-400/70" />
             {annotation.comment}
           </p>
@@ -310,7 +310,7 @@ export const FeedbackPanel = memo(function FeedbackPanel({
         </div>
 
         {/* Summary stats row */}
-        <div className="mt-2 flex items-center gap-3 text-[11px] text-muted-foreground">
+        <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
           <span className="flex items-center gap-1">
             <ThumbsUp className="h-3 w-3 text-emerald-500/70" />
             {totalUp}

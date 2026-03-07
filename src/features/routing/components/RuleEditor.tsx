@@ -93,7 +93,7 @@ function FormField({
     <div className="flex flex-col gap-1.5">
       <label
         htmlFor={htmlFor}
-        className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground"
+        className="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
       >
         {label}
       </label>
@@ -214,7 +214,7 @@ export const RuleEditor = memo(function RuleEditor({
                 autoFocus
               />
               {nameError && (
-                <p className="text-[11px] text-destructive">{nameError}</p>
+                <p className="text-xs text-destructive">{nameError}</p>
               )}
             </FormField>
 
@@ -264,7 +264,7 @@ export const RuleEditor = memo(function RuleEditor({
                 ))}
               </StyledSelect>
               {modelError && (
-                <p className="text-[11px] text-destructive">{modelError}</p>
+                <p className="text-xs text-destructive">{modelError}</p>
               )}
             </FormField>
 
@@ -286,7 +286,7 @@ export const RuleEditor = memo(function RuleEditor({
             </div>
 
             {/* Explanation */}
-            <p className="text-[11px] text-muted-foreground leading-relaxed">
+            <p className="text-xs text-muted-foreground leading-relaxed">
               When conditions match, the gateway will route this task to the
               selected model instead of the agent&apos;s default. Rules are
               evaluated top-to-bottom; the first match wins.

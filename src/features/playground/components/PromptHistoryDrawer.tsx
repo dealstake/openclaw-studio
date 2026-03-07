@@ -223,7 +223,7 @@ function HistoryRow({
           {entry.userMessage.slice(0, 100)}
         </p>
         {entry.systemPrompt && (
-          <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+          <p className="mt-0.5 truncate text-xs text-muted-foreground">
             System: {entry.systemPrompt.slice(0, 60)}
           </p>
         )}
@@ -270,7 +270,7 @@ function PresetRow({
       <Bookmark className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-primary/60" aria-hidden />
       <div className="min-w-0 flex-1">
         <p className="truncate text-xs font-medium text-foreground">{preset.label}</p>
-        <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+        <p className="mt-0.5 truncate text-xs text-muted-foreground">
           {preset.userMessage.slice(0, 80)}
         </p>
         <div className="mt-1 flex items-center gap-2 text-[10px] text-muted-foreground">

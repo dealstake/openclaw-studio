@@ -39,14 +39,14 @@ export const SettingsListSection = memo(function SettingsListSection({
       <div className="flex items-center justify-between">
         <SectionLabel>{label}</SectionLabel>
         {!loading && !error && count != null && count > 0 && (
-          <span className="text-[11px] text-muted-foreground">
+          <span className="text-xs text-muted-foreground">
             {count} {count !== 1 ? "items" : "item"}
           </span>
         )}
       </div>
 
       {loading ? (
-        <div className="mt-3 text-[11px] text-muted-foreground">Loading {label.toLowerCase()}...</div>
+        <div className="mt-3 text-xs text-muted-foreground">Loading {label.toLowerCase()}...</div>
       ) : null}
 
       {!loading && error ? (
@@ -54,7 +54,7 @@ export const SettingsListSection = memo(function SettingsListSection({
       ) : null}
 
       {!loading && !error && isEmpty ? (
-        <div className="mt-3 text-[11px] text-muted-foreground">{emptyMessage}</div>
+        <div className="mt-3 text-xs text-muted-foreground">{emptyMessage}</div>
       ) : null}
 
       {!loading && !error && !isEmpty ? (

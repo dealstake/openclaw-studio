@@ -75,7 +75,7 @@ export const HeartbeatsSettingsSection = memo(function HeartbeatsSettingsSection
             <>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="truncate text-[11px] text-muted-foreground">
+                  <div className="truncate text-xs text-muted-foreground">
                     {formatHeartbeatSchedule(heartbeat)}
                   </div>
                 </TooltipTrigger>
@@ -83,7 +83,7 @@ export const HeartbeatsSettingsSection = memo(function HeartbeatsSettingsSection
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="truncate text-[11px] text-muted-foreground">
+                  <div className="truncate text-xs text-muted-foreground">
                     {formatHeartbeatTarget(heartbeat)}
                   </div>
                 </TooltipTrigger>
@@ -91,7 +91,7 @@ export const HeartbeatsSettingsSection = memo(function HeartbeatsSettingsSection
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="truncate text-[11px] text-muted-foreground">
+                  <div className="truncate text-xs text-muted-foreground">
                     {formatHeartbeatSource(heartbeat)}
                   </div>
                 </TooltipTrigger>

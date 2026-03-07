@@ -70,7 +70,7 @@ export const IdentitySettingsSection = memo(function IdentitySettingsSection({
       <SectionLabel>Identity</SectionLabel>
 
       <div className="mt-3 flex items-center gap-2">
-        <span className="text-[11px] text-muted-foreground">
+        <span className="text-xs text-muted-foreground">
           ID: <span className="font-mono">{agentId}</span>
         </span>
         <Tooltip>

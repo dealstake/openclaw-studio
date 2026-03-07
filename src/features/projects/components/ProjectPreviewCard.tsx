@@ -116,7 +116,7 @@ export const ProjectPreviewCard = React.memo(function ProjectPreviewCard({
                   {phase.tasks.map((task, j) => (
                     <li
                       key={j}
-                      className="text-[11px] text-muted-foreground leading-relaxed before:content-['•'] before:mr-1.5 before:text-muted-foreground/50"
+                      className="text-xs text-muted-foreground leading-relaxed before:content-['•'] before:mr-1.5 before:text-muted-foreground/50"
                     >
                       {task}
                     </li>

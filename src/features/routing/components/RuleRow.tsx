@@ -84,7 +84,7 @@ export const RuleRow = memo(function RuleRow({
           </span>
         </div>
         <div className="mt-0.5 flex items-center gap-2 flex-wrap">
-          <span className="truncate text-[11px] text-muted-foreground leading-tight" title={conditionSummary(rule.conditions)}>
+          <span className="truncate text-xs text-muted-foreground leading-tight" title={conditionSummary(rule.conditions)}>
             {conditionSummary(rule.conditions)}
           </span>
           {agentValue && agentValue !== "*" && (

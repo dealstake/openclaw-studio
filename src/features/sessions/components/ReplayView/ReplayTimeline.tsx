@@ -140,7 +140,7 @@ const TurnRow = React.memo(function TurnRow({
           <button
             type="button"
             onClick={handleToolsToggle}
-            className="flex w-full items-center gap-2 px-10 py-1 text-left text-[11px] text-muted-foreground transition hover:text-foreground/70 min-h-[32px]"
+            className="flex w-full items-center gap-2 px-10 py-1 text-left text-xs text-muted-foreground transition hover:text-foreground/70 min-h-[32px]"
           >
             {toolsExpanded ? (
               <ChevronDown className="h-3 w-3 shrink-0" />
@@ -156,7 +156,7 @@ const TurnRow = React.memo(function TurnRow({
               {turn.toolCalls.map((tc) => (
                 <li
                   key={tc.id}
-                  className="flex items-center gap-1.5 text-[11px] text-muted-foreground"
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground"
                 >
                   <Wrench className="h-2.5 w-2.5 shrink-0 text-orange-400" />
                   <span className="font-mono truncate">{tc.name}</span>

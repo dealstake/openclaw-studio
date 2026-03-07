@@ -24,7 +24,7 @@ export const RawGatewaySection = memo(function RawGatewaySection({
           <Server className="h-3 w-3 shrink-0" />
           <span className={sectionLabelClass}>Gateway State</span>
         </div>
-        <p className="mt-1 text-[11px] text-muted-foreground">
+        <p className="mt-1 text-xs text-muted-foreground">
           No gateway cron job found (ID: <code className="rounded bg-muted px-1 py-0.5 font-mono text-[10px]">{cronJobId}</code>)
         </p>
       </div>
@@ -60,7 +60,7 @@ export const RawGatewaySection = memo(function RawGatewaySection({
       {expanded && (
         <div className="mt-2 animate-in fade-in slide-in-from-top-1 duration-150">
           {/* Key fields summary */}
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
             <span>Session: <strong className="text-foreground">{cronJob.sessionTarget}</strong></span>
             <span>Wake: <strong className="text-foreground">{cronJob.wakeMode}</strong></span>
             <span>Payload: <strong className="text-foreground">{cronJob.payload.kind}</strong></span>

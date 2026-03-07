@@ -203,7 +203,7 @@ export const KnowledgeSearchPreview = React.memo(
 
     return (
       <div className="flex flex-col gap-3">
-        <p className="text-[11px] text-muted-foreground/70">
+        <p className="text-xs text-muted-foreground/70">
           Preview what the persona would retrieve for any query. Results come
           from the FTS5 index.
         </p>
@@ -243,7 +243,7 @@ export const KnowledgeSearchPreview = React.memo(
           <div className="flex flex-col items-center gap-1.5 py-8 text-center">
             <FileSearch className="h-6 w-6 text-muted-foreground/30" />
             <p className="text-xs text-muted-foreground">No results found</p>
-            <p className="text-[11px] text-muted-foreground/70">
+            <p className="text-xs text-muted-foreground/70">
               Try different keywords or add more knowledge sources
             </p>
           </div>

@@ -147,7 +147,7 @@ export const SkillDetailSheet = React.memo(function SkillDetailSheet({
                 )}
 
                 {skill.envRequirements.length > 0 && (
-                  <div className="text-[11px] text-muted-foreground/70">
+                  <div className="text-xs text-muted-foreground/70">
                     <span className="font-medium">Required env vars: </span>
                     {skill.envRequirements.map((e) => e.key).join(", ")}
                   </div>
@@ -196,7 +196,7 @@ export const SkillDetailSheet = React.memo(function SkillDetailSheet({
                   {skill.missingDeps.map((dep) => (
                     <span
                       key={dep}
-                      className="rounded bg-destructive/10 px-2 py-0.5 text-[11px] font-mono text-destructive"
+                      className="rounded bg-destructive/10 px-2 py-0.5 text-xs font-mono text-destructive"
                     >
                       {dep}
                     </span>
@@ -207,16 +207,16 @@ export const SkillDetailSheet = React.memo(function SkillDetailSheet({
 
             {/* Meta info */}
             <div className="flex flex-col gap-1.5 border-t border-border/20 pt-3">
-              <div className="flex items-center justify-between text-[11px]">
+              <div className="flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">Source</span>
                 <span className="text-foreground capitalize">{skill.source}</span>
               </div>
-              <div className="flex items-center justify-between text-[11px]">
+              <div className="flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">Key</span>
                 <span className="font-mono text-foreground">{skill.key}</span>
               </div>
               {skill.location && (
-                <div className="flex items-center justify-between text-[11px]">
+                <div className="flex items-center justify-between text-xs">
                   <span className="text-muted-foreground">Location</span>
                   <span className="max-w-[200px] truncate font-mono text-foreground" title={skill.location}>
                     {skill.location}
@@ -224,7 +224,7 @@ export const SkillDetailSheet = React.memo(function SkillDetailSheet({
                 </div>
               )}
               {skill.blockReason && (
-                <div className="flex items-center justify-between text-[11px]">
+                <div className="flex items-center justify-between text-xs">
                   <span className="text-muted-foreground">Block reason</span>
                   <span className="text-amber-500">{skill.blockReason}</span>
                 </div>

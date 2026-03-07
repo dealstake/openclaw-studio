@@ -89,7 +89,7 @@ const ResultCard = memo(function ResultCard({
       </div>
 
       {/* Snippet */}
-      <pre className="overflow-hidden text-ellipsis whitespace-pre-wrap break-words text-[11px] leading-relaxed text-muted-foreground group-hover:text-foreground/80">
+      <pre className="overflow-hidden text-ellipsis whitespace-pre-wrap break-words text-xs leading-relaxed text-muted-foreground group-hover:text-foreground/80">
         {highlightQuery(result.snippet, query)}
       </pre>
     </button>

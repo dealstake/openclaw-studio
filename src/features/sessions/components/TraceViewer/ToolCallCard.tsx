@@ -62,7 +62,7 @@ export const ToolCallCard = React.memo(function ToolCallCard({
                 Result
               </div>
               <div className="max-h-48 overflow-auto rounded-md bg-muted/30 p-2 text-xs text-foreground/80">
-                <pre className="whitespace-pre-wrap break-all font-mono text-[11px]">
+                <pre className="whitespace-pre-wrap break-all font-mono text-xs">
                   {resultPreview}
                 </pre>
               </div>

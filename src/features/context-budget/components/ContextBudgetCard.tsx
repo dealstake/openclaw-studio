@@ -75,7 +75,7 @@ const CategoryRow = memo(function CategoryRow({
           aria-hidden="true"
         />
         <span className={`${sectionLabelClass} flex-1 min-w-0 truncate`}>{label}</span>
-        <span className="text-[11px] font-semibold text-foreground tabular-nums">
+        <span className="text-xs font-semibold text-foreground tabular-nums">
           {formatTokenEstimate(tokens)}
         </span>
         <span className="text-[10px] text-muted-foreground tabular-nums w-8 text-right">{pct}%</span>

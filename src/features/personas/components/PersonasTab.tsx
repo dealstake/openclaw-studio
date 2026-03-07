@@ -387,7 +387,7 @@ export const PersonasTab = React.memo(function PersonasTab({
           New Persona
         </button>
         {allPersonas.length > 0 && (
-          <span className="text-[11px] text-muted-foreground">
+          <span className="text-xs text-muted-foreground">
             {allPersonas.length} persona{allPersonas.length !== 1 ? "s" : ""}
           </span>
         )}
@@ -427,7 +427,7 @@ export const PersonasTab = React.memo(function PersonasTab({
             onClick={() => setFilter(f.value)}
             className={cn(
               "min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0",
-              "rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors",
+              "rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
               filter === f.value
                 ? "bg-primary text-primary-foreground"

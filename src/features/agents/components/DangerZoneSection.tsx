@@ -32,7 +32,7 @@ export const DangerZoneSection = memo(function DangerZoneSection({
     return (
       <section className="rounded-md border border-border/80 bg-card/70 p-4">
         <SectionLabel>System agent</SectionLabel>
-        <div className="mt-3 text-[11px] text-muted-foreground">
+        <div className="mt-3 text-xs text-muted-foreground">
           The main agent is reserved and cannot be deleted.
         </div>
       </section>
@@ -45,7 +45,7 @@ export const DangerZoneSection = memo(function DangerZoneSection({
         <AlertTriangle className="h-4 w-4 text-destructive" />
         <SectionLabel className="text-destructive">Danger zone</SectionLabel>
       </div>
-      <div className="mt-3 text-[11px] text-muted-foreground">
+      <div className="mt-3 text-xs text-muted-foreground">
         Permanently removes this agent from the gateway config and deletes all its cron jobs. This
         action cannot be undone.
       </div>
@@ -53,7 +53,7 @@ export const DangerZoneSection = memo(function DangerZoneSection({
         <div className="mt-3 space-y-2">
           <label
             htmlFor={`danger-zone-confirm-${agentId}`}
-            className="block text-[11px] text-muted-foreground"
+            className="block text-xs text-muted-foreground"
           >
             Type{" "}
             <span className="font-mono font-semibold text-foreground">{agentId}</span>{" "}

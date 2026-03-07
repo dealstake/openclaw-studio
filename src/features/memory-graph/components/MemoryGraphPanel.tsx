@@ -376,7 +376,7 @@ export function MemoryGraphPanel({
                 <p className="text-muted-foreground">{c.description}</p>
                 <div className="flex flex-wrap gap-1 mt-1">
                   {c.files.map((f) => (
-                    <span key={f} className="px-1.5 py-0.5 bg-muted rounded text-[11px]">{f}</span>
+                    <span key={f} className="px-1.5 py-0.5 bg-muted rounded text-xs">{f}</span>
                   ))}
                 </div>
               </div>
@@ -510,7 +510,7 @@ export function MemoryGraphPanel({
                   {selected.files.map((f) => (
                     <button
                       key={f}
-                      className={`px-1.5 py-0.5 bg-muted rounded text-[11px] ${
+                      className={`px-1.5 py-0.5 bg-muted rounded text-xs ${
                         onNavigateToFile ? "hover:bg-muted/80 cursor-pointer underline-offset-2 hover:underline" : ""
                       }`}
                       onClick={() => onNavigateToFile?.(f)}
@@ -525,7 +525,7 @@ export function MemoryGraphPanel({
             )}
             {data?.entityHealth[selected.id]?.isStale && (
               <div className="mt-2 p-2 rounded-lg border border-amber-500/30 bg-amber-500/5">
-                <p className="text-amber-400 text-[11px]">
+                <p className="text-amber-400 text-xs">
                   ⏳ This entity hasn&apos;t been referenced in {data.entityHealth[selected.id].daysSinceLastSeen ?? "30+"}+ days.
                   Consider reviewing the source files to clean up outdated references.
                 </p>

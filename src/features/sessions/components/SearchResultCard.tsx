@@ -64,7 +64,7 @@ export const SearchResultCard = memo(function SearchResultCard({
         </span>
       </CardHeader>
       {result.startedAt && (
-        <div className="mt-1 text-[11px] text-muted-foreground">
+        <div className="mt-1 text-xs text-muted-foreground">
           {formatRelativeTime(new Date(result.startedAt).getTime())}
         </div>
       )}

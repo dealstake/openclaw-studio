@@ -89,7 +89,7 @@ export const RunHistorySection = memo(function RunHistorySection({
       {!loading && !error && runs.length === 0 ? (
         <div className="mt-3 flex flex-col items-center gap-2 rounded-md border border-dashed border-border/50 py-6 text-center">
           <Clock className="h-5 w-5 text-muted-foreground/60" />
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             No runs yet
           </p>
           <p className="max-w-[180px] text-xs text-muted-foreground">

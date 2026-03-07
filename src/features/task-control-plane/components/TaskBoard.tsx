@@ -52,7 +52,7 @@ function PriorityDropdown({ card, saving, onSelect }: PriorityDropdownProps) {
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="rounded-full border border-border/70 px-2 py-0.5 text-[11px] text-muted-foreground transition hover:bg-background hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-full border border-border/70 px-2 py-0.5 text-xs text-muted-foreground transition hover:bg-background hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
           aria-label={`Change priority for ${card.id}`}
           data-testid={`task-control-card-priority-${card.id}`}
           disabled={saving}
@@ -68,10 +68,10 @@ function PriorityDropdown({ card, saving, onSelect }: PriorityDropdownProps) {
             onClick={() => onSelect(card, entry.value)}
             className="flex items-center justify-between gap-3"
           >
-            <span className="font-sans text-[11px] font-semibold">P{entry.value}</span>
+            <span className="font-sans text-xs font-semibold">P{entry.value}</span>
             <span className="flex-1 text-muted-foreground">{entry.label}</span>
             {card.priority === entry.value ? (
-              <span className="text-[11px] text-muted-foreground">Current</span>
+              <span className="text-xs text-muted-foreground">Current</span>
             ) : null}
           </DropdownMenuItem>
         ))}
@@ -122,7 +122,7 @@ function Column({
         {cards.map((card) => (
           <article key={card.id} className="rounded-lg border border-border/70 bg-card/90 p-3 shadow-xs">
             <div className="mb-2 flex items-start justify-between gap-2">
-              <p className="font-sans text-[11px] font-medium uppercase text-muted-foreground">
+              <p className="font-sans text-xs font-medium uppercase text-muted-foreground">
                 {card.id}
               </p>
               <div className="flex items-center gap-1">
@@ -140,7 +140,7 @@ function Column({
                   onSelect={onSelectPriority}
                 />
                 {card.decisionNeeded ? (
-                  <span className="rounded-full border border-accent/45 bg-accent/12 px-2 py-0.5 text-[11px] font-semibold text-accent-foreground">
+                  <span className="rounded-full border border-accent/45 bg-accent/12 px-2 py-0.5 text-xs font-semibold text-accent-foreground">
                     Decision Needed
                   </span>
                 ) : null}
@@ -234,7 +234,7 @@ function DetailsDialog({ card, onClose }: DetailsDialogProps) {
         {card ? (
           <>
             <DialogHeader>
-              <DialogDescription className="font-sans text-[11px] font-semibold uppercase tracking-[0.12em]">
+              <DialogDescription className="font-sans text-xs font-semibold uppercase tracking-[0.12em]">
                 {card.id}
               </DialogDescription>
               <DialogTitle className="text-base font-semibold">{card.title}</DialogTitle>
@@ -257,37 +257,37 @@ function DetailsDialog({ card, onClose }: DetailsDialogProps) {
                   <dl className="mt-2 grid grid-cols-1 gap-2 text-sm text-foreground sm:grid-cols-2">
                     {readString(details, ["issue_type", "issueType"]) ? (
                       <div className="rounded-md border border-border/70 bg-background/40 px-3 py-2">
-                        <dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Type</dt>
+                        <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Type</dt>
                         <dd className="mt-1 font-sans text-[12px]">{readString(details, ["issue_type", "issueType"])}</dd>
                       </div>
                     ) : null}
                     {readString(details, ["created_at", "createdAt"]) ? (
                       <div className="rounded-md border border-border/70 bg-background/40 px-3 py-2">
-                        <dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Created</dt>
+                        <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Created</dt>
                         <dd className="mt-1 font-sans text-[12px]">{formatTimestamp(readString(details, ["created_at", "createdAt"]) ?? "")}</dd>
                       </div>
                     ) : null}
                     {readString(details, ["created_by", "createdBy"]) ? (
                       <div className="rounded-md border border-border/70 bg-background/40 px-3 py-2">
-                        <dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Created By</dt>
+                        <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Created By</dt>
                         <dd className="mt-1 font-sans text-[12px]">{readString(details, ["created_by", "createdBy"])}</dd>
                       </div>
                     ) : null}
                     {readNumber(details, ["compaction_level", "compactionLevel"]) !== null ? (
                       <div className="rounded-md border border-border/70 bg-background/40 px-3 py-2">
-                        <dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Compaction</dt>
+                        <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Compaction</dt>
                         <dd className="mt-1 font-sans text-[12px]">{readNumber(details, ["compaction_level", "compactionLevel"])}</dd>
                       </div>
                     ) : null}
                     {readNumber(details, ["original_size", "originalSize"]) !== null ? (
                       <div className="rounded-md border border-border/70 bg-background/40 px-3 py-2">
-                        <dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Original Size</dt>
+                        <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Original Size</dt>
                         <dd className="mt-1 font-sans text-[12px]">{readNumber(details, ["original_size", "originalSize"])}</dd>
                       </div>
                     ) : null}
                     {readObjectArray(details, ["dependencies"]).length > 0 ? (
                       <div className="rounded-md border border-border/70 bg-background/40 px-3 py-2 sm:col-span-2">
-                        <dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Dependencies</dt>
+                        <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Dependencies</dt>
                         <dd className="mt-2 space-y-1 font-sans text-[12px]">
                           {readObjectArray(details, ["dependencies"]).map((dep, index) => (
                             <div key={typeof dep.id === "string" ? dep.id : String(index)}>
@@ -300,7 +300,7 @@ function DetailsDialog({ card, onClose }: DetailsDialogProps) {
                     ) : null}
                     {readObjectArray(details, ["dependents"]).length > 0 ? (
                       <div className="rounded-md border border-border/70 bg-background/40 px-3 py-2 sm:col-span-2">
-                        <dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Dependents</dt>
+                        <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Dependents</dt>
                         <dd className="mt-2 space-y-1 font-sans text-[12px]">
                           {readObjectArray(details, ["dependents"]).map((dep, index) => (
                             <div key={typeof dep.id === "string" ? dep.id : String(index)}>
@@ -319,31 +319,31 @@ function DetailsDialog({ card, onClose }: DetailsDialogProps) {
                 <SectionLabel>Summary</SectionLabel>
                 <dl className="mt-2 grid grid-cols-1 gap-2 text-sm text-foreground sm:grid-cols-2">
                   <div className="rounded-md border border-border/70 bg-background/40 px-3 py-2">
-                    <dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Status</dt>
+                    <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Status</dt>
                     <dd className="mt-1 font-sans text-[12px]">{card.status}</dd>
                   </div>
                   <div className="rounded-md border border-border/70 bg-background/40 px-3 py-2">
-                    <dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Column</dt>
+                    <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Column</dt>
                     <dd className="mt-1 font-sans text-[12px]">{card.column}</dd>
                   </div>
                   <div className="rounded-md border border-border/70 bg-background/40 px-3 py-2">
-                    <dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Priority</dt>
+                    <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Priority</dt>
                     <dd className="mt-1 font-sans text-[12px]">{card.priority === null ? "None" : `P${card.priority}`}</dd>
                   </div>
                   <div className="rounded-md border border-border/70 bg-background/40 px-3 py-2">
-                    <dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Updated</dt>
+                    <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Updated</dt>
                     <dd className="mt-1 font-sans text-[12px]">{formatTimestampOrFallback(card.updatedAt)}</dd>
                   </div>
                   <div className="rounded-md border border-border/70 bg-background/40 px-3 py-2">
-                    <dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Assignee</dt>
+                    <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Assignee</dt>
                     <dd className="mt-1 font-sans text-[12px]">{card.assignee ?? "None"}</dd>
                   </div>
                   <div className="rounded-md border border-border/70 bg-background/40 px-3 py-2">
-                    <dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Labels</dt>
+                    <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Labels</dt>
                     <dd className="mt-1 font-sans text-[12px]">{card.labels.length > 0 ? card.labels.join(", ") : "None"}</dd>
                   </div>
                   <div className="rounded-md border border-border/70 bg-background/40 px-3 py-2 sm:col-span-2">
-                    <dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Blocked By</dt>
+                    <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Blocked By</dt>
                     <dd className="mt-1 font-sans text-[12px]">{card.blockedBy.length > 0 ? card.blockedBy.join(", ") : "None"}</dd>
                   </div>
                 </dl>
@@ -362,10 +362,10 @@ function DetailsDialog({ card, onClose }: DetailsDialogProps) {
 
               {detailsJson ? (
                 <details className="rounded-md border border-border/70 bg-background/40 px-3 py-3">
-                  <summary className="cursor-pointer font-sans text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                  <summary className="cursor-pointer font-sans text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                     Raw JSON
                   </summary>
-                  <pre className="mt-3 overflow-x-auto whitespace-pre-wrap break-words font-mono text-[11px] text-foreground">
+                  <pre className="mt-3 overflow-x-auto whitespace-pre-wrap break-words font-mono text-xs text-foreground">
                     {detailsJson}
                   </pre>
                 </details>
@@ -425,7 +425,7 @@ export const TaskBoard = memo(function TaskBoard({ snapshot, onRequestRefresh }:
           </button>
         </div>
         {snapshot.scopePath ? (
-          <p className="mt-1 font-sans text-[11px] text-muted-foreground">
+          <p className="mt-1 font-sans text-xs text-muted-foreground">
             Scope: {snapshot.scopePath}
           </p>
         ) : null}

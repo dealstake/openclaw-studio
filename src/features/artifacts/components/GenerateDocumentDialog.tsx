@@ -226,7 +226,7 @@ export const GenerateDocumentDialog = memo(function GenerateDocumentDialog({
                 </select>
               )}
               {selectedTemplate && (
-                <p className="text-[11px] text-muted-foreground leading-snug">
+                <p className="text-xs text-muted-foreground leading-snug">
                   {selectedTemplate.description}
                   {selectedTemplate.variables && selectedTemplate.variables.length > 0 && (
                     <> · Variables: {selectedTemplate.variables.join(", ")}</>

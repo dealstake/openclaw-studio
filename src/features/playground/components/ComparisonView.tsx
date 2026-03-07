@@ -69,7 +69,7 @@ const CompareColumn = memo(function CompareColumn({
       {/* Column header */}
       <div className="flex flex-shrink-0 items-center gap-2 border-b border-border/50 bg-muted/30 px-3 py-2">
         <ModelBadge model={model} />
-        <span className="truncate text-[11px] font-medium text-foreground">
+        <span className="truncate text-xs font-medium text-foreground">
           {modelLabel}
         </span>
         {isStreaming && (

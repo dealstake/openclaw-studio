@@ -169,7 +169,7 @@ export const SessionDefaultsSection = memo(function SessionDefaultsSection({
       <div className="rounded-md border border-border/80 bg-card/70 p-4 space-y-5">
         {/* ── Session Reset ── */}
         <div>
-          <p className="text-[11px] font-medium text-muted-foreground mb-2">
+          <p className="text-xs font-medium text-muted-foreground mb-2">
             Session Reset
           </p>
 
@@ -209,7 +209,7 @@ export const SessionDefaultsSection = memo(function SessionDefaultsSection({
             <div className="mb-1">
               <label
                 htmlFor="session-at-hour"
-                className="text-[11px] text-muted-foreground"
+                className="text-xs text-muted-foreground"
               >
                 Reset at hour (UTC, 0–23)
               </label>
@@ -229,7 +229,7 @@ export const SessionDefaultsSection = memo(function SessionDefaultsSection({
                 className="mt-1 h-8 w-24 rounded-md border border-border/60 bg-background px-2.5 text-xs text-foreground focus:border-primary/60 focus:outline-none disabled:opacity-50"
               />
               {errors.atHour && (
-                <p id="atHour-error" className="mt-1 text-[11px] text-destructive">
+                <p id="atHour-error" className="mt-1 text-xs text-destructive">
                   {errors.atHour}
                 </p>
               )}
@@ -241,7 +241,7 @@ export const SessionDefaultsSection = memo(function SessionDefaultsSection({
             <div className="mb-1">
               <label
                 htmlFor="session-idle-minutes"
-                className="text-[11px] text-muted-foreground"
+                className="text-xs text-muted-foreground"
               >
                 Idle timeout (minutes)
               </label>
@@ -260,7 +260,7 @@ export const SessionDefaultsSection = memo(function SessionDefaultsSection({
                 className="mt-1 h-8 w-24 rounded-md border border-border/60 bg-background px-2.5 text-xs text-foreground focus:border-primary/60 focus:outline-none disabled:opacity-50"
               />
               {errors.idleMinutes && (
-                <p id="idleMinutes-error" className="mt-1 text-[11px] text-destructive">
+                <p id="idleMinutes-error" className="mt-1 text-xs text-destructive">
                   {errors.idleMinutes}
                 </p>
               )}
@@ -268,7 +268,7 @@ export const SessionDefaultsSection = memo(function SessionDefaultsSection({
           )}
 
           {resetMode === "" && (
-            <p className="text-[11px] italic text-muted-foreground">
+            <p className="text-xs italic text-muted-foreground">
               Sessions are never automatically reset.
             </p>
           )}
@@ -276,7 +276,7 @@ export const SessionDefaultsSection = memo(function SessionDefaultsSection({
 
         {/* ── Compaction ── */}
         <div>
-          <p className="text-[11px] font-medium text-muted-foreground mb-2">
+          <p className="text-xs font-medium text-muted-foreground mb-2">
             Compaction
           </p>
 
@@ -284,7 +284,7 @@ export const SessionDefaultsSection = memo(function SessionDefaultsSection({
           <div className="mb-3">
             <label
               htmlFor="compaction-mode"
-              className="text-[11px] text-muted-foreground"
+              className="text-xs text-muted-foreground"
             >
               Mode
             </label>
@@ -308,7 +308,7 @@ export const SessionDefaultsSection = memo(function SessionDefaultsSection({
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-foreground">Memory Flush</p>
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 Clear memory context on compaction
               </p>
             </div>

@@ -100,7 +100,7 @@ export const SkillCard = React.memo(function SkillCard({
       </CardHeader>
 
       <CardMeta>
-        <span className="text-[11px] text-muted-foreground line-clamp-1" title={skill.description || undefined}>
+        <span className="text-xs text-muted-foreground line-clamp-1" title={skill.description || undefined}>
           {skill.description || "No description"}
         </span>
       </CardMeta>

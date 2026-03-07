@@ -42,7 +42,7 @@ export const NewFileDialog = memo(function NewFileDialog({
       </SectionLabel>
       <div className="mt-2 flex items-center gap-2">
         {prefix ? (
-          <span className="text-[11px] text-muted-foreground">{prefix}</span>
+          <span className="text-xs text-muted-foreground">{prefix}</span>
         ) : null}
         <input
           ref={inputRef}

@@ -89,19 +89,19 @@ const EditableToolArgs = React.memo(function EditableToolArgs({
         <textarea
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          className="w-full rounded-md border border-border bg-muted/30 p-2 font-mono text-[11px] text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30"
+          className="w-full rounded-md border border-border bg-muted/30 p-2 font-mono text-xs text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30"
           rows={Math.min(Math.max(draft.split("\n").length, 3), 16)}
           spellCheck={false}
           autoFocus
         />
         {parseError && (
-          <p className="text-[11px] text-destructive">{parseError}</p>
+          <p className="text-xs text-destructive">{parseError}</p>
         )}
         <div className="flex gap-1.5">
           <button
             type="button"
             onClick={handleSave}
-            className="flex items-center gap-1 rounded-md bg-primary px-2 py-1 text-[11px] font-medium text-primary-foreground transition hover:bg-primary/90 min-h-[28px]"
+            className="flex items-center gap-1 rounded-md bg-primary px-2 py-1 text-xs font-medium text-primary-foreground transition hover:bg-primary/90 min-h-[28px]"
           >
             <Check className="h-3 w-3" />
             Save
@@ -109,7 +109,7 @@ const EditableToolArgs = React.memo(function EditableToolArgs({
           <button
             type="button"
             onClick={handleCancel}
-            className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] text-muted-foreground transition hover:bg-muted min-h-[28px]"
+            className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground transition hover:bg-muted min-h-[28px]"
           >
             <X className="h-3 w-3" />
             Cancel
@@ -184,7 +184,7 @@ const EditableContent = React.memo(function EditableContent({
           <button
             type="button"
             onClick={handleSave}
-            className="flex items-center gap-1 rounded-md bg-primary px-2 py-1 text-[11px] font-medium text-primary-foreground transition hover:bg-primary/90 min-h-[28px]"
+            className="flex items-center gap-1 rounded-md bg-primary px-2 py-1 text-xs font-medium text-primary-foreground transition hover:bg-primary/90 min-h-[28px]"
           >
             <Check className="h-3 w-3" />
             Save
@@ -192,7 +192,7 @@ const EditableContent = React.memo(function EditableContent({
           <button
             type="button"
             onClick={handleCancel}
-            className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] text-muted-foreground transition hover:bg-muted min-h-[28px]"
+            className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground transition hover:bg-muted min-h-[28px]"
           >
             <X className="h-3 w-3" />
             Cancel
@@ -317,13 +317,13 @@ export const StepDetailPanel = React.memo(function StepDetailPanel({
           </button>
           {hasEdits && (
             <>
-              <span className="text-[11px] text-amber-400">
+              <span className="text-xs text-amber-400">
                 {Object.keys(editedToolArgs).length + (editedContent !== undefined ? 1 : 0)} edit(s)
               </span>
               <button
                 type="button"
                 onClick={handleResetEdits}
-                className="flex items-center gap-1 rounded-md px-2 py-1 text-[11px] text-muted-foreground transition hover:bg-muted hover:text-foreground min-h-[28px]"
+                className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground transition hover:bg-muted hover:text-foreground min-h-[28px]"
               >
                 <RotateCcw className="h-3 w-3" />
                 Reset

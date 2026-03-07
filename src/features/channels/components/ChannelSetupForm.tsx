@@ -88,7 +88,7 @@ function FieldInput({
       )}
 
       {field.helpText && (
-        <p className="text-[11px] text-muted-foreground/80 mt-0.5 leading-snug">
+        <p className="text-xs text-muted-foreground/80 mt-0.5 leading-snug">
           {field.helpText}
         </p>
       )}

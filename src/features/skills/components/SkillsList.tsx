@@ -68,7 +68,7 @@ export const SkillsList = React.memo(function SkillsList({
             onClick={() => onFilterChange(f.value)}
             className={cn(
               "min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0",
-              "rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors",
+              "rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
               filter === f.value
                 ? "bg-primary text-primary-foreground"

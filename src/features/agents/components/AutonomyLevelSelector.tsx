@@ -53,7 +53,7 @@ const AutonomyOption = memo(function AutonomyOption({
           className={`h-3.5 w-3.5 shrink-0 ${selected ? "text-primary" : "text-muted-foreground"}`}
           aria-hidden="true"
         />
-        <span className="text-[11px] font-semibold uppercase tracking-[0.08em]">{label}</span>
+        <span className="text-xs font-semibold uppercase tracking-[0.08em]">{label}</span>
       </div>
       <p className="text-[10px] leading-tight text-muted-foreground">{description}</p>
     </button>

@@ -171,7 +171,7 @@ export const ComposerAgentMenu = memo(function ComposerAgentMenu({
           {/* Header with context % */}
           {tokenPct !== null && tokenPct !== undefined && (
             <div className="flex items-center justify-between border-b border-border/40 px-3 py-2">
-              <span className="text-[11px] text-muted-foreground">Context</span>
+              <span className="text-xs text-muted-foreground">Context</span>
               <div className="flex items-center gap-2">
                 <div className="h-1 w-12 overflow-hidden rounded-full bg-muted/50">
                   <div

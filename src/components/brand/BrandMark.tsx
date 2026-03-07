@@ -1,7 +1,7 @@
 import { TridentLogo } from "./TridentLogo";
 
 const variants = {
-  sm: { logo: 28 as const, main: "text-lg", sub: "text-[11px]", gap: "gap-2.5" },
+  sm: { logo: 28 as const, main: "text-lg", sub: "text-xs", gap: "gap-2.5" },
   md: { logo: 36 as const, main: "text-2xl", sub: "text-xs", gap: "gap-3" },
   lg: { logo: 48 as const, main: "text-3xl", sub: "text-sm", gap: "gap-3.5" },
 } as const;

@@ -95,11 +95,11 @@ export const ChannelCard = React.memo(function ChannelCard({
               </Tooltip>
               <CardTitle as="div">{label}</CardTitle>
             </div>
-            <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+            <p className="mt-0.5 truncate text-xs text-muted-foreground">
               {description}
             </p>
             {lastError && (
-              <p className="mt-0.5 truncate text-[11px] text-destructive">
+              <p className="mt-0.5 truncate text-xs text-destructive">
                 {lastError}
               </p>
             )}

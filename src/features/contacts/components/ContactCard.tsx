@@ -80,7 +80,7 @@ export const ContactCard = memo(function ContactCard({
       <div className="flex gap-2.5">
         {/* Avatar */}
         <div
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[11px] font-semibold text-primary"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xs font-semibold text-primary"
           aria-hidden="true"
         >
           {initials || "?"}
@@ -103,7 +103,7 @@ export const ContactCard = memo(function ContactCard({
 
           {/* Company / title */}
           {(contact.company || contact.title) && (
-            <div className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground">
+            <div className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
               {contact.company && (
                 <>
                   <Building2 className="h-3 w-3 shrink-0" aria-hidden="true" />

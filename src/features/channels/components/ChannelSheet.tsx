@@ -54,7 +54,7 @@ const TemplateCard = React.memo(function TemplateCard({
         </span>
         <div className="min-w-0 flex-1">
           <CardTitle as="div">{template.label}</CardTitle>
-          <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+          <p className="mt-0.5 truncate text-xs text-muted-foreground">
             {template.description}
           </p>
         </div>

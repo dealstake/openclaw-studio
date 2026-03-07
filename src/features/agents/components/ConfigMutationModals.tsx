@@ -52,7 +52,7 @@ const RestartBlockingModal: FC<RestartBlockingModalProps> = memo(
               Studio is temporarily locked until the gateway restarts.
             </div>
             {statusLine ? (
-              <div className="mt-4 rounded-md border border-border/70 bg-muted/40 px-3 py-2 font-sans text-[11px] uppercase tracking-[0.12em] text-foreground">
+              <div className="mt-4 rounded-md border border-border/70 bg-muted/40 px-3 py-2 font-sans text-xs uppercase tracking-[0.12em] text-foreground">
                 {statusLine}
               </div>
             ) : null}

@@ -110,7 +110,7 @@ const InteractionEntry = memo(function InteractionEntry({
         </div>
 
         {interaction.summary && (
-          <p className="mt-0.5 text-[11px] text-foreground/80 line-clamp-3">
+          <p className="mt-0.5 text-xs text-foreground/80 line-clamp-3">
             {interaction.summary}
           </p>
         )}

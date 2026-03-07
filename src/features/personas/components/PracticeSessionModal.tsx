@@ -175,7 +175,7 @@ const PreflightBanner = React.memo(function PreflightBanner({
           type="button"
           onClick={onRecheck}
           aria-label="Retry health check"
-          className="flex shrink-0 items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
+          className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
         >
           <RefreshCw className="h-3 w-3" />
           Retry
@@ -212,7 +212,7 @@ const PreflightBanner = React.memo(function PreflightBanner({
             type="button"
             onClick={onRecheck}
             aria-label="Re-check readiness"
-            className="flex shrink-0 items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
+            className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
           >
             <RefreshCw className="h-3 w-3" />
           </button>
@@ -220,18 +220,18 @@ const PreflightBanner = React.memo(function PreflightBanner({
         {missing.length > 0 && (
           <ul className="ml-5 flex flex-col gap-0.5">
             {missing.slice(0, 3).map((cap) => (
-              <li key={cap.capability} className="text-[11px] text-muted-foreground">
+              <li key={cap.capability} className="text-xs text-muted-foreground">
                 {cap.displayName}
               </li>
             ))}
             {missing.length > 3 && (
-              <li className="text-[11px] text-muted-foreground">
+              <li className="text-xs text-muted-foreground">
                 +{missing.length - 3} more
               </li>
             )}
           </ul>
         )}
-        <span className="text-[11px] text-muted-foreground">
+        <span className="text-xs text-muted-foreground">
           Practice can still proceed. Set up capabilities in the persona settings.
         </span>
       </div>
@@ -255,7 +255,7 @@ const PreflightBanner = React.memo(function PreflightBanner({
           type="button"
           onClick={onRecheck}
           aria-label="Re-check readiness"
-          className="flex shrink-0 items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
+          className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
         >
           <RefreshCw className="h-3 w-3" />
         </button>
@@ -263,13 +263,13 @@ const PreflightBanner = React.memo(function PreflightBanner({
       {blockedCaps.length > 0 && (
         <ul className="ml-5 flex flex-col gap-0.5">
           {blockedCaps.slice(0, 3).map((cap) => (
-            <li key={cap.capability} className="text-[11px] text-red-600 dark:text-red-400">
+            <li key={cap.capability} className="text-xs text-red-600 dark:text-red-400">
               {cap.displayName}: {cap.details || "Not configured"}
             </li>
           ))}
         </ul>
       )}
-      <span className="text-[11px] text-muted-foreground">
+      <span className="text-xs text-muted-foreground">
         Set up the required capabilities before starting practice.
       </span>
     </div>

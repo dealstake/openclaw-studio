@@ -209,7 +209,7 @@ export const RoutingPanel = memo(function RoutingPanel({
 
         {/* Info footer */}
         {rules.length > 0 && (
-          <p className="mt-4 text-[11px] text-muted-foreground leading-relaxed">
+          <p className="mt-4 text-xs text-muted-foreground leading-relaxed">
             Rules are evaluated top-to-bottom. The first matching rule wins.
             Disable a rule without deleting it using the toggle.
           </p>

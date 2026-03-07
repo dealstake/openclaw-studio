@@ -54,7 +54,7 @@ export const EmptyStatePanel = ({
         </p>
       ) : null}
       {detail ? (
-        <p className="mt-3 rounded-md border border-border/80 bg-background/75 px-4 py-2 font-sans text-[11px] text-muted-foreground/90">
+        <p className="mt-3 rounded-md border border-border/80 bg-background/75 px-4 py-2 font-sans text-xs text-muted-foreground/90">
           {detail}
         </p>
       ) : null}

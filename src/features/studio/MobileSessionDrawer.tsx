@@ -228,7 +228,7 @@ export const MobileSessionDrawer = memo(function MobileSessionDrawer({
               <NotificationBell />
               <ThemeToggle />
             </div>
-            <LogoutButton iconOnly={false} className="text-[11px]" />
+            <LogoutButton iconOnly={false} className="text-xs" />
           </div>
         </div>
         {/* Sessions section — takes remaining space */}

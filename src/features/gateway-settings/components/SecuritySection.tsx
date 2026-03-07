@@ -147,7 +147,7 @@ const RotateTokenSheet = memo(function RotateTokenSheet({
             <div className="rounded-md border border-amber-500/30 bg-amber-500/8 px-3 py-2.5">
               <div className="flex items-start gap-2">
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" aria-hidden="true" />
-                <p className="text-[11px] leading-relaxed text-amber-200/90">
+                <p className="text-xs leading-relaxed text-amber-200/90">
                   Rotating the token will immediately disconnect this browser
                   session and all other connected clients. You will need to log
                   in again with the new token.
@@ -180,8 +180,8 @@ const RotateTokenSheet = memo(function RotateTokenSheet({
               <p
                 className={
                   tokensMatch
-                    ? "text-[11px] text-emerald-500"
-                    : "text-[11px] text-destructive"
+                    ? "text-xs text-emerald-500"
+                    : "text-xs text-destructive"
                 }
               >
                 {tokensMatch ? "✓ Tokens match" : "✗ Tokens do not match"}
@@ -190,7 +190,7 @@ const RotateTokenSheet = memo(function RotateTokenSheet({
 
             {/* Validation / save error */}
             {(validationError ?? saveError) && (
-              <p className="rounded-md border border-destructive/30 bg-destructive/8 px-3 py-2 text-[11px] text-destructive">
+              <p className="rounded-md border border-destructive/30 bg-destructive/8 px-3 py-2 text-xs text-destructive">
                 {validationError ?? saveError}
               </p>
             )}
@@ -271,7 +271,7 @@ export const SecuritySection = memo(function SecuritySection({
         {/* Auth mode — read-only badge */}
         <div>
           <div className="flex items-center gap-1.5 mb-1">
-            <p className="text-[11px] font-medium text-muted-foreground">
+            <p className="text-xs font-medium text-muted-foreground">
               Auth Mode
             </p>
             <Info
@@ -281,7 +281,7 @@ export const SecuritySection = memo(function SecuritySection({
           </div>
           <div className="flex items-center gap-2">
             <AuthModeBadge mode={security.authMode} />
-            <span className="text-[11px] text-muted-foreground">
+            <span className="text-xs text-muted-foreground">
               Read-only — change via CLI
             </span>
           </div>
@@ -289,7 +289,7 @@ export const SecuritySection = memo(function SecuritySection({
 
         {/* Auth token — SecureInput display (raw token, SecureInput handles masking) */}
         <div className="space-y-1.5">
-          <p className="text-[11px] font-medium text-muted-foreground">
+          <p className="text-xs font-medium text-muted-foreground">
             Auth Token
           </p>
           {security.hasToken && security.tokenRaw ? (
@@ -315,7 +315,7 @@ export const SecuritySection = memo(function SecuritySection({
             </div>
           ) : (
             <div className="space-y-2">
-              <p className="text-[11px] text-muted-foreground italic">
+              <p className="text-xs text-muted-foreground italic">
                 No token configured
               </p>
               <Button
@@ -341,11 +341,11 @@ export const SecuritySection = memo(function SecuritySection({
               aria-hidden="true"
             />
             <div className="space-y-0.5">
-              <p className="text-[11px] font-medium text-foreground">
+              <p className="text-xs font-medium text-foreground">
                 Device Auth Bypass
               </p>
               <p
-                className="text-[11px] text-muted-foreground"
+                className="text-xs text-muted-foreground"
                 aria-description="This setting is read-only and must not be disabled"
               >
                 {security.dangerouslyDisableDeviceAuth
@@ -362,7 +362,7 @@ export const SecuritySection = memo(function SecuritySection({
         {/* Trusted proxies — read-only list */}
         {security.trustedProxies.length > 0 ? (
           <div>
-            <p className="text-[11px] font-medium text-muted-foreground mb-1">
+            <p className="text-xs font-medium text-muted-foreground mb-1">
               Trusted Proxies
             </p>
             <ul className="space-y-1" aria-label="Trusted proxy list">
@@ -381,10 +381,10 @@ export const SecuritySection = memo(function SecuritySection({
           </div>
         ) : (
           <div>
-            <p className="text-[11px] font-medium text-muted-foreground mb-1">
+            <p className="text-xs font-medium text-muted-foreground mb-1">
               Trusted Proxies
             </p>
-            <p className="text-[11px] text-muted-foreground italic">
+            <p className="text-xs text-muted-foreground italic">
               None configured
             </p>
           </div>

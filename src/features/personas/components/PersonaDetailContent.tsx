@@ -87,14 +87,14 @@ function OverviewTab({ agent }: { agent: AgentState }) {
           <div className="flex items-center gap-2 pt-0.5">
             <span
               className={cn(
-                "rounded-full px-2 py-0.5 text-[11px] font-medium",
+                "rounded-full px-2 py-0.5 text-xs font-medium",
                 STATUS_STYLES[statusLabel] ?? STATUS_STYLES.draft,
               )}
             >
               {statusLabel.charAt(0).toUpperCase() + statusLabel.slice(1)}
             </span>
             {agent.personaCategory && (
-              <span className="text-[11px] text-muted-foreground/70">
+              <span className="text-xs text-muted-foreground/70">
                 {agent.personaCategory}
               </span>
             )}
@@ -119,7 +119,7 @@ function OverviewTab({ agent }: { agent: AgentState }) {
             <span className="text-xs font-medium text-foreground">
               {s.value}
             </span>
-            <span className="text-[11px] text-muted-foreground">{s.label}</span>
+            <span className="text-xs text-muted-foreground">{s.label}</span>
           </div>
         ))}
       </div>
@@ -127,14 +127,14 @@ function OverviewTab({ agent }: { agent: AgentState }) {
       {/* Optimization goals */}
       {agent.optimizationGoals && agent.optimizationGoals.length > 0 && (
         <div className="flex flex-col gap-1.5">
-          <span className="text-[11px] font-medium text-muted-foreground">
+          <span className="text-xs font-medium text-muted-foreground">
             Optimization Goals
           </span>
           <div className="flex flex-wrap gap-1">
             {agent.optimizationGoals.map((g) => (
               <span
                 key={g}
-                className="rounded-md bg-primary/8 px-2 py-0.5 text-[11px] text-primary"
+                className="rounded-md bg-primary/8 px-2 py-0.5 text-xs text-primary"
               >
                 {g}
               </span>
@@ -252,7 +252,7 @@ function MetricsTab({ agent }: { agent: AgentState }) {
             <span className="text-sm font-semibold text-foreground">
               {s.value}
             </span>
-            <span className="text-[11px] text-muted-foreground">
+            <span className="text-xs text-muted-foreground">
               {s.label}
             </span>
           </div>
@@ -260,14 +260,14 @@ function MetricsTab({ agent }: { agent: AgentState }) {
       </div>
       {agent.optimizationGoals && agent.optimizationGoals.length > 0 && (
         <div className="flex flex-col gap-1.5">
-          <span className="text-[11px] font-medium text-muted-foreground">
+          <span className="text-xs font-medium text-muted-foreground">
             Optimization Goals
           </span>
           <div className="flex flex-wrap gap-1">
             {agent.optimizationGoals.map((g) => (
               <span
                 key={g}
-                className="rounded-md bg-primary/8 px-2 py-0.5 text-[11px] text-primary"
+                className="rounded-md bg-primary/8 px-2 py-0.5 text-xs text-primary"
               >
                 {g}
               </span>
@@ -411,7 +411,7 @@ export const PersonaDetailContent = memo(function PersonaDetailContent({
               aria-selected={isActive}
               onClick={() => setActiveTab(tab.value)}
               className={cn(
-                "flex min-h-[44px] items-center gap-1.5 whitespace-nowrap px-2.5 text-[11px] font-medium transition-colors md:min-h-9",
+                "flex min-h-[44px] items-center gap-1.5 whitespace-nowrap px-2.5 text-xs font-medium transition-colors md:min-h-9",
                 "border-b-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
                 isActive
                   ? "border-primary text-primary"

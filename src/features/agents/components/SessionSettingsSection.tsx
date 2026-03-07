@@ -77,7 +77,7 @@ export const SessionSettingsSection = memo(function SessionSettingsSection({
         data-testid="agent-settings-session"
       >
         <SectionLabel>Session</SectionLabel>
-        <div className="mt-3 text-[11px] text-muted-foreground">
+        <div className="mt-3 text-xs text-muted-foreground">
           Start this agent in a fresh session and clear the visible transcript in Studio.
         </div>
         <Tooltip>

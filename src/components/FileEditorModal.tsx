@@ -202,7 +202,7 @@ export const FileEditorModal = memo(function FileEditorModal({
             ) : (
               <textarea
                 ref={textareaRef}
-                className="h-full w-full resize-none bg-transparent p-6 font-mono text-[11px] text-foreground outline-none"
+                className="h-full w-full resize-none bg-transparent p-6 font-mono text-xs text-foreground outline-none"
                 value={editor.draft}
                 onChange={(e) => editor.setDraft(e.target.value)}
                 disabled={editor.saving}

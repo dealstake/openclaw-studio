@@ -55,7 +55,7 @@ export const TaskTemplatesSheet = memo(function TaskTemplatesSheet({
 
         {[...categories.entries()].map(([category, templates]) => (
           <div key={category} className="mb-5">
-            <h3 className="mb-2 font-sans text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+            <h3 className="mb-2 font-sans text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
               {category}
             </h3>
             <div className="flex flex-col gap-2">
@@ -87,7 +87,7 @@ export const TaskTemplatesSheet = memo(function TaskTemplatesSheet({
                           {template.type}
                         </span>
                       </div>
-                      <p className="mt-0.5 text-[11px] text-muted-foreground">
+                      <p className="mt-0.5 text-xs text-muted-foreground">
                         {template.description}
                       </p>
                       <p className="mt-1 text-xs text-muted-foreground">

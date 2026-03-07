@@ -63,7 +63,7 @@ export const TaskAdvancedSection = memo(function TaskAdvancedSection({
               <span>Thinking:</span>
               <select
                 aria-label="Thinking level"
-                className="h-6 rounded-md border border-border/80 bg-card/70 px-1.5 font-mono text-[11px] text-foreground outline-none transition hover:border-border focus:border-primary/60"
+                className="h-6 rounded-md border border-border/80 bg-card/70 px-1.5 font-mono text-xs text-foreground outline-none transition hover:border-border focus:border-primary/60"
                 value={editThinking}
                 onChange={(e) => onFieldChange("thinking", e.target.value)}
               >
@@ -82,7 +82,7 @@ export const TaskAdvancedSection = memo(function TaskAdvancedSection({
               <span>Cache:</span>
               <select
                 aria-label="Cache retention"
-                className="h-6 rounded-md border border-border/80 bg-card/70 px-1.5 font-mono text-[11px] text-foreground outline-none transition hover:border-border focus:border-primary/60"
+                className="h-6 rounded-md border border-border/80 bg-card/70 px-1.5 font-mono text-xs text-foreground outline-none transition hover:border-border focus:border-primary/60"
                 value={editCacheRetention}
                 onChange={(e) => onFieldChange("cacheRetention", e.target.value)}
               >
@@ -120,7 +120,7 @@ export const TaskAdvancedSection = memo(function TaskAdvancedSection({
                 <span className="text-muted-foreground">Mode:</span>
                 <select
                   aria-label="Delivery mode"
-                  className="h-6 rounded-md border border-border/80 bg-card/70 px-1.5 font-mono text-[11px] text-foreground outline-none transition hover:border-border focus:border-primary/60"
+                  className="h-6 rounded-md border border-border/80 bg-card/70 px-1.5 font-mono text-xs text-foreground outline-none transition hover:border-border focus:border-primary/60"
                   value={editDeliveryChannel ? "announce" : "none"}
                   onChange={(e) => {
                     if (e.target.value === "none") {

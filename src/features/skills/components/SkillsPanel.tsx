@@ -118,13 +118,13 @@ export const SkillsPanel = React.memo(function SkillsPanel({
             type="button"
             onClick={() => setInstallSheetOpen(true)}
             aria-label="Install skill from ClawHub"
-            className="flex h-6 items-center gap-1 rounded-md border border-border/60 bg-card/50 px-2 text-[11px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            className="flex h-6 items-center gap-1 rounded-md border border-border/60 bg-card/50 px-2 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
             <Download className="h-3 w-3" />
             Install
           </button>
           {report && (
-            <span className="text-[11px] text-muted-foreground">
+            <span className="text-xs text-muted-foreground">
               {report.total} installed
             </span>
           )}

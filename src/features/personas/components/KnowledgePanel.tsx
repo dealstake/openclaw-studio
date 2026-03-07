@@ -147,7 +147,7 @@ const AddSourceForm = React.memo(function AddSourceForm({
               aria-checked={sourceType === t}
               onClick={() => setSourceType(t)}
               className={cn(
-                "flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-[11px] font-medium transition-colors",
+                "flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
                 sourceType === t
                   ? "bg-primary text-primary-foreground"
@@ -281,7 +281,7 @@ const SourceCard = React.memo(function SourceCard({
           )}
         </div>
         {source.title && source.sourceUri !== source.title && (
-          <p className="truncate text-[11px] text-muted-foreground/70">
+          <p className="truncate text-xs text-muted-foreground/70">
             {source.sourceUri}
           </p>
         )}
@@ -383,7 +383,7 @@ export const KnowledgePanel = React.memo(function KnowledgePanel({
             <h2 className="truncate text-sm font-semibold text-foreground">
               Knowledge
             </h2>
-            <p className="truncate text-[11px] text-muted-foreground">
+            <p className="truncate text-xs text-muted-foreground">
               {personaName}
             </p>
           </div>
@@ -415,7 +415,7 @@ export const KnowledgePanel = React.memo(function KnowledgePanel({
           aria-selected={activeTab === "sources"}
           onClick={() => setActiveTab("sources")}
           className={cn(
-            "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors",
+            "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
             activeTab === "sources"
               ? "bg-primary/10 text-primary"
@@ -442,7 +442,7 @@ export const KnowledgePanel = React.memo(function KnowledgePanel({
           aria-selected={activeTab === "search"}
           onClick={() => setActiveTab("search")}
           className={cn(
-            "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors",
+            "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
             activeTab === "search"
               ? "bg-primary/10 text-primary"
@@ -574,7 +574,7 @@ export const KnowledgePanel = React.memo(function KnowledgePanel({
       {/* Footer stats — only on sources tab */}
       {activeTab === "sources" && sources.length > 0 && (
         <div className="border-t border-border/40 px-4 py-2">
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             {sources.length} source{sources.length !== 1 ? "s" : ""} ·{" "}
             {sources.filter((s) => s.sourceType === "web").length} web,{" "}
             {sources.filter((s) => s.sourceType === "file").length} files,{" "}

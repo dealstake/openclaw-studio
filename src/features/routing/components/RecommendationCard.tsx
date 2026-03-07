@@ -112,7 +112,7 @@ export const RecommendationCard = memo(function RecommendationCard({
 
       {/* Footer: savings + CTA */}
       <div className="mt-2.5 flex items-center justify-between">
-        <div className="flex items-center gap-1.5 text-[11px] text-emerald-600 dark:text-emerald-400">
+        <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
           <TrendingDown className="h-3 w-3" />
           <span className="font-medium">
             ~{formatCost(recommendation.estimatedMonthlySavings)}/mo

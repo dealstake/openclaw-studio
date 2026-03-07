@@ -162,7 +162,7 @@ export const FileViewer = memo(function FileViewer({
         ) : editing ? (
           <textarea
             ref={textareaRef}
-            className="h-full w-full resize-none bg-transparent p-3 font-mono text-[11px] text-foreground outline-none"
+            className="h-full w-full resize-none bg-transparent p-3 font-mono text-xs text-foreground outline-none"
             value={editor.draft}
             onChange={(e) => editor.setDraft(e.target.value)}
             disabled={saving}
@@ -172,7 +172,7 @@ export const FileViewer = memo(function FileViewer({
         ) : file.path.endsWith(".md") ? (
           <MarkdownViewer content={file.content} className="p-3" />
         ) : (
-          <pre className="whitespace-pre-wrap break-all p-3 font-mono text-[11px] text-foreground">
+          <pre className="whitespace-pre-wrap break-all p-3 font-mono text-xs text-foreground">
             {file.content}
           </pre>
         )}

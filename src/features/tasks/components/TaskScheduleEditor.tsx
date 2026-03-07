@@ -120,7 +120,7 @@ export const TaskScheduleEditor = memo(function TaskScheduleEditor({
   // ─── Non-interval schedules: read-only display ───────────────────────────
   if (!isIntervalSchedule) {
     return (
-      <div className="mt-2 text-[11px] text-muted-foreground">
+      <div className="mt-2 text-xs text-muted-foreground">
         {humanReadableSchedule(schedule)}
       </div>
     );
@@ -131,7 +131,7 @@ export const TaskScheduleEditor = memo(function TaskScheduleEditor({
     return (
       <div className="mt-2 flex items-center gap-2">
         <Clock className="h-3 w-3 shrink-0 text-muted-foreground" />
-        <span className="text-[11px] text-muted-foreground">
+        <span className="text-xs text-muted-foreground">
           {humanReadableSchedule(schedule)}
         </span>
         <button
@@ -154,7 +154,7 @@ export const TaskScheduleEditor = memo(function TaskScheduleEditor({
         <Clock className="h-3 w-3 shrink-0 text-muted-foreground" />
         <select
           aria-label="Task schedule interval"
-          className="h-9 rounded-md border border-primary/40 bg-card/70 px-2 font-mono text-[11px] text-foreground outline-none transition hover:border-primary/60 focus:border-primary/60 disabled:cursor-not-allowed disabled:opacity-60"
+          className="h-9 rounded-md border border-primary/40 bg-card/70 px-2 font-mono text-xs text-foreground outline-none transition hover:border-primary/60 focus:border-primary/60 disabled:cursor-not-allowed disabled:opacity-60"
           value={draftIntervalMs}
           disabled={busy}
           onChange={(e) => setDraftIntervalMs(Number(e.target.value))}
@@ -167,7 +167,7 @@ export const TaskScheduleEditor = memo(function TaskScheduleEditor({
         </select>
         <select
           aria-label="Task stagger window"
-          className="h-9 rounded-md border border-primary/40 bg-card/70 px-2 font-mono text-[11px] text-foreground outline-none transition hover:border-primary/60 focus:border-primary/60 disabled:cursor-not-allowed disabled:opacity-60"
+          className="h-9 rounded-md border border-primary/40 bg-card/70 px-2 font-mono text-xs text-foreground outline-none transition hover:border-primary/60 focus:border-primary/60 disabled:cursor-not-allowed disabled:opacity-60"
           value={draftStaggerMs}
           disabled={busy}
           onChange={(e) => setDraftStaggerMs(Number(e.target.value))}
@@ -201,7 +201,7 @@ export const TaskScheduleEditor = memo(function TaskScheduleEditor({
 
       {/* Next run preview */}
       {nextRunPreview ? (
-        <p className="pl-5 text-[11px] text-muted-foreground">
+        <p className="pl-5 text-xs text-muted-foreground">
           {nextRunPreview}
         </p>
       ) : null}

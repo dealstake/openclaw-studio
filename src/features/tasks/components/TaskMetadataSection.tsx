@@ -98,7 +98,7 @@ export const TaskMetadataSection = memo(function TaskMetadataSection({
             rows={2}
           />
         ) : task.description ? (
-          <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+          <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
             {task.description}
           </p>
         ) : null}
@@ -125,7 +125,7 @@ export const TaskMetadataSection = memo(function TaskMetadataSection({
       {task.managementStatus === "orphan" ? (
         <div className="flex items-start gap-2 border-b border-destructive/30 bg-destructive/5 px-4 py-3">
           <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />
-          <div className="text-[11px] leading-relaxed text-destructive">
+          <div className="text-xs leading-relaxed text-destructive">
             <span className="font-semibold">Cron job missing.</span>{" "}
             Task metadata exists but no matching gateway cron job was found.
             You can delete the orphaned metadata or recreate the task.

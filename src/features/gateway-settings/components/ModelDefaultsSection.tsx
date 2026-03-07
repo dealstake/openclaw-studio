@@ -191,7 +191,7 @@ export const ModelDefaultsSection = memo(function ModelDefaultsSection({
       <div className="space-y-5 rounded-md border border-border/80 bg-card/70 p-4">
         {/* ── Primary model ── */}
         <div>
-          <p className="mb-2 text-[11px] font-medium text-muted-foreground">
+          <p className="mb-2 text-xs font-medium text-muted-foreground">
             Primary Model
           </p>
 
@@ -216,7 +216,7 @@ export const ModelDefaultsSection = memo(function ModelDefaultsSection({
 
         {/* ── Fallback chain ── */}
         <div>
-          <p className="mb-2 text-[11px] font-medium text-muted-foreground">
+          <p className="mb-2 text-xs font-medium text-muted-foreground">
             Fallback Chain
           </p>
 
@@ -265,7 +265,7 @@ export const ModelDefaultsSection = memo(function ModelDefaultsSection({
               ))}
             </ol>
           ) : (
-            <p className="mb-2 text-[11px] italic text-muted-foreground">
+            <p className="mb-2 text-xs italic text-muted-foreground">
               No fallbacks configured
             </p>
           )}
@@ -298,7 +298,7 @@ export const ModelDefaultsSection = memo(function ModelDefaultsSection({
           </div>
 
           {fallbackError && (
-            <p className="mt-1 text-[11px] text-destructive">{fallbackError}</p>
+            <p className="mt-1 text-xs text-destructive">{fallbackError}</p>
           )}
 
           {/* Save fallbacks — only visible when list changed */}
@@ -323,7 +323,7 @@ export const ModelDefaultsSection = memo(function ModelDefaultsSection({
 
         {/* ── Model catalog ── */}
         <div>
-          <p className="mb-2 text-[11px] font-medium text-muted-foreground">
+          <p className="mb-2 text-xs font-medium text-muted-foreground">
             Model Catalog ({catalogEntries.length}{" "}
             {catalogEntries.length === 1 ? "entry" : "entries"})
           </p>
@@ -402,7 +402,7 @@ export const ModelDefaultsSection = memo(function ModelDefaultsSection({
                     </div>
                   ) : (
                     entry.alias && (
-                      <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                      <p className="mt-0.5 truncate text-xs text-muted-foreground">
                         alias: {entry.alias}
                       </p>
                     )
@@ -411,7 +411,7 @@ export const ModelDefaultsSection = memo(function ModelDefaultsSection({
               ))}
             </ul>
           ) : (
-            <p className="mb-2 text-[11px] italic text-muted-foreground">
+            <p className="mb-2 text-xs italic text-muted-foreground">
               No catalog entries
             </p>
           )}
@@ -457,7 +457,7 @@ export const ModelDefaultsSection = memo(function ModelDefaultsSection({
               </button>
             </div>
             {catalogKeyError && (
-              <p className="text-[11px] text-destructive">{catalogKeyError}</p>
+              <p className="text-xs text-destructive">{catalogKeyError}</p>
             )}
           </div>
         </div>

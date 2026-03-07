@@ -46,7 +46,7 @@ const AgentRow = memo(function AgentRow({ stats }: { stats: AgentFeedbackStats }
   return (
     <div className="flex flex-col gap-1 rounded-md px-2 py-1.5 transition-colors hover:bg-muted/40">
       <div className="flex items-center justify-between gap-2">
-        <span className="truncate text-[11px] font-medium text-foreground capitalize">
+        <span className="truncate text-xs font-medium text-foreground capitalize">
           {stats.agentId}
         </span>
         <div className="flex items-center gap-2 text-[10px] text-muted-foreground">

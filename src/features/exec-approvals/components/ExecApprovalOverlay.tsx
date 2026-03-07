@@ -31,7 +31,7 @@ const MetaRow = ({ label, value }: { label: string; value: string | null | undef
       <SectionLabel as="span" className="w-16 shrink-0">
         {label}
       </SectionLabel>
-      <span className="truncate text-[11px] text-foreground">{value}</span>
+      <span className="truncate text-xs text-foreground">{value}</span>
     </div>
   );
 };
@@ -119,7 +119,7 @@ export const ExecApprovalOverlay = ({
         {current.request.ask && !["off", "on-miss", "always"].includes(current.request.ask) ? (
           <div className="mt-3">
             <SectionLabel className="mb-1">Reason</SectionLabel>
-            <div className="rounded-md border border-border/80 bg-muted/40 px-3 py-2 text-[11px] text-muted-foreground">
+            <div className="rounded-md border border-border/80 bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
               {current.request.ask}
             </div>
           </div>

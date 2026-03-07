@@ -140,7 +140,7 @@ export const ExternalAgentCard = memo(function ExternalAgentCard({
 
           {/* Full output (expanded) */}
           {expanded && hasOutput && (
-            <pre className="mt-2 max-h-40 overflow-y-auto whitespace-pre-wrap rounded-md bg-muted/50 p-2 text-[11px] font-mono text-foreground/80">
+            <pre className="mt-2 max-h-40 overflow-y-auto whitespace-pre-wrap rounded-md bg-muted/50 p-2 text-xs font-mono text-foreground/80">
               {agent.output}
             </pre>
           )}

@@ -82,7 +82,7 @@ export const ChatStatusBar = React.memo(function ChatStatusBar({
       {/* Model name — right-aligned */}
       {model ? (
         <span
-          className={`${isActive && runStartedAt ? "" : "ml-auto"} truncate font-sans text-[11px] text-muted-foreground/70`}
+          className={`${isActive && runStartedAt ? "" : "ml-auto"} truncate font-sans text-xs text-muted-foreground/70`}
           title={model}
         >
           {model}
@@ -125,7 +125,7 @@ const ElapsedTimer = React.memo(function ElapsedTimer({
 
   return (
     <span
-      className="ml-auto font-sans text-[11px] tabular-nums text-muted-foreground"
+      className="ml-auto font-sans text-xs tabular-nums text-muted-foreground"
       title={`Started at ${new Date(runStartedAt).toLocaleTimeString()}`}
     >
       <span ref={ref}>0s</span>

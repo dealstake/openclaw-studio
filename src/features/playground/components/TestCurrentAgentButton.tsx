@@ -57,7 +57,7 @@ export const TestCurrentAgentButton = memo(function TestCurrentAgentButton({
       type="button"
       onClick={handleClick}
       disabled={disabled || loading || !agentId}
-      className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1.5 text-[11px] font-medium text-foreground
+      className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-medium text-foreground
         transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
       title="Load this agent's system prompt and model into the playground"
     >

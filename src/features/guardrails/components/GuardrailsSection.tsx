@@ -133,7 +133,7 @@ export const GuardrailsSection = memo(function GuardrailsSection({
         data-testid="guardrails-section"
       >
         <SectionLabel>Resource guardrails</SectionLabel>
-        <div className="mt-3 text-[11px] text-muted-foreground">
+        <div className="mt-3 text-xs text-muted-foreground">
           {loading ? "Loading…" : "Not connected."}
         </div>
       </section>
@@ -164,7 +164,7 @@ export const GuardrailsSection = memo(function GuardrailsSection({
         <ShieldAlert className="h-3.5 w-3.5 text-muted-foreground" />
         <SectionLabel>Resource guardrails</SectionLabel>
       </div>
-      <p className="mt-1.5 text-[11px] text-muted-foreground">
+      <p className="mt-1.5 text-xs text-muted-foreground">
         Set token and cost limits to prevent runaway agent spend.
       </p>
 

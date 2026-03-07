@@ -182,7 +182,7 @@ export const ReplayView = React.memo(function ReplayView({
             )}
             {/* Step indicator */}
             {effectiveIndex != null && (
-              <span className="ml-auto text-[11px] text-muted-foreground">
+              <span className="ml-auto text-xs text-muted-foreground">
                 Step {effectiveIndex + 1} / {turns.length}
               </span>
             )}

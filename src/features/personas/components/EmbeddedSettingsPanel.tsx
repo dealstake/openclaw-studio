@@ -71,27 +71,27 @@ export const EmbeddedSettingsPanel = memo(function EmbeddedSettingsPanel({
           <SectionLabel>Identity</SectionLabel>
           <div className="flex flex-col gap-1.5 rounded-md border border-border/30 bg-muted/10 p-3">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] text-muted-foreground">Agent ID</span>
+              <span className="text-xs text-muted-foreground">Agent ID</span>
               <code className="text-xs text-foreground">{agent.agentId}</code>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-[11px] text-muted-foreground">Name</span>
+              <span className="text-xs text-muted-foreground">Name</span>
               <span className="text-xs text-foreground">{agent.name}</span>
             </div>
             {agent.roleDescription && (
               <div className="flex items-center justify-between">
-                <span className="text-[11px] text-muted-foreground">Role</span>
+                <span className="text-xs text-muted-foreground">Role</span>
                 <span className="text-xs text-foreground">{agent.roleDescription}</span>
               </div>
             )}
             <div className="flex items-center justify-between">
-              <span className="text-[11px] text-muted-foreground">Tool Calling</span>
+              <span className="text-xs text-muted-foreground">Tool Calling</span>
               <span className="text-xs text-foreground">
                 {agent.toolCallingEnabled ? "Enabled" : "Disabled"}
               </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-[11px] text-muted-foreground">Thinking Traces</span>
+              <span className="text-xs text-muted-foreground">Thinking Traces</span>
               <span className="text-xs text-foreground">
                 {agent.showThinkingTraces ? "Shown" : "Hidden"}
               </span>

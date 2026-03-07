@@ -53,7 +53,7 @@ export const GatewaySettingsPanel = memo(function GatewaySettingsPanel({
       <div className="flex-1 overflow-y-auto px-3 pb-4">
         {status !== "connected" && (
           <div className="rounded-md border border-border/60 bg-muted/40 px-3 py-2 text-center">
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               Gateway disconnected — settings unavailable
             </p>
           </div>
