@@ -338,7 +338,7 @@ export const VoiceSettingsPanel = React.memo(function VoiceSettingsPanel({
           value={settings.modelId}
           onChange={handleModelChange}
           className={cn(
-            "min-h-[44px] rounded-lg border border-border/40 bg-background/50 px-3 text-sm",
+            "min-h-[44px] rounded-lg border border-border/40 bg-background/50 px-3 text-sm focus-ring",
           )}
         >
           <option value="eleven_flash_v2_5">Flash v2.5 — Fastest, lowest latency</option>
@@ -354,7 +354,7 @@ export const VoiceSettingsPanel = React.memo(function VoiceSettingsPanel({
           value={settings.language}
           onChange={handleLanguageChange}
           className={cn(
-            "min-h-[44px] rounded-lg border border-border/40 bg-background/50 px-3 text-sm",
+            "min-h-[44px] rounded-lg border border-border/40 bg-background/50 px-3 text-sm focus-ring",
           )}
         >
           <option value="en">English</option>
@@ -406,7 +406,7 @@ export const VoiceSettingsPanel = React.memo(function VoiceSettingsPanel({
           onClick={() => setAdvancedOpen(!advancedOpen)}
           aria-expanded={advancedOpen}
           aria-controls="advanced-voice-settings"
-          className="flex w-full items-center gap-1.5 rounded-md p-2 text-xs font-medium text-muted-foreground hover:text-foreground"
+          className="flex w-full items-center gap-1.5 rounded-md p-2 text-xs font-medium text-muted-foreground hover:text-foreground focus-ring"
         >
           {advancedOpen ? (
             <ChevronDown className="h-3 w-3" />
