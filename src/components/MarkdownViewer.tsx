@@ -15,7 +15,7 @@ function highlightVariables(text: string): ReactNode[] {
       return (
         <span
           key={i}
-          className="rounded px-1 py-0.5 bg-primary/15 text-primary-text font-mono text-[0.92em] border border-primary/20"
+          className="rounded px-1 py-0.5 bg-primary/15 text-foreground font-mono text-[0.92em] border border-primary/25"
         >
           {part}
         </span>
