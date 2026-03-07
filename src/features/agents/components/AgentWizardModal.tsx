@@ -146,8 +146,10 @@ export const AgentWizardModal = React.memo(function AgentWizardModal({
       if (config && isAgentConfig(config)) {
         setAgentConfig(config);
         setBrainFiles(extractBrainFiles(text));
-        // Show preview after a brief delay to let the message render
-        setTimeout(() => setStep("preview"), 300);
+        // Show preview after the next paint so the message renders first
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => setStep("preview"));
+        });
       }
       return config;
     },

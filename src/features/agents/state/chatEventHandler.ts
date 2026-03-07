@@ -15,6 +15,17 @@ import { findAgentBySessionKey } from "./agentLookup";
 import type { RuntimeTrackingState } from "./runtimeTrackingState";
 import type { MessagePart } from "@/lib/chat/types";
 
+// ── Constants ──────────────────────────────────────────────────────────
+
+/** Shared patch to reset an agent back to idle after a run completes or errors. */
+const IDLE_RESET_PATCH = {
+  status: "idle" as const,
+  runId: null,
+  runStartedAt: null,
+  streamText: null,
+  thinkingTrace: null,
+};
+
 // ── Helpers ────────────────────────────────────────────────────────────
 
 const resolveRole = (message: unknown) =>
@@ -123,7 +134,7 @@ function handleHeartbeatEvent(
     deps.dispatch({
       type: "updateAgent",
       agentId,
-      patch: { status: "idle", runId: null, runStartedAt: null, streamText: null, thinkingTrace: null },
+      patch: IDLE_RESET_PATCH,
     });
     if (deps.onActivityMessage) {
       deps.onActivityMessage(`heartbeat-${payload.runId}`, {
@@ -321,7 +332,7 @@ function handleAbortedEvent(
   deps.dispatch({
     type: "updateAgent",
     agentId,
-    patch: { status: "idle", runId: null, runStartedAt: null, streamText: null, thinkingTrace: null },
+    patch: IDLE_RESET_PATCH,
   });
 }
 

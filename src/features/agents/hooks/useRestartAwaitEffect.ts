@@ -1,5 +1,8 @@
 import { useEffect } from "react";
 
+/** Maximum time (ms) to wait for a restart to complete before showing a timeout error. */
+const RESTART_TIMEOUT_MS = 90_000;
+
 /**
  * Shared effect for the awaiting-restart → sawDisconnect → finalize pattern.
  *
@@ -55,7 +58,7 @@ export function useRestartAwaitEffect<T extends RestartBlockBase>(params: {
   useEffect(() => {
     if (!block) return;
     if (block.phase === "queued") return;
-    const maxWaitMs = 90_000;
+    const maxWaitMs = RESTART_TIMEOUT_MS;
     const elapsed = Date.now() - block.startedAt;
     const remaining = Math.max(0, maxWaitMs - elapsed);
     const timeoutId = window.setTimeout(() => {

@@ -73,10 +73,12 @@ const LineNumberedEditor = memo(
           const textarea = textareaRef.current;
           const computedStyle = window.getComputedStyle(textarea);
           const lh = computedStyle.lineHeight;
-          // ⚠️ parseFloat("normal") returns NaN — fall back to fontSize * 1.2
+          // ⚠️ parseFloat("normal") returns NaN — fall back to fontSize × default ratio
+          // CSS spec: "normal" is typically ~1.2× the font size
+          const DEFAULT_LINE_HEIGHT_RATIO = 1.2;
           const lineHeight =
             lh === "normal"
-              ? parseFloat(computedStyle.fontSize) * 1.2
+              ? parseFloat(computedStyle.fontSize) * DEFAULT_LINE_HEIGHT_RATIO
               : parseFloat(lh);
 
           const scrollTop = (lineNumber - 1) * lineHeight;
