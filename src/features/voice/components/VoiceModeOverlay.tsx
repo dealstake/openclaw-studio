@@ -29,12 +29,7 @@ import { detectVoiceCapability } from "../lib/voiceCapability";
 import { voiceModeToOrbState } from "../lib/voiceTypes";
 import type { VoiceModeState } from "../lib/voiceTypes";
 
-/** Strip ANSI escape codes from transcript text */
-// eslint-disable-next-line no-control-regex
-const ANSI_RE = /[\u001b\u009b][\[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g;
-function stripAnsi(text: string): string {
-  return text.replace(ANSI_RE, "");
-}
+import { stripAnsi } from "@/lib/stripAnsi";
 
 // ── Helpers ─────────────────────────────────────────────────────────────
 

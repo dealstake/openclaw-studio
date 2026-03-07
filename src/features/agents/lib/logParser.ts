@@ -11,22 +11,9 @@
  */
 
 import type { LogLevel, LogLine } from "./logTypes";
+import { stripAnsi } from "@/lib/stripAnsi";
 
-// ---------------------------------------------------------------------------
-// ANSI stripping
-// ---------------------------------------------------------------------------
-
-// Matches ANSI CSI sequences (colors, cursor movement) and OSC sequences
-const ANSI_RE =
-  /(\x9B|\x1B\[)[0-?]*[ -/]*[@-~]|\x1B\][^\x07]*\x07|\x1B[()][A-B0-9]/g;
-
-/**
- * Strip ANSI escape codes from a string.
- * Used to convert raw terminal output into plain text for display + indexing.
- */
-export function stripAnsi(raw: string): string {
-  return raw.replace(ANSI_RE, "");
-}
+export { stripAnsi };
 
 // ---------------------------------------------------------------------------
 // Log level detection

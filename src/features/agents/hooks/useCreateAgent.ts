@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import type { AgentState } from "../state/store";
 import type { ConfigMutationKind, CreateAgentBlockState } from "../types";
 import { createGatewayAgent } from "@/lib/gateway/agentConfig";
@@ -6,11 +6,21 @@ import { bootstrapAgentBrainFilesFromTemplate } from "@/lib/gateway/agentFiles";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import { useRestartAwaitEffect } from "./useRestartAwaitEffect";
 
+/**
+ * Tracks names currently being created (not yet visible in the agent list)
+ * to prevent duplicate names from concurrent creation attempts.
+ */
+const pendingNames = new Set<string>();
+
 const resolveNextNewAgentName = (agents: AgentState[]) => {
   const baseName = "New Agent";
   const existing = new Set(
     agents.map((agent) => agent.name.trim().toLowerCase()).filter((name) => name.length > 0)
   );
+  // Also exclude names currently being created
+  for (const pending of pendingNames) {
+    existing.add(pending.toLowerCase());
+  }
   const baseLower = baseName.toLowerCase();
   if (!existing.has(baseLower)) return baseName;
   for (let index = 2; index < 10000; index += 1) {
@@ -67,17 +77,23 @@ export function useCreateAgent(params: UseCreateAgentParams) {
 
   const [createAgentBlock, setCreateAgentBlock] = useState<CreateAgentBlockState | null>(null);
   const [createAgentBusy, setCreateAgentBusy] = useState(false);
+  /** Ref-based guard prevents concurrent invocations even across re-renders */
+  const creatingRef = useRef(false);
 
   const handleCreateAgent = useCallback(async () => {
+    if (creatingRef.current) return;
     if (createAgentBusy) return;
     if (isBusy) return;
     if (status !== "connected") {
       setError("Connect to gateway before creating an agent.");
       return;
     }
+    creatingRef.current = true;
     setCreateAgentBusy(true);
+    let name: string | null = null;
     try {
-      const name = resolveNextNewAgentName(stateRef.current.agents);
+      name = resolveNextNewAgentName(stateRef.current.agents);
+      pendingNames.add(name);
       setCreateAgentBlock({
         agentId: null,
         agentName: name,
@@ -93,7 +109,7 @@ export function useCreateAgent(params: UseCreateAgentParams) {
             if (!current || current.agentName !== name) return current;
             return { ...current, phase: "creating" };
           });
-          const created = await createGatewayAgent({ client, name });
+          const created = await createGatewayAgent({ client, name: name! });
           flushPendingDraft(focusedAgentId);
           focusFilterTouchedRef.current = true;
           setFocusFilter("all");
@@ -116,6 +132,8 @@ export function useCreateAgent(params: UseCreateAgentParams) {
       setCreateAgentBlock(null);
       setError(message);
     } finally {
+      if (name) pendingNames.delete(name);
+      creatingRef.current = false;
       setCreateAgentBusy(false);
     }
   }, [

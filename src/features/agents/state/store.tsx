@@ -167,8 +167,7 @@ export type Action =
   | { type: "markActivity"; agentId: string; at?: number }
   | { type: "selectAgent"; agentId: string | null }
   | { type: "startWizard"; agentId: string; wizardContext: WizardContext }
-  | { type: "endWizard"; agentId: string }
-  | { type: "setWizardConfig"; agentId: string; config: unknown };
+  | { type: "endWizard"; agentId: string };
 
 /** Maximum message parts per agent before oldest are trimmed. */
 export const MAX_PARTS = 500;
@@ -362,9 +361,6 @@ const reducer = (state: AgentStoreState, action: Action): AgentStoreState => {
             : agent
         ),
       };
-    case "setWizardConfig":
-      // Store extracted config — consumers read it from wizardContext
-      return state;
     default:
       return state;
   }

@@ -18,12 +18,7 @@ import {
 } from "@/lib/text/message-extract";
 import type { MessagePart } from "./types";
 
-/** Strip ANSI escape codes (colors, cursor, etc.) from terminal output */
-// eslint-disable-next-line no-control-regex
-const ANSI_RE = /\x1b\[[0-9;]*[a-zA-Z]|\x1b\].*?\x07/g;
-function stripAnsi(text: string): string {
-  return text.replace(ANSI_RE, "");
-}
+import { stripAnsi } from "@/lib/stripAnsi";
 
 // ── Pure parser (no React, testable standalone) ────────────────────────
 
