@@ -47,7 +47,7 @@ export const ThinkingBlock = React.memo(function ThinkingBlock({
 
   return (
     <Collapsible open={open} onOpenChange={setOpen} className={className}>
-      <CollapsibleTrigger aria-label={streaming ? "Thinking in progress" : "Show agent thought process"} aria-expanded={open} className="group/thinking flex items-center gap-1.5 rounded-md px-3 py-3 min-h-[44px] sm:px-2 sm:py-1.5 text-left transition-colors hover:bg-muted/50">
+      <CollapsibleTrigger aria-label={streaming ? "Thinking in progress" : "Show agent thought process"} aria-expanded={open} className="group/thinking flex items-center gap-2 rounded-md px-3 py-3 min-h-[44px] sm:px-2 sm:py-1.5 text-left transition-colors duration-150 hover:bg-muted/50 mt-1">
         {/* Chevron */}
         <ChevronRight
           size={14}

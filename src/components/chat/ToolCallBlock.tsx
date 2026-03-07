@@ -107,7 +107,7 @@ export const ToolCallBlock = React.memo(function ToolCallBlock({
     <Collapsible open={open} onOpenChange={setOpen} className={className}>
       <CollapsibleTrigger
         aria-label={`Tool call: ${friendlyToolName(name)} — ${config.label}${durationLabel ? ` (${durationLabel})` : ""}`}
-        className="group/tool flex items-center gap-1.5 rounded-md px-3 py-3 min-h-[44px] sm:px-2 sm:py-1.5 sm:min-h-[36px] text-left transition-colors hover:bg-muted/50"
+        className="group/tool flex items-center gap-2 rounded-md px-3 py-3 min-h-[44px] sm:px-2 sm:py-1.5 sm:min-h-[36px] text-left transition-colors duration-150 hover:bg-muted/50"
       >
         {/* Chevron — only if expandable */}
         {hasContent ? (

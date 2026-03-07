@@ -253,10 +253,10 @@ export const AppSidebar = memo(function AppSidebar({
             <button
               type="button"
               onClick={onToggleCollapse}
-              className="mt-2 flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="mt-2 flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-all duration-150 hover:bg-muted hover:text-foreground hover:translate-x-0.5 group/expand"
               aria-label="Expand sidebar"
             >
-              <MessageSquare className="h-4 w-4" />
+              <ChevronLeft className="h-4 w-4 rotate-180 transition-transform duration-150 group-hover/expand:translate-x-0.5" />
             </button>
           </div>
           {/* Notifications + Theme + Settings dropdown pinned to bottom */}
@@ -289,7 +289,7 @@ export const AppSidebar = memo(function AppSidebar({
             <button
               type="button"
               onClick={onToggleCollapse}
-              className="flex h-7 w-7 min-h-[44px] min-w-[44px] items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="flex h-7 w-7 min-h-[44px] min-w-[44px] items-center justify-center rounded-md text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground"
               aria-label="Collapse sidebar"
             >
               <ChevronLeft className="h-4 w-4" />
@@ -298,7 +298,7 @@ export const AppSidebar = memo(function AppSidebar({
             <button
               type="button"
               onClick={onNewSession}
-              className="flex h-7 w-7 min-h-[44px] min-w-[44px] items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-primary hover:text-primary-foreground"
+              className="flex h-7 w-7 min-h-[44px] min-w-[44px] items-center justify-center rounded-md text-muted-foreground transition-colors duration-150 hover:bg-primary hover:text-primary-foreground"
               aria-label="New session"
             >
               <Plus className="h-4 w-4" />
