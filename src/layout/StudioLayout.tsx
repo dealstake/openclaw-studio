@@ -196,7 +196,7 @@ export function StudioLayout({
           collapsedSize="0%"
           onResize={handleRightResize}
         >
-          <div className="h-full w-full overflow-hidden bg-surface-elevated/60 backdrop-blur-xl ring-1 ring-white/[0.06]">
+          <div className="h-full w-full overflow-hidden border-l border-border/30 bg-surface-elevated/60 backdrop-blur-xl">
             {rightPanel}
           </div>
         </Panel>
