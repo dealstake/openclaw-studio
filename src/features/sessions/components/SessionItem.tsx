@@ -2,6 +2,7 @@
 
 import { memo, useCallback, useEffect, useRef } from "react";
 import { MessageSquare, Pin, GitCompareArrows, Archive, GitBranch, Wand2, Swords, Bot } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatRelativeTime } from "@/lib/text/time";
 import type { SessionHistoryEntry } from "../hooks/useSessionHistory";
 import { SessionItemMenu } from "./SessionItemMenu";
@@ -127,9 +128,18 @@ export const SessionItem = memo(function SessionItem({
             onCancel={onRenameCancel}
           />
         ) : (
-          <p className="truncate text-[13px] font-medium leading-tight">
-            {highlightMatch(session.displayName, searchQuery)}
-          </p>
+          <TooltipProvider delayDuration={500}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <p className="truncate text-[13px] font-medium leading-tight">
+                  {highlightMatch(session.displayName, searchQuery)}
+                </p>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="max-w-[240px]">
+                {session.displayName}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         )}
         {session.summary && (
           <p className="mt-0.5 truncate text-[11px] text-muted-foreground/70">
