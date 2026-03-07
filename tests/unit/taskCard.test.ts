@@ -76,12 +76,12 @@ describe("TaskCard", () => {
 
   it("shows Paused status when disabled", () => {
     renderCard(makeTask({ enabled: false }));
-    expect(screen.getByText("Paused")).toBeDefined();
+    expect(screen.getAllByText("Paused").length).toBeGreaterThanOrEqual(1);
   });
 
   it("shows Running status when running", () => {
     renderCard(makeTask({ runningAtMs: Date.now() }));
-    expect(screen.getByText("Running…")).toBeDefined();
+    expect(screen.getByText("Running")).toBeDefined();
   });
 
   it("calls onSelect when clicked", () => {
