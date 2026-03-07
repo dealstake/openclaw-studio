@@ -285,7 +285,7 @@ export const GenerateDocumentDialog = memo(function GenerateDocumentDialog({
           </div>
 
           {/* Footer */}
-          <div className="mt-6 flex justify-end gap-2">
+          <div className="mt-6 flex flex-wrap justify-end gap-2">
             <Dialog.Close asChild>
               <button
                 type="button"
@@ -298,7 +298,7 @@ export const GenerateDocumentDialog = memo(function GenerateDocumentDialog({
               type="button"
               disabled={generating || !selectedTemplate || loadingTemplates}
               onClick={() => void handleGenerate()}
-              className="inline-flex h-11 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-11 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
             >
               {generating && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
               {generating ? "Generating…" : "Generate & Upload"}

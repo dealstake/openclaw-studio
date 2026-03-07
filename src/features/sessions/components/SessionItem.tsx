@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useEffect, useRef } from "react";
+import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { MessageSquare, Pin, GitCompareArrows, Archive, GitBranch, Wand2, Swords, Bot } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatRelativeTime } from "@/lib/text/time";
@@ -58,6 +58,8 @@ export const SessionItem = memo(function SessionItem({
   onViewForkTree,
 }: SessionItemProps) {
   const itemRef = useRef<HTMLDivElement>(null);
+  const nameRef = useRef<HTMLParagraphElement>(null);
+  const [isTruncated, setIsTruncated] = useState(false);
   const itemId = `session-item-${session.key.replace(/:/g, "-")}`;
   const handleClick = useCallback(() => onSelect(session.key), [onSelect, session.key]);
   const handleDoubleClick = useCallback(
@@ -84,6 +86,11 @@ export const SessionItem = memo(function SessionItem({
   useEffect(() => {
     if (focused) itemRef.current?.scrollIntoView({ block: "nearest" });
   }, [focused]);
+
+  useLayoutEffect(() => {
+    const el = nameRef.current;
+    if (el) setIsTruncated(el.scrollWidth > el.clientWidth);
+  }, [session.displayName]);
 
   return (
     <div
@@ -127,20 +134,24 @@ export const SessionItem = memo(function SessionItem({
             onSave={handleRenameSave}
             onCancel={onRenameCancel}
           />
-        ) : (
-          <TooltipProvider delayDuration={500}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <p className="truncate text-[13px] font-medium leading-tight">
-                  {highlightMatch(session.displayName, searchQuery)}
-                </p>
-              </TooltipTrigger>
-              <TooltipContent side="right" className="max-w-[240px]">
-                {session.displayName}
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        )}
+        ) : isTruncated ? (
+            <TooltipProvider delayDuration={500}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <p ref={nameRef} className="truncate text-[13px] font-medium leading-tight">
+                    {highlightMatch(session.displayName, searchQuery)}
+                  </p>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="max-w-[240px]">
+                  {session.displayName}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          ) : (
+            <p ref={nameRef} className="truncate text-[13px] font-medium leading-tight">
+              {highlightMatch(session.displayName, searchQuery)}
+            </p>
+          )}
         {session.summary && (
           <p className="mt-0.5 truncate text-[11px] text-muted-foreground/70">
             {session.summary}
