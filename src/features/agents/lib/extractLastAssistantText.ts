@@ -24,7 +24,7 @@ export function extractLastAssistantText(
     const part = messageParts[i];
     if (part.type !== "status") continue;
     const state = (part as { state?: string }).state;
-    if (state === "running" || state === "ended" || state === "idle") {
+    if (state === "running" || state === "ended" || state === "idle" || state === "complete" || state === "error") {
       startIdx = i + 1;
       break;
     }
