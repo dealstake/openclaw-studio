@@ -30,6 +30,30 @@ import { WizardChatOverlay } from "@/features/wizards/components/WizardChatOverl
 import type { WizardType } from "@/features/wizards/lib/wizardTypes";
 import type { ComposerAgent } from "./ComposerAgentMenu";
 
+// ── Grouped prop types ───────────────────────────────────────────────
+
+/** Props for viewing a historical session transcript */
+export type SessionViewProps = {
+  sessionKey?: string | null;
+  history?: MessagePart[];
+  loading?: boolean;
+  error?: string | null;
+  onRetry?: () => void;
+  onExit?: () => void;
+};
+
+/** Props for wizard-in-chat integration */
+export type WizardIntegrationProps = {
+  wizard?: UseWizardInChatReturn | null;
+  onConfirm?: () => void;
+  confirming?: boolean;
+  onOpenCredentialVault?: (templateKey: string) => void;
+  onLaunchWizard?: (type: WizardType) => void;
+  creationResult?: { success: boolean; message: string; resourceName?: string } | null;
+  creationSteps?: Array<{ label: string; status: "pending" | "active" | "done" | "error" }> | null;
+  onDismissResult?: () => void;
+};
+
 type AgentChatPanelProps = {
   agent: AgentRecord;
   /** Agent list for composer agent menu */
@@ -46,12 +70,8 @@ type AgentChatPanelProps = {
   tokenUsed?: number;
   tokenLimit?: number;
   onNewSession?: () => void;
-  viewingSessionKey?: string | null;
-  viewingSessionHistory?: MessagePart[];
-  viewingSessionLoading?: boolean;
-  viewingSessionError?: string | null;
-  onRetryTranscript?: () => void;
-  onExitSessionView?: () => void;
+  /** Grouped: session transcript viewing */
+  sessionView?: SessionViewProps;
   /** True when the agent's session key changed (session reset detected) */
   sessionContinued?: boolean;
   onDismissContinuationBanner?: () => void;
@@ -59,25 +79,8 @@ type AgentChatPanelProps = {
   gatewayStatus?: GatewayStatus;
   /** Number of messages queued for offline delivery */
   queueLength?: number;
-  /** Wizard-in-chat integration — pass from useWizardInChat hook */
-  wizard?: UseWizardInChatReturn | null;
-  /** Called when user confirms extracted wizard config */
-  onWizardConfirm?: () => void;
-  /** Whether wizard config confirmation is in progress */
-  wizardConfirming?: boolean;
-  /**
-   * Called when the wizard's preflight check identifies a missing credential.
-   * The parent (page.tsx) opens the credential vault for the given templateKey.
-   */
-  onOpenCredentialVault?: (templateKey: string) => void;
-  /** Called when user selects a wizard type from the manual launch menu */
-  onLaunchWizard?: (type: WizardType) => void;
-  /** Creation result — shown after wizard creation completes */
-  wizardCreationResult?: { success: boolean; message: string; resourceName?: string } | null;
-  /** Step-by-step creation progress */
-  wizardCreationSteps?: Array<{ label: string; status: "pending" | "active" | "done" | "error" }> | null;
-  /** Called to dismiss the creation result card */
-  onDismissWizardResult?: () => void;
+  /** Grouped: wizard-in-chat integration */
+  wizardProps?: WizardIntegrationProps;
 };
 
 export const AgentChatPanel = memo(function AgentChatPanel({
@@ -94,26 +97,31 @@ export const AgentChatPanel = memo(function AgentChatPanel({
   onStopRun,
   tokenUsed,
   tokenLimit,
-  viewingSessionKey,
-  viewingSessionHistory = [],
-  viewingSessionLoading = false,
-  viewingSessionError = null,
-  onRetryTranscript,
-  onExitSessionView,
+  sessionView,
   sessionContinued = false,
   onDismissContinuationBanner,
   gatewayStatus,
   queueLength = 0,
   onNewSession,
-  wizard = null,
-  onWizardConfirm,
-  wizardConfirming = false,
-  onOpenCredentialVault,
-  onLaunchWizard,
-  wizardCreationResult = null,
-  wizardCreationSteps = null,
-  onDismissWizardResult,
+  wizardProps,
 }: AgentChatPanelProps) {
+  // ── Destructure grouped props with defaults ──────────────────────
+  const viewingSessionKey = sessionView?.sessionKey ?? null;
+  const viewingSessionHistory = sessionView?.history ?? [];
+  const viewingSessionLoading = sessionView?.loading ?? false;
+  const viewingSessionError = sessionView?.error ?? null;
+  const onRetryTranscript = sessionView?.onRetry;
+  const onExitSessionView = sessionView?.onExit;
+
+  const wizard = wizardProps?.wizard ?? null;
+  const onWizardConfirm = wizardProps?.onConfirm;
+  const wizardConfirming = wizardProps?.confirming ?? false;
+  const onOpenCredentialVault = wizardProps?.onOpenCredentialVault;
+  const onLaunchWizard = wizardProps?.onLaunchWizard;
+  const wizardCreationResult = wizardProps?.creationResult ?? null;
+  const wizardCreationSteps = wizardProps?.creationSteps ?? null;
+  const onDismissWizardResult = wizardProps?.onDismissResult;
+
   const [contextBannerDismissed, setContextBannerDismissed] = useState(false);
   const [wizardInfoOpen, setWizardInfoOpen] = useState(false);
 
@@ -211,11 +219,6 @@ export const AgentChatPanel = memo(function AgentChatPanel({
 
   // ── Preflight action handlers ──────────────────────────────────────
 
-  /**
-   * Install a missing skill — sends the capability to the remediate API with
-   * user confirmation, then prompts the LLM to re-run the preflight check.
-   * Security mandate: user clicked "Install skill" explicitly → confirmed.
-   */
   const handleInstallSkill = useCallback(
     async (capability: string, clawhubPackage: string) => {
       const preflightResult = wizard?.preflightResult;
@@ -229,7 +232,6 @@ export const AgentChatPanel = memo(function AgentChatPanel({
             confirmedCapabilities: [capability],
           }),
         });
-        // Prompt LLM to recheck — it will output another json:run_preflight block
         void wizard?.sendMessage(
           `I've initiated the installation of the ${clawhubPackage} skill. Please re-run the preflight check to confirm.`,
         );
@@ -240,10 +242,6 @@ export const AgentChatPanel = memo(function AgentChatPanel({
     [wizard],
   );
 
-  /**
-   * Enable a disabled skill — safe auto-fix, no confirmation required.
-   * Sends to remediate API then asks LLM to recheck.
-   */
   const handleEnableSkill = useCallback(
     async (capability: string) => {
       const preflightResult = wizard?.preflightResult;
@@ -267,7 +265,6 @@ export const AgentChatPanel = memo(function AgentChatPanel({
     [wizard],
   );
 
-  /** Open the credential vault via parent callback */
   const handleSetupCredential = useCallback(
     (templateKey: string) => {
       onOpenCredentialVault?.(templateKey);
@@ -275,12 +272,10 @@ export const AgentChatPanel = memo(function AgentChatPanel({
     [onOpenCredentialVault],
   );
 
-  /** Open OAuth URL in a new tab */
   const handleOAuthFlow = useCallback((authUrl: string) => {
     window.open(authUrl, "_blank", "noopener,noreferrer");
   }, []);
 
-  /** Prompt the LLM to re-run the preflight check */
   const handlePrefightRecheck = useCallback(() => {
     if (!wizard?.wizardContext) return;
     const caps = wizard.preflightResult?.capabilities.map((c) => c.capability) ?? [];
