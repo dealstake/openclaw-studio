@@ -25,6 +25,7 @@ const MODEL_PRICING: Record<string, ModelPricing> = {
   // Haiku 3.5
   "claude-haiku-3.5": { inputPer1M: 0.8, outputPer1M: 4 },
   "claude-3-5-haiku-20241022": { inputPer1M: 0.8, outputPer1M: 4 },
+  "claude-3-5-haiku-latest": { inputPer1M: 0.8, outputPer1M: 4 },
   // Haiku 3
   "claude-3-haiku-20240307": { inputPer1M: 0.25, outputPer1M: 1.25 },
   // Gemini models

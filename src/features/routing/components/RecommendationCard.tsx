@@ -42,18 +42,15 @@ export const RecommendationCard = memo(function RecommendationCard({
   onTestInPlayground,
   disabled,
 }: RecommendationCardProps) {
-  const [creating, setCreating] = useState(false);
-  const [created, setCreated] = useState(false);
+  const [status, setStatus] = useState<"idle" | "creating" | "created">("idle");
 
   const handleCreate = useCallback(async () => {
-    setCreating(true);
+    setStatus("creating");
     try {
       await onCreateRule(recommendation.suggestedRule);
-      setCreated(true);
+      setStatus("created");
     } catch {
-      // Error handled by parent hook
-    } finally {
-      setCreating(false);
+      setStatus("idle");
     }
   }, [onCreateRule, recommendation.suggestedRule]);
 
@@ -61,7 +58,7 @@ export const RecommendationCard = memo(function RecommendationCard({
     onDismiss(recommendation.id);
   }, [onDismiss, recommendation.id]);
 
-  if (created) {
+  if (status === "created") {
     return (
       <div className="flex items-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-3 py-2.5 text-[12px] text-emerald-600 dark:text-emerald-400">
         <TrendingDown className="h-3.5 w-3.5 shrink-0" />
@@ -135,10 +132,10 @@ export const RecommendationCard = memo(function RecommendationCard({
           <button
             type="button"
             onClick={handleCreate}
-            disabled={disabled || creating}
+            disabled={disabled || status === "creating"}
             className="inline-flex h-11 items-center gap-1.5 rounded-md bg-primary px-4 text-[12px] font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {creating ? (
+            {status === "creating" ? (
               "Creating…"
             ) : (
               <>

@@ -90,8 +90,7 @@ export const RoutingPanel = memo(function RoutingPanel({
   const handleSaveRule = useCallback(
     async (rule: RoutingRule) => {
       if (editingRule) {
-        const { id, ...updates } = rule;
-        void id; // id is stable, only updates applied
+        const { id: _id, ...updates } = rule;
         await editRule(editingRule.id, updates);
       } else {
         await createRule(rule);

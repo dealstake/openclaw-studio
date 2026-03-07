@@ -127,14 +127,14 @@ export function useRecommendations(
     [usageData, rules, timeframeDays],
   );
 
-  // Filter by title (not ID, since IDs regenerate) to persist dismissals
+  // Filter by title for stable persistence (IDs regenerate each render cycle)
   const recommendations = useMemo(
     () => allRecommendations.filter((r) => !dismissedIds.has(r.title)),
     [allRecommendations, dismissedIds],
   );
 
   const dismiss = useCallback((id: string) => {
-    // Find the recommendation and dismiss by title for stability
+    // Dismiss by title for stability — IDs regenerate, titles are deterministic
     const rec = allRecommendations.find((r) => r.id === id);
     const key = rec?.title ?? id;
     setDismissedIds((prev) => {

@@ -16,6 +16,7 @@
  */
 
 import type { RoutingRule, RoutingCondition, TaskTypeConditionValue } from "./types";
+import { getModelPricing } from "@/features/usage/lib/pricingTable";
 
 // ── Rule Evaluation ─────────────────────────────────────────────────
 
@@ -118,28 +119,17 @@ export function evaluateRoutingRules(
 // ── Cost Calculation ────────────────────────────────────────────────
 
 /**
- * Known model pricing (per 1M tokens) — input/output.
- * These should be synced with the gateway's model catalog.
- */
-const MODEL_PRICING: Record<string, { input: number; output: number }> = {
-  "anthropic/claude-opus-4-6": { input: 15, output: 75 },
-  "anthropic/claude-sonnet-4-6": { input: 3, output: 15 },
-  "anthropic/claude-sonnet-4-5": { input: 3, output: 15 },
-  "anthropic/claude-haiku-3.5": { input: 0.8, output: 4 },
-  "anthropic/claude-3-5-haiku-latest": { input: 0.8, output: 4 },
-};
-
-/**
  * Calculate cost for a given model and token count.
+ * Uses the shared pricing table from @/features/usage/lib/pricingTable.
  */
 export function calculateCost(
   model: string,
   tokensIn: number,
   tokensOut: number,
 ): number | null {
-  const pricing = MODEL_PRICING[model];
+  const pricing = getModelPricing(model);
   if (!pricing) return null;
-  return (tokensIn * pricing.input + tokensOut * pricing.output) / 1_000_000;
+  return (tokensIn * pricing.inputPer1M + tokensOut * pricing.outputPer1M) / 1_000_000;
 }
 
 /**

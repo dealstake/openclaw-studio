@@ -52,6 +52,29 @@ const CHEAP_ALTERNATIVES: Record<string, string> = {
 
 const HAIKU_MODEL = "anthropic/claude-3-5-haiku-latest";
 
+// ── Threshold constants ─────────────────────────────────────────────
+
+/** Minimum monthly savings (USD) to suggest a cron routing rule */
+const MIN_CRON_SAVINGS_USD = 0.5;
+/** Minimum monthly savings (USD) to suggest a heartbeat routing rule */
+const MIN_HEARTBEAT_SAVINGS_USD = 0.1;
+/** Minimum monthly savings (USD) to suggest a sub-agent routing rule */
+const MIN_SUBAGENT_SAVINGS_USD = 1;
+/** Minimum run count for sub-agent recommendations */
+const MIN_SUBAGENT_RUN_COUNT = 5;
+/** Max avg input tokens per run for "low complexity" sub-agent classification */
+const MAX_LOW_COMPLEXITY_TOKENS = 10_000;
+/** Savings threshold for "high" priority label */
+const HIGH_PRIORITY_THRESHOLD_USD = 10;
+/** Savings threshold for "medium" priority label (below this = "low") */
+const MEDIUM_PRIORITY_THRESHOLD_USD = 2;
+/** Estimated fraction of heartbeat cost saved by switching to haiku */
+const HEARTBEAT_SAVINGS_FRACTION = 0.9;
+/** Estimated fraction of sub-agent cost saved by switching to sonnet */
+const SUBAGENT_SAVINGS_FRACTION = 0.8;
+/** Days in a month for projections */
+const DAYS_PER_MONTH = 30;
+
 /**
  * Generate routing recommendations from usage data.
  *
@@ -93,12 +116,12 @@ export function generateRecommendations(
     const altTotalOut = expensiveCron.reduce((s, d) => s + d.tokensOut, 0);
     const altCost = calculateCost(alternative, altTotalIn, altTotalOut) ?? totalCost * 0.2;
     const weeklySavings = totalCost - altCost;
-    const monthlySavings = (weeklySavings / timeframeDays) * 30;
+    const monthlySavings = (weeklySavings / timeframeDays) * DAYS_PER_MONTH;
 
-    if (monthlySavings > 0.5) {
+    if (monthlySavings > MIN_CRON_SAVINGS_USD) {
       recommendations.push({
         id: uuidv4(),
-        priority: monthlySavings > 10 ? "high" : monthlySavings > 2 ? "medium" : "low",
+        priority: monthlySavings > HIGH_PRIORITY_THRESHOLD_USD ? "high" : monthlySavings > MEDIUM_PRIORITY_THRESHOLD_USD ? "medium" : "low",
         title: `Route cron jobs to ${alternative.split("/")[1]}`,
         description: `${totalCount} cron runs used ${primaryModel.split("/")[1]} in the last period, costing $${totalCost.toFixed(2)}. Routing to ${alternative.split("/")[1]} could save ~$${monthlySavings.toFixed(2)}/month with minimal quality impact on automated tasks.`,
         estimatedMonthlySavings: monthlySavings,
@@ -120,9 +143,9 @@ export function generateRecommendations(
   );
   if (expensiveHeartbeats.length > 0 && !existingTaskTypes.has("heartbeat")) {
     const totalCost = expensiveHeartbeats.reduce((sum, d) => sum + d.totalCostUsd, 0);
-    const monthlySavings = (totalCost * 0.9 / timeframeDays) * 30; // haiku is ~10% of opus cost
+    const monthlySavings = (totalCost * HEARTBEAT_SAVINGS_FRACTION / timeframeDays) * DAYS_PER_MONTH;
 
-    if (monthlySavings > 0.1) {
+    if (monthlySavings > MIN_HEARTBEAT_SAVINGS_USD) {
       recommendations.push({
         id: uuidv4(),
         priority: "medium",
@@ -145,18 +168,18 @@ export function generateRecommendations(
   const lowTokenSubagents = subagentData.filter(
     (d) =>
       EXPENSIVE_MODELS.has(d.model) &&
-      d.count > 5 &&
-      d.tokensIn / d.count < 10000, // avg < 10K input tokens per run
+      d.count > MIN_SUBAGENT_RUN_COUNT &&
+      d.tokensIn / d.count < MAX_LOW_COMPLEXITY_TOKENS,
   );
   if (lowTokenSubagents.length > 0 && !existingTaskTypes.has("subagent")) {
     const totalCost = lowTokenSubagents.reduce((sum, d) => sum + d.totalCostUsd, 0);
     const alternative = "anthropic/claude-sonnet-4-6";
-    const monthlySavings = (totalCost * 0.8 / timeframeDays) * 30;
+    const monthlySavings = (totalCost * SUBAGENT_SAVINGS_FRACTION / timeframeDays) * DAYS_PER_MONTH;
 
-    if (monthlySavings > 1) {
+    if (monthlySavings > MIN_SUBAGENT_SAVINGS_USD) {
       recommendations.push({
         id: uuidv4(),
-        priority: monthlySavings > 5 ? "high" : "medium",
+        priority: monthlySavings > HIGH_PRIORITY_THRESHOLD_USD / 2 ? "high" : "medium",
         title: "Route sub-agents to Sonnet",
         description: `Low-complexity sub-agent runs (avg <10K tokens) are using Opus. Sonnet handles these well at 80% lower cost (~$${monthlySavings.toFixed(2)}/month savings).`,
         estimatedMonthlySavings: monthlySavings,

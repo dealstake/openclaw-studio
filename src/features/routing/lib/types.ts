@@ -28,6 +28,16 @@ export type AgentCondition = {
 
 export type RoutingCondition = TaskTypeCondition | AgentCondition;
 
+/** Type guard: narrows RoutingCondition to TaskTypeCondition */
+export function isTaskTypeCondition(c: RoutingCondition): c is TaskTypeCondition {
+  return c.type === "taskType";
+}
+
+/** Type guard: narrows RoutingCondition to AgentCondition */
+export function isAgentCondition(c: RoutingCondition): c is AgentCondition {
+  return c.type === "agentId";
+}
+
 /** A single routing rule */
 export type RoutingRule = {
   /** Stable identifier (UUID) */

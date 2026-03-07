@@ -11,13 +11,14 @@ import {
   SideSheetBody,
 } from "@/components/ui/SideSheet";
 import { Button } from "@/components/ui/button";
+import { ToggleSwitch } from "@/components/ui/ToggleSwitch";
 import type { GatewayModelChoice } from "@/lib/gateway/models";
 import type {
   RoutingRule,
   RoutingCondition,
   TaskTypeConditionValue,
 } from "../lib/types";
-import { TASK_TYPE_LABELS } from "../lib/types";
+import { TASK_TYPE_LABELS, isTaskTypeCondition, isAgentCondition } from "../lib/types";
 
 interface RuleEditorProps {
   open: boolean;
@@ -37,8 +38,11 @@ const TASK_TYPE_OPTIONS: { value: TaskTypeConditionValue; label: string }[] =
   }));
 
 function generateId(): string {
-  return `rule-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+  return crypto.randomUUID();
 }
+
+/** Sentinel value for "all agents" select option */
+const ALL_AGENTS_VALUE = "_all";
 
 function makeDefaultRule(models: GatewayModelChoice[]): RoutingRule {
   const firstModel =
@@ -135,13 +139,8 @@ export const RuleEditor = memo(function RuleEditor({
   }, []);
 
   // Task type condition
-  const taskTypeCondition = draft.conditions.find(
-    (c): c is { type: "taskType"; value: TaskTypeConditionValue } =>
-      c.type === "taskType",
-  );
-  const agentCondition = draft.conditions.find(
-    (c): c is { type: "agentId"; value: string } => c.type === "agentId",
-  );
+  const taskTypeCondition = draft.conditions.find(isTaskTypeCondition);
+  const agentCondition = draft.conditions.find(isAgentCondition);
 
   const handleTaskTypeChange = useCallback((value: string) => {
     const taskTypeValue = value as TaskTypeConditionValue;
@@ -155,7 +154,7 @@ export const RuleEditor = memo(function RuleEditor({
   const handleAgentChange = useCallback((value: string) => {
     setDraft((d) => {
       const withoutAgent = d.conditions.filter((c) => c.type !== "agentId");
-      if (!value || value === "_all") {
+      if (!value || value === ALL_AGENTS_VALUE) {
         return { ...d, conditions: withoutAgent };
       }
       const newCondition: RoutingCondition = { type: "agentId", value };
@@ -237,10 +236,10 @@ export const RuleEditor = memo(function RuleEditor({
             <FormField label="Limit to agent (optional)" htmlFor="agent-filter">
               <StyledSelect
                 id="agent-filter"
-                value={agentCondition?.value ?? "_all"}
+                value={agentCondition?.value ?? ALL_AGENTS_VALUE}
                 onChange={handleAgentChange}
               >
-                <option value="_all">All agents</option>
+                <option value={ALL_AGENTS_VALUE}>All agents</option>
                 {agentIds.map((id) => (
                   <option key={id} value={id}>
                     {id}
@@ -271,18 +270,11 @@ export const RuleEditor = memo(function RuleEditor({
             {/* Enabled toggle row */}
             <div className="flex items-center justify-between rounded-md border border-border/40 bg-muted/20 px-3 py-2.5">
               <span className="text-[13px] text-foreground">Rule enabled</span>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={draft.enabled}
-                aria-label={draft.enabled ? "Disable rule" : "Enable rule"}
-                onClick={() => setDraft((d) => ({ ...d, enabled: !d.enabled }))}
-                className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 ${draft.enabled ? "bg-primary" : "bg-muted"}`}
-              >
-                <span
-                  className={`pointer-events-none block h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${draft.enabled ? "translate-x-4" : "translate-x-0.5"}`}
-                />
-              </button>
+              <ToggleSwitch
+                checked={draft.enabled}
+                onChange={() => setDraft((d) => ({ ...d, enabled: !d.enabled }))}
+                label={draft.enabled ? "Disable rule" : "Enable rule"}
+              />
             </div>
 
             {/* Explanation */}

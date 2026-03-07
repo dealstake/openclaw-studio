@@ -5,7 +5,7 @@ import { Pencil, Trash2, Clock, GitBranch, MessageSquare, Heart, Layers, User } 
 import { IconButton } from "@/components/IconButton";
 import { ToggleSwitch } from "@/components/ui/ToggleSwitch";
 import type { RoutingRule, RoutingCondition, TaskTypeConditionValue } from "../lib/types";
-import { TASK_TYPE_LABELS } from "../lib/types";
+import { TASK_TYPE_LABELS, isTaskTypeCondition, isAgentCondition } from "../lib/types";
 
 interface RuleRowProps {
   rule: RoutingRule;
@@ -36,9 +36,9 @@ function conditionSummary(conditions: RoutingCondition[]): string {
 }
 
 function ConditionIcon({ conditions }: { conditions: RoutingCondition[] }) {
-  const taskType = conditions.find((c) => c.type === "taskType");
+  const taskType = conditions.find(isTaskTypeCondition);
   const IconComp = taskType
-    ? (TASK_TYPE_ICON_MAP[(taskType as { type: "taskType"; value: TaskTypeConditionValue }).value] ?? Layers)
+    ? (TASK_TYPE_ICON_MAP[taskType.value] ?? Layers)
     : Layers;
   return <IconComp className="h-3.5 w-3.5 text-muted-foreground/70" aria-hidden />;
 }
@@ -61,10 +61,8 @@ export const RuleRow = memo(function RuleRow({
   const handleDelete = useCallback(() => onDelete(rule.id), [onDelete, rule.id]);
 
   // Check if there's an agent condition
-  const agentCondition = rule.conditions.find((c) => c.type === "agentId");
-  const agentValue = agentCondition
-    ? (agentCondition as { type: "agentId"; value: string }).value
-    : null;
+  const agentCondition = rule.conditions.find(isAgentCondition);
+  const agentValue = agentCondition?.value ?? null;
 
   return (
     <div
