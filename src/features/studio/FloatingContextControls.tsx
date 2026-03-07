@@ -2,15 +2,10 @@
 
 import { memo } from "react";
 import { X } from "lucide-react";
-import type { BreadcrumbAgent } from "@/features/agents/components/ComposerAgentMenu";
 import { CONTEXT_TAB_CONFIG } from "@/features/context/lib/tabs";
 import type { ContextTab } from "@/features/context/components/ContextPanel";
 
 interface FloatingContextControlsProps {
-  agents: BreadcrumbAgent[];
-  selectedAgentId: string | null;
-  onSelectAgent: (agentId: string) => void;
-  onCreateAgent?: () => void;
   contextTab: ContextTab;
   contextPanelOpen: boolean;
   onContextTabClick: (tab: ContextTab) => void;
@@ -19,7 +14,6 @@ interface FloatingContextControlsProps {
 }
 
 export const FloatingContextControls = memo(function FloatingContextControls({
-  // Agent props kept in interface for parent compat — agent picker moved to composer
   contextTab,
   contextPanelOpen,
   onContextTabClick,

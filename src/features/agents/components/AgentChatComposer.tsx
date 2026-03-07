@@ -13,7 +13,6 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 
 import type { GatewayModelChoice } from "@/lib/gateway/models";
-import type { MessagePart } from "@/lib/chat/types";
 import type { GatewayStatus } from "@/lib/gateway/GatewayClient";
 import { AlertCircle, ArrowUp, Square, UploadCloud, WifiOff } from "lucide-react";
 import { ChatAttachmentPreview } from "./ChatAttachmentPreview";
@@ -80,8 +79,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   tokenLimit,
   agentName,
   allowThinking,
-  messageParts: _messageParts,
-  runStartedAt: _runStartedAt,
+
   gatewayStatus,
   queueLength,
   wizardType,
@@ -116,8 +114,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   tokenLimit?: number;
   agentName: string;
   allowThinking: boolean;
-  messageParts?: MessagePart[];
-  runStartedAt?: number | null;
+
   gatewayStatus?: GatewayStatus;
   queueLength?: number;
   wizardType?: WizardType | null;

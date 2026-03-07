@@ -71,8 +71,6 @@ type AgentChatPanelProps = {
    * The parent (page.tsx) opens the credential vault for the given templateKey.
    */
   onOpenCredentialVault?: (templateKey: string) => void;
-  /** Open agent settings panel — used by the autonomy badge click handler. */
-  onOpenSettings?: () => void;
   /** Called when user selects a wizard type from the manual launch menu */
   onLaunchWizard?: (type: WizardType) => void;
   /** Creation result — shown after wizard creation completes */
@@ -112,7 +110,6 @@ export const AgentChatPanel = memo(function AgentChatPanel({
   onWizardConfirm,
   wizardConfirming = false,
   onOpenCredentialVault,
-  onOpenSettings,
   onLaunchWizard,
   wizardCreationResult = null,
   wizardCreationSteps = null,
@@ -588,8 +585,6 @@ export const AgentChatPanel = memo(function AgentChatPanel({
             tokenLimit={tokenLimit}
             agentName={agent.name}
             allowThinking={models.length > 0}
-            messageParts={agent.messageParts}
-            runStartedAt={agent.runStartedAt}
             gatewayStatus={gatewayStatus}
             queueLength={queueLength}
             wizardType={wizard?.wizardContext?.type ?? null}

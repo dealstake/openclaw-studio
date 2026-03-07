@@ -114,7 +114,6 @@ export const AgentStudioPage = () => {
     wizardCreationSteps,
     onDismissWizardResult: clearWizardCreationResult,
     onOpenCredentialVault: () => setManagementView("credentials"),
-    onOpenSettings: () => handleManagementNav("personas"),
     onLaunchWizard: handleStartWizard,
   } : null;
 
@@ -219,13 +218,6 @@ export const AgentStudioPage = () => {
             onBlur={onFocusZoneLeave}
           >
             <FloatingContextControls
-              agents={breadcrumbAgents}
-              selectedAgentId={focusedAgentId}
-              onSelectAgent={(agentId) => {
-                flushPendingDraft(focusedAgent?.agentId ?? null);
-                dispatch({ type: "selectAgent", agentId });
-              }}
-              onCreateAgent={() => handleStartWizard("agent")}
               contextTab={contextTab}
               contextPanelOpen={contextPanelOpen}
               onContextTabClick={(tab) => {
