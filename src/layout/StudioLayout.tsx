@@ -205,7 +205,7 @@ export function StudioLayout({
         {!contextPanelOpen && (
           <button
             onClick={() => onContextPanelOpenChange?.(true)}
-            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-6 h-16 rounded-l-md bg-muted/50 hover:bg-muted border border-r-0 border-border/50 text-muted-foreground hover:text-foreground transition-all duration-150 group"
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-8 h-16 rounded-l-md bg-muted/50 hover:bg-muted border border-r-0 border-border/50 text-muted-foreground hover:text-foreground transition-all duration-150 group cursor-pointer focus-visible:ring-2 focus-visible:ring-primary"
             aria-label="Open context panel"
             title="Open context panel (⌘\)"
           >
