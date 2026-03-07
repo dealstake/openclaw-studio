@@ -66,8 +66,8 @@ export const FilterGroup = React.memo(function FilterGroup<V extends string = st
             aria-label={`Filter by ${opt.label}${opt.count != null ? `, ${opt.count} items` : ""}`}
             className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 min-h-[44px] md:min-h-0 font-sans text-xs font-semibold tracking-[0.08em] transition-all focus-ring ${
               active
-                ? "bg-primary text-primary-foreground"
-                : "bg-transparent text-foreground/80 border border-border/60 hover:bg-muted/40 hover:border-border/70"
+                ? "bg-primary text-primary-foreground shadow-sm shadow-primary/25"
+                : "bg-transparent text-muted-foreground border border-border/60 hover:bg-muted/40 hover:border-border/70 hover:text-foreground"
             }`}
             onClick={() => handleClick(opt.value)}
           >

@@ -3,6 +3,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Plus, RefreshCw, ListChecks, Layers } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { CardSkeleton } from "@/components/ui/CardSkeleton";
@@ -258,17 +259,15 @@ export const TasksPanel = memo(function TasksPanel({
           )}
         </div>
         <div className="flex items-center gap-1.5">
-          <button
-            className="flex h-7 items-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-2.5 text-primary transition focus-ring hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
-            type="button"
+          <Button
+            variant="outline"
+            size="sm"
             aria-label="Create new task"
             onClick={onNewTask}
           >
             <Plus className="h-3.5 w-3.5" />
-            <span className="text-xs font-medium">
-              New
-            </span>
-          </button>
+            New
+          </Button>
           <IconButton
             aria-label="Refresh tasks"
             onClick={onRefresh}

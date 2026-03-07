@@ -43,10 +43,10 @@ export const MessageBubble = React.memo(function MessageBubble({
     );
   }
 
-  // Assistant — flush left, no background (ChatGPT style)
+  // Assistant — flush left, subtle card treatment for visual separation
   return (
     <div className={cn("group/message relative", className)}>
-      <div className="max-w-prose px-4 py-2.5 text-foreground">
+      <div className="max-w-prose rounded-2xl rounded-tl-sm bg-[var(--surface-1)] px-4 py-2.5 text-foreground">
         <MarkdownViewer
           content={content}
           className={cn(
