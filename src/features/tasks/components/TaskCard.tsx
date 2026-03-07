@@ -5,7 +5,7 @@ import { AlertTriangle, Clock, Play, CheckCircle2, XCircle, AlertCircle, Minus }
 import type { StudioTask } from "@/features/tasks/types";
 import { humanReadableSchedule } from "@/features/tasks/lib/schedule";
 import { formatRelativeTime, formatDuration } from "@/lib/text/time";
-import { STATUS_DOT_CLASS, getTaskStatusKey, STATUS_LABEL } from "@/features/tasks/lib/taskTypeConfig";
+import { STATUS_DOT_CLASS, STATUS_PILL_CLASS, getTaskStatusKey, STATUS_LABEL } from "@/features/tasks/lib/taskTypeConfig";
 import { BaseCard, CardHeader } from "@/components/ui/BaseCard";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -47,7 +47,7 @@ export const TaskCard = memo(function TaskCard({
   const isOrphan = task.managementStatus === "orphan";
   const statusKey = getTaskStatusKey(task);
   const dotClass = STATUS_DOT_CLASS[statusKey];
-  const isRunning = statusKey === "running";
+  const pillClass = STATUS_PILL_CLASS[statusKey];
   const hasErrors = (task.consecutiveErrors ?? 0) > 0;
 
   const handleSelect = useCallback(() => {
@@ -77,14 +77,16 @@ export const TaskCard = memo(function TaskCard({
         {isOrphan ? (
           <AlertTriangle className="h-3 w-3 shrink-0 text-destructive" />
         ) : (
-          <span className={`h-2 w-2 shrink-0 rounded-full ${dotClass}`} />
+          <span className={`inline-flex items-center gap-1 shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${pillClass}`}>
+            <span className={`h-1.5 w-1.5 rounded-full ${dotClass}`} />
+            {STATUS_LABEL[statusKey]}
+          </span>
         )}
         <span className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground transition-colors duration-150 group-hover/card:text-primary" title={task.name}>
           {task.name}
-          {isRunning && <span className="ml-1.5 text-xs font-normal text-purple-300">Running…</span>}
         </span>
         <span
-          className="ml-2 shrink-0 rounded bg-muted px-1.5 py-0.5 font-sans text-[10px] text-muted-foreground"
+          className="ml-2 shrink-0 rounded-full bg-muted px-1.5 py-0.5 font-sans text-[10px] text-muted-foreground"
           title={task.model}
         >
           {abbreviateModel(task.model)}

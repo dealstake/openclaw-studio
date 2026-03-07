@@ -117,7 +117,7 @@ export const ProjectCard = memo(function ProjectCard({
             <Popover.Trigger asChild>
               <button
                 type="button"
-                className={`inline-flex min-h-[44px] lg:min-h-0 items-center justify-center gap-1 rounded border px-1.5 py-0.5 text-xs font-semibold transition hover:brightness-125 ${statusColors}`}
+                className={`inline-flex min-h-[44px] lg:min-h-0 items-center justify-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold tracking-wide uppercase transition hover:brightness-125 ${statusColors}`}
                 onClick={(e) => { e.stopPropagation(); }}
                 aria-label={`Change status (current: ${statusLabel})`}
               >
