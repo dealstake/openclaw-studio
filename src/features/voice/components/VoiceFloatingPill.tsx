@@ -66,14 +66,15 @@ export const VoiceFloatingPill = React.memo(function VoiceFloatingPill() {
           transition={{ type: "spring", damping: 20, stiffness: 300 }}
           onClick={expandVoiceMode}
           className={cn(
-            "fixed right-4 z-40",
+            "fixed z-40",
             "bottom-[calc(4.5rem+var(--mobile-nav-height,0px)+env(safe-area-inset-bottom))]",
+            // Mobile: centered, 56px for easier tap; Desktop: bottom-right, 48px circular
+            "left-1/2 -translate-x-1/2 min-h-[56px] md:left-auto md:right-4 md:translate-x-0 md:min-h-[48px]",
             "flex items-center gap-2 rounded-full px-4 py-3",
             "bg-card border border-border shadow-lg",
             "text-sm font-medium text-foreground",
             "transition-shadow hover:shadow-xl",
             "focus-ring",
-            "min-h-[48px]",
           )}
           aria-label={`Voice mode ${pillLabel(state).toLowerCase()} — tap to expand`}
         >
