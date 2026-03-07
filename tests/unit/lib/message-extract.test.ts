@@ -1,15 +1,21 @@
 import { describe, it, expect } from "vitest";
 import {
   extractText,
+  extractRawText,
+  extractRawTextCached,
   extractThinking,
   extractThinkingFromTaggedText,
   extractThinkingFromTaggedStream,
   extractToolCalls,
   extractToolResult,
+  extractToolLines,
   formatToolCallMarkdown,
   formatToolResultMarkdown,
+  isToolMarkdown,
+  parseToolMarkdown,
   stripUiMetadata,
   isHeartbeatPrompt,
+  isUiMetadataPrefix,
 } from "@/lib/text/message-extract";
 
 /* ---------- extractText ---------- */
@@ -264,5 +270,111 @@ describe("isHeartbeatPrompt", () => {
   it("handles empty/falsy input", () => {
     expect(isHeartbeatPrompt("")).toBe(false);
     expect(isHeartbeatPrompt("   ")).toBe(false);
+  });
+});
+
+/* ---------- extractRawText ---------- */
+describe("extractRawText", () => {
+  it("returns string content without stripping thinking tags", () => {
+    const msg = { role: "assistant", content: "<thinking>inner</thinking>visible" };
+    expect(extractRawText(msg)).toBe("<thinking>inner</thinking>visible");
+  });
+
+  it("returns string content without stripping envelope", () => {
+    const msg = { role: "user", content: "[WebChat 2026-01-01] actual message" };
+    expect(extractRawText(msg)).toBe("[WebChat 2026-01-01] actual message");
+  });
+
+  it("returns null for non-objects", () => {
+    expect(extractRawText(null)).toBeNull();
+    expect(extractRawText(42)).toBeNull();
+  });
+});
+
+/* ---------- extractRawTextCached ---------- */
+describe("extractRawTextCached", () => {
+  it("returns same result as extractRawText", () => {
+    const msg = { content: "hello" };
+    expect(extractRawTextCached(msg)).toBe("hello");
+  });
+
+  it("returns cached result on second call", () => {
+    const msg = { content: "cached" };
+    const first = extractRawTextCached(msg);
+    const second = extractRawTextCached(msg);
+    expect(first).toBe(second);
+    expect(first).toBe("cached");
+  });
+
+  it("handles non-object input", () => {
+    expect(extractRawTextCached(null)).toBeNull();
+    expect(extractRawTextCached("string")).toBeNull();
+  });
+});
+
+/* ---------- extractToolLines ---------- */
+describe("extractToolLines", () => {
+  it("combines tool calls and results", () => {
+    const msg = {
+      content: [{ type: "toolCall", name: "exec", arguments: { cmd: "ls" } }],
+    };
+    const lines = extractToolLines(msg);
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toContain("exec");
+  });
+
+  it("returns empty for non-tool messages", () => {
+    expect(extractToolLines({ content: "plain" })).toEqual([]);
+  });
+});
+
+/* ---------- isToolMarkdown ---------- */
+describe("isToolMarkdown", () => {
+  it("detects tool call markdown", () => {
+    expect(isToolMarkdown("[[tool]] read")).toBe(true);
+  });
+
+  it("detects tool result markdown", () => {
+    expect(isToolMarkdown("[[tool-result]] read")).toBe(true);
+  });
+
+  it("rejects non-tool lines", () => {
+    expect(isToolMarkdown("just text")).toBe(false);
+  });
+});
+
+/* ---------- parseToolMarkdown ---------- */
+describe("parseToolMarkdown", () => {
+  it("parses tool call line", () => {
+    const parsed = parseToolMarkdown("[[tool]] read (tc1)");
+    expect(parsed.kind).toBe("call");
+    expect(parsed.label).toBe("read (tc1)");
+    expect(parsed.body).toBe("");
+  });
+
+  it("parses tool result with body", () => {
+    const parsed = parseToolMarkdown("[[tool-result]] exec\n```text\noutput\n```");
+    expect(parsed.kind).toBe("result");
+    expect(parsed.label).toBe("exec");
+    expect(parsed.body).toContain("output");
+  });
+});
+
+/* ---------- isUiMetadataPrefix ---------- */
+describe("isUiMetadataPrefix", () => {
+  it("detects project path prefix", () => {
+    expect(isUiMetadataPrefix("Project path: /some/path")).toBe(true);
+  });
+
+  it("detects workspace path prefix", () => {
+    expect(isUiMetadataPrefix("Workspace path: /some/path")).toBe(true);
+  });
+
+  it("detects reset session prefix", () => {
+    expect(isUiMetadataPrefix("A new session was started via /new or /reset")).toBe(true);
+  });
+
+  it("rejects normal text", () => {
+    expect(isUiMetadataPrefix("Hello world")).toBe(false);
   });
 });

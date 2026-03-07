@@ -175,6 +175,17 @@ export const extractImages = (message: unknown): { src: string; alt?: string }[]
   return images;
 };
 
+const rawTextCache = new WeakMap<object, string | null>();
+
+export const extractRawTextCached = (message: unknown): string | null => {
+  if (!message || typeof message !== "object") return extractRawText(message);
+  const obj = message as object;
+  if (rawTextCache.has(obj)) return rawTextCache.get(obj) ?? null;
+  const value = extractRawText(message);
+  rawTextCache.set(obj, value);
+  return value;
+};
+
 export const extractTextCached = (message: unknown): string | null => {
   if (!message || typeof message !== "object") return extractText(message);
   const obj = message as object;
