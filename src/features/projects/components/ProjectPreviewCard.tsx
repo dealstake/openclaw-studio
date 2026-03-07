@@ -60,7 +60,7 @@ export const ProjectPreviewCard = React.memo(function ProjectPreviewCard({
         <CardTitle className="font-semibold leading-tight">
           {config.name}
         </CardTitle>
-        <CardDescription className="text-xs">
+        <CardDescription className="text-sm">
           {config.description}
         </CardDescription>
       </div>
