@@ -135,41 +135,41 @@ export const buildHistorySyncPatch = ({
 }: HistorySyncPatchInput): Partial<AgentState> => {
   const { lines, lastAssistant, lastAssistantAt, lastRole, lastUser } = buildHistoryLines(messages);
   if (lines.length === 0) return { historyLoadedAt: loadedAt };
+  // Pre-build image map: stripped user text → images array (O(M) scan)
+  const imagesByText = new Map<string, { src: string; alt?: string }[]>();
+  for (const message of messages) {
+    if (!message) continue;
+    const role = typeof message.role === "string" ? message.role : "";
+    if (role !== "user") continue;
+    const images = extractImages(message);
+    if (images.length === 0) continue;
+    const msgText = stripUiMetadata(extractText(message)?.trim() ?? "");
+    if (!msgText) continue;
+    // Later messages overwrite earlier ones with same text (last wins)
+    imagesByText.set(msgText, images);
+  }
+
   const messageParts = parseMessageParts({
     outputLines: lines,
     streamText: null,
     liveThinkingTrace: "",
   });
 
-  // Inject image parts from user messages at the correct position.
-  // Images belong after the user text part that matches their source message.
-  // We match by comparing the stripped message text to the quoted line content.
-  for (let mi = messages.length - 1; mi >= 0; mi--) {
-    const message = messages[mi];
-    if (!message) continue;
-    const images = extractImages(message);
-    if (images.length === 0) continue;
-    const role = typeof message.role === "string" ? message.role : "";
-    if (role !== "user") continue;
-    const msgText = stripUiMetadata(extractText(message)?.trim() ?? "");
-    if (!msgText) continue;
-
-    // Find the exact matching quoted user text part: "> <msgText>"
-    let insertIdx = messageParts.length; // fallback: append at end
+  // Inject image parts in a single forward pass through messageParts (O(P))
+  if (imagesByText.size > 0) {
     for (let pi = messageParts.length - 1; pi >= 0; pi--) {
       const p = messageParts[pi];
-      if (p && p.type === "text") {
-        const quoted = p.text.trimStart();
-        if (quoted.startsWith("> ") && quoted.slice(2).trim() === msgText) {
-          insertIdx = pi + 1;
-          break;
-        }
-      }
-    }
-    // Insert image parts at the found position
-    for (const img of images) {
-      messageParts.splice(insertIdx, 0, { type: "image", src: img.src, alt: img.alt });
-      insertIdx++;
+      if (!p || p.type !== "text") continue;
+      const quoted = p.text.trimStart();
+      if (!quoted.startsWith("> ")) continue;
+      const userText = quoted.slice(2).trim();
+      const images = imagesByText.get(userText);
+      if (!images) continue;
+      // Splice images right after this text part
+      const imgParts = images.map((img) => ({ type: "image" as const, src: img.src, alt: img.alt ?? "" }));
+      messageParts.splice(pi + 1, 0, ...imgParts);
+      // Remove from map so duplicate quoted lines don't double-inject
+      imagesByText.delete(userText);
     }
   }
   const patch: Partial<AgentState> = {

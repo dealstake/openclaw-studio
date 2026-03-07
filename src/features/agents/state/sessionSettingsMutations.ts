@@ -10,6 +10,8 @@ type SessionSettingField = "model" | "thinkingLevel";
 type AgentSessionState = {
   agentId: string;
   sessionCreated: boolean;
+  model?: string | null;
+  thinkingLevel?: string | null;
 };
 
 type SessionSettingsDispatchAction =
@@ -47,6 +49,7 @@ const buildErrorPrefix = (field: SessionSettingField) =>
   field === "model" ? "Model update failed" : "Thinking update failed";
 
 export const applySessionSettingMutation = async ({
+  agents,
   dispatch,
   client,
   agentId,
@@ -54,6 +57,10 @@ export const applySessionSettingMutation = async ({
   field,
   value,
 }: ApplySessionSettingMutationParams) => {
+  // Capture previous value for rollback
+  const agent = agents.find((a) => a.agentId === agentId);
+  const previousValue = agent?.[field];
+
   dispatch({
     type: "updateAgent",
     agentId,
@@ -92,6 +99,15 @@ export const applySessionSettingMutation = async ({
       patch,
     });
   } catch (err) {
+    // Rollback optimistic update to previous value
+    dispatch({
+      type: "updateAgent",
+      agentId,
+      patch: {
+        [field]: previousValue ?? null,
+        sessionSettingsSynced: true,
+      },
+    });
     const msg = err instanceof Error ? err.message : buildFallbackError(field);
     dispatch({
       type: "appendPart",

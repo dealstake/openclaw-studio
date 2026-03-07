@@ -235,10 +235,11 @@ export const AgentBrainPanel = memo(function AgentBrainPanel({
   const [activeHeading, setActiveHeading] = useState<number | null>(null);
 
   const currentContent = agentFiles[agentFileTab].content;
+  const deferredContent = useDeferredValue(currentContent);
 
   const headings = useMemo(
-    () => extractHeadings(currentContent),
-    [currentContent]
+    () => extractHeadings(deferredContent),
+    [deferredContent]
   );
 
   const fileHints = useMemo(
