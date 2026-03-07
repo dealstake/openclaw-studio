@@ -52,7 +52,7 @@ export const VoiceModeButton = React.memo(function VoiceModeButton({
           "bg-primary text-primary-foreground shadow-sm",
           "ring-1 ring-white/[0.06] transition-all",
           "hover:bg-primary/90 active:scale-95",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+          "focus-ring",
           className,
         )}
         aria-label="Open voice mode"

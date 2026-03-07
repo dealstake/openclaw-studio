@@ -72,7 +72,7 @@ export const VoiceFloatingPill = React.memo(function VoiceFloatingPill() {
             "bg-card border border-border shadow-lg",
             "text-sm font-medium text-foreground",
             "transition-shadow hover:shadow-xl",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            "focus-ring",
             "min-h-[48px]",
           )}
           aria-label={`Voice mode ${pillLabel(state).toLowerCase()} — tap to expand`}

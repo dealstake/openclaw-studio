@@ -59,7 +59,7 @@ export const MicPermissionDialog = React.memo(function MicPermissionDialog({
             "absolute right-3 top-3",
             "flex h-11 w-11 items-center justify-center rounded-full",
             "text-muted-foreground hover:bg-muted hover:text-foreground",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            "focus-ring",
           )}
           aria-label="Close"
         >
@@ -107,7 +107,7 @@ export const MicPermissionDialog = React.memo(function MicPermissionDialog({
               "flex-1 rounded-lg border border-border px-4 py-2.5",
               "text-sm font-medium text-muted-foreground",
               "hover:bg-muted transition-colors",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+              "focus-ring",
             )}
           >
             Cancel
@@ -122,7 +122,7 @@ export const MicPermissionDialog = React.memo(function MicPermissionDialog({
               "flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5",
               "bg-primary text-primary-foreground text-sm font-medium",
               "hover:bg-primary/90 transition-colors",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+              "focus-ring",
             )}
           >
             <Mic className="h-4 w-4" />

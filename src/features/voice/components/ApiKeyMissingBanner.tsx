@@ -44,7 +44,7 @@ export const ApiKeyMissingBanner = React.memo(function ApiKeyMissingBanner({
             "rounded-lg px-4 py-2 text-sm font-medium",
             "bg-primary text-primary-foreground",
             "hover:bg-primary/90 transition-colors",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            "focus-ring",
           )}
         >
           Open Credentials

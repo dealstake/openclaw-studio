@@ -276,7 +276,7 @@ export const VoiceModeOverlay = React.memo(function VoiceModeOverlay() {
                 className={cn(
                   "flex h-11 w-11 items-center justify-center rounded-full",
                   "text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  "focus-ring",
                 )}
                 aria-label="Minimize voice mode"
               >
@@ -290,7 +290,7 @@ export const VoiceModeOverlay = React.memo(function VoiceModeOverlay() {
                 className={cn(
                   "flex h-11 w-11 items-center justify-center rounded-full",
                   "text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  "focus-ring",
                 )}
                 aria-label="Close voice mode"
               >
@@ -401,7 +401,7 @@ export const VoiceModeOverlay = React.memo(function VoiceModeOverlay() {
                 "flex h-14 w-14 items-center justify-center rounded-full",
                 "bg-destructive text-destructive-foreground",
                 "transition-transform hover:scale-105 active:scale-95",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                "focus-ring",
                 "shadow-lg",
               )}
               aria-label="End voice call"

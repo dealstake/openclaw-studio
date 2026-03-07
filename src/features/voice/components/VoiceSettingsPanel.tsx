@@ -76,7 +76,7 @@ const VoiceCard = React.memo(function VoiceCard({
       onKeyDown={handleKeyDown}
       className={cn(
         "flex w-full cursor-pointer items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition-colors",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        "focus-ring",
         selected
           ? "border-primary/40 bg-primary/10"
           : "border-border/30 hover:border-border/60 hover:bg-muted/30",
@@ -313,7 +313,7 @@ export const VoiceSettingsPanel = React.memo(function VoiceSettingsPanel({
           onClick={toggleAutoSpeak}
           role="switch"
           aria-checked={settings.autoSpeak}
-          className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+          className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-full focus-ring"
         >
           <div
             className={cn(
