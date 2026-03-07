@@ -173,13 +173,16 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   // (prevents streaming stale chat history into the overlay)
   const voiceMessageSentRef = useRef(false);
 
+  // Track the run count when voice message was sent — we only show text from
+  // generations that start AFTER this count (prevents stale text leak)
+  const voiceMessageRunCountRef = useRef(0);
+  const runCountRef = useRef(0);
+
   const { start: startVoiceMode, speakResponse: sessionSpeakResponse } = useVoiceSession({
     onUserMessage: useCallback(
       (text: string) => {
         voiceMessageSentRef.current = true;
-        // Reset generation tracking — we're waiting for a NEW generation
-        // in response to this voice message, not an existing one
-        generationStartedRef.current = false;
+        voiceMessageRunCountRef.current = runCountRef.current;
         onSend(text);
       },
       [onSend],
@@ -265,13 +268,15 @@ export const AgentChatComposer = memo(function AgentChatComposer({
     }
   }, [voiceModeActive, lastAssistantText]);
 
-  // Track when a NEW generation starts so we only stream text from current generation.
-  // In voice mode, only flag as started when a voice message was sent (prevents
-  // capturing a generation that was already in progress when voice mode opened).
+  // Track run transitions to detect new generations
   const generationStartedRef = useRef(false);
   useEffect(() => {
     if (isRunning && !prevRunningRef.current) {
-      if (!voiceModeActive || voiceMessageSentRef.current) {
+      runCountRef.current += 1;
+      // In voice mode: only flag as started for generations AFTER the voice message
+      if (voiceModeActive) {
+        generationStartedRef.current = voiceMessageSentRef.current && runCountRef.current > voiceMessageRunCountRef.current;
+      } else {
         generationStartedRef.current = true;
       }
     }
