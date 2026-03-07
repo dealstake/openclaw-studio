@@ -145,11 +145,11 @@ export const SessionList = memo(function SessionList({
         />
       ) : (
         groups.map((group, groupIndex) => (
-          <div key={group.label} className={groupIndex > 0 ? "mb-2 mt-3" : "mb-2"}>
+          <div key={group.label} className={groupIndex > 0 ? "pt-3" : ""}>
             <div className={`${sectionLabelClass} px-2.5 py-2 text-muted-foreground/70`}>
               {group.label}
             </div>
-            <div className="flex flex-col gap-0.5">
+            <div className="mt-1 flex flex-col gap-0.5">
               {group.sessions.map((session) => (
                 <SessionItem
                   key={session.key}
