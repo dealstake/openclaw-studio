@@ -158,6 +158,13 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   const voiceMode = useVoiceModeSafe();
   const voiceModeActive = !!(voiceMode?.isOverlayOpen || voiceMode?.isMinimized);
 
+  // Keep a ref to voiceMode so effects can read the latest value without
+  // re-firing when the object reference changes (fixes stale closure).
+  const voiceModeRef = useRef(voiceMode);
+  useEffect(() => {
+    voiceModeRef.current = voiceMode;
+  });
+
   // Track whether voice mode has sent a message this session
   // (prevents streaming stale chat history into the overlay)
   const voiceMessageSentRef = useRef(false);
@@ -274,7 +281,8 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   // Stream agent text into voice overlay in real-time (visual only — TTS waits for completion)
   // Only shows text when: voice mode is active AND a voice message was sent this session
   useEffect(() => {
-    if (!voiceModeActive || !voiceMode || !isRunning || !lastAssistantText) return;
+    const vm = voiceModeRef.current;
+    if (!voiceModeActive || !vm || !isRunning || !lastAssistantText) return;
     if (!generationStartedRef.current || !voiceMessageSentRef.current) return;
     const baseline = voiceModeBaselineRef.current || "";
     const newText = lastAssistantText.startsWith(baseline)
@@ -282,12 +290,12 @@ export const AgentChatComposer = memo(function AgentChatComposer({
       : lastAssistantText;
     const plain = stripMarkdownForSpeech(newText);
     if (plain) {
-      voiceMode.setAgentTranscript(plain);
-      if (voiceMode.state === "thinking") {
-        voiceMode.setState("speaking");
+      vm.setAgentTranscript(plain);
+      if (vm.state === "thinking") {
+        vm.setState("speaking");
       }
     }
-  }, [isRunning, lastAssistantText, voiceModeActive]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isRunning, lastAssistantText, voiceModeActive]);
 
   // When agent finishes, speak the response (only for voice-mode-initiated messages)
   useEffect(() => {

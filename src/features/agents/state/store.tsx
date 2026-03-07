@@ -306,13 +306,10 @@ const reducer = (state: AgentStoreState, action: Action): AgentStoreState => {
           const { index, patch } = action;
           if (index < 0 || index >= agent.messageParts.length) return agent;
           const updated = { ...agent.messageParts[index], ...patch } as MessagePart;
-          // Return a new array reference so consumers that memoize on
-          // messageParts identity (e.g. React.memo, useMemo) correctly
-          // detect the change. The spread is O(n) but n is bounded by
-          // MAX_PARTS (500) and streaming deltas are already debounced.
-          const newParts = agent.messageParts.slice();
-          newParts[index] = updated;
-          return { ...agent, messageParts: newParts };
+          // .with() returns a new array with the element at `index` replaced.
+          // Semantically identical to slice()+assign but avoids the intermediate
+          // mutable step and is optimised in modern engines (ES2023).
+          return { ...agent, messageParts: agent.messageParts.with(index, updated) };
         }),
       };
     case "markActivity": {

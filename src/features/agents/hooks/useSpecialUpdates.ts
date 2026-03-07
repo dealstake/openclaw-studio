@@ -183,12 +183,17 @@ export function useSpecialUpdates(params: {
   const prevAgentSnapshotRef = useRef<Map<string, string>>(new Map());
 
   // Derive a primitive dep: concatenation of agentId + lastUserMessage for
-  // each agent. This avoids re-running the effect on every reducer action
-  // (which always returns a new `agents` array), limiting it to actual
-  // lastUserMessage changes. Uses stateRef for agent data inside the effect.
-  const agentMessageFingerprint = agents
+  // each agent. Ref-based memoization ensures the string identity stays
+  // stable across renders when the content hasn't changed, preventing
+  // the useEffect below from re-firing on unrelated reducer actions.
+  const prevFingerprintRef = useRef("");
+  const computedFingerprint = agents
     .map((a) => `${a.agentId}:${a.lastUserMessage ?? ""}`)
     .join("|");
+  const agentMessageFingerprint =
+    computedFingerprint === prevFingerprintRef.current
+      ? prevFingerprintRef.current
+      : (prevFingerprintRef.current = computedFingerprint);
 
   useEffect(() => {
     const controller = new AbortController();
