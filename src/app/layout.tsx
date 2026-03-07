@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
+import { Inter, IBM_Plex_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import { ChunkErrorRecovery } from "@/components/ChunkErrorRecovery";
 import "./globals.css";
@@ -15,10 +15,10 @@ export const metadata: Metadata = {
   description: "AI agent operations dashboard for Trident Funding Solutions.",
 };
 
-const sans = IBM_Plex_Sans({
+const sans = Inter({
   variable: "--font-sans",
-  weight: ["400", "500", "600", "700"],
   subsets: ["latin"],
+  display: "swap",
 });
 
 const mono = IBM_Plex_Mono({
