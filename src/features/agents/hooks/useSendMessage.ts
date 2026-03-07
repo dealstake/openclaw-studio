@@ -1,7 +1,7 @@
 import { useCallback, type MutableRefObject } from "react";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import { syncGatewaySessionSettings } from "@/lib/gateway/GatewayClient";
-import { buildAgentInstruction } from "@/lib/text/message-extract";
+
 import type { Action, AgentState } from "@/features/agents/state/store";
 import type { createGatewayRuntimeEventHandler } from "@/features/agents/state/gatewayRuntimeEventHandler";
 
@@ -101,7 +101,7 @@ export function useSendMessage({
         }
         await client.call("chat.send", {
           sessionKey,
-          message: buildAgentInstruction({ message: trimmed }),
+          message: trimmed,
           deliver: false,
           idempotencyKey: runId,
           ...(attachments && attachments.length > 0 ? { attachments } : {}),

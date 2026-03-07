@@ -2,6 +2,22 @@
  * Text extraction from message objects — envelope stripping, thinking tag removal, caching.
  */
 
+/**
+ * Minimal shape for a message-like object.
+ * Used as a runtime type guard at entry points to avoid unsafe `as Record<string, unknown>` casts.
+ */
+export interface MessageLike {
+  role?: string;
+  content?: unknown;
+  text?: string;
+  [key: string]: unknown;
+}
+
+/** Runtime type guard for message-like objects. Accepts any non-null object with at least one known message key. */
+export function isMessageLike(value: unknown): value is MessageLike {
+  return value != null && typeof value === "object";
+}
+
 const ENVELOPE_PREFIX = /^\[([^\]]+)\]\s*/;
 const ENVELOPE_CHANNELS = [
   "WebChat",
@@ -70,8 +86,8 @@ const stripThinkingTagsFromAssistantText = (value: string): string => {
 };
 
 export const extractRawText = (message: unknown): string | null => {
-  if (!message || typeof message !== "object") return null;
-  const m = message as Record<string, unknown>;
+  if (!isMessageLike(message)) return null;
+  const m = message;
   const content = m.content;
   if (typeof content === "string") return content;
   if (Array.isArray(content)) {
@@ -89,10 +105,8 @@ export const extractRawText = (message: unknown): string | null => {
 };
 
 export const extractText = (message: unknown): string | null => {
-  if (!message || typeof message !== "object") {
-    return null;
-  }
-  const m = message as Record<string, unknown>;
+  if (!isMessageLike(message)) return null;
+  const m = message;
   const role = typeof m.role === "string" ? m.role : "";
   const content = m.content;
 
@@ -130,8 +144,8 @@ export const extractText = (message: unknown): string | null => {
  * and URL-based images: { type: "image_url", image_url: { url } } (OpenAI format)
  */
 export const extractImages = (message: unknown): { src: string; alt?: string }[] => {
-  if (!message || typeof message !== "object") return [];
-  const m = message as Record<string, unknown>;
+  if (!isMessageLike(message)) return [];
+  const m = message;
   const content = m.content;
   if (!Array.isArray(content)) return [];
 

@@ -2,7 +2,7 @@
  * Thinking/reasoning extraction from message objects — tagged text parsing, caching, markdown formatting.
  */
 
-import { extractRawText } from "./extract-text";
+import { extractRawText, isMessageLike } from "./extract-text";
 
 const THINKING_BLOCK_RE =
   /<\s*(think(?:ing)?|analysis)\s*>([\s\S]*?)<\s*\/\s*\1\s*>/gi;
@@ -62,8 +62,8 @@ const extractFromRecord = (record: Record<string, unknown>): string | null => {
 };
 
 export const extractThinking = (message: unknown): string | null => {
-  if (!message || typeof message !== "object") return null;
-  const m = message as Record<string, unknown>;
+  if (!isMessageLike(message)) return null;
+  const m = message;
   const content = m.content;
   const parts: string[] = [];
 

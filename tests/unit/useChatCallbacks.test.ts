@@ -14,10 +14,6 @@ vi.mock("@/lib/gateway/GatewayClient", async () => {
   };
 });
 
-vi.mock("@/lib/text/message-extract", () => ({
-  buildAgentInstruction: ({ message }: { message: string }) => message,
-}));
-
 vi.mock("@/features/agents/state/store", async () => {
   const actual = await vi.importActual("@/features/agents/state/store");
   return {

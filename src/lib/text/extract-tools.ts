@@ -2,7 +2,7 @@
  * Tool call/result extraction and markdown formatting from message objects.
  */
 
-import { extractText } from "./extract-text";
+import { extractText, isMessageLike } from "./extract-text";
 
 const TOOL_CALL_PREFIX = "[[tool]]";
 const TOOL_RESULT_PREFIX = "[[tool-result]]";
@@ -61,8 +61,8 @@ const formatToolResultMeta = (details?: Record<string, unknown> | null, isError?
 };
 
 export const extractToolCalls = (message: unknown): ToolCallRecord[] => {
-  if (!message || typeof message !== "object") return [];
-  const content = (message as Record<string, unknown>).content;
+  if (!isMessageLike(message)) return [];
+  const content = message.content;
   if (!Array.isArray(content)) return [];
   const calls: ToolCallRecord[] = [];
   for (const item of content) {
@@ -79,8 +79,8 @@ export const extractToolCalls = (message: unknown): ToolCallRecord[] => {
 };
 
 export const extractToolResult = (message: unknown): ToolResultRecord | null => {
-  if (!message || typeof message !== "object") return null;
-  const record = message as Record<string, unknown>;
+  if (!isMessageLike(message)) return null;
+  const record = message;
   const role = typeof record.role === "string" ? record.role : "";
   if (role !== "toolResult" && role !== "tool") return null;
   const details =

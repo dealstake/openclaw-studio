@@ -2,10 +2,6 @@
  * UI metadata stripping, heartbeat detection, and agent instruction building.
  */
 
-export type AgentInstructionParams = {
-  message: string;
-};
-
 const PROJECT_PROMPT_BLOCK_RE = /^(?:Project|Workspace) path:[\s\S]*?\n\s*\n/i;
 const PROJECT_PROMPT_INLINE_RE = /^(?:Project|Workspace) path:[\s\S]*?memory_search\.\s*/i;
 const RESET_PROMPT_RE =
@@ -36,12 +32,3 @@ export const isHeartbeatPrompt = (text: string) => {
 };
 
 export const isUiMetadataPrefix = (text: string) => UI_METADATA_PREFIX_RE.test(text);
-
-export const buildAgentInstruction = ({
-  message,
-}: AgentInstructionParams): string => {
-  const trimmed = message.trim();
-  if (!trimmed) return trimmed;
-  if (trimmed.startsWith("/")) return trimmed;
-  return trimmed;
-};

@@ -66,9 +66,8 @@ export function formatElapsedLabel(
 ): string | null {
   if (streaming) return null;
   if (startMs != null && completedMs != null) {
-    const { minutes, remainderSeconds } = breakDownMs(completedMs - startMs);
-    const secs = minutes * 60 + remainderSeconds; // total seconds for < 60 check
-    if (secs < 60) return `${secs}s`;
+    const { seconds, minutes, remainderSeconds } = breakDownMs(completedMs - startMs);
+    if (seconds < 60) return `${seconds}s`;
     return `${minutes}m ${String(remainderSeconds).padStart(2, "0")}s`;
   }
   return null;

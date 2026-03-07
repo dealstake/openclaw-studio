@@ -8,7 +8,8 @@
  * - ui-metadata.ts: UI metadata stripping, heartbeat detection
  */
 
-export { extractText, extractTextCached, extractRawText, extractImages, stripEnvelope } from "./extract-text";
+export { extractText, extractTextCached, extractRawText, extractImages, stripEnvelope, isMessageLike } from "./extract-text";
+export type { MessageLike } from "./extract-text";
 export {
   extractThinking,
   extractThinkingCached,
@@ -31,6 +32,4 @@ export {
   stripUiMetadata,
   isHeartbeatPrompt,
   isUiMetadataPrefix,
-  buildAgentInstruction,
 } from "./ui-metadata";
-export type { AgentInstructionParams } from "./ui-metadata";

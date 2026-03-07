@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  buildAgentInstruction,
   extractText,
   extractTextCached,
   extractThinking,
@@ -82,11 +81,7 @@ describe("message-extract", () => {
   });
 
   it("does not treat normal messages as UI metadata", () => {
-    const built = buildAgentInstruction({
-      message: "hello",
-    });
-
-    expect(isUiMetadataPrefix(built)).toBe(false);
-    expect(stripUiMetadata(built)).toBe("hello");
+    expect(isUiMetadataPrefix("hello")).toBe(false);
+    expect(stripUiMetadata("hello")).toBe("hello");
   });
 });
