@@ -40,6 +40,8 @@ export const InlineVoiceIndicator = memo(function InlineVoiceIndicator({
         exit={{ opacity: 0, scale: 0.9 }}
         transition={{ duration: 0.15 }}
         className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${config.colorClass}`}
+        role="status"
+        aria-live="polite"
       >
         <span className="relative flex h-3 w-3 items-center justify-center">
           {config.pulse && (
