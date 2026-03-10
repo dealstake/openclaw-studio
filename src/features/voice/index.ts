@@ -1,7 +1,7 @@
 /**
- * Voice feature — ElevenLabs STT + TTS voice mode for Studio.
+ * Voice feature — ElevenLabs STT + TTS inline voice mode for Studio.
  *
- * Public exports for use by other features (chat, personas, wizards).
+ * Voice conversations happen inline in the chat — no overlay.
  */
 
 // Types
@@ -36,24 +36,15 @@ export {
   type UseVoiceSettingsParams,
   type UseVoiceSettingsReturn,
 } from "./hooks/useVoiceSettings";
-
-// Voice Mode Types
-export type { VoiceModeState } from "./lib/voiceTypes";
-export { voiceModeToOrbState } from "./lib/voiceTypes";
-
-// Voice Mode Hooks
-export { useVoiceModeShortcut } from "./hooks/useVoiceModeShortcut";
-export { useVoiceModeBridge } from "./hooks/useVoiceModeBridge";
-export { useVoiceSession } from "./hooks/useVoiceSession";
-
-// Providers
-export { VoiceModeProvider, useVoiceMode, useVoiceModeSafe } from "./providers/VoiceModeProvider";
-export type { VoiceModeContextValue } from "./providers/VoiceModeProvider";
+export {
+  useInlineVoice,
+  type InlineVoiceState,
+  type UseInlineVoiceOptions,
+  type UseInlineVoiceReturn,
+} from "./hooks/useInlineVoice";
 
 // Components
 export { VoiceInputControl } from "./components/VoiceControls";
 export { VoiceSettingsPanel } from "./components/VoiceSettingsPanel";
 export { VoiceSettingsPanelConnected } from "./components/VoiceSettingsPanelConnected";
-export { VoiceModeOverlay } from "./components/VoiceModeOverlay";
-export { VoiceFloatingPill } from "./components/VoiceFloatingPill";
-export { VoiceModeButton } from "./components/VoiceModeButton";
+export { InlineVoiceIndicator } from "./components/InlineVoiceIndicator";

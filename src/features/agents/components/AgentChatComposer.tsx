@@ -2,7 +2,6 @@ import {
   memo,
   useCallback,
   useEffect,
-  useMemo,
   useRef,
   useState,
   type ChangeEvent,
@@ -14,43 +13,30 @@ import { motion, AnimatePresence } from "framer-motion";
 
 import type { GatewayModelChoice } from "@/lib/gateway/models";
 import type { GatewayStatus } from "@/lib/gateway/GatewayClient";
-import { AlertCircle, ArrowUp, Square, UploadCloud, WifiOff } from "lucide-react";
+import { AlertCircle, ArrowUp, Mic, MicOff, Square, UploadCloud, WifiOff } from "lucide-react";
 import { ChatAttachmentPreview } from "./ChatAttachmentPreview";
-// AgentAvatar available for future composer enhancements
 import { ComposerAgentMenu, type ComposerAgent } from "./ComposerAgentMenu";
 import { useFileUpload, type ChatAttachment } from "../hooks/useFileUpload";
 import type { WizardType, WizardTheme, WizardStarter } from "@/features/wizards/lib/wizardTypes";
 import { WizardBanner } from "@/features/wizards/components/WizardBanner";
 import { WizardLaunchMenu } from "@/features/wizards/components/WizardLaunchMenu";
-import { useVoiceOutput, resolvedToSpeakOptions } from "@/features/voice/hooks/useVoiceOutput";
-import { useVoiceSession } from "@/features/voice/hooks/useVoiceSession";
+import { useInlineVoice } from "@/features/voice/hooks/useInlineVoice";
+import { InlineVoiceIndicator } from "@/features/voice/components/InlineVoiceIndicator";
 
 import { stripAnsi } from "@/lib/stripAnsi";
 
 /** Strip markdown syntax for cleaner speech output */
 function stripMarkdownForSpeech(text: string): string {
   return stripAnsi(text)
-    // Remove code blocks entirely (don't speak code)
     .replace(/```[\s\S]*?```/g, " code block ")
-    // Strip inline formatting
     .replace(/\*\*(.*?)\*\*/g, "$1")
     .replace(/\*(.*?)\*/g, "$1")
     .replace(/`([^`]+)`/g, "$1")
-    // Strip heading markers
     .replace(/#{1,6}\s/g, "")
-    // Strip links, keep text
     .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-    // Compress whitespace
     .replace(/\n{2,}/g, ". ")
     .trim();
 }
-import { useVoiceSettings } from "@/features/voice/hooks/useVoiceSettings";
-import { createStudioSettingsCoordinator } from "@/lib/studio/coordinator";
-import { VoiceInputControl } from "@/features/voice/components/VoiceControls";
-import { VoiceModeButton } from "@/features/voice/components/VoiceModeButton";
-// useVoiceModeBridge replaced by useVoiceSession (unified hook)
-import { useVoiceModeSafe } from "@/features/voice/providers/VoiceModeProvider";
-import type { SpeechInputData } from "@/components/ui/speech-input";
 
 export const AgentChatComposer = memo(function AgentChatComposer({
   onDraftChange,
@@ -120,9 +106,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   composerAgents?: ComposerAgent[];
   selectedAgentId?: string | null;
   onSelectAgent?: (agentId: string) => void;
-  /** Latest assistant message text — used for TTS when voice output is enabled */
   lastAssistantText?: string;
-  /** Called when user selects a wizard type from the launch menu */
   onLaunchWizard?: (type: WizardType) => void;
 }) {
   const localRef = useRef<HTMLTextAreaElement | null>(null);
@@ -135,171 +119,22 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   const dragCountRef = useRef(0);
   const { files, addFiles, removeFile, clearFiles, getAttachments, hasFiles, isEncoding, acceptString } = useFileUpload();
 
-  // When wizard is active, use wizard streaming state instead of main agent running state
   const isRunning = wizardType ? (wizardIsStreaming ?? false) : running;
 
-  // ── Voice controls ────────────────────────────────────────────────────
-  const voiceOutput = useVoiceOutput();
-  const voiceSettingsCoordinator = useMemo(
-    () => createStudioSettingsCoordinator({ debounceMs: 200 }),
-    [],
-  );
-  const { settings: voiceResolvedSettings } = useVoiceSettings({
-    settingsCoordinator: voiceSettingsCoordinator,
+  // ── Inline Voice ──────────────────────────────────────────────────
+  const inlineVoice = useInlineVoice({
+    onUserMessage: useCallback((text: string) => {
+      onSend(text);
+    }, [onSend]),
+    agentId: selectedAgentId,
   });
 
-  // Stable ref for voiceOutput to avoid re-creating callbacks
-  const voiceOutputRef = useRef(voiceOutput);
-  useEffect(() => {
-    voiceOutputRef.current = voiceOutput;
-  }, [voiceOutput]);
-
-  // ── Voice mode (unified session: STT↔TTS↔Agent loop) ─────────────
-  const voiceMode = useVoiceModeSafe();
-  const voiceModeActive = !!(voiceMode?.isOverlayOpen || voiceMode?.isMinimized);
-
-  // Keep a ref to voiceMode so effects can read the latest value without
-  // re-firing when the object reference changes (fixes stale closure).
-  const voiceModeRef = useRef(voiceMode);
-  useEffect(() => {
-    voiceModeRef.current = voiceMode;
-  });
-
-  // Track whether voice mode has sent a message this session
-  // (prevents streaming stale chat history into the overlay)
-  const voiceMessageSentRef = useRef(false);
-
-  // Track the run count when voice message was sent — we only show text from
-  // generations that start AFTER this count (prevents stale text leak)
-  const voiceMessageRunCountRef = useRef(0);
-  const runCountRef = useRef(0);
-
-  const { start: startVoiceMode, speakResponse: sessionSpeakResponse } = useVoiceSession({
-    onUserMessage: useCallback(
-      (text: string) => {
-        voiceMessageSentRef.current = true;
-        voiceMessageRunCountRef.current = runCountRef.current;
-        onSend(text);
-      },
-      [onSend],
-    ),
-  });
-
-  /** When voice transcript updates, sync it into the textarea */
-  const voiceBaseTextRef = useRef("");
-  const handleVoiceChange = useCallback((data: SpeechInputData) => {
-    const el = localRef.current;
-    if (el) {
-      const base = voiceBaseTextRef.current;
-      const full = base ? `${base} ${data.transcript}` : data.transcript;
-      el.value = full;
-      // Auto-resize textarea to fit content
-      el.style.height = "auto";
-      el.style.height = `${el.scrollHeight}px`;
-      setIsEmpty(!full.trim());
-      onDraftChange(full);
-    }
-  }, [onDraftChange]);
-
-  /** When voice recording starts, capture existing text as base and enable voice output */
-  const handleVoiceStart = useCallback(() => {
-    const el = localRef.current;
-    voiceBaseTextRef.current = el?.value?.trim() || "";
-    voiceOutputRef.current.setEnabled(true);
-  }, []);
-
-  /** When voice input stops, preserve text in textarea for review/editing */
-  const handleVoiceStop = useCallback((data: SpeechInputData) => {
-    const newText = data.transcript.trim();
-    const base = voiceBaseTextRef.current;
-    const full = base && newText ? `${base} ${newText}` : (newText || base);
-    if (!full) return;
-    const el = localRef.current;
-    if (el) {
-      el.value = full;
-      el.style.height = "auto";
-      el.style.height = `${el.scrollHeight}px`;
-      el.focus();
-    }
-    setIsEmpty(!full);
-    onDraftChange(full);
-    // Reset base text — next recording will capture the new full value
-    voiceBaseTextRef.current = "";
-  }, [onDraftChange]);
-
-  /** When voice input is cancelled, restore base text (don't add new transcript) */
-  const handleVoiceCancel = useCallback((_data: SpeechInputData) => {
-    const base = voiceBaseTextRef.current;
-    const el = localRef.current;
-    if (el) {
-      el.value = base;
-      el.style.height = "auto";
-      if (base) {
-        el.style.height = `${el.scrollHeight}px`;
-        el.focus();
-      }
-    }
-    setIsEmpty(!base);
-    onDraftChange(base);
-    voiceBaseTextRef.current = "";
-  }, [onDraftChange]);
-
-  /** Auto-speak assistant responses when voice is active (overlay or inline) */
+  // Auto-speak agent responses when inline voice is active
   const prevRunningRef = useRef(false);
   const prevAssistantTextRef = useRef<string | undefined>(undefined);
 
-  // When voice mode opens, snapshot current lastAssistantText as baseline
-  // so we don't display/speak text from before voice mode was activated
-  const voiceModeBaselineRef = useRef<string | undefined>(undefined);
-  const voiceModeWasActive = useRef(false);
   useEffect(() => {
-    if (voiceModeActive && !voiceModeWasActive.current) {
-      voiceModeWasActive.current = true;
-      voiceModeBaselineRef.current = lastAssistantText;
-      prevAssistantTextRef.current = lastAssistantText;
-    } else if (!voiceModeActive) {
-      voiceModeWasActive.current = false;
-      voiceModeBaselineRef.current = undefined;
-      voiceMessageSentRef.current = false;
-    }
-  }, [voiceModeActive, lastAssistantText]);
-
-  // Track run transitions to detect new generations
-  const generationStartedRef = useRef(false);
-  useEffect(() => {
-    if (isRunning && !prevRunningRef.current) {
-      runCountRef.current += 1;
-      // In voice mode: only flag as started for generations AFTER the voice message
-      if (voiceModeActive) {
-        generationStartedRef.current = voiceMessageSentRef.current && runCountRef.current > voiceMessageRunCountRef.current;
-      } else {
-        generationStartedRef.current = true;
-      }
-    }
-  }, [isRunning, voiceModeActive]);
-
-  // Stream agent text into voice overlay in real-time (visual only — TTS waits for completion)
-  // Only shows text when: voice mode is active AND a voice message was sent this session
-  useEffect(() => {
-    const vm = voiceModeRef.current;
-    if (!voiceModeActive || !vm || !isRunning || !lastAssistantText) return;
-    if (!generationStartedRef.current || !voiceMessageSentRef.current) return;
-    const baseline = voiceModeBaselineRef.current || "";
-    const newText = lastAssistantText.startsWith(baseline)
-      ? lastAssistantText.slice(baseline.length).trim()
-      : lastAssistantText;
-    const plain = stripMarkdownForSpeech(newText);
-    if (plain) {
-      vm.setAgentTranscript(plain);
-      if (vm.state === "thinking") {
-        vm.setState("speaking");
-      }
-    }
-  }, [isRunning, lastAssistantText, voiceModeActive]);
-
-  // When agent finishes, speak the response (only for voice-mode-initiated messages)
-  useEffect(() => {
-    if (prevRunningRef.current && !isRunning && lastAssistantText) {
+    if (prevRunningRef.current && !isRunning && lastAssistantText && inlineVoice.isActive) {
       if (lastAssistantText !== prevAssistantTextRef.current) {
         const prevText = prevAssistantTextRef.current || "";
         const newText = lastAssistantText.startsWith(prevText)
@@ -309,18 +144,24 @@ export const AgentChatComposer = memo(function AgentChatComposer({
         if (plainText.length >= 5000) plainText = plainText.slice(0, 4000);
 
         if (plainText.length > 0) {
-          if (voiceModeActive && voiceMessageSentRef.current) {
-            void sessionSpeakResponse(plainText);
-          } else if (voiceOutput.enabled) {
-            void voiceOutput.speak(plainText, resolvedToSpeakOptions(voiceResolvedSettings));
-            voiceOutput.setEnabled(false);
-          }
+          void inlineVoice.speakResponse(plainText);
         }
         prevAssistantTextRef.current = lastAssistantText;
       }
     }
     prevRunningRef.current = isRunning;
-  }, [isRunning, lastAssistantText, voiceOutput, voiceModeActive, sessionSpeakResponse, voiceResolvedSettings]);
+  }, [isRunning, lastAssistantText, inlineVoice]);
+
+  // ── Voice toggle handler ──────────────────────────────────────────
+  const handleVoiceToggle = useCallback(() => {
+    if (inlineVoice.isActive) {
+      inlineVoice.stop();
+    } else {
+      void inlineVoice.start();
+    }
+  }, [inlineVoice]);
+
+  // ── File / Input handlers ─────────────────────────────────────────
 
   const showFileError = useCallback((msg: string) => {
     setFileError(msg);
@@ -348,13 +189,8 @@ export const AgentChatComposer = memo(function AgentChatComposer({
       const value = el.value;
       setIsEmpty(!value.trim());
       onDraftChange(value);
-      // Auto-resize: reset to single row then expand to fit content
       el.style.height = "auto";
       el.style.height = `${el.scrollHeight}px`;
-      // User is typing — exit voice mode
-      if (voiceOutputRef.current.enabled && value.trim()) {
-        voiceOutputRef.current.setEnabled(false);
-      }
       if (pendingResizeRef.current !== null) {
         cancelAnimationFrame(pendingResizeRef.current);
       }
@@ -505,7 +341,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
       <div className="pointer-events-none h-4 sm:h-8 bg-gradient-to-t from-background to-transparent" />
 
       <div className="mx-auto max-w-3xl 2xl:max-w-4xl">
-        {/* Wizard banner — desktop only (mobile uses header transition) */}
+        {/* Wizard banner — desktop only */}
         {wizardType && wizardTheme && onWizardExit && (
           <div className="mb-2 hidden rounded-2xl border border-border/50 glass-panel dark:bg-background/40 sm:block">
             <WizardBanner
@@ -518,7 +354,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
             />
           </div>
         )}
-        {/* Mobile wizard starters — shown inline when no messages yet */}
+        {/* Mobile wizard starters */}
         {wizardType && wizardTheme && !wizardHasMessages && wizardStarters && wizardStarters.length > 0 && onWizardStarterClick && (
           <div className="mb-2 flex flex-wrap gap-1.5 sm:hidden">
             {wizardStarters.map((starter) => (
@@ -534,7 +370,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
           </div>
         )}
 
-        {/* Minimal status strip — only offline/errors/attachments, no streaming chrome */}
+        {/* Status strip */}
         {((gatewayStatus && gatewayStatus !== "connected") || fileError || hasFiles) && (
           <div className="mb-2 rounded-2xl border border-border/30 bg-background/95 px-4 py-2 shadow-sm animate-in slide-in-from-bottom-2 fade-in duration-200">
             {gatewayStatus && gatewayStatus !== "connected" && (
@@ -566,28 +402,37 @@ export const AgentChatComposer = memo(function AgentChatComposer({
           onChange={handleFileInputChange}
         />
 
-        {/* ═══ COMPOSER ROW: [━━ Glass Input Pill ━━] [○ Action Button] ═══ */}
+        {/* ═══ COMPOSER ROW ═══ */}
         <div className="flex items-end gap-2 sm:gap-2.5">
 
           {/* ── Glass Input Pill ── */}
           <div className="min-w-0 flex-1 rounded-[24px] border border-border/30 bg-background shadow-sm transition-colors focus-within:border-border/50">
             <div className="flex items-end">
-              {/* Left controls — wizard always visible, voice controls desktop-only (mobile uses native keyboard dictation) */}
+              {/* Left controls */}
               <div className="flex shrink-0 items-center gap-1 pl-2 pb-1.5 sm:pl-2.5">
                 {!wizardType && onLaunchWizard && (
                   <WizardLaunchMenu onLaunch={onLaunchWizard} disabled={isRunning} />
                 )}
-                <div className="hidden sm:flex items-center gap-1">
-                  <VoiceInputControl
-                    onChange={handleVoiceChange}
-                    onStart={handleVoiceStart}
-                    onStop={handleVoiceStop}
-                    onCancel={handleVoiceCancel}
-                  />
-                  {selectedAgentId && (
-                    <VoiceModeButton agentId={selectedAgentId} onActivate={startVoiceMode} />
+                {/* Inline voice mic button */}
+                <button
+                  type="button"
+                  onClick={handleVoiceToggle}
+                  className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
+                    inlineVoice.isActive
+                      ? "bg-destructive/10 text-destructive hover:bg-destructive/20"
+                      : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                  }`}
+                  aria-label={inlineVoice.isActive ? "Stop voice mode" : "Start voice mode"}
+                  title={inlineVoice.isActive ? "Stop voice mode" : "Start voice mode"}
+                >
+                  {inlineVoice.isActive ? (
+                    <MicOff className="h-4 w-4" />
+                  ) : (
+                    <Mic className="h-4 w-4" />
                   )}
-                </div>
+                </button>
+                {/* Inline voice state indicator */}
+                <InlineVoiceIndicator state={inlineVoice.state} />
               </div>
               <textarea
                 ref={handleRef}
@@ -604,9 +449,8 @@ export const AgentChatComposer = memo(function AgentChatComposer({
             </div>
           </div>
 
-          {/* ── Morphing Action Button — outside the pill ── */}
+          {/* ── Morphing Action Button ── */}
           <div className="relative shrink-0">
-            {/* SVG progress ring — visible when running and tokenPct available */}
             {isRunning && tokenPct !== null && (
               <svg
                 className="pointer-events-none absolute inset-0 -rotate-90"
@@ -631,7 +475,6 @@ export const AgentChatComposer = memo(function AgentChatComposer({
               <div className="absolute inset-[-3px] rounded-full border-2 border-primary/50 animate-pulse" aria-hidden />
             )}
             <AnimatePresence mode="wait" initial={false}>
-            {/* State 1: Running → Stop button (wizard-aware) */}
             {isRunning ? (
               <motion.button
                 key="stop"
@@ -648,7 +491,6 @@ export const AgentChatComposer = memo(function AgentChatComposer({
                 <Square className="h-3.5 w-3.5 fill-current" />
               </motion.button>
             ) : !isEmpty || hasFiles ? (
-              /* State 2: Has text/files → Send button */
               <motion.button
                 key="send"
                 initial={{ scale: 0.8, opacity: 0 }}
@@ -663,50 +505,30 @@ export const AgentChatComposer = memo(function AgentChatComposer({
               >
                 <ArrowUp className="h-[18px] w-[18px]" />
               </motion.button>
-            ) : selectedAgentId && voiceMode ? (
-              /* State 3a: Idle + mobile → Voice mode primary button (< 768px) */
-              /* State 3b: Idle + desktop → Avatar (agent menu) (≥ 768px) */
-              <>
-                {/* Mobile: voice mode button */}
-                <motion.div
-                  key="voice-mobile"
-                  initial={{ scale: 0.8, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 0.8, opacity: 0 }}
-                  transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                  className="sm:hidden"
-                >
-                  <VoiceModeButton agentId={selectedAgentId} variant="primary" onActivate={startVoiceMode} />
-                </motion.div>
-                {/* Desktop: agent menu (unchanged) */}
-                {composerAgents && composerAgents.length > 0 && onSelectAgent && (
-                  <motion.div
-                    key="avatar"
-                    initial={{ scale: 0.8, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0.8, opacity: 0 }}
-                    transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                    className="hidden sm:block"
-                  >
-                    <ComposerAgentMenu
-                      agents={composerAgents}
-                      selectedAgentId={selectedAgentId}
-                      onSelectAgent={onSelectAgent}
-                      models={models}
-                      modelValue={modelValue}
-                      onModelChange={onModelChange}
-                      thinkingLevel={thinkingLevel}
-                      onThinkingChange={onThinkingChange}
-                      allowThinking={allowThinking}
-                      tokenPct={tokenPct}
-                      onNewSession={onNewSession}
-                      onAttach={triggerAttach}
-                    />
-                  </motion.div>
-                )}
-              </>
+            ) : composerAgents && composerAgents.length > 0 && onSelectAgent && selectedAgentId ? (
+              <motion.div
+                key="avatar"
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.8, opacity: 0 }}
+                transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              >
+                <ComposerAgentMenu
+                  agents={composerAgents}
+                  selectedAgentId={selectedAgentId}
+                  onSelectAgent={onSelectAgent}
+                  models={models}
+                  modelValue={modelValue}
+                  onModelChange={onModelChange}
+                  thinkingLevel={thinkingLevel}
+                  onThinkingChange={onThinkingChange}
+                  allowThinking={allowThinking}
+                  tokenPct={tokenPct}
+                  onNewSession={onNewSession}
+                  onAttach={triggerAttach}
+                />
+              </motion.div>
             ) : (
-              /* Fallback: disabled send button */
               <motion.button
                 key="disabled"
                 initial={{ scale: 0.8, opacity: 0 }}
