@@ -136,12 +136,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   useEffect(() => {
     if (prevRunningRef.current && !isRunning && lastAssistantText && inlineVoice.isActive) {
       if (lastAssistantText !== prevAssistantTextRef.current) {
-        const prevText = prevAssistantTextRef.current || "";
-        const newText = lastAssistantText.startsWith(prevText)
-          ? lastAssistantText.slice(prevText.length).trim()
-          : lastAssistantText;
-        let plainText = stripMarkdownForSpeech(newText);
-        if (plainText.length >= 5000) plainText = plainText.slice(0, 4000);
+        const plainText = stripMarkdownForSpeech(lastAssistantText).slice(0, 4000);
 
         if (plainText.length > 0) {
           void inlineVoice.speakResponse(plainText);
@@ -417,7 +412,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
                 <button
                   type="button"
                   onClick={handleVoiceToggle}
-                  className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
+                  className={`flex h-10 w-10 items-center justify-center rounded-full transition-colors ${
                     inlineVoice.isActive
                       ? "bg-destructive/10 text-destructive hover:bg-destructive/20"
                       : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"

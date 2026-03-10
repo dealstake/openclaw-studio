@@ -317,6 +317,10 @@ export function useInlineVoice(options?: UseInlineVoiceOptions): UseInlineVoiceR
     });
     recorderRef.current = recorder;
     recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+    recorder.onerror = (e) => {
+      console.error("[InlineVoice] MediaRecorder error:", e);
+      updateState("error");
+    };
     recorder.start(250);
 
     try {
