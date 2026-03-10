@@ -14,7 +14,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 import type { GatewayModelChoice } from "@/lib/gateway/models";
 import type { GatewayStatus } from "@/lib/gateway/GatewayClient";
-import { AlertCircle, ArrowUp, Mic, MicOff, Square, UploadCloud, Volume2, WifiOff } from "lucide-react";
+import { AlertCircle, ArrowUp, AudioLines, Square, UploadCloud, Volume2, WifiOff, X } from "lucide-react";
 import { ChatAttachmentPreview } from "./ChatAttachmentPreview";
 import { ComposerAgentMenu, type ComposerAgent } from "./ComposerAgentMenu";
 import { useFileUpload, type ChatAttachment } from "../hooks/useFileUpload";
@@ -455,7 +455,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
           }`}>
             <div className="flex items-end">
               {/* Left controls */}
-              <div className="flex shrink-0 items-center gap-1 pl-2 pb-1.5 sm:pl-2.5">
+              <div className="flex shrink-0 items-end gap-1 pl-3 pb-1.5 sm:pl-2.5">
                 {!wizardType && onLaunchWizard && (
                   <WizardLaunchMenu onLaunch={onLaunchWizard} disabled={isRunning} />
                 )}
@@ -480,7 +480,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
                 placeholder={wizardType && wizardTheme ? "Type your requirements or pick a template..." : `Message ${agentName}...`}
               />
               {/* Right side: voice conversation toggle + status */}
-              <div className="flex shrink-0 items-center gap-1 pr-2 pb-1.5 sm:pr-2.5">
+              <div className="flex shrink-0 items-end gap-1 pr-3 pb-1.5 sm:pr-2.5">
                 {voiceStatusText && (
                   <span className={`flex items-center gap-1 text-xs font-medium ${
                     isTtsSpeaking ? "text-blue-500" : isRunning ? "text-amber-500" : "text-emerald-500"
@@ -492,18 +492,18 @@ export const AgentChatComposer = memo(function AgentChatComposer({
                 <button
                   type="button"
                   onClick={handleVoiceConversationToggle}
-                  className={`flex h-10 w-10 items-center justify-center rounded-full transition-all ${
+                  className={`flex h-11 w-11 items-center justify-center rounded-full transition-all ${
                     voiceConversationActive
                       ? "bg-emerald-500/15 text-emerald-600 hover:bg-emerald-500/25 dark:text-emerald-400"
                       : "text-muted-foreground/50 hover:bg-muted/50 hover:text-muted-foreground"
                   }`}
                   aria-label={voiceConversationActive ? "End voice conversation" : "Start voice conversation"}
-                  title={voiceConversationActive ? "End voice conversation" : "Start voice conversation — auto-sends, auto-speaks responses"}
+                  title={voiceConversationActive ? "End voice conversation" : "Voice conversation — auto-sends, reads responses aloud"}
                 >
                   {voiceConversationActive ? (
-                    <MicOff className="h-4 w-4" />
+                    <X className="h-4 w-4" />
                   ) : (
-                    <Mic className="h-4 w-4" />
+                    <AudioLines className="h-4 w-4" />
                   )}
                 </button>
               </div>
