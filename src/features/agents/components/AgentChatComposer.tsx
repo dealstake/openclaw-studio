@@ -234,29 +234,48 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   const prevRunningRef = useRef(false);
   const prevAssistantTextRef = useRef<string | undefined>(undefined);
 
+  // Auto-TTS: when agent finishes and voice conversation is active, speak the response
+  const speakResponseRef = useRef((text: string) => {
+    const plainText = stripMarkdownForSpeech(text).slice(0, 4000);
+    if (plainText.length === 0) return;
+    setIsTtsSpeaking(true);
+    const opts = resolvedToSpeakOptions(voiceResolvedSettings);
+    void voiceOutputRef.current.speak(plainText, opts).then(() => {
+      setIsTtsSpeaking(false);
+      if (voiceConversationActiveRef.current && voiceRestartRef.current) {
+        voiceRestartRef.current();
+      }
+    }).catch(() => {
+      setIsTtsSpeaking(false);
+    });
+  });
+  useEffect(() => {
+    speakResponseRef.current = (text: string) => {
+      const plainText = stripMarkdownForSpeech(text).slice(0, 4000);
+      if (plainText.length === 0) return;
+      setIsTtsSpeaking(true);
+      const opts = resolvedToSpeakOptions(voiceResolvedSettings);
+      void voiceOutputRef.current.speak(plainText, opts).then(() => {
+        setIsTtsSpeaking(false);
+        if (voiceConversationActiveRef.current && voiceRestartRef.current) {
+          voiceRestartRef.current();
+        }
+      }).catch(() => {
+        setIsTtsSpeaking(false);
+      });
+    };
+  }, [voiceResolvedSettings]);
+
   useEffect(() => {
     if (prevRunningRef.current && !isRunning && lastAssistantText && voiceConversationActiveRef.current) {
       if (lastAssistantText !== prevAssistantTextRef.current) {
-        const plainText = stripMarkdownForSpeech(lastAssistantText).slice(0, 4000);
-
-        if (plainText.length > 0) {
-          setIsTtsSpeaking(true);
-          const opts = resolvedToSpeakOptions(voiceResolvedSettings);
-          void voiceOutputRef.current.speak(plainText, opts).then(() => {
-            setIsTtsSpeaking(false);
-            // Auto-restart recording after TTS finishes
-            if (voiceConversationActiveRef.current && voiceRestartRef.current) {
-              voiceRestartRef.current();
-            }
-          }).catch(() => {
-            setIsTtsSpeaking(false);
-          });
-        }
         prevAssistantTextRef.current = lastAssistantText;
+        // Defer to avoid synchronous setState in effect
+        queueMicrotask(() => speakResponseRef.current(lastAssistantText));
       }
     }
     prevRunningRef.current = isRunning;
-  }, [isRunning, lastAssistantText, voiceResolvedSettings]);
+  }, [isRunning, lastAssistantText]);
 
   // ── Standard handlers ─────────────────────────────────────────────
 
