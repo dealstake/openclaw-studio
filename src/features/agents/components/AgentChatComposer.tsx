@@ -2,6 +2,7 @@ import {
   memo,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type ChangeEvent,
@@ -13,15 +14,18 @@ import { motion, AnimatePresence } from "framer-motion";
 
 import type { GatewayModelChoice } from "@/lib/gateway/models";
 import type { GatewayStatus } from "@/lib/gateway/GatewayClient";
-import { AlertCircle, ArrowUp, Mic, MicOff, Square, UploadCloud, WifiOff } from "lucide-react";
+import { AlertCircle, ArrowUp, Mic, MicOff, Square, UploadCloud, Volume2, WifiOff } from "lucide-react";
 import { ChatAttachmentPreview } from "./ChatAttachmentPreview";
 import { ComposerAgentMenu, type ComposerAgent } from "./ComposerAgentMenu";
 import { useFileUpload, type ChatAttachment } from "../hooks/useFileUpload";
 import type { WizardType, WizardTheme, WizardStarter } from "@/features/wizards/lib/wizardTypes";
 import { WizardBanner } from "@/features/wizards/components/WizardBanner";
 import { WizardLaunchMenu } from "@/features/wizards/components/WizardLaunchMenu";
-import { useInlineVoice } from "@/features/voice/hooks/useInlineVoice";
-import { InlineVoiceIndicator } from "@/features/voice/components/InlineVoiceIndicator";
+import { useVoiceOutput, resolvedToSpeakOptions } from "@/features/voice/hooks/useVoiceOutput";
+import { useVoiceSettings } from "@/features/voice/hooks/useVoiceSettings";
+import { createStudioSettingsCoordinator } from "@/lib/studio/coordinator";
+import { VoiceInputControl } from "@/features/voice/components/VoiceControls";
+import type { SpeechInputData } from "@/components/ui/speech-input";
 
 import { stripAnsi } from "@/lib/stripAnsi";
 
@@ -121,42 +125,140 @@ export const AgentChatComposer = memo(function AgentChatComposer({
 
   const isRunning = wizardType ? (wizardIsStreaming ?? false) : running;
 
-  // ── Inline Voice ──────────────────────────────────────────────────
-  const inlineVoice = useInlineVoice({
-    onUserMessage: useCallback((text: string) => {
-      onSend(text);
-    }, [onSend]),
+  // ── Voice Mode State ──────────────────────────────────────────────
+  // "voice conversation mode" — when active, auto-sends on stop, auto-TTS on response, auto-restarts recording
+  const [voiceConversationActive, setVoiceConversationActive] = useState(false);
+  const [isTtsSpeaking, setIsTtsSpeaking] = useState(false);
+  const voiceConversationActiveRef = useRef(false);
+  const voiceRestartRef = useRef<(() => void) | null>(null);
+
+  // Track the text that was in the textarea before voice started
+  const voiceBaseTextRef = useRef("");
+
+  // ── Voice TTS output ──────────────────────────────────────────────
+  const voiceOutput = useVoiceOutput();
+  const voiceSettingsCoordinator = useMemo(
+    () => createStudioSettingsCoordinator({ debounceMs: 200 }),
+    [],
+  );
+  const { settings: voiceResolvedSettings } = useVoiceSettings({
+    settingsCoordinator: voiceSettingsCoordinator,
     agentId: selectedAgentId,
   });
+  const voiceOutputRef = useRef(voiceOutput);
+  useEffect(() => { voiceOutputRef.current = voiceOutput; }, [voiceOutput]);
 
-  // Auto-speak agent responses when inline voice is active
+  // ── Voice: live transcript → textarea ─────────────────────────────
+  const handleVoiceChange = useCallback((data: SpeechInputData) => {
+    const el = localRef.current;
+    if (el) {
+      const base = voiceBaseTextRef.current;
+      const full = base ? `${base} ${data.transcript}` : data.transcript;
+      el.value = full;
+      el.style.height = "auto";
+      el.style.height = `${el.scrollHeight}px`;
+      setIsEmpty(!full.trim());
+      onDraftChange(full);
+    }
+  }, [onDraftChange]);
+
+  const handleVoiceStart = useCallback(() => {
+    const el = localRef.current;
+    voiceBaseTextRef.current = el?.value?.trim() || "";
+  }, []);
+
+  /** When voice stops — if voice conversation mode is on, auto-send */
+  const handleVoiceStop = useCallback((data: SpeechInputData) => {
+    const newText = data.transcript.trim();
+    const base = voiceBaseTextRef.current;
+    const full = base && newText ? `${base} ${newText}` : (newText || base);
+    voiceBaseTextRef.current = "";
+
+    if (!full) return;
+
+    if (voiceConversationActiveRef.current) {
+      // Auto-send in voice conversation mode
+      onSend(full);
+      // Clear the textarea
+      const el = localRef.current;
+      if (el) {
+        el.value = "";
+        el.style.height = "auto";
+      }
+      setIsEmpty(true);
+      onDraftChange("");
+    } else {
+      // Normal mode — just leave text in textarea for review
+      const el = localRef.current;
+      if (el) {
+        el.value = full;
+        el.style.height = "auto";
+        el.style.height = `${el.scrollHeight}px`;
+        el.focus();
+      }
+      setIsEmpty(!full);
+      onDraftChange(full);
+    }
+  }, [onSend, onDraftChange]);
+
+  const handleVoiceCancel = useCallback((_data: SpeechInputData) => {
+    const base = voiceBaseTextRef.current;
+    const el = localRef.current;
+    if (el) {
+      el.value = base;
+      el.style.height = "auto";
+      if (base) el.style.height = `${el.scrollHeight}px`;
+    }
+    setIsEmpty(!base);
+    onDraftChange(base);
+    voiceBaseTextRef.current = "";
+  }, [onDraftChange]);
+
+  // ── Voice conversation toggle ─────────────────────────────────────
+  const handleVoiceConversationToggle = useCallback(() => {
+    if (voiceConversationActive) {
+      // Stop voice conversation
+      setVoiceConversationActive(false);
+      voiceConversationActiveRef.current = false;
+      // Stop any TTS
+      voiceOutputRef.current.stop();
+      setIsTtsSpeaking(false);
+    } else {
+      // Start voice conversation — VoiceInputControl will handle mic
+      setVoiceConversationActive(true);
+      voiceConversationActiveRef.current = true;
+    }
+  }, [voiceConversationActive]);
+
+  // ── Auto-TTS agent responses when voice conversation is active ────
   const prevRunningRef = useRef(false);
   const prevAssistantTextRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
-    if (prevRunningRef.current && !isRunning && lastAssistantText && inlineVoice.isActive) {
+    if (prevRunningRef.current && !isRunning && lastAssistantText && voiceConversationActiveRef.current) {
       if (lastAssistantText !== prevAssistantTextRef.current) {
         const plainText = stripMarkdownForSpeech(lastAssistantText).slice(0, 4000);
 
         if (plainText.length > 0) {
-          void inlineVoice.speakResponse(plainText);
+          setIsTtsSpeaking(true);
+          const opts = resolvedToSpeakOptions(voiceResolvedSettings);
+          void voiceOutputRef.current.speak(plainText, opts).then(() => {
+            setIsTtsSpeaking(false);
+            // Auto-restart recording after TTS finishes
+            if (voiceConversationActiveRef.current && voiceRestartRef.current) {
+              voiceRestartRef.current();
+            }
+          }).catch(() => {
+            setIsTtsSpeaking(false);
+          });
         }
         prevAssistantTextRef.current = lastAssistantText;
       }
     }
     prevRunningRef.current = isRunning;
-  }, [isRunning, lastAssistantText, inlineVoice]);
+  }, [isRunning, lastAssistantText, voiceResolvedSettings]);
 
-  // ── Voice toggle handler ──────────────────────────────────────────
-  const handleVoiceToggle = useCallback(() => {
-    if (inlineVoice.isActive) {
-      inlineVoice.stop();
-    } else {
-      void inlineVoice.start();
-    }
-  }, [inlineVoice]);
-
-  // ── File / Input handlers ─────────────────────────────────────────
+  // ── Standard handlers ─────────────────────────────────────────────
 
   const showFileError = useCallback((msg: string) => {
     setFileError(msg);
@@ -172,9 +274,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
   const handleFocus = useCallback(() => {
     const el = localRef.current;
     if (el) {
-      requestAnimationFrame(() => {
-        el.scrollIntoView({ block: "nearest" });
-      });
+      requestAnimationFrame(() => el.scrollIntoView({ block: "nearest" }));
     }
   }, []);
 
@@ -186,9 +286,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
       onDraftChange(value);
       el.style.height = "auto";
       el.style.height = `${el.scrollHeight}px`;
-      if (pendingResizeRef.current !== null) {
-        cancelAnimationFrame(pendingResizeRef.current);
-      }
+      if (pendingResizeRef.current !== null) cancelAnimationFrame(pendingResizeRef.current);
       pendingResizeRef.current = requestAnimationFrame(() => {
         pendingResizeRef.current = null;
         onResize();
@@ -199,10 +297,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
 
   const clearAfterSend = useCallback(() => {
     const el = localRef.current;
-    if (el) {
-      el.value = "";
-      el.style.height = "auto";
-    }
+    if (el) { el.value = ""; el.style.height = "auto"; }
     setIsEmpty(true);
     onDraftChange("");
   }, [onDraftChange]);
@@ -227,9 +322,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
     [doSend]
   );
 
-  const handleClickSend = useCallback(() => {
-    doSend();
-  }, [doSend]);
+  const handleClickSend = useCallback(() => doSend(), [doSend]);
 
   const handlePaste = useCallback(
     (event: ClipboardEvent<HTMLTextAreaElement>) => {
@@ -244,67 +337,32 @@ export const AgentChatComposer = memo(function AgentChatComposer({
       }
       if (imageFiles.length > 0) {
         event.preventDefault();
-        void addFiles(imageFiles).then((errs) => {
-          if (errs && errs.length > 0) showFileError(errs[0]);
-        });
+        void addFiles(imageFiles).then((errs) => { if (errs?.length) showFileError(errs[0]); });
       }
     },
     [addFiles, showFileError]
   );
 
-  const handleDragEnter = useCallback((e: DragEvent) => {
-    e.preventDefault();
-    dragCountRef.current++;
-    if (dragCountRef.current === 1) setIsDragging(true);
-  }, []);
+  const handleDragEnter = useCallback((e: DragEvent) => { e.preventDefault(); dragCountRef.current++; if (dragCountRef.current === 1) setIsDragging(true); }, []);
+  const handleDragLeave = useCallback((e: DragEvent) => { e.preventDefault(); dragCountRef.current--; if (dragCountRef.current === 0) setIsDragging(false); }, []);
+  const handleDragOver = useCallback((e: DragEvent) => { e.preventDefault(); }, []);
+  const handleDrop = useCallback((e: DragEvent) => {
+    e.preventDefault(); dragCountRef.current = 0; setIsDragging(false);
+    const droppedFiles = Array.from(e.dataTransfer?.files ?? []);
+    if (droppedFiles.length > 0) void addFiles(droppedFiles).then((errs) => { if (errs?.length) showFileError(errs[0]); });
+  }, [addFiles, showFileError]);
 
-  const handleDragLeave = useCallback((e: DragEvent) => {
-    e.preventDefault();
-    dragCountRef.current--;
-    if (dragCountRef.current === 0) setIsDragging(false);
-  }, []);
+  const handleFileInputChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
+    const selected = Array.from(e.target.files ?? []);
+    if (selected.length > 0) void addFiles(selected).then((errs) => { if (errs?.length) showFileError(errs[0]); });
+    e.target.value = "";
+  }, [addFiles, showFileError]);
 
-  const handleDragOver = useCallback((e: DragEvent) => {
-    e.preventDefault();
-  }, []);
-
-  const handleDrop = useCallback(
-    (e: DragEvent) => {
-      e.preventDefault();
-      dragCountRef.current = 0;
-      setIsDragging(false);
-      const droppedFiles = Array.from(e.dataTransfer?.files ?? []);
-      if (droppedFiles.length > 0) {
-        void addFiles(droppedFiles).then((errs) => {
-          if (errs && errs.length > 0) showFileError(errs[0]);
-        });
-      }
-    },
-    [addFiles, showFileError]
-  );
-
-  const handleFileInputChange = useCallback(
-    (e: ChangeEvent<HTMLInputElement>) => {
-      const selected = Array.from(e.target.files ?? []);
-      if (selected.length > 0) {
-        void addFiles(selected).then((errs) => {
-          if (errs && errs.length > 0) showFileError(errs[0]);
-        });
-      }
-      e.target.value = "";
-    },
-    [addFiles, showFileError]
-  );
-
-  const triggerAttach = useCallback(() => {
-    fileInputRef.current?.click();
-  }, []);
+  const triggerAttach = useCallback(() => { fileInputRef.current?.click(); }, []);
 
   useEffect(() => {
     return () => {
-      if (pendingResizeRef.current !== null) {
-        cancelAnimationFrame(pendingResizeRef.current);
-      }
+      if (pendingResizeRef.current !== null) cancelAnimationFrame(pendingResizeRef.current);
       if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
     };
   }, []);
@@ -313,6 +371,11 @@ export const AgentChatComposer = memo(function AgentChatComposer({
 
   const tokenPct = tokenUsed && tokenLimit && tokenLimit > 0
     ? Math.round((tokenUsed / tokenLimit) * 100)
+    : null;
+
+  // ── Voice conversation mode status text ───────────────────────────
+  const voiceStatusText = voiceConversationActive
+    ? isTtsSpeaking ? "Speaking…" : isRunning ? "Thinking…" : "Listening"
     : null;
 
   return (
@@ -324,7 +387,6 @@ export const AgentChatComposer = memo(function AgentChatComposer({
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
-      {/* Drag overlay */}
       {isDragging && (
         <div className="absolute inset-0 z-50 flex flex-col items-center justify-center rounded-3xl border-2 border-dashed border-primary bg-background/80 backdrop-blur-sm animate-in fade-in zoom-in-95">
           <UploadCloud className="mb-2 h-10 w-10 animate-bounce text-primary" />
@@ -332,7 +394,6 @@ export const AgentChatComposer = memo(function AgentChatComposer({
         </div>
       )}
 
-      {/* Gradient fade */}
       <div className="pointer-events-none h-4 sm:h-8 bg-gradient-to-t from-background to-transparent" />
 
       <div className="mx-auto max-w-3xl 2xl:max-w-4xl">
@@ -349,7 +410,6 @@ export const AgentChatComposer = memo(function AgentChatComposer({
             />
           </div>
         )}
-        {/* Mobile wizard starters */}
         {wizardType && wizardTheme && !wizardHasMessages && wizardStarters && wizardStarters.length > 0 && onWizardStarterClick && (
           <div className="mb-2 flex flex-wrap gap-1.5 sm:hidden">
             {wizardStarters.map((starter) => (
@@ -371,10 +431,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
             {gatewayStatus && gatewayStatus !== "connected" && (
               <div className="flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400" role="status">
                 <WifiOff className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                <span>
-                  {gatewayStatus === "connecting" ? "Reconnecting…" : "Offline"}
-                  {(queueLength ?? 0) > 0 && ` · ${queueLength} queued`}
-                </span>
+                <span>{gatewayStatus === "connecting" ? "Reconnecting…" : "Offline"}{(queueLength ?? 0) > 0 && ` · ${queueLength} queued`}</span>
               </div>
             )}
             {fileError && (
@@ -387,47 +444,28 @@ export const AgentChatComposer = memo(function AgentChatComposer({
           </div>
         )}
 
-        {/* Hidden file input */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          className="hidden"
-          accept={acceptString}
-          multiple
-          onChange={handleFileInputChange}
-        />
+        <input ref={fileInputRef} type="file" className="hidden" accept={acceptString} multiple onChange={handleFileInputChange} />
 
         {/* ═══ COMPOSER ROW ═══ */}
         <div className="flex items-end gap-2 sm:gap-2.5">
 
           {/* ── Glass Input Pill ── */}
-          <div className="min-w-0 flex-1 rounded-[24px] border border-border/30 bg-background shadow-sm transition-colors focus-within:border-border/50">
+          <div className={`min-w-0 flex-1 rounded-[24px] border bg-background shadow-sm transition-colors focus-within:border-border/50 ${
+            voiceConversationActive ? "border-emerald-500/50 ring-1 ring-emerald-500/20" : "border-border/30"
+          }`}>
             <div className="flex items-end">
               {/* Left controls */}
               <div className="flex shrink-0 items-center gap-1 pl-2 pb-1.5 sm:pl-2.5">
                 {!wizardType && onLaunchWizard && (
                   <WizardLaunchMenu onLaunch={onLaunchWizard} disabled={isRunning} />
                 )}
-                {/* Inline voice mic button */}
-                <button
-                  type="button"
-                  onClick={handleVoiceToggle}
-                  className={`flex h-10 w-10 items-center justify-center rounded-full transition-colors ${
-                    inlineVoice.isActive
-                      ? "bg-destructive/10 text-destructive hover:bg-destructive/20"
-                      : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                  }`}
-                  aria-label={inlineVoice.isActive ? "Stop voice mode" : "Start voice mode"}
-                  title={inlineVoice.isActive ? "Stop voice mode" : "Start voice mode"}
-                >
-                  {inlineVoice.isActive ? (
-                    <MicOff className="h-4 w-4" />
-                  ) : (
-                    <Mic className="h-4 w-4" />
-                  )}
-                </button>
-                {/* Inline voice state indicator */}
-                <InlineVoiceIndicator state={inlineVoice.state} />
+                {/* Live voice input — streams transcript into textarea in real-time */}
+                <VoiceInputControl
+                  onChange={handleVoiceChange}
+                  onStart={handleVoiceStart}
+                  onStop={handleVoiceStop}
+                  onCancel={handleVoiceCancel}
+                />
               </div>
               <textarea
                 ref={handleRef}
@@ -441,24 +479,43 @@ export const AgentChatComposer = memo(function AgentChatComposer({
                 onPaste={handlePaste}
                 placeholder={wizardType && wizardTheme ? "Type your requirements or pick a template..." : `Message ${agentName}...`}
               />
+              {/* Right side: voice conversation toggle + status */}
+              <div className="flex shrink-0 items-center gap-1 pr-2 pb-1.5 sm:pr-2.5">
+                {voiceStatusText && (
+                  <span className={`flex items-center gap-1 text-xs font-medium ${
+                    isTtsSpeaking ? "text-blue-500" : isRunning ? "text-amber-500" : "text-emerald-500"
+                  }`}>
+                    {isTtsSpeaking && <Volume2 className="h-3 w-3" />}
+                    {voiceStatusText}
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={handleVoiceConversationToggle}
+                  className={`flex h-10 w-10 items-center justify-center rounded-full transition-all ${
+                    voiceConversationActive
+                      ? "bg-emerald-500/15 text-emerald-600 hover:bg-emerald-500/25 dark:text-emerald-400"
+                      : "text-muted-foreground/50 hover:bg-muted/50 hover:text-muted-foreground"
+                  }`}
+                  aria-label={voiceConversationActive ? "End voice conversation" : "Start voice conversation"}
+                  title={voiceConversationActive ? "End voice conversation" : "Start voice conversation — auto-sends, auto-speaks responses"}
+                >
+                  {voiceConversationActive ? (
+                    <MicOff className="h-4 w-4" />
+                  ) : (
+                    <Mic className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
             </div>
           </div>
 
           {/* ── Morphing Action Button ── */}
           <div className="relative shrink-0">
             {isRunning && tokenPct !== null && (
-              <svg
-                className="pointer-events-none absolute inset-0 -rotate-90"
-                viewBox="0 0 44 44"
-                width="44"
-                height="44"
-                aria-hidden
-              >
+              <svg className="pointer-events-none absolute inset-0 -rotate-90" viewBox="0 0 44 44" width="44" height="44" aria-hidden>
                 <circle cx="22" cy="22" r="19" fill="none" stroke="currentColor" strokeWidth="2" className="text-muted/30" />
-                <circle
-                  cx="22" cy="22" r="19" fill="none"
-                  strokeWidth="2"
-                  strokeLinecap="round"
+                <circle cx="22" cy="22" r="19" fill="none" strokeWidth="2" strokeLinecap="round"
                   className={`transition-all duration-700 ${tokenPct >= 80 ? "text-yellow-500" : "text-primary"}`}
                   stroke="currentColor"
                   strokeDasharray={`${2 * Math.PI * 19}`}
@@ -473,67 +530,43 @@ export const AgentChatComposer = memo(function AgentChatComposer({
             {isRunning ? (
               <motion.button
                 key="stop"
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.8, opacity: 0 }}
+                initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }}
                 transition={{ type: "spring", damping: 25, stiffness: 200 }}
                 className="relative flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-sm ring-1 ring-white/[0.06] transition-all hover:bg-destructive/90 active:scale-95 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
-                type="button"
-                aria-label="Stop agent"
-                onClick={onStop}
-                disabled={!canSend || stopBusy}
+                type="button" aria-label="Stop agent" onClick={onStop} disabled={!canSend || stopBusy}
               >
                 <Square className="h-3.5 w-3.5 fill-current" />
               </motion.button>
             ) : !isEmpty || hasFiles ? (
               <motion.button
                 key="send"
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.8, opacity: 0 }}
+                initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }}
                 transition={{ type: "spring", damping: 25, stiffness: 200 }}
                 className="relative flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm ring-1 ring-white/[0.06] transition-all hover:bg-primary/90 active:scale-95 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
-                type="button"
-                aria-label="Send message"
-                onClick={handleClickSend}
-                disabled={sendDisabled}
+                type="button" aria-label="Send message" onClick={handleClickSend} disabled={sendDisabled}
               >
                 <ArrowUp className="h-[18px] w-[18px]" />
               </motion.button>
             ) : composerAgents && composerAgents.length > 0 && onSelectAgent && selectedAgentId ? (
               <motion.div
                 key="avatar"
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.8, opacity: 0 }}
+                initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }}
                 transition={{ type: "spring", damping: 25, stiffness: 200 }}
               >
                 <ComposerAgentMenu
-                  agents={composerAgents}
-                  selectedAgentId={selectedAgentId}
-                  onSelectAgent={onSelectAgent}
-                  models={models}
-                  modelValue={modelValue}
-                  onModelChange={onModelChange}
-                  thinkingLevel={thinkingLevel}
-                  onThinkingChange={onThinkingChange}
-                  allowThinking={allowThinking}
-                  tokenPct={tokenPct}
-                  onNewSession={onNewSession}
-                  onAttach={triggerAttach}
+                  agents={composerAgents} selectedAgentId={selectedAgentId} onSelectAgent={onSelectAgent}
+                  models={models} modelValue={modelValue} onModelChange={onModelChange}
+                  thinkingLevel={thinkingLevel} onThinkingChange={onThinkingChange} allowThinking={allowThinking}
+                  tokenPct={tokenPct} onNewSession={onNewSession} onAttach={triggerAttach}
                 />
               </motion.div>
             ) : (
               <motion.button
                 key="disabled"
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.8, opacity: 0 }}
+                initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }}
                 transition={{ type: "spring", damping: 25, stiffness: 200 }}
                 className="relative flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-full border border-border/20 bg-muted/30 text-muted-foreground shadow-sm ring-1 ring-white/[0.06]"
-                type="button"
-                aria-label="Send message"
-                disabled
+                type="button" aria-label="Send message" disabled
               >
                 <ArrowUp className="h-[18px] w-[18px]" />
               </motion.button>
