@@ -58,6 +58,17 @@ jobs:
             -t ${{ env.AR_REPO }}:latest .
           docker push ${{ env.AR_REPO }} --all-tags
 
+      - name: Ensure service account JSON is single-line (base64)
+        id: sa_b64
+        run: |
+          RAW='${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}'
+          # If it looks like JSON, base64-encode it; otherwise assume already base64
+          if echo "$RAW" | head -c1 | grep -q '{'; then
+            echo "value=$(echo "$RAW" | base64 -w0)" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=$RAW" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Deploy to Cloud Run
         uses: google-github-actions/deploy-cloudrun@v2
         with:
@@ -67,7 +78,7 @@ jobs:
           env_vars: |
             NODE_ENV=production
             HOSTNAME=0.0.0.0
-            GOOGLE_SERVICE_ACCOUNT_JSON=${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+            GOOGLE_SERVICE_ACCOUNT_JSON=${{ steps.sa_b64.outputs.value }}
             GOOGLE_IMPERSONATE_EMAIL=alex@tridentfundingsolutions.com
             GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
             WORKSPACE_SIDECAR_URL=${{ secrets.WORKSPACE_SIDECAR_URL }}
