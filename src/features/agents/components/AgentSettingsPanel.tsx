@@ -11,7 +11,6 @@ import { AutonomyLevelSelector } from "./AutonomyLevelSelector";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import type { AutonomyLevel } from "@/features/agents/lib/autonomyService";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
-import { GuardrailsSection } from "@/features/guardrails/components/GuardrailsSection";
 
 type AgentSettingsPanelProps = {
   agent: AgentState;
@@ -25,9 +24,7 @@ type AgentSettingsPanelProps = {
   onToolCallingToggle: (enabled: boolean) => void;
   onThinkingTracesToggle: (enabled: boolean) => void;
   onAutonomyChange: (level: AutonomyLevel) => void;
-  /** GatewayClient — required to render the GuardrailsSection. */
   client?: GatewayClient | null;
-  /** Gateway connection status — required to render the GuardrailsSection. */
   status?: GatewayStatus;
 };
 
@@ -81,13 +78,6 @@ export const AgentSettingsPanel = memo(function AgentSettingsPanel({
             onChange={onAutonomyChange}
           />
 
-          {client && status ? (
-            <GuardrailsSection
-              client={client}
-              agentId={agent.agentId}
-              status={status}
-            />
-          ) : null}
 
           <DangerZoneSection
             agentId={agent.agentId}

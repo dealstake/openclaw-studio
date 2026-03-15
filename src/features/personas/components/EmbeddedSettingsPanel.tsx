@@ -3,7 +3,6 @@
 import React, { memo, useCallback, useState } from "react";
 import { SectionLabel } from "@/components/SectionLabel";
 import { AutonomyLevelSelector } from "@/features/agents/components/AutonomyLevelSelector";
-import { GuardrailsSection } from "@/features/guardrails/components/GuardrailsSection";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import type { AgentState } from "@/features/agents/state/store";
 import type { GatewayClient, GatewayStatus } from "@/lib/gateway/GatewayClient";
@@ -139,13 +138,6 @@ export const EmbeddedSettingsPanel = memo(function EmbeddedSettingsPanel({
 
         {/* Guardrails */}
         <section className="flex flex-col gap-2">
-          <SectionLabel>Guardrails</SectionLabel>
-          <GuardrailsSection
-            client={client}
-            agentId={agent.agentId}
-            status={status}
-          />
-        </section>
       </div>
     </TooltipProvider>
   );
