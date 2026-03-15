@@ -3,7 +3,7 @@
  *
  * Tiers (highest to lowest):
  * 1. full     — Orb (WebGL) + STT + TTS
- * 2. reduced  — BarVisualizer (canvas) + STT + TTS
+ * * 2. reduced  — canvas visualizer + STT + TTS
  * 3. minimal  — Text-only STT + TTS via REST (no WebSocket)
  * 4. disabled — Error state with helpful message
  */
