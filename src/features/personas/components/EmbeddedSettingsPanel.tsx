@@ -136,7 +136,6 @@ export const EmbeddedSettingsPanel = memo(function EmbeddedSettingsPanel({
           )}
         </section>
 
-        <section className="flex flex-col gap-2">
       </div>
     </TooltipProvider>
   );
